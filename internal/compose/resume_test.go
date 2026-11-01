@@ -56,6 +56,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a language's level", want: "fluent"},
 		{name: "a word of the site", want: "Experience"},
 		{name: "a label of the site", want: "repository"},
+		{name: "the word for what still goes on", want: "present"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -90,7 +91,7 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 		got = append(got, as[document.Entry](test, block).Period)
 	}
 	want := []document.Period{
-		{Start: document.KnownMonth{Start: firstMoment(2023, time.April)}, End: document.CurrentMonth{}},
+		{Start: document.KnownMonth{Start: firstMoment(2023, time.April)}, End: document.CurrentMonth{Text: "present"}},
 		{Start: document.KnownMonth{Start: firstMoment(2020, time.January)}, End: document.KnownMonth{Start: firstMoment(2023, time.March)}},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -98,21 +99,25 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 	}
 }
 
-// Every link of the résumé leads where the profile says: a face writes the address, but never chooses it.
+// Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
+// never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
-	resume := Resume(fixtureSnapshot(test))
+	documents := Documents(fixtureSnapshot(test))
+	resume := documentOf(test, documents, document.Page{Kind: document.PageResume, Slug: ""})
+	project := documentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
 	projects := sectionTitled(test, resume, "Projects")
-	pageless, tidy := as[document.Card](test, projects.Blocks[0]), as[document.Card](test, projects.Blocks[1])
+	pageless, tidy := cardTitled(test, projects, "other-tool"), cardTitled(test, projects, "tidy-tool")
 	cases := []struct {
 		name string
 		got  document.Target
 		want document.Target
 	}{
-		{name: "the mail address", got: linkTarget(test, resume.Head.Ways[0].Value), want: document.Address{URL: "mailto:mira@example.test"}},
-		{name: "a public profile", got: linkTarget(test, resume.Head.Ways[1].Value), want: document.Address{URL: "https://github.test/mira"}},
+		{name: "the mail address", got: linkTarget(test, factLabelled(test, resume.Head.Ways, "mail").Value), want: document.Address{URL: "mailto:mira@example.test"}},
+		{name: "a public profile", got: linkTarget(test, factLabelled(test, resume.Head.Ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
 		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}},
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},
-		{name: "a project's repository", got: linkTarget(test, tidy.Facts[0].Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
+		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
+		{name: "a project's page back to the résumé", got: linkTarget(test, factLabelled(test, detailsOf(test, project), "author").Value), want: document.Page{Kind: document.PageResume, Slug: ""}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -121,6 +126,50 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 			}
 		})
 	}
+}
+
+// documentOf is the document of a page, wherever compose put it.
+func documentOf(test *testing.T, documents []document.Document, page document.Page) document.Document {
+	for _, found := range documents {
+		if found.Head.Page == page {
+			return found
+		}
+	}
+	test.Fatalf("no document is the page %+v", page)
+	return document.Document{Head: document.Head{Page: page, Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil}, Blocks: nil}
+}
+
+// cardTitled is a section's card under a title, wherever compose put it.
+func cardTitled(test *testing.T, section document.Section, title string) document.Card {
+	for _, block := range section.Blocks {
+		if card, isCard := block.(document.Card); isCard && as[document.Text](test, card.Title[0]).Text == title {
+			return card
+		}
+	}
+	test.Fatalf("the section has no card %q", title)
+	return document.Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: nil, Page: document.Page{Kind: document.PageNone, Slug: ""}}
+}
+
+// detailsOf are a page's facts, wherever compose put them.
+func detailsOf(test *testing.T, page document.Document) []document.Fact {
+	for _, block := range page.Blocks {
+		if facts, isFacts := block.(document.Facts); isFacts {
+			return facts.List
+		}
+	}
+	test.Fatalf("the page %+v has no facts", page.Head.Page)
+	return nil
+}
+
+// factLabelled is the fact under a label.
+func factLabelled(test *testing.T, facts []document.Fact, label string) document.Fact {
+	for _, fact := range facts {
+		if fact.Label == label {
+			return fact
+		}
+	}
+	test.Fatalf("no fact is labelled %q among %+v", label, facts)
+	return document.Fact{Label: label, Value: nil}
 }
 
 // sectionTitled is the résumé's section under a title, wherever compose put it.

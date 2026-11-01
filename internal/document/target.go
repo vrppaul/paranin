@@ -25,6 +25,8 @@ type PageKind int
 const (
 	// PageNone is no page: a page left unset is none
 	PageNone PageKind = iota
+	// PageResume is the résumé, the site's first page; it has no slug
+	PageResume
 	// PageProject is a project's own page, by the project's slug
 	PageProject
 )

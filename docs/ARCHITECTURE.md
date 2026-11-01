@@ -168,8 +168,10 @@ and web routes.
   same spans.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
-  writes it its own way: `2024 – now`, `01/2024 – present`. `document`
-  imports nothing of `content`, so `compose` carries the months across.
+  writes a known month its own way (`2024`, `01/2024`); the end of what still
+  goes on carries the site's word for it, `present`, which every face writes
+  as it is. `document` imports nothing of `content`, so `compose` carries the
+  months across.
 - **A link names its target**: an address outside the site, or a page of it
   by its kind and slug, with a format where the link names one (the CV as
   PDF, `index.md`, `llms.txt`) and an anchor where it names a place inside

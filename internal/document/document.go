@@ -10,9 +10,10 @@ type Document struct {
 	Blocks []Block
 }
 
-// Head is what every face shows first: the document's title, a subtitle and the place beside it, a lead, and
-// the ways to reach the author.
+// Head is what every face shows first: the page the document is, its title, a subtitle and the place beside it,
+// a lead, and the ways to reach the author.
 type Head struct {
+	Page     Page
 	Title    []Span
 	Subtitle []Span
 	Place    string

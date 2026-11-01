@@ -213,6 +213,21 @@ linters:
               desc: *foundation-alone
             - pkg: github.com/vrppaul/paranin/internal/document
               desc: *foundation-alone
+        # A face draws documents and compose's records alone, never the content they are made from (ADR-0003)
+        faces-know-no-content:
+          files:
+            - "**/internal/face/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/content
+              desc: a face draws documents; compose makes them from the content
+        routes-read-documents-alone:
+          files:
+            - "**/internal/routes/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/content
+              desc: &routes-alone routes writes the address of a document's target, and reads document alone
+            - pkg: github.com/vrppaul/paranin/internal/look
+              desc: *routes-alone
         face-html-alone:
           list-mode: lax
           files:

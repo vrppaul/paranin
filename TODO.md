@@ -4,9 +4,9 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The foundation
 
-- The faces, each its own commit (§8, step 5): `face/text` with `routes`, `hosting/web` serving its formats, the project pages and the index, the depguard rule that keeps `content` out of every face, and one that holds `routes` to `document` alone, each tried on its package as it lands; `face/tui` with `hosting/ssh`, `look` and the token generator from `design/tokens.yaml`; `face/html` on templ, on the same `hosting/web`. Each reads the first version under _old/tree while the face is written, and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
+- The faces, each its own commit (§8, step 5): the rest of `face/text`, the man page for `curl` and the index of `llms.txt`, with what `/` sends each reader and a 404 in text that quotes the path and says where to go; the `Link: rel="canonical"` header of a page's other formats comes with `face/html`; `face/tui` with `hosting/ssh`, `look` and the token generator from `design/tokens.yaml`; `face/html` on templ, on the same `hosting/web`. Each reads the first version under _old/tree while the face is written, and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6): `web/` with Vite, TypeScript and Svelte 5, its gates, `domain`, `ui`, then the islands one at a time; the rules of the page and the design arrive with it.
-- Hosting (§8, step 7): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; `inbox` with delivery to Telegram; `face/print` on Typst; the Dockerfile with both ports; deploy.
+- Hosting (§8, step 7): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; the reload on a change in the content folder once the changes settle (ADR-0003), beside SIGHUP; `inbox` with delivery to Telegram; `face/print` on Typst; the Dockerfile with both ports; deploy.
 - The blog (§8, step 8) and phase 3 (§8, step 9).
 
 ## Documents

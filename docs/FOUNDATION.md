@@ -769,3 +769,14 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   kinds of month a closed set on both sides, a card's page of its own, the
   marks read in every text that becomes spans, and phrases as a plain list;
   each answered.
+- **2026-11-01, the first face and its host.** `routes`, the markdown of
+  `face/text` for the résumé and each project's page, `hosting/web` serving
+  each page at its address and drawing a snapshot's pages once, and
+  `paranin serve`, which reloads on SIGHUP. The head's page came back with
+  its first user, `hosting/web`. depguard now keeps `content` out of every
+  face and `routes` to `document`. The review asked for markdown that never
+  reads text as markup, code spans CommonMark keeps whole, the word for a
+  role still held written as the site writes it, a project's author and
+  recording kept, a server that listens before it says so and gives the
+  signals back once stopping, and a test of the signals; each answered. What
+  the first version gave `curl` that waits for its chunk is in TODO.

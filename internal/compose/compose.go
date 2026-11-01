@@ -17,6 +17,17 @@ const mailScheme = "mailto:"
 // What separates the values of one cell: the places a skill was proven
 const listSeparator = ", "
 
+// Documents are every page a snapshot makes: the résumé, then the page of each project that has one.
+func Documents(snapshot *content.Snapshot) []document.Document {
+	documents := []document.Document{Resume(snapshot)}
+	for _, project := range snapshot.Profile.Projects {
+		if project.Page {
+			documents = append(documents, projectDocument(project, snapshot.Profile.Person, snapshot.Words))
+		}
+	}
+	return documents
+}
+
 // Resume is the résumé as one document: its head, the summary, then its facts, experience, projects, skills,
 // education and languages, each a section under the site's word for it.
 func Resume(snapshot *content.Snapshot) document.Document {
@@ -38,6 +49,7 @@ func Resume(snapshot *content.Snapshot) document.Document {
 func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	return document.Head{
+		Page:     document.Page{Kind: document.PageResume, Slug: ""},
 		Title:    markedSpans(person.Name),
 		Subtitle: markedSpans(person.Title),
 		Place:    person.Location,
@@ -60,7 +72,7 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 	entries := make([]document.Block, 0, len(roles))
 	for _, role := range roles {
 		entries = append(entries, document.Entry{
-			Period:   periodOf(role.Start, role.End),
+			Period:   periodOf(role.Start, role.End, words),
 			Title:    markedSpans(role.Company),
 			Subtitle: markedSpans(role.Title),
 			Place:    role.Location,
@@ -74,7 +86,7 @@ func educationSection(schools []content.School, words content.Words) document.Se
 	entries := make([]document.Block, 0, len(schools))
 	for _, school := range schools {
 		entries = append(entries, document.Entry{
-			Period:   periodOf(school.Start, school.End),
+			Period:   periodOf(school.Start, school.End, words),
 			Title:    markedSpans(school.Name),
 			Subtitle: markedSpans(school.Field),
 			Place:    "",
@@ -97,6 +109,36 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 		})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Blocks: cards}
+}
+
+// projectDocument is a project's own page: its name, what it is in a line and what it does; its details, its
+// author first, a link back to the résumé; its recording, where it has one; then its sections.
+func projectDocument(project content.Project, author content.Person, words content.Words) document.Document {
+	resume := document.Page{Kind: document.PageResume, Slug: ""}
+	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
+	details = append(details, factList(project.Facts)...)
+	blocks := []document.Block{document.Facts{List: append(details, projectFacts(project, words)...)}}
+	if project.Recording != "" {
+		blocks = append(blocks, document.CodeBlock{Text: project.Recording})
+	}
+	for _, section := range project.Sections {
+		paragraphs := make([]document.Block, 0, len(section.Paragraphs))
+		for _, paragraph := range section.Paragraphs {
+			paragraphs = append(paragraphs, document.Paragraph{Spans: markedSpans(paragraph)})
+		}
+		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Blocks: paragraphs})
+	}
+	return document.Document{
+		Head: document.Head{
+			Page:     projectPage(project),
+			Title:    markedSpans(project.Name),
+			Subtitle: markedSpans(project.Tagline),
+			Place:    "",
+			Lead:     markedSpans(project.Description),
+			Ways:     nil,
+		},
+		Blocks: blocks,
+	}
 }
 
 // projectPage is a project's own page, or no page where it has none.

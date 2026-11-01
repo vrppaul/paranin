@@ -49,6 +49,7 @@ projects:
     language: Lua
     repo: https://github.test/mira/tidy-tool
     install: go install example.test/tidy-tool@latest
+    recording: "$ tidy .\ntidied 3 files"
     page: true
     facts:
       - {label: status, value: done}

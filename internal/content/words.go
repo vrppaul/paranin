@@ -6,7 +6,7 @@ import (
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
-// résumé, or the label of a way to reach the author or of a detail of a project.
+// résumé, the label of a way to reach the author or of a detail of a project, or the end of what still goes on.
 type Word int
 
 const (
@@ -22,6 +22,8 @@ const (
 	WordSSH
 	WordRepository
 	WordInstall
+	WordPresent
+	WordAuthor
 )
 
 // wordKeys are the keys a catalogue writes each word under, each named once. exhaustive holds the literal to
@@ -38,6 +40,8 @@ func wordKeys() map[Word]string {
 		WordSSH:        "ssh",
 		WordRepository: "repository",
 		WordInstall:    "install",
+		WordPresent:    "present",
+		WordAuthor:     "author",
 	}
 }
 

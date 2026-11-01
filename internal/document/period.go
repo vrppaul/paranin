@@ -25,8 +25,10 @@ type GapMonth struct {
 	Text string
 }
 
-// CurrentMonth is the end of what still goes on.
-type CurrentMonth struct{}
+// CurrentMonth is the end of what still goes on, with the site's word for it.
+type CurrentMonth struct {
+	Text string
+}
 
 func (KnownMonth) month()   {}
 func (GapMonth) month()     {}

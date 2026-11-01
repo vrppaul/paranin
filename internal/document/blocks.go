@@ -33,6 +33,11 @@ type Cell struct {
 	Spans []Span
 }
 
+// CodeBlock is text shown as it is, line for line: a terminal's recording.
+type CodeBlock struct {
+	Text string
+}
+
 // Facts is a list of labels and their values.
 type Facts struct {
 	List []Fact
@@ -66,6 +71,7 @@ type Card struct {
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (Table) block()     {}
+func (CodeBlock) block() {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}

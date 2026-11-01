@@ -22,6 +22,8 @@ func blockPhrases(phrases []string, blocks []Block) []string {
 			phrases = spanPhrases(phrases, typed.Spans)
 		case Table:
 			phrases = rowPhrases(phrases, typed.Rows)
+		case CodeBlock:
+			phrases = textPhrase(phrases, typed.Text)
 		case Facts:
 			phrases = factPhrases(phrases, typed.List)
 		case Entry:
@@ -63,12 +65,14 @@ func cardPhrases(phrases []string, card Card) []string {
 	return factPhrases(spanPhrases(phrases, card.Summary), card.Facts)
 }
 
-// monthPhrase is a gap's text; a known month and the end of what goes on are each face's to write.
+// monthPhrase is a gap's text and the word for what still goes on; a known month is each face's to write.
 func monthPhrase(phrases []string, month Month) []string {
 	switch typed := month.(type) {
 	case GapMonth:
 		return textPhrase(phrases, typed.Text)
-	case KnownMonth, CurrentMonth:
+	case CurrentMonth:
+		return textPhrase(phrases, typed.Text)
+	case KnownMonth:
 	}
 	return phrases
 }

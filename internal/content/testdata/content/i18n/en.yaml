@@ -10,3 +10,5 @@ mail: mail
 ssh: ssh
 repository: repository
 install: install
+present: present
+author: author

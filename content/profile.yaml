@@ -20,12 +20,10 @@ person:
   location: Prague, Czechia
   email: paraninpasha@gmail.com
   links:
-    - key: gh
-      label: GitHub
+    - label: GitHub
       url: https://github.com/vrppaul
       text: github.com/vrppaul
-    - key: in
-      label: LinkedIn
+    - label: LinkedIn
       url: https://www.linkedin.com/in/pavel-paranin/
       text: linkedin.com/in/pavel-paranin
 
@@ -166,27 +164,29 @@ projects:
     facts: []
     sections: []
 
-# The groups skills are shown in, in this order
+# The groups skills are shown in, and the skills in each, in this order
 skill_groups:
-  - {key: languages, title: Languages}
-  - {key: backend, title: Backend}
-  - {key: ai, title: AI and ML}
-  - {key: design, title: Design}
-
-skills:
-  - {name: Python, group: languages, duration: 7y, aliases: [python], sources: [Blindspot Solutions, Seznam.cz, claude-review, semantic-code-mcp]}
-  - {name: Kotlin, group: languages, duration: 1y 7m, aliases: [kotlin], sources: [Blindspot Solutions]}
-  - {name: Rust, group: languages, duration: side, aliases: [rust], sources: [graph-rs]}
-  - {name: SQL, group: languages, duration: side, aliases: [sql], sources: [water-tracker]}
-  - {name: Go, group: languages, duration: learning, aliases: [go, golang], sources: [paranin, study lab], learning: true}
-  - {name: Kubernetes, group: backend, duration: 1y 6m, aliases: [kubernetes, k8s], sources: [Seznam.cz]}
-  - {name: PostgreSQL, group: backend, duration: side, aliases: [postgresql, postgres], sources: [water-tracker]}
-  - {name: Docker, group: backend, duration: side, aliases: [docker, docker compose], sources: [padel-bot]}
-  - {name: MCP, group: ai, duration: 1y, aliases: [mcp, model context protocol], sources: [semantic-code-mcp]}
-  - {name: LLM agents, group: ai, duration: 1y, aliases: [llm, llms, ai agents, coding agents, ai coding tools, agentic, claude code, cursor, codex], sources: [claude-review, semantic-code-mcp]}
-  - {name: Embeddings and vector search, group: ai, duration: 1y, aliases: [embeddings, vector search, semantic search, lancedb, rag], sources: [semantic-code-mcp]}
-  - {name: scikit-learn, group: ai, duration: 1y 7m, aliases: [scikit-learn, sklearn, machine learning, nlp], sources: [Blindspot Solutions]}
-  - {name: UX design, group: design, duration: 11m, aliases: [ux, user research, usability testing, prototyping], sources: [Česká spořitelna]}
+  - title: Languages
+    skills:
+      - {name: Python, duration: 7y, aliases: [python], sources: [Blindspot Solutions, Seznam.cz, claude-review, semantic-code-mcp]}
+      - {name: Kotlin, duration: 1y 7m, aliases: [kotlin], sources: [Blindspot Solutions]}
+      - {name: Rust, duration: side, aliases: [rust], sources: [graph-rs]}
+      - {name: SQL, duration: side, aliases: [sql], sources: [water-tracker]}
+      - {name: Go, duration: learning, aliases: [go, golang], sources: [paranin, study lab], learning: true}
+  - title: Backend
+    skills:
+      - {name: Kubernetes, duration: 1y 6m, aliases: [kubernetes, k8s], sources: [Seznam.cz]}
+      - {name: PostgreSQL, duration: side, aliases: [postgresql, postgres], sources: [water-tracker]}
+      - {name: Docker, duration: side, aliases: [docker, docker compose], sources: [padel-bot]}
+  - title: AI and ML
+    skills:
+      - {name: MCP, duration: 1y, aliases: [mcp, model context protocol], sources: [semantic-code-mcp]}
+      - {name: LLM agents, duration: 1y, aliases: [llm, llms, ai agents, coding agents, ai coding tools, agentic, claude code, cursor, codex], sources: [claude-review, semantic-code-mcp]}
+      - {name: Embeddings and vector search, duration: 1y, aliases: [embeddings, vector search, semantic search, lancedb, rag], sources: [semantic-code-mcp]}
+      - {name: scikit-learn, duration: 1y 7m, aliases: [scikit-learn, sklearn, machine learning, nlp], sources: [Blindspot Solutions]}
+  - title: Design
+    skills:
+      - {name: UX design, duration: 11m, aliases: [ux, user research, usability testing, prototyping], sources: [Česká spořitelna]}
 
 education:
   - name: Czech Technical University in Prague
@@ -227,7 +227,5 @@ contact:
   salary:
     min: 100000
     soft_max: 300000
-    step: 10000
-    big_step: 50000
     currencies: [USD, EUR]
     period: year

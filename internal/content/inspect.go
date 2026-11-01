@@ -5,6 +5,7 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -17,15 +18,27 @@ const (
 	plainScheme  = "http"
 )
 
-// What is said of each kind of fault
+// What is said of each kind of fault, as a format for the values it names; a fault of a value written quotes it
 const (
-	emptyProblem      = "is empty"
-	addressProblem    = "is no absolute web address"
-	unknownMonth      = "%q is no month, YYYY-MM"
-	unknownEnd        = "%q is no month, YYYY-MM, nor current"
-	unknownMonthOrGap = "%q is no month, YYYY-MM, nor a [gap]"
-	orderProblem      = "comes before the start"
+	emptyProblem       = "is empty"
+	addressProblem     = "%q is no absolute web address"
+	slashProblem       = "%q ends in a slash, which every address adds itself"
+	mailProblem        = "%q is no bare mail address"
+	unknownMonth       = "%q is no month, YYYY-MM"
+	unknownEnd         = unknownMonth + ", nor " + currentWord
+	unknownMonthOrGap  = unknownMonth + ", nor a " + gapOpening + "gap" + gapClosing
+	orderProblem       = "%q comes before the start, %q"
+	slugProblem        = "%q is no slug: small letters and digits, joined by hyphens"
+	sharedSlugProblem  = "%q names another project too"
+	sharedGroupProblem = "%q names another group too"
+	emptyGroupProblem  = "holds no skill"
+	levelProblem       = "%q is none of %s"
+	positiveProblem    = "%d is not above 0"
+	rangeProblem       = "%d is not above min, %d"
 )
+
+// What separates the levels a level fault lists
+const levelSeparator = ", "
 
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
@@ -35,7 +48,10 @@ type inspection struct {
 	faults Faults
 }
 
-func (inspection *inspection) add(field, problem string) {
+// add writes a fault from its problem's format and the values it names. It takes the format whole, as Sprintf
+// does, so vet refuses a format whose values are missing.
+func (inspection *inspection) add(field, format string, values ...any) {
+	problem := fmt.Sprintf(format, values...)
 	inspection.faults = append(inspection.faults, Fault{File: profileFile, Field: field, Problem: problem})
 }
 
@@ -48,7 +64,7 @@ func (inspection *inspection) require(field, value string) {
 func (inspection *inspection) requireAddress(field, address string) {
 	parsed, err := url.Parse(address)
 	if err != nil || parsed.Host == "" || (parsed.Scheme != secureScheme && parsed.Scheme != plainScheme) {
-		inspection.add(field, addressProblem)
+		inspection.add(field, addressProblem, address)
 	}
 }
 
@@ -61,7 +77,7 @@ func inspectProfile(profile Profile) Faults {
 	inspectExperience(inspection, profile.Experience)
 	inspectEducation(inspection, profile.Education)
 	inspectProjects(inspection, profile.Projects)
-	inspectSkills(inspection, profile.SkillGroups, profile.Skills)
+	inspectSkills(inspection, profile.SkillGroups)
 	inspectHealth(inspection, profile.Health)
 	inspectSalary(inspection, profile.Contact.Salary)
 	return inspection.faults
@@ -70,7 +86,7 @@ func inspectProfile(profile Profile) Faults {
 func inspectSite(inspection *inspection, site Site) {
 	inspection.requireAddress(baseAddressField, site.BaseURL)
 	if strings.HasSuffix(site.BaseURL, "/") {
-		inspection.add(baseAddressField, "ends in a slash, which every address adds itself")
+		inspection.add(baseAddressField, slashProblem, site.BaseURL)
 	}
 	inspection.require("site.ssh", site.SSH)
 }
@@ -80,10 +96,9 @@ func inspectPerson(inspection *inspection, person Person) {
 	inspection.require("person.given_name", person.GivenName)
 	inspection.require("person.title", person.Title)
 	if parsed, err := mail.ParseAddress(person.Email); err != nil || parsed.Address != person.Email {
-		inspection.add("person.email", fmt.Sprintf("%q is no bare mail address", person.Email))
+		inspection.add("person.email", mailProblem, person.Email)
 	}
 	for index, link := range person.Links {
-		inspection.require(fmt.Sprintf("person.links[%d].key", index), link.Key)
 		inspection.require(fmt.Sprintf("person.links[%d].label", index), link.Label)
 		inspection.require(fmt.Sprintf("person.links[%d].text", index), link.Text)
 		inspection.requireAddress(fmt.Sprintf("person.links[%d].url", index), link.URL)
@@ -97,15 +112,15 @@ func inspectExperience(inspection *inspection, roles []Role) {
 		inspection.require(fmt.Sprintf("experience[%d].title", index), role.Title)
 		start := fmt.Sprintf("experience[%d].start", index)
 		if !role.Start.IsKnown() {
-			inspection.add(start, fmt.Sprintf(unknownMonth, role.Start.Written()))
+			inspection.add(start, unknownMonth, role.Start.Written())
 		}
 		end := fmt.Sprintf("experience[%d].end", index)
 		switch {
 		case role.Current():
 		case !role.End.IsKnown():
-			inspection.add(end, fmt.Sprintf(unknownEnd, role.End.Written()))
+			inspection.add(end, unknownEnd, role.End.Written())
 		case role.Start.IsKnown() && role.End.Before(role.Start):
-			inspection.add(end, orderProblem)
+			inspection.add(end, orderProblem, role.End.Written(), role.Start.Written())
 		}
 	}
 }
@@ -117,13 +132,13 @@ func inspectEducation(inspection *inspection, schools []School) {
 		start := fmt.Sprintf("education[%d].start", index)
 		end := fmt.Sprintf("education[%d].end", index)
 		if !school.Start.IsKnown() && !school.Start.IsGap() {
-			inspection.add(start, fmt.Sprintf(unknownMonthOrGap, school.Start.Written()))
+			inspection.add(start, unknownMonthOrGap, school.Start.Written())
 		}
 		if !school.End.IsKnown() && !school.End.IsGap() {
-			inspection.add(end, fmt.Sprintf(unknownMonthOrGap, school.End.Written()))
+			inspection.add(end, unknownMonthOrGap, school.End.Written())
 		}
 		if school.Start.IsKnown() && school.End.IsKnown() && school.End.Before(school.Start) {
-			inspection.add(end, orderProblem)
+			inspection.add(end, orderProblem, school.End.Written(), school.Start.Written())
 		}
 	}
 }
@@ -135,9 +150,9 @@ func inspectProjects(inspection *inspection, projects []Project) {
 		field := fmt.Sprintf("projects[%d].slug", index)
 		switch {
 		case !slug.MatchString(project.Slug):
-			inspection.add(field, "is no slug: small letters and digits, joined by hyphens")
+			inspection.add(field, slugProblem, project.Slug)
 		case seen[project.Slug]:
-			inspection.add(field, "names another project too")
+			inspection.add(field, sharedSlugProblem, project.Slug)
 		}
 		seen[project.Slug] = true
 		inspection.require(fmt.Sprintf("projects[%d].name", index), project.Name)
@@ -147,22 +162,21 @@ func inspectProjects(inspection *inspection, projects []Project) {
 	}
 }
 
-// inspectSkills holds every skill to a group the profile lists, and every group to a key of its own.
-func inspectSkills(inspection *inspection, groups []SkillGroup, skills []Skill) {
-	keys := map[string]bool{}
-	for index, group := range groups {
-		field := fmt.Sprintf("skill_groups[%d].key", index)
-		inspection.require(field, group.Key)
-		if keys[group.Key] {
-			inspection.add(field, "names another group too")
+// inspectSkills holds every group to a title of its own and to a skill at least, and every skill to its name.
+func inspectSkills(inspection *inspection, groups []SkillGroup) {
+	seen := map[string]bool{}
+	for groupIndex, group := range groups {
+		title := fmt.Sprintf("skill_groups[%d].title", groupIndex)
+		inspection.require(title, group.Title)
+		if seen[group.Title] {
+			inspection.add(title, sharedGroupProblem, group.Title)
 		}
-		keys[group.Key] = true
-		inspection.require(fmt.Sprintf("skill_groups[%d].title", index), group.Title)
-	}
-	for index, skill := range skills {
-		inspection.require(fmt.Sprintf("skills[%d].name", index), skill.Name)
-		if !keys[skill.Group] {
-			inspection.add(fmt.Sprintf("skills[%d].group", index), "is none of skill_groups")
+		seen[group.Title] = true
+		if len(group.Skills) == 0 {
+			inspection.add(fmt.Sprintf("skill_groups[%d].skills", groupIndex), emptyGroupProblem)
+		}
+		for skillIndex, skill := range group.Skills {
+			inspection.require(fmt.Sprintf("skill_groups[%d].skills[%d].name", groupIndex, skillIndex), skill.Name)
 		}
 	}
 }
@@ -171,16 +185,32 @@ func inspectHealth(inspection *inspection, sections []HealthSection) {
 	for sectionIndex, section := range sections {
 		for checkIndex, check := range section.Checks {
 			if !check.Level.IsKnown() {
-				inspection.add(fmt.Sprintf("health[%d].checks[%d].level", sectionIndex, checkIndex), "is none of ok, warn, error")
+				field := fmt.Sprintf("health[%d].checks[%d].level", sectionIndex, checkIndex)
+				inspection.add(field, levelProblem, check.Level, levelList())
 			}
 			inspection.require(fmt.Sprintf("health[%d].checks[%d].text", sectionIndex, checkIndex), check.Text)
 		}
 	}
 }
 
+// levelList writes out every level a check may read as, in the order of the alphabet, the same on every run.
+func levelList() string {
+	words := []string{}
+	for level := range levels() {
+		words = append(words, string(level))
+	}
+	slices.Sort(words)
+	return strings.Join(words, levelSeparator)
+}
+
 func inspectSalary(inspection *inspection, salary Salary) {
-	if salary.Min <= 0 || salary.Step <= 0 || salary.SoftMax <= salary.Min || salary.BigStep < salary.Step ||
-		len(salary.Currencies) == 0 {
-		inspection.add("contact.salary", "needs min above 0, soft_max above min, step above 0, big_step of a step or more, and a currency")
+	if salary.Min <= 0 {
+		inspection.add("contact.salary.min", positiveProblem, salary.Min)
+	}
+	if salary.SoftMax <= salary.Min {
+		inspection.add("contact.salary.soft_max", rangeProblem, salary.SoftMax, salary.Min)
+	}
+	if len(salary.Currencies) == 0 {
+		inspection.add("contact.salary.currencies", emptyProblem)
 	}
 }

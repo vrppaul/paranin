@@ -34,15 +34,23 @@ type initialisms struct {
 	clientIP    string
 	uiState     int
 	osName      string
+	HTTP2Server string
+	http2Client string
+	ID3Tag      string
+	sha256Sum   string
+	SHA256Sum   string
+	utf16Text   string
 }
 
 // A word cut short is refused in the plural too, and the forms Go calls wrong are refused.
 type plurals struct {
-	segs    []int    // want `"segs" is not a whole word \(in "segs"\)`
-	srvName string   // want `"srv" is not a whole word \(in "srvName"\)`
-	userIds []int    // want `"userIds" spells an initialism in mixed case: write "IDs"`
-	Urls    []string // want `"Urls" spells an initialism in mixed case: write "URLs"`
-	errs    []error  // want `"errs" is not a whole word \(in "errs"\)`
+	segs        []int    // want `"segs" is not a whole word \(in "segs"\)`
+	srvName     string   // want `"srv" is not a whole word \(in "srvName"\)`
+	userIds     []int    // want `"userIds" spells an initialism in mixed case: write "IDs"`
+	Urls        []string // want `"Urls" spells an initialism in mixed case: write "URLs"`
+	errs        []error  // want `"errs" is not a whole word \(in "errs"\)`
+	Http2Server string   // want `"Http2Server" spells an initialism in mixed case: write "HTTP2"`
+	Sha256Sum   string   // want `"Sha256Sum" spells an initialism in mixed case: write "SHA256"`
 }
 
 type HTTPServer struct{} // a run of capitals is one word

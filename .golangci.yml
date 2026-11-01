@@ -61,6 +61,9 @@ linters:
     nestif:
       min-complexity: 4
     exhaustive:
+      # A switch over an enumeration, and a map literal keyed by one, names every value: a table of kinds is held
+      # like a switch over them
+      check: [switch, mapliteral]
       # A default case hides a value added later
       default-signifies-exhaustive: false
     gochecksumtype:

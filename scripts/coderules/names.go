@@ -33,8 +33,8 @@ HTTPServer: HTTP, Server; userIDs: user, IDs), and each word must have three let
 counted, and not be an abbreviation, in the singular or the plural (seg, segs, cfg). A few short words are
 kept: alone, those of D11; inside a longer name, also the small words of English. An initialism is a word,
 written as Go writes it: in capitals, or in small letters where a name or a part of it starts (ID, userID,
-idList, Example_url; URLs; ETag), and refused in mixed case (userId, Urls). One of two letters stands
-alone only as "id" (D14).`
+idList, Example_url; URLs; ETag; HTTP2Server), and refused in mixed case (userId, Urls, Http2Server). One of
+two letters stands alone only as "id" (D14).`
 
 // nameRule is what the rule reads a word against, each table keyed in lower case.
 type nameRule struct {
@@ -101,12 +101,13 @@ func goInitialisms() []string {
 	}
 }
 
-// projectInitialisms are this project's own: the initialisms of its trade, the names the standard library gives
-// a hash, a certificate format and a signature scheme (crypto/md5, crypto/x509, crypto/ed25519), and the names of things as their owners spell them, mixed
-// case and all (D14).
+// projectInitialisms are this project's own: the initialisms of its trade; the names the standard library gives
+// hashes, a certificate format, a signature scheme and an encoding (crypto/md5, crypto/sha256, crypto/x509,
+// crypto/ed25519, unicode/utf16), SHA standing for each of its lengths (SHA256); and the names of things as their
+// owners spell them, mixed case and all (D14).
 func projectInitialisms() []string {
 	return []string{
-		"CLI", "CSP", "IO", "MD5", "OS", "OSC", "PDF", "PNG", "PTY", "SVG", "TUI", "X509",
+		"CLI", "CSP", "IO", "MD5", "OS", "OSC", "PDF", "PNG", "PTY", "SHA", "SVG", "TUI", "UTF16", "X509",
 		"Ed25519", "ETag", "IPv4", "IPv6", "OAuth",
 	}
 }
@@ -255,7 +256,8 @@ func letterCount(word string) int {
 	return count
 }
 
-// spellingOf is how Go writes an initialism, plural or not; empty for a word that is none.
+// spellingOf is how Go writes an initialism, plural or not, with the digits it carries (HTTP2); empty for a
+// word that is none. A spelling with digits of its own (UTF8, MD5) is found whole, before its digits are split off.
 func spellingOf(rule nameRule, word string) string {
 	lower := strings.ToLower(word)
 	if spelling, isInitialism := rule.spellings[lower]; isInitialism {
@@ -263,6 +265,10 @@ func spellingOf(rule nameRule, word string) string {
 	}
 	if spelling, isInitialism := rule.spellings[strings.TrimSuffix(lower, plural)]; isInitialism {
 		return spelling + plural
+	}
+	letters := strings.TrimRightFunc(lower, unicode.IsDigit)
+	if spelling, isInitialism := rule.spellings[letters]; isInitialism {
+		return spelling + strings.TrimPrefix(lower, letters)
 	}
 	return ""
 }

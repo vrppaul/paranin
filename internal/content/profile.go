@@ -12,7 +12,6 @@ type Profile struct {
 	Experience  []Role          `yaml:"experience"`
 	Projects    []Project       `yaml:"projects"`
 	SkillGroups []SkillGroup    `yaml:"skill_groups"`
-	Skills      []Skill         `yaml:"skills"`
 	Education   []School        `yaml:"education"`
 	Languages   []Language      `yaml:"languages"`
 	Health      []HealthSection `yaml:"health"`
@@ -37,10 +36,8 @@ type Person struct {
 	Links          []SocialLink `yaml:"links"`
 }
 
-// SocialLink is a public profile: a short key for lists of keys and values, a label, its address, and how the
-// address is written out.
+// SocialLink is a public profile: its label, its address, and how the address is written out.
 type SocialLink struct {
-	Key   string `yaml:"key"`
 	Label string `yaml:"label"`
 	URL   string `yaml:"url"`
 	Text  string `yaml:"text"`
@@ -89,17 +86,17 @@ type Section struct {
 	Paragraphs []string `yaml:"paragraphs"`
 }
 
-// SkillGroup is a group skills are shown in; the profile lists the groups in their order.
+// SkillGroup is a group of skills, under its title; the profile lists the groups, and the skills in each, in
+// their order.
 type SkillGroup struct {
-	Key   string `yaml:"key"`
-	Title string `yaml:"title"`
+	Title  string  `yaml:"title"`
+	Skills []Skill `yaml:"skills"`
 }
 
-// Skill is something the author can do: its group, how long, the words a job description may use for it, and
-// where it was proven.
+// Skill is something the author can do: how long, the words a job description may use for it, and where it was
+// proven.
 type Skill struct {
 	Name     string   `yaml:"name"`
-	Group    string   `yaml:"group"`
 	Duration string   `yaml:"duration"`
 	Aliases  []string `yaml:"aliases"`
 	Sources  []string `yaml:"sources"`
@@ -142,14 +139,15 @@ const (
 	LevelError   Level = "error"
 )
 
-// IsKnown tells a level of one of the three kinds.
+// levels are the levels a check may read as, each named once. exhaustive holds the literal to every Level, so a
+// level added to the constants is added here too.
+func levels() map[Level]bool {
+	return map[Level]bool{LevelOK: true, LevelWarning: true, LevelError: true}
+}
+
+// IsKnown tells a level of one of the kinds the levels name.
 func (level Level) IsKnown() bool {
-	switch level {
-	case LevelOK, LevelWarning, LevelError:
-		return true
-	default:
-		return false
-	}
+	return levels()[level]
 }
 
 // Contact is what the contact form offers: what a message may be about, and the salary range it asks for.
@@ -158,13 +156,11 @@ type Contact struct {
 	Salary Salary   `yaml:"salary"`
 }
 
-// Salary is the range the form's slider offers, in whole units of a currency per period. A maximum above SoftMax
-// means no upper limit; Step moves the slider, BigStep moves it far.
+// Salary is the range the form offers, in whole units of a currency per period. A maximum above SoftMax means no
+// upper limit. How far a slider moves is the form's own.
 type Salary struct {
 	Min        int      `yaml:"min"`
 	SoftMax    int      `yaml:"soft_max"`
-	Step       int      `yaml:"step"`
-	BigStep    int      `yaml:"big_step"`
 	Currencies []string `yaml:"currencies"`
 	Period     string   `yaml:"period"`
 }

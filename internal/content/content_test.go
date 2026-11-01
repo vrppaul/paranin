@@ -22,36 +22,62 @@ func TestTheRepositoryContentLoads(test *testing.T) {
 	}
 }
 
-func TestEveryFaultIsReportedAtItsField(test *testing.T) {
+// A fault is read by whoever edits the content: the line it writes is the behaviour. It names the field, and
+// quotes what was written there where something was.
+func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 	cases := []struct {
 		name        string
 		original    string
 		replacement string
-		field       string
+		want        string
 	}{
-		{name: "an empty name", original: "name: Mira Example", replacement: `name: ""`, field: "person.name"},
-		{name: "a mail address with a name round it", original: "email: mira@example.test", replacement: "email: Mira <mira@example.test>", field: "person.email"},
-		{name: "a base address ending in a slash", original: "base_url: https://example.test", replacement: "base_url: https://example.test/", field: "site.base_url"},
-		{name: "a link that is no address", original: "url: https://github.test/mira\n", replacement: "url: github mira\n", field: "person.links[0].url"},
-		{name: "a month past twelve", original: "start: 2023-04", replacement: "start: 2023-13", field: "experience[0].start"},
-		{name: "a role whose start is a gap", original: "start: 2023-04", replacement: `start: "[2023]"`, field: "experience[0].start"},
-		{name: "a role ended by the old word", original: "end: 2023-03", replacement: "end: present", field: "experience[1].end"},
-		{name: "a role whose end is left empty", original: "end: 2023-03", replacement: "end:", field: "experience[1].end"},
-		{name: "a role that ends before it starts", original: "end: 2023-03", replacement: "end: 2019-01", field: "experience[1].end"},
-		{name: "a school month neither a month nor a gap", original: `end: "[20XX]"`, replacement: "end: later", field: "education[0].end"},
-		{name: "a school that ends before it starts", original: `end: "[20XX]"`, replacement: "end: 2010-01", field: "education[0].end"},
-		{name: "a slug with capitals", original: "slug: tidy-tool", replacement: "slug: Tidy-Tool", field: "projects[1].slug"},
-		{name: "a slug two projects share", original: "slug: other-tool", replacement: "slug: tidy-tool", field: "projects[1].slug"},
-		{name: "a skill in no group", original: "group: languages, duration: 3y", replacement: "group: music, duration: 3y", field: "skills[0].group"},
-		{name: "a group written twice", original: "key: tools", replacement: "key: languages", field: "skill_groups[1].key"},
-		{name: "a level of no kind", original: "level: warn", replacement: "level: bad", field: "health[0].checks[1].level"},
-		{name: "a salary range upside down", original: "soft_max: 9000", replacement: "soft_max: 500", field: "contact.salary"},
+		{name: "an empty name", original: "name: Mira Example", replacement: `name: ""`, want: "profile.yaml: person.name is empty"},
+		{name: "a mail address with a name round it", original: "email: mira@example.test", replacement: "email: Mira <mira@example.test>", want: `profile.yaml: person.email "Mira <mira@example.test>" is no bare mail address`},
+		{name: "a base address ending in a slash", original: "base_url: https://example.test", replacement: "base_url: https://example.test/", want: `profile.yaml: site.base_url "https://example.test/" ends in a slash, which every address adds itself`},
+		{name: "a link that is no address", original: "url: https://github.test/mira\n", replacement: "url: github mira\n", want: `profile.yaml: person.links[0].url "github mira" is no absolute web address`},
+		{name: "a month past twelve", original: "start: 2023-04", replacement: "start: 2023-13", want: `profile.yaml: experience[0].start "2023-13" is no month, YYYY-MM`},
+		{name: "a role whose start is a gap", original: "start: 2023-04", replacement: `start: "[2023]"`, want: `profile.yaml: experience[0].start "[2023]" is no month, YYYY-MM`},
+		{name: "a role ended by the old word", original: "end: 2023-03", replacement: "end: present", want: `profile.yaml: experience[1].end "present" is no month, YYYY-MM, nor current`},
+		{name: "a role whose end is left empty", original: "end: 2023-03", replacement: "end:", want: `profile.yaml: experience[1].end "" is no month, YYYY-MM, nor current`},
+		{name: "a role that ends before it starts", original: "end: 2023-03", replacement: "end: 2019-01", want: `profile.yaml: experience[1].end "2019-01" comes before the start, "2020-01"`},
+		{name: "a school month neither a month nor a gap", original: `end: "[20XX]"`, replacement: "end: later", want: `profile.yaml: education[0].end "later" is no month, YYYY-MM, nor a [gap]`},
+		{name: "a school that ends before it starts", original: `end: "[20XX]"`, replacement: "end: 2010-01", want: `profile.yaml: education[0].end "2010-01" comes before the start, "2016-09"`},
+		{name: "a slug with capitals", original: "slug: tidy-tool", replacement: "slug: Tidy-Tool", want: `profile.yaml: projects[1].slug "Tidy-Tool" is no slug: small letters and digits, joined by hyphens`},
+		{name: "a slug two projects share", original: "slug: other-tool", replacement: "slug: tidy-tool", want: `profile.yaml: projects[1].slug "tidy-tool" names another project too`},
+		{name: "a group with no title", original: "title: Tools", replacement: `title: ""`, want: "profile.yaml: skill_groups[1].title is empty"},
+		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},
+		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},
+		{name: "a skill with no name", original: "name: Docker", replacement: `name: ""`, want: "profile.yaml: skill_groups[1].skills[0].name is empty"},
+		{name: "a level of no kind", original: "level: warn", replacement: "level: bad", want: `profile.yaml: health[0].checks[1].level "bad" is none of error, ok, warn`},
+		{name: "a salary from nothing", original: "min: 1000", replacement: "min: 0", want: "profile.yaml: contact.salary.min 0 is not above 0"},
+		{name: "a salary range upside down", original: "soft_max: 9000", replacement: "soft_max: 500", want: "profile.yaml: contact.salary.soft_max 500 is not above min, 1000"},
+		{name: "a salary range of no width", original: "soft_max: 9000", replacement: "soft_max: 1000", want: "profile.yaml: contact.salary.soft_max 1000 is not above min, 1000"},
+		{name: "a salary in no currency", original: "currencies: [EUR]", replacement: "currencies: []", want: "profile.yaml: contact.salary.currencies is empty"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			faults := faultsOf(test, changedFixture(test, fixtureText(test), testCase.original, testCase.replacement))
-			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.Field == testCase.field }) {
-				test.Errorf("faults = %v, want one at %q", faults, testCase.field)
+			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
+				test.Errorf("faults = %q, want one %q", faults, testCase.want)
+			}
+		})
+	}
+}
+
+// A profile missing or empty is a fault of the file, which is named once.
+func TestAMissingOrEmptyProfileIsAFaultOfTheFile(test *testing.T) {
+	cases := []struct {
+		name   string
+		folder fstest.MapFS
+		want   string
+	}{
+		{name: "no profile in the folder", folder: fstest.MapFS{}, want: "profile.yaml: file does not exist"},
+		{name: "an empty profile", folder: fstest.MapFS{profileFile: {Data: []byte("")}}, want: "profile.yaml: is empty"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if _, err := Load(testCase.folder); err == nil || err.Error() != testCase.want {
+				test.Errorf("Load = %v, want %q", err, testCase.want)
 			}
 		})
 	}
@@ -71,12 +97,19 @@ func TestEveryUnknownKeyIsAFault(test *testing.T) {
 }
 
 func TestEveryFaultIsReportedAtOnceOneALine(test *testing.T) {
-	text := changedFixture(test, fixtureText(test), "name: Mira Example", `name: ""`)
-	text = changedFixture(test, text, "level: warn", "level: bad")
+	text := changedFixture(test, fixtureText(test), "ssh: ssh example.test", `ssh: ""`)
+	text = changedFixture(test, text, "title: Software Engineer", `title: ""`)
 	_, err := Load(fstest.MapFS{profileFile: {Data: []byte(text)}})
-	want := "profile.yaml: person.name is empty\nprofile.yaml: health[0].checks[1].level is none of ok, warn, error"
+	want := "profile.yaml: site.ssh is empty\nprofile.yaml: person.title is empty"
 	if err == nil || err.Error() != want {
 		test.Errorf("Load = %v, want %q", err, want)
+	}
+}
+
+func TestASiteCannotOpenOnFaultyContent(test *testing.T) {
+	folder := fstest.MapFS{profileFile: {Data: []byte(changedFixture(test, fixtureText(test), "name: Mira Example", `name: ""`))}}
+	if store, err := Open(folder); store != nil || err == nil {
+		test.Errorf("Open(faulty) = %v, %v; want no store and faults", store, err)
 	}
 }
 

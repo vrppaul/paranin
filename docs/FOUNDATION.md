@@ -35,6 +35,8 @@ Each decision carries one of three marks:
 | D13 | Posts go first to LinkedIn, HN and Lobsters, Reddit, dev.to, and X or Bluesky (§5.7). | 2026-11-01 |
 | D14 | An initialism of two letters, written as Go writes it (`ID`, `IO`, `IP`, `OS`, `UI`, `VM`), is a word inside a name: `clientIP`, `uiState`. Alone it stays refused, but for `id` (D11). | 2026-11-01 |
 | D15 | Time is the `time` package's, in code and in tests; a test holds a moment or a wait inside `testing/synctest`. No `Clock` is handed to the parts. | 2026-11-01 |
+| D16 | The profile nests skills under their groups: a group is its title and its skills, each in its order. No key joins a skill to its group. | 2026-11-01 |
+| D17 | The content holds facts, not how a face shows them: the links' short keys and the salary slider's steps leave the profile. A face shows a link by its label; the form works its steps out of `min` and `soft_max` (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
 
 ## 2. What must hold whatever we build
 
@@ -545,9 +547,10 @@ once); the small words and the table of abbreviations are **Proposed**:
   `in`, `or`, `if`, `no`, `up`, `do`, `go` (`oneOfAKind`).
 - An initialism is a word, written as Go writes it: in capitals, its plural
   with a small s, or in small letters where a name or a part of it starts
-  (`ID`, `userIDs`, `idList`, `URLs`, `clientIP`, `Example_url`); and the
-  names of things as their owners spell them (`ETag`, `IPv6`, `OAuth`). Mixed
-  case is refused (`userId`, `Urls`). The list is staticcheck's own, copied
+  (`ID`, `userIDs`, `idList`, `URLs`, `clientIP`, `Example_url`), with the
+  digits it carries (`HTTP2Server`); and the names of things as their owners
+  spell them (`ETag`, `IPv6`, `OAuth`). Mixed case is refused (`userId`,
+  `Urls`, `Http2Server`). The list is staticcheck's own, copied
   whole, and a few of this trade (`CLI`, `TUI`, `PTY`, `OSC`, `PDF`). One of
   two letters stands alone only as `id` (D14).
 - A digit is no letter of a word: `p99` is refused, `utf8Text` kept.
@@ -736,3 +739,11 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   review found the ciphers' names refused (`ed25519Key`), two holes at the
   edge of internal and stale lines here; each answered. The first commit
   became four (§8, step 4).
+- **2026-11-01, D16 and D17, and two reviews of the content's answer.**
+  Pavel's word: skills nested under their groups (D16); the links' keys and
+  the slider's steps out of the content, what takes their place left to the
+  author (D17). The reviews asked D17 to name what takes their place, the
+  levels written once and held to every value by exhaustive's map check, a
+  quote in every fault of a written value, a fault built from its format so
+  vet sees a value missing, and SHA and UTF16 among the initialisms; each
+  answered.

@@ -13,8 +13,7 @@ person:
   location: Brno, Czechia
   email: mira@example.test
   links:
-    - key: gh
-      label: GitHub
+    - label: GitHub
       url: https://github.test/mira
       text: github.test/mira
 
@@ -59,12 +58,12 @@ projects:
           - Files were untidy.
 
 skill_groups:
-  - {key: languages, title: Languages}
-  - {key: tools, title: Tools}
-
-skills:
-  - {name: Go, group: languages, duration: 3y, aliases: [go, golang], sources: [tidy-tool]}
-  - {name: Docker, group: tools, duration: side, aliases: [docker], sources: [Northwind], learning: true}
+  - title: Languages
+    skills:
+      - {name: Go, duration: 3y, aliases: [go, golang], sources: [tidy-tool]}
+  - title: Tools
+    skills:
+      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}
 
 education:
   - name: A University
@@ -86,7 +85,5 @@ contact:
   salary:
     min: 1000
     soft_max: 9000
-    step: 100
-    big_step: 1000
     currencies: [EUR]
     period: month

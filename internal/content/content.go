@@ -39,7 +39,7 @@ func readProfile(folder fs.FS) (Profile, Faults) {
 	var profile Profile
 	data, err := fs.ReadFile(folder, profileFile)
 	if err != nil {
-		return profile, Faults{fileFault(err)}
+		return profile, Faults{unreadFault(err)}
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
@@ -55,8 +55,8 @@ func readProfile(folder fs.FS) (Profile, Faults) {
 
 // decodingFaults are the faults of a profile the decoder could not read: one for each line it named.
 func decodingFaults(err error) Faults {
-	var typeError *yaml.TypeError
-	if !errors.As(err, &typeError) {
+	typeError, isTypeError := errors.AsType[*yaml.TypeError](err)
+	if !isTypeError {
 		return Faults{fileFault(err)}
 	}
 	faults := make(Faults, 0, len(typeError.Errors))
@@ -68,4 +68,13 @@ func decodingFaults(err error) Faults {
 
 func fileFault(err error) Fault {
 	return Fault{File: profileFile, Field: "", Problem: err.Error()}
+}
+
+// unreadFault is the fault of a file that could not be read. The fault names the file already, so where the error
+// names its path as well, only the cause is kept.
+func unreadFault(err error) Fault {
+	if pathError, isPathError := errors.AsType[*fs.PathError](err); isPathError {
+		return fileFault(pathError.Err)
+	}
+	return fileFault(err)
 }

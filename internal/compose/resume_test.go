@@ -128,6 +128,104 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	}
 }
 
+// The index lists each page under the site's word for its kind, by the title and the line its own page opens
+// with, so an agent finds each page by what it is called there.
+func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
+	index := Index(fixtureSnapshot(test))
+	cases := []struct {
+		name    string
+		section string
+		want    []document.Listing
+	}{
+		{name: "the résumé", section: "Résumé", want: []document.Listing{{
+			Page:  document.Page{Kind: document.PageResume, Slug: ""},
+			Title: []document.Span{document.Text{Text: "Mira Example"}},
+			Note:  []document.Span{document.Text{Text: "Software Engineer"}},
+		}}},
+		{name: "the projects' pages", section: "Projects", want: []document.Listing{{
+			Page:  document.Page{Kind: document.PageProject, Slug: "tidy-tool"},
+			Title: []document.Span{document.Text{Text: "tidy-tool"}},
+			Note:  []document.Span{document.Text{Text: "Tidies files."}},
+		}}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := contentsOf(test, sectionTitled(test, index, testCase.section)).Listings; !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("listings under %q = %+v, want %+v", testCase.section, got, testCase.want)
+			}
+		})
+	}
+}
+
+// The index lists every page compose makes, in the order it makes them: a page added to the site is a page added
+// to the index.
+func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
+	snapshot := fixtureSnapshot(test)
+	index := Index(snapshot)
+	got := []document.Page{}
+	for _, title := range []string{"Résumé", "Projects"} {
+		for _, listed := range contentsOf(test, sectionTitled(test, index, title)).Listings {
+			got = append(got, listed.Page)
+		}
+	}
+	want := []document.Page{}
+	for _, page := range Documents(snapshot) {
+		want = append(want, page.Head.Page)
+	}
+	if !slices.Equal(got, want) {
+		test.Errorf("listed pages = %+v, want the pages compose makes, %+v", got, want)
+	}
+}
+
+// The projects' word stands in the index only where a project has a page to list under it.
+func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
+	withoutPages := *fixtureSnapshot(test)
+	withoutPages.Profile.Projects = slices.Clone(withoutPages.Profile.Projects)
+	for index := range withoutPages.Profile.Projects {
+		withoutPages.Profile.Projects[index].Page = false
+	}
+	got := []string{}
+	for _, block := range Index(&withoutPages).Blocks {
+		got = append(got, titleOf(test, as[document.Section](test, block)))
+	}
+	if want := []string{"Résumé"}; !slices.Equal(got, want) {
+		test.Errorf("sections = %q, want %q", got, want)
+	}
+}
+
+// Whose site it is, the site's words and every listing's title and line reach the index as phrases of their own:
+// a face that shows every phrase lists every page.
+func TestEveryPageReachesTheIndex(test *testing.T) {
+	phrases := document.Phrases(Index(fixtureSnapshot(test)))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the headline", want: "Builds small tools that last."},
+		{name: "a word of the site", want: "Résumé"},
+		{name: "a listing's title", want: "tidy-tool"},
+		{name: "a listing's line", want: "Tidies files."},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !slices.Contains(phrases, testCase.want) {
+				test.Errorf("phrases = %q, want one %q", phrases, testCase.want)
+			}
+		})
+	}
+}
+
+// contentsOf are a section's contents, wherever compose put them.
+func contentsOf(test *testing.T, section document.Section) document.Contents {
+	for _, block := range section.Blocks {
+		if contents, isContents := block.(document.Contents); isContents {
+			return contents
+		}
+	}
+	test.Fatalf("the section %+v lists no pages", section.Title)
+	return document.Contents{Listings: nil}
+}
+
 // documentOf is the document of a page, wherever compose put it.
 func documentOf(test *testing.T, documents []document.Document, page document.Page) document.Document {
 	for _, found := range documents {
@@ -172,14 +270,14 @@ func factLabelled(test *testing.T, facts []document.Fact, label string) document
 	return document.Fact{Label: label, Value: nil}
 }
 
-// sectionTitled is the résumé's section under a title, wherever compose put it.
-func sectionTitled(test *testing.T, resume document.Document, title string) document.Section {
-	for _, block := range resume.Blocks {
+// sectionTitled is a document's section under a title, wherever compose put it.
+func sectionTitled(test *testing.T, composed document.Document, title string) document.Section {
+	for _, block := range composed.Blocks {
 		if section, isSection := block.(document.Section); isSection && titleOf(test, section) == title {
 			return section
 		}
 	}
-	test.Fatalf("the résumé has no section %q", title)
+	test.Fatalf("the page %+v has no section %q", composed.Head.Page, title)
 	return document.Section{Title: nil, Blocks: nil}
 }
 

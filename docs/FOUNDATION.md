@@ -787,3 +787,11 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   among them, with `Vary: Accept` alone (§5.2). Pavel left to the author
   whether HTML brings telling `curl` from a browser by its agent: it does
   not (D21), since a browser ranks HTML first and `curl` asks for anything.
+- **2026-11-01, the index and the text 404.** `compose` makes the site's
+  index, and `face/text` writes it as markdown, served at `llms.txt` as
+  plain text: a title, a quote of the headline, the résumé and each project's
+  page listed under the site's word for it. The document gained the index's
+  page and a block of contents for it (Pavel's word); a document's lead is a
+  quote in markdown on every page, which is how llms.txt opens. An address of
+  no page is answered in text that quotes the path and names the command
+  that reads the site.

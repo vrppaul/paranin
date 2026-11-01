@@ -2,7 +2,7 @@
 
 Software Engineer · Brno, Czechia
 
-Builds small tools that last.
+> Builds small tools that last.
 
 - mail: [mira@example.test](mailto:mira@example.test)
 - GitHub: [github.test/mira](https://github.test/mira)

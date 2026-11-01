@@ -1,0 +1,11 @@
+# Mira Example
+
+> Builds small tools that last.
+
+## Résumé
+
+- [Mira Example](https://example.test/index.md): Software Engineer
+
+## Projects
+
+- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files.

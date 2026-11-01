@@ -1,9 +1,13 @@
 // Package text draws documents as text an agent or a terminal reads (docs/ARCHITECTURE.md, ADR-0003): CommonMark
 // for an agent, and a manual page for a terminal, laid out in 78 columns as man(1) lays one out, a section of the
 // page for each section of the document, a command one word that never breaks. Each draws every kind of block
-// and span a document has, and writes every address through routes. In markdown, text reads as the text it is: what CommonMark would take for markup is escaped, and so is what would open a block
-// at the start of any line or close a heading. The escapes are part of the text a `curl` reader sees
-// (search\_code), the price of one rule for every text over a rule for each place in a line.
+// and span a document has, and writes every address through routes. The site's index is markdown too: a
+// document's lead is a quote, so the index reads as llmstxt.org lays out llms.txt, a title, a quote of what the
+// site is, and its pages listed under their sections. An address of no page reads as NotFound.
+//
+// In markdown, text reads as the text it is: what CommonMark would take for markup is escaped, and so is what
+// would open a block at the start of any line or close a heading. The escapes are part of the text a `curl`
+// reader sees (search\_code), the price of one rule for every text over a rule for each place in a line.
 package text
 
 import (
@@ -18,6 +22,7 @@ import (
 const (
 	headingMark   = "#"
 	listMark      = "- "
+	quoteMark     = ">"
 	highlightMark = "**"
 	codeMark      = "`"
 	escapeMark    = `\`
@@ -101,7 +106,7 @@ func escaperOf(letters string) *strings.Replacer {
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place)))
-	chunks = appendLine(chunks, writer.spans(head.Lead))
+	chunks = appendChunk(chunks, quote(writer.spans(head.Lead)))
 	return appendChunk(chunks, writer.facts(head.Ways))
 }
 
@@ -123,6 +128,8 @@ func (writer markdownWriter) blocks(chunks []string, blocks []document.Block, de
 			chunks = writer.entry(chunks, typed, depth)
 		case document.Card:
 			chunks = writer.card(chunks, typed, depth)
+		case document.Contents:
+			chunks = appendChunk(chunks, writer.contents(typed))
 		}
 	}
 	return chunks
@@ -163,14 +170,24 @@ func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth 
 // card writes a card under its title, a link to its page where it has one; its tag and subtitle in a line, its
 // summary, then its facts.
 func (writer markdownWriter) card(chunks []string, card document.Card, depth int) []string {
-	title := writer.spans(card.Title)
+	title := card.Title
 	if card.Page.Kind != document.PageNone {
-		title = link(title, writer.site.Address(card.Page, routes.FormatMarkdown))
+		title = []document.Span{document.Link{Target: card.Page, Spans: card.Title}}
 	}
-	chunks = appendChunk(chunks, heading(depth, title))
+	chunks = appendChunk(chunks, heading(depth, writer.spans(title)))
 	chunks = appendLine(chunks, joined(dot, writer.text(card.Tag), writer.spans(card.Subtitle)))
 	chunks = appendLine(chunks, writer.spans(card.Summary))
 	return appendChunk(chunks, writer.facts(card.Facts))
+}
+
+// contents writes each listed page as an item: a link to the page in markdown, then the line on what it is.
+func (writer markdownWriter) contents(contents document.Contents) string {
+	items := make([]string, 0, len(contents.Listings))
+	for _, listing := range contents.Listings {
+		title := writer.spans([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}})
+		items = append(items, joined(labelEnd, title, writer.spans(listing.Note)))
+	}
+	return list(items)
 }
 
 // period writes a period escaped as a gap is: its gaps keep their brackets.
@@ -266,6 +283,27 @@ func lineStart(line string) string {
 		return escapeMark + line
 	}
 	return line
+}
+
+// quote writes text as a quote, where there is one: every line of it marked, a blank one included, so a quote
+// of two paragraphs stays one quote; the text after each mark opens no block of its own.
+func quote(text string) string {
+	if text == "" {
+		return ""
+	}
+	lines := strings.Split(text, lineEnd)
+	for index, line := range lines {
+		lines[index] = quoteLine(line)
+	}
+	return strings.Join(lines, lineEnd)
+}
+
+// quoteLine is one line of a quote: its mark alone where the line is blank.
+func quoteLine(line string) string {
+	if line == "" {
+		return quoteMark
+	}
+	return quoteMark + space + lineStart(line)
 }
 
 // list writes items as a markdown list, one a line; an item reads as text, never as a block of its own.

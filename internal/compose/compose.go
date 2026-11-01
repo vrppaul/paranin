@@ -5,6 +5,7 @@
 package compose
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/content"
@@ -17,15 +18,19 @@ const mailScheme = "mailto:"
 // What separates the values of one cell: the places a skill was proven
 const listSeparator = ", "
 
-// Documents are every page a snapshot makes: the résumé, then the page of each project that has one.
+// Documents are the pages a snapshot makes for a person to read: the résumé, then the page of each project that
+// has one. Index lists them.
 func Documents(snapshot *content.Snapshot) []document.Document {
 	documents := []document.Document{Resume(snapshot)}
-	for _, project := range snapshot.Profile.Projects {
-		if project.Page {
-			documents = append(documents, projectDocument(project, snapshot.Profile.Person, snapshot.Words))
-		}
+	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
+		documents = append(documents, projectDocument(project, snapshot.Profile.Person, snapshot.Words))
 	}
 	return documents
+}
+
+// projectsWithPages are the projects that have a page of their own, in their order.
+func projectsWithPages(projects []content.Project) []content.Project {
+	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
 }
 
 // Resume is the résumé as one document: its head, the summary, then its facts, experience, projects, skills,
@@ -44,6 +49,38 @@ func Resume(snapshot *content.Snapshot) document.Document {
 			section(words.Text(content.WordLanguages), document.Facts{List: languageList(profile.Languages)}),
 		},
 	}
+}
+
+// Index is the site's index, the list of its pages an agent reads first: whose site it is and its headline, then
+// the résumé and the page of each project that has one, each under the site's word for it, the projects' word
+// only where a project has a page. A page is listed by the title and subtitle its own head opens with.
+func Index(snapshot *content.Snapshot) document.Document {
+	words := snapshot.Words
+	resume := resumeHead(snapshot.Profile, words)
+	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
+	projects := []document.Listing{}
+	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
+		projects = append(projects, listing(projectHead(project)))
+	}
+	if len(projects) > 0 {
+		blocks = append(blocks, section(words.Text(content.WordProjects), document.Contents{Listings: projects}))
+	}
+	return document.Document{
+		Head: document.Head{
+			Page:     document.Page{Kind: document.PageIndex, Slug: ""},
+			Title:    resume.Title,
+			Subtitle: nil,
+			Place:    "",
+			Lead:     resume.Lead,
+			Ways:     nil,
+		},
+		Blocks: blocks,
+	}
+}
+
+// listing is a page as a list of contents names it: by its head's title and subtitle.
+func listing(head document.Head) document.Listing {
+	return document.Listing{Page: head.Page, Title: head.Title, Note: head.Subtitle}
 }
 
 func resumeHead(profile content.Profile, words content.Words) document.Head {
@@ -128,16 +165,18 @@ func projectDocument(project content.Project, author content.Person, words conte
 		}
 		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Blocks: paragraphs})
 	}
-	return document.Document{
-		Head: document.Head{
-			Page:     projectPage(project),
-			Title:    markedSpans(project.Name),
-			Subtitle: markedSpans(project.Tagline),
-			Place:    "",
-			Lead:     markedSpans(project.Description),
-			Ways:     nil,
-		},
-		Blocks: blocks,
+	return document.Document{Head: projectHead(project), Blocks: blocks}
+}
+
+// projectHead is the head of a project's page: its name, what it is in a line, and what it does.
+func projectHead(project content.Project) document.Head {
+	return document.Head{
+		Page:     projectPage(project),
+		Title:    markedSpans(project.Name),
+		Subtitle: markedSpans(project.Tagline),
+		Place:    "",
+		Lead:     markedSpans(project.Description),
+		Ways:     nil,
 	}
 }
 

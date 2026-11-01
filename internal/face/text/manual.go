@@ -63,14 +63,15 @@ func Manual(composed document.Document, site routes.Site) string {
 	return strings.Join(lines, lineEnd) + lineEnd
 }
 
-// pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page.
+// pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page;
+// the index, served in markdown alone, has no manual to name.
 func (writer manualWriter) pageName(page document.Page) string {
 	switch page.Kind {
 	case document.PageResume:
 		return writer.site.Host()
 	case document.PageProject:
 		return page.Slug
-	case document.PageNone:
+	case document.PageNone, document.PageIndex:
 	}
 	return ""
 }
@@ -119,6 +120,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.entry(indent, typed)
 	case document.Card:
 		return writer.card(indent, typed)
+	case document.Contents:
+		return writer.contents(indent, typed)
 	}
 	return nil
 }
@@ -135,13 +138,24 @@ func (writer manualWriter) card(indent int, card document.Card) []string {
 	return append(lines, writer.pairs(inner, card.Facts)...)
 }
 
+// contents writes each listed page as a bullet: its title and its address as a manual, as a link to it reads, then
+// the line on what it is.
+func (writer manualWriter) contents(indent int, contents document.Contents) []string {
+	lines := []string{}
+	for _, listing := range contents.Listings {
+		title := writer.words([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}})
+		lines = append(lines, bullet(indent, joinedWords(dashWord, title, writer.words(listing.Note)))...)
+	}
+	return lines
+}
+
 // entry writes an entry's title and subtitle with its period and place at the right, then its points under them.
 func (writer manualWriter) entry(indent int, entry document.Entry) []string {
 	left := joinedWords(dashWord, writer.words(entry.Title), writer.words(entry.Subtitle))
 	right := joinedWords(dotWord, strings.Fields(periodText(entry.Period)), strings.Fields(entry.Place))
 	lines := titleLine(indent, left, right)
 	for _, point := range entry.Points {
-		lines = append(lines, paragraph(indent+sectionIndent, bulletHang, append([]string{bulletMark}, writer.words(point.Spans)...))...)
+		lines = append(lines, bullet(indent+sectionIndent, writer.words(point.Spans))...)
 	}
 	return lines
 }
@@ -154,7 +168,7 @@ func (writer manualWriter) table(indent int, table document.Table) []string {
 		for _, cell := range row.Cells {
 			cells = append(cells, writer.words(cell.Spans))
 		}
-		lines = append(lines, paragraph(indent, bulletHang, append([]string{bulletMark}, joinedWords(dashWord, cells...)...))...)
+		lines = append(lines, bullet(indent, joinedWords(dashWord, cells...))...)
 	}
 	return lines
 }
@@ -188,6 +202,12 @@ func titleLine(indent int, left, right []string) []string {
 		return append(paragraph(indent, 0, left), paragraph(indent, 0, right)...)
 	}
 	return []string{strings.Repeat(space, indent) + leftText + strings.Repeat(space, gap) + rightText}
+}
+
+// bullet lays words out as one item of a list at an indent: its mark, then the words, its lines after the first
+// standing in under its text.
+func bullet(indent int, words []string) []string {
+	return paragraph(indent, bulletHang, append([]string{bulletMark}, words...))
 }
 
 // paragraph lays words out at an indent; the lines after the first stand in by the hang.

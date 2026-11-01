@@ -14,7 +14,7 @@ import (
 // The content package's fixture
 const fixturePath = "../../content/testdata/content"
 
-// Each page is served at its address as markdown.
+// Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	server := New(fixtureStore(test, fixtureCopy(test)))
 	cases := []struct {
@@ -28,6 +28,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "a project's page", path: "/p/tidy-tool.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# tidy-tool"},
 		{name: "the résumé as a manual", path: "/index.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "EXAMPLE.TEST(1)"},
 		{name: "a project's page as a manual", path: "/p/tidy-tool.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "TIDY-TOOL(1)"},
+		{name: "the index", path: "/llms.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -79,20 +80,26 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 }
 
-// An address of no page is not found.
+// An address of no page is not found, in plain text opening with the status it is answered with and the path
+// asked for, as the request decoded it.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	server := New(fixtureStore(test, fixtureCopy(test)))
 	cases := []struct {
-		name string
-		path string
+		name  string
+		path  string
+		opens string
 	}{
-		{name: "a project with no page", path: "/p/other-tool.md"},
-		{name: "no page at all", path: "/nothing"},
+		{name: "a project with no page", path: "/p/other-tool.md", opens: `404 Not Found: "/p/other-tool.md"`},
+		{name: "no page at all", path: "/nothing", opens: `404 Not Found: "/nothing"`},
+		{name: "a path written escaped", path: "/no%20thing", opens: `404 Not Found: "/no thing"`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if response := serve(server, http.MethodGet, testCase.path); response.Code != http.StatusNotFound {
-				test.Errorf("GET %s = %d, want %d", testCase.path, response.Code, http.StatusNotFound)
+			response := serve(server, http.MethodGet, testCase.path)
+			if response.Code != http.StatusNotFound || response.Header().Get("Content-Type") != "text/plain; charset=utf-8" ||
+				!strings.HasPrefix(response.Body.String(), testCase.opens) {
+				test.Errorf("GET %s = %d %q, %q; want %d %q, opening %q", testCase.path, response.Code,
+					response.Header().Get("Content-Type"), response.Body.String(), http.StatusNotFound, "text/plain; charset=utf-8", testCase.opens)
 			}
 		})
 	}

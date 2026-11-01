@@ -29,6 +29,8 @@ const (
 	PageResume
 	// PageProject is a project's own page, by the project's slug
 	PageProject
+	// PageIndex is the site's index, the list of its pages an agent reads first; it has no slug
+	PageIndex
 )
 
 func (Address) target() {}

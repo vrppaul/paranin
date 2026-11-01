@@ -1,7 +1,9 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003). It draws every page of a snapshot
 // once, the first time a request meets that snapshot, and serves the drawing until the store holds another, so
 // no request composes or draws a page. Each page is served at the path routes writes for it in each format, and
-// at its own address in the format the reader's request asks for; any other path is not found.
+// at its own address in the format the reader's request asks for; the index at llms.txt, sent as plain text, as a
+// name ending in .txt promises. Any other path is answered with the text of no page, drawn once like the pages but
+// for the path, which each request quotes in it.
 package web
 
 import (
@@ -21,7 +23,7 @@ import (
 // a reload can change any page
 const (
 	markdownType = markdownMediaType + utf8Text
-	manualType   = manualMediaType + utf8Text
+	plainType    = plainMediaType + utf8Text
 	utf8Text     = "; charset=utf-8"
 	noSniffing   = "nosniff"
 	askEveryTime = "no-cache"
@@ -36,7 +38,7 @@ const (
 	acceptHeader      = "Accept"
 	varyHeader        = "Vary"
 	markdownMediaType = "text/markdown"
-	manualMediaType   = "text/plain"
+	plainMediaType    = "text/plain"
 	mediaTypeEnd      = ","
 	qualityParameter  = "q"
 	qualityBits       = 64
@@ -62,6 +64,13 @@ const (
 // The pattern every path a reader reads falls under
 const pagePattern = "GET /"
 
+// The status an address of no page is answered with, and what stands between a status's code and its reason in
+// the line HTTP writes it in
+const (
+	missingStatus   = http.StatusNotFound
+	statusSeparator = " "
+)
+
 // Server serves the pages of the store's current snapshot.
 type Server struct {
 	store *content.Store
@@ -71,11 +80,12 @@ type Server struct {
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at: in each format at its own path, and
-// both ways at the address where the reader chooses.
+// both ways at the address where the reader chooses; and the text of an address of no page.
 type drawing struct {
 	snapshot *content.Snapshot
 	pages    map[string]drawnPage
 	chosen   map[string]choice
+	notFound text.NotFound
 }
 
 // choice is one page in each format a reader may choose.
@@ -106,21 +116,21 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
 	drawn := server.current()
 	if found, isPage := drawn.pages[request.URL.Path]; isPage {
-		send(writer, found)
+		send(writer, http.StatusOK, found)
 		return
 	}
 	if offered, isChosen := drawn.chosen[request.URL.Path]; isChosen {
 		writer.Header().Set(varyHeader, acceptHeader)
-		send(writer, offered.chosenBy(request.Header.Get(acceptHeader)))
+		send(writer, http.StatusOK, offered.chosenBy(request.Header.Get(acceptHeader)))
 		return
 	}
-	http.NotFound(writer, request)
+	send(writer, missingStatus, drawnPage{contentType: plainType, body: []byte(drawn.notFound.For(request.URL.Path))})
 }
 
 // chosenBy is the page in the format an Accept header ranks higher: markdown where the header ranks it above
 // plain text, the manual otherwise, `curl` and a header naming neither among them.
 func (offered choice) chosenBy(accept string) drawnPage {
-	if quality(accept, markdownMediaType) > quality(accept, manualMediaType) {
+	if quality(accept, markdownMediaType) > quality(accept, plainMediaType) {
 		return offered.markdown
 	}
 	return offered.manual
@@ -167,11 +177,12 @@ func qualityOf(parameters map[string]string) float64 {
 	return value
 }
 
-func send(writer http.ResponseWriter, page drawnPage) {
+func send(writer http.ResponseWriter, status int, page drawnPage) {
 	header := writer.Header()
 	header.Set(contentType, page.contentType)
 	header.Set(typeOptions, noSniffing)
 	header.Set(cacheControl, askEveryTime)
+	writer.WriteHeader(status)
 	// A write fails only when the reader has gone, and nobody is left to tell
 	_, _ = writer.Write(page.body)
 }
@@ -191,21 +202,29 @@ func (server *Server) current() *drawing {
 	return drawn
 }
 
+// statusLine is a status as HTTP writes it in a response's first line: its code, then its reason.
+func statusLine(status int) string {
+	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
+}
+
 // draw draws every page of a snapshot, at the address it is served at.
 func draw(snapshot *content.Snapshot) *drawing {
 	site := routes.New(snapshot.Profile.Site.BaseURL)
 	documents := compose.Documents(snapshot)
-	pages := make(map[string]drawnPage, len(documents))
+	index := compose.Index(snapshot)
+	pages := map[string]drawnPage{
+		routes.Path(index.Head.Page, routes.FormatMarkdown): {contentType: plainType, body: []byte(text.Markdown(index, site))},
+	}
 	chosen := make(map[string]choice, len(documents))
 	for _, composed := range documents {
 		page := composed.Head.Page
 		offered := choice{
 			markdown: drawnPage{contentType: markdownType, body: []byte(text.Markdown(composed, site))},
-			manual:   drawnPage{contentType: manualType, body: []byte(text.Manual(composed, site))},
+			manual:   drawnPage{contentType: plainType, body: []byte(text.Manual(composed, site))},
 		}
 		pages[routes.Path(page, routes.FormatMarkdown)] = offered.markdown
 		pages[routes.Path(page, routes.FormatManual)] = offered.manual
 		chosen[routes.Path(page, routes.FormatChosen)] = offered
 	}
-	return &drawing{snapshot: snapshot, pages: pages, chosen: chosen}
+	return &drawing{snapshot: snapshot, pages: pages, chosen: chosen, notFound: text.NewNotFound(site, statusLine(missingStatus))}
 }

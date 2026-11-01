@@ -61,3 +61,32 @@ func TestAListItemNeverOpensABlock(test *testing.T) {
 		test.Errorf("Markdown = %q, want it to hold %q", got, want)
 	}
 }
+
+// A document's lead reads as one quote of the text it is, every paragraph of it inside, never opening a block
+// inside the quote; a document with no lead has no quote.
+func TestALeadReadsAsAQuoteOfItsText(test *testing.T) {
+	cases := []struct {
+		name string
+		lead []document.Span
+		want string
+	}{
+		{name: "no lead", lead: nil, want: "# tool\n"},
+		{name: "a lead", lead: []document.Span{document.Text{Text: "Tidies files."}}, want: "# tool\n\n> Tidies files.\n"},
+		{name: "a lead opening with a heading's mark", lead: []document.Span{document.Text{Text: "# not a heading"}}, want: "# tool\n\n> \\# not a heading\n"},
+		{name: "a lead of two paragraphs", lead: []document.Span{document.Text{Text: "first\n\nsecond"}}, want: "# tool\n\n> first\n>\n> second\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			composed := document.Document{
+				Head: document.Head{
+					Page: document.Page{Kind: document.PageNone, Slug: ""}, Title: []document.Span{document.Text{Text: "tool"}},
+					Subtitle: nil, Place: "", Lead: testCase.lead, Ways: nil,
+				},
+				Blocks: nil,
+			}
+			if got := Markdown(composed, routes.New(fixtureBase)); got != testCase.want {
+				test.Errorf("Markdown = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}

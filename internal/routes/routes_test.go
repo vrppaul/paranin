@@ -7,11 +7,13 @@ import (
 )
 
 // The site's addresses are a contract with whoever links to it: each page has its address in each format, the
-// address a reader's request chooses the format at among them, and an address outside the site is left as it is.
+// address a reader's request chooses the format at among them, the index at the address agents look for it,
+// llms.txt, and in markdown alone; and an address outside the site is left as it is.
 func TestEveryTargetHasItsAddress(test *testing.T) {
 	site := New("https://example.test")
 	resume := document.Page{Kind: document.PageResume, Slug: ""}
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool"}
+	index := document.Page{Kind: document.PageIndex, Slug: ""}
 	cases := []struct {
 		name   string
 		target document.Target
@@ -24,6 +26,9 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a project's page in markdown", target: project, format: FormatMarkdown, want: "https://example.test/p/tidy-tool.md"},
 		{name: "a project's page as a manual", target: project, format: FormatManual, want: "https://example.test/p/tidy-tool.txt"},
 		{name: "a project's page as the reader asks", target: project, format: FormatChosen, want: "https://example.test/p/tidy-tool"},
+		{name: "the index in markdown", target: index, format: FormatMarkdown, want: "https://example.test/llms.txt"},
+		{name: "the index has no manual", target: index, format: FormatManual, want: ""},
+		{name: "the index has no address to choose at", target: index, format: FormatChosen, want: ""},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: ""}, format: FormatMarkdown, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "mailto:mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 	}

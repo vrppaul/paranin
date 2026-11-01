@@ -68,6 +68,19 @@ type Card struct {
 	Page     Page
 }
 
+// Contents are pages of the site a document leads to, each by its title and a line on what it is: the site's
+// index lists its pages so.
+type Contents struct {
+	Listings []Listing
+}
+
+// Listing is one page a list of contents leads to: the page, its title, and a line on what it is.
+type Listing struct {
+	Page  Page
+	Title []Span
+	Note  []Span
+}
+
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (Table) block()     {}
@@ -75,3 +88,4 @@ func (CodeBlock) block() {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}
+func (Contents) block()  {}

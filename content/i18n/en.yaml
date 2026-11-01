@@ -1,6 +1,6 @@
 # The site's own words in English, which every face shows beside the facts: the titles of the résumé's
-# sections, the labels of the ways to reach the author and of a project's details, and the end of what still
-# goes on. `paranin check content` requires every one of them.
+# sections and of the index's, the labels of the ways to reach the author and of a project's details, and the end
+# of what still goes on. `paranin check content` requires every one of them.
 
 facts: Facts
 experience: Experience
@@ -14,3 +14,4 @@ repository: repository
 install: install
 present: present
 author: author
+resume: Résumé

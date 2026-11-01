@@ -30,6 +30,8 @@ func blockPhrases(phrases []string, blocks []Block) []string {
 			phrases = entryPhrases(phrases, typed)
 		case Card:
 			phrases = cardPhrases(phrases, typed)
+		case Contents:
+			phrases = listingPhrases(phrases, typed.Listings)
 		}
 	}
 	return phrases
@@ -63,6 +65,13 @@ func entryPhrases(phrases []string, entry Entry) []string {
 func cardPhrases(phrases []string, card Card) []string {
 	phrases = textPhrase(spanPhrases(spanPhrases(phrases, card.Title), card.Subtitle), card.Tag)
 	return factPhrases(spanPhrases(phrases, card.Summary), card.Facts)
+}
+
+func listingPhrases(phrases []string, listings []Listing) []string {
+	for _, listing := range listings {
+		phrases = spanPhrases(spanPhrases(phrases, listing.Title), listing.Note)
+	}
+	return phrases
 }
 
 // monthPhrase is a gap's text and the word for what still goes on; a known month is each face's to write.

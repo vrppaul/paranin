@@ -22,11 +22,12 @@ const (
 	FormatChosen
 )
 
-// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, and the
-// endings of the formats
+// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the index
+// where agents look for it (llmstxt.org), and the endings of the formats
 const (
 	resumeRoot     = "/"
 	resumeFile     = "/index"
+	indexFile      = "/llms.txt"
 	projectFolder  = "/p/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
@@ -63,7 +64,8 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
-// Path is where a page is served in a format, empty where it is served in none: PageNone, or no format.
+// Path is where a page is served in a format, empty where it is served in none: PageNone, the index in any
+// format but markdown, or no format.
 func Path(page document.Page, format Format) string {
 	switch page.Kind {
 	case document.PageNone:
@@ -72,6 +74,8 @@ func Path(page document.Page, format Format) string {
 		return resumePath(format)
 	case document.PageProject:
 		return projectPath(page.Slug, format)
+	case document.PageIndex:
+		return indexPath(format)
 	}
 	return ""
 }
@@ -96,6 +100,16 @@ func projectPath(slug string, format Format) string {
 		return projectFolder + slug + manualEnding
 	case FormatChosen:
 		return projectFolder + slug
+	}
+	return ""
+}
+
+// indexPath is where the index is served: in markdown alone, which llms.txt is.
+func indexPath(format Format) string {
+	switch format {
+	case FormatMarkdown:
+		return indexFile
+	case FormatManual, FormatChosen:
 	}
 	return ""
 }

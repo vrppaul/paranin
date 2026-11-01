@@ -155,6 +155,8 @@ and web routes.
     (labels and their values), an entry (a period, a title, a subtitle, a
     place and its points: a role, a school) and a card (a title, a subtitle,
     a tag, a summary, its facts and its page: a project);
+  - the index's: contents, the pages a document leads to, each by its title
+    and a line on what it is, which `llms.txt` lists;
   - a widget (a name, its props, a caption and an alt text), the form, the
     salary range and the job matcher among them, so `compose` places them
     too;

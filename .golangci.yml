@@ -80,6 +80,17 @@ linters:
           msg: nothing prints but the composition root and the scripts; log through the logger handed in
         - pattern: ^(log\.(Print|Fatal|Panic).*|log\.Default|slog\.(Debug|Info|Warn|Error|Log|LogAttrs|Default|SetDefault)(Context)?)$
           msg: the package-level logger is state at package level; log through the logger handed in
+    ireturn:
+      # A constructor returns its concrete type. Its defaults, and two more: a function that picks one kind of a
+      # closed set returns the set (a sum type of document, //sumtype:decl, each named with the first function
+      # that returns it), and a generic function its type parameter
+      allow:
+        - anon
+        - error
+        - empty
+        - stdlib
+        - generic
+        - ^github\.com/vrppaul/paranin/internal/document\.Month$
     nolintlint:
       require-explanation: true
       require-specific: true

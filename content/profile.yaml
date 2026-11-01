@@ -3,7 +3,8 @@
 #
 # A role still held ends `current`. A date not known yet is a gap, as in any text.
 #
-# Inline marks in any text shown to people:
+# Marks in prose and titles; a label, a place, a language, an address, a link's text and a command are shown
+# as written:
 #   ==text==  a result worth highlighting
 #   [text]    a gap still to fill; the site shows it faint
 

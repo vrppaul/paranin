@@ -46,7 +46,7 @@ projects:
     name: tidy-tool
     tagline: Tidies files.
     description: A tool that tidies files.
-    language: Go
+    language: Lua
     repo: https://github.test/mira/tidy-tool
     install: go install example.test/tidy-tool@latest
     page: true
@@ -60,7 +60,7 @@ projects:
 skill_groups:
   - title: Languages
     skills:
-      - {name: Go, duration: 3y, aliases: [go, golang], sources: [tidy-tool]}
+      - {name: Go, duration: 3y, aliases: [go, golang], sources: [tidy-tool, a hobby]}
   - title: Tools
     skills:
       - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}

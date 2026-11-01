@@ -39,6 +39,7 @@ Each decision carries one of three marks:
 | D17 | The content holds facts, not how a face shows them: the links' short keys and the salary slider's steps leave the profile. A face shows a link by its label; the form works its steps out of `min` and `soft_max` (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
 | D18 | Nothing lands before its user: `document` and `compose` arrive in one chunk, `compose` making the résumé their first user; `routes` arrives with `face/text`, the first face to write an address; `look` and the token generator with `face/tui`, the first that needs a colour. | 2026-11-01 |
 | D19 | Every face draws the résumé, the project pages and the posts from one document model, the HTML page and the islands included. The document has the résumé's own kinds beside markdown's, and its kinds are a closed set every face switches over. Its parts, in ADR-0003, are the author's, on Pavel's leave to choose. | 2026-11-01 |
+| D20 | The layers of ADR-0003 are accepted. | 2026-11-01 |
 
 ## 2. What must hold whatever we build
 
@@ -461,8 +462,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
   headings) live in one catalogue per language, `content/i18n/en.yaml` and
   `ru.yaml`, used by every face, the TUI (`:set lang=ru`) and
   `curl paran.in/ru/…` included. `paranin check` requires every key in
-  every language. The catalogue arrives with the first face, not with the
-  first translation, so no template is written twice.
+  every language. The catalogue arrives with `compose`, the first part that
+  writes a word of the site, not with the first translation, so no template
+  is written twice.
 - **The résumé in another language later**: `profile.ru.yaml` beside
   `profile.yaml`, holding the words that translate; the check refuses a key
   the main file lacks.
@@ -687,7 +689,7 @@ moves it out first.
 8. The blog: posts in the one format, their status and preview links,
    publishing on a date, `kit`, the first widget from study, the feed,
    the cards, posts in the TUI. The site's word catalogue arrives with
-   step 5's first face; a second language is an addition, not a step.
+   `compose` in step 4; a second language is an addition, not a step.
 9. Phase 3: the brain's threat model, SQLite, `brain`, the chat island,
    then the chat in the TUI.
 
@@ -759,3 +761,11 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   sent the islands' text through documents and the rest through typed props
   and `compose`'s record, moved `routes` to `face/text` and `face/text` to
   `hosting/web`, and gave a link a format and an anchor.
+- **2026-11-01, D20, and `document` with `compose`.** Pavel accepted the
+  layers (D20). The résumé became a document, and the site's word catalogue
+  arrived with it, as `compose` writes the first word of the site (the
+  author's choice, under D18). The review asked for the snapshot built whole
+  again, each word's key written once, a test of where each link leads, the
+  kinds of month a closed set on both sides, a card's page of its own, the
+  marks read in every text that becomes spans, and phrases as a plain list;
+  each answered.

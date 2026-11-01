@@ -1,9 +1,16 @@
 package content
 
+// The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
+// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
+// value, a duration. A label, a place, a language's name, an address, a link's text and a command are shown as
+// written. A gap is also how a month not known yet is written
+const (
+	HighlightMark = "=="
+	GapOpening    = "["
+	GapClosing    = "]"
+)
+
 // Profile is the résumé: who, what they did and made, what they can do, and how to reach them.
-//
-// A text shown to people may carry two inline marks, which the faces draw: ==text== a result worth
-// highlighting, and [text] a gap the author has still to fill.
 type Profile struct {
 	Site        Site            `yaml:"site"`
 	Person      Person          `yaml:"person"`
@@ -57,11 +64,6 @@ type Role struct {
 	Start    Month    `yaml:"start"`
 	End      Month    `yaml:"end"`
 	Bullets  []string `yaml:"bullets"`
-}
-
-// Current tells a role still held.
-func (role Role) Current() bool {
-	return role.End.IsCurrent()
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of

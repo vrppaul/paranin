@@ -1,0 +1,12 @@
+# The site's own words in English, for the tests: what every face shows beside the facts.
+
+facts: Facts
+experience: Experience
+projects: Projects
+skills: Skills
+education: Education
+languages: Languages
+mail: mail
+ssh: ssh
+repository: repository
+install: install

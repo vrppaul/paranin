@@ -10,9 +10,9 @@ import (
 	"testing/fstest"
 )
 
-// The folder of the fixture profile, and the repository's own content, from this package
+// The fixture content, and the repository's own, from this package
 const (
-	fixtureFolder    = "testdata/profile"
+	fixturePath      = "testdata/content"
 	repositoryFolder = "../../content"
 )
 
@@ -56,7 +56,7 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			faults := faultsOf(test, changedFixture(test, fixtureText(test), testCase.original, testCase.replacement))
+			faults := faultsOf(test, changedProfile(test, testCase.original, testCase.replacement))
 			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
 				test.Errorf("faults = %q, want one %q", faults, testCase.want)
 			}
@@ -71,8 +71,8 @@ func TestAMissingOrEmptyProfileIsAFaultOfTheFile(test *testing.T) {
 		folder fstest.MapFS
 		want   string
 	}{
-		{name: "no profile in the folder", folder: fstest.MapFS{}, want: "profile.yaml: file does not exist"},
-		{name: "an empty profile", folder: fstest.MapFS{profileFile: {Data: []byte("")}}, want: "profile.yaml: is empty"},
+		{name: "no profile in the folder", folder: fstest.MapFS{englishWordsFile: fixtureFolder(test)[englishWordsFile]}, want: "profile.yaml: file does not exist"},
+		{name: "an empty profile", folder: writtenFile(fixtureFolder(test), profileFile, ""), want: "profile.yaml: is empty"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -84,9 +84,8 @@ func TestAMissingOrEmptyProfileIsAFaultOfTheFile(test *testing.T) {
 }
 
 func TestEveryUnknownKeyIsAFault(test *testing.T) {
-	text := changedFixture(test, fixtureText(test), "headline:", "tagline:")
-	text = changedFixture(test, text, "location: Brno, Czechia", "place: Brno, Czechia")
-	faults := faultsOf(test, text)
+	folder := changedProfile(test, "headline:", "tagline:")
+	faults := faultsOf(test, changedFile(test, folder, profileFile, "location: Brno, Czechia", "place: Brno, Czechia"))
 	named := []bool{
 		slices.ContainsFunc(faults, func(fault Fault) bool { return strings.Contains(fault.Problem, "tagline") }),
 		slices.ContainsFunc(faults, func(fault Fault) bool { return strings.Contains(fault.Problem, "place") }),
@@ -97,57 +96,93 @@ func TestEveryUnknownKeyIsAFault(test *testing.T) {
 }
 
 func TestEveryFaultIsReportedAtOnceOneALine(test *testing.T) {
-	text := changedFixture(test, fixtureText(test), "ssh: ssh example.test", `ssh: ""`)
-	text = changedFixture(test, text, "title: Software Engineer", `title: ""`)
-	_, err := Load(fstest.MapFS{profileFile: {Data: []byte(text)}})
+	folder := changedProfile(test, "ssh: ssh example.test", `ssh: ""`)
+	_, err := Load(changedFile(test, folder, profileFile, "title: Software Engineer", `title: ""`))
 	want := "profile.yaml: site.ssh is empty\nprofile.yaml: person.title is empty"
 	if err == nil || err.Error() != want {
 		test.Errorf("Load = %v, want %q", err, want)
 	}
 }
 
+// The site's words are content too: each one is there, and the catalogue holds no word the site has not.
+func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
+	cases := []struct {
+		name        string
+		original    string
+		replacement string
+		want        string
+	}{
+		{name: "a word left empty", original: "experience: Experience", replacement: `experience: ""`, want: "i18n/en.yaml: experience is empty"},
+		{name: "a word left out", original: "experience: Experience\n", replacement: "", want: "i18n/en.yaml: experience is empty"},
+		{name: "a word the site has not", original: "facts: Facts", replacement: "facts: Facts\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), englishWordsFile, testCase.original, testCase.replacement))
+			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
+				test.Errorf("faults = %q, want one %q", faults, testCase.want)
+			}
+		})
+	}
+}
+
 func TestASiteCannotOpenOnFaultyContent(test *testing.T) {
-	folder := fstest.MapFS{profileFile: {Data: []byte(changedFixture(test, fixtureText(test), "name: Mira Example", `name: ""`))}}
-	if store, err := Open(folder); store != nil || err == nil {
+	if store, err := Open(changedProfile(test, "name: Mira Example", `name: ""`)); store != nil || err == nil {
 		test.Errorf("Open(faulty) = %v, %v; want no store and faults", store, err)
 	}
 }
 
 func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
-	folder := fstest.MapFS{profileFile: {Data: []byte(fixtureText(test))}}
+	folder := fixtureFolder(test)
 	store, err := Open(folder)
 	if err != nil {
 		test.Fatalf("Open(fixture) = %v, want no error", err)
 	}
-	folder[profileFile] = &fstest.MapFile{Data: []byte(changedFixture(test, fixtureText(test), "name: Mira Example", `name: ""`))}
+	changedFile(test, folder, profileFile, "name: Mira Example", `name: ""`)
 	if err := store.Reload(); err == nil || store.Current().Profile.Person.Name != "Mira Example" {
 		test.Errorf("a faulty reload = %v with the name %q, want faults and the old name kept", err, store.Current().Profile.Person.Name)
 	}
-	folder[profileFile] = &fstest.MapFile{Data: []byte(changedFixture(test, fixtureText(test), "name: Mira Example", "name: Mira Other"))}
+	changedFile(test, folder, profileFile, `name: ""`, "name: Mira Other")
 	if err := store.Reload(); err != nil || store.Current().Profile.Person.Name != "Mira Other" {
 		test.Errorf("a good reload = %v with the name %q, want the new name", err, store.Current().Profile.Person.Name)
 	}
 }
 
-func fixtureText(test *testing.T) string {
-	data, err := os.ReadFile(filepath.Join(fixtureFolder, profileFile))
-	if err != nil {
-		test.Fatalf("read the fixture: %v", err)
+// fixtureFolder is the fixture content in a folder in memory, which a test may change.
+func fixtureFolder(test *testing.T) fstest.MapFS {
+	folder := fstest.MapFS{}
+	for _, file := range []string{profileFile, englishWordsFile} {
+		data, err := os.ReadFile(filepath.Join(fixturePath, file))
+		if err != nil {
+			test.Fatalf("read the fixture's %s: %v", file, err)
+		}
+		folder[file] = &fstest.MapFile{Data: data}
 	}
-	return string(data)
+	return folder
 }
 
-// changedFixture is a profile with one piece of it written otherwise; the piece must be there once.
-func changedFixture(test *testing.T, text, original, replacement string) string {
+// changedFile writes one piece of a file of the folder otherwise; the piece must be there once.
+func changedFile(test *testing.T, folder fstest.MapFS, file, original, replacement string) fstest.MapFS {
+	text := string(folder[file].Data)
 	if strings.Count(text, original) != 1 {
-		test.Fatalf("the profile holds %q %d times, want once", original, strings.Count(text, original))
+		test.Fatalf("%s holds %q %d times, want once", file, original, strings.Count(text, original))
 	}
-	return strings.Replace(text, original, replacement, 1)
+	return writtenFile(folder, file, strings.Replace(text, original, replacement, 1))
 }
 
-// faultsOf loads a profile and hands back the faults it was refused with.
-func faultsOf(test *testing.T, profileText string) Faults {
-	_, err := Load(fstest.MapFS{profileFile: {Data: []byte(profileText)}})
+// changedProfile is the fixture content with one piece of its profile written otherwise.
+func changedProfile(test *testing.T, original, replacement string) fstest.MapFS {
+	return changedFile(test, fixtureFolder(test), profileFile, original, replacement)
+}
+
+func writtenFile(folder fstest.MapFS, file, text string) fstest.MapFS {
+	folder[file] = &fstest.MapFile{Data: []byte(text)}
+	return folder
+}
+
+// faultsOf loads a folder and hands back the faults it was refused with.
+func faultsOf(test *testing.T, folder fstest.MapFS) Faults {
+	_, err := Load(folder)
 	var faults Faults
 	if !errors.As(err, &faults) {
 		test.Fatalf("Load = %v, want faults", err)

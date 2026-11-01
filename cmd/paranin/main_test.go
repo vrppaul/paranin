@@ -17,7 +17,7 @@ func TestCheckExitsByWhatTheContentHolds(test *testing.T) {
 		arguments []string
 		want      int
 	}{
-		{name: "content that loads", arguments: []string{"paranin", "check", "../../internal/content/testdata/profile"}, want: contentLoads},
+		{name: "content that loads", arguments: []string{"paranin", "check", "../../internal/content/testdata/content"}, want: contentLoads},
 		{name: "content with faults", arguments: []string{"paranin", "check", faulty}, want: contentFaulty},
 		{name: "no folder named", arguments: []string{"paranin", "check"}, want: usageMistaken},
 		{name: "a command it has not", arguments: []string{"paranin", "serve", faulty}, want: usageMistaken},

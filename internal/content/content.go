@@ -1,8 +1,8 @@
-// Package content holds the facts every face draws: the profile, read from a folder on disk, checked whole and
-// held as a snapshot that nothing changes after. It knows no face: how a fact is shown is the faces' own
-// (docs/ARCHITECTURE.md, ADR-0003). A load reports every fault it finds at once, each at its field, so whoever
-// edits the content fixes it in one pass: first every line the decoder cannot read, and once the file reads,
-// every fault of what it says.
+// Package content holds the facts every face draws, and the site's own words beside them: read from a folder on
+// disk, checked whole and held as a snapshot that nothing changes after. It knows no face: how a fact is shown is
+// the faces' own (docs/ARCHITECTURE.md, ADR-0003). A load reports every fault it finds at once, each at its
+// field, so whoever edits the content fixes it in one pass: first every line the decoder cannot read, and once
+// the files read, every fault of what they say.
 package content
 
 import (
@@ -14,67 +14,76 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The file of the folder that holds the profile
-const profileFile = "profile.yaml"
+// The files of the folder: the profile, and the site's words in English, its one language so far (D12)
+const (
+	profileFile      = "profile.yaml"
+	englishWordsFile = "i18n/en.yaml"
+)
 
 // Snapshot is the content as one load read it.
 type Snapshot struct {
 	Profile Profile
+	Words   Words
 }
 
 // Load reads the content folder and checks it whole: a snapshot, or Faults naming everything wrong in it.
 func Load(folder fs.FS) (*Snapshot, error) {
-	profile, faults := readProfile(folder)
-	if len(faults) == 0 {
-		faults = inspectProfile(profile)
-	}
+	profile, faults := readFile[Profile](folder, profileFile)
+	written, wordFaults := readFile[map[string]string](folder, englishWordsFile)
+	faults = append(faults, wordFaults...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	return &Snapshot{Profile: profile}, nil
+	words, wordFaults := readWords(written)
+	faults = append(inspectProfile(profile), wordFaults...)
+	if len(faults) > 0 {
+		return nil, faults
+	}
+	return &Snapshot{Profile: profile, Words: words}, nil
 }
 
-// readProfile decodes the profile strictly: a key the schema lacks is a fault, so a typo is never dropped unsaid.
-func readProfile(folder fs.FS) (Profile, Faults) {
-	var profile Profile
-	data, err := fs.ReadFile(folder, profileFile)
+// readFile decodes a file of the folder strictly: a key a struct lacks is a fault, so a typo is never dropped
+// unsaid. A map takes any key, for its reader to check.
+func readFile[Target any](folder fs.FS, file string) (Target, Faults) {
+	var target Target
+	data, err := fs.ReadFile(folder, file)
 	if err != nil {
-		return profile, Faults{unreadFault(err)}
+		return target, Faults{unreadFault(file, err)}
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
-	err = decoder.Decode(&profile)
+	err = decoder.Decode(&target)
 	if errors.Is(err, io.EOF) {
-		return profile, Faults{{File: profileFile, Field: "", Problem: emptyProblem}}
+		return target, Faults{{File: file, Field: "", Problem: emptyProblem}}
 	}
 	if err != nil {
-		return profile, decodingFaults(err)
+		return target, decodingFaults(file, err)
 	}
-	return profile, nil
+	return target, nil
 }
 
-// decodingFaults are the faults of a profile the decoder could not read: one for each line it named.
-func decodingFaults(err error) Faults {
+// decodingFaults are the faults of a file the decoder could not read: one for each line it named.
+func decodingFaults(file string, err error) Faults {
 	typeError, isTypeError := errors.AsType[*yaml.TypeError](err)
 	if !isTypeError {
-		return Faults{fileFault(err)}
+		return Faults{fileFault(file, err)}
 	}
 	faults := make(Faults, 0, len(typeError.Errors))
 	for _, problem := range typeError.Errors {
-		faults = append(faults, Fault{File: profileFile, Field: "", Problem: problem})
+		faults = append(faults, Fault{File: file, Field: "", Problem: problem})
 	}
 	return faults
 }
 
-func fileFault(err error) Fault {
-	return Fault{File: profileFile, Field: "", Problem: err.Error()}
+func fileFault(file string, err error) Fault {
+	return Fault{File: file, Field: "", Problem: err.Error()}
 }
 
 // unreadFault is the fault of a file that could not be read. The fault names the file already, so where the error
 // names its path as well, only the cause is kept.
-func unreadFault(err error) Fault {
+func unreadFault(file string, err error) Fault {
 	if pathError, isPathError := errors.AsType[*fs.PathError](err); isPathError {
-		return fileFault(pathError.Err)
+		return fileFault(file, pathError.Err)
 	}
-	return fileFault(err)
+	return fileFault(file, err)
 }

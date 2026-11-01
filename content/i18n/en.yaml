@@ -1,0 +1,13 @@
+# The site's own words in English, which every face shows beside the facts: the titles of the résumé's sections
+# and the labels of the ways to reach the author. `paranin check content` requires every one of them.
+
+facts: Facts
+experience: Experience
+projects: Projects
+skills: Skills
+education: Education
+languages: Languages
+mail: mail
+ssh: ssh
+repository: repository
+install: install

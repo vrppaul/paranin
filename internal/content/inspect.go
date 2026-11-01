@@ -26,7 +26,7 @@ const (
 	mailProblem        = "%q is no bare mail address"
 	unknownMonth       = "%q is no month, YYYY-MM"
 	unknownEnd         = unknownMonth + ", nor " + currentWord
-	unknownMonthOrGap  = unknownMonth + ", nor a " + gapOpening + "gap" + gapClosing
+	unknownMonthOrGap  = unknownMonth + ", nor a " + GapOpening + "gap" + GapClosing
 	orderProblem       = "%q comes before the start, %q"
 	slugProblem        = "%q is no slug: small letters and digits, joined by hyphens"
 	sharedSlugProblem  = "%q names another project too"
@@ -35,6 +35,7 @@ const (
 	levelProblem       = "%q is none of %s"
 	positiveProblem    = "%d is not above 0"
 	rangeProblem       = "%d is not above min, %d"
+	unknownWordProblem = "is no word of the site"
 )
 
 // What separates the levels a level fault lists
@@ -43,8 +44,9 @@ const levelSeparator = ", "
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
 
-// inspection gathers the faults of one profile, each at its field, so every one is reported at once.
+// inspection gathers the faults of one file, each at its field, so every one is reported at once.
 type inspection struct {
+	file   string
 	faults Faults
 }
 
@@ -52,7 +54,7 @@ type inspection struct {
 // does, so vet refuses a format whose values are missing.
 func (inspection *inspection) add(field, format string, values ...any) {
 	problem := fmt.Sprintf(format, values...)
-	inspection.faults = append(inspection.faults, Fault{File: profileFile, Field: field, Problem: problem})
+	inspection.faults = append(inspection.faults, Fault{File: inspection.file, Field: field, Problem: problem})
 }
 
 func (inspection *inspection) require(field, value string) {
@@ -71,7 +73,7 @@ func (inspection *inspection) requireAddress(field, address string) {
 // inspectProfile checks what the schema cannot say: what must be there, how it is written, and how its parts
 // agree with each other.
 func inspectProfile(profile Profile) Faults {
-	inspection := &inspection{faults: nil}
+	inspection := &inspection{file: profileFile, faults: nil}
 	inspectSite(inspection, profile.Site)
 	inspectPerson(inspection, profile.Person)
 	inspectExperience(inspection, profile.Experience)
@@ -111,15 +113,15 @@ func inspectExperience(inspection *inspection, roles []Role) {
 		inspection.require(fmt.Sprintf("experience[%d].company", index), role.Company)
 		inspection.require(fmt.Sprintf("experience[%d].title", index), role.Title)
 		start := fmt.Sprintf("experience[%d].start", index)
-		if !role.Start.IsKnown() {
+		if role.Start.Kind() != MonthKnown {
 			inspection.add(start, unknownMonth, role.Start.Written())
 		}
 		end := fmt.Sprintf("experience[%d].end", index)
 		switch {
-		case role.Current():
-		case !role.End.IsKnown():
+		case role.End.Kind() == MonthCurrent:
+		case role.End.Kind() != MonthKnown:
 			inspection.add(end, unknownEnd, role.End.Written())
-		case role.Start.IsKnown() && role.End.Before(role.Start):
+		case role.Start.Kind() == MonthKnown && role.End.Before(role.Start):
 			inspection.add(end, orderProblem, role.End.Written(), role.Start.Written())
 		}
 	}
@@ -131,16 +133,21 @@ func inspectEducation(inspection *inspection, schools []School) {
 		inspection.require(fmt.Sprintf("education[%d].name", index), school.Name)
 		start := fmt.Sprintf("education[%d].start", index)
 		end := fmt.Sprintf("education[%d].end", index)
-		if !school.Start.IsKnown() && !school.Start.IsGap() {
+		if !knownOrGap(school.Start) {
 			inspection.add(start, unknownMonthOrGap, school.Start.Written())
 		}
-		if !school.End.IsKnown() && !school.End.IsGap() {
+		if !knownOrGap(school.End) {
 			inspection.add(end, unknownMonthOrGap, school.End.Written())
 		}
-		if school.Start.IsKnown() && school.End.IsKnown() && school.End.Before(school.Start) {
+		if school.Start.Kind() == MonthKnown && school.End.Kind() == MonthKnown && school.End.Before(school.Start) {
 			inspection.add(end, orderProblem, school.End.Written(), school.Start.Written())
 		}
 	}
+}
+
+// knownOrGap tells a month a school may start or end in.
+func knownOrGap(month Month) bool {
+	return month.Kind() == MonthKnown || month.Kind() == MonthGap
 }
 
 func inspectProjects(inspection *inspection, projects []Project) {

@@ -114,8 +114,8 @@ but our own (`script-src 'self'`).
 ## ADR-0003 — The content store and the document model
 
 **Status:** accepted (2026-11-01): content published without a new binary (D5), one format for every face
-(D8), the store, and one document model every face draws (D19). The document's parts below are the author's, on
-Pavel's leave to choose; the layers are proposed, waiting for Pavel. [FOUNDATION](FOUNDATION.md) §5.2.
+(D8), the store, one document model every face draws (D19), and the layers (D20). The document's parts below
+are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2.
 
 ### Context
 
@@ -144,10 +144,10 @@ and web routes.
   of a snapshot, and of the time where a post's date makes it one; who holds
   what it makes is the hosts' to say.
 - **A document is a head and its blocks.** The head holds the page it is,
-  where it is one; its title, a subtitle and a lead (the résumé's are the
-  name, the title and place, the headline); a description for the page's
-  metadata; and the ways to reach the author (mail, the profiles, `ssh`, the
-  CV), since every face shows them first.
+  where it is one; its title, a subtitle, a place and a lead (the résumé's
+  are the name, the title, where the author lives, the headline); a
+  description for the page's metadata; and the ways to reach the author
+  (mail, the profiles, `ssh`, the CV), since every face shows them first.
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a
@@ -167,9 +167,9 @@ and web routes.
   as the profile has it. The profile's marks and a post's markdown become the
   same spans.
 - **A period is a type**: a start and an end, each a month or a gap, and the
-  end may be current. Each face writes it its own way: `2024 – now`,
-  `01/2024 – present`. `document` imports nothing of `content`, so `compose`
-  carries the months across.
+  end may be current; the kinds of month are a closed set too. Each face
+  writes it its own way: `2024 – now`, `01/2024 – present`. `document`
+  imports nothing of `content`, so `compose` carries the months across.
 - **A link names its target**: an address outside the site, or a page of it
   by its kind and slug, with a format where the link names one (the CV as
   PDF, `index.md`, `llms.txt`) and an anchor where it names a place inside
@@ -185,7 +185,11 @@ and web routes.
   and the sitemap's dates. No face imports `content`; depguard refuses it,
   from the first face on.
 - **What lands when.** The head, the résumé's blocks and its spans (text,
-  code, link, highlight, gap) land with `compose` and the résumé; project
+  code, link, highlight, gap) land with `compose` and the résumé, and the
+  site's word catalogue with them, since `compose` writes the first word of
+  the site. The head's page lands with `routes`, its description with
+  `face/html`, the CV among the ways with `face/print`; a section's anchor and
+  a link's format and anchor with the first link that names one; project
   pages and the index with `face/text`, the first face to serve them; the
   extras with `face/tui`; a widget with `face/html`; the posts' blocks and
   spans with the blog (D18).
@@ -274,7 +278,7 @@ included (D8). Their widgets are code, built by the page's toolchain.
 - **Translations**, when they come (D12): a file per language beside the
   original, an address per language under its prefix, `hreflang`, a status
   per translation, the original's hash in each to show a stale one, and word
-  catalogues every face reads, there from the first face.
+  catalogues every face reads, there from `compose` on.
 
 ### Rationale
 

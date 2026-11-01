@@ -1,0 +1,233 @@
+# The facts of paran.in, ssh paran.in, the markdown and plain-text copies and cv.pdf, written once. The site
+# serves them from this folder; `paranin check content` checks it, as the site will on each load.
+#
+# A role still held ends `current`. A date not known yet is a gap, as in any text.
+#
+# Inline marks in any text shown to people:
+#   ==text==  a result worth highlighting
+#   [text]    a gap still to fill; the site shows it faint
+
+site:
+  base_url: https://paran.in
+  ssh: ssh paran.in
+
+person:
+  name: Pavel Paranin
+  given_name: Pavel
+  alternate_names: [Paul Paranin, Павел Паранин, vrppaul]
+  title: Senior Software Engineer
+  headline: Builds backend services, and tools for people who live in the terminal.
+  location: Prague, Czechia
+  email: paraninpasha@gmail.com
+  links:
+    - key: gh
+      label: GitHub
+      url: https://github.com/vrppaul
+      text: github.com/vrppaul
+    - key: in
+      label: LinkedIn
+      url: https://www.linkedin.com/in/pavel-paranin/
+      text: linkedin.com/in/pavel-paranin
+
+summary: >-
+  Backend engineer with 7+ years across Kiwi.com, Twisto, Seznam.cz and applied
+  machine learning. I work mostly in Python and build open-source tools for AI
+  coding agents: an MCP server for semantic code search and a code review tool
+  for Claude Code, Cursor and Codex. I started as a UX designer, and it still
+  shows in how I build.
+
+facts:
+  - {label: experience, value: 7+ years}
+  - {label: stack, value: Python · Kubernetes}
+  - {label: looking for, value: "[later]"}
+  - {label: where, value: "Prague · [remote?]"}
+  - {label: languages, value: "English, Czech, Russian"}
+  - {label: now, value: "Kiwi.com, since 2024"}
+  - {label: available, value: "[notice period]"}
+  - {label: open source, value: 2 tools for AI agents}
+
+experience:
+  - company: Kiwi.com
+    title: Senior Software Engineer
+    location: Prague
+    start: 2024-01
+    end: current
+    bullets:
+      - "Owned [service] handling ==[N] requests/day=="
+      - "Cut [p95 latency] by ==[40%]== through [change]"
+      - "Brought AI agent tooling into the team's workflow: [what changed, measured]"
+  - company: Twisto
+    title: Backend Developer
+    location: Prague
+    start: 2022-02
+    end: 2023-12
+    bullets:
+      - "[What you built in payments, and what it changed]"
+      - "[A second result, with a number]"
+  - company: Seznam.cz
+    title: Backend Developer
+    location: Prague
+    start: 2020-08
+    end: 2022-01
+    bullets:
+      - Built new services from scratch with business stakeholders, from first idea to production
+      - Migrated services from Python 2 to Python 3, added Kubernetes support, moved legacy databases to new infrastructure
+  - company: Blindspot Solutions
+    title: Machine Learning Developer
+    location: Prague
+    start: 2019-01
+    end: 2020-07
+    bullets:
+      - NLP topic extraction with scikit-learn behind a C# / ASP.NET backend; context search in Python
+      - "Logistics optimisation: data analysis in Python, solver in Kotlin"
+  - company: Česká spořitelna
+    title: UX Designer
+    location: Prague
+    start: 2017-11
+    end: 2018-09
+    bullets:
+      - Personas, prototypes and usability testing for a major web app in an agile team
+  - company: Freelance
+    title: Web Graphic Designer
+    location: Prague
+    start: 2016-01
+    end: 2017-10
+    bullets:
+      - Websites, logos and brand identities for small companies
+
+projects:
+  - slug: claude-review
+    name: claude-review
+    tagline: Browser-based code review for AI coding agents.
+    description: >-
+      Add inline comments on code changes, text files or conversation
+      transcripts, and send structured feedback back to the agent.
+    language: Python
+    repo: https://github.com/vrppaul/claude-review
+    install: npx skills add vrppaul/claude-review -g -y
+    page: true
+    recording: ""
+    facts:
+      - {label: language, value: Python}
+      - {label: works in, value: "Claude Code, Cursor, Codex"}
+      - {label: modes, value: "diff, files, plan, transcript"}
+    sections:
+      - title: What it does
+        paragraphs:
+          - "Diff mode shows uncommitted changes, tracked, staged and untracked, in a GitHub-style diff view with a file tree."
+          - "Files mode opens any text file for review: plans, docs, configs, source code. /review-ui plan opens the current plan before you approve it."
+          - "Transcript mode turns a Claude Code conversation into reviewable entries, one per user or assistant message, without tool calls or thinking blocks."
+          - "Comments go on a line or a range. A comment can suggest a replacement, or be marked as a question or a blocker. On submit, the comments reach the agent, and it makes the requested changes."
+          - "A review can go in rounds: the threads stay on screen while the agent answers and makes the changes, and the diff is taken again beneath them."
+  - slug: semantic-code-mcp
+    name: semantic-code-mcp
+    tagline: Semantic code search for Claude Code.
+    description: >-
+      An MCP server that indexes a codebase with embeddings and returns ranked
+      results by meaning, instead of iterative grep and glob.
+    language: Python
+    repo: https://github.com/vrppaul/semantic-code-mcp
+    install: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
+    page: true
+    recording: ""
+    facts:
+      - {label: language, value: Python}
+      - {label: indexes, value: "Python, Rust, Markdown"}
+      - {label: built on, value: "tree-sitter, sentence-transformers, LanceDB"}
+    sections:
+      - title: How it works
+        paragraphs:
+          - "tree-sitter splits source files into functions, classes, methods, structs, traits and markdown sections."
+          - "sentence-transformers encodes each chunk with all-MiniLM-L6-v2, and LanceDB stores the vectors. LanceDB is embedded, like SQLite, so there is no server to run."
+          - "Search combines semantic and keyword matching and boosts recent code. The first search indexes the project on its own."
+          - "Indexing is incremental, by file modification time, and finds files with git ls-files. The embedding model loads on the first query."
+          - "Three MCP tools: search_code, index_codebase and index_status."
+          - "On Linux, install the CPU-only torch build: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp"
+  - slug: paranin
+    name: paranin
+    tagline: This résumé as an SSH app.
+    description: The same profile, served over SSH as a terminal app. Go, Charm Wish and Bubble Tea.
+    language: Go
+    repo: ""
+    install: ssh paran.in
+    page: false
+    recording: ""
+    facts: []
+    sections: []
+  - slug: water-tracker
+    name: water-tracker
+    tagline: A coaster that weighs your mug.
+    description: ESP32 firmware reads a load cell; a Raspberry Pi server with PostgreSQL answers how much water you drank today.
+    language: C++ and Python
+    repo: ""
+    install: ""
+    page: false
+    recording: ""
+    facts: []
+    sections: []
+
+# The groups skills are shown in, in this order
+skill_groups:
+  - {key: languages, title: Languages}
+  - {key: backend, title: Backend}
+  - {key: ai, title: AI and ML}
+  - {key: design, title: Design}
+
+skills:
+  - {name: Python, group: languages, duration: 7y, aliases: [python], sources: [Blindspot Solutions, Seznam.cz, claude-review, semantic-code-mcp]}
+  - {name: Kotlin, group: languages, duration: 1y 7m, aliases: [kotlin], sources: [Blindspot Solutions]}
+  - {name: Rust, group: languages, duration: side, aliases: [rust], sources: [graph-rs]}
+  - {name: SQL, group: languages, duration: side, aliases: [sql], sources: [water-tracker]}
+  - {name: Go, group: languages, duration: learning, aliases: [go, golang], sources: [paranin, study lab], learning: true}
+  - {name: Kubernetes, group: backend, duration: 1y 6m, aliases: [kubernetes, k8s], sources: [Seznam.cz]}
+  - {name: PostgreSQL, group: backend, duration: side, aliases: [postgresql, postgres], sources: [water-tracker]}
+  - {name: Docker, group: backend, duration: side, aliases: [docker, docker compose], sources: [padel-bot]}
+  - {name: MCP, group: ai, duration: 1y, aliases: [mcp, model context protocol], sources: [semantic-code-mcp]}
+  - {name: LLM agents, group: ai, duration: 1y, aliases: [llm, llms, ai agents, coding agents, ai coding tools, agentic, claude code, cursor, codex], sources: [claude-review, semantic-code-mcp]}
+  - {name: Embeddings and vector search, group: ai, duration: 1y, aliases: [embeddings, vector search, semantic search, lancedb, rag], sources: [semantic-code-mcp]}
+  - {name: scikit-learn, group: ai, duration: 1y 7m, aliases: [scikit-learn, sklearn, machine learning, nlp], sources: [Blindspot Solutions]}
+  - {name: UX design, group: design, duration: 11m, aliases: [ux, user research, usability testing, prototyping], sources: [Česká spořitelna]}
+
+education:
+  - name: Czech Technical University in Prague
+    field: Faculty of Mechanical Engineering
+    start: "[20XX]"
+    end: "[20XX]"
+
+languages:
+  - {name: English, level: full professional}
+  - {name: Czech, level: full professional}
+  - {name: Russian, level: native}
+
+health:
+  - name: experience
+    checks:
+      - {level: ok, text: "Python: Blindspot Solutions, Seznam.cz, two open-source tools"}
+      - {level: ok, text: Services built from first idea to production at Seznam.cz}
+      - {level: ok, text: Kubernetes support added to existing services at Seznam.cz}
+      - {level: ok, text: "Machine learning: NLP and optimisation at Blindspot Solutions"}
+  - name: tooling
+    checks:
+      - {level: ok, text: "claude-review: code review for AI coding agents"}
+      - {level: ok, text: "semantic-code-mcp: semantic code search over MCP"}
+      - {level: ok, text: "paranin: this résumé as an SSH app"}
+  - name: design
+    checks:
+      - {level: ok, text: "UX designer at Česká spořitelna, 2017–2018"}
+  - name: languages
+    checks:
+      - {level: ok, text: "English, Czech: full professional"}
+      - {level: ok, text: "Russian: native"}
+  - name: growing
+    checks:
+      - {level: warn, text: "Go: learning now", advice: this site's SSH app is written in it}
+
+contact:
+  about: [A role, A contract, A project, Something else]
+  salary:
+    min: 100000
+    soft_max: 300000
+    step: 10000
+    big_step: 50000
+    currencies: [USD, EUR]
+    period: year

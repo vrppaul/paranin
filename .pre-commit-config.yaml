@@ -47,6 +47,13 @@ repos:
         language: system
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
+      # The content loads as the site would load it
+      - id: content-check
+        name: paranin check (the content)
+        entry: go run ./cmd/paranin check content
+        language: system
+        files: (^content/|\.go$)
+        pass_filenames: false
       # The whole suite takes seconds
       - id: go-test
         name: go test (the tests)

@@ -1,0 +1,92 @@
+# A profile of nobody, for the tests: every section the schema has, each fact made up.
+
+site:
+  base_url: https://example.test
+  ssh: ssh example.test
+
+person:
+  name: Mira Example
+  given_name: Mira
+  alternate_names: [M. Example]
+  title: Software Engineer
+  headline: Builds small tools that last.
+  location: Brno, Czechia
+  email: mira@example.test
+  links:
+    - key: gh
+      label: GitHub
+      url: https://github.test/mira
+      text: github.test/mira
+
+summary: Writes software for people who read it.
+
+facts:
+  - {label: experience, value: 5 years}
+  - {label: available, value: "[notice period]"}
+
+experience:
+  - company: Northwind
+    title: Senior Engineer
+    location: Brno
+    start: 2023-04
+    end: current
+    bullets:
+      - "Kept the ==queue== moving"
+  - company: Southwind
+    title: Engineer
+    location: Prague
+    start: 2020-01
+    end: 2023-03
+    bullets:
+      - Wrote the first parser
+
+projects:
+  - slug: other-tool
+    name: other-tool
+  - slug: tidy-tool
+    name: tidy-tool
+    tagline: Tidies files.
+    description: A tool that tidies files.
+    language: Go
+    repo: https://github.test/mira/tidy-tool
+    install: go install example.test/tidy-tool@latest
+    page: true
+    facts:
+      - {label: status, value: done}
+    sections:
+      - title: Why
+        paragraphs:
+          - Files were untidy.
+
+skill_groups:
+  - {key: languages, title: Languages}
+  - {key: tools, title: Tools}
+
+skills:
+  - {name: Go, group: languages, duration: 3y, aliases: [go, golang], sources: [tidy-tool]}
+  - {name: Docker, group: tools, duration: side, aliases: [docker], sources: [Northwind], learning: true}
+
+education:
+  - name: A University
+    field: Computer Science
+    start: 2016-09
+    end: "[20XX]"
+
+languages:
+  - {name: English, level: fluent}
+
+health:
+  - name: paranin
+    checks:
+      - {level: ok, text: all fine}
+      - {level: warn, text: one thing, advice: look at it}
+
+contact:
+  about: [a role, a project]
+  salary:
+    min: 1000
+    soft_max: 9000
+    step: 100
+    big_step: 1000
+    currencies: [EUR]
+    period: month

@@ -138,7 +138,7 @@ linters:
             - "**/internal/routes/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/compose
-              desc: compose writes links by routes, so routes never build on compose
+              desc: compose will read a post's links back into targets by routes, so routes never build on compose
         # The inbox stands on the foundation beside compose and routes: it delivers a message, and neither it nor
         # they need the other
         inbox-alone:

@@ -4,8 +4,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The foundation
 
-- The first commits (§8, step 4): the instruction files, the gates, CI and the documents; then `content` with `paranin check` and the real profile, ported from the first version (_old/tree and its archive, `paranin-first-version-2026-11-01.tar.gz` beside the repository), the only copy of it until then; then `document` and `routes`; then `look` and the token generator from `design/tokens.yaml`. Each package's layer rule in `.golangci.yml` is tried on it as it lands.
-- The faces, each its own commit (§8, step 5): `face/text`; `face/tui` with `hosting/ssh`; `face/html` on templ with `hosting/web`. The site's word catalogue arrives with the first of them. Each deletes what it replaces under _old/tree.
+- `document` and `compose` (§8, step 4; ADR-0003): the résumé as a document, `compose` their first user (D18). Each package's layer rule in `.golangci.yml` is tried on it as it lands.
+- The faces, each its own commit (§8, step 5): `face/text` with `routes`, `hosting/web` serving its formats, the project pages and the index, the depguard rule that keeps `content` out of every face, and one that holds `routes` to `document` alone; `face/tui` with `hosting/ssh`, `look` and the token generator from `design/tokens.yaml`; `face/html` on templ, on the same `hosting/web`. The site's word catalogue arrives with the first of them. Each reads the first version under _old/tree while the face is written, and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6): `web/` with Vite, TypeScript and Svelte 5, its gates, `domain`, `ui`, then the islands one at a time; the rules of the page and the design arrive with it.
 - Hosting (§8, step 7): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; `inbox` with delivery to Telegram; `face/print` on Typst; the Dockerfile with both ports; deploy.
 - The blog (§8, step 8) and phase 3 (§8, step 9).

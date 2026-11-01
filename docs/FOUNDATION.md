@@ -37,6 +37,8 @@ Each decision carries one of three marks:
 | D15 | Time is the `time` package's, in code and in tests; a test holds a moment or a wait inside `testing/synctest`. No `Clock` is handed to the parts. | 2026-11-01 |
 | D16 | The profile nests skills under their groups: a group is its title and its skills, each in its order. No key joins a skill to its group. | 2026-11-01 |
 | D17 | The content holds facts, not how a face shows them: the links' short keys and the salary slider's steps leave the profile. A face shows a link by its label; the form works its steps out of `min` and `soft_max` (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
+| D18 | Nothing lands before its user: `document` and `compose` arrive in one chunk, `compose` making the résumé their first user; `routes` arrives with `face/text`, the first face to write an address; `look` and the token generator with `face/tui`, the first that needs a colour. | 2026-11-01 |
+| D19 | Every face draws the résumé, the project pages and the posts from one document model, the HTML page and the islands included. The document has the résumé's own kinds beside markdown's, and its kinds are a closed set every face switches over. Its parts, in ADR-0003, are the author's, on Pavel's leave to choose. | 2026-11-01 |
 
 ## 2. What must hold whatever we build
 
@@ -249,26 +251,25 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
     face/feed          Atom, sitemap
     face/tui           Bubble Tea
     face/print         Typst: cv.pdf, the tailored CV, social cards as PNG
-      compose          content → document: the résumé's section order written once; a post's markdown → document
-      routes           every address, typed: routes.Post(slug, format)
+      compose          content → documents, and the records no person reads (ADR-0003)
+      routes           every address, written from a document's link target in each format
       inbox            contact messages: delivery to Telegram
-        document       the face-neutral model: Heading, Paragraph, List, Code, Facts, Figure, Widget
+        document       the face-neutral model (ADR-0003)
         content        the facts: Profile, Project, Post, Release; load from a folder, check, snapshot
         look           design tokens (generated)
 ```
 
-- **Content on disk.** `content.Store` holds a snapshot in an
-  `atomic.Pointer`. On SIGHUP or a change in the folder it loads the whole
-  folder again, after the changes settle (a debounce, never a reload per
-  file); a snapshot that fails its check is refused, the old one stays, and
-  the error is logged. `paranin check ./content` runs the same loader, so CI
-  refuses what the server would refuse. No copy of the content is embedded:
+- **Content on disk.** `content.Store` swaps whole snapshots and keeps the
+  last good one; the composition root reloads it on SIGHUP and on a change in
+  the folder once the changes settle (a debounce, never a reload per file),
+  and logs a refusal (ADR-0003). `paranin check ./content` runs the same
+  loader, so CI refuses what the server would refuse. No copy of the content is embedded:
   tests read `testdata/`.
-- **One document model.** Posts and the résumé's text faces are drawn from
-  `document`. The HTML résumé keeps a layout of its own in templ, but takes
-  its sections and their order from `compose` too. This makes a behaviour
-  test possible: every fact `compose` emits appears in every face, HTML and
-  TUI included, so the `curl` reader sees what the browser reader sees.
+- **One document model** (D19, ADR-0003). Every face draws the résumé and
+  the posts from `document`, the HTML page included, each block in a layout
+  of its own. This makes a behaviour test possible: every fact `compose`
+  emits appears in every face, HTML and TUI included, so the `curl` reader
+  sees what the browser reader sees.
 - **The brain beside the faces.** It needs the content as text, which is
   `face/text`'s work, so the composition root builds its `Grounding` from
   `face/text` and hands it over. It streams markdown; the chat island and
@@ -670,12 +671,15 @@ moves it out first.
    Typst.
 4. The first commits, each clean and every gate green: first the
    instruction files, the gates and the documents; then `content` with
-   `paranin check` and the real profile; then `document` and `routes`;
-   then `look` and the token generator. One commit was the plan; four
+   `paranin check` and the real profile; then `document` and `compose`,
+   which makes the résumé their first user (D18). One commit was the plan;
    small ones follow "Small chunks" of `AGENTS.md`.
-5. The faces one at a time, each its own commit: `face/text`, then
-   `face/tui` with `hosting/ssh`, then `face/html` on templ with
-   `hosting/web`, since a face has no reader without its host.
+5. The faces one at a time, each its own commit, with its host, since a face
+   has no reader without one. `face/text` comes first, with `routes` and
+   `hosting/web` serving its formats to `curl`. Then `face/tui` with
+   `hosting/ssh`, and with `look` and the token generator from
+   `design/tokens.yaml`: it is the first face that needs a colour (D18).
+   Then `face/html` on templ, served by the same `hosting/web`.
 6. `web/`: `domain`, `ui`, then the islands one at a time.
 7. Hosting: SEC-6 and SEC-15; `inbox` with delivery to Telegram;
    `face/print` on Typst; the `Dockerfile` with both ports and
@@ -747,3 +751,11 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   quote in every fault of a written value, a fault built from its format so
   vet sees a value missing, and SHA and UTF16 among the initialisms; each
   answered.
+- **2026-11-01, D18 and D19, and the review of ADR-0003.** Pavel's word on
+  the order of work and the document: nothing lands before its user (D18),
+  and one document every face draws, with the résumé's own kinds (D19). The
+  store is accepted. On two reviews' findings, ADR-0003 gave the document a
+  head, nested its spans, named the project pages, the index and the extras,
+  sent the islands' text through documents and the rest through typed props
+  and `compose`'s record, moved `routes` to `face/text` and `face/text` to
+  `hosting/web`, and gave a link a format and an anchor.

@@ -10,7 +10,8 @@ How a package is built is said in its package comment. The rules for code in any
 
 ## The layers
 
-- `cmd` → `hosting` → the faces and `brain` → `compose` → `routes` → `content`, `document`, `look`, as ADR-0003 draws them; `inbox` stands on the foundation beside `compose` and `routes`. Each builds only on the layers after it.
+- `cmd` → `hosting` → the faces and `brain` → `compose` and `routes` → `content`, `document`, `look`, as ADR-0003 draws them; `inbox` stands on the foundation beside `compose` and `routes`. Each builds only on the layers after it.
+- `routes` reads `document` alone; `compose` reaches `routes` only to read a post's links back into targets.
 - The parts of one layer stand side by side: one face never builds on another, nor one host on another, nor `content`, `document` and `look` on each other. What two of them share goes down a layer.
 - `content`, `document`, `look`, `compose` and `routes` know no face: no web server, no template engine, nothing of Charm.
 - Every part but the composition root lives under the module's `internal` directory. depguard holds all of it, each rule saying why (`.golangci.yml`).

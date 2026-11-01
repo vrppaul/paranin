@@ -113,45 +113,101 @@ but our own (`script-src 'self'`).
 
 ## ADR-0003 — The content store and the document model
 
-**Status:** accepted in part (2026-11-01): content published without a new binary (D5) and one format for
-every face (D8) are decided; the store, the document model and the layers are proposed, waiting for Pavel.
-[FOUNDATION](FOUNDATION.md) §5.2.
+**Status:** accepted (2026-11-01): content published without a new binary (D5), one format for every face
+(D8), the store, and one document model every face draws (D19). The document's parts below are the author's, on
+Pavel's leave to choose; the layers are proposed, waiting for Pavel. [FOUNDATION](FOUNDATION.md) §5.2.
 
 ### Context
 
 The first version embedded `profile.yaml` in the binary and parsed it once,
 so no post could change without a build (against D5). Each face laid the
-content out again by hand, and `content` held presentation and web routes.
+content out again by hand: the HTML page, the markdown, the man page and the
+TUI each picked the facts and their order, and `content` held presentation
+and web routes.
 
 ### Decision
 
 - **Content lives on disk.** `content` loads a folder (the profile, the
   posts, the word catalogues), checks it whole and makes an immutable
-  snapshot. A store holds the snapshot in an `atomic.Pointer`. On SIGHUP or a
-  change in the folder, after the changes settle, it loads the whole folder
-  again; a snapshot that fails its check is refused, the old one stays, and
-  the error is logged. Nothing of the content is embedded; tests read
+  snapshot. `content.Store` swaps snapshots whole, in an `atomic.Pointer`,
+  and keeps the last good one when a load fails. The composition root calls
+  `Reload` on SIGHUP and on a change in the folder once the changes settle,
+  and logs a refusal. Nothing of the content is embedded; tests read
   fixtures.
 - **`paranin check`** runs the same loader, so CI refuses what the server
   would refuse.
-- **One document model**, `document`: headings, paragraphs, lists, code,
-  facts, figures, widgets, links. `compose` turns content into documents: a
-  post's markdown, through goldmark, and the résumé, its sections written in
-  one order once. Every face draws documents; the HTML résumé keeps a layout
-  of its own and takes its sections from `compose`.
+- **One document, every face.** `compose` turns content into documents: the
+  résumé, a page for each project that has one, each post, the index of the
+  site that `llms.txt` lists, and the extras of the TUI and the vim mode.
+  Every face draws them, the HTML page included, each part in a layout of its
+  own; no face picks the facts or their order again. `compose` is a function
+  of a snapshot, and of the time where a post's date makes it one; who holds
+  what it makes is the hosts' to say.
+- **A document is a head and its blocks.** The head holds the page it is,
+  where it is one; its title, a subtitle and a lead (the résumé's are the
+  name, the title and place, the headline); a description for the page's
+  metadata; and the ways to reach the author (mail, the profiles, `ssh`, the
+  CV), since every face shows them first.
+- **The blocks** are a closed set (`//sumtype:decl`), and every face switches
+  over all of them (gochecksumtype), so a new kind reaches every face:
+  - the résumé's: a section (a title, an anchor and its blocks), a
+    paragraph, a table (each skill group is a section holding one), facts
+    (labels and their values), an entry (a period, a title, a subtitle, a
+    place and its points: a role, a school) and a card (a title, a subtitle,
+    a tag, a summary, its facts and its page: a project);
+  - a widget (a name, its props, a caption and an alt text), the form, the
+    salary range and the job matcher among them, so `compose` places them
+    too;
+  - the posts' (step 8): a list, ordered or not, whose items hold blocks; a
+    quote; code with its language; a figure. A table gains a header row, and
+    a post's headings nest into sections.
+- **Text inside a block** is a tree of spans, a closed set too: emphasis,
+  strong, a link and a highlight (`==result==`) hold spans; text, code and a
+  gap (`[text]`, still to fill) are leaves. A gap may sit inside a highlight,
+  as the profile has it. The profile's marks and a post's markdown become the
+  same spans.
+- **A period is a type**: a start and an end, each a month or a gap, and the
+  end may be current. Each face writes it its own way: `2024 – now`,
+  `01/2024 – present`. `document` imports nothing of `content`, so `compose`
+  carries the months across.
+- **A link names its target**: an address outside the site, or a page of it
+  by its kind and slug, with a format where the link names one (the CV as
+  PDF, `index.md`, `llms.txt`) and an anchor where it names a place inside
+  the page. A section's anchor is the one a link names. The kinds of page
+  are `document`'s type; `routes` builds on `document` and writes a target's
+  address in each format (`/p/claude-review`, `/p/claude-review.md`), so the
+  markdown face links to markdown and the TUI can open the page in a buffer.
+- **The islands' text is a document's too.** The extras of the TUI and the
+  vim mode (`:checkhealth`, `:Lazy`, `:hire`) are documents, which the page
+  draws on the server for the island to show. What no person reads comes
+  typed: a widget's props, each widget's own type (the salary range's
+  numbers, the matcher's aliases), and a record `compose` makes for JSON-LD
+  and the sitemap's dates. No face imports `content`; depguard refuses it,
+  from the first face on.
+- **What lands when.** The head, the résumé's blocks and its spans (text,
+  code, link, highlight, gap) land with `compose` and the résumé; project
+  pages and the index with `face/text`, the first face to serve them; the
+  extras with `face/tui`; a widget with `face/html`; the posts' blocks and
+  spans with the blog (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document` and `look` at the foot, side by
-  side; `routes` on them, and `compose` on `routes`; `inbox` on the foot
-  alone, beside both; the faces and `brain` side by side on those, no face on
+  side; `routes` on `document`; `compose` on the foundation, and on `routes`
+  once it reads a post's links back into targets; `inbox` on the foot alone,
+  beside both; the faces and `brain` side by side on those, no face on
   another; `hosting` over everything but the composition root. depguard holds
-  them (`.golangci.yml`).
+  each border once its package lands (`.golangci.yml`).
 
 ### Rationale
 
 - A snapshot swapped whole means no request sees content half loaded, and a
   bad push leaves the site as it was.
-- With one document model a test can hold the rule the first version kept by
-  discipline: every fact `compose` emits appears in every face.
+- With one document a test can hold the rule the first version kept by
+  discipline: every fact of a document appears in every face. The HTML page
+  differs from the TUI in layout and in its own words, never in the facts it
+  shows.
+- A head, typed periods and typed links keep faces from finding the name by
+  position, and keep date formats and addresses out of `compose`, in the
+  faces and in `routes`, which own them.
 
 ### Alternatives considered
 
@@ -160,13 +216,25 @@ content out again by hand, and `content` held presentation and web routes.
   brain.
 - **Keeping an embedded copy as a fallback.** Two sources of the same facts;
   rejected.
+- **The HTML résumé drawn from `content`'s types, `compose` giving it only
+  the order of the sections**, as this ADR's first draft had it. Two paths to
+  one page, and the HTML held to the facts by a test of its own; rejected.
+- **The blocks of markdown alone**, the résumé written as headings, lists and
+  paragraphs. The TUI's columns and the HTML layout would read the structure
+  back out of text; rejected.
+- **The islands' text from `content`, as the first version's client data
+  carried it.** One text on two paths, and a face importing `content` that
+  only a reviewer could tell from one that should not; rejected.
 
 ### Consequences
 
 - The binary cannot start without a content folder; development points it
   at the repository's own.
-- A face is written against `document`, never against `content`'s types
-  directly, but for the HTML résumé's own layout.
+- A face draws from documents and from `compose`'s records alone.
+- A new kind of block or span is a change to every face, which the compiler
+  and gochecksumtype point at.
+- A month's shape is written twice, in `content` and in `document`: the
+  price of layers that stand side by side.
 
 ---
 

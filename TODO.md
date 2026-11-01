@@ -4,12 +4,14 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The foundation
 
-- The faces, each its own commit (§8, step 5): the `Link: rel="canonical"` header of a page's other formats comes with `face/html`; `face/tui` with `hosting/ssh`, `look` and the token generator from `design/tokens.yaml`; `face/html` on templ, on the same `hosting/web`. Each reads the first version under _old/tree while the face is written, and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
+- The faces, each its own commit (§8, step 5): the `Link: rel="canonical"` header of a page's other formats comes with `face/html`; the rest of `face/tui`, a chunk each: search (`/`, `n`, `N`) and counts before a key; the command line with completion, the window of keys, and `:e <slug>` opening a project's page; the extras (`:checkhealth`, `:Lazy`, `:hire`) as documents `compose` makes (ADR-0003); copying a value (OSC 52), the blinking cursor and the banner, which deletes `_old/tree/internal/tui`; `face/html` on templ, on the same `hosting/web`. Each reads the first version under _old/tree while the face is written, and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6): `web/` with Vite, TypeScript and Svelte 5, its gates, `domain`, `ui`, then the islands one at a time; the rules of the page and the design arrive with it.
 - Hosting (§8, step 7): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; the reload on a change in the content folder once the changes settle (ADR-0003), beside SIGHUP; `inbox` with delivery to Telegram; `face/print` on Typst, the CV listed in `llms.txt` with it, as the first version listed it; the Dockerfile with both ports; deploy.
 - The blog (§8, step 8) and phase 3 (§8, step 9).
 
 ## Documents
+
+- `docs/ARCHITECTURE.md` beyond ADR-0001 and the SSH face still draws the first version: the web's component design (`internal/web`, embedded templates, `make assets`), the project layout's `internal/web` and `scripts/build-assets.sh`, and `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet. Rewrite each with the part that replaces it.
 
 - `docs/WEB.md` copies facts of the résumé (the email, the employer) as examples: rewrite it with `face/html` against the fixture profile. Its skill groups still carry a `Key` and are grouped from a flat list by `skillGroups` (both gone by D16), and its client data the salary slider's `step` and `bigStep` (gone by D17, the form works them out of the range).
 
@@ -27,6 +29,10 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
+
+## Hosting
+
+- SEC-13 asks for one log: a panic inside a session's TUI is caught by Bubble Tea and logged by wish through its own logger, on standard error, beside the slog log. Serving the TUI through `bubbletea.MiddlewareWithProgramHandler` with a handler of our own that logs `Run`'s error would put it in ours.
 
 ## Upstream
 

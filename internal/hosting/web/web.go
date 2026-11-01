@@ -1,9 +1,9 @@
-// Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003). It draws every page of a snapshot
-// once, the first time a request meets that snapshot, and serves the drawing until the store holds another, so
-// no request composes or draws a page. Each page is served at the path routes writes for it in each format, and
-// at its own address in the format the reader's request asks for; the index at llms.txt, sent as plain text, as a
-// name ending in .txt promises. Any other path is answered with the text of no page, drawn once like the pages but
-// for the path, which each request quotes in it.
+// Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003). It draws every page of a snapshot once, the
+// first time a request meets that snapshot (content.Derived), and serves the drawing until the store holds another, so
+// no request composes or draws a page. Each page is served at the path routes writes for it in each format, and at its
+// own address in the format the reader's request asks for; the index at llms.txt, sent as plain text, as a name ending
+// in .txt promises. Any other path is answered with the text of no page, drawn once like the pages but for the path,
+// which each request quotes in it.
 package web
 
 import (
@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync/atomic"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
@@ -73,16 +72,14 @@ const (
 
 // Server serves the pages of the store's current snapshot.
 type Server struct {
-	store *content.Store
-	// drawn is the drawing of the last snapshot a request met
-	drawn   atomic.Pointer[drawing]
+	// drawn is every page of the store's current snapshot, drawn once for each snapshot
+	drawn   *content.Derived[*drawing]
 	handler http.Handler
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at: in each format at its own path, and
 // both ways at the address where the reader chooses; and the text of an address of no page.
 type drawing struct {
-	snapshot *content.Snapshot
 	pages    map[string]drawnPage
 	chosen   map[string]choice
 	notFound text.NotFound
@@ -103,7 +100,7 @@ type drawnPage struct {
 // New is a server of the site the store holds.
 func New(store *content.Store) *Server {
 	mux := http.NewServeMux()
-	server := &Server{store: store, drawn: atomic.Pointer[drawing]{}, handler: mux}
+	server := &Server{drawn: content.Derive(store, draw), handler: mux}
 	mux.HandleFunc(pagePattern, server.servePage)
 	return server
 }
@@ -114,7 +111,7 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 }
 
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
-	drawn := server.current()
+	drawn := server.drawn.Current()
 	if found, isPage := drawn.pages[request.URL.Path]; isPage {
 		send(writer, http.StatusOK, found)
 		return
@@ -187,21 +184,6 @@ func send(writer http.ResponseWriter, status int, page drawnPage) {
 	_, _ = writer.Write(page.body)
 }
 
-// current is the drawing of the store's current snapshot. Two requests that meet a new snapshot at once may each
-// draw it, and a drawing is kept only over the one its request found. The drawing is read before the snapshot,
-// and a store's snapshots only move forward, so the snapshot a request draws is never older than the drawing it
-// replaces.
-func (server *Server) current() *drawing {
-	found := server.drawn.Load()
-	snapshot := server.store.Current()
-	if found != nil && found.snapshot == snapshot {
-		return found
-	}
-	drawn := draw(snapshot)
-	server.drawn.CompareAndSwap(found, drawn)
-	return drawn
-}
-
 // statusLine is a status as HTTP writes it in a response's first line: its code, then its reason.
 func statusLine(status int) string {
 	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
@@ -226,5 +208,5 @@ func draw(snapshot *content.Snapshot) *drawing {
 		pages[routes.Path(page, routes.FormatManual)] = offered.manual
 		chosen[routes.Path(page, routes.FormatChosen)] = offered
 	}
-	return &drawing{snapshot: snapshot, pages: pages, chosen: chosen, notFound: text.NewNotFound(site, statusLine(missingStatus))}
+	return &drawing{pages: pages, chosen: chosen, notFound: text.NewNotFound(site, statusLine(missingStatus))}
 }

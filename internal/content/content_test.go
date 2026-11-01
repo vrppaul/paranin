@@ -148,6 +148,39 @@ func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 	}
 }
 
+// A value derived from the content is worked out once for each snapshot: readers of one snapshot share it, and
+// a reload brings the next reader a value of the new one.
+func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
+	folder := fixtureFolder(test)
+	store, err := Open(folder)
+	if err != nil {
+		test.Fatalf("Open(fixture) = %v, want no error", err)
+	}
+	counter := &workCounter{times: 0}
+	names := Derive(store, counter.name)
+	first, again := names.Current(), names.Current()
+	changedFile(test, folder, profileFile, "name: Mira Example", "name: Mira Other")
+	if err := store.Reload(); err != nil {
+		test.Fatalf("Reload = %v, want no error", err)
+	}
+	reloaded := names.Current()
+	if first != "Mira Example" || again != first || reloaded != "Mira Other" || counter.times != 2 {
+		test.Errorf("values %q, %q, then %q after a reload, worked out %d times; want %q twice, then %q, worked out twice",
+			first, again, reloaded, counter.times, "Mira Example", "Mira Other")
+	}
+}
+
+// workCounter counts how many times a value is worked out.
+type workCounter struct {
+	times int
+}
+
+// name works out the author's name, and counts it.
+func (counter *workCounter) name(snapshot *Snapshot) string {
+	counter.times++
+	return snapshot.Profile.Person.Name
+}
+
 // fixtureFolder is the fixture content in a folder in memory, which a test may change.
 func fixtureFolder(test *testing.T) fstest.MapFS {
 	folder := fstest.MapFS{}

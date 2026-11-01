@@ -41,3 +41,37 @@ func (store *Store) Reload() error {
 	store.current.Store(snapshot)
 	return nil
 }
+
+// Derived is a value worked out from the store's snapshots, once for each snapshot a reader meets, and kept until
+// the store holds another: what a host draws from the content, which no request or session works out again.
+type Derived[Value any] struct {
+	store *Store
+	work  func(*Snapshot) Value
+	// last is the value of the last snapshot a reader met
+	last atomic.Pointer[derivation[Value]]
+}
+
+// derivation is a value and the snapshot it was worked out from.
+type derivation[Value any] struct {
+	snapshot *Snapshot
+	value    Value
+}
+
+// Derive is a value the store's snapshots make, by the work that makes it.
+func Derive[Value any](store *Store, work func(*Snapshot) Value) *Derived[Value] {
+	return &Derived[Value]{store: store, work: work, last: atomic.Pointer[derivation[Value]]{}}
+}
+
+// Current is the value of the store's current snapshot. Two readers that meet a new snapshot at once may each work
+// it out, and a value is kept only over the one its reader found. The kept value is read before the snapshot, and
+// a store's snapshots only move forward, so the snapshot worked out is never older than the value it replaces.
+func (derived *Derived[Value]) Current() Value {
+	found := derived.last.Load()
+	snapshot := derived.store.Current()
+	if found != nil && found.snapshot == snapshot {
+		return found.value
+	}
+	worked := &derivation[Value]{snapshot: snapshot, value: derived.work(snapshot)}
+	derived.last.CompareAndSwap(found, worked)
+	return worked.value
+}

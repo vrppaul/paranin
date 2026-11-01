@@ -59,6 +59,42 @@ func TestASiteWhoseServerFailsExitsFailed(test *testing.T) {
 	}
 }
 
+// A stop shuts every server down, and a server that does not stop cleanly makes the exit say so.
+func TestAStopShutsEveryServerDown(test *testing.T) {
+	cases := []struct {
+		name  string
+		fault error
+		want  int
+	}{
+		{name: "every server stops cleanly", fault: nil, want: succeeded},
+		{name: "a server does not stop cleanly", fault: errors.New("a session would not end"), want: failed},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			running, _ := testSite(test, fixtureCopy(test))
+			first, second := &stoppingServer{fault: nil, stopped: false}, &stoppingServer{fault: testCase.fault, stopped: false}
+			running.servers = []server{first, second}
+			stopping, stop := context.WithCancel(context.Background())
+			stop()
+			if code := running.watch(stopping); code != testCase.want || !first.stopped || !second.stopped {
+				test.Errorf("exit %d, the servers stopped %t and %t; want exit %d and both stopped", code, first.stopped,
+					second.stopped, testCase.want)
+			}
+		})
+	}
+}
+
+// stoppingServer is a server that records its shutdown and answers it with a fault, or none.
+type stoppingServer struct {
+	fault   error
+	stopped bool
+}
+
+func (stopping *stoppingServer) Shutdown(context.Context) error {
+	stopping.stopped = true
+	return stopping.fault
+}
+
 // testSite is a site on a folder that listens nowhere, its reloads unbuffered so a test knows when one is taken,
 // and the log it writes.
 func testSite(test *testing.T, folder string) (serving, *bytes.Buffer) {
@@ -71,7 +107,7 @@ func testSite(test *testing.T, folder string) (serving, *bytes.Buffer) {
 	return serving{
 		logger:      logger,
 		store:       store,
-		server:      newServer(http.NotFoundHandler(), logger),
+		servers:     []server{newServer(http.NotFoundHandler(), logger)},
 		reloads:     make(chan os.Signal),
 		failures:    make(chan error, 1),
 		stopSignals: keepSignals,

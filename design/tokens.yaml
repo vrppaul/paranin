@@ -1,0 +1,59 @@
+# The design's colours, each named for what it does, in the light theme (Catppuccin Latte) and the dark one
+# (Catppuccin Macchiato), the palettes the first version kept (docs/FOUNDATION.md §3.4). scripts/tokens writes
+# them into internal/look, where the faces read them: `go generate ./internal/look`.
+#
+# A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
+# 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays over its background
+# at a strength; a terminal has no opacity, so the blend is worked out into a colour of its own.
+
+# The page itself, which every blend is laid over
+background:
+  light: "#eff1f5"
+  dark: "#24273a"
+
+colours:
+  - name: sunk
+    about: the bars around the page, a shade below it
+    light: "#e6e9ef"
+    dark: "#1e2030"
+    basic: own
+  - name: text
+    about: what a reader reads
+    light: "#4c4f69"
+    dark: "#cad3f5"
+    basic: own
+  - name: muted
+    about: what stands beside the text and says less
+    light: "#6c6f85"
+    dark: "#a5adcb"
+    basic: own
+  - name: faint
+    about: what a reader may pass over, a gap still to fill among it
+    light: "#8c8fa1"
+    dark: "#8087a2"
+    basic: 8
+  - name: quiet
+    about: a rule between two parts of a bar
+    light: "#ccd0da"
+    dark: "#363a4f"
+    basic: 8
+  - name: accent
+    about: what the eye goes to first, a command among it
+    light: "#fe640b"
+    dark: "#f5a97f"
+    basic: 3
+  - name: on_accent
+    about: text laid on the accent
+    light: "#24273a"
+    dark: "#24273a"
+    basic: 0
+
+blends:
+  - name: tint
+    about: a result worth seeing first, the accent laid over the page
+    over: accent
+    light: 0.16
+    dark: 0.22
+    basic: 3
+    # a terminal of 256 colours would round so faint a blend to a grey, so it leans this far to its colour first
+    indexed_lean: 0.25

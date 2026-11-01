@@ -1,0 +1,177 @@
+// Package ssh serves the TUI over SSH (docs/REQUIREMENTS.md): a kiosk, not a shell. Anyone may connect, with no key
+// and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
+// and nothing else is served: no shell, no command, no file transfer, no forwarding (SEC-1, SEC-2). A session with
+// no terminal is refused (SEC-3), a panic ends its own session and never the server (SEC-4), a session idle too
+// long or open too long is closed (SEC-5), and each session is logged as it opens and closes (SEC-13), what its
+// reader sent quoted by the logger's handler, as slog's handlers quote a value with a control character in it
+// (SEC-15).
+//
+// A panic inside the TUI itself is caught by Bubble Tea, which ends the session and gives the reader's terminal
+// back as it found it; wish then logs it through its own logger, on standard error, beside ours (TODO.md). The
+// server alone ends its sessions: no session's program answers the server's own signals, so a stop waits for the
+// sessions open before it closes them.
+//
+// The résumé is composed once for each snapshot the store holds (content.Derived), and each session draws the
+// snapshot current when it opened; a reload reaches the sessions that open after it.
+package ssh
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+	charmssh "charm.land/ssh"
+	"charm.land/wish/v2"
+	"charm.land/wish/v2/activeterm"
+	"charm.land/wish/v2/bubbletea"
+
+	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/face/tui"
+	"github.com/vrppaul/paranin/internal/routes"
+)
+
+// The keys of what the log says of a session
+const (
+	remoteKey = "remote"
+	userKey   = "user"
+	lastedKey = "lasted"
+	panicKey  = "panic"
+)
+
+// Settings are what the server is run with: where its host key lives, and how long a session may stay idle and
+// stay open.
+type Settings struct {
+	// HostKeyPath is the file of the server's key, made there on the first start when it is missing (SEC-10)
+	HostKeyPath string
+	IdleTimeout time.Duration
+	MaxTimeout  time.Duration
+}
+
+// Server serves the résumé to each session with a terminal.
+type Server struct {
+	server *charmssh.Server
+}
+
+// drawing is what each session of one snapshot draws: the résumé, and the site that writes its addresses.
+type drawing struct {
+	resume document.Document
+	site   routes.Site
+}
+
+// sessions open each session's TUI on what the current snapshot draws.
+type sessions struct {
+	drawn *content.Derived[drawing]
+}
+
+// guard logs each session and ends one that panics.
+type guard struct {
+	logger *slog.Logger
+}
+
+// New is a server of the site the store holds, logging through the logger.
+func New(store *content.Store, logger *slog.Logger, settings Settings) (*Server, error) {
+	opening := sessions{drawn: content.Derive(store, draw)}
+	watching := guard{logger: logger}
+	// wish runs the last listed outermost: the log, then the guard against panics, then the refusal of a
+	// session with no terminal, then the TUI
+	server, err := wish.NewServer(
+		wish.WithHostKeyPath(settings.HostKeyPath),
+		wish.WithIdleTimeout(settings.IdleTimeout),
+		wish.WithMaxTimeout(settings.MaxTimeout),
+		wish.WithMiddleware(
+			bubbletea.Middleware(opening.open),
+			activeterm.Middleware(),
+			watching.recovering,
+			watching.logging,
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("make the SSH server with the host key %q: %w", settings.HostKeyPath, err)
+	}
+	return &Server{server: server}, nil
+}
+
+// Serve serves the sessions that come to a listener until the server shuts down.
+func (server *Server) Serve(listener net.Listener) error {
+	if err := server.server.Serve(listener); err != nil {
+		return fmt.Errorf("serve SSH at %s: %w", listener.Addr(), err)
+	}
+	return nil
+}
+
+// Shutdown stops taking sessions and waits for the open ones to end; once the context ends first, it closes the
+// sessions still open and stops cleanly all the same: a reader may keep a session open for as long as the server
+// lets them, so one still open at a stop is no fault, where a request still unanswered is one for the web.
+func (server *Server) Shutdown(ctx context.Context) error {
+	err := server.server.Shutdown(ctx)
+	if err == nil {
+		return nil
+	}
+	if ctx.Err() == nil {
+		return fmt.Errorf("shut the SSH server down: %w", err)
+	}
+	if err := server.server.Close(); err != nil {
+		return fmt.Errorf("close the sessions still open: %w", err)
+	}
+	return nil
+}
+
+// draw is what the sessions of a snapshot draw.
+func draw(snapshot *content.Snapshot) drawing {
+	return drawing{resume: compose.Resume(snapshot), site: routes.New(snapshot.Profile.Site.BaseURL)}
+}
+
+// open is a session's TUI, of the size its terminal said it is.
+func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.ProgramOption) {
+	terminal, _, _ := session.Pty()
+	drawn := opening.drawn.Current()
+	model := tui.New(drawn.resume, drawn.site, terminal.Window.Width, terminal.Window.Height)
+	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}
+}
+
+// logging logs a session as it opens and as it closes, with how long it lasted.
+func (watching guard) logging(next charmssh.Handler) charmssh.Handler {
+	return loggedSession{guard: watching, next: next}.serve
+}
+
+// recovering ends a session that panics, logging the panic, and leaves the server and every other session be.
+func (watching guard) recovering(next charmssh.Handler) charmssh.Handler {
+	return recoveredSession{guard: watching, next: next}.serve
+}
+
+// loggedSession is a session handler whose sessions are logged.
+type loggedSession struct {
+	guard
+	next charmssh.Handler
+}
+
+func (logged loggedSession) serve(session charmssh.Session) {
+	opened := time.Now()
+	remote, user := session.RemoteAddr().String(), session.User()
+	logged.logger.Info("the session opened", remoteKey, remote, userKey, user)
+	logged.next(session)
+	logged.logger.Info("the session closed", remoteKey, remote, userKey, user, lastedKey, time.Since(opened))
+}
+
+// recoveredSession is a session handler whose panics end its own session alone.
+type recoveredSession struct {
+	guard
+	next charmssh.Handler
+}
+
+func (recovered recoveredSession) serve(session charmssh.Session) {
+	defer recovered.catch(session)
+	recovered.next(session)
+}
+
+// catch logs a panic of the session, which has ended it.
+func (recovered recoveredSession) catch(session charmssh.Session) {
+	if cause := recover(); cause != nil {
+		recovered.logger.Error("a session panicked", remoteKey, session.RemoteAddr().String(), panicKey, fmt.Sprint(cause))
+	}
+}

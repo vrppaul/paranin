@@ -47,6 +47,13 @@ repos:
         language: system
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
+      # The design's colours in Go are the ones design/tokens.yaml makes (scripts/tokens/main.go)
+      - id: design-tokens
+        name: design tokens (internal/look as design/tokens.yaml makes it)
+        entry: go run ./scripts/tokens
+        language: system
+        files: (^design/|^internal/look/|^scripts/tokens/)
+        pass_filenames: false
       # The content loads as the site would load it
       - id: content-check
         name: paranin check (the content)

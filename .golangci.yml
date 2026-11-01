@@ -91,6 +91,8 @@ linters:
         - stdlib
         - generic
         - ^github\.com/vrppaul/paranin/internal/document\.Month$
+        # Bubble Tea's own interface, which its Update and wish's session handler are typed to return
+        - ^charm\.land/bubbletea/v2\.Model$
     nolintlint:
       require-explanation: true
       require-specific: true

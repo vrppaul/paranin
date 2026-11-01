@@ -795,3 +795,15 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   quote in markdown on every page, which is how llms.txt opens. An address of
   no page is answered in text that quotes the path and names the command
   that reads the site.
+- **2026-11-01, the TUI over SSH, the first of its chunks.** Pavel's word:
+  the Charm modules (Bubble Tea, Lip Gloss, wish, colorprofile, x/ansi), and
+  no deploy until every part is built. `design/tokens.yaml` holds the
+  colours the TUI uses, each with a fallback of sixteen; `scripts/tokens`
+  writes them into `internal/look/palette.go`, blends and the nearest of 256
+  worked out there, and its hook checks the file. `tokens.css` and
+  `tokens.ts` come with their users (D18). `face/tui` draws the résumé as
+  tabs, the head first and then each section, and `hosting/ssh` serves it
+  as a kiosk beside HTTP from `paranin serve`. What both hosts draw from a
+  snapshot is worked out once for each snapshot, by `content.Derived`.
+  wish v2.0.5 asks for Go 1.26.8, which `go.mod` now names; the SSH tests'
+  client is `golang.org/x/crypto/ssh`, already in the graph through wish.

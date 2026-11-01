@@ -2,7 +2,8 @@
 
 ## ADR-0001 — Language and TUI/SSH stack
 
-**Status:** accepted (2026-06-02)
+**Status:** accepted (2026-06-02); amended 2026-11-01, when the TUI was rebuilt: the log is slog's, and the SSH
+layer is `charm.land/ssh`, where Charm moved it.
 
 ### Context
 
@@ -20,8 +21,8 @@ Use **Go 1.26** with the **Charm v2** ecosystem:
 | Bubble Tea | `charm.land/bubbletea/v2` | v2.0.6 | TUI framework (The Elm Architecture) |
 | Lip Gloss | `charm.land/lipgloss/v2` | v2.0.3 | styling & layout |
 | Bubbles | `charm.land/bubbles/v2` | v2.0.0 | reusable components |
-| Log | `charm.land/log/v2` | v2.0.0 | structured logging |
-| ssh | `github.com/charmbracelet/ssh` | pinned | low-level SSH session layer |
+| Log | `log/slog` | the standard library | structured logging, the one log of every part |
+| ssh | `charm.land/ssh` | pinned | low-level SSH session layer |
 
 > **Important:** Charm v2 moved its module paths from
 > `github.com/charmbracelet/...` to **`charm.land/...`**. Most tutorials online
@@ -44,7 +45,7 @@ Use **Go 1.26** with the **Charm v2** ecosystem:
 - **`tview` / `gocui` / `termui`** for the TUI — mature but less momentum, and
   no first-class SSH-serving story. Rejected.
 - **`gliderlabs/ssh` or `golang.org/x/crypto/ssh`** directly — lower level,
-  more plumbing, no middleware. Wish wraps `charmbracelet/ssh` with sane
+  more plumbing, no middleware. Wish wraps `charm.land/ssh` with sane
   defaults. Rejected for v1.
 
 ### Consequences
@@ -374,18 +375,18 @@ the content package is designed to be face-agnostic from day one.
 
 ```
    ssh client ──TCP:22/23234──▶ ┌─────────────────────────────────────┐
-                                │ internal/server (Wish)              │
+                                │ internal/hosting/ssh (Wish)         │
                                 │  middleware chain (outer→inner):    │
-                                │   recover → logging → activeterm →  │
-                                │   bubbletea.Middleware(teaHandler)  │
+                                │   logging → recover → activeterm →  │
+                                │   bubbletea.Middleware(open)        │
                                 └───────────────┬─────────────────────┘
                                                 │ per connection
                                                 ▼
                                 ┌─────────────────────────────────────┐
-                                │ internal/tui (Bubble Tea program)   │
-                                │  root model: menu + page router     │
-                                │  pages render from content          │
-                                │  styles: lipgloss theme             │
+                                │ internal/face/tui (Bubble Tea)      │
+                                │  tabs of the résumé's document      │
+                                │  laid out once a size, painted once │
+                                │  a theme, from internal/look        │
                                 └─────────────────────────────────────┘
 ```
 
@@ -396,8 +397,10 @@ View` until the user quits or disconnects. Window-resize events from the SSH
 client are forwarded into the program as `tea.WindowSizeMsg` automatically.
 
 **Per-connection isolation:** each session gets its own model instance; a panic
-in one session is contained by the recover middleware and does not affect others
-or crash the server.
+in one session is contained, by Bubble Tea inside the program and by the recover
+middleware around it, and does not affect others or crash the server. No
+session's program answers the server's own signals: the server alone ends its
+sessions on a stop.
 
 ## Phase 2 component design (web)
 
@@ -430,8 +433,10 @@ or crash the server.
 
 ```
 cmd/paranin/main.go      # wire config + start both servers; handle signals/shutdown
-internal/server/         # Wish server construction, middleware, security policy
-internal/tui/            # Bubble Tea root model, page views, lipgloss styles
+internal/hosting/ssh/    # Wish server construction, middleware, security policy
+internal/face/tui/       # Bubble Tea model: the document's tabs, laid out and painted
+internal/look/           # the design's colours, generated from design/tokens.yaml
+scripts/tokens/          # the generator of internal/look and its check
 internal/web/            # HTTP routes, renderers, contact API, templates, static files
 internal/content/        # profile.yaml + Resume types (the "brain"); face-agnostic
 scripts/build-assets.sh  # cv.pdf and og.png from the running server
@@ -445,9 +450,8 @@ MVP reads from env with sane defaults (12-factor):
 
 | Var | Default | Meaning |
 | --- | --- | --- |
-| `PARANIN_HOST` | `localhost` | bind host |
-| `PARANIN_PORT` | `23234` | bind port |
-| `PARANIN_HOST_KEY_PATH` | `.ssh/id_ed25519` | host key path (persisted, gitignored) |
+| `PARANIN_SSH_ADDR` | `localhost:23234` | SSH listen address |
+| `PARANIN_SSH_HOST_KEY` | `.ssh/id_ed25519` | host key path (persisted, gitignored; made when missing) |
 | `PARANIN_HTTP_ADDR` | `localhost:8080` | HTTP listen address |
 | `PARANIN_MESSAGES_PATH` | `data/messages.jsonl` | where contact messages are appended |
 | `PARANIN_TRUST_PROXY` | off | `1` counts the rate limit by `X-Forwarded-For` |

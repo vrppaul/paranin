@@ -1,0 +1,320 @@
+# What the Go code is held to beyond the compiler and scripts/coderules: the rules of .claude/rules/code.md
+# and .claude/rules/go.md that a linter here can keep, and the layers. Names and numbers are coderules' to hold
+# (scripts/coderules/main.go says why varnamelen and mnd are not used).
+version: "2"
+
+run:
+  # Tests are held to formatting and to coderules' names, helpers and records alone (.claude/rules/tests.md).
+  # Formatting reaches them through `golangci-lint fmt`, which reads every file
+  tests: false
+
+linters:
+  # errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    # A string written more than once is named
+    - goconst
+    # The layers
+    - depguard
+    # A function does one thing: ten paths through it at most, the limit McCabe gave with his measure
+    - cyclop
+    - gocognit
+    - nestif
+    # No state at package level, no init, every value of an enumeration named, every field of our structs written
+    - gochecknoglobals
+    - gochecknoinits
+    - exhaustive
+    - exhaustruct_v5
+    # An error says what failed, wrapped as it goes up, compared by errors.Is and errors.As
+    - errorlint
+    - wrapcheck
+    - forcetypeassert
+    # A context handed on, a body closed
+    - contextcheck
+    - bodyclose
+    - gosec
+    # Nothing prints but the composition root and the scripts
+    - forbidigo
+    # Every suppression names its linter and says why
+    - nolintlint
+    # A closed set of kinds is matched whole; an interface is returned only where a caller needs one; the Go
+    # go.mod names is written; no name hides a built-in; the standard library's names over their values
+    - gochecksumtype
+    - ireturn
+    - modernize
+    - predeclared
+    - usestdlibvars
+
+  settings:
+    staticcheck:
+      # The defaults, and a package says why it exists in its comment (ST1000)
+      checks: ["all", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+      # A string handed to a call twice is written twice too
+      ignore-calls: false
+    cyclop:
+      max-complexity: 10
+    gocognit:
+      min-complexity: 15
+    nestif:
+      min-complexity: 4
+    exhaustive:
+      # A default case hides a value added later
+      default-signifies-exhaustive: false
+    gochecksumtype:
+      default-signifies-exhaustive: false
+    exhaustruct_v5:
+      # Our own types: a struct of the standard library or another module keeps its defaults
+      explicit-mode: true
+      enforce-patterns:
+        - '^github\.com/vrppaul/paranin/.+'
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^(fmt\.Print.*|print|println|os\.Stdout|os\.Stderr)$
+          msg: nothing prints but the composition root and the scripts; log through the logger handed in
+        - pattern: ^(log\.(Print|Fatal|Panic).*|log\.Default|slog\.(Debug|Info|Warn|Error|Log|LogAttrs|Default|SetDefault)(Context)?)$
+          msg: the package-level logger is state at package level; log through the logger handed in
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
+    # The layers of .claude/rules/go.md: each part builds only on the layers after it, and the parts of one layer
+    # stand side by side. One rule to a border, so every import refused is written once; a file is held to every
+    # rule whose files it is among. Go itself refuses an import of the composition root, a package main
+    depguard:
+      rules:
+        hosting-over-the-rest:
+          files:
+            - "**/internal/**"
+            - "!**/internal/hosting/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/hosting
+              desc: hosting builds on every other part, and only the composition root builds on it
+        faces-and-brain-over-composition:
+          files:
+            - "**/internal/content/**"
+            - "**/internal/document/**"
+            - "**/internal/look/**"
+            - "**/internal/compose/**"
+            - "**/internal/routes/**"
+            - "**/internal/inbox/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face
+              desc: a face builds on this part, never the other way
+            - pkg: github.com/vrppaul/paranin/internal/brain
+              desc: the brain builds on this part, never the other way
+        faces-beside-the-brain:
+          files:
+            - "**/internal/face/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/brain
+              desc: a face draws what the brain says through hosting, and never calls it
+        brain-beside-the-faces:
+          files:
+            - "**/internal/brain/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face
+              desc: the composition root hands the brain its grounding as text (docs/FOUNDATION.md §5.2)
+        composition-over-the-foundation:
+          files:
+            - "**/internal/content/**"
+            - "**/internal/document/**"
+            - "**/internal/look/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/compose
+              desc: compose builds on the foundation, never the other way
+            - pkg: github.com/vrppaul/paranin/internal/routes
+              desc: routes build on the foundation, never the other way
+            - pkg: github.com/vrppaul/paranin/internal/inbox
+              desc: the inbox builds on the foundation, never the other way
+        compose-over-routes:
+          files:
+            - "**/internal/routes/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/compose
+              desc: compose writes links by routes, so routes never build on compose
+        # The inbox stands on the foundation beside compose and routes: it delivers a message, and neither it nor
+        # they need the other
+        inbox-alone:
+          files:
+            - "**/internal/inbox/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/compose
+              desc: &inbox-beside the inbox stands beside compose and routes, on the foundation alone
+            - pkg: github.com/vrppaul/paranin/internal/routes
+              desc: *inbox-beside
+        beside-the-inbox:
+          files:
+            - "**/internal/compose/**"
+            - "**/internal/routes/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/inbox
+              desc: *inbox-beside
+        # A part outside internal would be held by none of the rules above
+        every-part-inside-internal:
+          files:
+            - "$all"
+            - "!**/internal/**"
+            - "!**/cmd/**"
+            - "!**/scripts/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal
+              desc: &inside-internal every part but the composition root lives under internal, where the layers hold it
+        # and a part inside builds on nothing of the module outside it
+        nothing-outside-internal:
+          list-mode: lax
+          files:
+            - "**/internal/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/
+          deny:
+            - pkg: github.com/vrppaul/paranin/
+              desc: *inside-internal
+            - pkg: github.com/vrppaul/paranin$
+              desc: *inside-internal
+        content-alone:
+          files:
+            - "**/internal/content/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/document
+              desc: &foundation-alone the foundation's parts stand side by side; compose brings them together
+            - pkg: github.com/vrppaul/paranin/internal/look
+              desc: *foundation-alone
+        document-alone:
+          files:
+            - "**/internal/document/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/content
+              desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/look
+              desc: *foundation-alone
+        look-alone:
+          files:
+            - "**/internal/look/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/content
+              desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/document
+              desc: *foundation-alone
+        face-html-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/html/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/html
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: &face-alone one face never builds on another; what two faces share goes down to compose or document
+        face-text-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/text/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/text
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: *face-alone
+        face-feed-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/feed/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/feed
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: *face-alone
+        face-tui-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/tui/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/tui
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: *face-alone
+        face-print-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/print/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/print
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: *face-alone
+        hosting-web-alone:
+          list-mode: lax
+          files:
+            - "**/internal/hosting/web/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/hosting/web
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/hosting/
+              desc: &host-alone one host never builds on another; the composition root starts each
+        hosting-ssh-alone:
+          list-mode: lax
+          files:
+            - "**/internal/hosting/ssh/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/hosting/ssh
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/hosting/
+              desc: *host-alone
+        knows-no-face:
+          files:
+            - "**/internal/content/**"
+            - "**/internal/document/**"
+            - "**/internal/look/**"
+            - "**/internal/compose/**"
+            - "**/internal/routes/**"
+          deny:
+            - pkg: net/http
+              desc: this part knows no face, so no web server
+            - pkg: html/template
+              desc: &no-template this part knows no face, so no template engine
+            - pkg: text/template
+              desc: *no-template
+            - pkg: github.com/a-h/templ
+              desc: *no-template
+            # goldmark's parser and its tree are compose's; its renderer, and Convert, which renders, a face's.
+            # goldmark/extension holds parsers and renderers both, and no path parts them: compose builds its
+            # parser by hand from the extensions' parsers, and a reviewer holds the rest
+            - pkg: github.com/yuin/goldmark/renderer
+              desc: &no-drawing compose reads markdown into a document; drawing it is a face's
+            - pkg: github.com/yuin/goldmark$
+              desc: *no-drawing
+            - pkg: charm.land
+              desc: &no-charm this part knows no face, so nothing of Charm
+            - pkg: github.com/charmbracelet
+              desc: *no-charm
+
+  exclusions:
+    generated: strict
+    rules:
+      # The composition root and the scripts are where printing belongs
+      - path: ^(cmd|scripts)/
+        linters:
+          - forbidigo
+
+# A gate lists every finding: golangci-lint would show one finding a line and three of a kind
+issues:
+  uniq-by-line: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofumpt
+  exclusions:
+    # The first version, kept on the owner's machine while its replacements land, is read, never formatted
+    paths:
+      - ^_old/
+  settings:
+    gofumpt:
+      module-path: github.com/vrppaul/paranin
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true

@@ -1,0 +1,35 @@
+# Every gate of .pre-commit-config.yaml again, on what a commit carries: on a machine the hooks read the working
+# tree, untracked files included, so a commit can pass on a file it does not hold. And the check that needs the
+# network, govulncheck, which the hooks leave out so a commit can be made offline
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install pre-commit==4.5.1
+      - run: pre-commit run --all-files --show-diff-on-failure
+
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...

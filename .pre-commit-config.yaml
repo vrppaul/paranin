@@ -1,0 +1,97 @@
+# Every hook runs once, before the commit; only the message check runs on the message. A hook that cannot run
+# fails: leave one out only on purpose, by naming it in SKIP. The hooks read the working tree, so CI
+# (.github/workflows/gates.yml) runs them again on what a commit carries, with the check that needs the network
+default_stages: [pre-commit]
+
+repos:
+  # The Go gates. The linters are built at a pinned version in an environment pre-commit makes for them, with the
+  # Go of this machine, so a linter built with an older Go never refuses the language go.mod names, and nothing
+  # of theirs reaches go.mod
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint (the linters and the layers)
+        entry: golangci-lint run
+        language: golang
+        additional_dependencies: [github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0]
+        files: (\.go|^\.golangci\.yml|^go\.mod|^go\.sum)$
+        pass_filenames: false
+      # gofumpt over every Go file handed over, tests included, which the linters do not read. It checks and
+      # rewrites nothing: a commit never carries formatting it was not shown. A testdata folder holds code as a
+      # rule's test needs it written, so formatting leaves it alone, as the go command does
+      - id: golangci-fmt
+        name: golangci-lint fmt (gofumpt, tests included)
+        entry: golangci-lint fmt --diff
+        language: golang
+        additional_dependencies: [github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0]
+        types: [go]
+        exclude: /testdata/
+      - id: golangci-config
+        name: golangci-lint (its configuration)
+        entry: golangci-lint config verify
+        language: golang
+        additional_dependencies: [github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0]
+        files: ^\.golangci\.yml$
+        pass_filenames: false
+      # The rules no linter here can be told to keep (scripts/coderules/main.go)
+      - id: code-rules
+        name: code rules (names, helpers, records, markup, colours, numbers)
+        entry: go run ./scripts/coderules ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+      # go.mod says what the code imports, no more and no less
+      - id: go-mod-tidy
+        name: go.mod as the code needs it
+        entry: go mod tidy -diff
+        language: system
+        files: (\.go|^go\.mod|^go\.sum)$
+        pass_filenames: false
+      # The whole suite takes seconds
+      - id: go-test
+        name: go test (the tests)
+        entry: go test ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
+    hooks:
+      - id: typos
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      # The SSH face holds a host key on disk: none may reach git
+      - id: detect-private-key
+
+  # claude-review's gate of its instruction files, taken whole (scripts/check_instruction_files.py), run in an
+  # environment pre-commit makes for it. A path goes stale when the file it names moves, so it runs on every commit
+  - repo: local
+    hooks:
+      - id: instruction-files
+        name: instruction files (their size, the paths they name, how they are reached)
+        entry: python scripts/check_instruction_files.py
+        language: python
+        language_version: python3.14
+        additional_dependencies: [pydantic]
+        pass_filenames: false
+        always_run: true
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.5.0
+    hooks:
+      - id: conventional-pre-commit
+        name: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore]

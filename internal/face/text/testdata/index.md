@@ -14,6 +14,7 @@ Writes software for people who read it.
 
 - experience: 5 years
 - available: [notice period]
+- focus: Small tools for people who live in the terminal, written to last and to be read by whoever comes next
 
 ## Experience
 
@@ -28,6 +29,7 @@ Writes software for people who read it.
 01/2020 – 03/2023 · Prague
 
 - Wrote the first parser
+- Kept the build green through three moves of the office, two mergers and one long winter of outages
 
 ## Projects
 
@@ -54,7 +56,7 @@ A tool that tidies files.
 
 ## Education
 
-### A University — Computer Science
+### A University — Computer Science and the Engineering of Systems That Last
 
 09/2016 – [20XX]
 

@@ -9,7 +9,7 @@ The review the rebuild began from, the decisions, D1 onward, and the order of wo
 ```bash
 go test ./...                                           # the tests
 go run ./scripts/coderules ./...                        # the code rules no linter here holds
-go run ./cmd/paranin serve content                      # the site: curl localhost:8080/index.md (PARANIN_HTTP_ADDR)
+go run ./cmd/paranin serve content                      # the site: curl localhost:8080 (PARANIN_HTTP_ADDR)
 pre-commit run --all-files                              # every gate a commit runs, over every tracked file
 pre-commit run --files $(git ls-files -co --exclude-standard)   # the same over files not yet tracked
 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 fmt   # write the formatting the gate asks for

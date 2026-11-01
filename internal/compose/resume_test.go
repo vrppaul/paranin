@@ -50,7 +50,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a skill's duration", want: "side"},
 		{name: "a skill's sources", want: "tidy-tool, a hobby"},
 		{name: "a school", want: "A University"},
-		{name: "a field of study", want: "Computer Science"},
+		{name: "a field of study", want: "Computer Science and the Engineering of Systems That Last"},
 		{name: "a month still to fill", want: "[20XX]"},
 		{name: "a language", want: "English"},
 		{name: "a language's level", want: "fluent"},

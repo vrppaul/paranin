@@ -780,3 +780,8 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   recording kept, a server that listens before it says so and gives the
   signals back once stopping, and a test of the signals; each answered. What
   the first version gave `curl` that waits for its chunk is in TODO.
+- **2026-11-01, the manual page.** `face/text` writes a document as a
+  manual page too, at `.txt`; a page's own address (`/`, `/p/<slug>`) sends
+  markdown to whoever asks for it and the manual to everyone else, `curl`
+  among them, with `Vary: Accept` alone (§5.2). Telling `curl` from a
+  browser by its agent waits for the HTML face, the first that needs it.

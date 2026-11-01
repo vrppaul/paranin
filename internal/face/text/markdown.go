@@ -1,6 +1,7 @@
 // Package text draws documents as text an agent or a terminal reads (docs/ARCHITECTURE.md, ADR-0003): CommonMark
-// here. It draws every kind of block and span a document has, and writes every address through routes. Text
-// reads as the text it is: what CommonMark would take for markup is escaped, and so is what would open a block
+// for an agent, and a manual page for a terminal, laid out in 78 columns as man(1) lays one out, a section of the
+// page for each section of the document, a command one word that never breaks. Each draws every kind of block
+// and span a document has, and writes every address through routes. In markdown, text reads as the text it is: what CommonMark would take for markup is escaped, and so is what would open a block
 // at the start of any line or close a heading. The escapes are part of the text a `curl` reader sees
 // (search\_code), the price of one rule for every text over a rule for each place in a line.
 package text
@@ -71,9 +72,6 @@ const (
 
 // What an escaper replaces each letter with: the letter, and the letter after its escape
 const replacementWidth = 2
-
-// How a month of a year is written
-const monthLayout = "01/2006"
 
 // markdownWriter writes one document: the site writes its addresses, and the escapers keep text and gaps from
 // reading as markup.
@@ -175,20 +173,9 @@ func (writer markdownWriter) card(chunks []string, card document.Card, depth int
 	return appendChunk(chunks, writer.facts(card.Facts))
 }
 
+// period writes a period escaped as a gap is: its gaps keep their brackets.
 func (writer markdownWriter) period(period document.Period) string {
-	return writer.month(period.Start) + rangeDash + writer.month(period.End)
-}
-
-func (writer markdownWriter) month(month document.Month) string {
-	switch typed := month.(type) {
-	case document.KnownMonth:
-		return typed.Start.Format(monthLayout)
-	case document.GapMonth:
-		return writer.gapEscape.Replace(typed.Text)
-	case document.CurrentMonth:
-		return writer.text(typed.Text)
-	}
-	return ""
+	return writer.gapEscape.Replace(periodText(period))
 }
 
 func (writer markdownWriter) spans(spans []document.Span) string {

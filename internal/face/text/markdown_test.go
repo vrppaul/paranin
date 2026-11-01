@@ -27,35 +27,61 @@ func TestMain(tests *testing.M) {
 	os.Exit(tests.Run())
 }
 
-// The markdown of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of
-// the fixture is held to its golden file, named by the page's own path.
-func TestEveryPageReadsAsItsGoldenMarkdown(test *testing.T) {
-	for _, composed := range fixtureDocuments(test) {
-		path := routes.Path(composed.Head.Page, routes.FormatMarkdown)
-		test.Run(path, func(test *testing.T) {
-			golden := filepath.Join(goldenFolder, filepath.FromSlash(path))
-			got := Markdown(composed, routes.New(fixtureBase))
-			if updating() {
-				writeGolden(test, golden, got)
-			}
-			want, err := os.ReadFile(golden)
-			if err != nil {
-				test.Fatalf("read %s: %v", golden, err)
-			}
-			if got != string(want) {
-				test.Errorf("Markdown of %s =\n%s\nwant\n%s", path, got, want)
-			}
-		})
+// format is one format this package writes, the function that writes it, and how a reader finds a phrase in it.
+type format struct {
+	format routes.Format
+	write  func(document.Document, routes.Site) string
+	holds  func(text, phrase string) bool
+}
+
+func formats() []format {
+	return []format{
+		{format: routes.FormatMarkdown, write: Markdown, holds: strings.Contains},
+		{format: routes.FormatManual, write: Manual, holds: manualHolds},
 	}
 }
 
-// Every phrase of a document reaches its markdown: the facts an agent reads are the facts the document holds.
-func TestEveryPhraseReachesTheMarkdown(test *testing.T) {
-	for _, composed := range fixtureDocuments(test) {
-		markdown := Markdown(composed, routes.New(fixtureBase))
-		for _, phrase := range document.Phrases(composed) {
-			if !strings.Contains(markdown, phrase) {
-				test.Errorf("the markdown of %+v holds no %q", composed.Head.Page, phrase)
+// manualHolds tells a manual that holds a phrase: its lines may break inside the phrase, and a section's title
+// stands in capitals.
+func manualHolds(text, phrase string) bool {
+	words, wanted := strings.Join(strings.Fields(text), " "), strings.Join(strings.Fields(phrase), " ")
+	return strings.Contains(words, wanted) || strings.Contains(words, strings.ToUpper(wanted))
+}
+
+// The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the
+// fixture, in each format, is held to its golden file, named by the page's own path in that format.
+func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
+	for _, written := range formats() {
+		for _, composed := range fixtureDocuments(test) {
+			path := routes.Path(composed.Head.Page, written.format)
+			test.Run(path, func(test *testing.T) {
+				golden := filepath.Join(goldenFolder, filepath.FromSlash(path))
+				got := written.write(composed, routes.New(fixtureBase))
+				if updating() {
+					writeGolden(test, golden, got)
+				}
+				want, err := os.ReadFile(golden)
+				if err != nil {
+					test.Fatalf("read %s: %v", golden, err)
+				}
+				if got != string(want) {
+					test.Errorf("%s =\n%s\nwant\n%s", path, got, want)
+				}
+			})
+		}
+	}
+}
+
+// Every phrase of a document reaches its text in each format: the facts a reader reads are the facts the
+// document holds, found as each format writes them.
+func TestEveryPhraseReachesEveryFormat(test *testing.T) {
+	for _, written := range formats() {
+		for _, composed := range fixtureDocuments(test) {
+			text := written.write(composed, routes.New(fixtureBase))
+			for _, phrase := range document.Phrases(composed) {
+				if !written.holds(text, phrase) {
+					test.Errorf("the %s of %+v holds no %q", routes.Path(composed.Head.Page, written.format), composed.Head.Page, phrase)
+				}
 			}
 		}
 	}

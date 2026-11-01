@@ -22,6 +22,7 @@ summary: Writes software for people who read it.
 facts:
   - {label: experience, value: 5 years}
   - {label: available, value: "[notice period]"}
+  - {label: focus, value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next"}
 
 experience:
   - company: Northwind
@@ -38,6 +39,7 @@ experience:
     end: 2023-03
     bullets:
       - Wrote the first parser
+      - Kept the build green through three moves of the office, two mergers and one long winter of outages
 
 projects:
   - slug: other-tool
@@ -68,7 +70,7 @@ skill_groups:
 
 education:
   - name: A University
-    field: Computer Science
+    field: Computer Science and the Engineering of Systems That Last
     start: 2016-09
     end: "[20XX]"
 

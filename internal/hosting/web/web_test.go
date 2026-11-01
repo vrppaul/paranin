@@ -26,6 +26,8 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	}{
 		{name: "the résumé", path: "/index.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Mira Example"},
 		{name: "a project's page", path: "/p/tidy-tool.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# tidy-tool"},
+		{name: "the résumé as a manual", path: "/index.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "EXAMPLE.TEST(1)"},
+		{name: "a project's page as a manual", path: "/p/tidy-tool.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "TIDY-TOOL(1)"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -34,6 +36,44 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 				!strings.Contains(response.Body.String(), testCase.holds) {
 				test.Errorf("GET %s = %d %q holding %q, want %d %q holding %q", testCase.path, response.Code,
 					response.Header().Get("Content-Type"), response.Body.String(), testCase.status, testCase.contentType, testCase.holds)
+			}
+		})
+	}
+}
+
+// At a page's own address the reader's request chooses the format: markdown for whoever asks for it, the manual
+// for everyone else, `curl` among them; and a cache keeps one copy for each Accept.
+func TestTheReaderChoosesTheFormat(test *testing.T) {
+	server := New(fixtureStore(test, fixtureCopy(test)))
+	cases := []struct {
+		name   string
+		path   string
+		accept string
+		holds  string
+	}{
+		{name: "an agent asking for markdown", path: "/", accept: "text/markdown", holds: "# Mira Example"},
+		{name: "curl, taking anything", path: "/", accept: "*/*", holds: "EXAMPLE.TEST(1)"},
+		{name: "a request asking for nothing", path: "/", accept: "", holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown refused", path: "/", accept: "text/markdown;q=0, */*", holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown among others", path: "/", accept: "text/html;q=0.9, text/markdown", holds: "# Mira Example"},
+		{name: "plain text ranked above markdown", path: "/", accept: "text/plain, text/markdown;q=0.1", holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown ranked above plain text", path: "/", accept: "text/markdown, text/plain;q=0.5", holds: "# Mira Example"},
+		{name: "both of a family", path: "/", accept: "text/*", holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below anything", path: "/", accept: "text/markdown;q=0.5, */*", holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below its family", path: "/", accept: "text/markdown;q=0.5, text/*", holds: "EXAMPLE.TEST(1)"},
+		{name: "a browser asking for HTML", path: "/", accept: "text/html", holds: "EXAMPLE.TEST(1)"},
+		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", holds: "# tidy-tool"},
+		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", holds: "TIDY-TOOL(1)"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+			request.Header.Set("Accept", testCase.accept)
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if !strings.Contains(response.Body.String(), testCase.holds) || response.Header().Get("Vary") != "Accept" {
+				test.Errorf("GET %s, Accept %q = %q, Vary %q; want it to hold %q, Vary %q", testCase.path, testCase.accept,
+					response.Body.String(), response.Header().Get("Vary"), testCase.holds, "Accept")
 			}
 		})
 	}

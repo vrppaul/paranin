@@ -1,0 +1,20 @@
+TIDY-TOOL(1)                    User Commands                     TIDY-TOOL(1)
+
+NAME
+       tidy-tool — Tidies files.
+
+DESCRIPTION
+       A tool that tidies files.
+
+       author       Mira Example <https://example.test/index.txt>
+       status       done
+       repository   https://github.test/mira/tidy-tool
+       install      go install example.test/tidy-tool@latest
+
+       $ tidy .
+       tidied 3 files
+
+WHY
+       Files were untidy.
+
+example.test                                                      TIDY-TOOL(1)

@@ -25,7 +25,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The owner's
 
-- Once `face/html` serves HTML, does a page's own address tell a terminal from a browser by its agent, as the first version did with `Vary: Accept, User-Agent` (FOUNDATION §3.1, item 11, names that a fault), or by the Accept header's ranking alone, which already sends a browser what it ranks highest (§5.2)?
 
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
 

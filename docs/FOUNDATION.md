@@ -40,6 +40,7 @@ Each decision carries one of three marks:
 | D18 | Nothing lands before its user: `document` and `compose` arrive in one chunk, `compose` making the résumé their first user; `routes` arrives with `face/text`, the first face to write an address; `look` and the token generator with `face/tui`, the first that needs a colour. | 2026-11-01 |
 | D19 | Every face draws the résumé, the project pages and the posts from one document model, the HTML page and the islands included. The document has the résumé's own kinds beside markdown's, and its kinds are a closed set every face switches over. Its parts, in ADR-0003, are the author's, on Pavel's leave to choose. | 2026-11-01 |
 | D20 | The layers of ADR-0003 are accepted. | 2026-11-01 |
+| D21 | A page's own address chooses its format by the Accept header's ranking alone, with `Vary: Accept`, HTML among the formats once it is served: no reader is told apart by its agent (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
 
 ## 2. What must hold whatever we build
 
@@ -280,8 +281,8 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
 - **Dates and levels are types.** A role's end is a month or "current", not
   the string `"present"`; health levels are one enumeration that every face
   names.
-- **Plain text by contract.** `Accept`, a `.txt` route and `curl`'s known
-  agent, with `Vary: Accept` alone; negotiated routes send
+- **Plain text by contract.** `Accept` and a `.txt` route, with
+  `Vary: Accept` alone (D21); negotiated routes send
   `Cache-Control: no-cache` until the contract is settled in `WEB.md`.
 - **Typst replaces headless Chrome** (Decided, D10) for `cv.pdf`, the tailored CV (phase 5)
   and a social card per page and post. One tool makes PDF and PNG from
@@ -783,5 +784,6 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
 - **2026-11-01, the manual page.** `face/text` writes a document as a
   manual page too, at `.txt`; a page's own address (`/`, `/p/<slug>`) sends
   markdown to whoever asks for it and the manual to everyone else, `curl`
-  among them, with `Vary: Accept` alone (§5.2). Telling `curl` from a
-  browser by its agent waits for the HTML face, the first that needs it.
+  among them, with `Vary: Accept` alone (§5.2). Pavel left to the author
+  whether HTML brings telling `curl` from a browser by its agent: it does
+  not (D21), since a browser ranks HTML first and `curl` asks for anything.

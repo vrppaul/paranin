@@ -34,6 +34,12 @@ const (
 	partHintKey
 	// partCross is a corner cross around the page
 	partCross
+	// partCommand is what the command line says, partFailure what it says went wrong, partPrompt the slash a
+	// search is typed after, and partCursor where the next letter goes
+	partCommand
+	partFailure
+	partPrompt
+	partCursor
 )
 
 // paint is how each kind of text and each part of the frame looks in one terminal: its theme, and the colours it
@@ -45,8 +51,11 @@ type paint struct {
 	// with none underlined
 	highlightGround color.Color
 	highlightText   color.Color
-	fewColours      bool
-	noColours       bool
+	// a match of the search stands on the accent, its text laid on it, and with few colours or none reversed
+	matchGround color.Color
+	matchText   color.Color
+	fewColours  bool
+	noColours   bool
 }
 
 // paintFor is the paint of a theme in a terminal that shows a profile of colours.
@@ -76,9 +85,15 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partStatusRule:   bar.Foreground(colour(look.ColourQuiet)),
 			partHintKey:      bar.Foreground(colour(look.ColourText)).Bold(true),
 			partCross:        plain.Foreground(colour(look.ColourFaint)),
+			partCommand:      plain.Foreground(colour(look.ColourText)),
+			partFailure:      plain.Foreground(colour(look.ColourError)).Bold(true),
+			partPrompt:       plain.Foreground(colour(look.ColourAccent)).Bold(true),
+			partCursor:       plain.Foreground(colour(look.ColourAccent)),
 		},
 		highlightGround: colour(look.ColourTint),
 		highlightText:   colour(look.ColourOnAccent),
+		matchGround:     colour(look.ColourAccent),
+		matchText:       colour(look.ColourOnAccent),
 		fewColours:      fewColours,
 		noColours:       noColours,
 	}
@@ -111,9 +126,9 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 	return lipgloss.NoColor{}
 }
 
-// tab paints a tab's lines in the frame: each at the page's left edge, cut at its right one, the screen's width
-// filled.
-func (paint paint) tab(lines []line, frame frame) []string {
+// tab paints a tab's lines in the frame, each match of the search marked: each at the page's left edge, cut at its
+// right one, the screen's width filled.
+func (paint paint) tab(lines [][]matchedRun, frame frame) []string {
 	drawn := make([]string, 0, len(lines))
 	gutter := strings.Repeat(space, frame.left)
 	for _, shown := range lines {
@@ -124,7 +139,7 @@ func (paint paint) tab(lines []line, frame frame) []string {
 }
 
 // line paints a line cut at a width, and says how many columns it took.
-func (paint paint) line(shown line, width int) (string, int) {
+func (paint paint) line(shown []matchedRun, width int) (string, int) {
 	var builder strings.Builder
 	used := 0
 	for _, piece := range shown {
@@ -138,14 +153,19 @@ func (paint paint) line(shown line, width int) (string, int) {
 	return builder.String(), used
 }
 
-// style is the look of a run: its kind's, highlighted where it is a result, carrying its address where it links.
-func (paint paint) style(piece run) lipgloss.Style {
+// style is the look of a run: its kind's, highlighted where it is a result, marked where it matches the search,
+// carrying its address where it links.
+func (paint paint) style(piece matchedRun) lipgloss.Style {
 	style := paint.kinds[piece.kind]
 	if piece.highlighted {
 		style = style.Background(paint.highlightGround).Underline(paint.noColours)
 		if paint.fewColours {
 			style = style.Foreground(paint.highlightText)
 		}
+	}
+	// a match stands out over a highlight too, and with few colours or none it is reversed, as a highlight is not
+	if piece.matched {
+		style = style.Background(paint.matchGround).Foreground(paint.matchText).Reverse(paint.fewColours)
 	}
 	if piece.address != "" {
 		style = style.Hyperlink(piece.address)

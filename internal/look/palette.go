@@ -20,6 +20,8 @@ const (
 	ColourAccent
 	// ColourOnAccent is text laid on the accent
 	ColourOnAccent
+	// ColourError is what says something went wrong, as a search that found nothing
+	ColourError
 	// ColourTint is a result worth seeing first, the accent laid over the page
 	ColourTint
 )
@@ -36,6 +38,7 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourQuiet:    {TrueColour: color.RGBA{R: 204, G: 208, B: 218, A: 255}, Indexed: 252, Basic: 8},
 			ColourAccent:   {TrueColour: color.RGBA{R: 254, G: 100, B: 11, A: 255}, Indexed: 202, Basic: 3},
 			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
+			ColourError:    {TrueColour: color.RGBA{R: 210, G: 15, B: 57, A: 255}, Indexed: 161, Basic: 1},
 			ColourTint:     {TrueColour: color.RGBA{R: 241, G: 218, B: 208, A: 255}, Indexed: 217, Basic: 3},
 		}
 	case ThemeDark:
@@ -47,6 +50,7 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourQuiet:    {TrueColour: color.RGBA{R: 54, G: 58, B: 79, A: 255}, Indexed: 238, Basic: 8},
 			ColourAccent:   {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
 			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
+			ColourError:    {TrueColour: color.RGBA{R: 237, G: 135, B: 150, A: 255}, Indexed: 210, Basic: 1},
 			ColourTint:     {TrueColour: color.RGBA{R: 82, G: 68, B: 73, A: 255}, Indexed: 95, Basic: 3},
 		}
 	}

@@ -807,3 +807,9 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   snapshot is worked out once for each snapshot, by `content.Derived`.
   wish v2.0.5 asks for Go 1.26.8, which `go.mod` now names; the SSH tests'
   client is `golang.org/x/crypto/ssh`, already in the graph through wish.
+- **2026-11-01, search and counts in the TUI.** A slash searches the tab,
+  whatever the case; Enter marks every match and goes to the first at or
+  after the page, n and N go round them, and the command line, a row of its
+  own as Neovim's, says which of how many or E486. A number before a key
+  counts it; one typed alone chooses its tab after a pause. The keys of
+  normal mode are a table of actions, and the tokens gained `error`.

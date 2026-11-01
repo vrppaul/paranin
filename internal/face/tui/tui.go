@@ -1,13 +1,17 @@
 // Package tui draws a document in a terminal as a Bubble Tea program laid out like Neovim (docs/ARCHITECTURE.md,
-// ADR-0003): a line of tabs above, the page between two rows of corner crosses, a status line below. The head of the
-// document and what stands before its first section are the first tab; each section after them is a tab of its own,
-// titled as the document titles it. The reader moves between tabs and scrolls each one, and each keeps its place.
+// ADR-0003): a line of tabs above, the page between two rows of corner crosses, a status line and a command line below.
+// The head of the document and what stands before its first section are the first tab; each section after them is a tab
+// of its own, titled as the document titles it. The reader moves between tabs and scrolls each one, by a count typed
+// before a key where they type one, and each tab keeps its place; a slash searches the tab, and n and N go through its
+// matches.
 //
-// A tab is laid out once for a size and painted once for a theme and the terminal's colours, with the frame around it:
-// a key press only chooses which painted lines show, and writes the ruler that says where it scrolled. What a piece of
-// text is (text, muted, a command, a result worth seeing first) is the layout's to say; how it looks is the paint's,
-// from the design's colours in look, for the colours the terminal shows. Every address is written by routes; a link
-// carries its address to a terminal that follows links.
+// A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
+// around it: a key press only chooses which painted lines show, and writes the ruler that says where it scrolled and
+// the command line; a search confirmed or taken away paints the tabs again, once. The command line counts the lines
+// that hold a match, which n and N go through, not the matches in them. What a piece of text is (text, muted, a
+// command, a result worth seeing first) is the layout's to say; how it looks is the paint's, from the design's colours
+// in look, for the colours the terminal shows. Every address is written by routes; a link carries its address to a
+// terminal that follows links.
 package tui
 
 import (
@@ -27,26 +31,6 @@ const (
 	assumedHeight = 24
 )
 
-// The keys a reader presses, as Bubble Tea names them
-const (
-	quitKey        = "q"
-	interruptKey   = "ctrl+c"
-	downKey        = "j"
-	downArrow      = "down"
-	upKey          = "k"
-	upArrow        = "up"
-	topKey         = "g"
-	homeKey        = "home"
-	bottomKey      = "G"
-	endKey         = "end"
-	nextKey        = "l"
-	rightArrow     = "right"
-	tabKey         = "tab"
-	previousKey    = "h"
-	leftArrow      = "left"
-	backwardTabKey = "shift+tab"
-)
-
 // Model is one reader's session: the tabs of the document, the terminal it is drawn in, and where the reader is.
 type Model struct {
 	tabs []tab
@@ -63,8 +47,12 @@ type Model struct {
 	chosen int
 	// scrolls is how far down each tab the reader has scrolled, by the tab's place
 	scrolls []int
-	// topPending is a first g pressed, which a second one makes the top of the tab
-	topPending bool
+	// actions are what each key does in normal mode
+	actions map[string]action
+	keys    keyState
+	search  searchState
+	// said is what the command line says after the last key
+	said commandMessage
 }
 
 // terminal is what the session knows of the reader's terminal: its size, its background, the colours it shows.
@@ -83,16 +71,19 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 	}
 	tabs := tabsOf(composed)
 	model := Model{
-		tabs:       tabs,
-		site:       site,
-		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
-		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
-		laid:       nil,
-		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, fewColours: false, noColours: false},
-		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: ""},
-		chosen:     0,
-		scrolls:    make([]int, len(tabs)),
-		topPending: false,
+		tabs:     tabs,
+		site:     site,
+		terminal: terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
+		frame:    frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
+		laid:     nil,
+		paint:    paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, fewColours: false, noColours: false},
+		drawn:    drawnScreen{tabs: nil, crossRow: "", blankRow: ""},
+		chosen:   0,
+		scrolls:  make([]int, len(tabs)),
+		actions:  normalActions(),
+		keys:     keyState{mode: modeNormal, topPending: false, count: 0, countSequence: 0},
+		search:   searchState{typing: "", query: "", shown: nil},
+		said:     commandMessage{text: "", failed: false},
 	}
 	return model.relaid()
 }
@@ -117,7 +108,9 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		model.terminal.profile = typed.Profile
 		return model.repainted(), nil
 	case tea.KeyPressMsg:
-		return model.pressed(typed.String())
+		return model.pressed(typed)
+	case countPaused:
+		return model.countEnded(typed), nil
 	}
 	return model, nil
 }
@@ -144,6 +137,8 @@ func (model Model) relaid() Model {
 	for _, shown := range model.tabs {
 		model.laid = append(model.laid, layout.tab(shown))
 	}
+	// the matches shown were lines of the layout gone
+	model.search.shown = make([]shownMatch, len(model.tabs))
 	return model.repainted()
 }
 
@@ -153,34 +148,6 @@ func (model Model) repainted() Model {
 	model.paint = paintFor(model.terminal.theme, model.terminal.profile)
 	model.drawn = model.drawnScreen()
 	return model.clamped()
-}
-
-// pressed is the model after a key: a step through the tab or between tabs, or the end of the session.
-func (model Model) pressed(key string) (Model, tea.Cmd) {
-	topPending := model.topPending
-	model.topPending = false
-	switch key {
-	case quitKey, interruptKey:
-		return model, tea.Quit
-	case downKey, downArrow:
-		return model.scrolledTo(model.scrolls[model.chosen] + 1), nil
-	case upKey, upArrow:
-		return model.scrolledTo(model.scrolls[model.chosen] - 1), nil
-	case topKey:
-		if topPending {
-			return model.scrolledTo(0), nil
-		}
-		model.topPending = true
-	case homeKey:
-		return model.scrolledTo(0), nil
-	case bottomKey, endKey:
-		return model.scrolledTo(len(model.drawn.tabs[model.chosen].lines)), nil
-	case nextKey, rightArrow, tabKey:
-		return model.choose(model.chosen + 1), nil
-	case previousKey, leftArrow, backwardTabKey:
-		return model.choose(model.chosen - 1), nil
-	}
-	return model, nil
 }
 
 // choose shows a tab by its place, round from the last to the first and back.

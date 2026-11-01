@@ -47,6 +47,11 @@ colours:
     light: "#24273a"
     dark: "#24273a"
     basic: 0
+  - name: error
+    about: what says something went wrong, as a search that found nothing
+    light: "#d20f39"
+    dark: "#ed8796"
+    basic: 1
 
 blends:
   - name: tint

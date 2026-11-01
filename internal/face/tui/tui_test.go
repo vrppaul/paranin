@@ -26,8 +26,8 @@ const (
 	commonHeight = 30
 	tallHeight   = 400
 	narrowWidth  = 40
-	// a terminal of six rows shows two lines of a page
-	shortHeight = 6
+	// a terminal of seven rows shows two lines of a page
+	shortHeight = 7
 	// a phone's terminal, narrower than the page with its margins, and the smallest that still draws
 	phoneWidth     = 28
 	phoneHeight    = 20
@@ -86,7 +86,6 @@ func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 // The scrolling keys move a tab taller than the terminal a line at a time, to its end and back to its start.
 // The experience tab opens with a role, then its first point.
 func TestTheScrollingKeysMoveThroughATab(test *testing.T) {
-	toExperience := []string{"l", "l"}
 	cases := []struct {
 		name  string
 		keys  []string
@@ -107,7 +106,7 @@ func TestTheScrollingKeysMoveThroughATab(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience, testCase.keys...)...)
+			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), testCase.keys...)...)
 			screen := screenOf(test, model)
 			if !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
 				test.Errorf("after %q the screen =\n%s\nwant it to hold %q and not %q", testCase.keys, screen, testCase.holds, testCase.lacks)
@@ -154,7 +153,6 @@ func TestARoleReadsWithItsPeriod(test *testing.T) {
 // A terminal resized gets its page laid out again for its new size: as many of a tab's lines as it has rows show,
 // and a terminal as narrow as a phone's still reads, the page then taking its whole width (FR-13, NFR-6).
 func TestAResizeLaysThePageOutAgain(test *testing.T) {
-	toExperience := []string{"l", "l"}
 	cases := []struct {
 		name   string
 		width  int
@@ -169,7 +167,7 @@ func TestAResizeLaysThePageOutAgain(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, fixtureModel(test, commonWidth, commonHeight), toExperience...)
+			model := pressed(test, fixtureModel(test, commonWidth, commonHeight), toExperience()...)
 			resized, _ := model.Update(tea.WindowSizeMsg{Width: testCase.width, Height: testCase.height})
 			screen := screenOf(test, as[Model](test, resized))
 			if !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
@@ -291,6 +289,17 @@ func keyPress(test *testing.T, name string) tea.KeyPressMsg {
 		"g":         {Code: 'g', Text: "g"},
 		"G":         {Code: 'g', ShiftedCode: 'G', Mod: tea.ModShift, Text: "G"},
 		"q":         {Code: 'q', Text: "q"},
+		"n":         {Code: 'n', Text: "n"},
+		"N":         {Code: 'n', ShiftedCode: 'N', Mod: tea.ModShift, Text: "N"},
+		"/":         {Code: '/', Text: "/"},
+		"0":         {Code: '0', Text: "0"},
+		"2":         {Code: '2', Text: "2"},
+		"3":         {Code: '3', Text: "3"},
+		"1":         {Code: '1', Text: "1"},
+		"9":         {Code: '9', Text: "9"},
+		"enter":     {Code: tea.KeyEnter},
+		"esc":       {Code: tea.KeyEscape},
+		"backspace": {Code: tea.KeyBackspace},
 		"tab":       {Code: tea.KeyTab},
 		"shift+tab": {Code: tea.KeyTab, Mod: tea.ModShift},
 		"left":      {Code: tea.KeyLeft},
@@ -304,6 +313,15 @@ func keyPress(test *testing.T, name string) tea.KeyPressMsg {
 		test.Fatalf("no key reads as %q", name)
 	}
 	return key
+}
+
+// typed is a model after a text typed, a key for each letter.
+func typed(test *testing.T, model Model, text string) Model {
+	for _, letter := range text {
+		next, _ := model.Update(tea.KeyPressMsg{Code: letter, Text: string(letter)})
+		model = as[Model](test, next)
+	}
+	return model
 }
 
 // screenOf is the text a reader sees, its colours gone.

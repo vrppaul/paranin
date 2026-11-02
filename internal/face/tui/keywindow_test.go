@@ -79,7 +79,8 @@ func TestTheStatusLineNamesTheWindowOfKeys(test *testing.T) {
 
 // The window of keys opens only where it shows whole: there Esc closes the window alone, so the search stays and n
 // goes on through it; where the window would stand taller or wider than the screen, the question mark opens nothing,
-// the keys stay in normal mode, and Esc takes the search away. A phone's width is the window's own.
+// the command line says there is no room, as Neovim does, the keys stay in normal mode, and Esc takes the search
+// away. A phone's width is the window's own.
 func TestTheWindowOfKeysOpensOnlyWhole(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -96,7 +97,12 @@ func TestTheWindowOfKeysOpensOnlyWhole(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, testCase.width, testCase.height), append(toExperience(), "/")...)
-			model = pressed(test, typed(test, model, "the"), "enter", "?", "esc", "n")
+			model = pressed(test, typed(test, model, "the"), "enter", "?")
+			if below := belowThePage(screenOf(test, model)); strings.Contains(below, "E36: Not enough room") == testCase.opened {
+				test.Errorf("at %dx%d after a search and ? the status and command lines = %q, want no room said: %t",
+					testCase.width, testCase.height, below, !testCase.opened)
+			}
+			model = pressed(test, model, "esc", "n")
 			if below := belowThePage(screenOf(test, model)); strings.Contains(below, "/the [2/4]") != testCase.opened {
 				test.Errorf("at %dx%d after a search, ?, Esc and n the status and command lines = %q, want the window opened: %t",
 					testCase.width, testCase.height, below, testCase.opened)

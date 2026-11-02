@@ -9,10 +9,11 @@
 // not know with Neovim's error. While the reader types, a window over the page lists the commands whose names start
 // with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first. A question
 // mark or a space opens the window of keys, which names the keys of normal mode and what each does, and which the
-// next key closes. A window shows whole or not at all: the window of keys opens only where it fits, and closes when
-// a resize leaves it no room. On the command line the cursor is the terminal's own, a bar the terminal blinks, as
-// the first version's blinked, in the accent where the terminal shows many colours: the program writes no frame to
-// blink it, so a session left alone writes nothing and its idle timeout runs out.
+// next key closes. A window shows whole or not at all: the window of keys opens only where it fits, where it does
+// not the command line says Neovim's E36, and the window closes when a resize leaves it no room. On the command line
+// the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent where
+// the terminal shows many colours: the program writes no frame to blink it, so a session left alone writes nothing
+// and its idle timeout runs out.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says

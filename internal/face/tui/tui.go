@@ -3,12 +3,14 @@
 // The head of the document and what stands before its first section are the first tab; each section after them is a tab
 // of its own, titled as the document titles it. The reader moves between tabs and scrolls each one, by a count typed
 // before a key where they type one, and each tab keeps its place; a slash searches the tab, and n and N go through its
-// matches.
+// matches. While the reader types a search, the tab marks what they type and its page goes to the first match, as
+// Neovim's incsearch does, but for the slash, which takes the marks of the search before away at once; the command
+// line counts the matches, as Neovim does.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it: a key press only chooses which painted lines show, and writes the ruler that says where it scrolled and
-// the command line; a search confirmed or taken away paints the tabs again, once. The command line counts the lines
-// that hold a match, which n and N go through, not the matches in them. What a piece of text is (text, muted, a
+// the command line. A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page
+// again; a search confirmed or taken away paints the tabs again, once. What a piece of text is (text, muted, a
 // command, a result worth seeing first) is the layout's to say; how it looks is the paint's, from the design's colours
 // in look, for the colours the terminal shows. Every address is written by routes; a link carries its address to a
 // terminal that follows links.
@@ -82,7 +84,7 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 		scrolls:  make([]int, len(tabs)),
 		actions:  normalActions(),
 		keys:     keyState{mode: modeNormal, topPending: false, count: 0, countSequence: 0},
-		search:   searchState{typing: "", query: "", shown: nil},
+		search:   searchState{typing: "", begunAt: 0, query: "", shown: nil},
 		said:     commandMessage{text: "", failed: false},
 	}
 	return model.relaid()
@@ -137,9 +139,12 @@ func (model Model) relaid() Model {
 	for _, shown := range model.tabs {
 		model.laid = append(model.laid, layout.tab(shown))
 	}
-	// the matches shown were lines of the layout gone
+	// the matches shown were places among the matches of the layout gone
 	model.search.shown = make([]shownMatch, len(model.tabs))
-	return model.repainted()
+	model = model.repainted()
+	// the line a search began at is a scroll of the chosen tab, held to the new layout as every scroll is
+	model.search.begunAt = model.scrollWithin(model.chosen, model.search.begunAt)
+	return model
 }
 
 // repainted is the model with every tab and the frame around it painted again, for the terminal's background
@@ -150,10 +155,22 @@ func (model Model) repainted() Model {
 	return model.clamped()
 }
 
+// repaintedChosen is the model with the chosen tab's page painted again, for the search it marks.
+func (model Model) repaintedChosen() Model {
+	model.drawn.tabs = slices.Clone(model.drawn.tabs)
+	model.drawn.tabs[model.chosen].paintedPage = model.paintedPage(model.chosen)
+	return model
+}
+
 // choose shows a tab by its place, round from the last to the first and back.
 func (model Model) choose(place int) Model {
-	model.chosen = (place%len(model.tabs) + len(model.tabs)) % len(model.tabs)
+	model.chosen = wrapped(place, len(model.tabs))
 	return model
+}
+
+// wrapped is a place among a count of them, round from the last to the first and back.
+func wrapped(place, count int) int {
+	return (place%count + count) % count
 }
 
 // scrolledTo is the chosen tab scrolled to a line.
@@ -163,13 +180,18 @@ func (model Model) scrolledTo(line int) Model {
 	return model.clamped()
 }
 
-// clamped is the model with each tab scrolled no further than between its start and the last line that fills
-// the page, as the tab is drawn now.
+// clamped is the model with each tab scrolled within it, as the tab is drawn now.
 func (model Model) clamped() Model {
 	scrolls := make([]int, len(model.drawn.tabs))
-	for place, drawn := range model.drawn.tabs {
-		scrolls[place] = min(max(model.scrolls[place], 0), max(len(drawn.lines)-model.frame.rows, 0))
+	for place := range model.drawn.tabs {
+		scrolls[place] = model.scrollWithin(place, model.scrolls[place])
 	}
 	model.scrolls = scrolls
 	return model
+}
+
+// scrollWithin is a scroll of a tab held between its start and the last line that fills the page, as the tab is
+// drawn now.
+func (model Model) scrollWithin(place, scroll int) int {
+	return min(max(scroll, 0), max(len(model.drawn.tabs[place].lines)-model.frame.rows, 0))
 }

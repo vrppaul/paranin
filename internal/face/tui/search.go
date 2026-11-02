@@ -18,18 +18,21 @@ const (
 	notFoundError = "E486: Pattern not found: "
 )
 
-// searchState is the search: what the reader is typing after the slash, the search confirmed last, which every
-// painted tab marks and n and N go through, and the match each tab showed last.
+// searchState is the search: what the reader is typing after the slash; the line the chosen tab's page stood at
+// when they typed it, which the typing seeks its first match from, and the page goes back to while what is typed
+// matches nothing and once the reader leaves the search line unconfirmed; the search confirmed last, which every
+// painted tab marks and n and N go through; and the match each tab showed last.
 type searchState struct {
-	typing string
-	query  string
-	shown  []shownMatch
+	typing  string
+	begunAt int
+	query   string
+	shown   []shownMatch
 }
 
-// shownMatch is the line of the match a tab showed last, and the scroll it left the tab at: n goes on from that
-// match while the page stays there, and from the page's top once the reader scrolls it.
+// shownMatch is the place among a tab's matches of the one it showed last, and the scroll it left the tab at: n
+// goes on from that match while the page stays there, and from the page's top once the reader scrolls it.
 type shownMatch struct {
-	line   int
+	place  int
 	scroll int
 	shown  bool
 }
@@ -40,10 +43,34 @@ type commandMessage struct {
 	failed bool
 }
 
-// startSearch opens the search line, empty, after a slash.
+// The steps n and N take through the matches: on to the next, and back to the one before
+const (
+	nextStep     = 1
+	previousStep = -1
+)
+
+// matchWay is the way n or N goes through the matches: the step it takes from the match the tab showed last, and
+// the match it goes to by the page's top line where the tab shows none.
+type matchWay struct {
+	step     int
+	byTheTop func(matches []int, line int) int
+}
+
+// onward is n's way: to the next match, or the first at or after the page's top line.
+func onward() matchWay {
+	return matchWay{step: nextStep, byTheTop: matchAtOrAfter}
+}
+
+// back is N's way: to the match before, or the last before the page's top line.
+func back() matchWay {
+	return matchWay{step: previousStep, byTheTop: matchBefore}
+}
+
+// startSearch opens the search line, empty, after a slash: the chosen tab marks nothing until the reader types,
+// where Neovim keeps the marks of the search before until then.
 func (model Model) startSearch(int) (Model, tea.Cmd) {
-	model.keys.mode, model.search.typing = modeSearch, ""
-	return model, nil
+	model.keys.mode, model.search.typing, model.search.begunAt = modeSearch, "", model.scrolls[model.chosen]
+	return model.repaintedChosen(), nil
 }
 
 // endSearch takes the search away, and its marks with it.
@@ -63,60 +90,84 @@ func (model Model) typedInSearch(key tea.KeyPressMsg) Model {
 	case enterKey:
 		return model.searched()
 	case escapeKey:
-		model.keys.mode = modeNormal
-		return model
+		return model.searchLeft()
 	case backspaceKey:
 		if model.search.typing == "" {
-			model.keys.mode = modeNormal
-			return model
+			return model.searchLeft()
 		}
 		_, last := utf8.DecodeLastRuneInString(model.search.typing)
 		model.search.typing = model.search.typing[:len(model.search.typing)-last]
+		return model.retyped()
+	}
+	if !printable(key.Text) {
 		return model
 	}
-	if printable(key.Text) {
-		model.search.typing += key.Text
+	model.search.typing += key.Text
+	return model.retyped()
+}
+
+// retyped is the model after what is typed changes, as Neovim's incsearch shows it: the chosen tab painted again
+// with what is typed marked, its page at the first match at or after the line the search began at, or back at
+// that line where nothing matches.
+func (model Model) retyped() Model {
+	model = model.repaintedChosen()
+	shown := model.search.begunAt
+	if matches := model.drawn.tabs[model.chosen].matches; len(matches) > 0 {
+		shown = matches[matchAtOrAfter(matches, shown)]
 	}
-	return model
+	return model.scrolledTo(shown)
+}
+
+// searchLeft is the model after the reader leaves the search line unconfirmed: the chosen tab marks the search
+// before it again, and its page is back where it stood.
+func (model Model) searchLeft() Model {
+	model.keys.mode = modeNormal
+	return model.repaintedChosen().scrolledTo(model.search.begunAt)
 }
 
 // searched is the model after the search typed is confirmed: every tab painted again with its matches marked, no
-// match shown yet on any, and the page at the first match at or after its top line.
+// match shown yet on any, and the page at the first match at or after its top line, the one the typing showed.
+// Enter on nothing typed leaves the search line as Esc does.
 func (model Model) searched() Model {
-	model.keys.mode = modeNormal
 	if model.search.typing == "" {
-		return model
+		return model.searchLeft()
 	}
+	model.keys.mode = modeNormal
 	model.search.query = model.search.typing
 	model.search.shown = make([]shownMatch, len(model.tabs))
 	model = model.repainted()
-	return model.stepMatch(1, model.scrolls[model.chosen]-1, matchAfter)
+	return model.toMatch(func(matches []int) int { return matchAtOrAfter(matches, model.scrolls[model.chosen]) })
 }
 
-// nextMatch goes to the next match: after the one the tab showed last, or at or after the page's top line, as Enter
+// nextMatch goes a number of matches on, from the one the tab showed last, or from the page's top line, as Enter
 // does, where it shows none.
 func (model Model) nextMatch(count int) (Model, tea.Cmd) {
-	return model.stepMatch(max(count, 1), model.matchReference(model.scrolls[model.chosen]-1), matchAfter), nil
+	return model.toMatch(func(matches []int) int { return model.stepped(matches, onward(), max(count, 1)) }), nil
 }
 
-// previousMatch goes to the match before: before the one the tab showed last, or before the page's top line.
+// previousMatch goes a number of matches back, from the one the tab showed last, or from the page's top line.
 func (model Model) previousMatch(count int) (Model, tea.Cmd) {
-	return model.stepMatch(max(count, 1), model.matchReference(model.scrolls[model.chosen]), matchBefore), nil
+	return model.toMatch(func(matches []int) int { return model.stepped(matches, back(), max(count, 1)) }), nil
 }
 
-// matchReference is the line n and N go on from: the match the tab showed last while the page stays there, or a
-// line by the page's top where it shows none, or the reader has scrolled since.
-func (model Model) matchReference(byTheTop int) int {
-	if last := model.search.shown[model.chosen]; last.shown && last.scroll == model.scrolls[model.chosen] {
-		return last.line
+// stepped is the place of the match a number of steps one way, round from the last to the first.
+func (model Model) stepped(matches []int, way matchWay, steps int) int {
+	return wrapped(model.firstStep(matches, way)+(steps-1)*way.step, len(matches))
+}
+
+// firstStep is the place of the match the first step one way goes to: a step from the match the tab showed last,
+// while the page stays there; with none, the match the way picks by the page's top line.
+func (model Model) firstStep(matches []int, way matchWay) int {
+	top := model.scrolls[model.chosen]
+	if last := model.search.shown[model.chosen]; last.shown && last.scroll == top {
+		return last.place + way.step
 	}
-	return byTheTop
+	return way.byTheTop(matches, top)
 }
 
-// stepMatch shows the match a number of steps from a line, each step the next match after the line or the one
-// before it, round from the last to the first; it says which line of how many holding a match it is, or that the
-// search found nothing in the tab.
-func (model Model) stepMatch(steps, from int, step func(matches []int, line int) int) Model {
+// toMatch shows a match of the chosen tab, the one a choice picks among its matches, and says which of how many it
+// is; or says the search found nothing in the tab.
+func (model Model) toMatch(choose func(matches []int) int) Model {
 	query, matches := model.search.query, model.drawn.tabs[model.chosen].matches
 	if query == "" {
 		return model
@@ -125,23 +176,29 @@ func (model Model) stepMatch(steps, from int, step func(matches []int, line int)
 		model.said = commandMessage{text: notFoundError + query, failed: true}
 		return model
 	}
-	place := step(matches, from)
-	for range steps - 1 {
-		place = step(matches, matches[place])
-	}
+	place := choose(matches)
 	model.said = commandMessage{
 		text:   searchMark + query + matchOpening + strconv.Itoa(place+1) + matchOf + strconv.Itoa(len(matches)) + matchClosing,
 		failed: false,
 	}
 	model = model.scrolledTo(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
-	model.search.shown[model.chosen] = shownMatch{line: matches[place], scroll: model.scrolls[model.chosen], shown: true}
+	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.scrolls[model.chosen], shown: true}
 	return model
 }
 
-// matchAfter is the place of the first match after a line, or the first of all after the last.
-func matchAfter(matches []int, line int) int {
-	return max(slices.IndexFunc(matches, func(matching int) bool { return matching > line }), 0)
+// markedQuery is the search a tab marks: what the reader types, on the chosen tab while they type it; the search
+// confirmed last everywhere else.
+func (model Model) markedQuery(place int) string {
+	if model.keys.mode == modeSearch && place == model.chosen {
+		return model.search.typing
+	}
+	return model.search.query
+}
+
+// matchAtOrAfter is the place of the first match on a line or after it, or the first of all after the last.
+func matchAtOrAfter(matches []int, line int) int {
+	return max(slices.IndexFunc(matches, func(matching int) bool { return matching >= line }), 0)
 }
 
 // matchBefore is the place of the last match before a line, or the last of all before the first.
@@ -160,14 +217,56 @@ type matchedRun struct {
 	matched bool
 }
 
-// matchedRuns are a line's runs with each match of a query, whatever its case, parted into a run of its own; with
-// no query, the runs as they are.
-func matchedRuns(shown line, query string) []matchedRun {
+// markedLine is a line with each match of the search parted into a run of its own, and how many matches it holds.
+type markedLine struct {
+	runs       []matchedRun
+	matchCount int
+}
+
+// markedLineOf is a line with each match of a query, whatever its case, marked; with no query, the line as it is.
+func markedLineOf(shown line, query string) markedLine {
 	letters := []rune{}
 	for _, piece := range shown {
 		letters = append(letters, []rune(piece.text)...)
 	}
-	marks := matchMarks(letters, []rune(query))
+	queryLetters := []rune(query)
+	starts := matchStarts(letters, queryLetters)
+	return markedLine{runs: partedRuns(shown, matchMarks(starts, len(letters), len(queryLetters))), matchCount: len(starts)}
+}
+
+// matchStarts are the places of the letters each match of a query starts at, whatever its case. Matches never
+// overlap, as Neovim's do not: the next is sought after the end of the one before.
+func matchStarts(letters, query []rune) []int {
+	starts := []int{}
+	if len(query) == 0 {
+		return starts
+	}
+	for start := 0; start+len(query) <= len(letters); {
+		if !strings.EqualFold(string(letters[start:start+len(query)]), string(query)) {
+			start++
+			continue
+		}
+		starts = append(starts, start)
+		start += len(query)
+	}
+	return starts
+}
+
+// matchMarks are whether each of a count of letters lies in a match, the matches starting at places and each as
+// long as the query.
+func matchMarks(starts []int, letterCount, queryLength int) []bool {
+	marks := make([]bool, letterCount)
+	for _, start := range starts {
+		for index := range queryLength {
+			marks[start+index] = true
+		}
+	}
+	return marks
+}
+
+// partedRuns are a line's runs parted where a letter's mark differs from the one before it, each part marked as
+// its letters are.
+func partedRuns(shown line, marks []bool) []matchedRun {
 	matched := []matchedRun{}
 	place := 0
 	for _, piece := range shown {
@@ -185,25 +284,6 @@ func matchedRuns(shown line, query string) []matchedRun {
 		place += len(pieceLetters)
 	}
 	return matched
-}
-
-// matchMarks are whether each letter lies in a match of a query, whatever its case; matches never overlap.
-func matchMarks(letters, query []rune) []bool {
-	marks := make([]bool, len(letters))
-	if len(query) == 0 {
-		return marks
-	}
-	for start := 0; start+len(query) <= len(letters); {
-		if !strings.EqualFold(string(letters[start:start+len(query)]), string(query)) {
-			start++
-			continue
-		}
-		for index := range query {
-			marks[start+index] = true
-		}
-		start += len(query)
-	}
-	return marks
 }
 
 func partOf(piece run, letters []rune, matched bool) matchedRun {

@@ -128,11 +128,11 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 
 // tab paints a tab's lines in the frame, each match of the search marked: each at the page's left edge, cut at its
 // right one, the screen's width filled.
-func (paint paint) tab(lines [][]matchedRun, frame frame) []string {
+func (paint paint) tab(lines []markedLine, frame frame) []string {
 	drawn := make([]string, 0, len(lines))
 	gutter := strings.Repeat(space, frame.left)
 	for _, shown := range lines {
-		painted, width := paint.line(shown, frame.inner)
+		painted, width := paint.line(shown.runs, frame.inner)
 		drawn = append(drawn, gutter+painted+strings.Repeat(space, max(frame.width-frame.left-width, 0)))
 	}
 	return drawn

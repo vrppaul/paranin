@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -132,13 +131,19 @@ type drawnScreen struct {
 	blankRow string
 }
 
-// drawnTab is one tab painted: its lines, those that hold a match of the search, the line of tabs with it chosen,
-// and the status line in each mode but for its ruler.
+// drawnTab is one tab painted: its page, the line of tabs with it chosen, and the status line in each mode but for
+// its ruler.
 type drawnTab struct {
-	lines   []string
-	matches []int
+	paintedPage
 	tabline string
 	status  map[mode]drawnStatus
+}
+
+// paintedPage is a tab's lines painted with the search it marks, and the line of each match, in order: a line
+// holding two matches is there twice.
+type paintedPage struct {
+	lines   []string
+	matches []int
 }
 
 // drawnStatus is the status line but for its ruler: what stands before the ruler, and the keys after it.
@@ -163,12 +168,10 @@ func (model Model) drawnScreen() drawnScreen {
 		for shown, seen := range looks {
 			status[shown] = model.drawnStatus(place, seen)
 		}
-		marked := markedLines(model.laid[place], model.search.query)
 		tabs = append(tabs, drawnTab{
-			lines:   model.paint.tab(marked, model.frame),
-			matches: matchingLines(marked),
-			tabline: model.paint.bar(model.tabline(place), width),
-			status:  status,
+			paintedPage: model.paintedPage(place),
+			tabline:     model.paint.bar(model.tabline(place), width),
+			status:      status,
 		})
 	}
 	crossRow := ""
@@ -176,6 +179,12 @@ func (model Model) drawnScreen() drawnScreen {
 		crossRow = model.paint.crossRow(model.frame)
 	}
 	return drawnScreen{tabs: tabs, crossRow: crossRow, blankRow: strings.Repeat(space, width)}
+}
+
+// paintedPage paints a tab's lines, each match of the search it marks marked.
+func (model Model) paintedPage(place int) paintedPage {
+	marked := markedLines(model.laid[place], model.markedQuery(place))
+	return paintedPage{lines: model.paint.tab(marked, model.frame), matches: matchLines(marked)}
 }
 
 // drawnStatus paints a tab's status line in a mode, all but its ruler.
@@ -229,25 +238,25 @@ func (model Model) commandLine() string {
 	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, width)
 }
 
-// markedLines are a tab's lines with each match of a query parted into a run of its own, worked out once for both
-// the painting and the list of the lines that hold a match.
-func markedLines(lines []line, query string) [][]matchedRun {
-	marked := make([][]matchedRun, 0, len(lines))
+// markedLines are a tab's lines with each match of a query marked, worked out once for both the painting and the
+// list of the matches.
+func markedLines(lines []line, query string) []markedLine {
+	marked := make([]markedLine, 0, len(lines))
 	for _, shown := range lines {
-		marked = append(marked, matchedRuns(shown, query))
+		marked = append(marked, markedLineOf(shown, query))
 	}
 	return marked
 }
 
-// matchingLines are the places of the marked lines that hold a match.
-func matchingLines(marked [][]matchedRun) []int {
-	matching := []int{}
-	for place, runs := range marked {
-		if slices.ContainsFunc(runs, func(piece matchedRun) bool { return piece.matched }) {
-			matching = append(matching, place)
+// matchLines are the place of the line of each match among marked lines, in order.
+func matchLines(marked []markedLine) []int {
+	lines := []int{}
+	for place, shown := range marked {
+		for range shown.matchCount {
+			lines = append(lines, place)
 		}
 	}
-	return matching
+	return lines
 }
 
 // tabline is each tab by its number and title, a chosen one on the page's ground, then the site's name at the

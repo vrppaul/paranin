@@ -386,7 +386,7 @@ the content package is designed to be face-agnostic from day one.
                                 │ internal/face/tui (Bubble Tea)      │
                                 │  tabs of the résumé's document      │
                                 │  laid out once a size, painted once │
-                                │  a theme, from internal/look        │
+                                │  a theme and a search, from look    │
                                 └─────────────────────────────────────┘
 ```
 

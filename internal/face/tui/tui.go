@@ -13,7 +13,10 @@
 // not the command line says Neovim's E36, and the window closes when a resize leaves it no room. On the command line
 // the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent where
 // the terminal shows many colours: the program writes no frame to blink it, so a session left alone writes nothing
-// and its idle timeout runs out.
+// and its idle timeout runs out. The résumé's title, the author's name, ends in the site's cursor, the bar in the
+// accent the page, the PDF and the card draw there. It stands still, where the first version's blinked for half a
+// minute after a key: a blink would need a tick, a count and the head painted again each half second, where a tab is
+// painted once.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says

@@ -31,6 +31,8 @@ const (
 	kindStrong
 	// kindCode is a command a reader types or copies
 	kindCode
+	// kindCursor is the site's cursor after the head's title
+	kindCursor
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, and leading to an

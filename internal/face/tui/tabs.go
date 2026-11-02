@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/document"
@@ -26,6 +27,10 @@ const (
 	rangeMark    = "–"
 	monthLayout  = "2006-01"
 )
+
+// The site's cursor: the bar after the author's name, as the page, the PDF and the card draw it
+// (docs/FOUNDATION.md §3.4)
+const cursorBar = "▎"
 
 // tab is one screen of a document a reader moves between: the head and the blocks before the first section, or
 // a section's blocks under its title.
@@ -89,9 +94,14 @@ func (layout layout) tab(shown tab) []line {
 	return append(append(lines, blankLines()...), layout.blocks(shown.blocks, 0)...)
 }
 
-// head lays out the title, the subtitle and place, the lead, and the ways to reach the author.
+// head lays out the title, with the site's cursor after it where the page carries one, the subtitle and place, the
+// lead, and the ways to reach the author.
 func (layout layout) head(head document.Head) []line {
-	lines := layout.fill(layout.words(head.Title, kindStrong), 0)
+	title := layout.words(head.Title, kindStrong)
+	if carriesCursor(head.Page.Kind) {
+		title = withCursor(title)
+	}
+	lines := layout.fill(title, 0)
 	beside := placedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted))
 	lines = append(lines, layout.fill(beside, 0)...)
 	if lead := layout.fill(layout.words(head.Lead, kindText), 0); len(lead) > 0 {
@@ -101,6 +111,31 @@ func (layout layout) head(head document.Head) []line {
 		lines = append(append(lines, blankLines()...), layout.facts(head.Ways, 0)...)
 	}
 	return lines
+}
+
+// carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as
+// the first version's page drew it; a project's and the index's do not.
+func carriesCursor(kind document.PageKind) bool {
+	switch kind {
+	case document.PageResume:
+		return true
+	case document.PageNone, document.PageProject, document.PageIndex:
+	}
+	return false
+}
+
+// withCursor is a title's words with the site's cursor at the end of the last, so a line parts the two only where
+// that word is wider than the line and breaks, bar and all, as fill breaks any; a title of no words is left with
+// none.
+func withCursor(words []word) []word {
+	last := len(words) - 1
+	if last < 0 {
+		return words
+	}
+	marked := slices.Clone(words)
+	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: ""}
+	marked[last].runs = append(slices.Clone(marked[last].runs), cursor)
+	return marked
 }
 
 // blocks lays out blocks at an indent, a blank line between each two.

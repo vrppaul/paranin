@@ -95,7 +95,8 @@ type Check struct {
 	Advice []Span
 }
 
-// CheckLevel is how a check reads.
+// CheckLevel is how a check reads. The levels rise from a check that passed to one that failed, and a face that
+// lists them lists them in that order: a level added takes its place in it.
 type CheckLevel int
 
 const (

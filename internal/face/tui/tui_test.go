@@ -292,6 +292,11 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtureSite(snapshot), width, height)
 }
 
+// textOf is a text as the spans of a document, for a document a test builds by hand.
+func textOf(text string) []document.Span {
+	return []document.Span{document.Text{Text: text}}
+}
+
 // fixtureSite is the site of the fixture, at the address its profile gives.
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)

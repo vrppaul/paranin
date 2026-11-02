@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/document"
@@ -55,6 +57,9 @@ const cursorBar = "▎"
 // a section's blocks under its title.
 type tab struct {
 	title string
+	// tally is the tab's checks counted by level, its sections' included, as the status line names them after the
+	// title, and empty where the tab holds none
+	tally string
 	// head is the document's head on the tab that opens with it, and nothing on a section's
 	head   *document.Head
 	blocks []document.Block
@@ -62,7 +67,7 @@ type tab struct {
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, then each section.
 func tabsOf(composed document.Document) []tab {
-	opening := tab{title: plainText(composed.Head.Title), head: &composed.Head, blocks: nil}
+	opening := tab{title: plainText(composed.Head.Title), tally: "", head: &composed.Head, blocks: nil}
 	sections := []tab{}
 	for _, block := range composed.Blocks {
 		section, isSection := block.(document.Section)
@@ -70,9 +75,49 @@ func tabsOf(composed document.Document) []tab {
 			opening.blocks = append(opening.blocks, block)
 			continue
 		}
-		sections = append(sections, tab{title: plainText(section.Title), head: nil, blocks: section.Blocks})
+		sections = append(sections, tab{title: plainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks})
 	}
+	opening.tally = checkTally(opening.blocks)
 	return append([]tab{opening}, sections...)
+}
+
+// checkTally is how many checks a tab's blocks hold at each level that has one, its sections' included, in the
+// order the document gives the levels, the count before Neovim's word for the level: "1 OK · 1 WARNING".
+func checkTally(blocks []document.Block) string {
+	looks, counted := levelLooks(), []string{}
+	for _, level := range slices.Sorted(maps.Keys(looks)) {
+		if count := checksAt(blocks, level); count > 0 {
+			counted = append(counted, strconv.Itoa(count)+space+looks[level].word)
+		}
+	}
+	return strings.Join(counted, tallySeparator)
+}
+
+// checksAt is how many checks blocks hold at a level, the blocks of their sections included.
+func checksAt(blocks []document.Block, level document.CheckLevel) int {
+	count := 0
+	for _, block := range blocks {
+		switch typed := block.(type) {
+		case document.Section:
+			count += checksAt(typed.Blocks, level)
+		case document.Checks:
+			count += checksOfLevel(typed.List, level)
+		case document.Paragraph, document.Table, document.CodeBlock, document.Facts, document.Entry, document.Card,
+			document.Contents:
+		}
+	}
+	return count
+}
+
+// checksOfLevel is how many of a group's checks read at a level.
+func checksOfLevel(checks []document.Check, level document.CheckLevel) int {
+	count := 0
+	for _, check := range checks {
+		if check.Level == level {
+			count++
+		}
+	}
+	return count
 }
 
 // plainText is the text of spans, marks gone: a tab's title.

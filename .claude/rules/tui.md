@@ -16,5 +16,5 @@ How the TUI is built is said in the comment of `internal/face/tui`; the rules fo
 - Every colour comes from `look`, which `scripts/tokens` writes from `design/tokens.yaml`: change the tokens and run `go generate ./internal/look`, never the palette by hand.
 - With sixteen colours or none, what colour alone would tell is told by reversing or underlining as well.
 - Each key is a named constant, and each key's behaviour a test through the model: keys in, the screen's text out, its colours stripped.
-- The facts and the site's words come from the document. The TUI's own words are those of the frame it draws, as Neovim's are: the mode, the ruler (`All`, `Top`, `Bot`), the keys the status line names.
+- The facts and the site's words come from the document. The TUI's own words are those of the frame it draws, as Neovim's are: the mode, the ruler (`All`, `Top`, `Bot`), the keys the status line names, and a tab's count of checks by level.
 - On the page the TUI's own words are only Neovim's for a value the document types: `:checkhealth`'s levels (`OK`, `WARNING`, `ERROR`) and `ADVICE:`.

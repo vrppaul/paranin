@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -35,11 +36,13 @@ const (
 // The columns the terminal's cursor takes on the command line, after what is typed
 const cursorWidth = 1
 
-// The marks of the frame: a corner cross, the rule between the parts of the status line, and the room a tab's
-// number and title are padded with, most first
+// The marks of the frame: a corner cross, the rule between the parts of the status line, what parts a tab's title
+// from its tally there and one level's count from the next, and the room a tab's number and title are padded with,
+// most first
 const (
 	crossMark       = "+"
 	statusRuleMark  = "│"
+	tallySeparator  = space + placeMark + space
 	widestTabPad    = 2
 	narrowestTabPad = 1
 )
@@ -89,12 +92,13 @@ type hint struct {
 	does string
 }
 
-// What parts the two keys of a hint, and the widest the ruler ever is with the spaces around it: one of its
-// words, or a percentage below a hundred, which is two digits at most
+// What parts the two keys of a hint, the widest the ruler ever is with the spaces around it: one of its words, or a
+// percentage below a hundred, which is two digits at most; and the widest a mode's name is with the spaces around it
 const (
 	hintKeySeparator = "/"
 	percentDigits    = 2
 	widestRuler      = 2*spaceWidth + max(len(wholeShown), len(startShown), len(endShown), percentDigits+len(percentMark))
+	widestMode       = 2*spaceWidth + max(len(normalMode), len(commandMode))
 )
 
 // The mark the status line names the Enter key by, the word for what both it and the slash do, and for what Esc
@@ -342,14 +346,20 @@ func (model Model) tabPieces(padding, first, chosen int) []piece {
 	return pieces
 }
 
-// statusOpening is what the status line opens with on a tab in a mode: the mode, the tab's title, and the rule
-// before the ruler.
+// statusOpening is what the status line opens with on a tab in a mode: the mode, the tab's title, its tally, and
+// the rule before the ruler. The tally shows where it has one that fits whole beside the widest mode's name with
+// room left for the ruler, so it shows in every mode or in none; the keys the line names get the room it leaves, as
+// the first version's count came before its keys.
 func (model Model) statusOpening(place int, modeName string) []piece {
-	return []piece{
-		{text: space + modeName + space, part: partMode},
-		{text: space + model.tabs[place].title + space, part: partStatus},
-		{text: statusRuleMark, part: partStatusRule},
+	shown := model.tabs[place]
+	title := []piece{{text: space + shown.title, part: partStatus}}
+	closing := []piece{{text: space, part: partStatus}, {text: statusRuleMark, part: partStatusRule}}
+	tally := []piece{{text: tallySeparator + shown.tally, part: partStatus}}
+	mode := []piece{{text: space + modeName + space, part: partMode}}
+	if shown.tally == "" || widestMode+piecesWidth(slices.Concat(title, tally, closing))+widestRuler > model.frame.width {
+		return slices.Concat(mode, title, closing)
 	}
+	return slices.Concat(mode, title, tally, closing)
 }
 
 // statusHints are the keys the status line names in a mode that fit in a room, then the bar's last space; in a

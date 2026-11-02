@@ -15,7 +15,7 @@ const (
 	pageNotFoundClosing = `" in path`
 )
 
-// resumePage is the page a session opens on, and the one q closes a project's page back to.
+// resumePage is the page a session opens on, and the one q closes any other page back to.
 func resumePage() document.Page {
 	return document.Page{Kind: document.PageResume, Slug: ""}
 }
@@ -68,9 +68,20 @@ func (model Model) showing(page document.Page) Model {
 	left[model.shown] = readerPlace{chosen: model.chosen, scrolls: model.scrolls}
 	place := left[page]
 	delete(left, page)
-	model.left, model.shown, model.tabs, model.commands = left, page, model.buffers[page], commands(closingHint(page))
+	model.left, model.shown, model.tabs = left, page, model.buffers[page]
+	model.commands = commands(closingHint(page), model.buffers)
 	model.chosen, model.scrolls = place.chosen, place.scrolls
 	return model.relaid()
+}
+
+// healthPage is the health report :checkhealth shows.
+func healthPage() document.Page {
+	return document.Page{Kind: document.PageHealth, Slug: ""}
+}
+
+// checkedHealth shows the health report, as Neovim's :checkhealth shows its own.
+func (model Model) checkedHealth(string) (Model, tea.Cmd) {
+	return model.showing(healthPage()), nil
 }
 
 // edit shows the page of a project by its slug, as Neovim's :e opens a file, or says it finds no such page.
@@ -83,8 +94,9 @@ func (model Model) edit(slug string) (Model, tea.Cmd) {
 	return model.showing(wanted), nil
 }
 
-// closed is the model after q, as Neovim's :q closes a window: on a project's page the résumé shows again, where
-// its reader left it, as the first version closed a report; on the résumé the session ends.
+// closed is the model after q, as Neovim's :q closes a window: on a project's page or the health report the
+// résumé shows again, where its reader left it, as the first version closed a report; on the résumé the session
+// ends.
 func (model Model) closed(int) (Model, tea.Cmd) {
 	if model.shown != resumePage() {
 		return model.showing(resumePage()), nil
@@ -92,7 +104,7 @@ func (model Model) closed(int) (Model, tea.Cmd) {
 	return model, tea.Quit
 }
 
-// closingHint is what the frame says q does on a page: it closes a project's page, and quits on the résumé.
+// closingHint is what the frame says q does on a page: it closes any page but the résumé, and quits on the résumé.
 func closingHint(shown document.Page) string {
 	if shown == resumePage() {
 		return quitHint

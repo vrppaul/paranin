@@ -226,25 +226,41 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 	}
 }
 
-// Every phrase of the résumé reaches the TUI on one tab or another, at any width: a terminal reader reads every
-// fact a browser reader reads. A word wider than a narrow terminal breaks across lines, so the phrases are read
-// with every space and break taken out.
+// Every phrase of a page reaches the TUI on one tab or another, at any width: of the résumé, so a terminal reader
+// reads every fact a browser reader reads, and of the health report :checkhealth shows. A word wider than a narrow
+// terminal breaks across lines, so the phrases are read with every space and break taken out.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtureSnapshot(test)
-	resume := compose.Resume(snapshot)
-	for _, width := range []int{commonWidth, narrowWidth} {
-		model := New([]document.Document{resume}, fixtureSite(snapshot), width, tallHeight)
-		screens := []string{}
-		for range tabsOf(resume) {
-			screens = append(screens, screenOf(test, model))
-			model = pressed(test, model, "l")
-		}
-		read := strings.Join(strings.Fields(strings.Join(screens, " ")), "")
-		for _, phrase := range document.Phrases(resume) {
-			if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) {
-				test.Errorf("at %d columns no tab holds %q", width, phrase)
+	cases := []struct {
+		name  string
+		shown document.Document
+		model Model
+	}{
+		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, commonWidth, tallHeight)},
+		{name: "the résumé, narrow", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight)},
+		{
+			name: "the health report", shown: compose.Health(snapshot),
+			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "checkhealth"),
+		},
+		{
+			name: "the health report, narrow", shown: compose.Health(snapshot),
+			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "checkhealth"),
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model, screens := testCase.model, []string{}
+			for range tabsOf(testCase.shown) {
+				screens = append(screens, screenOf(test, model))
+				model = pressed(test, model, "l")
 			}
-		}
+			read := strings.Join(strings.Fields(strings.Join(screens, " ")), "")
+			for _, phrase := range document.Phrases(testCase.shown) {
+				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) {
+					test.Errorf("no tab of %s holds %q", testCase.name, phrase)
+				}
+			}
+		})
 	}
 }
 
@@ -268,8 +284,12 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 }
 
 func fixtureModel(test *testing.T, width, height int) Model {
-	snapshot := fixtureSnapshot(test)
-	return New(compose.Documents(snapshot), fixtureSite(snapshot), width, height)
+	return sessionModel(fixtureSnapshot(test), width, height)
+}
+
+// sessionModel is a session on what a snapshot draws, as the SSH server opens one: its pages and the TUI's extras.
+func sessionModel(snapshot *content.Snapshot, width, height int) Model {
+	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtureSite(snapshot), width, height)
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

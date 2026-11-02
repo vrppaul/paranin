@@ -82,6 +82,9 @@ health:
     checks:
       - {level: ok, text: all fine}
       - {level: warn, text: one thing, advice: look at it}
+  - name: tooling
+    checks:
+      - {level: error, text: no tests yet}
 
 contact:
   about: [a role, a project]

@@ -15,24 +15,31 @@ func Phrases(document Document) []string {
 
 func blockPhrases(phrases []string, blocks []Block) []string {
 	for _, block := range blocks {
-		switch typed := block.(type) {
-		case Section:
-			phrases = blockPhrases(spanPhrases(phrases, typed.Title), typed.Blocks)
-		case Paragraph:
-			phrases = spanPhrases(phrases, typed.Spans)
-		case Table:
-			phrases = rowPhrases(phrases, typed.Rows)
-		case CodeBlock:
-			phrases = textPhrase(phrases, typed.Text)
-		case Facts:
-			phrases = factPhrases(phrases, typed.List)
-		case Entry:
-			phrases = entryPhrases(phrases, typed)
-		case Card:
-			phrases = cardPhrases(phrases, typed)
-		case Contents:
-			phrases = listingPhrases(phrases, typed.Listings)
-		}
+		phrases = oneBlockPhrases(phrases, block)
+	}
+	return phrases
+}
+
+func oneBlockPhrases(phrases []string, block Block) []string {
+	switch typed := block.(type) {
+	case Section:
+		return blockPhrases(spanPhrases(phrases, typed.Title), typed.Blocks)
+	case Paragraph:
+		return spanPhrases(phrases, typed.Spans)
+	case Table:
+		return rowPhrases(phrases, typed.Rows)
+	case CodeBlock:
+		return textPhrase(phrases, typed.Text)
+	case Facts:
+		return factPhrases(phrases, typed.List)
+	case Entry:
+		return entryPhrases(phrases, typed)
+	case Card:
+		return cardPhrases(phrases, typed)
+	case Contents:
+		return listingPhrases(phrases, typed.Listings)
+	case Checks:
+		return checkPhrases(spanPhrases(phrases, typed.Title), typed.List)
 	}
 	return phrases
 }
@@ -70,6 +77,14 @@ func cardPhrases(phrases []string, card Card) []string {
 func listingPhrases(phrases []string, listings []Listing) []string {
 	for _, listing := range listings {
 		phrases = spanPhrases(spanPhrases(phrases, listing.Title), listing.Note)
+	}
+	return phrases
+}
+
+// checkPhrases are what each check says and its advice; a level is each face's to write.
+func checkPhrases(phrases []string, checks []Check) []string {
+	for _, check := range checks {
+		phrases = spanPhrases(spanPhrases(phrases, check.Spans), check.Advice)
 	}
 	return phrases
 }

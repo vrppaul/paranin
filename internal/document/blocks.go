@@ -81,6 +81,34 @@ type Listing struct {
 	Note  []Span
 }
 
+// Checks are a group of checks under the group's name: the hidden health report holds its checks so, as Neovim's
+// :checkhealth does.
+type Checks struct {
+	Title []Span
+	List  []Check
+}
+
+// Check is one line of a report: how it reads, what it says, and the advice on it, empty where it has none.
+type Check struct {
+	Level  CheckLevel
+	Spans  []Span
+	Advice []Span
+}
+
+// CheckLevel is how a check reads.
+type CheckLevel int
+
+const (
+	// The zero level names none
+	_ CheckLevel = iota
+	// CheckOK is a check that passed
+	CheckOK
+	// CheckWarning is a check that passed with something to look at
+	CheckWarning
+	// CheckError is a check that failed
+	CheckError
+)
+
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (Table) block()     {}
@@ -89,3 +117,4 @@ func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}
 func (Contents) block()  {}
+func (Checks) block()    {}

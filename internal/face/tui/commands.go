@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/vrppaul/paranin/internal/document"
 )
 
 // How the command line opens, and what it says, as Neovim says it, of a command it does not know, of a command
@@ -25,6 +27,9 @@ const (
 	pagesHint   = "pages"
 )
 
+// The hidden command that shows the health report, as Neovim's shows its own
+const healthCommand = "checkhealth"
+
 // A command runs with no count typed before it
 const noCount = 0
 
@@ -43,9 +48,10 @@ type commandAction func(model Model, argument string) (Model, tea.Cmd)
 
 // commands are the commands the command line runs, in the order the window lists them, which says what q does on
 // the page shown: Neovim's ways to close a window and to quit, listed by the first alone, and its way to open a
-// file, here a project's page by its slug.
-func commands(closing string) []command {
-	return []command{
+// file, here a project's page by its slug; and where the session holds the health report, Neovim's way to show its
+// own, which the window keeps hidden, as the first version did.
+func commands(closing string, buffers map[document.Page][]tab) []command {
+	known := []command{
 		{name: "q", does: closing, takesArgument: false, act: Model.closedByCommand},
 		{name: "quit", does: "", takesArgument: false, act: Model.closedByCommand},
 		{name: "q!", does: "", takesArgument: false, act: Model.closedByCommand},
@@ -53,6 +59,10 @@ func commands(closing string) []command {
 		{name: editCommand, does: "open a page", takesArgument: true, act: Model.edit},
 		{name: "edit", does: "", takesArgument: true, act: Model.edit},
 	}
+	if _, held := buffers[healthPage()]; held {
+		known = append(known, command{name: healthCommand, does: "", takesArgument: false, act: Model.checkedHealth})
+	}
+	return known
 }
 
 // closedByCommand closes the page shown, as q does.

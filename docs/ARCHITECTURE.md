@@ -158,6 +158,8 @@ and web routes.
     a tag, a summary, its facts and its page: a project);
   - the index's: contents, the pages a document leads to, each by its title
     and a line on what it is, which `llms.txt` lists;
+  - the health report's: checks, a group of them under its name, each check
+    at a level (OK, a warning, an error) with what it says and its advice;
   - a widget (a name, its props, a caption and an alt text), the form, the
     salary range and the job matcher among them, so `compose` places them
     too;
@@ -242,8 +244,8 @@ and web routes.
 - A face draws from documents and from `compose`'s records alone.
 - A new kind of block or span is a change to every face, which the compiler
   and gochecksumtype point at.
-- A month's shape is written twice, in `content` and in `document`: the
-  price of layers that stand side by side.
+- A month's shape is written twice, in `content` and in `document`, and so
+  are a check's levels: the price of layers that stand side by side.
 
 ---
 

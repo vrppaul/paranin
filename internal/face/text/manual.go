@@ -64,14 +64,14 @@ func Manual(composed document.Document, site routes.Site) string {
 }
 
 // pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page;
-// the index, served in markdown alone, has no manual to name.
+// the index, served in markdown alone, and the hidden health report, served in neither, have no manual to name.
 func (writer manualWriter) pageName(page document.Page) string {
 	switch page.Kind {
 	case document.PageResume:
 		return writer.site.Host()
 	case document.PageProject:
 		return page.Slug
-	case document.PageNone, document.PageIndex:
+	case document.PageNone, document.PageIndex, document.PageHealth:
 	}
 	return ""
 }
@@ -122,6 +122,9 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.card(indent, typed)
 	case document.Contents:
 		return writer.contents(indent, typed)
+	case document.Checks:
+		// only the hidden health report holds checks, and no host hands it to a text face: a page served with them
+		// would fail TestEveryPhraseReachesEveryFormat
 	}
 	return nil
 }

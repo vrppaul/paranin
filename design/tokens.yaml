@@ -58,6 +58,16 @@ colours:
     light: "#d20f39"
     dark: "#ed8796"
     basic: 1
+  - name: passed
+    about: what says a check passed, as the health report's OK
+    light: "#40a02b"
+    dark: "#a6da95"
+    basic: 2
+  - name: warned
+    about: what says a check passed with something to look at, as the health report's WARNING
+    light: "#df8e1d"
+    dark: "#eed49f"
+    basic: 3
 
 blends:
   - name: tint

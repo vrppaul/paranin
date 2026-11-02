@@ -66,27 +66,30 @@ func TestEachPageKeepsWhereItsReaderStood(test *testing.T) {
 	}
 }
 
-// On a project's page q and the commands that close a window go back to the résumé, and the session goes on.
-func TestClosingAProjectsPageGoesBackToTheResume(test *testing.T) {
+// On a project's page, or the health report, q and the commands that close a window go back to the résumé, and the
+// session goes on.
+func TestClosingAPageGoesBackToTheResume(test *testing.T) {
 	cases := []struct {
-		name   string
-		typing string
-		last   string
+		name    string
+		opening string
+		typing  string
+		last    string
 	}{
-		{name: "q", typing: "", last: "q"},
-		{name: ":q", typing: ":q", last: "enter"},
-		{name: ":quit", typing: ":quit", last: "enter"},
-		{name: ":q!", typing: ":q!", last: "enter"},
+		{name: "q", opening: "e tidy-tool", typing: "", last: "q"},
+		{name: ":q", opening: "e tidy-tool", typing: ":q", last: "enter"},
+		{name: ":quit", opening: "e tidy-tool", typing: ":quit", last: "enter"},
+		{name: ":q!", opening: "e tidy-tool", typing: ":q!", last: "enter"},
+		{name: "q on the health report", opening: "checkhealth", typing: "", last: "q"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			project := typed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"), testCase.typing)
-			next, command := project.Update(keyPress(test, testCase.last))
+			opened := typed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.opening), testCase.typing)
+			next, command := opened.Update(keyPress(test, testCase.last))
 			if command != nil {
-				test.Fatalf("after :e tidy-tool and %s a command came, want the session going on", testCase.name)
+				test.Fatalf("after :%s and %s a command came, want the session going on", testCase.opening, testCase.name)
 			}
 			if screen := screenOf(test, as[Model](test, next)); !strings.Contains(screen, resumeHeadline) {
-				test.Errorf("after :e tidy-tool and %s the screen =\n%s\nwant the résumé", testCase.name, screen)
+				test.Errorf("after :%s and %s the screen =\n%s\nwant the résumé", testCase.opening, testCase.name, screen)
 			}
 		})
 	}

@@ -31,6 +31,8 @@ const (
 	PageProject
 	// PageIndex is the site's index, the list of its pages an agent reads first; it has no slug
 	PageIndex
+	// PageHealth is the hidden health report, after Neovim's :checkhealth; it has no slug
+	PageHealth
 )
 
 func (Address) target() {}

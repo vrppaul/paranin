@@ -6,16 +6,18 @@
 // searches the tab, and n and N go through its matches. While the reader types a search, the tab marks what they
 // type and its page goes to the first match, as Neovim's incsearch does, but for the slash, which takes the marks of
 // the search before away at once; the command line counts the matches, as Neovim does. A colon opens the command
-// line, which runs a command, or names one it does not know with Neovim's error. The session holds the résumé and
-// each project's page as buffers, as Neovim holds the files it opened: :e and a project's slug shows the project's
-// page in place of the résumé, and q, or :q, shows the résumé again, as the first version closed a report; each
-// buffer keeps the tab and the scrolls its reader left. The status line names :e last, where a project's page is
-// there to open; the page itself holds the document's words alone. While the reader types, a window over the page
-// lists the commands whose names start with what is typed, as the first version showed them, where Neovim waits for
-// Tab; after :e and a space it lists the projects' pages whose slugs start with what follows. Tab and Shift+Tab go
-// round what it lists, writing the item chosen on the line, and past either end what was typed, as Neovim's wildmenu
+// line, which runs a command, or names one it does not know with Neovim's error. The session holds the résumé, each
+// project's page and the health report as buffers, as Neovim holds the files it opened: :e and a project's slug
+// shows the project's page in place of the résumé, :checkhealth the health report, written as Neovim writes its
+// own, and q, or :q, shows the résumé again, as the first version closed a report; each buffer keeps the tab and the
+// scrolls its reader left. The status line names :e last, where a project's page is there to open; the page holds
+// the document's words, and of the TUI's own only its marks and Neovim's words for a check's level and advice.
+// While the reader types, a window over the page lists the commands whose names start with what is typed, as the
+// first version showed them, where Neovim waits for Tab, and keeps :checkhealth hidden, as the first version did;
+// after :e and a space it lists the projects' pages whose slugs start with what follows. Tab and Shift+Tab go round
+// what it lists, writing the item chosen on the line, and past either end what was typed, as Neovim's wildmenu
 // does. A question mark or a space opens the window of keys, which names the keys of normal mode and what each does,
-// and which the next key closes; the frame says q closes a project's page and quits on the résumé. A search stands in
+// and which the next key closes; the frame says q closes a page it opened and quits on the résumé. A search stands in
 // for the cursor this TUI has not: y copies the value of the fact on the line found, as Neovim's yy yanks a line,
 // to the reader's clipboard over OSC 52, as the first version copied a value of its head; a link gives its text, as
 // its line shows it. A window shows whole or not at all: the window of keys opens only where it fits, where it does
@@ -119,7 +121,7 @@ func New(documents []document.Document, site routes.Site, width, height int) Mod
 		chosen:     0,
 		scrolls:    make([]int, len(buffers[shown])),
 		actions:    normalActions(),
-		commands:   commands(closingHint(shown)),
+		commands:   commands(closingHint(shown), buffers),
 		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
 		completion: completionState{typed: "", listed: nil, chosen: noneChosen},

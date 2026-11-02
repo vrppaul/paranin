@@ -83,6 +83,17 @@ func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 	readUntil(test, output, "5 years")
 }
 
+// A session opens the health report with :checkhealth: the server hands the TUI the extras beside the site's pages.
+func TestASessionOpensTheHealthReport(test *testing.T) {
+	address := serving(test, slog.New(slog.DiscardHandler))
+	output, input := openTerminal(test, clientSession(test, address, "reader"))
+	readUntil(test, output, "Languages")
+	if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
+		test.Fatalf("type :checkhealth = %v, want the session open", err)
+	}
+	readUntil(test, output, "no tests yet")
+}
+
 // A session with no terminal is refused, and a command sent with it is never run: the server is a kiosk, not a
 // shell.
 func TestASessionWithoutATerminalIsRefused(test *testing.T) {

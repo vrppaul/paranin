@@ -1,10 +1,10 @@
 // Package ssh serves the TUI over SSH (docs/REQUIREMENTS.md): a kiosk, not a shell. Anyone may connect, with no key
-// and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé
-// and the projects' pages, and nothing else is served: no shell, no command, no file transfer, no forwarding
-// (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never the server
-// (SEC-4), a session idle too long or open too long is closed (SEC-5), and each session is logged as it opens and
-// closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a
-// control character in it (SEC-15).
+// and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
+// the projects' pages and the TUI's extras, and nothing else is served: no shell, no command, no file transfer, no
+// forwarding (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never
+// the server (SEC-4), a session idle too long or open too long is closed (SEC-5), and each session is logged as it
+// opens and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value
+// with a control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
@@ -60,8 +60,8 @@ type Server struct {
 	server *charmssh.Server
 }
 
-// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé among them, and the
-// site that writes their addresses.
+// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé and the health
+// report among them, and the site that writes their addresses.
 type drawing struct {
 	documents []document.Document
 	site      routes.Site
@@ -126,9 +126,10 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// draw is what the sessions of a snapshot draw.
+// draw is what the sessions of a snapshot draw: its pages, and the extras the TUI opens by a command.
 func draw(snapshot *content.Snapshot) drawing {
-	return drawing{documents: compose.Documents(snapshot), site: routes.New(snapshot.Profile.Site.BaseURL)}
+	documents := append(compose.Documents(snapshot), compose.Extras(snapshot)...)
+	return drawing{documents: documents, site: routes.New(snapshot.Profile.Site.BaseURL)}
 }
 
 // open is a session's TUI, of the size its terminal said it is.

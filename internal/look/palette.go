@@ -24,6 +24,10 @@ const (
 	ColourOnAccent
 	// ColourError is what says something went wrong, as a search that found nothing
 	ColourError
+	// ColourPassed is what says a check passed, as the health report's OK
+	ColourPassed
+	// ColourWarned is what says a check passed with something to look at, as the health report's WARNING
+	ColourWarned
 	// ColourTint is a result worth seeing first, the accent laid over the page
 	ColourTint
 	// ColourChosen is the ground of the item chosen in a window, the text laid faintly over the bars
@@ -44,6 +48,8 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourAccent:   {TrueColour: color.RGBA{R: 254, G: 100, B: 11, A: 255}, Indexed: 202, Basic: 3},
 			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
 			ColourError:    {TrueColour: color.RGBA{R: 210, G: 15, B: 57, A: 255}, Indexed: 161, Basic: 1},
+			ColourPassed:   {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
+			ColourWarned:   {TrueColour: color.RGBA{R: 223, G: 142, B: 29, A: 255}, Indexed: 172, Basic: 3},
 			ColourTint:     {TrueColour: color.RGBA{R: 241, G: 218, B: 208, A: 255}, Indexed: 217, Basic: 3},
 			ColourChosen:   {TrueColour: color.RGBA{R: 219, G: 222, B: 230, A: 255}, Indexed: 254, Basic: BasicOwn},
 		}
@@ -58,6 +64,8 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourAccent:   {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
 			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
 			ColourError:    {TrueColour: color.RGBA{R: 237, G: 135, B: 150, A: 255}, Indexed: 210, Basic: 1},
+			ColourPassed:   {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},
+			ColourWarned:   {TrueColour: color.RGBA{R: 238, G: 212, B: 159, A: 255}, Indexed: 223, Basic: 3},
 			ColourTint:     {TrueColour: color.RGBA{R: 82, G: 68, B: 73, A: 255}, Indexed: 95, Basic: 3},
 			ColourChosen:   {TrueColour: color.RGBA{R: 40, G: 43, B: 60, A: 255}, Indexed: 236, Basic: BasicOwn},
 		}

@@ -6,8 +6,8 @@ import (
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
-// résumé or of the index, the label of a way to reach the author or of a detail of a project, or the end of what
-// still goes on.
+// résumé or of the index, the label of a way to reach the author or of a detail of a project, the end of what
+// still goes on, or the title of the TUI's health report.
 type Word int
 
 const (
@@ -26,6 +26,7 @@ const (
 	WordPresent
 	WordAuthor
 	WordResume
+	WordHealth
 )
 
 // wordKeys are the keys a catalogue writes each word under, each named once. exhaustive holds the literal to
@@ -45,6 +46,7 @@ func wordKeys() map[Word]string {
 		WordPresent:    "present",
 		WordAuthor:     "author",
 		WordResume:     "resume",
+		WordHealth:     "health",
 	}
 }
 

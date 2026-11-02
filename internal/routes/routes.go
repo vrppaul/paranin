@@ -63,11 +63,11 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
-// Path is where a page is served in a format, empty where it is served in none: PageNone, the index in any
-// format but markdown, or no format.
+// Path is where a page is served in a format, empty where it is served in none: PageNone, the hidden health
+// report, the index in any format but markdown, or no format.
 func Path(page document.Page, format Format) string {
 	switch page.Kind {
-	case document.PageNone:
+	case document.PageNone, document.PageHealth:
 		return ""
 	case document.PageResume:
 		return resumePath(format)

@@ -9,7 +9,7 @@ import (
 )
 
 // The title of the window of keys, which the status line names it by too, and the word for what Esc does there,
-// which the frame says of q on a project's page
+// which the frame says of q on any page but the résumé
 const (
 	keysTitle = "keys"
 	closeHint = "close"

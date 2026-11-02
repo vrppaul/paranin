@@ -112,25 +112,33 @@ func (writer markdownWriter) head(head document.Head) []string {
 
 func (writer markdownWriter) blocks(chunks []string, blocks []document.Block, depth int) []string {
 	for _, block := range blocks {
-		switch typed := block.(type) {
-		case document.Section:
-			chunks = appendChunk(chunks, heading(depth, writer.spans(typed.Title)))
-			chunks = writer.blocks(chunks, typed.Blocks, depth+1)
-		case document.Paragraph:
-			chunks = appendLine(chunks, writer.spans(typed.Spans))
-		case document.Table:
-			chunks = appendChunk(chunks, writer.table(typed))
-		case document.CodeBlock:
-			chunks = appendChunk(chunks, codeBlock(typed.Text))
-		case document.Facts:
-			chunks = appendChunk(chunks, writer.facts(typed.List))
-		case document.Entry:
-			chunks = writer.entry(chunks, typed, depth)
-		case document.Card:
-			chunks = writer.card(chunks, typed, depth)
-		case document.Contents:
-			chunks = appendChunk(chunks, writer.contents(typed))
-		}
+		chunks = writer.block(chunks, block, depth)
+	}
+	return chunks
+}
+
+func (writer markdownWriter) block(chunks []string, block document.Block, depth int) []string {
+	switch typed := block.(type) {
+	case document.Section:
+		chunks = appendChunk(chunks, heading(depth, writer.spans(typed.Title)))
+		return writer.blocks(chunks, typed.Blocks, depth+1)
+	case document.Paragraph:
+		return appendLine(chunks, writer.spans(typed.Spans))
+	case document.Table:
+		return appendChunk(chunks, writer.table(typed))
+	case document.CodeBlock:
+		return appendChunk(chunks, codeBlock(typed.Text))
+	case document.Facts:
+		return appendChunk(chunks, writer.facts(typed.List))
+	case document.Entry:
+		return writer.entry(chunks, typed, depth)
+	case document.Card:
+		return writer.card(chunks, typed, depth)
+	case document.Contents:
+		return appendChunk(chunks, writer.contents(typed))
+	case document.Checks:
+		// only the hidden health report holds checks, and no host hands it to a text face: a page served with them
+		// would fail TestEveryPhraseReachesEveryFormat
 	}
 	return chunks
 }

@@ -33,6 +33,12 @@ const (
 	kindCode
 	// kindCursor is the site's cursor after the head's title
 	kindCursor
+	// kindPassed says a check passed
+	kindPassed
+	// kindWarned says a check passed with something to look at
+	kindWarned
+	// kindFailed says a check failed
+	kindFailed
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address

@@ -85,6 +85,9 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindStrong: plain.Foreground(colour(look.ColourText)).Bold(true),
 			kindCode:   plain.Foreground(colour(look.ColourAccent)),
 			kindCursor: plain.Foreground(colour(look.ColourAccent)),
+			kindPassed: plain.Foreground(colour(look.ColourPassed)),
+			kindWarned: plain.Foreground(colour(look.ColourWarned)),
+			kindFailed: plain.Foreground(colour(look.ColourError)),
 		},
 		parts: map[part]lipgloss.Style{
 			partBar:          bar,

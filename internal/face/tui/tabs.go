@@ -19,14 +19,33 @@ const (
 )
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a period
-// from its place, the start of a period from its end
+// from its place, the start of a period from its end; and as Neovim's :checkhealth writes them, the mark after a
+// group's name and the word before a check's advice
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
 	placeMark    = "·"
 	rangeMark    = "–"
 	monthLayout  = "2006-01"
+	groupMark    = "~"
+	adviceWord   = "ADVICE:"
 )
+
+// levelLook is how a check's level reads: the word Neovim's :checkhealth writes it in, and the kind of that word.
+type levelLook struct {
+	word string
+	kind kind
+}
+
+// levelLooks are how each level of a check reads. exhaustive holds the literal to every level, so a level the
+// document gains reads its own way here too.
+func levelLooks() map[document.CheckLevel]levelLook {
+	return map[document.CheckLevel]levelLook{
+		document.CheckOK:      {word: "OK", kind: kindPassed},
+		document.CheckWarning: {word: "WARNING", kind: kindWarned},
+		document.CheckError:   {word: "ERROR", kind: kindFailed},
+	}
+}
 
 // The site's cursor: the bar after the author's name, as the page, the PDF and the card draw it
 // (docs/FOUNDATION.md §3.4)
@@ -114,12 +133,12 @@ func (layout layout) head(head document.Head) []line {
 }
 
 // carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as
-// the first version's page drew it; a project's and the index's do not.
+// the first version's page drew it; a project's, the index's and the health report's do not.
 func carriesCursor(kind document.PageKind) bool {
 	switch kind {
 	case document.PageResume:
 		return true
-	case document.PageNone, document.PageProject, document.PageIndex:
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth:
 	}
 	return false
 }
@@ -169,8 +188,26 @@ func (layout layout) block(block document.Block, indent int) []line {
 		return layout.card(typed, indent)
 	case document.Contents:
 		return layout.contents(typed, indent)
+	case document.Checks:
+		return layout.checks(typed, indent)
 	}
 	return nil
+}
+
+// checks lays out a group of checks as Neovim's :checkhealth does: the group's name and its mark, then each check
+// as a point opening with the word of its level, and its advice as a point under it.
+func (layout layout) checks(checks document.Checks, indent int) []line {
+	lines := layout.fill(append(layout.words(checks.Title, kindStrong), textWords(groupMark, kindFaint)...), indent)
+	looks := levelLooks()
+	for _, check := range checks.List {
+		level := looks[check.Level]
+		lines = append(lines, layout.bullet(append(textWords(level.word, level.kind), layout.words(check.Spans, kindText)...), indent)...)
+		if len(check.Advice) > 0 {
+			advice := append(textWords(adviceWord, kindMuted), layout.words(check.Advice, kindText)...)
+			lines = append(lines, layout.bullet(advice, indent+bulletHang)...)
+		}
+	}
+	return lines
 }
 
 // entry lays out an entry's title and subtitle with its period and place at the right, then its points.

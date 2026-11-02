@@ -92,6 +92,29 @@ func TestClosingAProjectsPageGoesBackToTheResume(test *testing.T) {
 	}
 }
 
+// The status line names :e where the session holds a project's page to open; a session of the résumé alone names
+// none.
+func TestTheStatusLineNamesEditWhereAPageIsThere(test *testing.T) {
+	snapshot := fixtureSnapshot(test)
+	cases := []struct {
+		name  string
+		model Model
+		named bool
+	}{
+		{name: "a project's page", model: fixtureModel(test, commonWidth, commonHeight), named: true},
+		{name: "the résumé alone", model: New([]document.Document{compose.Resume(snapshot)}, fixtureSite(snapshot), commonWidth, commonHeight), named: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			below := belowThePage(screenOf(test, testCase.model))
+			if named := strings.Contains(below, ":e pages"); named != testCase.named {
+				test.Errorf("on a session of %s the status and command lines = %q, want :e pages named: %t", testCase.name, below,
+					testCase.named)
+			}
+		})
+	}
+}
+
 // :e finds only a project with a page of its own, and names back what it does not find with Neovim's error.
 func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 	cases := []struct {

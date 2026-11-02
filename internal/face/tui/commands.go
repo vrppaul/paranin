@@ -19,6 +19,12 @@ const (
 // keys say of q there
 const quitHint = "quit"
 
+// The command that opens a project's page, as Neovim's opens a file, and what the status line says it opens
+const (
+	editCommand = "e"
+	pagesHint   = "pages"
+)
+
 // A command runs with no count typed before it
 const noCount = 0
 
@@ -44,7 +50,7 @@ func commands(closing string) []command {
 		{name: "quit", does: "", takesArgument: false, act: Model.closedByCommand},
 		{name: "q!", does: "", takesArgument: false, act: Model.closedByCommand},
 		{name: "qa", does: "", takesArgument: false, act: Model.quitByCommand},
-		{name: "e", does: "open a page", takesArgument: true, act: Model.edit},
+		{name: editCommand, does: "open a page", takesArgument: true, act: Model.edit},
 		{name: "edit", does: "", takesArgument: true, act: Model.edit},
 	}
 }

@@ -1,17 +1,17 @@
 // Package ssh serves the TUI over SSH (docs/REQUIREMENTS.md): a kiosk, not a shell. Anyone may connect, with no key
-// and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
-// and nothing else is served: no shell, no command, no file transfer, no forwarding (SEC-1, SEC-2). A session with
-// no terminal is refused (SEC-3), a panic ends its own session and never the server (SEC-4), a session idle too
-// long or open too long is closed (SEC-5), and each session is logged as it opens and closes (SEC-13), what its
-// reader sent quoted by the logger's handler, as slog's handlers quote a value with a control character in it
-// (SEC-15).
+// and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé
+// and the projects' pages, and nothing else is served: no shell, no command, no file transfer, no forwarding
+// (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never the server
+// (SEC-4), a session idle too long or open too long is closed (SEC-5), and each session is logged as it opens and
+// closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a
+// control character in it (SEC-15).
 //
 // A panic inside the TUI itself is caught by Bubble Tea, which ends the session and gives the reader's terminal
 // back as it found it; wish then logs it through its own logger, on standard error, beside ours (TODO.md). The
 // server alone ends its sessions: no session's program answers the server's own signals, so a stop waits for the
 // sessions open before it closes them.
 //
-// The résumé is composed once for each snapshot the store holds (content.Derived), and each session draws the
+// The documents are composed once for each snapshot the store holds (content.Derived), and each session draws the
 // snapshot current when it opened; a reload reaches the sessions that open after it.
 package ssh
 
@@ -52,15 +52,16 @@ type Settings struct {
 	MaxTimeout  time.Duration
 }
 
-// Server serves the résumé to each session with a terminal.
+// Server serves the résumé, and the projects' pages a reader opens from it, to each session with a terminal.
 type Server struct {
 	server *charmssh.Server
 }
 
-// drawing is what each session of one snapshot draws: the résumé, and the site that writes its addresses.
+// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé among them, and the
+// site that writes their addresses.
 type drawing struct {
-	resume document.Document
-	site   routes.Site
+	documents []document.Document
+	site      routes.Site
 }
 
 // sessions open each session's TUI on what the current snapshot draws.
@@ -123,14 +124,14 @@ func (server *Server) Shutdown(ctx context.Context) error {
 
 // draw is what the sessions of a snapshot draw.
 func draw(snapshot *content.Snapshot) drawing {
-	return drawing{resume: compose.Resume(snapshot), site: routes.New(snapshot.Profile.Site.BaseURL)}
+	return drawing{documents: compose.Documents(snapshot), site: routes.New(snapshot.Profile.Site.BaseURL)}
 }
 
 // open is a session's TUI, of the size its terminal said it is.
 func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.ProgramOption) {
 	terminal, _, _ := session.Pty()
 	drawn := opening.drawn.Current()
-	model := tui.New(drawn.resume, drawn.site, terminal.Window.Width, terminal.Window.Height)
+	model := tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height)
 	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}
 }
 

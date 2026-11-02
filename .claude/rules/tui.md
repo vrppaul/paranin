@@ -8,8 +8,9 @@ paths:
 How the TUI is built is said in the comment of `internal/face/tui`; the rules for Go are in `.claude/rules/go.md`.
 
 - A tab is laid out once for a size, and painted once for a theme, a terminal's colours and the search, the frame around it and the window of keys with it.
-- A key press chooses which painted lines show and writes the ruler, the command line and the window of commands; nothing else is laid out or painted for a key, but for the search.
+- A key press chooses which painted lines show and writes the ruler, the command line and the window of commands; nothing else is laid out or painted for a key, but for the search and a buffer shown.
 - A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away paints every tab again, once.
+- Showing another buffer, by `:e`, or by the key `q` or `:q` on a project's page, lays out and paints the buffer shown, once.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.
 - The layout says what a piece of text is, a kind; the paint says how each kind looks. No colour, weight or style is written in the layout.
 - Every colour comes from `look`, which `scripts/tokens` writes from `design/tokens.yaml`: change the tokens and run `go generate ./internal/look`, never the palette by hand.

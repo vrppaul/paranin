@@ -434,7 +434,7 @@ sessions on a stop.
 ```
 cmd/paranin/main.go      # wire config + start both servers; handle signals/shutdown
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
-internal/face/tui/       # Bubble Tea model: the document's tabs, laid out and painted
+internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
 internal/look/           # the design's colours, generated from design/tokens.yaml
 scripts/tokens/          # the generator of internal/look and its check
 internal/web/            # HTTP routes, renderers, contact API, templates, static files

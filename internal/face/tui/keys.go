@@ -89,7 +89,7 @@ type action func(model Model, count int) (Model, tea.Cmd)
 // normalActions are what each key does in normal mode.
 func normalActions() map[string]action {
 	actions := map[string]action{
-		quitKey:          Model.quit,
+		quitKey:          Model.closed,
 		interruptKey:     Model.quit,
 		downKey:          Model.scrollDown,
 		downArrow:        Model.scrollDown,

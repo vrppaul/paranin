@@ -8,7 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The title of the window of keys, which the status line names it by too, and the word for what Esc does there
+// The title of the window of keys, which the status line names it by too, and the word for what Esc does there,
+// which the frame says of q on a project's page
 const (
 	keysTitle = "keys"
 	closeHint = "close"
@@ -44,7 +45,7 @@ func (model Model) keyNotes() []hint {
 		{key: nextMatchKey + space + previousMatchKey, does: "next / prior match"},
 		{key: commandKey, does: "command line"},
 		{key: escapeKey, does: "end the search"},
-		{key: quitKey, does: quitHint},
+		{key: quitKey, does: closingHint(model.shown)},
 	}
 }
 

@@ -191,23 +191,26 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New(composed, routes.New(fixtureBase), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, New([]document.Document{composed}, routes.New(fixtureBase), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
 
-// q and Ctrl+C end the session.
+// q and Ctrl+C end the session on the résumé, and Ctrl+C on a project's page too.
 func TestTheQuitKeysEndTheSession(test *testing.T) {
 	cases := []struct {
-		name string
-		key  string
+		name   string
+		opened string
+		key    string
 	}{
-		{name: "q", key: "q"},
-		{name: "Ctrl+C", key: "ctrl+c"},
+		{name: "q", opened: "", key: "q"},
+		{name: "Ctrl+C", opened: "", key: "ctrl+c"},
+		{name: "Ctrl+C on a project's page", opened: "e tidy-tool", key: "ctrl+c"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			_, command := fixtureModel(test, commonWidth, commonHeight).Update(keyPress(test, testCase.key))
+			model := commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.opened)
+			_, command := model.Update(keyPress(test, testCase.key))
 			if command == nil {
 				test.Fatalf("%s gave no command, want the end of the session", testCase.key)
 			}
@@ -224,7 +227,7 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	resume := compose.Resume(fixtureSnapshot(test))
 	for _, width := range []int{commonWidth, narrowWidth} {
-		model := New(resume, routes.New(fixtureBase), width, tallHeight)
+		model := New([]document.Document{resume}, routes.New(fixtureBase), width, tallHeight)
 		screens := []string{}
 		for range tabsOf(resume) {
 			screens = append(screens, screenOf(test, model))
@@ -259,7 +262,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 }
 
 func fixtureModel(test *testing.T, width, height int) Model {
-	return New(compose.Resume(fixtureSnapshot(test)), routes.New(fixtureBase), width, height)
+	return New(compose.Documents(fixtureSnapshot(test)), routes.New(fixtureBase), width, height)
 }
 
 func fixtureSnapshot(test *testing.T) *content.Snapshot {

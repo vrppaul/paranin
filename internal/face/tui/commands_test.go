@@ -15,17 +15,51 @@ func TestTheColonOpensTheCommandLine(test *testing.T) {
 	}
 }
 
-// Each of Neovim's ways to quit, typed on the command line, ends the session, as q does, spaces around it or not.
+// Each of Neovim's ways to quit, typed on the command line, ends the session on the résumé, as q does, spaces around
+// it or not; :qa ends it on a project's page too.
 func TestAQuitCommandEndsTheSession(test *testing.T) {
-	for _, name := range []string{"q", "quit", "qa", "q!", " q "} {
-		test.Run(name, func(test *testing.T) {
-			model := typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), name)
-			_, command := model.Update(keyPress(test, "enter"))
+	cases := []struct {
+		name   string
+		opened string
+		text   string
+	}{
+		{name: ":q", opened: "", text: "q"},
+		{name: ":quit", opened: "", text: "quit"},
+		{name: ":qa", opened: "", text: "qa"},
+		{name: ":q!", opened: "", text: "q!"},
+		{name: ":q with spaces around", opened: "", text: " q "},
+		{name: ":qa on a project's page", opened: "e tidy-tool", text: "qa"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.opened)
+			_, command := typed(test, pressed(test, model, ":"), testCase.text).Update(keyPress(test, "enter"))
 			if command == nil {
-				test.Fatalf(":%s gave no command, want the end of the session", name)
+				test.Fatalf("after :%s, :%s gave no command, want the end of the session", testCase.opened, testCase.text)
 			}
 			if message := command(); message != tea.Quit() {
-				test.Errorf(":%s gave %T, want the end of the session", name, message)
+				test.Errorf("after :%s, :%s gave %T, want the end of the session", testCase.opened, testCase.text, message)
+			}
+		})
+	}
+}
+
+// A command given an argument it cannot take is named back with Neovim's errors: one that takes an argument needs
+// it, and one that takes none refuses what follows it.
+func TestCommandsRefuseArgumentsTheyCannotTake(test *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		want string
+	}{
+		{name: ":e with nothing", text: "e", want: "E471: Argument required"},
+		{name: ":q with something after", text: "q now", want: "E488: Trailing characters: now"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.text))
+			if below := belowThePage(screen); !strings.Contains(below, testCase.want) || !strings.Contains(screen, resumeHeadline) {
+				test.Errorf("after :%s the screen =\n%s\nwant %q, and the résumé still shown", testCase.text, screen, testCase.want)
 			}
 		})
 	}
@@ -45,9 +79,12 @@ func TestAnUnknownCommandIsNamedBack(test *testing.T) {
 	}
 }
 
-// The window of commands at the fixture's commands is twelve columns wide: its border, the mark, ":q", the gap,
-// "quit" and a space
-const commandWindowWidth = 12
+// The window of commands listing every command is nineteen columns wide: its border, the mark, ":q" and ":e", the
+// gap, "open a page" and a space; and four rows tall: its border and the two commands it lists
+const (
+	commandWindowWidth = 19
+	commandWindowRows  = 4
+)
 
 // Esc and Ctrl+C leave the command line, as do a backspace and Enter on nothing, running nothing.
 func TestTheCommandLineIsLeftUnrun(test *testing.T) {
@@ -120,8 +157,8 @@ func TestTheCommandLineOpensAtAnySize(test *testing.T) {
 		listed bool
 	}{
 		{name: "a phone", width: phoneWidth, height: phoneHeight, listed: true},
-		{name: "one as short as the window fits", width: commonWidth, height: shortHeight - 1, listed: true},
-		{name: "one a row too short for the window", width: commonWidth, height: shortHeight - 2, listed: false},
+		{name: "one as short as the window fits", width: commonWidth, height: commandWindowRows + barRows, listed: true},
+		{name: "one a row too short for the window", width: commonWidth, height: commandWindowRows + barRows - 1, listed: false},
 		{name: "one as narrow as the window", width: commandWindowWidth, height: phoneHeight, listed: true},
 		{name: "one a column narrower than the window", width: commandWindowWidth - 1, height: phoneHeight, listed: false},
 	}

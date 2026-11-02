@@ -1,31 +1,36 @@
-// Package tui draws a document in a terminal as a Bubble Tea program laid out like Neovim (docs/ARCHITECTURE.md,
-// ADR-0003): a line of tabs above, the page between two rows of corner crosses, a status line and a command line below.
-// The head of the document and what stands before its first section are the first tab; each section after them is a tab
-// of its own, titled as the document titles it. The reader moves between tabs and scrolls each one, by a count typed
-// before a key where they type one, and each tab keeps its place; a slash searches the tab, and n and N go through its
-// matches. While the reader types a search, the tab marks what they type and its page goes to the first match, as
-// Neovim's incsearch does, but for the slash, which takes the marks of the search before away at once; the command
-// line counts the matches, as Neovim does. A colon opens the command line, which runs a command, or names one it does
-// not know with Neovim's error. While the reader types, a window over the page lists the commands whose names start
-// with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first. A question
-// mark or a space opens the window of keys, which names the keys of normal mode and what each does, and which the
-// next key closes. A window shows whole or not at all: the window of keys opens only where it fits, where it does
-// not the command line says Neovim's E36, and the window closes when a resize leaves it no room. On the command line
-// the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent where
-// the terminal shows many colours: the program writes no frame to blink it, so a session left alone writes nothing
-// and its idle timeout runs out. The résumé's title, the author's name, ends in the site's cursor, the bar in the
-// accent the page, the PDF and the card draw there. It stands still, where the first version's blinked for half a
-// minute after a key: a blink would need a tick, a count and the head painted again each half second, where a tab is
+// Package tui draws the site's documents in a terminal as a Bubble Tea program laid out like Neovim
+// (docs/ARCHITECTURE.md, ADR-0003): a line of tabs above, the page between two rows of corner crosses, a status line
+// and a command line below. The head of a document and what stands before its first section are the first tab; each
+// section after them is a tab of its own, titled as the document titles it. The reader moves between tabs and
+// scrolls each one, by a count typed before a key where they type one, and each tab keeps its place; a slash
+// searches the tab, and n and N go through its matches. While the reader types a search, the tab marks what they
+// type and its page goes to the first match, as Neovim's incsearch does, but for the slash, which takes the marks of
+// the search before away at once; the command line counts the matches, as Neovim does. A colon opens the command
+// line, which runs a command, or names one it does not know with Neovim's error. The session holds the résumé and
+// each project's page as buffers, as Neovim holds the files it opened: :e and a project's slug shows the project's
+// page in place of the résumé, and q, or :q, shows the résumé again, as the first version closed a report; each
+// buffer keeps the tab and the scrolls its reader left. While the reader types, a window over the page lists the
+// commands whose names start with what is typed, as the first version showed them, where Neovim waits for Tab; Tab
+// chooses the first. A question mark or a space opens the window of keys, which names the keys of normal mode and
+// what each does, and which the next key closes; the frame says q closes a project's page and quits on the résumé.
+// A window shows whole or not at all: the window of keys opens only where it fits, where it does not the command
+// line says Neovim's E36, and the window closes when a resize leaves it no room. On the command line the cursor is
+// the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent where the terminal
+// shows many colours: the program writes no frame to blink it, so a session left alone writes nothing and its idle
+// timeout runs out. The résumé's title, the author's name, ends in the site's cursor, the bar in the accent the
+// page, the PDF and the card draw there. It stands still, where the first version's blinked for half a minute
+// after a key: a blink would need a tick, a count and the head painted again each half second, where a tab is
 // painted once.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says
 // where it scrolled, the command line and the window of commands. Lipgloss lays a window over the rows it covers
 // alone, as the screen is drawn. A key that changes what the search line holds, or opens or leaves it, paints the
-// chosen tab's page again; a search confirmed or taken away paints the tabs again, once. What a piece of text is
-// (text, muted, a command, a result worth seeing first) is the layout's to say; how it looks is the paint's, from the
-// design's colours in look, for the colours the terminal shows. Every address is written by routes; a link carries
-// its address to a terminal that follows links.
+// chosen tab's page again; a search confirmed or taken away paints the tabs again, once; a buffer shown in place of
+// another is laid out and painted, once. What a piece of text is (text, muted, a command, a result worth seeing
+// first) is the layout's to say; how it looks is the paint's, from the design's colours in look, for the colours
+// the terminal shows. Every address is written by routes; a link carries its address to a terminal that follows
+// links.
 package tui
 
 import (
@@ -45,9 +50,15 @@ const (
 	assumedHeight = 24
 )
 
-// Model is one reader's session: the tabs of the document, the terminal it is drawn in, and where the reader is.
+// Model is one reader's session: the buffers of the documents it holds, the tabs of the one shown, the terminal it
+// is drawn in, and where the reader is.
 type Model struct {
-	tabs []tab
+	// buffers are the tabs of each page the session holds; shown is the page shown, and tabs its tabs; left is
+	// where the reader stood in each page not shown, and chosen and scrolls below where they stand in the one shown
+	buffers map[document.Page][]tab
+	shown   document.Page
+	tabs    []tab
+	left    map[document.Page]readerPlace
 	// site writes the addresses links lead to, and names the site in the line of tabs
 	site     routes.Site
 	terminal terminal
@@ -79,15 +90,18 @@ type terminal struct {
 	profile colorprofile.Profile
 }
 
-// New is a session that draws a document in a terminal of a size, a dark one of full colour until it says what
-// it is. A size of nothing is taken for a common terminal's.
-func New(composed document.Document, site routes.Site, width, height int) Model {
+// New is a session that holds documents, the résumé among them and shown first, in a terminal of a size, a dark one
+// of full colour until it says what it is. A size of nothing is taken for a common terminal's.
+func New(documents []document.Document, site routes.Site, width, height int) Model {
 	if width <= 0 || height <= 0 {
 		width, height = assumedWidth, assumedHeight
 	}
-	tabs := tabsOf(composed)
+	buffers, shown := buffersOf(documents), resumePage()
 	model := Model{
-		tabs:       tabs,
+		buffers:    buffers,
+		shown:      shown,
+		tabs:       buffers[shown],
+		left:       placesLeft(buffers, shown),
 		site:       site,
 		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
@@ -95,9 +109,9 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", keyWindow: paintedWindow{rows: nil, width: 0}},
 		chosen:     0,
-		scrolls:    make([]int, len(tabs)),
+		scrolls:    make([]int, len(buffers[shown])),
 		actions:    normalActions(),
-		commands:   commands(),
+		commands:   commands(closingHint(shown)),
 		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
 		completion: completionState{listed: nil, chosen: false},

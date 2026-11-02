@@ -6,35 +6,57 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// How the command line opens, and what it says of a command it does not know, as Neovim says it
+// How the command line opens, and what it says, as Neovim says it, of a command it does not know, of a command
+// that needs an argument and was given none, and of one that takes none and was given one
 const (
-	commandMark    = ":"
-	unknownCommand = "E492: Not an editor command: "
+	commandMark        = ":"
+	unknownCommand     = "E492: Not an editor command: "
+	argumentRequired   = "E471: Argument required"
+	trailingCharacters = "E488: Trailing characters: "
 )
 
-// What the window of commands says the quit command does, which the status line and the window of keys say of q
+// What the window of commands says the quit command does on the résumé, which the status line and the window of
+// keys say of q there
 const quitHint = "quit"
 
 // A command runs with no count typed before it
 const noCount = 0
 
 // command is a command the command line runs: its name; what the window of commands says it does, or nothing
-// where the window does not list it, as for a second name of a command it lists; and what it does.
+// where the window does not list it, as for a second name of a command it lists; whether it takes an argument,
+// which it needs then; and what it does with the argument.
 type command struct {
-	name string
-	does string
-	act  action
+	name          string
+	does          string
+	takesArgument bool
+	act           commandAction
 }
 
-// commands are the commands the command line runs, in the order the window lists them: Neovim's ways to quit
-// among them, listed by the first alone.
-func commands() []command {
+// commandAction is what a command does, with the argument typed after it, or nothing where it takes none.
+type commandAction func(model Model, argument string) (Model, tea.Cmd)
+
+// commands are the commands the command line runs, in the order the window lists them, which says what q does on
+// the page shown: Neovim's ways to close a window and to quit, listed by the first alone, and its way to open a
+// file, here a project's page by its slug.
+func commands(closing string) []command {
 	return []command{
-		{name: "q", does: quitHint, act: Model.quit},
-		{name: "quit", does: "", act: Model.quit},
-		{name: "qa", does: "", act: Model.quit},
-		{name: "q!", does: "", act: Model.quit},
+		{name: "q", does: closing, takesArgument: false, act: Model.closedByCommand},
+		{name: "quit", does: "", takesArgument: false, act: Model.closedByCommand},
+		{name: "q!", does: "", takesArgument: false, act: Model.closedByCommand},
+		{name: "qa", does: "", takesArgument: false, act: Model.quitByCommand},
+		{name: "e", does: "open a page", takesArgument: true, act: Model.edit},
+		{name: "edit", does: "", takesArgument: true, act: Model.edit},
 	}
+}
+
+// closedByCommand closes the page shown, as q does.
+func (model Model) closedByCommand(string) (Model, tea.Cmd) {
+	return model.closed(noCount)
+}
+
+// quitByCommand ends the session, as Ctrl+C does.
+func (model Model) quitByCommand(string) (Model, tea.Cmd) {
+	return model.quit(noCount)
 }
 
 // completionState is the window of commands: the commands it lists, worked out each time the reader edits the
@@ -93,19 +115,35 @@ func (model Model) completions(typed string) []command {
 	return listed
 }
 
-// ranCommand runs the command typed, as Neovim does: the one of that name, or none, and the command line says it
-// knows no such command; the keys go back to normal mode either way, and nothing typed runs nothing.
+// ranCommand runs the command typed, as Neovim does: the one named by the first word, with what follows it, or none,
+// and the command line says it knows no such command; the keys go back to normal mode either way, and nothing typed
+// runs nothing.
 func (model Model) ranCommand() (Model, tea.Cmd) {
 	model.keys.mode = modeNormal
 	typed := strings.TrimSpace(model.keys.typing)
 	if typed == "" {
 		return model, nil
 	}
+	name, argument, _ := strings.Cut(typed, space)
 	for _, known := range model.commands {
-		if known.name == typed {
-			return known.act(model, noCount)
+		if known.name == name {
+			return model.ranWith(known, strings.TrimSpace(argument))
 		}
 	}
 	model.said = commandMessage{text: unknownCommand + typed, failed: true}
+	return model, nil
+}
+
+// ranWith runs a command with the argument typed after it, where the command takes that: one that takes an argument
+// needs it, and one that takes none refuses any, each saying so as Neovim says it.
+func (model Model) ranWith(known command, argument string) (Model, tea.Cmd) {
+	switch {
+	case known.takesArgument && argument == "":
+		model.said = commandMessage{text: argumentRequired, failed: true}
+	case !known.takesArgument && argument != "":
+		model.said = commandMessage{text: trailingCharacters + argument, failed: true}
+	default:
+		return known.act(model, argument)
+	}
 	return model, nil
 }

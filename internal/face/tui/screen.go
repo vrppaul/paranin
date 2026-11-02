@@ -112,15 +112,15 @@ type modeLook struct {
 	hints []hint
 }
 
-// modeLooks are how the status line shows each mode.
-func modeLooks() map[mode]modeLook {
+// modeLooks are how the status line shows each mode, saying what q does on the page shown.
+func modeLooks(closing string) map[mode]modeLook {
 	return map[mode]modeLook{
 		modeNormal: {name: normalMode, hints: []hint{
 			{key: keyWindowKey, does: keysTitle},
 			{key: previousKey + hintKeySeparator + nextKey, does: "tabs"},
 			{key: downKey + hintKeySeparator + upKey, does: "scroll"},
 			{key: searchKey, does: findHint},
-			{key: quitKey, does: quitHint},
+			{key: quitKey, does: closing},
 		}},
 		modeSearch: {name: commandMode, hints: []hint{
 			{key: enterMark, does: findHint},
@@ -183,7 +183,7 @@ type paintedBar struct {
 func (model Model) drawnScreen() drawnScreen {
 	width := model.frame.width
 	tabs := make([]drawnTab, 0, len(model.tabs))
-	looks := modeLooks()
+	looks := modeLooks(closingHint(model.shown))
 	for place := range model.tabs {
 		status := make(map[mode]drawnStatus, len(looks))
 		for shown, seen := range looks {

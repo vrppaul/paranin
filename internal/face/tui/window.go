@@ -7,8 +7,8 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// The marks of a window over the page: the corners and sides of its border, the mark of the item chosen, which is
-// the command line's cursor, and the room between an item's name and what it says
+// The marks of a window over the page: the corners and sides of its border, the mark of the item chosen, and the
+// room between an item's name and what it says
 const (
 	edgeTopLeft     = "╭"
 	edgeTopRight    = "╮"
@@ -16,7 +16,7 @@ const (
 	edgeBottomRight = "╯"
 	edgeAcross      = "─"
 	edgeDown        = "│"
-	chosenMark      = cursorMark
+	chosenMark      = "▎"
 	itemGap         = 2
 )
 

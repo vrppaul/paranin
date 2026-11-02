@@ -128,7 +128,7 @@ func TestTheCommandLineOpensAtAnySize(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			screen := screenOf(test, pressed(test, fixtureModel(test, testCase.width, testCase.height), ":"))
-			if !strings.Contains(belowThePage(screen), ":▎") || strings.Contains(screen, "quit") != testCase.listed {
+			if !strings.Contains(belowThePage(screen), " :") || strings.Contains(screen, "quit") != testCase.listed {
 				test.Errorf("at %dx%d after a colon the screen =\n%s\nwant the command line, and the window listed: %t",
 					testCase.width, testCase.height, screen, testCase.listed)
 			}
@@ -140,7 +140,7 @@ func TestTheCommandLineOpensAtAnySize(test *testing.T) {
 // runs.
 func TestTabCompletesACommand(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, commonHeight), ":", "tab")
-	if screen := screenOf(test, model); !strings.Contains(screen, "▎:q") || !strings.Contains(belowThePage(screen), ":q▎") {
+	if screen := screenOf(test, model); !strings.Contains(screen, "▎:q") || !strings.Contains(belowThePage(screen), " :q") {
 		test.Errorf("after a colon and Tab the screen =\n%s\nwant :q marked in the window and written on the line", screen)
 	}
 	_, command := model.Update(keyPress(test, "enter"))

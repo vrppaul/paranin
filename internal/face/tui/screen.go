@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -19,15 +20,20 @@ const (
 	sides         = 2
 )
 
-// The rows the frame takes: the line of tabs above the page, the status line and the command line below it, and
-// a row of crosses above and below the page; a screen with fewer rows than the crosses need has none
+// The rows the frame takes: the line of tabs above the page, the status line and, last, the command line below it,
+// and a row of crosses above and below the page; a screen with fewer rows than the crosses need has none
 const (
-	rowsAbovePage  = 1
-	rowsBelowPage  = 2
-	barRows        = rowsAbovePage + rowsBelowPage
-	crossRows      = 2
-	fewestForCross = 6
+	rowsAbovePage   = 1
+	statusLineRows  = 1
+	commandLineRows = 1
+	rowsBelowPage   = statusLineRows + commandLineRows
+	barRows         = rowsAbovePage + rowsBelowPage
+	crossRows       = 2
+	fewestForCross  = 6
 )
+
+// The columns the terminal's cursor takes on the command line, after what is typed
+const cursorWidth = 1
 
 // The marks of the frame: a corner cross, the rule between the parts of the status line, and the room a tab's
 // number and title are padded with, most first
@@ -38,12 +44,10 @@ const (
 	narrowestTabPad = 1
 )
 
-// The words of the status line, as Neovim's ruler and its modes write them, and the mark of the command line's
-// cursor
+// The words of the status line, as Neovim's ruler and its modes write them
 const (
 	normalMode   = "NORMAL"
 	commandMode  = "COMMAND"
-	cursorMark   = "▎"
 	wholeShown   = "All"
 	startShown   = "Top"
 	endShown     = "Bot"
@@ -211,9 +215,9 @@ func (model Model) drawnStatus(place int, seen modeLook) drawnStatus {
 	return drawnStatus{opening: opening, hints: model.paint.cut(statusHints(seen.hints, width-opening.width-widestRuler), width)}
 }
 
-// screen draws the whole screen: the line of tabs, the page between its crosses, and the status line. All of it
-// is painted already but the ruler.
-func (model Model) screen() string {
+// screen draws the whole screen: the line of tabs, the page between its crosses, the status line and the command
+// line; and the cursor, where the reader types. All of it is painted already but the ruler and the command line.
+func (model Model) screen() (string, *tea.Cursor) {
 	frame, drawn := model.frame, model.drawn.tabs[model.chosen]
 	rows := []string{drawn.tabline}
 	if frame.crosses {
@@ -230,7 +234,8 @@ func (model Model) screen() string {
 	if frame.crosses {
 		rows = append(rows, model.drawn.crossRow)
 	}
-	rows = append(rows, model.statusline(drawn), model.commandLine())
+	commandLine, cursor := model.commandLine()
+	rows = append(rows, model.statusline(drawn), commandLine)
 	rows = rows[max(len(rows)-frame.height, 0):]
 	switch model.keys.mode {
 	case modeCommand:
@@ -239,11 +244,12 @@ func (model Model) screen() string {
 		rows = model.withKeys(rows)
 	case modeNormal, modeSearch:
 	}
-	return strings.Join(rows, lineEnd)
+	return strings.Join(rows, lineEnd), cursor
 }
 
-// commandLine is the last row: what the reader types after the slash or the colon, or what the last key said.
-func (model Model) commandLine() string {
+// commandLine is the last row: what the reader types after the slash or the colon, with the cursor after it, or
+// what the last key said, with no cursor.
+func (model Model) commandLine() (string, *tea.Cursor) {
 	switch model.keys.mode {
 	case modeSearch:
 		return model.typedLine(searchMark)
@@ -255,21 +261,30 @@ func (model Model) commandLine() string {
 	if model.said.failed {
 		said = partFailure
 	}
-	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, model.frame.width)
+	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, model.frame.width), nil
 }
 
-// typedLine is the command line as the reader types on it after a mark; what is typed shows its end where the line
-// is too narrow for all of it, so the cursor stays in sight.
-func (model Model) typedLine(mark string) string {
-	width := model.frame.width
-	room := width - textWidth(space+mark+cursorMark)
+// typedLine is the command line as the reader types on it after a mark, and the terminal's own cursor after what
+// they typed, held within the screen: a bar the terminal blinks, as the first version's cursor blinked, in the
+// accent where the terminal shows many colours.
+func (model Model) typedLine(mark string) (string, *tea.Cursor) {
+	prompt := space + mark
+	shown := model.shownTyping(prompt)
+	row := model.paint.plainRow([]piece{{text: prompt, part: partPrompt}, {text: shown, part: partCommand}}, model.frame.width)
+	position := tea.Position{X: min(textWidth(prompt+shown), model.frame.width-cursorWidth), Y: model.frame.height - commandLineRows}
+	return row, &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}
+}
+
+// shownTyping is what the command line shows of what is typed after a prompt: its end, where the line is too
+// narrow for all of it and the cursor after it.
+func (model Model) shownTyping(prompt string) string {
+	room := model.frame.width - textWidth(prompt) - cursorWidth
 	typed := model.keys.typing
 	for textWidth(typed) > max(room, 0) {
 		_, first := utf8.DecodeRuneInString(typed)
 		typed = typed[first:]
 	}
-	typing := []piece{{text: space, part: partCommand}, {text: mark, part: partPrompt}, {text: typed, part: partCommand}, {text: cursorMark, part: partCursor}}
-	return model.paint.plainRow(typing, width)
+	return typed
 }
 
 // markedLines are a tab's lines with each match of a query marked, worked out once for both the painting and the

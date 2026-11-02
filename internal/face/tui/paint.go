@@ -34,12 +34,11 @@ const (
 	partHintKey
 	// partCross is a corner cross around the page
 	partCross
-	// partCommand is what the command line says, partFailure what it says went wrong, partPrompt the slash a
-	// search is typed after, and partCursor where the next letter goes
+	// partCommand is what the command line says, partFailure what it says went wrong, and partPrompt the slash or
+	// the colon the reader types after
 	partCommand
 	partFailure
 	partPrompt
-	partCursor
 	// partEdge is the border of a window over the page, and partWindowRule a rule inside it; partWindowName and
 	// partWindowNote are an item it lists, its name and what it says; partChosenMark, partChosenName and
 	// partChosenNote are the item chosen, its mark among them
@@ -64,8 +63,10 @@ type paint struct {
 	// a match of the search stands on the accent, its text laid on it, and with few colours or none reversed
 	matchGround color.Color
 	matchText   color.Color
-	fewColours  bool
-	noColours   bool
+	// the terminal's cursor is the accent, or the terminal's own colour where it shows few colours or none
+	cursorColour color.Color
+	fewColours   bool
+	noColours    bool
 }
 
 // paintFor is the paint of a theme in a terminal that shows a profile of colours.
@@ -99,7 +100,6 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partCommand:      plain.Foreground(colour(look.ColourText)),
 			partFailure:      plain.Foreground(colour(look.ColourError)).Bold(true),
 			partPrompt:       plain.Foreground(colour(look.ColourAccent)).Bold(true),
-			partCursor:       plain.Foreground(colour(look.ColourAccent)),
 			partEdge:         plain.Foreground(colour(look.ColourEdge)),
 			partWindowRule:   bar.Foreground(colour(look.ColourQuiet)),
 			partWindowName:   bar.Foreground(colour(look.ColourText)).Bold(true),
@@ -112,9 +112,20 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 		highlightText:   colour(look.ColourOnAccent),
 		matchGround:     colour(look.ColourAccent),
 		matchText:       colour(look.ColourOnAccent),
+		cursorColour:    cursorColourOf(colour(look.ColourAccent), fewColours),
 		fewColours:      fewColours,
 		noColours:       noColours,
 	}
+}
+
+// cursorColourOf is the colour the terminal's cursor takes: the accent, or none where the terminal shows few
+// colours. A terminal takes the cursor's colour as red, green and blue: with sixteen colours those would be the
+// standard ones, not the reader's theme's, and with none lipgloss's absent colour would read as black.
+func cursorColourOf(accent color.Color, fewColours bool) color.Color {
+	if fewColours {
+		return nil
+	}
+	return accent
 }
 
 // colours are the design's colours in one theme, as a terminal of a profile shows them.

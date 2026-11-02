@@ -10,7 +10,9 @@
 // with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first. A question
 // mark or a space opens the window of keys, which names the keys of normal mode and what each does, and which the
 // next key closes. A window shows whole or not at all: the window of keys opens only where it fits, and closes when
-// a resize leaves it no room.
+// a resize leaves it no room. On the command line the cursor is the terminal's own, a bar the terminal blinks, as
+// the first version's blinked, in the accent where the terminal shows many colours: the program writes no frame to
+// blink it, so a session left alone writes nothing and its idle timeout runs out.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says
@@ -86,7 +88,7 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
 		laid:       nil,
-		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, fewColours: false, noColours: false},
+		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", keyWindow: paintedWindow{rows: nil, width: 0}},
 		chosen:     0,
 		scrolls:    make([]int, len(tabs)),
@@ -105,7 +107,8 @@ func (model Model) Init() tea.Cmd {
 	return tea.RequestBackgroundColor
 }
 
-// Update takes what the terminal says: its size, its background, its colours, or a key.
+// Update takes what the terminal says: its size, its background, its colours, or a key; and the pause after a
+// digit, which the model asks for itself.
 func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch typed := message.(type) {
 	case tea.WindowSizeMsg:
@@ -129,8 +132,10 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 // View is the screen as the reader sees it, over the whole terminal.
 func (model Model) View() tea.View {
-	view := tea.NewView(model.screen())
+	screen, cursor := model.screen()
+	view := tea.NewView(screen)
 	view.AltScreen = true
+	view.Cursor = cursor
 	return view
 }
 

@@ -139,7 +139,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 	}{
 		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "COMMAND", lacks: "NORMAL"},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
-		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "NORMAL", lacks: "▎"},
+		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "NORMAL", lacks: cancelHint},
 		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
 	}
 	for _, testCase := range cases {

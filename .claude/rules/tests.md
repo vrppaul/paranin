@@ -14,6 +14,7 @@ paths:
 - It is written before its code and seen failing. A refactor gets no new test: the old ones pass unchanged.
 - A test rewritten is seen failing too: with the line of code it holds broken, then restored.
 - Never how it looks: no colour, size or position read back. The text a text face writes is what a terminal reader gets, so a golden file of it is behaviour.
+- The one position a test reads back is the terminal's cursor: it stands where the next letter typed goes. Its shape and colour are looks.
 - No test for a declaration, a library's own behaviour, internals or a test helper.
 - A rule about how code is written is a gate in pre-commit, never a test.
 - "No test holds X" is no finding and no TODO item unless X is a behaviour someone can name.

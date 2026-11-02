@@ -263,7 +263,7 @@ func TestThePageFollowsTheSearchTyped(test *testing.T) {
 }
 
 // A search typed and left unconfirmed leaves the search before it as it was: n goes on through its matches from the
-// one shown. Esc leaves it, so do a backspace on nothing and Enter on nothing.
+// one shown. Esc and Ctrl+C leave it, as do a backspace on nothing and Enter on nothing.
 func TestASearchLeftKeepsTheOneBefore(test *testing.T) {
 	cases := []struct {
 		name string
@@ -271,6 +271,7 @@ func TestASearchLeftKeepsTheOneBefore(test *testing.T) {
 		keys []string
 	}{
 		{name: "Esc", text: "parser", keys: []string{"esc"}},
+		{name: "Ctrl+C", text: "parser", keys: []string{"ctrl+c"}},
 		{name: "a backspace on nothing", text: "p", keys: []string{"backspace", "backspace"}},
 		{name: "Enter on nothing", text: "p", keys: []string{"backspace", "enter"}},
 	}
@@ -342,12 +343,17 @@ func belowThePage(screen string) string {
 	return strings.Join(rows[max(len(rows)-2, 0):], "\n")
 }
 
-// A control character sent as typing never reaches the reader's terminal: the search line shows letters alone.
+// A control character sent as typing never reaches the reader's terminal: the search line and the command line
+// show letters alone.
 func TestAControlCharacterTypedNeverReachesTheScreen(test *testing.T) {
-	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), "/")
-	next, _ := model.Update(tea.KeyPressMsg{Code: 'x', Text: "\x1b[2J"})
-	if view := as[Model](test, next).View().Content; strings.Contains(view, "[2J") {
-		test.Errorf("the screen holds the control sequence typed: %q", view)
+	for _, opening := range []string{"/", ":"} {
+		test.Run(opening, func(test *testing.T) {
+			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), opening)
+			next, _ := model.Update(tea.KeyPressMsg{Code: 'x', Text: "\x1b[2J"})
+			if view := as[Model](test, next).View().Content; strings.Contains(view, "[2J") {
+				test.Errorf("after %q the screen holds the control sequence typed: %q", opening, view)
+			}
+		})
 	}
 }
 

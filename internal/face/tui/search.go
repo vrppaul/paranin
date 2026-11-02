@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -18,12 +17,11 @@ const (
 	notFoundError = "E486: Pattern not found: "
 )
 
-// searchState is the search: what the reader is typing after the slash; the line the chosen tab's page stood at
-// when they typed it, which the typing seeks its first match from, and the page goes back to while what is typed
-// matches nothing and once the reader leaves the search line unconfirmed; the search confirmed last, which every
-// painted tab marks and n and N go through; and the match each tab showed last.
+// searchState is the search: the line the chosen tab's page stood at when the reader typed the slash, which what
+// they type seeks its first match from, and the page goes back to while what is typed matches nothing and once the
+// reader leaves the search line unconfirmed; the search confirmed last, which every painted tab marks and n and N
+// go through; and the match each tab showed last.
 type searchState struct {
-	typing  string
 	begunAt int
 	query   string
 	shown   []shownMatch
@@ -69,7 +67,7 @@ func back() matchWay {
 // startSearch opens the search line, empty, after a slash: the chosen tab marks nothing until the reader types,
 // where Neovim keeps the marks of the search before until then.
 func (model Model) startSearch(int) (Model, tea.Cmd) {
-	model.keys.mode, model.search.typing, model.search.begunAt = modeSearch, "", model.scrolls[model.chosen]
+	model.keys.mode, model.keys.typing, model.search.begunAt = modeSearch, "", model.scrolls[model.chosen]
 	return model.repaintedChosen(), nil
 }
 
@@ -82,28 +80,22 @@ func (model Model) endSearch(int) (Model, tea.Cmd) {
 	return model.repainted(), nil
 }
 
-// typedInSearch is the model after a key while the reader types a search: Enter searches, Esc leaves unsought, a
-// backspace takes a letter back or, on nothing, leaves, and a letter is typed. Anything else, a control character
-// among it, is passed over, so it never reaches the screen.
+// typedInSearch is the model after a key while the reader types a search: Enter searches; any other key edits the
+// line, or leaves it unsought.
 func (model Model) typedInSearch(key tea.KeyPressMsg) Model {
-	switch key.String() {
-	case enterKey:
+	if key.String() == enterKey {
 		return model.searched()
-	case escapeKey:
-		return model.searchLeft()
-	case backspaceKey:
-		if model.search.typing == "" {
-			return model.searchLeft()
-		}
-		_, last := utf8.DecodeLastRuneInString(model.search.typing)
-		model.search.typing = model.search.typing[:len(model.search.typing)-last]
+	}
+	typing, edit := edited(model.keys.typing, key)
+	switch edit {
+	case lineChanged:
+		model.keys.typing = typing
 		return model.retyped()
+	case lineLeft:
+		return model.searchLeft()
+	case lineKept:
 	}
-	if !printable(key.Text) {
-		return model
-	}
-	model.search.typing += key.Text
-	return model.retyped()
+	return model
 }
 
 // retyped is the model after what is typed changes, as Neovim's incsearch shows it: the chosen tab painted again
@@ -129,11 +121,11 @@ func (model Model) searchLeft() Model {
 // match shown yet on any, and the page at the first match at or after its top line, the one the typing showed.
 // Enter on nothing typed leaves the search line as Esc does.
 func (model Model) searched() Model {
-	if model.search.typing == "" {
+	if model.keys.typing == "" {
 		return model.searchLeft()
 	}
 	model.keys.mode = modeNormal
-	model.search.query = model.search.typing
+	model.search.query = model.keys.typing
 	model.search.shown = make([]shownMatch, len(model.tabs))
 	model = model.repainted()
 	return model.toMatch(func(matches []int) int { return matchAtOrAfter(matches, model.scrolls[model.chosen]) })
@@ -191,7 +183,7 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 // confirmed last everywhere else.
 func (model Model) markedQuery(place int) string {
 	if model.keys.mode == modeSearch && place == model.chosen {
-		return model.search.typing
+		return model.keys.typing
 	}
 	return model.search.query
 }

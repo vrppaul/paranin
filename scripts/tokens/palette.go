@@ -58,17 +58,17 @@ func paletteOf(read tokens) []worked {
 			name:  blend.name,
 			about: blend.about,
 			shades: themedShade{
-				light: blendShade(read.background.Light, blend.over.Light, blend.strengths.Light, blend.indexedLean, blend.basic),
-				dark:  blendShade(read.background.Dark, blend.over.Dark, blend.strengths.Dark, blend.indexedLean, blend.basic),
+				light: blendShade(blend.under.Light, blend.over.Light, blend.strengths.Light, blend.indexedLean, blend.basic),
+				dark:  blendShade(blend.under.Dark, blend.over.Dark, blend.strengths.Dark, blend.indexedLean, blend.basic),
 			},
 		})
 	}
 	return palette
 }
 
-// blendShade is a colour laid over the page at a strength; for 256 colours it leans toward its colour first.
-func blendShade(page, over color.RGBA, strength, lean float64, basic basicValue) shade {
-	laid := mixed(page, over, strength)
+// blendShade is a colour laid over another at a strength; for 256 colours it leans toward its colour first.
+func blendShade(under, over color.RGBA, strength, lean float64, basic basicValue) shade {
+	laid := mixed(under, over, strength)
 	return shadeOf(laid, mixed(laid, over, lean), basic)
 }
 

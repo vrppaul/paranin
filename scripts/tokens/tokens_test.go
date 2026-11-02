@@ -8,7 +8,8 @@ import (
 	"testing"
 )
 
-// A file of tokens with one colour and one blend over it, its values chosen so each shade is easy to work out
+// A file of tokens with two colours, a blend over the page and one over a colour, its values chosen so each shade
+// is easy to work out
 const fixtureTokens = `background:
   light: "#000000"
   dark: "#000000"
@@ -31,6 +32,14 @@ blends:
     dark: 0.25
     basic: 3
     indexed_lean: 0.5
+  - name: chosen
+    about: an item chosen
+    over: text
+    under: accent
+    light: 0.5
+    dark: 0.5
+    basic: own
+    indexed_lean: 0
 `
 
 // A colour keeps its value whole for a terminal of full colour, falls to the nearest of xterm's 256 for one of
@@ -57,22 +66,24 @@ func TestEachColourHasAShadeForEachTerminal(test *testing.T) {
 	}
 }
 
-// A blend is its colour laid over the page at its strength in each theme; for 256 colours it leans toward its
-// colour first, so a faint blend never rounds to a grey.
+// A blend is its colour laid over the page at its strength in each theme, or over the colour it names to lie
+// under it; for 256 colours it leans toward its colour first, so a faint blend never rounds to a grey.
 func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
-	tint := fixtureShades(test)["tint"]
+	shades := fixtureShades(test)
 	cases := []struct {
 		name string
 		got  shade
 		want shade
 	}{
-		{name: "the light theme's strength", got: tint.light, want: shade{trueColour: color.RGBA{R: 128, G: 128, B: 128, A: 255}, indexed: 250, basic: 3}},
-		{name: "the dark theme's strength", got: tint.dark, want: shade{trueColour: color.RGBA{R: 64, G: 34, B: 0, A: 255}, indexed: 130, basic: 3}},
+		{name: "the light theme's strength", got: shades["tint"].light, want: shade{trueColour: color.RGBA{R: 128, G: 128, B: 128, A: 255}, indexed: 250, basic: 3}},
+		{name: "the dark theme's strength", got: shades["tint"].dark, want: shade{trueColour: color.RGBA{R: 64, G: 34, B: 0, A: 255}, indexed: 130, basic: 3}},
+		{name: "over a colour in the light theme", got: shades["chosen"].light, want: shade{trueColour: color.RGBA{R: 187, G: 187, B: 187, A: 255}, indexed: 250, basic: ownBasic}},
+		{name: "over a colour in the dark theme", got: shades["chosen"].dark, want: shade{trueColour: color.RGBA{R: 128, G: 68, B: 0, A: 255}, indexed: 94, basic: ownBasic}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			if testCase.got != testCase.want {
-				test.Errorf("the tint = %+v, want %+v", testCase.got, testCase.want)
+				test.Errorf("the blend = %+v, want %+v", testCase.got, testCase.want)
 			}
 		})
 	}
@@ -91,6 +102,7 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a value that is no colour", original: `dark: "#ff8700"`, replacement: `dark: "#ff87"`, want: `"#ff87"`},
 		{name: "a basic colour beyond sixteen", original: "    basic: own\n", replacement: "    basic: 16\n", want: "16"},
 		{name: "a blend over a colour the file does not name", original: "over: accent", replacement: "over: border", want: `"border"`},
+		{name: "a blend under a colour the file does not name", original: "under: accent", replacement: "under: border", want: `"border"`},
 		{name: "a colour named twice", original: "name: text", replacement: "name: accent", want: `"accent" is named twice`},
 		{name: "a basic colour left out", original: "    basic: own\n", replacement: "", want: "has no basic"},
 		{name: "a colour that says nothing of what it is for", original: "    about: what a reader reads\n", replacement: "", want: "says nothing"},

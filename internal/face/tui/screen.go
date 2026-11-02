@@ -19,10 +19,12 @@ const (
 	sides         = 2
 )
 
-// The rows the frame takes: the line of tabs, the status line and the command line, and a row of crosses above
-// and below the page; a screen with fewer rows than the crosses need has none
+// The rows the frame takes: the line of tabs above the page, the status line and the command line below it, and
+// a row of crosses above and below the page; a screen with fewer rows than the crosses need has none
 const (
-	barRows        = 3
+	rowsAbovePage  = 1
+	rowsBelowPage  = 2
+	barRows        = rowsAbovePage + rowsBelowPage
 	crossRows      = 2
 	fewestForCross = 6
 )
@@ -88,10 +90,12 @@ const (
 	widestRuler      = 2*spaceWidth + max(len(wholeShown), len(startShown), len(endShown), percentDigits+len(percentMark))
 )
 
-// The mark the status line names the Enter key by, and the word for what both it and the slash do
+// The mark the status line names the Enter key by, the word for what both it and the slash do, and for what Esc
+// does on the command line
 const (
-	enterMark = "↵"
-	findHint  = "find"
+	enterMark  = "↵"
+	findHint   = "find"
+	cancelHint = "cancel"
 )
 
 // modeLook is how the status line shows a mode: the name it opens with, and the keys it names, the most needed
@@ -108,11 +112,16 @@ func modeLooks() map[mode]modeLook {
 			{key: previousKey + hintKeySeparator + nextKey, does: "tabs"},
 			{key: downKey + hintKeySeparator + upKey, does: "scroll"},
 			{key: searchKey, does: findHint},
-			{key: quitKey, does: "quit"},
+			{key: quitKey, does: quitHint},
 		}},
 		modeSearch: {name: commandMode, hints: []hint{
 			{key: enterMark, does: findHint},
-			{key: escapeKey, does: "cancel"},
+			{key: escapeKey, does: cancelHint},
+		}},
+		modeCommand: {name: commandMode, hints: []hint{
+			{key: enterMark, does: "run"},
+			{key: tabKey, does: "complete"},
+			{key: escapeKey, does: cancelHint},
 		}},
 	}
 }
@@ -214,28 +223,41 @@ func (model Model) screen() string {
 		rows = append(rows, model.drawn.crossRow)
 	}
 	rows = append(rows, model.statusline(drawn), model.commandLine())
-	return strings.Join(rows[max(len(rows)-frame.height, 0):], lineEnd)
+	rows = rows[max(len(rows)-frame.height, 0):]
+	if model.keys.mode == modeCommand {
+		rows = model.withCompletions(rows)
+	}
+	return strings.Join(rows, lineEnd)
 }
 
-// commandLine is the last row: the search as the reader types it after the slash, or what the last key said.
+// commandLine is the last row: what the reader types after the slash or the colon, or what the last key said.
 func (model Model) commandLine() string {
-	width := model.frame.width
-	if model.keys.mode == modeSearch {
-		// what is typed shows its end where the line is too narrow for all of it, so the cursor stays in sight
-		room := width - textWidth(space+searchMark+cursorMark)
-		typed := model.search.typing
-		for textWidth(typed) > max(room, 0) {
-			_, first := utf8.DecodeRuneInString(typed)
-			typed = typed[first:]
-		}
-		typing := []piece{{text: space, part: partCommand}, {text: searchMark, part: partPrompt}, {text: typed, part: partCommand}, {text: cursorMark, part: partCursor}}
-		return model.paint.plainRow(typing, width)
+	switch model.keys.mode {
+	case modeSearch:
+		return model.typedLine(searchMark)
+	case modeCommand:
+		return model.typedLine(commandMark)
+	case modeNormal:
 	}
 	said := partCommand
 	if model.said.failed {
 		said = partFailure
 	}
-	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, width)
+	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, model.frame.width)
+}
+
+// typedLine is the command line as the reader types on it after a mark; what is typed shows its end where the line
+// is too narrow for all of it, so the cursor stays in sight.
+func (model Model) typedLine(mark string) string {
+	width := model.frame.width
+	room := width - textWidth(space+mark+cursorMark)
+	typed := model.keys.typing
+	for textWidth(typed) > max(room, 0) {
+		_, first := utf8.DecodeRuneInString(typed)
+		typed = typed[first:]
+	}
+	typing := []piece{{text: space, part: partCommand}, {text: mark, part: partPrompt}, {text: typed, part: partCommand}, {text: cursorMark, part: partCursor}}
+	return model.paint.plainRow(typing, width)
 }
 
 // markedLines are a tab's lines with each match of a query marked, worked out once for both the painting and the

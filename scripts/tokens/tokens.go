@@ -69,12 +69,14 @@ type colourToken struct {
 	Basic *basicValue `yaml:"basic"`
 }
 
-// blendToken is a blend as the file writes it: the colour it lays over the page, its strength in each theme, the
-// basic colour it falls back to, and how far it leans toward its colour for 256 colours.
+// blendToken is a blend as the file writes it: the colour it lays, the colour it lies over, or the page where it
+// names none, its strength in each theme, the basic colour it falls back to, and how far it leans toward its colour
+// for 256 colours.
 type blendToken struct {
 	Name        string      `yaml:"name"`
 	About       string      `yaml:"about"`
 	Over        string      `yaml:"over"`
+	Under       string      `yaml:"under"`
 	Light       *float64    `yaml:"light"`
 	Dark        *float64    `yaml:"dark"`
 	Basic       *basicValue `yaml:"basic"`
@@ -114,11 +116,13 @@ type readColour struct {
 	basic  basicValue
 }
 
-// readBlend is a blend of the file with its colour found and its strengths read.
+// readBlend is a blend of the file with its colours found, the one it lies over the page's where it names none, and
+// its strengths read.
 type readBlend struct {
 	name        string
 	about       string
 	over        themedValue[color.RGBA]
+	under       themedValue[color.RGBA]
 	strengths   themedValue[float64]
 	basic       basicValue
 	indexedLean float64
@@ -149,7 +153,7 @@ func readTokens(data []byte) (tokens, error) {
 	}
 	blends := make([]readBlend, 0, len(written.Blends))
 	for _, token := range written.Blends {
-		blend, err := readBlendToken(token, colours, named)
+		blend, err := readBlendToken(token, background, colours, named)
 		if err != nil {
 			return tokens{}, err
 		}
@@ -173,29 +177,42 @@ func readColourToken(token colourToken, named map[string]bool) (readColour, erro
 	return readColour{name: token.Name, about: token.About, values: values, basic: basic}, nil
 }
 
-func readBlendToken(token blendToken, colours []readColour, named map[string]bool) (readBlend, error) {
+func readBlendToken(token blendToken, page themedValue[color.RGBA], colours []readColour, named map[string]bool) (readBlend, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readBlend{}, err
 	}
-	over := slices.IndexFunc(colours, func(known readColour) bool { return known.name == token.Over })
-	if over < 0 {
-		return readBlend{}, fmt.Errorf("%w: the blend %q lies over %q, which is no colour of the file", errTokens, token.Name, token.Over)
+	over, overErr := namedColour(colours, token.Over, token.Name, "lays")
+	under := page
+	var underErr error
+	if token.Under != "" {
+		under, underErr = namedColour(colours, token.Under, token.Name, "lies over")
 	}
 	light, lightErr := strength(token.Light, token.Name, lightKey)
 	dark, darkErr := strength(token.Dark, token.Name, darkKey)
 	lean, leanErr := strength(token.IndexedLean, token.Name, leanKey)
 	basic, basicErr := required(token.Basic, token.Name, basicKey)
-	if err := errors.Join(lightErr, darkErr, leanErr, basicErr); err != nil {
+	if err := errors.Join(overErr, underErr, lightErr, darkErr, leanErr, basicErr); err != nil {
 		return readBlend{}, err
 	}
 	return readBlend{
 		name:        token.Name,
 		about:       token.About,
-		over:        colours[over].values,
+		over:        over,
+		under:       under,
 		strengths:   themedValue[float64]{Light: light, Dark: dark},
 		basic:       basic,
 		indexedLean: lean,
 	}, nil
+}
+
+// namedColour is the values of the colour of a name a blend names, as it says what it does with it, or a fault
+// where the file has no colour of that name.
+func namedColour(colours []readColour, name, blend, does string) (themedValue[color.RGBA], error) {
+	found := slices.IndexFunc(colours, func(known readColour) bool { return known.name == name })
+	if found < 0 {
+		return themedValue[color.RGBA]{}, fmt.Errorf("%w: the blend %q %s %q, which is no colour of the file", errTokens, blend, does, name)
+	}
+	return colours[found].values, nil
 }
 
 // checkToken refuses a token whose name is no word, or words parted by underscores, or is one the file has named

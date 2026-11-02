@@ -3,8 +3,9 @@
 # them into internal/look, where the faces read them: `go generate ./internal/look`.
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
-# 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays over its background
-# at a strength; a terminal has no opacity, so the blend is worked out into a colour of its own.
+# 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays at a strength over
+# its background, or over the colour the blend names `under` it; a terminal has no opacity, so the blend is worked
+# out into a colour of its own.
 
 # The page itself, which every blend is laid over
 background:
@@ -37,6 +38,11 @@ colours:
     light: "#ccd0da"
     dark: "#363a4f"
     basic: 8
+  - name: edge
+    about: the border of a window laid over the page
+    light: "#9ca0b0"
+    dark: "#5b6078"
+    basic: 8
   - name: accent
     about: what the eye goes to first, a command among it
     light: "#fe640b"
@@ -62,3 +68,11 @@ blends:
     basic: 3
     # a terminal of 256 colours would round so faint a blend to a grey, so it leans this far to its colour first
     indexed_lean: 0.25
+  - name: chosen
+    about: the ground of the item chosen in a window, the text laid faintly over the bars
+    over: text
+    under: sunk
+    light: 0.07
+    dark: 0.06
+    basic: own
+    indexed_lean: 0

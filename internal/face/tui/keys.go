@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -27,6 +28,7 @@ const (
 	leftArrow        = "left"
 	backwardTabKey   = "shift+tab"
 	searchKey        = "/"
+	commandKey       = ":"
 	nextMatchKey     = "n"
 	previousMatchKey = "N"
 	escapeKey        = "esc"
@@ -40,7 +42,7 @@ const countPause = 500 * time.Millisecond
 // What a digit is worth in the number typed before it
 const decimalBase = 10
 
-// mode is what the keys do: move through the page, or type a search.
+// mode is what the keys do: move through the page, type a search, or type a command.
 type mode int
 
 const (
@@ -48,16 +50,29 @@ const (
 	modeNormal mode = iota
 	// modeSearch types a search after the slash
 	modeSearch
+	// modeCommand types a command after the colon
+	modeCommand
 )
 
-// keyState is what the keys pressed so far leave pending: the mode, a first g, and a number typed before a key,
-// with the sequence of its last digit, so a pause that ends an older number is passed over.
+// keyState is what the keys pressed so far leave pending: the mode, what is typed on the command line after the
+// slash or the colon, a first g, and a number typed before a key, with the sequence of its last digit, so a pause
+// that ends an older number is passed over.
 type keyState struct {
 	mode          mode
+	typing        string
 	topPending    bool
 	count         int
 	countSequence int
 }
+
+// lineEdit is what a key does to the line the reader types: nothing, a change to it, or leaving it.
+type lineEdit int
+
+const (
+	lineKept lineEdit = iota
+	lineChanged
+	lineLeft
+)
 
 // countPaused is the pause after a digit, by the digit's sequence.
 type countPaused struct {
@@ -87,6 +102,7 @@ func normalActions() map[string]action {
 		leftArrow:        Model.previousTab,
 		backwardTabKey:   Model.previousTab,
 		searchKey:        Model.startSearch,
+		commandKey:       Model.startCommand,
 		nextMatchKey:     Model.nextMatch,
 		previousMatchKey: Model.previousMatch,
 		escapeKey:        Model.endSearch,
@@ -101,10 +117,34 @@ func (model Model) pressed(key tea.KeyPressMsg) (Model, tea.Cmd) {
 		key.Mod &^= tea.ModAlt
 		return escaped.pressed(key)
 	}
-	if model.keys.mode == modeSearch {
+	switch model.keys.mode {
+	case modeSearch:
 		return model.typedInSearch(key), nil
+	case modeCommand:
+		return model.typedInCommand(key)
+	case modeNormal:
 	}
 	return model.normalKey(key.String())
+}
+
+// edited is the line the reader types after a key, and what the key did to it: a letter a terminal shows as it is
+// adds itself, a backspace takes the last letter back, and Esc, Ctrl+C, as in Neovim, or a backspace on nothing
+// leaves the line. Anything else, a control character among it, is passed over, so it never reaches the screen.
+func edited(typing string, key tea.KeyPressMsg) (string, lineEdit) {
+	switch key.String() {
+	case escapeKey, interruptKey:
+		return typing, lineLeft
+	case backspaceKey:
+		if typing == "" {
+			return typing, lineLeft
+		}
+		_, last := utf8.DecodeLastRuneInString(typing)
+		return typing[:len(typing)-last], lineChanged
+	}
+	if !printable(key.Text) {
+		return typing, lineKept
+	}
+	return typing + key.Text, lineChanged
 }
 
 // normalKey is the model after a key in normal mode: a digit of a number, a first g, or a key's action, counted

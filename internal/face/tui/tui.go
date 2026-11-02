@@ -5,15 +5,17 @@
 // before a key where they type one, and each tab keeps its place; a slash searches the tab, and n and N go through its
 // matches. While the reader types a search, the tab marks what they type and its page goes to the first match, as
 // Neovim's incsearch does, but for the slash, which takes the marks of the search before away at once; the command
-// line counts the matches, as Neovim does.
+// line counts the matches, as Neovim does. A colon opens the command line, which runs a command, or names one it does
+// not know with Neovim's error. While the reader types, a window over the page lists the commands whose names start
+// with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
-// around it: a key press only chooses which painted lines show, and writes the ruler that says where it scrolled and
-// the command line. A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page
-// again; a search confirmed or taken away paints the tabs again, once. What a piece of text is (text, muted, a
-// command, a result worth seeing first) is the layout's to say; how it looks is the paint's, from the design's colours
-// in look, for the colours the terminal shows. Every address is written by routes; a link carries its address to a
-// terminal that follows links.
+// around it: a key press only chooses which painted lines show, and writes the ruler that says where it scrolled, the
+// command line and the window of commands, which lipgloss lays over the rows it covers alone. A key that changes what
+// the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away
+// paints the tabs again, once. What a piece of text is (text, muted, a command, a result worth seeing first) is the
+// layout's to say; how it looks is the paint's, from the design's colours in look, for the colours the terminal
+// shows. Every address is written by routes; a link carries its address to a terminal that follows links.
 package tui
 
 import (
@@ -49,10 +51,12 @@ type Model struct {
 	chosen int
 	// scrolls is how far down each tab the reader has scrolled, by the tab's place
 	scrolls []int
-	// actions are what each key does in normal mode
-	actions map[string]action
-	keys    keyState
-	search  searchState
+	// actions are what each key does in normal mode, and commands what the command line runs
+	actions    map[string]action
+	commands   []command
+	keys       keyState
+	search     searchState
+	completion completionState
 	// said is what the command line says after the last key
 	said commandMessage
 }
@@ -73,19 +77,21 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 	}
 	tabs := tabsOf(composed)
 	model := Model{
-		tabs:     tabs,
-		site:     site,
-		terminal: terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
-		frame:    frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
-		laid:     nil,
-		paint:    paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, fewColours: false, noColours: false},
-		drawn:    drawnScreen{tabs: nil, crossRow: "", blankRow: ""},
-		chosen:   0,
-		scrolls:  make([]int, len(tabs)),
-		actions:  normalActions(),
-		keys:     keyState{mode: modeNormal, topPending: false, count: 0, countSequence: 0},
-		search:   searchState{typing: "", begunAt: 0, query: "", shown: nil},
-		said:     commandMessage{text: "", failed: false},
+		tabs:       tabs,
+		site:       site,
+		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
+		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
+		laid:       nil,
+		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, fewColours: false, noColours: false},
+		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: ""},
+		chosen:     0,
+		scrolls:    make([]int, len(tabs)),
+		actions:    normalActions(),
+		commands:   commands(),
+		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
+		search:     searchState{begunAt: 0, query: "", shown: nil},
+		completion: completionState{listed: nil, chosen: false},
+		said:       commandMessage{text: "", failed: false},
 	}
 	return model.relaid()
 }

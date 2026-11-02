@@ -40,6 +40,15 @@ const (
 	partFailure
 	partPrompt
 	partCursor
+	// partEdge is the border of a window over the page; partWindowName and partWindowNote are an item it lists, its
+	// name and what it says; partChosenMark, partChosenName and partChosenNote are the item chosen, its mark among
+	// them
+	partEdge
+	partWindowName
+	partWindowNote
+	partChosenMark
+	partChosenName
+	partChosenNote
 )
 
 // paint is how each kind of text and each part of the frame looks in one terminal: its theme, and the colours it
@@ -65,6 +74,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	fewColours, noColours := profile < colorprofile.ANSI256, profile < colorprofile.ANSI
 	plain := lipgloss.NewStyle()
 	bar := plain.Background(colour(look.ColourSunk))
+	chosen := plain.Background(colour(look.ColourChosen))
 	return paint{
 		kinds: map[kind]lipgloss.Style{
 			kindText:   plain.Foreground(colour(look.ColourText)),
@@ -89,6 +99,12 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partFailure:      plain.Foreground(colour(look.ColourError)).Bold(true),
 			partPrompt:       plain.Foreground(colour(look.ColourAccent)).Bold(true),
 			partCursor:       plain.Foreground(colour(look.ColourAccent)),
+			partEdge:         plain.Foreground(colour(look.ColourEdge)),
+			partWindowName:   bar.Foreground(colour(look.ColourText)).Bold(true),
+			partWindowNote:   bar.Foreground(colour(look.ColourMuted)),
+			partChosenMark:   chosen.Foreground(colour(look.ColourAccent)),
+			partChosenName:   chosen.Foreground(colour(look.ColourText)).Bold(true),
+			partChosenNote:   chosen.Foreground(colour(look.ColourText)),
 		},
 		highlightGround: colour(look.ColourTint),
 		highlightText:   colour(look.ColourOnAccent),

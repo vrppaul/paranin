@@ -6,10 +6,11 @@
 // closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a
 // control character in it (SEC-15).
 //
-// A panic inside the TUI itself is caught by Bubble Tea, which ends the session and gives the reader's terminal
-// back as it found it; wish then logs it through its own logger, on standard error, beside ours (TODO.md). The
-// server alone ends its sessions: no session's program answers the server's own signals, so a stop waits for the
-// sessions open before it closes them.
+// A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
+// which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
+// Bubble Tea still writes the panic and its stack to standard error, and wish a line of the error the program ended
+// with; a panic in a command Bubble Tea runs reaches only those (TODO.md). The server alone ends its sessions: no
+// session's program answers the server's own signals, so a stop waits for the sessions open before it closes them.
 //
 // The documents are composed once for each snapshot the store holds (content.Derived), and each session draws the
 // snapshot current when it opened; a reload reaches the sessions that open after it.
@@ -20,6 +21,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"runtime/debug"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -41,6 +43,7 @@ const (
 	userKey   = "user"
 	lastedKey = "lasted"
 	panicKey  = "panic"
+	stackKey  = "stack"
 )
 
 // Settings are what the server is run with: where its host key lives, and how long a session may stay idle and
@@ -64,9 +67,10 @@ type drawing struct {
 	site      routes.Site
 }
 
-// sessions open each session's TUI on what the current snapshot draws.
+// sessions open each session's TUI on what the current snapshot draws, its panics logged through the logger.
 type sessions struct {
-	drawn *content.Derived[drawing]
+	logger *slog.Logger
+	drawn  *content.Derived[drawing]
 }
 
 // guard logs each session and ends one that panics.
@@ -76,7 +80,7 @@ type guard struct {
 
 // New is a server of the site the store holds, logging through the logger.
 func New(store *content.Store, logger *slog.Logger, settings Settings) (*Server, error) {
-	opening := sessions{drawn: content.Derive(store, draw)}
+	opening := sessions{logger: logger, drawn: content.Derive(store, draw)}
 	watching := guard{logger: logger}
 	// wish runs the last listed outermost: the log, then the guard against panics, then the refusal of a
 	// session with no terminal, then the TUI
@@ -131,8 +135,51 @@ func draw(snapshot *content.Snapshot) drawing {
 func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.ProgramOption) {
 	terminal, _, _ := session.Pty()
 	drawn := opening.drawn.Current()
-	model := tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height)
+	model := watchedModel{
+		logger: opening.logger,
+		model:  tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height),
+		remote: session.RemoteAddr().String(),
+	}
 	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}
+}
+
+// watchedModel is a session's TUI whose panics reach the server's log, with the session's address and the stack
+// they came up, on their way to Bubble Tea, which ends the session and gives its terminal back.
+type watchedModel struct {
+	logger *slog.Logger
+	model  tea.Model
+	remote string
+}
+
+func (watched watchedModel) Init() tea.Cmd {
+	defer watched.passPanicOn()
+	return watched.model.Init()
+}
+
+func (watched watchedModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	defer watched.passPanicOn()
+	next, command := watched.model.Update(message)
+	watched.model = next
+	return watched, command
+}
+
+func (watched watchedModel) View() tea.View {
+	defer watched.passPanicOn()
+	return watched.model.View()
+}
+
+// passPanicOn logs a panic of the TUI and passes it on to Bubble Tea, whose recover is in place before Init runs.
+func (watched watchedModel) passPanicOn() {
+	if cause := recover(); cause != nil {
+		logPanic(watched.logger, watched.remote, cause)
+		panic(cause) //nolint:forbidigo // one already caught, passed on to the recovery that ends the session
+	}
+}
+
+// logPanic logs a panic of the session from an address, with its stack. A deferred call reads the stack before
+// the panic has left the frames it came from, so the stack still holds them.
+func logPanic(logger *slog.Logger, remote string, cause any) {
+	logger.Error("a session panicked", remoteKey, remote, panicKey, fmt.Sprint(cause), stackKey, string(debug.Stack()))
 }
 
 // logging logs a session as it opens and as it closes, with how long it lasted.
@@ -173,6 +220,6 @@ func (recovered recoveredSession) serve(session charmssh.Session) {
 // catch logs a panic of the session, which has ended it.
 func (recovered recoveredSession) catch(session charmssh.Session) {
 	if cause := recover(); cause != nil {
-		recovered.logger.Error("a session panicked", remoteKey, session.RemoteAddr().String(), panicKey, fmt.Sprint(cause))
+		logPanic(recovered.logger, session.RemoteAddr().String(), cause)
 	}
 }

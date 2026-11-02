@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	gossh "golang.org/x/crypto/ssh"
 
@@ -102,6 +104,83 @@ func TestASessionIsLoggedOpeningAndClosing(test *testing.T) {
 		test.Errorf("the log = %q then %q, want the session of mira opened and closed", opened, closed)
 	}
 }
+
+// What the test's screens panic with, and the address of the session they are drawn for
+const (
+	breakage      = "the model broke"
+	readerAddress = "203.0.113.7:52100"
+)
+
+// A panic of a session's TUI reaches the server's log, with whose session it was, what it panicked with and the
+// function it panicked in, wherever the model panics: as it starts, as it takes a message, or as it draws a frame
+// after one. The panic goes on up to Bubble Tea, which ends the program with it.
+func TestAPanicOfASessionsScreenIsLogged(test *testing.T) {
+	cases := []struct {
+		name   string
+		model  tea.Model
+		source string
+	}{
+		{name: "as it starts", model: brokenInit{}, source: "brokenInit.Init"},
+		{name: "as it takes a message", model: brokenUpdate{}, source: "brokenUpdate.Update"},
+		{name: "drawing a frame after a message", model: calmModel{}, source: "brokenView.View"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			lines := make(chan string, logLines)
+			logger := slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil))
+			screen := watchedModel{logger: logger, model: testCase.model, remote: readerAddress}
+			running, stop := context.WithTimeout(test.Context(), testDeadline)
+			defer stop()
+			program := tea.NewProgram(screen, tea.WithContext(running), tea.WithInput(nil), tea.WithOutput(io.Discard),
+				tea.WithoutSignalHandler(), tea.WithWindowSize(terminalWidth, terminalHeight))
+			if _, err := program.Run(); !errors.Is(err, tea.ErrProgramPanic) {
+				test.Errorf("Run of a screen that panics %s = %v, want %v", testCase.name, err, tea.ErrProgramPanic)
+			}
+			if line := nextLine(test, lines); !strings.Contains(line, "remote="+readerAddress) || !strings.Contains(line, breakage) ||
+				!strings.Contains(line, testCase.source) {
+				test.Errorf("the log = %q, want the panic %q of the session from %s, and %s in its stack", line, breakage,
+					readerAddress, testCase.source)
+			}
+		})
+	}
+}
+
+// brokenInit panics as it starts.
+type brokenInit struct{}
+
+func (brokenInit) Init() tea.Cmd { panic(breakage) }
+
+func (brokenInit) Update(tea.Msg) (tea.Model, tea.Cmd) { return brokenInit{}, nil }
+
+func (brokenInit) View() tea.View { return tea.NewView("") }
+
+// brokenUpdate panics as it takes the first message Bubble Tea sends it.
+type brokenUpdate struct{}
+
+func (brokenUpdate) Init() tea.Cmd { return nil }
+
+func (brokenUpdate) Update(tea.Msg) (tea.Model, tea.Cmd) { panic(breakage) }
+
+func (brokenUpdate) View() tea.View { return tea.NewView("") }
+
+// calmModel draws its first frame, and becomes a model that panics drawing the next once it takes the first
+// message Bubble Tea sends it.
+type calmModel struct{}
+
+func (calmModel) Init() tea.Cmd { return nil }
+
+func (calmModel) Update(tea.Msg) (tea.Model, tea.Cmd) { return brokenView{}, nil }
+
+func (calmModel) View() tea.View { return tea.NewView("") }
+
+// brokenView panics drawing its frame.
+type brokenView struct{}
+
+func (brokenView) Init() tea.Cmd { return nil }
+
+func (brokenView) Update(tea.Msg) (tea.Model, tea.Cmd) { return brokenView{}, nil }
+
+func (brokenView) View() tea.View { panic(breakage) }
 
 // serving is the address of a server of the fixture, which serves until the test ends.
 func serving(test *testing.T, logger *slog.Logger) string {

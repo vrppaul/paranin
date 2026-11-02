@@ -36,7 +36,7 @@ How a package is built is said in its package comment. The rules for code in any
 - An error says what failed and with what, wrapped with `%w` as it goes up: `fmt.Errorf("load post %q: %w", slug, err)`.
 - An error is compared with `errors.Is` or `errors.As`, never by its text or with `==` on a wrapped one.
 - A refusal the outside world sees is an error of one kind, and one table turns a kind into what the caller gets: a status, an exit code.
-- Panic only at the start of the program, where it cannot run without what it lacks; never in a request or a session.
+- Panic only at the start of the program, where it cannot run without what it lacks; never in a request or a session, except to pass a panic already caught on to the recovery that ends the session (forbidigo).
 
 ## Time, logging and the terminal
 

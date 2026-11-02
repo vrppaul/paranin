@@ -28,11 +28,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
 
-## Hosting
-
-- SEC-13 asks for one log: a panic inside a session's TUI is caught by Bubble Tea and logged by wish through its own logger, on standard error, beside the slog log. Serving the TUI through `bubbletea.MiddlewareWithProgramHandler` with a handler of our own that logs `Run`'s error would put it in ours.
-
 ## Upstream
 
+- Bubble Tea writes a panic it catches and its stack straight to standard error, and wish's middleware logs the error `Run` ended with through charm's own logger: neither takes ours. Our log holds a panic of the TUI's model (`internal/hosting/ssh`), but a panic in a command Bubble Tea runs reaches theirs alone. A way to hand Bubble Tea a logger, or a hook for the panic it catches, would make slog the one log ADR-0001 asks for.
 - claude-review's `scripts/check_instruction_files.py` takes a word for a path by `/` or by a suffix it knows, and `.go` is not among them: a bare `main.go` in a rule is never checked. Proposed there; copied back here whole.
 - The same script finds a file by the file system, ignored folders included: on the owner's machine `**/*_test.go` was matched by the old tree's tests before this repository held one. Asking git for its files would match only what a clone has.

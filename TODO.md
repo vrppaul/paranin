@@ -17,8 +17,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## Content
 
-- `routes` parses the site's base address again to name the site after its host, though content's check parsed it already: content could keep a web address parsed, as it keeps a month, and hand routes its host.
-
 - A fault names its field by a path written by hand beside the yaml tags (`experience[0].end`). yaml.v3's `Node` knows the line and column of each value, which would name the place (`profile.yaml:171:`) with no second copy of the schema; weigh it before the posts' loader is written.
 
 ## Before the design work

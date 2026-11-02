@@ -34,6 +34,8 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "an empty name", original: "name: Mira Example", replacement: `name: ""`, want: "profile.yaml: person.name is empty"},
 		{name: "a mail address with a name round it", original: "email: mira@example.test", replacement: "email: Mira <mira@example.test>", want: `profile.yaml: person.email "Mira <mira@example.test>" is no bare mail address`},
 		{name: "a base address ending in a slash", original: "base_url: https://example.test", replacement: "base_url: https://example.test/", want: `profile.yaml: site.base_url "https://example.test/" ends in a slash, which every address adds itself`},
+		{name: "a base address of no web scheme", original: "base_url: https://example.test", replacement: "base_url: ftp://example.test", want: `profile.yaml: site.base_url "ftp://example.test" is no absolute web address`},
+		{name: "a base address of no host", original: "base_url: https://example.test", replacement: "base_url: https:///cv", want: `profile.yaml: site.base_url "https:///cv" is no absolute web address`},
 		{name: "a link that is no address", original: "url: https://github.test/mira\n", replacement: "url: github mira\n", want: `profile.yaml: person.links[0].url "github mira" is no absolute web address`},
 		{name: "a month past twelve", original: "start: 2023-04", replacement: "start: 2023-13", want: `profile.yaml: experience[0].start "2023-13" is no month, YYYY-MM`},
 		{name: "a role whose start is a gap", original: "start: 2023-04", replacement: `start: "[2023]"`, want: `profile.yaml: experience[0].start "[2023]" is no month, YYYY-MM`},
@@ -59,6 +61,30 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 			faults := faultsOf(test, changedProfile(test, testCase.original, testCase.replacement))
 			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
 				test.Errorf("faults = %q, want one %q", faults, testCase.want)
+			}
+		})
+	}
+}
+
+// The site's base address is read once, as the content writes it, and keeps its host, which names the site.
+func TestTheBaseAddressKeepsItsHost(test *testing.T) {
+	cases := []struct {
+		name string
+		base string
+		want string
+	}{
+		{name: "a bare address", base: "https://example.test", want: "example.test"},
+		{name: "an address with a path", base: "https://example.test/cv", want: "example.test"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot, err := Load(changedProfile(test, "base_url: https://example.test", "base_url: "+testCase.base))
+			if err != nil {
+				test.Fatalf("Load with base_url %q = %v, want no error", testCase.base, err)
+			}
+			if address := snapshot.Profile.Site.BaseURL; address.Written() != testCase.base || address.Host() != testCase.want {
+				test.Errorf("base_url %q reads as %q of the host %q, want it as written, of the host %q", testCase.base,
+					address.Written(), address.Host(), testCase.want)
 			}
 		})
 	}

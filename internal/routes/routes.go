@@ -3,8 +3,6 @@
 package routes
 
 import (
-	"net/url"
-
 	"github.com/vrppaul/paranin/internal/document"
 )
 
@@ -39,15 +37,16 @@ type Site struct {
 	host string
 }
 
-// New is the site served at a base address, which ends in no slash; content's check holds it to a web address.
-func New(base string) Site {
-	// content's check has parsed this address already and refused one that does not parse; the second parse is
-	// a debt (TODO.md), and its failure branch keeps the whole address as the name
-	host := base
-	if parsed, err := url.Parse(base); err == nil {
-		host = parsed.Host
-	}
-	return Site{base: base, host: host}
+// BaseAddress is the address a site is served at, as New's caller hands it: as it is written, ending in no slash,
+// and its host. Content's web address is one, read once from the profile and held by its check to the web.
+type BaseAddress interface {
+	Written() string
+	Host() string
+}
+
+// New is the site served at a base address, and named by the address's host.
+func New(base BaseAddress) Site {
+	return Site{base: base.Written(), host: base.Host()}
 }
 
 // Address is where a target leads, written whole: a page's in a format, or an address outside the site as it is.

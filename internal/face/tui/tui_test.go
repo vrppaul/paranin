@@ -14,11 +14,8 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The content package's fixture, and the address it is served at
-const (
-	fixturePath = "../../content/testdata/content"
-	fixtureBase = "https://example.test"
-)
+// The content package's fixture
+const fixturePath = "../../content/testdata/content"
 
 // A terminal of a common size, and one tall enough to show any tab whole
 const (
@@ -34,6 +31,14 @@ const (
 	smallestWidth  = 10
 	smallestHeight = 3
 )
+
+// Where it has room, the line of tabs ends in the site's name: the host of its base address, not the address whole.
+func TestTheLineOfTabsNamesTheSiteByItsHost(test *testing.T) {
+	tabline := strings.TrimRight(strings.Split(screenOf(test, fixtureModel(test, wideWidth, commonHeight)), lineEnd)[0], space)
+	if !strings.HasSuffix(tabline, " example.test") {
+		test.Errorf("the line of tabs = %q, want it to end in the host %q", tabline, "example.test")
+	}
+}
 
 // The first screen is the head of the résumé, and the tabs name every section after it.
 func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
@@ -191,7 +196,7 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New([]document.Document{composed}, routes.New(fixtureBase), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtureSnapshot(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
@@ -225,9 +230,10 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // fact a browser reader reads. A word wider than a narrow terminal breaks across lines, so the phrases are read
 // with every space and break taken out.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
-	resume := compose.Resume(fixtureSnapshot(test))
+	snapshot := fixtureSnapshot(test)
+	resume := compose.Resume(snapshot)
 	for _, width := range []int{commonWidth, narrowWidth} {
-		model := New([]document.Document{resume}, routes.New(fixtureBase), width, tallHeight)
+		model := New([]document.Document{resume}, fixtureSite(snapshot), width, tallHeight)
 		screens := []string{}
 		for range tabsOf(resume) {
 			screens = append(screens, screenOf(test, model))
@@ -262,7 +268,13 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 }
 
 func fixtureModel(test *testing.T, width, height int) Model {
-	return New(compose.Documents(fixtureSnapshot(test)), routes.New(fixtureBase), width, height)
+	snapshot := fixtureSnapshot(test)
+	return New(compose.Documents(snapshot), fixtureSite(snapshot), width, height)
+}
+
+// fixtureSite is the site of the fixture, at the address its profile gives.
+func fixtureSite(snapshot *content.Snapshot) routes.Site {
+	return routes.New(snapshot.Profile.Site.BaseURL)
 }
 
 func fixtureSnapshot(test *testing.T) *content.Snapshot {

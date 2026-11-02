@@ -27,8 +27,8 @@ type Profile struct {
 
 // Site is where the résumé is found: its address, with no slash at the end, and the command that reaches it.
 type Site struct {
-	BaseURL string `yaml:"base_url"`
-	SSH     string `yaml:"ssh"`
+	BaseURL WebAddress `yaml:"base_url"`
+	SSH     string     `yaml:"ssh"`
 }
 
 // Person is who the résumé is about.

@@ -8,7 +8,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // The keys that reach the experience tab, which opens with a role, its point, a blank line, then the next role
@@ -306,7 +305,7 @@ func TestMatchesNeverOverlap(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{document.Text{Text: "aaa aa"}}}},
 	}
-	model := pressed(test, New([]document.Document{composed}, routes.New(fixtureBase), commonWidth, commonHeight), "/")
+	model := pressed(test, New([]document.Document{composed}, fixtureSite(fixtureSnapshot(test)), commonWidth, commonHeight), "/")
 	if screen := screenOf(test, pressed(test, typed(test, model, "aa"), "enter")); !strings.Contains(screen, "/aa [1/2]") {
 		test.Errorf("after searching %q in %q the screen =\n%s\nwant two matches", "aa", "aaa aa", screen)
 	}

@@ -3,7 +3,6 @@ package content
 import (
 	"fmt"
 	"net/mail"
-	"net/url"
 	"regexp"
 	"slices"
 	"strings"
@@ -11,12 +10,6 @@ import (
 
 // How a slug is written: small letters and digits, words joined by hyphens
 const slugPattern = `^[a-z0-9]+(-[a-z0-9]+)*$`
-
-// The schemes an address of the profile may have
-const (
-	secureScheme = "https"
-	plainScheme  = "http"
-)
 
 // What is said of each kind of fault, as a format for the values it names; a fault of a value written quotes it
 const (
@@ -63,10 +56,9 @@ func (inspection *inspection) require(field, value string) {
 	}
 }
 
-func (inspection *inspection) requireAddress(field, address string) {
-	parsed, err := url.Parse(address)
-	if err != nil || parsed.Host == "" || (parsed.Scheme != secureScheme && parsed.Scheme != plainScheme) {
-		inspection.add(field, addressProblem, address)
+func (inspection *inspection) requireWebAddress(field string, address WebAddress) {
+	if !address.absolute() {
+		inspection.add(field, addressProblem, address.Written())
 	}
 }
 
@@ -86,9 +78,9 @@ func inspectProfile(profile Profile) Faults {
 }
 
 func inspectSite(inspection *inspection, site Site) {
-	inspection.requireAddress(baseAddressField, site.BaseURL)
-	if strings.HasSuffix(site.BaseURL, "/") {
-		inspection.add(baseAddressField, slashProblem, site.BaseURL)
+	inspection.requireWebAddress(baseAddressField, site.BaseURL)
+	if strings.HasSuffix(site.BaseURL.Written(), "/") {
+		inspection.add(baseAddressField, slashProblem, site.BaseURL.Written())
 	}
 	inspection.require("site.ssh", site.SSH)
 }
@@ -103,7 +95,7 @@ func inspectPerson(inspection *inspection, person Person) {
 	for index, link := range person.Links {
 		inspection.require(fmt.Sprintf("person.links[%d].label", index), link.Label)
 		inspection.require(fmt.Sprintf("person.links[%d].text", index), link.Text)
-		inspection.requireAddress(fmt.Sprintf("person.links[%d].url", index), link.URL)
+		inspection.requireWebAddress(fmt.Sprintf("person.links[%d].url", index), readWebAddress(link.URL))
 	}
 }
 
@@ -164,7 +156,7 @@ func inspectProjects(inspection *inspection, projects []Project) {
 		seen[project.Slug] = true
 		inspection.require(fmt.Sprintf("projects[%d].name", index), project.Name)
 		if project.Repo != "" {
-			inspection.requireAddress(fmt.Sprintf("projects[%d].repo", index), project.Repo)
+			inspection.requireWebAddress(fmt.Sprintf("projects[%d].repo", index), readWebAddress(project.Repo))
 		}
 	}
 }

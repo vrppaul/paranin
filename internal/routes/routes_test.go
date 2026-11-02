@@ -10,7 +10,7 @@ import (
 // address a reader's request chooses the format at among them, the index at the address agents look for it,
 // llms.txt, and in markdown alone; and an address outside the site is left as it is.
 func TestEveryTargetHasItsAddress(test *testing.T) {
-	site := New("https://example.test")
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
 	resume := document.Page{Kind: document.PageResume, Slug: ""}
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool"}
 	index := document.Page{Kind: document.PageIndex, Slug: ""}
@@ -41,21 +41,16 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	}
 }
 
-// The site's name is the host of its base address alone, whatever path the address goes on with.
-func TestTheSiteIsNamedByItsHost(test *testing.T) {
-	cases := []struct {
-		name string
-		base string
-		want string
-	}{
-		{name: "a bare address", base: "https://example.test", want: "example.test"},
-		{name: "an address with a path", base: "https://example.test/cv", want: "example.test"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if got := New(testCase.base).Host(); got != testCase.want {
-				test.Errorf("New(%q).Host() = %q, want %q", testCase.base, got, testCase.want)
-			}
-		})
-	}
+// writtenAddress is a base address as a test writes it, its host beside it, as content reads one from a profile.
+type writtenAddress struct {
+	written string
+	host    string
+}
+
+func (address writtenAddress) Written() string {
+	return address.written
+}
+
+func (address writtenAddress) Host() string {
+	return address.host
 }

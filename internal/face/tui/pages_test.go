@@ -6,7 +6,6 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What the fixture's résumé says under the name, and what the page of its project tidy-tool says under its own
@@ -147,8 +146,9 @@ func twoPagesModel(test *testing.T) Model {
 		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "another-tool"}, Title: []document.Span{document.Text{Text: "another-tool"}}, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
 		Blocks: nil,
 	}
-	documents := append(compose.Documents(fixtureSnapshot(test)), another)
-	return New(documents, routes.New(fixtureBase), commonWidth, commonHeight)
+	snapshot := fixtureSnapshot(test)
+	documents := append(compose.Documents(snapshot), another)
+	return New(documents, fixtureSite(snapshot), commonWidth, commonHeight)
 }
 
 // Tab after :e and a space writes the page the window lists first, which Enter opens.

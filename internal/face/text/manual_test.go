@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // A command too long for a line stays on one, so a reader who copies it pastes the whole command; prose around
@@ -18,7 +17,7 @@ func TestACommandNeverBreaksAcrossLines(test *testing.T) {
 			{Label: "install", Value: []document.Span{document.Code{Text: command}}},
 		}}},
 	}
-	if got := Manual(composed, routes.New(fixtureBase)); !strings.Contains(got, command) {
+	if got := Manual(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, command) {
 		test.Errorf("Manual = %q, want the command %q on one line", got, command)
 	}
 }
@@ -33,7 +32,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 		Blocks: []document.Block{document.Entry{Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Points: nil}},
 	}
 	want := strings.Repeat(" ", sectionIndent) + "[2020] – [2021]\n"
-	if got := Manual(composed, routes.New(fixtureBase)); !strings.Contains(got, "\n"+want) {
+	if got := Manual(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, "\n"+want) {
 		test.Errorf("Manual = %q, want the period on a line of its own, %q", got, want)
 	}
 }
@@ -46,7 +45,7 @@ func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 			document.Text{Text: "Run "}, document.Code{Text: "tool --all"}, document.Text{Text: "."},
 		}}},
 	}
-	if got := Manual(composed, routes.New(fixtureBase)); !strings.Contains(got, "Run tool --all.") {
+	if got := Manual(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, "Run tool --all.") {
 		test.Errorf("Manual = %q, want %q", got, "Run tool --all.")
 	}
 }

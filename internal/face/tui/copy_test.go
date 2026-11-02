@@ -7,8 +7,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// A terminal far wider than the widest page: a long value still wraps on the page, and the command line shows it
-// whole
+// A terminal far wider than the widest page: a long value still wraps on the page, the command line shows it
+// whole, and the line of tabs has room for the site's name
 const wideWidth = 160
 
 // y copies the value of the fact on the line the search found, whole, to the reader's clipboard over OSC 52, and the

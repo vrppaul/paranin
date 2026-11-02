@@ -7,9 +7,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The fewest rows a terminal has that shows the window of keys whole: its fifteen rows, the line of tabs, the status
+// The fewest rows a terminal has that shows the window of keys whole: its sixteen rows, the line of tabs, the status
 // line and the command line
-const keyWindowHeight = 18
+const keyWindowHeight = 19
 
 // A question mark or a space opens the window of keys over the page, which names the keys of normal mode and what
 // each does, the tabs a number chooses among them, and how the window closes; the status line stays in normal mode.

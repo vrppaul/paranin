@@ -33,6 +33,7 @@ const (
 	spaceKey         = "space"
 	nextMatchKey     = "n"
 	previousMatchKey = "N"
+	copyKey          = "y"
 	escapeKey        = "esc"
 	enterKey         = "enter"
 	backspaceKey     = "backspace"
@@ -109,6 +110,7 @@ func normalActions() map[string]action {
 		commandKey:       Model.startCommand,
 		nextMatchKey:     Model.nextMatch,
 		previousMatchKey: Model.previousMatch,
+		copyKey:          Model.copiedValue,
 		escapeKey:        Model.endSearch,
 	}
 	for _, key := range windowKeys() {

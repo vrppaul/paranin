@@ -292,6 +292,7 @@ func keyPress(test *testing.T, name string) tea.KeyPressMsg {
 		"g":         {Code: 'g', Text: "g"},
 		"G":         {Code: 'g', ShiftedCode: 'G', Mod: tea.ModShift, Text: "G"},
 		"q":         {Code: 'q', Text: "q"},
+		"y":         {Code: 'y', Text: "y"},
 		"n":         {Code: 'n', Text: "n"},
 		"N":         {Code: 'n', ShiftedCode: 'N', Mod: tea.ModShift, Text: "N"},
 		"/":         {Code: '/', Text: "/"},

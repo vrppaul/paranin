@@ -43,6 +43,7 @@ func (model Model) keyNotes() []hint {
 		{key: strconv.Itoa(firstTabNumber) + keyRangeMark + strconv.Itoa(lastTab), does: "go to a tab"},
 		{key: searchKey, does: "find in the tab"},
 		{key: nextMatchKey + space + previousMatchKey, does: "next / prior match"},
+		{key: copyKey, does: "copy a found value"},
 		{key: commandKey, does: "command line"},
 		{key: escapeKey, does: "end the search"},
 		{key: quitKey, does: closingHint(model.shown)},

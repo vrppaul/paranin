@@ -133,7 +133,7 @@ func withCursor(words []word) []word {
 		return words
 	}
 	marked := slices.Clone(words)
-	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: ""}
+	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: "", copied: ""}
 	marked[last].runs = append(slices.Clone(marked[last].runs), cursor)
 	return marked
 }
@@ -215,8 +215,8 @@ func (layout layout) facts(facts []document.Fact, indent int) []line {
 	column := labelWidth + columnGap
 	lines := []line{}
 	for _, fact := range facts {
-		lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: kindMuted, highlighted: false, address: ""}}
-		lines = append(lines, layout.continued(lead, layout.words(fact.Value, kindText), indent+column)...)
+		lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: kindMuted, highlighted: false, address: "", copied: ""}}
+		lines = append(lines, layout.continued(lead, layout.valueWords(fact.Value), indent+column)...)
 	}
 	return lines
 }
@@ -261,7 +261,7 @@ func (layout layout) columnWidths(table document.Table) []int {
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.
 func (layout layout) bullet(words []word, indent int) []line {
-	lead := line{indentRun(indent), {text: bulletMark + space, kind: kindFaint, highlighted: false, address: ""}}
+	lead := line{indentRun(indent), {text: bulletMark + space, kind: kindFaint, highlighted: false, address: "", copied: ""}}
 	return layout.continued(lead, words, indent+bulletHang)
 }
 
@@ -290,7 +290,7 @@ func (layout layout) titleLine(left, right []word, indent int) []line {
 func codeLines(code string, indent int) []line {
 	lines := []line{}
 	for written := range strings.SplitSeq(code, lineEnd) {
-		lines = append(lines, line{indentRun(indent), {text: written, kind: kindMuted, highlighted: false, address: ""}})
+		lines = append(lines, line{indentRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: ""}})
 	}
 	return lines
 }

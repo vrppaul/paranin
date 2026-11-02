@@ -71,12 +71,12 @@ func (model Model) startSearch(int) (Model, tea.Cmd) {
 	return model.repaintedChosen(), nil
 }
 
-// endSearch takes the search away, and its marks with it.
+// endSearch takes the search away, its marks and the matches it showed with it.
 func (model Model) endSearch(int) (Model, tea.Cmd) {
 	if model.search.query == "" {
 		return model, nil
 	}
-	model.search.query = ""
+	model.search.query, model.search.shown = "", make([]shownMatch, len(model.tabs))
 	return model.repainted(), nil
 }
 
@@ -150,11 +150,17 @@ func (model Model) stepped(matches []int, way matchWay, steps int) int {
 // firstStep is the place of the match the first step one way goes to: a step from the match the tab showed last,
 // while the page stays there; with none, the match the way picks by the page's top line.
 func (model Model) firstStep(matches []int, way matchWay) int {
-	top := model.scrolls[model.chosen]
-	if last := model.search.shown[model.chosen]; last.shown && last.scroll == top {
+	if last, standing := model.standingMatch(); standing {
 		return last.place + way.step
 	}
-	return way.byTheTop(matches, top)
+	return way.byTheTop(matches, model.scrolls[model.chosen])
+}
+
+// standingMatch is the match the chosen tab showed last, while its page stays where the match left it, and whether
+// there is one: n steps on from it, and y copies from its line.
+func (model Model) standingMatch() (shownMatch, bool) {
+	last := model.search.shown[model.chosen]
+	return last, last.shown && last.scroll == model.scrolls[model.chosen]
 }
 
 // toMatch shows a match of the chosen tab, the one a choice picks among its matches, and says which of how many it

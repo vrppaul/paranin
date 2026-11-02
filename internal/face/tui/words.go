@@ -35,13 +35,14 @@ const (
 	kindCursor
 )
 
-// run is a piece of text of one kind: highlighted where it is a result worth seeing first, and leading to an
-// address where it is a link.
+// run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address
+// where it is a link, and carrying the value y copies from its line where it is part of a fact's value.
 type run struct {
 	text        string
 	kind        kind
 	highlighted bool
 	address     string
+	copied      string
 }
 
 // line is one line of a tab, the runs it is made of; every line a layout makes opens with its indent.
@@ -57,8 +58,19 @@ type word struct {
 // words are the words of spans read as a kind of text: marks become runs of their own kind, a link carries its
 // address, and a command stays one word, its spaces and all, so it never breaks.
 func (layout layout) words(spans []document.Span, base kind) []word {
+	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: ""})
+}
+
+// valueWords are the words of a fact's value, read as text, each run carrying the value they read as, which y
+// copies from any line of them.
+func (layout layout) valueWords(value []document.Span) []word {
+	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: plainText(value)})
+}
+
+// formWords are the words of spans read in the form a run gives them.
+func (layout layout) formWords(spans []document.Span, form run) []word {
 	reader := wordReader{site: layout.site, words: []word{}, current: word{runs: nil, highlightBefore: false}}
-	reader.read(spans, run{text: "", kind: base, highlighted: false, address: ""})
+	reader.read(spans, form)
 	return reader.done()
 }
 
@@ -66,7 +78,7 @@ func (layout layout) words(spans []document.Span, base kind) []word {
 func textWords(text string, base kind) []word {
 	words := []word{}
 	for written := range strings.FieldsSeq(text) {
-		words = append(words, word{runs: []run{{text: written, kind: base, highlighted: false, address: ""}}, highlightBefore: false})
+		words = append(words, word{runs: []run{{text: written, kind: base, highlighted: false, address: "", copied: ""}}, highlightBefore: false})
 	}
 	return words
 }
@@ -139,6 +151,8 @@ func (reader *wordReader) done() []word {
 	return reader.words
 }
 
+// sameForm is whether two runs read alike, so one may take the other's text; the runs of one reading carry one
+// value for y to copy, so it is no part of their form.
 func sameForm(first, second run) bool {
 	return first.kind == second.kind && first.highlighted == second.highlighted && first.address == second.address
 }
@@ -205,7 +219,7 @@ func cutWord(whole word, width int) (word, word) {
 
 // spaceRun is the space before a word, highlighted where the space was.
 func spaceRun(next word) run {
-	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: ""}
+	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: ""}
 }
 
 // wordRuns are words laid in one line, a space between each two.
@@ -234,7 +248,7 @@ func indentRun(indent int) run {
 }
 
 func gapRun(width int) run {
-	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: ""}
+	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: ""}
 }
 
 // padded is a text with spaces after it to a width.

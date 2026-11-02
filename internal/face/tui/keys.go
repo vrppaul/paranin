@@ -29,6 +29,8 @@ const (
 	backwardTabKey   = "shift+tab"
 	searchKey        = "/"
 	commandKey       = ":"
+	keyWindowKey     = "?"
+	spaceKey         = "space"
 	nextMatchKey     = "n"
 	previousMatchKey = "N"
 	escapeKey        = "esc"
@@ -42,7 +44,7 @@ const countPause = 500 * time.Millisecond
 // What a digit is worth in the number typed before it
 const decimalBase = 10
 
-// mode is what the keys do: move through the page, type a search, or type a command.
+// mode is what the keys do: move through the page, type a search, type a command, or close the window of keys.
 type mode int
 
 const (
@@ -52,6 +54,8 @@ const (
 	modeSearch
 	// modeCommand types a command after the colon
 	modeCommand
+	// modeKeys shows the window of keys, which the next key closes
+	modeKeys
 )
 
 // keyState is what the keys pressed so far leave pending: the mode, what is typed on the command line after the
@@ -84,7 +88,7 @@ type action func(model Model, count int) (Model, tea.Cmd)
 
 // normalActions are what each key does in normal mode.
 func normalActions() map[string]action {
-	return map[string]action{
+	actions := map[string]action{
 		quitKey:          Model.quit,
 		interruptKey:     Model.quit,
 		downKey:          Model.scrollDown,
@@ -107,6 +111,10 @@ func normalActions() map[string]action {
 		previousMatchKey: Model.previousMatch,
 		escapeKey:        Model.endSearch,
 	}
+	for _, key := range windowKeys() {
+		actions[key] = Model.openKeys
+	}
+	return actions
 }
 
 // pressed is the model after a key, as the mode it is in takes it. Esc typed just before a key reaches a terminal
@@ -122,6 +130,8 @@ func (model Model) pressed(key tea.KeyPressMsg) (Model, tea.Cmd) {
 		return model.typedInSearch(key), nil
 	case modeCommand:
 		return model.typedInCommand(key)
+	case modeKeys:
+		return model.keyInWindow(key.String())
 	case modeNormal:
 	}
 	return model.normalKey(key.String())
@@ -184,7 +194,7 @@ func (model Model) countEnded(paused countPaused) Model {
 	if paused.sequence != model.keys.countSequence || model.keys.count == 0 {
 		return model
 	}
-	place := model.keys.count - 1
+	place := model.keys.count - firstTabNumber
 	model.keys.count = 0
 	if place >= len(model.tabs) {
 		return model

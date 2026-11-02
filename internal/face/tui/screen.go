@@ -76,7 +76,10 @@ func frameOf(width, height int) frame {
 	return frame{width: width, height: height, left: left, inner: inner, rows: max(rows, 0), crosses: crosses}
 }
 
-// hint is a key the status line names, and what it does.
+// Tabs are numbered from one, in the line of tabs and by the number that chooses one
+const firstTabNumber = 1
+
+// hint is a key, or keys, and what they do, as the status line and the window of keys name them.
 type hint struct {
 	key  string
 	does string
@@ -109,6 +112,7 @@ type modeLook struct {
 func modeLooks() map[mode]modeLook {
 	return map[mode]modeLook{
 		modeNormal: {name: normalMode, hints: []hint{
+			{key: keyWindowKey, does: keysTitle},
 			{key: previousKey + hintKeySeparator + nextKey, does: "tabs"},
 			{key: downKey + hintKeySeparator + upKey, does: "scroll"},
 			{key: searchKey, does: findHint},
@@ -123,6 +127,9 @@ func modeLooks() map[mode]modeLook {
 			{key: tabKey, does: "complete"},
 			{key: escapeKey, does: cancelHint},
 		}},
+		modeKeys: {name: normalMode, hints: []hint{
+			{key: escapeKey, does: closeHint},
+		}},
 	}
 }
 
@@ -132,12 +139,13 @@ type piece struct {
 	part part
 }
 
-// drawnScreen is the screen painted for the terminal as it is: each tab, and the rows of the page that hold
-// nothing but its crosses, or nothing at all.
+// drawnScreen is the screen painted for the terminal as it is: each tab, the rows of the page that hold nothing but
+// its crosses, or nothing at all, and the window of keys.
 type drawnScreen struct {
-	tabs     []drawnTab
-	crossRow string
-	blankRow string
+	tabs      []drawnTab
+	crossRow  string
+	blankRow  string
+	keyWindow paintedWindow
 }
 
 // drawnTab is one tab painted: its page, the line of tabs with it chosen, and the status line in each mode but for
@@ -187,7 +195,7 @@ func (model Model) drawnScreen() drawnScreen {
 	if model.frame.crosses {
 		crossRow = model.paint.crossRow(model.frame)
 	}
-	return drawnScreen{tabs: tabs, crossRow: crossRow, blankRow: strings.Repeat(space, width)}
+	return drawnScreen{tabs: tabs, crossRow: crossRow, blankRow: strings.Repeat(space, width), keyWindow: model.paint.keyWindow(model.keyNotes())}
 }
 
 // paintedPage paints a tab's lines, each match of the search it marks marked.
@@ -224,8 +232,12 @@ func (model Model) screen() string {
 	}
 	rows = append(rows, model.statusline(drawn), model.commandLine())
 	rows = rows[max(len(rows)-frame.height, 0):]
-	if model.keys.mode == modeCommand {
+	switch model.keys.mode {
+	case modeCommand:
 		rows = model.withCompletions(rows)
+	case modeKeys:
+		rows = model.withKeys(rows)
+	case modeNormal, modeSearch:
 	}
 	return strings.Join(rows, lineEnd)
 }
@@ -237,7 +249,7 @@ func (model Model) commandLine() string {
 		return model.typedLine(searchMark)
 	case modeCommand:
 		return model.typedLine(commandMark)
-	case modeNormal:
+	case modeNormal, modeKeys:
 	}
 	said := partCommand
 	if model.said.failed {
@@ -305,7 +317,7 @@ func (model Model) tabPieces(padding, first, chosen int) []piece {
 		if first+place == chosen {
 			number, title = partChosenNumber, partChosenTitle
 		}
-		pieces = append(pieces, piece{text: pad + strconv.Itoa(first+place+1) + space, part: number}, piece{text: shown.title + pad, part: title})
+		pieces = append(pieces, piece{text: pad + strconv.Itoa(first+place+firstTabNumber) + space, part: number}, piece{text: shown.title + pad, part: title})
 	}
 	return pieces
 }

@@ -7,15 +7,19 @@
 // Neovim's incsearch does, but for the slash, which takes the marks of the search before away at once; the command
 // line counts the matches, as Neovim does. A colon opens the command line, which runs a command, or names one it does
 // not know with Neovim's error. While the reader types, a window over the page lists the commands whose names start
-// with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first.
+// with what is typed, as the first version showed them, where Neovim waits for Tab; Tab chooses the first. A question
+// mark or a space opens the window of keys, which names the keys of normal mode and what each does, and which the
+// next key closes. A window shows whole or not at all: the window of keys opens only where it fits, and closes when
+// a resize leaves it no room.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
-// around it: a key press only chooses which painted lines show, and writes the ruler that says where it scrolled, the
-// command line and the window of commands, which lipgloss lays over the rows it covers alone. A key that changes what
-// the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away
-// paints the tabs again, once. What a piece of text is (text, muted, a command, a result worth seeing first) is the
-// layout's to say; how it looks is the paint's, from the design's colours in look, for the colours the terminal
-// shows. Every address is written by routes; a link carries its address to a terminal that follows links.
+// around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says
+// where it scrolled, the command line and the window of commands. Lipgloss lays a window over the rows it covers
+// alone, as the screen is drawn. A key that changes what the search line holds, or opens or leaves it, paints the
+// chosen tab's page again; a search confirmed or taken away paints the tabs again, once. What a piece of text is
+// (text, muted, a command, a result worth seeing first) is the layout's to say; how it looks is the paint's, from the
+// design's colours in look, for the colours the terminal shows. Every address is written by routes; a link carries
+// its address to a terminal that follows links.
 package tui
 
 import (
@@ -83,7 +87,7 @@ func New(composed document.Document, site routes.Site, width, height int) Model 
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
 		laid:       nil,
 		paint:      paint{kinds: nil, parts: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, fewColours: false, noColours: false},
-		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: ""},
+		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", keyWindow: paintedWindow{rows: nil, width: 0}},
 		chosen:     0,
 		scrolls:    make([]int, len(tabs)),
 		actions:    normalActions(),
@@ -150,6 +154,10 @@ func (model Model) relaid() Model {
 	model = model.repainted()
 	// the line a search began at is a scroll of the chosen tab, held to the new layout as every scroll is
 	model.search.begunAt = model.scrollWithin(model.chosen, model.search.begunAt)
+	// an open window of keys closes where the new size cannot show it whole, so no mode stays open unseen
+	if model.keys.mode == modeKeys && !model.shows(model.drawn.keyWindow) {
+		model.keys.mode = modeNormal
+	}
 	return model
 }
 

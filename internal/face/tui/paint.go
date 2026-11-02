@@ -40,10 +40,11 @@ const (
 	partFailure
 	partPrompt
 	partCursor
-	// partEdge is the border of a window over the page; partWindowName and partWindowNote are an item it lists, its
-	// name and what it says; partChosenMark, partChosenName and partChosenNote are the item chosen, its mark among
-	// them
+	// partEdge is the border of a window over the page, and partWindowRule a rule inside it; partWindowName and
+	// partWindowNote are an item it lists, its name and what it says; partChosenMark, partChosenName and
+	// partChosenNote are the item chosen, its mark among them
 	partEdge
+	partWindowRule
 	partWindowName
 	partWindowNote
 	partChosenMark
@@ -100,6 +101,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partPrompt:       plain.Foreground(colour(look.ColourAccent)).Bold(true),
 			partCursor:       plain.Foreground(colour(look.ColourAccent)),
 			partEdge:         plain.Foreground(colour(look.ColourEdge)),
+			partWindowRule:   bar.Foreground(colour(look.ColourQuiet)),
 			partWindowName:   bar.Foreground(colour(look.ColourText)).Bold(true),
 			partWindowNote:   bar.Foreground(colour(look.ColourMuted)),
 			partChosenMark:   chosen.Foreground(colour(look.ColourAccent)),

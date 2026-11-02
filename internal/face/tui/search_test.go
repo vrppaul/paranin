@@ -337,10 +337,16 @@ func TestTypingAfterAResizeKeepsThePage(test *testing.T) {
 	}
 }
 
-// belowThePage is the status line and the command line of a screen, its last two rows.
+// belowThePage is the status line and the command line of a screen, its last rows.
 func belowThePage(screen string) string {
-	rows := strings.Split(screen, "\n")
-	return strings.Join(rows[max(len(rows)-2, 0):], "\n")
+	rows := strings.Split(screen, lineEnd)
+	return strings.Join(rows[max(len(rows)-rowsBelowPage, 0):], lineEnd)
+}
+
+// aboveTheStatusLine is a screen but for its status line and its command line.
+func aboveTheStatusLine(screen string) string {
+	rows := strings.Split(screen, lineEnd)
+	return strings.Join(rows[:max(len(rows)-rowsBelowPage, 0)], lineEnd)
 }
 
 // A control character sent as typing never reaches the reader's terminal: the search line and the command line

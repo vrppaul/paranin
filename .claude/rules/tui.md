@@ -7,7 +7,7 @@ paths:
 
 How the TUI is built is said in the comment of `internal/face/tui`; the rules for Go are in `.claude/rules/go.md`.
 
-- A tab is laid out once for a size, and painted once for a theme, a terminal's colours and the search, the frame around it with it.
+- A tab is laid out once for a size, and painted once for a theme, a terminal's colours and the search, the frame around it and the window of keys with it.
 - A key press chooses which painted lines show and writes the ruler, the command line and the window of commands; nothing else is laid out or painted for a key, but for the search.
 - A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away paints every tab again, once.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.

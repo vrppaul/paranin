@@ -14,7 +14,7 @@ const (
 	ColourMuted
 	// ColourFaint is what a reader may pass over, a gap still to fill among it
 	ColourFaint
-	// ColourQuiet is a rule between two parts of a bar
+	// ColourQuiet is a rule between two parts of a bar, or inside a window
 	ColourQuiet
 	// ColourEdge is the border of a window laid over the page
 	ColourEdge

@@ -12,7 +12,7 @@ const (
 	unknownCommand = "E492: Not an editor command: "
 )
 
-// What the window of commands says the quit command does, which the status line says of q too
+// What the window of commands says the quit command does, which the status line and the window of keys say of q
 const quitHint = "quit"
 
 // A command runs with no count typed before it

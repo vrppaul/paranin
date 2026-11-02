@@ -186,6 +186,37 @@ func TestTabCompletesACommand(test *testing.T) {
 	}
 }
 
+// Tab goes down what the window lists and Shift+Tab up it, writing the item chosen on the command line; past either
+// end the line holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does.
+func TestTabGoesRoundTheCommands(test *testing.T) {
+	cases := []struct {
+		name string
+		keys []string
+		line string
+	}{
+		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: " :e"},
+		{name: "a Tab past the last what was typed", keys: []string{"tab", "tab", "tab"}, line: " :"},
+		{name: "a Tab after that the first again", keys: []string{"tab", "tab", "tab", "tab"}, line: " :q"},
+		{name: "Shift+Tab the last", keys: []string{"shift+tab"}, line: " :e"},
+		{name: "a second Shift+Tab the one before", keys: []string{"shift+tab", "shift+tab"}, line: " :q"},
+		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: " :"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), append([]string{":"}, testCase.keys...)...))
+			if line := commandLineOf(screen); line != testCase.line {
+				test.Errorf("after a colon and %q the command line = %q, want %q", testCase.keys, line, testCase.line)
+			}
+		})
+	}
+}
+
+// commandLineOf is a screen's last row, the command line, without the blanks after what it says.
+func commandLineOf(screen string) string {
+	rows := strings.Split(screen, lineEnd)
+	return strings.TrimRight(rows[len(rows)-1], space)
+}
+
 // Editing the line takes the choice away: the window lists anew, none marked.
 func TestAnEditTakesTheChoiceAway(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, commonHeight), ":", "tab", "backspace")

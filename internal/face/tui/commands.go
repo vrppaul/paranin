@@ -59,34 +59,59 @@ func (model Model) quitByCommand(string) (Model, tea.Cmd) {
 	return model.quit(noCount)
 }
 
-// completionState is the window of commands: the commands it lists, worked out each time the reader edits the
-// line, and whether Tab has chosen the first of them.
-type completionState struct {
-	listed []command
-	chosen bool
+// completion is an item the window of commands lists: what it shows, what it says the item does, and what Tab writes
+// on the command line where it chooses the item.
+type completion struct {
+	shown   string
+	does    string
+	written string
 }
+
+// completionState is the window of commands: what the reader typed, what the window lists for it, both worked out
+// each time they edit the line, and the place of the item Tab or Shift+Tab has chosen.
+type completionState struct {
+	typed  string
+	listed []completion
+	chosen int
+}
+
+// The place of the item chosen where none is, the line holding what the reader typed; the places what was typed
+// takes in the round Tab goes, its first, the items after it; and the steps Tab and Shift+Tab take through it
+const (
+	noneChosen   = -1
+	typedPlaces  = 1
+	forwardStep  = 1
+	backwardStep = -1
+)
 
 // startCommand opens the command line, empty, after a colon; the window lists every command.
 func (model Model) startCommand(int) (Model, tea.Cmd) {
 	model.keys.mode, model.keys.typing = modeCommand, ""
-	model.completion = completionState{listed: model.completions(""), chosen: false}
+	model.completion = model.completionsOf("")
 	return model, nil
 }
 
-// typedInCommand is the model after a key while the reader types a command: Enter runs it, Tab chooses the first
-// command the window lists; any other key edits the line, and the window lists anew, or leaves it unrun.
+// completionsOf is the window of commands for what the reader typed, none of it chosen.
+func (model Model) completionsOf(typed string) completionState {
+	return completionState{typed: typed, listed: model.completions(typed), chosen: noneChosen}
+}
+
+// typedInCommand is the model after a key while the reader types a command: Enter runs it, Tab and Shift+Tab go
+// round what the window lists; any other key edits the line, and the window lists anew, or leaves it unrun.
 func (model Model) typedInCommand(key tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch key.String() {
 	case enterKey:
 		return model.ranCommand()
 	case tabKey:
-		return model.completed(), nil
+		return model.completed(forwardStep), nil
+	case backwardTabKey:
+		return model.completed(backwardStep), nil
 	}
 	typing, edit := edited(model.keys.typing, key)
 	switch edit {
 	case lineChanged:
 		model.keys.typing = typing
-		model.completion = completionState{listed: model.completions(typing), chosen: false}
+		model.completion = model.completionsOf(typing)
 	case lineLeft:
 		model.keys.mode = modeNormal
 	case lineKept:
@@ -94,25 +119,69 @@ func (model Model) typedInCommand(key tea.KeyPressMsg) (Model, tea.Cmd) {
 	return model, nil
 }
 
-// completed is the model with the first command the window lists chosen and written on the command line.
-func (model Model) completed() Model {
-	if len(model.completion.listed) == 0 {
+// completed is the model with the item a step on chosen and written on the command line, as Neovim's wildmenu goes
+// round: what the reader typed is a place in the round, before the first and after the last, so Tab from it
+// chooses the first, Shift+Tab the last, and a step past either end writes what they typed again.
+func (model Model) completed(step int) Model {
+	listed := model.completion.listed
+	if len(listed) == 0 {
 		return model
 	}
-	model.keys.typing, model.completion.chosen = model.completion.listed[0].name, true
+	next := wrapped(model.completion.chosen+typedPlaces+step, len(listed)+typedPlaces) - typedPlaces
+	model.keys.typing, model.completion.chosen = model.completion.typed, next
+	if next != noneChosen {
+		model.keys.typing = listed[next].written
+	}
 	return model
 }
 
-// completions are the commands the window lists for what the reader typed: those it lists at all whose names start
-// with it.
-func (model Model) completions(typed string) []command {
-	listed := []command{}
+// commandParts are what a command line holds, read as Neovim reads it: a command's name, then, after a space, its
+// argument, spaces before either left out; and whether a space came after the name.
+func commandParts(typed string) (name, argument string, argued bool) {
+	name, argument, argued = strings.Cut(strings.TrimLeft(typed, space), space)
+	return name, strings.TrimLeft(argument, space), argued
+}
+
+// completions are what the window lists for what the reader typed: before a space, the commands it lists at all
+// whose names start with it; after a command and a space, the pages whose slugs start with what follows, where the
+// command takes an argument, which only a page is.
+func (model Model) completions(typed string) []completion {
+	name, argument, argued := commandParts(typed)
+	if argued {
+		return model.pageCompletions(name, argument)
+	}
+	listed := []completion{}
 	for _, known := range model.commands {
-		if known.does != "" && strings.HasPrefix(known.name, typed) {
-			listed = append(listed, known)
+		if known.does != "" && strings.HasPrefix(known.name, name) {
+			listed = append(listed, completion{shown: commandMark + known.name, does: known.does, written: known.name})
 		}
 	}
 	return listed
+}
+
+// pageCompletions are the projects' pages the window lists after a command named and a space, by slug, where the
+// command takes an argument: those whose slugs start with what is typed, each written after the command's name.
+func (model Model) pageCompletions(name, typed string) []completion {
+	listed := []completion{}
+	if known, found := model.commandNamed(name); !found || !known.takesArgument {
+		return listed
+	}
+	for _, slug := range model.slugs {
+		if strings.HasPrefix(slug, typed) {
+			listed = append(listed, completion{shown: slug, does: "", written: name + space + slug})
+		}
+	}
+	return listed
+}
+
+// commandNamed is the command of a name, and whether there is one.
+func (model Model) commandNamed(name string) (command, bool) {
+	for _, known := range model.commands {
+		if known.name == name {
+			return known, true
+		}
+	}
+	return command{name: "", does: "", takesArgument: false, act: nil}, false
 }
 
 // ranCommand runs the command typed, as Neovim does: the one named by the first word, with what follows it, or none,
@@ -124,11 +193,9 @@ func (model Model) ranCommand() (Model, tea.Cmd) {
 	if typed == "" {
 		return model, nil
 	}
-	name, argument, _ := strings.Cut(typed, space)
-	for _, known := range model.commands {
-		if known.name == name {
-			return model.ranWith(known, strings.TrimSpace(argument))
-		}
+	name, argument, _ := commandParts(typed)
+	if known, found := model.commandNamed(name); found {
+		return model.ranWith(known, strings.TrimSpace(argument))
 	}
 	model.said = commandMessage{text: unknownCommand + typed, failed: true}
 	return model, nil

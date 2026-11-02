@@ -55,21 +55,25 @@ func (model Model) shows(window paintedWindow) bool {
 	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-barRows
 }
 
-// commandWindow paints commands as a window, each command a row, its name after the colon in a column as wide as
-// the widest and what it does after it; the first marked where Tab chose it.
-func (paint paint) commandWindow(listed []command, firstChosen bool) paintedWindow {
+// commandWindow paints what the window of commands lists as a window, each item a row, what it shows in a column as
+// wide as the widest and what it does after it, past a gap where any item says what it does; the item chosen marked.
+func (paint paint) commandWindow(listed []completion, chosen int) paintedWindow {
 	nameWidth, doesWidth := 0, 0
-	for _, known := range listed {
-		nameWidth, doesWidth = max(nameWidth, textWidth(commandMark+known.name)), max(doesWidth, textWidth(known.does))
+	for _, item := range listed {
+		nameWidth, doesWidth = max(nameWidth, textWidth(item.shown)), max(doesWidth, textWidth(item.does))
 	}
-	inner := textWidth(chosenMark) + nameWidth + itemGap + doesWidth + spaceWidth
+	nameColumn := nameWidth
+	if doesWidth > 0 {
+		nameColumn += itemGap
+	}
+	inner := textWidth(chosenMark) + nameColumn + doesWidth + spaceWidth
 	inside := make([]string, 0, len(listed))
-	for place, known := range listed {
+	for place, item := range listed {
 		mark, name, does := piece{text: space, part: partWindowNote}, partWindowName, partWindowNote
-		if firstChosen && place == 0 {
+		if place == chosen {
 			mark, name, does = piece{text: chosenMark, part: partChosenMark}, partChosenName, partChosenNote
 		}
-		pieces := []piece{mark, {text: padded(commandMark+known.name, nameWidth+itemGap), part: name}, {text: padded(known.does, doesWidth+spaceWidth), part: does}}
+		pieces := []piece{mark, {text: padded(item.shown, nameColumn), part: name}, {text: padded(item.does, doesWidth+spaceWidth), part: does}}
 		inside = append(inside, paint.cut(pieces, inner).text)
 	}
 	return paint.framed(inside, inner)

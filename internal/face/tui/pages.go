@@ -2,6 +2,7 @@ package tui
 
 import (
 	"maps"
+	"slices"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -33,6 +34,18 @@ func buffersOf(documents []document.Document) map[document.Page][]tab {
 		buffers[held.Head.Page] = tabsOf(held)
 	}
 	return buffers
+}
+
+// projectSlugs are the slugs of the projects' pages among the buffers, in the order of their letters.
+func projectSlugs(buffers map[document.Page][]tab) []string {
+	slugs := []string{}
+	for page := range buffers {
+		if page.Kind == document.PageProject {
+			slugs = append(slugs, page.Slug)
+		}
+	}
+	slices.Sort(slugs)
+	return slugs
 }
 
 // placesLeft are where a reader stands in each buffer but the one shown before they first read it: on its first

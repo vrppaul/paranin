@@ -10,9 +10,11 @@
 // each project's page as buffers, as Neovim holds the files it opened: :e and a project's slug shows the project's
 // page in place of the résumé, and q, or :q, shows the résumé again, as the first version closed a report; each
 // buffer keeps the tab and the scrolls its reader left. While the reader types, a window over the page lists the
-// commands whose names start with what is typed, as the first version showed them, where Neovim waits for Tab; Tab
-// chooses the first. A question mark or a space opens the window of keys, which names the keys of normal mode and
-// what each does, and which the next key closes; the frame says q closes a project's page and quits on the résumé.
+// commands whose names start with what is typed, as the first version showed them, where Neovim waits for Tab; after
+// :e and a space it lists the projects' pages whose slugs start with what follows. Tab and Shift+Tab go round what
+// it lists, writing the item chosen on the line, and past either end what was typed, as Neovim's wildmenu does. A
+// question mark or a space opens the window of keys, which names the keys of normal mode and what each does, and
+// which the next key closes; the frame says q closes a project's page and quits on the résumé.
 // A window shows whole or not at all: the window of keys opens only where it fits, where it does not the command
 // line says Neovim's E36, and the window closes when a resize leaves it no room. On the command line the cursor is
 // the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent where the terminal
@@ -59,6 +61,8 @@ type Model struct {
 	shown   document.Page
 	tabs    []tab
 	left    map[document.Page]readerPlace
+	// slugs are the slugs of the projects' pages the session holds, in order, as the window of commands lists them
+	slugs []string
 	// site writes the addresses links lead to, and names the site in the line of tabs
 	site     routes.Site
 	terminal terminal
@@ -102,6 +106,7 @@ func New(documents []document.Document, site routes.Site, width, height int) Mod
 		shown:      shown,
 		tabs:       buffers[shown],
 		left:       placesLeft(buffers, shown),
+		slugs:      projectSlugs(buffers),
 		site:       site,
 		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, rows: 0, crosses: false},
@@ -114,7 +119,7 @@ func New(documents []document.Document, site routes.Site, width, height int) Mod
 		commands:   commands(closingHint(shown)),
 		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
-		completion: completionState{listed: nil, chosen: false},
+		completion: completionState{typed: "", listed: nil, chosen: noneChosen},
 		said:       commandMessage{text: "", failed: false},
 	}
 	return model.relaid()

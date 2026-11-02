@@ -3,6 +3,10 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What the fixture's résumé says under the name, and what the page of its project tidy-tool says under its own
@@ -106,6 +110,55 @@ func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 				test.Errorf("after :%s the screen =\n%s\nwant %q, and the résumé still shown", testCase.text, screen, testCase.want)
 			}
 		})
+	}
+}
+
+// After :e and a space the window of commands lists the projects with a page whose slugs start with what follows,
+// in the order of their letters, which Tab goes through; after a command that takes no argument it lists nothing,
+// and Tab leaves the line as typed. The session holds a second project's page, which sorts first.
+func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		keys []string
+		line string
+	}{
+		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: " :e another-tool"},
+		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: " :e tidy-tool"},
+		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: " :e tidy-tool"},
+		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: " :e ti"},
+		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: " :e tidy-tool"},
+		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: " :e other"},
+		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: " :q"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := typed(test, pressed(test, twoPagesModel(test), ":"), testCase.text)
+			if line := commandLineOf(screenOf(test, pressed(test, model, testCase.keys...))); line != testCase.line {
+				test.Errorf("after :%s and %q the command line = %q, want %q", testCase.text, testCase.keys, line, testCase.line)
+			}
+		})
+	}
+}
+
+// twoPagesModel is a session on the fixture's documents and a second project's page, another-tool, of a title alone.
+func twoPagesModel(test *testing.T) Model {
+	another := document.Document{
+		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "another-tool"}, Title: []document.Span{document.Text{Text: "another-tool"}}, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Blocks: nil,
+	}
+	documents := append(compose.Documents(fixtureSnapshot(test)), another)
+	return New(documents, routes.New(fixtureBase), commonWidth, commonHeight)
+}
+
+// Tab after :e and a space writes the page the window lists first, which Enter opens.
+func TestTabCompletesAPage(test *testing.T) {
+	model := pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "e "), "tab")
+	if line := commandLineOf(screenOf(test, model)); line != " :e tidy-tool" {
+		test.Errorf("after :e, a space and Tab the command line = %q, want %q", line, " :e tidy-tool")
+	}
+	if screen := screenOf(test, pressed(test, model, "enter")); !strings.Contains(screen, projectTagline) {
+		test.Errorf("after :e, a space, Tab and Enter the screen =\n%s\nwant the project's page", screen)
 	}
 }
 

@@ -52,7 +52,8 @@ func wordKeys() map[Word]string {
 
 // Words are the site's words in one language, every one of them there (D12).
 type Words struct {
-	texts map[Word]string
+	language string
+	texts    map[Word]string
 }
 
 // Text is a word as this language writes it.
@@ -60,10 +61,15 @@ func (words Words) Text(word Word) string {
 	return words.texts[word]
 }
 
-// readWords takes a catalogue as the file writes it: every word under its key and none empty, and no key the
-// site has no word for. The faults come in the order of the words, then of the keys.
-func readWords(written map[string]string) (Words, Faults) {
-	inspection := &inspection{file: englishWordsFile, faults: nil}
+// Language is the tag of the language the words are written in, as BCP 47 writes it: "en".
+func (words Words) Language() string {
+	return words.language
+}
+
+// readWords takes a catalogue in a language as the file writes it: every word under its key and none empty, and
+// no key the site has no word for. The faults come in the order of the words, then of the keys.
+func readWords(language string, written map[string]string) (Words, Faults) {
+	inspection := &inspection{file: wordsFile(language), faults: nil}
 	keys := wordKeys()
 	texts := make(map[Word]string, len(keys))
 	for _, word := range slices.Sorted(maps.Keys(keys)) {
@@ -76,5 +82,5 @@ func readWords(written map[string]string) (Words, Faults) {
 			inspection.add(key, unknownWordProblem)
 		}
 	}
-	return Words{texts: texts}, inspection.faults
+	return Words{language: language, texts: texts}, inspection.faults
 }

@@ -71,7 +71,7 @@ type tab struct {
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, then each section.
 func tabsOf(composed document.Document) []tab {
-	opening := tab{title: plainText(composed.Head.Title), tally: "", head: &composed.Head, blocks: nil}
+	opening := tab{title: document.PlainText(composed.Head.Title), tally: "", head: &composed.Head, blocks: nil}
 	sections := []tab{}
 	for _, block := range composed.Blocks {
 		section, isSection := block.(document.Section)
@@ -79,7 +79,7 @@ func tabsOf(composed document.Document) []tab {
 			opening.blocks = append(opening.blocks, block)
 			continue
 		}
-		sections = append(sections, tab{title: plainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks})
+		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks})
 	}
 	opening.tally = checkTally(opening.blocks)
 	return append([]tab{opening}, sections...)
@@ -122,26 +122,6 @@ func checksOfLevel(checks []document.Check, level document.CheckLevel) int {
 		}
 	}
 	return count
-}
-
-// plainText is the text of spans, marks gone: a tab's title.
-func plainText(spans []document.Span) string {
-	var builder strings.Builder
-	for _, span := range spans {
-		switch typed := span.(type) {
-		case document.Text:
-			builder.WriteString(typed.Text)
-		case document.Code:
-			builder.WriteString(typed.Text)
-		case document.Gap:
-			builder.WriteString(typed.Text)
-		case document.Highlight:
-			builder.WriteString(plainText(typed.Spans))
-		case document.Link:
-			builder.WriteString(plainText(typed.Spans))
-		}
-	}
-	return builder.String()
 }
 
 // layout lays a tab out in lines of a width; the site writes the address each link leads to.

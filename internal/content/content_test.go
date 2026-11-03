@@ -97,7 +97,7 @@ func TestAMissingOrEmptyProfileIsAFaultOfTheFile(test *testing.T) {
 		folder fstest.MapFS
 		want   string
 	}{
-		{name: "no profile in the folder", folder: fstest.MapFS{englishWordsFile: fixtureFolder(test)[englishWordsFile]}, want: "profile.yaml: file does not exist"},
+		{name: "no profile in the folder", folder: fstest.MapFS{wordsFile(english): fixtureFolder(test)[wordsFile(english)]}, want: "profile.yaml: file does not exist"},
 		{name: "an empty profile", folder: writtenFile(fixtureFolder(test), profileFile, ""), want: "profile.yaml: is empty"},
 	}
 	for _, testCase := range cases {
@@ -144,7 +144,7 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			faults := faultsOf(test, changedFile(test, fixtureFolder(test), englishWordsFile, testCase.original, testCase.replacement))
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), wordsFile(english), testCase.original, testCase.replacement))
 			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
 				test.Errorf("faults = %q, want one %q", faults, testCase.want)
 			}
@@ -210,7 +210,7 @@ func (counter *workCounter) name(snapshot *Snapshot) string {
 // fixtureFolder is the fixture content in a folder in memory, which a test may change.
 func fixtureFolder(test *testing.T) fstest.MapFS {
 	folder := fstest.MapFS{}
-	for _, file := range []string{profileFile, englishWordsFile} {
+	for _, file := range []string{profileFile, wordsFile(english)} {
 		data, err := os.ReadFile(filepath.Join(fixturePath, file))
 		if err != nil {
 			test.Fatalf("read the fixture's %s: %v", file, err)

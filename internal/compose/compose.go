@@ -60,7 +60,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
-		projects = append(projects, listing(projectHead(project)))
+		projects = append(projects, listing(projectHead(project, words)))
 	}
 	if len(projects) > 0 {
 		blocks = append(blocks, section(words.Text(content.WordProjects), document.Contents{Listings: projects}))
@@ -68,6 +68,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:     document.Page{Kind: document.PageIndex, Slug: ""},
+			Language: words.Language(),
 			Title:    resume.Title,
 			Subtitle: nil,
 			Place:    "",
@@ -87,6 +88,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	return document.Head{
 		Page:     document.Page{Kind: document.PageResume, Slug: ""},
+		Language: words.Language(),
 		Title:    markedSpans(person.Name),
 		Subtitle: markedSpans(person.Title),
 		Place:    person.Location,
@@ -165,13 +167,15 @@ func projectDocument(project content.Project, author content.Person, words conte
 		}
 		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Blocks: paragraphs})
 	}
-	return document.Document{Head: projectHead(project), Blocks: blocks}
+	return document.Document{Head: projectHead(project, words), Blocks: blocks}
 }
 
-// projectHead is the head of a project's page: its name, what it is in a line, and what it does.
-func projectHead(project content.Project) document.Head {
+// projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a
+// line, and what it does.
+func projectHead(project content.Project, words content.Words) document.Head {
 	return document.Head{
 		Page:     projectPage(project),
+		Language: words.Language(),
 		Title:    markedSpans(project.Name),
 		Subtitle: markedSpans(project.Tagline),
 		Place:    "",

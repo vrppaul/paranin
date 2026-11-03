@@ -54,6 +54,13 @@ repos:
         language: system
         files: (^design/|^internal/look/|^scripts/tokens/)
         pass_filenames: false
+      # Each templ template as templ formats it, and its Go as templ writes it (scripts/templates/main.go)
+      - id: templates
+        name: templ templates (formatted, their Go written)
+        entry: go run ./scripts/templates
+        language: system
+        files: (\.templ$|_templ\.go$|^scripts/templates/|^go\.mod$)
+        pass_filenames: false
       # The content loads as the site would load it
       - id: content-check
         name: paranin check (the content)

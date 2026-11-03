@@ -93,6 +93,8 @@ linters:
         - ^github\.com/vrppaul/paranin/internal/document\.Month$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return
         - ^charm\.land/bubbletea/v2\.Model$
+        # templ's own interface, which every component is and every component it calls is typed as
+        - ^github\.com/a-h/templ\.Component$
     nolintlint:
       require-explanation: true
       require-specific: true
@@ -169,6 +171,14 @@ linters:
           deny:
             - pkg: github.com/vrppaul/paranin/internal/inbox
               desc: *inbox-beside
+        # The golden files' helper links testing into whatever imports it; the linters read no test, so every file
+        # they read is one that may not
+        tests-alone-read-golden:
+          files:
+            - "$all"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/golden
+              desc: golden is the tests' helper; only a _test.go file imports it
         # A part outside internal would be held by none of the rules above
         every-part-inside-internal:
           files:

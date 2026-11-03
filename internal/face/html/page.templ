@@ -1,0 +1,238 @@
+package html
+
+import (
+	"time"
+
+	"github.com/vrppaul/paranin/internal/document"
+)
+
+// page is a document's whole page: its language and title for the browser, then its head and its blocks.
+templ (writer pageWriter) page(composed document.Document) {
+	<!DOCTYPE html>
+	<html lang={ composed.Head.Language }>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ document.PlainText(composed.Head.Title) }</title>
+		</head>
+		<body>
+			@writer.head(composed.Head)
+			<main>
+				for _, block := range composed.Blocks {
+					@writer.block(block, firstHeadingDepth)
+				}
+			</main>
+		</body>
+	</html>
+}
+
+// head is what the page shows first: its title, the subtitle and the place beside it, the lead, and the ways to
+// reach the author.
+templ (writer pageWriter) head(head document.Head) {
+	<header>
+		<h1>
+			@writer.spans(head.Title)
+		</h1>
+		if len(head.Subtitle) > 0 || head.Place != "" {
+			<p>
+				@writer.spans(head.Subtitle)
+				if len(head.Subtitle) > 0 && head.Place != "" {
+					@text(dot)
+				}
+				@text(head.Place)
+			</p>
+		}
+		if len(head.Lead) > 0 {
+			<p>
+				@writer.spans(head.Lead)
+			</p>
+		}
+		if len(head.Ways) > 0 {
+			@writer.facts(head.Ways)
+		}
+	</header>
+}
+
+templ (writer pageWriter) section(section document.Section, depth int) {
+	<section>
+		@heading(depth, writer.spans(section.Title))
+		for _, block := range section.Blocks {
+			@writer.block(block, depth+1)
+		}
+	</section>
+}
+
+templ (writer pageWriter) paragraph(paragraph document.Paragraph) {
+	<p>
+		@writer.spans(paragraph.Spans)
+	</p>
+}
+
+templ (writer pageWriter) table(table document.Table) {
+	<table>
+		<tbody>
+			for _, row := range table.Rows {
+				<tr>
+					for _, cell := range row.Cells {
+						<td>
+							@writer.spans(cell.Spans)
+						</td>
+					}
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+// codeBlock is text shown as it is, line for line.
+templ codeBlock(text string) {
+	<pre>{ text }</pre>
+}
+
+templ (writer pageWriter) facts(facts []document.Fact) {
+	<dl>
+		for _, fact := range facts {
+			<dt>{ fact.Label }</dt>
+			<dd>
+				@writer.spans(fact.Value)
+			</dd>
+		}
+	</dl>
+}
+
+// entry is a role or a school under its title and subtitle, its period and place in a line, then its points.
+templ (writer pageWriter) entry(entry document.Entry, depth int) {
+	<article>
+		@heading(depth, writer.titled(entry.Title, entry.Subtitle))
+		<p>
+			@month(entry.Period.Start)
+			@text(rangeDash)
+			@month(entry.Period.End)
+			if entry.Place != "" {
+				@text(dot)
+				@text(entry.Place)
+			}
+		</p>
+		if len(entry.Points) > 0 {
+			<ul>
+				for _, point := range entry.Points {
+					<li>
+						@writer.spans(point.Spans)
+					</li>
+				}
+			</ul>
+		}
+	</article>
+}
+
+// card is a piece of work under its title, a link to its page where it has one; its tag and subtitle in a line,
+// its summary, then its facts.
+templ (writer pageWriter) card(card document.Card, depth int) {
+	<article>
+		@heading(depth, writer.spans(linked(card.Page, card.Title)))
+		if card.Tag != "" || len(card.Subtitle) > 0 {
+			<p>
+				@text(card.Tag)
+				if card.Tag != "" && len(card.Subtitle) > 0 {
+					@text(dot)
+				}
+				@writer.spans(card.Subtitle)
+			</p>
+		}
+		if len(card.Summary) > 0 {
+			<p>
+				@writer.spans(card.Summary)
+			</p>
+		}
+		if len(card.Facts) > 0 {
+			@writer.facts(card.Facts)
+		}
+	</article>
+}
+
+// contents are the pages a document leads to, each a link by its title, then the line on what it is.
+templ (writer pageWriter) contents(contents document.Contents) {
+	<ul>
+		for _, listing := range contents.Listings {
+			<li>
+				@writer.spans(linked(listing.Page, listing.Title))
+				if len(listing.Note) > 0 {
+					@text(labelEnd)
+					@writer.spans(listing.Note)
+				}
+			</li>
+		}
+	</ul>
+}
+
+// titled is a title and its subtitle in one line, a dash between them where both are there.
+templ (writer pageWriter) titled(title, subtitle []document.Span) {
+	@writer.spans(title)
+	if len(title) > 0 && len(subtitle) > 0 {
+		@text(dash)
+	}
+	@writer.spans(subtitle)
+}
+
+templ (writer pageWriter) spans(spans []document.Span) {
+	for _, span := range spans {
+		@writer.span(span)
+	}
+}
+
+// text is text as it reads. Text beside the other parts of a line is written through it, never as an expression
+// of its own: templ writes a space before an expression that opens a line of the template after another part.
+templ text(text string) {
+	{ text }
+}
+
+templ code(text string) {
+	<code>{ text }</code>
+}
+
+templ (writer pageWriter) highlight(spans []document.Span) {
+	<mark>
+		@writer.spans(spans)
+	</mark>
+}
+
+templ (writer pageWriter) link(address string, spans []document.Span) {
+	<a href={ address }>
+		@writer.spans(spans)
+	</a>
+}
+
+// knownMonth is a month of a year as a time: as a reader reads it, and as a machine does.
+templ knownMonth(start time.Time) {
+	<time datetime={ machineMonth(start) }>{ monthText(start) }</time>
+}
+
+templ headingTwo(title templ.Component) {
+	<h2>
+		@title
+	</h2>
+}
+
+templ headingThree(title templ.Component) {
+	<h3>
+		@title
+	</h3>
+}
+
+templ headingFour(title templ.Component) {
+	<h4>
+		@title
+	</h4>
+}
+
+templ headingFive(title templ.Component) {
+	<h5>
+		@title
+	</h5>
+}
+
+templ headingSix(title templ.Component) {
+	<h6>
+		@title
+	</h6>
+}

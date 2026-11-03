@@ -10,10 +10,12 @@ type Document struct {
 	Blocks []Block
 }
 
-// Head is what every face shows first: the page the document is, its title, a subtitle and the place beside it,
-// a lead, and the ways to reach the author.
+// Head is what every face shows first: the page the document is, the language it is written in, its title, a
+// subtitle and the place beside it, a lead, and the ways to reach the author.
 type Head struct {
-	Page     Page
+	Page Page
+	// Language is a tag of BCP 47, as HTML's lang and Typst's text take it: "en"
+	Language string
 	Title    []Span
 	Subtitle []Span
 	Place    string

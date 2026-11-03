@@ -19,6 +19,7 @@ func Skills(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:     document.Page{Kind: document.PageSkills, Slug: ""},
+			Language: snapshot.Words.Language(),
 			Title:    textSpans(snapshot.Words.Text(content.WordSkills)),
 			Subtitle: nil,
 			Place:    "",
@@ -50,6 +51,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:     document.Page{Kind: document.PageHealth, Slug: ""},
+			Language: snapshot.Words.Language(),
 			Title:    textSpans(snapshot.Words.Text(content.WordHealth)),
 			Subtitle: nil,
 			Place:    "",

@@ -623,9 +623,12 @@ once); the small words and the table of abbreviations are **Proposed**:
   reviewers. A change that survived a round is now a case of its test, but
   for an entry of a table: no test holds a declaration.
 - **Go, besides:** `go mod tidy -diff`, `go test ./...`; `govulncheck`
-  v1.9.0 in CI alone, since it needs the network. templ, when it comes,
-  through `go tool` (its generated code must match its version), with
-  `templ fmt`.
+  v1.9.0 in CI alone, since it needs the network. `scripts/templates` runs
+  templ's own commands, so its generated code is that of the version
+  `go.mod` requires; templ is a `tool` of `go.mod` too, so `go tool templ`,
+  an editor's language server among its uses, is the same version. The
+  script checks each template against `templ fmt` in memory, since templ's
+  own `-fail` rewrites the file, and its Go with `templ generate -check`.
 - **Page:** `tsc` strict; `svelte-check`; eslint with `LAYERS`,
   `id-length`, `NO_NESTED_HELPERS`, `no-magic-numbers`, complexity 10, and
   `innerHTML` and `getElementById` refused; stylelint as in §5.5; knip;

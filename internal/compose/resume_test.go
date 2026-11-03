@@ -215,6 +215,18 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 	}
 }
 
+// Every document compose makes is in the language its words are written in, the fixture's English, so a face can
+// name the language its reader reads.
+func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
+	snapshot := fixtureSnapshot(test)
+	documents := slices.Concat(Documents(snapshot), []document.Document{Index(snapshot)}, Extras(snapshot))
+	for _, composed := range documents {
+		if got, want := composed.Head.Language, "en"; got != want {
+			test.Errorf("the language of %+v = %q, want %q", composed.Head.Page, got, want)
+		}
+	}
+}
+
 // contentsOf are a section's contents, wherever compose put them.
 func contentsOf(test *testing.T, section document.Section) document.Contents {
 	for _, block := range section.Blocks {
@@ -234,7 +246,7 @@ func documentOf(test *testing.T, documents []document.Document, page document.Pa
 		}
 	}
 	test.Fatalf("no document is the page %+v", page)
-	return document.Document{Head: document.Head{Page: page, Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil}, Blocks: nil}
+	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil}, Blocks: nil}
 }
 
 // cardTitled is a section's card under a title, wherever compose put it.

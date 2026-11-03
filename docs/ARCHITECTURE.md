@@ -145,7 +145,7 @@ and web routes.
   of a snapshot, and of the time where a post's date makes it one; who holds
   what it makes is the hosts' to say.
 - **A document is a head and its blocks.** The head holds the page it is,
-  where it is one; its title, a subtitle, a place and a lead (the résumé's
+  where it is one; the language it is written in; its title, a subtitle, a place and a lead (the résumé's
   are the name, the title, where the author lives, the headline); a
   description for the page's metadata; and the ways to reach the author
   (mail, the profiles, `ssh`, the CV), since every face shows them first.
@@ -197,8 +197,9 @@ and web routes.
 - **What lands when.** The head, the résumé's blocks and its spans (text,
   code, link, highlight, gap) land with `compose` and the résumé, and the
   site's word catalogue with them, since `compose` writes the first word of
-  the site. The head's page lands with `routes`, its description with
-  `face/html`, the CV among the ways with `face/print`; a section's anchor and
+  the site. The head's page lands with `routes`, its language (the tag of
+  the words' catalogue, which a page's `lang` names) and its description
+  with `face/html`, the CV among the ways with `face/print`; a section's anchor and
   a link's format and anchor with the first link that names one; project
   pages and the index with `face/text`, the first face to serve them; the
   extras with `face/tui`; a widget with `face/html`; the posts' blocks and

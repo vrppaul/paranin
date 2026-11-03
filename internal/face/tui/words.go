@@ -70,7 +70,7 @@ func (layout layout) words(spans []document.Span, base kind) []word {
 // valueWords are the words of a fact's value, read as text, each run carrying the value they read as, which y
 // copies from any line of them.
 func (layout layout) valueWords(value []document.Span) []word {
-	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: plainText(value)})
+	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value)})
 }
 
 // formWords are the words of spans read in the form a run gives them.

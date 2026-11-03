@@ -1,8 +1,9 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003). It draws every page of a snapshot once, the
 // first time a request meets that snapshot (content.Derived), and serves the drawing until the store holds another, so
 // no request composes or draws a page. Each page is served at the path routes writes for it in each format, and at its
-// own address in the format the reader's request asks for; the index at llms.txt, sent as plain text, as a name ending
-// in .txt promises. Any other path is answered with the text of no page, drawn once like the pages but for the path,
+// own address in the format the reader's request asks for: HTML for a browser, markdown for an agent that asks for
+// it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as a name ending in
+// .txt promises. Any other path is answered with the text of no page, drawn once like the pages but for the path,
 // which each request quotes in it.
 package web
 
@@ -14,15 +15,14 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/face/html"
 	"github.com/vrppaul/paranin/internal/face/text"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The headers every page is sent with: what it is, that it is no other kind, and that a cache asks again, since
-// a reload can change any page
+// The headers every page is sent with: what it is, text of UTF-8 whatever its media type, that it is no other
+// kind, and that a cache asks again, since a reload can change any page
 const (
-	markdownType = markdownMediaType + utf8Text
-	plainType    = plainMediaType + utf8Text
 	utf8Text     = "; charset=utf-8"
 	noSniffing   = "nosniff"
 	askEveryTime = "no-cache"
@@ -38,6 +38,7 @@ const (
 	varyHeader        = "Vary"
 	markdownMediaType = "text/markdown"
 	plainMediaType    = "text/plain"
+	htmlMediaType     = "text/html"
 	mediaTypeEnd      = ","
 	qualityParameter  = "q"
 	qualityBits       = 64
@@ -78,23 +79,28 @@ type Server struct {
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at: in each format at its own path, and
-// both ways at the address where the reader chooses; and the text of an address of no page.
+// in every format at the address where the reader chooses; and the text of an address of no page.
 type drawing struct {
 	pages    map[string]drawnPage
 	chosen   map[string]choice
 	notFound text.NotFound
 }
 
-// choice is one page in each format a reader may choose.
-type choice struct {
-	markdown drawnPage
-	manual   drawnPage
-}
+// choice is one page in each format a reader may choose, never none, in the order a tie between two goes: the
+// manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual.
+type choice []drawnPage
 
-// drawnPage is one page as it is sent.
+// drawnPage is one page as it is sent: the media type it is, which an Accept header ranks, the header that says
+// it, and its text.
 type drawnPage struct {
+	mediaType   string
 	contentType string
 	body        []byte
+}
+
+// drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is.
+func drawnAs(mediaType, text string) drawnPage {
+	return drawnPage{mediaType: mediaType, contentType: mediaType + utf8Text, body: []byte(text)}
 }
 
 // New is a server of the site the store holds.
@@ -121,16 +127,20 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		send(writer, http.StatusOK, offered.chosenBy(request.Header.Get(acceptHeader)))
 		return
 	}
-	send(writer, missingStatus, drawnPage{contentType: plainType, body: []byte(drawn.notFound.For(request.URL.Path))})
+	send(writer, missingStatus, drawnAs(plainMediaType, drawn.notFound.For(request.URL.Path)))
 }
 
-// chosenBy is the page in the format an Accept header ranks higher: markdown where the header ranks it above
-// plain text, the manual otherwise, `curl` and a header naming neither among them.
+// chosenBy is the page in the format an Accept header ranks highest, the first of the choice where it ranks two
+// alike: a browser, which ranks HTML above anything else, gets the page it shows.
 func (offered choice) chosenBy(accept string) drawnPage {
-	if quality(accept, markdownMediaType) > quality(accept, plainMediaType) {
-		return offered.markdown
+	first := offered[0]
+	chosen, best := first, quality(accept, first.mediaType)
+	for _, format := range offered[1:] {
+		if ranked := quality(accept, format.mediaType); ranked > best {
+			chosen, best = format, ranked
+		}
 	}
-	return offered.manual
+	return chosen
 }
 
 // quality is the quality an Accept header gives a media type: that of the closest range naming it, nothing where
@@ -195,18 +205,17 @@ func draw(snapshot *content.Snapshot) *drawing {
 	documents := compose.Documents(snapshot)
 	index := compose.Index(snapshot)
 	pages := map[string]drawnPage{
-		routes.Path(index.Head.Page, routes.FormatMarkdown): {contentType: plainType, body: []byte(text.Markdown(index, site))},
+		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}
 	chosen := make(map[string]choice, len(documents))
 	for _, composed := range documents {
 		page := composed.Head.Page
-		offered := choice{
-			markdown: drawnPage{contentType: markdownType, body: []byte(text.Markdown(composed, site))},
-			manual:   drawnPage{contentType: plainType, body: []byte(text.Manual(composed, site))},
-		}
-		pages[routes.Path(page, routes.FormatMarkdown)] = offered.markdown
-		pages[routes.Path(page, routes.FormatManual)] = offered.manual
-		chosen[routes.Path(page, routes.FormatChosen)] = offered
+		markdown := drawnAs(markdownMediaType, text.Markdown(composed, site))
+		manual := drawnAs(plainMediaType, text.Manual(composed, site))
+		browsed := drawnAs(htmlMediaType, html.Page(composed, site))
+		pages[routes.Path(page, routes.FormatMarkdown)] = markdown
+		pages[routes.Path(page, routes.FormatManual)] = manual
+		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
 	}
 	return &drawing{pages: pages, chosen: chosen, notFound: text.NewNotFound(site, statusLine(missingStatus))}
 }

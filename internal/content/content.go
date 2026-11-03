@@ -14,11 +14,19 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The files of the folder: the profile, and the site's words in English, its one language so far (D12)
+// The files of the folder: the profile, and the site's words in English, its one language so far (D12), in the
+// folder of the catalogues, in a file named by the language's tag (wordsFile)
 const (
-	profileFile      = "profile.yaml"
-	englishWordsFile = "i18n/en.yaml"
+	profileFile = "profile.yaml"
+	english     = "en"
+	wordsFolder = "i18n/"
+	wordsEnding = ".yaml"
 )
+
+// wordsFile is the file of the site's words in a language, by its tag.
+func wordsFile(language string) string {
+	return wordsFolder + language + wordsEnding
+}
 
 // Snapshot is the content as one load read it.
 type Snapshot struct {
@@ -29,12 +37,12 @@ type Snapshot struct {
 // Load reads the content folder and checks it whole: a snapshot, or Faults naming everything wrong in it.
 func Load(folder fs.FS) (*Snapshot, error) {
 	profile, faults := readFile[Profile](folder, profileFile)
-	written, wordFaults := readFile[map[string]string](folder, englishWordsFile)
+	written, wordFaults := readFile[map[string]string](folder, wordsFile(english))
 	faults = append(faults, wordFaults...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	words, wordFaults := readWords(written)
+	words, wordFaults := readWords(english, written)
 	faults = append(inspectProfile(profile), wordFaults...)
 	if len(faults) > 0 {
 		return nil, faults

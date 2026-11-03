@@ -1,29 +1,22 @@
 package text
 
 import (
-	"flag"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/golden"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The content package's fixture, and where the golden files live
-const (
-	fixturePath  = "../../content/testdata/content"
-	goldenFolder = "testdata"
-	updateFlag   = "update"
-)
+// The content package's fixture
+const fixturePath = "../../content/testdata/content"
 
 func TestMain(tests *testing.M) {
-	flag.Bool(updateFlag, false, "rewrite the golden files from what the face writes now")
-	flag.Parse()
-	os.Exit(tests.Run())
+	golden.Main(tests)
 }
 
 // format is one format this package writes, the function that writes it, and how a reader finds a phrase in it.
@@ -56,7 +49,7 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 		for _, composed := range documents {
 			path := routes.Path(composed.Head.Page, written.format)
 			test.Run(path, func(test *testing.T) {
-				matchesGolden(test, path, written.write(composed, site))
+				golden.Match(test, path, written.write(composed, site))
 			})
 		}
 	}
@@ -68,7 +61,7 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtureSnapshot(test)
 	index := compose.Index(snapshot)
 	path := routes.Path(index.Head.Page, routes.FormatMarkdown)
-	matchesGolden(test, path, Markdown(index, fixtureSite(snapshot)))
+	golden.Match(test, path, Markdown(index, fixtureSite(snapshot)))
 }
 
 // Every phrase of a document reaches its text in each format: the facts a reader reads are the facts the
@@ -112,32 +105,4 @@ func fixtureSnapshot(test *testing.T) *content.Snapshot {
 // fixtureSite is the site of the fixture, at the address its profile gives.
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
-}
-
-// matchesGolden holds a text to the golden file of its path, after rewriting the file where the run asks to.
-func matchesGolden(test *testing.T, path, got string) {
-	golden := filepath.Join(goldenFolder, filepath.FromSlash(path))
-	if updating() {
-		writeGolden(test, golden, got)
-	}
-	want, err := os.ReadFile(golden)
-	if err != nil {
-		test.Fatalf("read %s: %v", golden, err)
-	}
-	if got != string(want) {
-		test.Errorf("%s =\n%s\nwant\n%s", path, got, want)
-	}
-}
-
-func updating() bool {
-	return flag.Lookup(updateFlag).Value.String() == "true"
-}
-
-func writeGolden(test *testing.T, golden, text string) {
-	if err := os.MkdirAll(filepath.Dir(golden), 0o750); err != nil {
-		test.Fatalf("make the folder of %s: %v", golden, err)
-	}
-	if err := os.WriteFile(golden, []byte(text), 0o600); err != nil {
-		test.Fatalf("write %s: %v", golden, err)
-	}
 }

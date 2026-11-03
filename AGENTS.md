@@ -11,6 +11,7 @@ go test ./...                                           # the tests
 go run ./scripts/coderules ./...                        # the code rules no linter here holds
 go run ./cmd/paranin serve content                      # the site: curl localhost:8080, ssh -p 23234 localhost
 go generate ./internal/look                             # write the design's colours from design/tokens.yaml
+go generate ./internal/face/html                        # format the templ templates and write their Go
 pre-commit run --all-files                              # every gate a commit runs, over every tracked file
 pre-commit run --files $(git ls-files -co --exclude-standard)   # the same over files not yet tracked
 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 fmt   # write the formatting the gate asks for
@@ -29,7 +30,8 @@ go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 fmt   # wr
 - **Review before presenting.** Read every changed file: the right layer? redundant work? the non-obvious commented? every line needed?
 - **Test runs follow the change.** Which tests run when: `.claude/rules/tests.md`.
 - **Speed is measured.** Say with each piece how long it took and what its slowest step was.
-- **Ask first** before adding a dependency, changing the architecture, or changing what the content or the document model is made of.
+- **Ask first** before adding a dependency, changing the architecture, or changing what the content or the document model is made of, where two ways are equally good or the choice is a real trade-off.
+- **A right way and a wrong one are no choice.** Take the right one and say what changed; never bring the owner a question you can answer.
 - Never commit secrets, keys or credentials.
 - A commit follows Conventional Commits, `type(scope): description`.
 - Every sentence of a commit message is a claim: look before you write it, and read a count off a command's output.

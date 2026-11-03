@@ -42,29 +42,44 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	}
 }
 
-// At a page's own address the reader's request chooses the format: markdown for whoever asks for it, the manual
-// for everyone else, `curl` among them; and a cache keeps one copy for each Accept.
+// At a page's own address the reader's request chooses the format: HTML for a browser, markdown for whoever asks
+// for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
+// cache keeps one copy for each Accept.
 func TestTheReaderChoosesTheFormat(test *testing.T) {
 	server := New(fixtureStore(test, fixtureCopy(test)))
+	const (
+		markdown = "text/markdown; charset=utf-8"
+		manual   = "text/plain; charset=utf-8"
+		browsed  = "text/html; charset=utf-8"
+		// how a page of HTML opens, which face/html's tests hold whole
+		pageOpening = "<!doctype html>"
+	)
 	cases := []struct {
-		name   string
-		path   string
-		accept string
-		holds  string
+		name        string
+		path        string
+		accept      string
+		contentType string
+		holds       string
 	}{
-		{name: "an agent asking for markdown", path: "/", accept: "text/markdown", holds: "# Mira Example"},
-		{name: "curl, taking anything", path: "/", accept: "*/*", holds: "EXAMPLE.TEST(1)"},
-		{name: "a request asking for nothing", path: "/", accept: "", holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown refused", path: "/", accept: "text/markdown;q=0, */*", holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown among others", path: "/", accept: "text/html;q=0.9, text/markdown", holds: "# Mira Example"},
-		{name: "plain text ranked above markdown", path: "/", accept: "text/plain, text/markdown;q=0.1", holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown ranked above plain text", path: "/", accept: "text/markdown, text/plain;q=0.5", holds: "# Mira Example"},
-		{name: "both of a family", path: "/", accept: "text/*", holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown below anything", path: "/", accept: "text/markdown;q=0.5, */*", holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown below its family", path: "/", accept: "text/markdown;q=0.5, text/*", holds: "EXAMPLE.TEST(1)"},
-		{name: "a browser asking for HTML", path: "/", accept: "text/html", holds: "EXAMPLE.TEST(1)"},
-		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", holds: "# tidy-tool"},
-		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", holds: "TIDY-TOOL(1)"},
+		{name: "an agent asking for markdown", path: "/", accept: "text/markdown", contentType: markdown, holds: "# Mira Example"},
+		{name: "curl, taking anything", path: "/", accept: "*/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "a request asking for nothing", path: "/", accept: "", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown refused", path: "/", accept: "text/markdown;q=0, */*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown among others", path: "/", accept: "text/html;q=0.9, text/markdown", contentType: markdown, holds: "# Mira Example"},
+		{name: "plain text ranked above markdown", path: "/", accept: "text/plain, text/markdown;q=0.1", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown ranked above plain text", path: "/", accept: "text/markdown, text/plain;q=0.5", contentType: markdown, holds: "# Mira Example"},
+		{name: "all of a family", path: "/", accept: "text/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below anything", path: "/", accept: "text/markdown;q=0.5, */*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below its family", path: "/", accept: "text/markdown;q=0.5, text/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "a browser asking for HTML", path: "/", accept: "text/html", contentType: browsed, holds: pageOpening},
+		{
+			name: "a browser's own Accept", path: "/", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			contentType: browsed, holds: pageOpening,
+		},
+		{name: "HTML and markdown alike", path: "/", accept: "text/html, text/markdown, text/plain;q=0.1", contentType: markdown, holds: "# Mira Example"},
+		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", contentType: markdown, holds: "# tidy-tool"},
+		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", contentType: manual, holds: "TIDY-TOOL(1)"},
+		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: "<h1>tidy-tool</h1>"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -72,9 +87,11 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 			request.Header.Set("Accept", testCase.accept)
 			response := httptest.NewRecorder()
 			server.ServeHTTP(response, request)
-			if !strings.Contains(response.Body.String(), testCase.holds) || response.Header().Get("Vary") != "Accept" {
-				test.Errorf("GET %s, Accept %q = %q, Vary %q; want it to hold %q, Vary %q", testCase.path, testCase.accept,
-					response.Body.String(), response.Header().Get("Vary"), testCase.holds, "Accept")
+			header := response.Header()
+			if header.Get("Content-Type") != testCase.contentType || !strings.Contains(response.Body.String(), testCase.holds) ||
+				header.Get("Vary") != "Accept" {
+				test.Errorf("GET %s, Accept %q = %q %q, Vary %q; want %q holding %q, Vary %q", testCase.path, testCase.accept,
+					header.Get("Content-Type"), response.Body.String(), header.Get("Vary"), testCase.contentType, testCase.holds, "Accept")
 			}
 		})
 	}

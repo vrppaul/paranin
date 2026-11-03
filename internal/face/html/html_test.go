@@ -61,11 +61,26 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 	nowhere := document.Link{Target: document.Page{Kind: document.PageHealth, Slug: ""}, Spans: []document.Span{document.Text{Text: "the report"}}}
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
 	if page, want := Page(composed, fixtureSite(fixtureSnapshot(test))), "<p>the report</p>"; !strings.Contains(page, want) {
 		test.Errorf("the page %q holds no %q", page, want)
+	}
+}
+
+// A page whose content gives no description names none, so a search engine or a preview writes its own rather
+// than an empty one.
+func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
+	composed := document.Document{
+		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
+		Blocks: nil,
+	}
+	page := Page(composed, fixtureSite(fixtureSnapshot(test)))
+	for _, unwanted := range []string{`name="description"`, `property="og:description"`} {
+		if strings.Contains(page, unwanted) {
+			test.Errorf("the page %q holds %q", page, unwanted)
+		}
 	}
 }
 
@@ -96,5 +111,5 @@ func documentOf(test *testing.T, snapshot *content.Snapshot, page document.Page)
 		}
 	}
 	test.Fatalf("compose made no page %+v", page)
-	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil}, Blocks: nil}
+	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}
 }

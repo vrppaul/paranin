@@ -39,7 +39,7 @@ Writes software for people who read it.
 
 Lua · Tidies files.
 
-A tool that tidies files.
+A tool that **tidies files**.
 
 - repository: [https://github.test/mira/tidy-tool](https://github.test/mira/tidy-tool)
 - install: `go install example.test/tidy-tool@latest`

@@ -12,7 +12,7 @@ import (
 func TestACommandNeverBreaksAcrossLines(test *testing.T) {
 	command := "toolkit add --scope user example -- runner --index example-index=https://packages.example.test example-tool"
 	composed := document.Document{
-		Head: document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head: document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Facts{List: []document.Fact{
 			{Label: "install", Value: []document.Span{document.Code{Text: command}}},
 		}}},
@@ -28,7 +28,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 	period := document.Period{Start: document.GapMonth{Text: "[2020]"}, End: document.GapMonth{Text: "[2021]"}}
 	title := strings.Repeat("a", pageWidth-sectionIndent-textWidth("[2020] – [2021]")-1)
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Entry{Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Points: nil}},
 	}
 	want := strings.Repeat(" ", sectionIndent) + "[2020] – [2021]\n"
@@ -40,7 +40,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 // Text that touches a command stays with it, as it is written: a full stop after a command is no word of its own.
 func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 	composed := document.Document{
-		Head: document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head: document.Head{Page: document.Page{Kind: document.PageProject, Slug: "tool"}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{
 			document.Text{Text: "Run "}, document.Code{Text: "tool --all"}, document.Text{Text: "."},
 		}}},

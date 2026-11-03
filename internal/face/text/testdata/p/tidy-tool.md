@@ -2,7 +2,7 @@
 
 Tidies files.
 
-> A tool that tidies files.
+> A tool that **tidies files**.
 
 - author: [Mira Example](https://example.test/index.md)
 - status: done

@@ -41,7 +41,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a highlighted result", want: "queue"},
 		{name: "a project", want: "tidy-tool"},
 		{name: "a tagline", want: "Tidies files."},
-		{name: "a description", want: "A tool that tidies files."},
+		{name: "a description", want: "tidies files"},
 		{name: "a project's language", want: "Lua"},
 		{name: "a repository", want: "https://github.test/mira/tidy-tool"},
 		{name: "an install command", want: "go install example.test/tidy-tool@latest"},
@@ -227,6 +227,27 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 	}
 }
 
+// Each page a person reads has a description, for a search engine's snippet and a link's preview where it is
+// shared: the résumé's is its headline, a project's page's what the project does.
+func TestEachPageHasADescription(test *testing.T) {
+	documents := Documents(fixtureSnapshot(test))
+	cases := []struct {
+		name string
+		page document.Page
+		want string
+	}{
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "Builds small tools that last."},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: "A tool that tidies files."},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := document.PlainText(documentOf(test, documents, testCase.page).Head.Description); got != testCase.want {
+				test.Errorf("the description of %+v = %q, want %q", testCase.page, got, testCase.want)
+			}
+		})
+	}
+}
+
 // contentsOf are a section's contents, wherever compose put them.
 func contentsOf(test *testing.T, section document.Section) document.Contents {
 	for _, block := range section.Blocks {
@@ -246,7 +267,7 @@ func documentOf(test *testing.T, documents []document.Document, page document.Pa
 		}
 	}
 	test.Fatalf("no document is the page %+v", page)
-	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil}, Blocks: nil}
+	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}
 }
 
 // cardTitled is a section's card under a title, wherever compose put it.

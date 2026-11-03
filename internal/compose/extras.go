@@ -18,13 +18,14 @@ func Extras(snapshot *content.Snapshot) []document.Document {
 func Skills(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
-			Page:     document.Page{Kind: document.PageSkills, Slug: ""},
-			Language: snapshot.Words.Language(),
-			Title:    textSpans(snapshot.Words.Text(content.WordSkills)),
-			Subtitle: nil,
-			Place:    "",
-			Lead:     nil,
-			Ways:     nil,
+			Page:        document.Page{Kind: document.PageSkills, Slug: ""},
+			Language:    snapshot.Words.Language(),
+			Title:       textSpans(snapshot.Words.Text(content.WordSkills)),
+			Subtitle:    nil,
+			Place:       "",
+			Lead:        nil,
+			Ways:        nil,
+			Description: nil,
 		},
 		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups)}},
 	}
@@ -50,13 +51,14 @@ func skillList(groups []content.SkillGroup) []document.Skill {
 func Health(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
-			Page:     document.Page{Kind: document.PageHealth, Slug: ""},
-			Language: snapshot.Words.Language(),
-			Title:    textSpans(snapshot.Words.Text(content.WordHealth)),
-			Subtitle: nil,
-			Place:    "",
-			Lead:     nil,
-			Ways:     nil,
+			Page:        document.Page{Kind: document.PageHealth, Slug: ""},
+			Language:    snapshot.Words.Language(),
+			Title:       textSpans(snapshot.Words.Text(content.WordHealth)),
+			Subtitle:    nil,
+			Place:       "",
+			Lead:        nil,
+			Ways:        nil,
+			Description: nil,
 		},
 		Blocks: checkGroups(snapshot.Profile.Health),
 	}

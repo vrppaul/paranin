@@ -11,7 +11,7 @@ type Document struct {
 }
 
 // Head is what every face shows first: the page the document is, the language it is written in, its title, a
-// subtitle and the place beside it, a lead, and the ways to reach the author.
+// subtitle and the place beside it, a lead, and the ways to reach the author; and the page's description.
 type Head struct {
 	Page Page
 	// Language is a tag of BCP 47, as HTML's lang and Typst's text take it: "en"
@@ -21,6 +21,10 @@ type Head struct {
 	Place    string
 	Lead     []Span
 	Ways     []Fact
+	// Description is what the page is about, for its metadata: a search engine's snippet, a link's preview where
+	// it is shared. A face writes it as plain text; none where no browser reads the page (the index, the hidden
+	// pages) or the content gives none
+	Description []Span
 }
 
 // Fact is a label and its value: a fact of the résumé, a way to reach its author, a detail of a project.

@@ -47,7 +47,7 @@ projects:
   - slug: tidy-tool
     name: tidy-tool
     tagline: Tidies files.
-    description: A tool that tidies files.
+    description: A tool that ==tidies files==.
     language: Lua
     repo: https://github.test/mira/tidy-tool
     install: go install example.test/tidy-tool@latest

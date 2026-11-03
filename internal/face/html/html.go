@@ -1,10 +1,11 @@
 // Package html draws documents as the pages a browser shows (docs/ARCHITECTURE.md, ADR-0002, ADR-0003), with
 // templ: each kind of block and span is a component of page.templ, and the choice between the kinds is Go's, here,
 // where gochecksumtype holds every switch to every kind, as it cannot inside generated code. A page names the
-// language of its document and is titled by its head, and names the address it is known by, whole, and the path of
-// its markdown. Every address is written by routes; a link inside the page leads to a page of the site by its path
-// from the root, at the address where the reader's request chooses the format, which a browser reads as the page,
-// so a page served from this machine leads to this machine.
+// language of its document, takes its title and description from its head, both as plain text, and names the
+// address it is known by, whole, and the path of its markdown; a page with an address carries Open Graph's tags
+// for the preview of a shared link. Every address is written by routes; a link inside the page leads to a page of
+// the site by its path from the root, at the address where the reader's request chooses the format, which a
+// browser reads as the page, so a page served from this machine leads to this machine.
 //
 // The page is markup alone so far: what each part is, a heading by its depth, a period's months as times. How it
 // looks arrives with the page's stylesheet (docs/FOUNDATION.md §5.3), and with it the classes; until then a gap
@@ -34,6 +35,10 @@ const (
 // The media type of a page's markdown, which its head names beside the link to it
 const markdownType = "text/markdown"
 
+// The kind of thing Open Graph says every page is, as the first version said it. The résumé could be a profile,
+// which asks for the person's names in fields of its own; until a page needs that, one kind serves every page
+const openGraphType = "website"
+
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6
 const (
 	firstHeadingDepth   = 2
@@ -58,12 +63,32 @@ type pageWriter struct {
 	site routes.Site
 }
 
-// Page writes a document as a page of HTML: its head, then each block.
+// pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
+// as plain text, the address it is known by, whole, and the path of its markdown; each empty where it has none.
+type pageMetadata struct {
+	title       string
+	description string
+	canonical   string
+	markdown    string
+}
+
+// Page writes a document as a page of HTML: what it says of itself, then its head, then each block.
 func Page(composed document.Document, site routes.Site) string {
+	writer := pageWriter{site: site}
 	var builder strings.Builder
 	// A builder takes every write, and no component here returns an error of its own
-	_ = pageWriter{site: site}.page(composed).Render(context.Background(), &builder)
+	_ = writer.page(composed, writer.metadataOf(composed.Head)).Render(context.Background(), &builder)
 	return builder.String()
+}
+
+// metadataOf is what a page of a head says of itself.
+func (writer pageWriter) metadataOf(head document.Head) pageMetadata {
+	return pageMetadata{
+		title:       document.PlainText(head.Title),
+		description: document.PlainText(head.Description),
+		canonical:   writer.site.Address(head.Page, routes.FormatChosen),
+		markdown:    routes.Reference(head.Page, routes.FormatMarkdown),
+	}
 }
 
 // block is the component of a block, at the depth of its headings.

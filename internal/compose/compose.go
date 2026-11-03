@@ -67,13 +67,14 @@ func Index(snapshot *content.Snapshot) document.Document {
 	}
 	return document.Document{
 		Head: document.Head{
-			Page:     document.Page{Kind: document.PageIndex, Slug: ""},
-			Language: words.Language(),
-			Title:    resume.Title,
-			Subtitle: nil,
-			Place:    "",
-			Lead:     resume.Lead,
-			Ways:     nil,
+			Page:        document.Page{Kind: document.PageIndex, Slug: ""},
+			Language:    words.Language(),
+			Title:       resume.Title,
+			Subtitle:    nil,
+			Place:       "",
+			Lead:        resume.Lead,
+			Ways:        nil,
+			Description: nil,
 		},
 		Blocks: blocks,
 	}
@@ -84,16 +85,19 @@ func listing(head document.Head) document.Listing {
 	return document.Listing{Page: head.Page, Title: head.Title, Note: head.Subtitle}
 }
 
+// resumeHead is the résumé's head, its headline its description.
 func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
+	headline := markedSpans(person.Headline)
 	return document.Head{
-		Page:     document.Page{Kind: document.PageResume, Slug: ""},
-		Language: words.Language(),
-		Title:    markedSpans(person.Name),
-		Subtitle: markedSpans(person.Title),
-		Place:    person.Location,
-		Lead:     markedSpans(person.Headline),
-		Ways:     ways(person, profile.Site, words),
+		Page:        document.Page{Kind: document.PageResume, Slug: ""},
+		Language:    words.Language(),
+		Title:       markedSpans(person.Name),
+		Subtitle:    markedSpans(person.Title),
+		Place:       person.Location,
+		Lead:        headline,
+		Ways:        ways(person, profile.Site, words),
+		Description: headline,
 	}
 }
 
@@ -171,16 +175,18 @@ func projectDocument(project content.Project, author content.Person, words conte
 }
 
 // projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a
-// line, and what it does.
+// line, and what it does, its description.
 func projectHead(project content.Project, words content.Words) document.Head {
+	description := markedSpans(project.Description)
 	return document.Head{
-		Page:     projectPage(project),
-		Language: words.Language(),
-		Title:    markedSpans(project.Name),
-		Subtitle: markedSpans(project.Tagline),
-		Place:    "",
-		Lead:     markedSpans(project.Description),
-		Ways:     nil,
+		Page:        projectPage(project),
+		Language:    words.Language(),
+		Title:       markedSpans(project.Name),
+		Subtitle:    markedSpans(project.Tagline),
+		Place:       "",
+		Lead:        description,
+		Ways:        nil,
+		Description: description,
 	}
 }
 

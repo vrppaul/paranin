@@ -4,23 +4,26 @@ import (
 	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// page is a document's whole page: its language and title for the browser, the address it is known by and its
-// markdown for whoever reads it so, where it has them; then its head and its blocks.
-templ (writer pageWriter) page(composed document.Document) {
+// page is a document's whole page: its language, and what it says of itself, its title, its description, the
+// address it is known by with Open Graph, and its markdown, each where it has one; then its head and its blocks.
+templ (writer pageWriter) page(composed document.Document, metadata pageMetadata) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ document.PlainText(composed.Head.Title) }</title>
-			if canonical := writer.site.Address(composed.Head.Page, routes.FormatChosen); canonical != "" {
-				<link rel="canonical" href={ canonical }/>
+			<title>{ metadata.title }</title>
+			if metadata.description != "" {
+				<meta name="description" content={ metadata.description }/>
 			}
-			if markdown := routes.Reference(composed.Head.Page, routes.FormatMarkdown); markdown != "" {
-				<link rel="alternate" type={ markdownType } href={ markdown }/>
+			if metadata.canonical != "" {
+				<link rel="canonical" href={ metadata.canonical }/>
+				@writer.openGraph(metadata)
+			}
+			if metadata.markdown != "" {
+				<link rel="alternate" type={ markdownType } href={ metadata.markdown }/>
 			}
 		</head>
 		<body>
@@ -32,6 +35,18 @@ templ (writer pageWriter) page(composed document.Document) {
 			</main>
 		</body>
 	</html>
+}
+
+// openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, its title and
+// description, and the address it is known by. Its picture comes with the cards Typst draws (ADR-0005).
+templ (writer pageWriter) openGraph(metadata pageMetadata) {
+	<meta property="og:type" content={ openGraphType }/>
+	<meta property="og:site_name" content={ writer.site.Host() }/>
+	<meta property="og:title" content={ metadata.title }/>
+	if metadata.description != "" {
+		<meta property="og:description" content={ metadata.description }/>
+	}
+	<meta property="og:url" content={ metadata.canonical }/>
 }
 
 // head is what the page shows first: its title, the subtitle and the place beside it, the lead, and the ways to

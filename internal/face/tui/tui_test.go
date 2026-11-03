@@ -193,7 +193,7 @@ func TestANarrowTerminalOpensTheResume(test *testing.T) {
 // A fact with no value still reads as its label: a document may leave a value out, and the tab still draws.
 func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
 	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtureSnapshot(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {

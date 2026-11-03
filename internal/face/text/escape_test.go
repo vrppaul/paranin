@@ -36,7 +36,7 @@ func TestTextNeverReadsAsMarkup(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			composed := document.Document{
-				Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+				Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 				Blocks: []document.Block{document.Section{Title: []document.Span{testCase.span}, Blocks: nil}, document.Paragraph{Spans: []document.Span{testCase.span}}},
 			}
 			if got := Markdown(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, testCase.want) {
@@ -49,7 +49,7 @@ func TestTextNeverReadsAsMarkup(test *testing.T) {
 // A list item reads as the text it is too: a fact's value never opens a list or a quote inside its item.
 func TestAListItemNeverOpensABlock(test *testing.T) {
 	composed := document.Document{
-		Head: document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head: document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Table{Rows: []document.Row{
 			{Cells: []document.Cell{{Spans: []document.Span{document.Text{Text: "- a"}}}}},
 			{Cells: []document.Cell{{Spans: []document.Span{document.Text{Text: "1. b"}}}}},
@@ -79,7 +79,7 @@ func TestALeadReadsAsAQuoteOfItsText(test *testing.T) {
 			composed := document.Document{
 				Head: document.Head{
 					Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: []document.Span{document.Text{Text: "tool"}},
-					Subtitle: nil, Place: "", Lead: testCase.lead, Ways: nil,
+					Subtitle: nil, Place: "", Lead: testCase.lead, Ways: nil, Description: nil,
 				},
 				Blocks: nil,
 			}

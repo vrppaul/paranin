@@ -7,10 +7,11 @@
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.ssh/id_ed25519, made there when
-// missing). It loads both folders again on SIGHUP, as one release, keeping what it serves when either has faults,
-// and stops on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the
-// wait for them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has
-// faults or the server failed, and 2 when the command itself is written wrong.
+// missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds still, as
+// `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops on SIGINT
+// or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for them runs
+// out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults or the
+// server failed, and 2 when the command itself is written wrong.
 package main
 
 import (
@@ -95,6 +96,10 @@ const (
 	sessionMaxTimeout  = time.Hour
 )
 
+// How often the watch looks at the release's folders: it takes a change once the change has held still for a look,
+// so a page rebuilt reaches the browser at most a second after the build's last write
+const lookInterval = 500 * time.Millisecond
+
 func main() {
 	os.Exit(run(os.Args))
 }
@@ -151,7 +156,12 @@ func refused(err error, folders ...string) int {
 }
 
 func serve(contentFolder, buildFolder string) int {
-	store, err := release.Open(release.FoldersAt(contentFolder, buildFolder))
+	stopping, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	folders := release.FoldersAt(contentFolder, buildFolder)
+	// The watch looks before the first load, so a change made while the site starts is a change it sees
+	changes := release.Watch(stopping, folders, lookInterval)
+	store, err := release.Open(folders)
 	if err != nil {
 		return refused(err, contentFolder, buildFolder)
 	}
@@ -168,8 +178,6 @@ func serve(contentFolder, buildFolder string) int {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	stopping, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	webServer := newServer(web.New(store), logger)
 	servers := []server{webServer, sshServer}
 	running := serving{
@@ -177,6 +185,7 @@ func serve(contentFolder, buildFolder string) int {
 		store:       store,
 		servers:     servers,
 		reloads:     make(chan os.Signal, 1),
+		changes:     changes,
 		failures:    make(chan error, len(servers)),
 		stopSignals: stop,
 	}
@@ -230,16 +239,18 @@ type server interface {
 
 // serving is the site while it is served: the store it reads, its servers, and the signals it answers.
 type serving struct {
-	logger   *slog.Logger
-	store    *release.Store
-	servers  []server
-	reloads  chan os.Signal
+	logger  *slog.Logger
+	store   *release.Store
+	servers []server
+	reloads chan os.Signal
+	// changes says the folders changed and held still, as the release's watch saw them
+	changes  <-chan struct{}
 	failures chan error
 	// stopSignals gives SIGINT and SIGTERM back, so a second one ends the program while the first one waits
 	stopSignals context.CancelFunc
 }
 
-// watch answers each signal until the site stops: a reload, a stop, or the server failing.
+// watch answers each signal until the site stops: a reload, a change in the folders, a stop, or the server failing.
 func (running serving) watch(stopping context.Context) int {
 	for {
 		select {
@@ -247,6 +258,8 @@ func (running serving) watch(stopping context.Context) int {
 			running.stopSignals()
 			return running.shutDown(stopping)
 		case <-running.reloads:
+			running.reload()
+		case <-running.changes:
 			running.reload()
 		case err := <-running.failures:
 			running.logger.Error("a server stopped", errorKey, err)

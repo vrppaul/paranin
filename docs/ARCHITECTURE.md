@@ -446,7 +446,8 @@ sessions on a stop.
 
 - `cmd/paranin` runs the SSH and HTTP servers in one process over one
   `release.Store`, the content folder and the page's build, reloads it on
-  `SIGHUP`, and stops both on `SIGINT` or `SIGTERM`.
+  `SIGHUP` and once a change in the folders holds still for a look
+  (`release.Watch`), and stops both on `SIGINT` or `SIGTERM`.
 - `hosting/web` composes each snapshot of the store with `compose` and
   `routes`, the first time a request meets it, and hands the documents and
   the build to the faces to draw (two requests meeting a new snapshot at
@@ -480,7 +481,7 @@ internal/face/html/      # templ pages: each document, its record as JSON-LD, th
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
-internal/release/        # the content and the build as one snapshot: load, the store, what is derived once
+internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch
 internal/document/       # the face-neutral model
 internal/content/        # the content folder: load, check
 internal/look/           # the design's colours, generated from design/tokens.yaml

@@ -2,7 +2,8 @@
 // as one snapshot that nothing changes after, which a store swaps whole (docs/ARCHITECTURE.md, ADR-0003, ADR-0004).
 // A page names the files of the build it was drawn with, so the two parts are never swapped apart: a load that
 // fails in either keeps both as they were. What a host draws from a snapshot is worked out once for each
-// (Derived).
+// (Derived). Watch looks at the folders in a goroutine of its own, until its context ends, and says when they
+// changed and held still, for whoever reloads (watch.go).
 package release
 
 import (

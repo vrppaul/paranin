@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/content"
@@ -86,14 +87,11 @@ func Copy(test *testing.T, fixture string) string {
 }
 
 // ReplaceIn writes the first of a text in a file of a folder as another; the text must be there. The file is read
-// and written inside the folder, opened as a root, so no path leads out of it.
+// and written inside the folder, opened as a root, so no path leads out of it, and it is written at the time the
+// test's clock says, which a test in synctest's bubble sets, whatever the file system's own clock and its steps.
 func ReplaceIn(test *testing.T, folder, file, original, replacement string) {
 	test.Helper()
-	root, err := os.OpenRoot(folder)
-	if err != nil {
-		test.Fatalf("open %s: %v", folder, err)
-	}
-	test.Cleanup(func() { closeFolder(test, root) })
+	root := openFolder(test, folder)
 	written, err := root.ReadFile(file)
 	if err != nil {
 		test.Fatalf("read %s: %v", file, err)
@@ -102,8 +100,36 @@ func ReplaceIn(test *testing.T, folder, file, original, replacement string) {
 	if changed == string(written) {
 		test.Fatalf("%s holds no %q", file, original)
 	}
-	if err := root.WriteFile(file, []byte(changed), fileMode); err != nil {
+	writeAt(test, root, file, changed)
+}
+
+// WriteIn writes a file of a folder whole, as ReplaceIn writes it: inside the folder, at the time the test's clock
+// says.
+func WriteIn(test *testing.T, folder, file, text string) {
+	test.Helper()
+	writeAt(test, openFolder(test, folder), file, text)
+}
+
+// openFolder is a folder opened as a root, closed when the test ends.
+func openFolder(test *testing.T, folder string) *os.Root {
+	test.Helper()
+	root, err := os.OpenRoot(folder)
+	if err != nil {
+		test.Fatalf("open %s: %v", folder, err)
+	}
+	test.Cleanup(func() { closeFolder(test, root) })
+	return root
+}
+
+// writeAt writes a file of a root at the time the test's clock says.
+func writeAt(test *testing.T, root *os.Root, file, text string) {
+	test.Helper()
+	if err := root.WriteFile(file, []byte(text), fileMode); err != nil {
 		test.Fatalf("write %s: %v", file, err)
+	}
+	now := time.Now()
+	if err := root.Chtimes(file, now, now); err != nil {
+		test.Fatalf("set the time of %s: %v", file, err)
 	}
 }
 

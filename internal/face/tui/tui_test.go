@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -11,11 +10,9 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/routes"
 )
-
-// The content package's fixture
-const fixturePath = "../../content/testdata/content"
 
 // A terminal of a common size, and one tall enough to show any tab whole
 const (
@@ -196,7 +193,7 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtureSnapshot(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
@@ -231,7 +228,7 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // show. A word wider than a narrow terminal breaks across lines, so the phrases are read with every space and break
 // taken out.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
 		name  string
 		shown document.Document
@@ -293,7 +290,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 }
 
 func fixtureModel(test *testing.T, width, height int) Model {
-	return sessionModel(fixtureSnapshot(test), width, height)
+	return sessionModel(fixtures.LoadedContent(test), width, height)
 }
 
 // sessionModel is a session on what a snapshot draws, as the SSH server opens one: its pages and the TUI's extras.
@@ -309,14 +306,6 @@ func textOf(text string) []document.Span {
 // fixtureSite is the site of the fixture, at the address its profile gives.
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
-}
-
-func fixtureSnapshot(test *testing.T) *content.Snapshot {
-	snapshot, err := content.Load(os.DirFS(fixturePath))
-	if err != nil {
-		test.Fatalf("Load(%q) = %v, want no error", fixturePath, err)
-	}
-	return snapshot
 }
 
 // pressed is a model after the keys, each pressed in turn.

@@ -2,19 +2,16 @@ package html
 
 import (
 	"html"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
 	"github.com/vrppaul/paranin/internal/routes"
 )
-
-// The content package's fixture
-const fixturePath = "../../content/testdata/content"
 
 func TestMain(tests *testing.M) {
 	golden.Main(tests)
@@ -26,7 +23,7 @@ func TestMain(tests *testing.M) {
 // is held to its golden file, named after the page's own address, with a line break between each two tags that
 // meet, so the file reads in a diff.
 func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	site := fixtureSite(snapshot)
 	cases := []struct {
 		page document.Page
@@ -38,7 +35,7 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
 			composed := composedOf(test, snapshot, testCase.page)
-			golden.Match(test, testCase.file, lined(Page(composed.Document, composed.Record, site)))
+			golden.Match(test, testCase.file, lined(Page(composed.Document, composed.Record, site, fixtures.LoadedBuild(test))))
 		})
 	}
 }
@@ -46,10 +43,10 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 // Every phrase of a document reaches its page, as HTML writes text: the facts a browser shows are the facts the
 // document holds.
 func TestEveryPhraseReachesThePage(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	site := fixtureSite(snapshot)
 	for _, composed := range compose.Pages(snapshot) {
-		page := Page(composed.Document, composed.Record, site)
+		page := Page(composed.Document, composed.Record, site, fixtures.LoadedBuild(test))
 		for _, phrase := range document.Phrases(composed.Document) {
 			if !strings.Contains(page, html.EscapeString(phrase)) {
 				test.Errorf("the page of %+v holds no %q", composed.Document.Head.Page, phrase)
@@ -65,7 +62,7 @@ func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
-	if page, want := Page(composed, blankPerson(), fixtureSite(fixtureSnapshot(test))), "<p>the report</p>"; !strings.Contains(page, want) {
+	if page, want := Page(composed, blankPerson(), fixtureSite(fixtures.LoadedContent(test)), fixtures.LoadedBuild(test)), "<p>the report</p>"; !strings.Contains(page, want) {
 		test.Errorf("the page %q holds no %q", page, want)
 	}
 }
@@ -77,7 +74,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: nil,
 	}
-	page := Page(composed, blankPerson(), fixtureSite(fixtureSnapshot(test)))
+	page := Page(composed, blankPerson(), fixtureSite(fixtures.LoadedContent(test)), fixtures.LoadedBuild(test))
 	for _, unwanted := range []string{`name="description"`, `property="og:description"`} {
 		if strings.Contains(page, unwanted) {
 			test.Errorf("the page %q holds %q", page, unwanted)
@@ -90,17 +87,17 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 // in it reaches the page; and leads to where the site begins, by its path, under the site's name. It is held to
 // its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
-	missing := NewNotFound(fixtureSite(fixtureSnapshot(test)), "404 Not Found", "en").For("/nothing\x1b[2J<b>")
+	missing := NewNotFound(fixtureSite(fixtures.LoadedContent(test)), "404 Not Found", "en", fixtures.LoadedBuild(test)).For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
 }
 
 // A person who works nowhere now is written with no employer, rather than with an employer of no name.
 func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	resume := document.Page{Kind: document.PageResume, Slug: ""}
 	record := blankPerson()
 	record.Name = "Mira Example"
-	if page := Page(composedOf(test, snapshot, resume).Document, record, fixtureSite(snapshot)); strings.Contains(page, "worksFor") {
+	if page := Page(composedOf(test, snapshot, resume).Document, record, fixtureSite(snapshot), fixtures.LoadedBuild(test)); strings.Contains(page, "worksFor") {
 		test.Errorf("the page %q names an employer", page)
 	}
 }
@@ -109,14 +106,6 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 // or a word between two tags stays where it is.
 func lined(page string) string {
 	return strings.ReplaceAll(page, "><", ">\n<") + "\n"
-}
-
-func fixtureSnapshot(test *testing.T) *content.Snapshot {
-	snapshot, err := content.Load(os.DirFS(fixturePath))
-	if err != nil {
-		test.Fatalf("Load(%q) = %v, want no error", fixturePath, err)
-	}
-	return snapshot
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

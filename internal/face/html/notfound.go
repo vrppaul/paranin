@@ -3,6 +3,7 @@ package html
 import (
 	"strconv"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
@@ -18,13 +19,21 @@ type NotFound struct {
 	// start is the path where the site begins, and siteName the name a link to it reads as
 	start    string
 	siteName string
+	// stylesheets are the paths of the stylesheets the page is drawn in, as every page is
+	stylesheets []string
 }
 
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
-// answers with.
-func NewNotFound(site routes.Site, status, language string) NotFound {
+// answers with, drawn in the build's stylesheet.
+func NewNotFound(site routes.Site, status, language string, build *assets.Build) NotFound {
 	start := document.Page{Kind: document.PageResume, Slug: ""}
-	return NotFound{status: status, language: language, start: routes.Reference(start, routes.FormatChosen), siteName: site.Host()}
+	return NotFound{
+		status:      status,
+		language:    language,
+		start:       routes.Reference(start, routes.FormatChosen),
+		siteName:    site.Host(),
+		stylesheets: stylesheetsOf(build),
+	}
 }
 
 // For is the page for a path asked for: its status, the path quoted as Go quotes a string, so no control character

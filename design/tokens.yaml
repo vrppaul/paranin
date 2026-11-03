@@ -1,14 +1,15 @@
 # The design's colours, each named for what it does, in the light theme (Catppuccin Latte) and the dark one
 # (Catppuccin Macchiato), the palettes the first version kept (docs/FOUNDATION.md §3.4). scripts/tokens writes
-# them into internal/look, where the faces read them: `go generate ./internal/look`.
+# them into internal/look, where the TUI reads them, and into web/src/tokens/tokens.css, where the page does:
+# `go generate ./internal/look`.
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
 # 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays at a strength over
 # its background, or over the colour the blend names `under` it; a terminal has no opacity, so the blend is worked
 # out into a colour of its own.
 
-# The page itself, which every blend is laid over
 background:
+  about: the page itself, which every blend is laid over
   light: "#eff1f5"
   dark: "#24273a"
 

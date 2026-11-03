@@ -22,8 +22,21 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
+      # The page's tools, at the pnpm web/package.json names and the versions its lockfile pins
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm --dir web install --frozen-lockfile
       - run: pip install pre-commit==4.5.1
       - run: pre-commit run --all-files --show-diff-on-failure
+      # The page builds, as a release would build it, and the site loads the release it makes
+      - run: pnpm --dir web build
+      - run: go run ./cmd/paranin check content build/web
 
   vulnerabilities:
     runs-on: ubuntu-latest

@@ -1,14 +1,15 @@
-// Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003). It draws every page of a snapshot once, the
-// first time a request meets that snapshot (content.Derived), and serves the drawing until the store holds another, so
-// no request composes or draws a page. Each page is served at the path routes writes for it in each format, and at its
-// own address in the format the reader's request asks for: HTML for a browser, markdown for an agent that asks for
-// it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as a name ending in
-// .txt promises. Each format of a page names in a Link header the address the page is known by, the one where the
-// reader chooses, so a search engine counts its markdown and its manual as the page. Any other path is answered
-// with the page of no page, in text or in HTML, whichever the reader's request ranks higher: drawn for each
-// request, since it quotes the path asked for, in the chosen format alone. Every answer, a refusal net/http writes
-// among them, tells a browser not to guess its type and to load nothing but the site's own files, so markup
-// slipped into a page runs no script but the site's own.
+// Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003, ADR-0004). It draws every page of a release's
+// snapshot once, the first time a request meets that snapshot (release.Derived), and serves the drawing until the
+// store holds another, so no request composes or draws a page; beside the pages it serves every file of the
+// snapshot's build at its path, from memory, for a cache to keep for good. Each page is served at the path routes
+// writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
+// browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
+// llms.txt, sent as plain text, as a name ending in .txt promises. Each format of a page names in a Link header the
+// address the page is known by, the one where the reader chooses, so a search engine counts its markdown and its
+// manual as the page. Any other path is answered with the page of no page, in text or in HTML, whichever the
+// reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the chosen format
+// alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and to load
+// nothing but the site's own files, so markup slipped into a page runs no script but the site's own.
 package web
 
 import (
@@ -17,10 +18,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/face/html"
 	"github.com/vrppaul/paranin/internal/face/text"
+	"github.com/vrppaul/paranin/internal/release"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -32,6 +34,10 @@ const (
 	contentType  = "Content-Type"
 	cacheControl = "Cache-Control"
 )
+
+// How long a cache keeps a built file: a year, which caches read as for good, and with no need to ask again, since
+// a file changed is built under another name
+const keptForGood = "public, max-age=31536000, immutable"
 
 // The headers every answer is sent with: that it is no other kind than it says, and what a browser may do with it
 const (
@@ -93,24 +99,25 @@ const (
 	statusSeparator = " "
 )
 
-// Server serves the pages of the store's current snapshot.
+// Server serves the pages and the built files of the store's current snapshot.
 type Server struct {
 	// drawn is every page of the store's current snapshot, drawn once for each snapshot
-	drawn   *content.Derived[*drawing]
+	drawn   *release.Derived[*drawing]
 	handler http.Handler
 }
 
-// drawing is every page of one snapshot, drawn, by the path it is served at: in each format at its own path, and
-// in every format at the address where the reader chooses; and the page of an address of no page.
+// drawing is every page of one snapshot, drawn, by the path it is served at, and every file of its build: in
+// each format at its own path, and each file, the same whatever the request asks; in every format at the address
+// where the reader chooses; and the page of an address of no page.
 type drawing struct {
-	pages    map[string]drawnPage
+	fixed    map[string]answer
 	chosen   map[string]choice
 	notFound missingChoice
 }
 
 // choice is one page in each format a reader may choose, never none, in the order a tie between two goes: the
 // manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual.
-type choice []drawnPage
+type choice []answer
 
 // missingChoice is the page of no page in each format a reader may choose, never none, in the order a tie between
 // them goes: text, then HTML.
@@ -128,46 +135,52 @@ type offer interface {
 	servedAs() string
 }
 
-func (page drawnPage) servedAs() string {
-	return page.mediaType
+func (sent answer) servedAs() string {
+	return sent.mediaType
 }
 
 func (format missingFormat) servedAs() string {
 	return format.mediaType
 }
 
-// drawnPage is one page as it is sent: the media type it is, which an Accept header ranks, the header that says
-// it, the Link header naming the address the page is known by, empty where it is none a person reads, and its
-// text.
-type drawnPage struct {
-	mediaType   string
-	contentType string
-	link        string
-	body        []byte
+// answer is a page or a built file as it is sent: the media type a page is, which an Accept header ranks, empty for
+// a built file, which no reader chooses; the header that says what it is; the Link header naming the address a page
+// is known by, empty where it is none a person reads; how long a cache keeps it; and what it holds.
+type answer struct {
+	mediaType    string
+	contentType  string
+	link         string
+	cacheControl string
+	body         []byte
 }
 
-// drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is.
-func drawnAs(mediaType, text string) drawnPage {
-	return drawnPage{mediaType: mediaType, contentType: mediaType + utf8Text, link: "", body: []byte(text)}
+// drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
+func drawnAs(mediaType, text string) answer {
+	return answer{mediaType: mediaType, contentType: mediaType + utf8Text, link: "", cacheControl: askEveryTime, body: []byte(text)}
+}
+
+// builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
+// another name.
+func builtAs(file assets.File) answer {
+	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, body: file.Body}
 }
 
 // knownAt is a page naming the address it is known by, as a Link header writes it (RFC 8288, RFC 6596).
-func (page drawnPage) knownAt(address string) drawnPage {
-	page.link = linkOpening + address + canonicalRelation
-	return page
+func (sent answer) knownAt(address string) answer {
+	sent.link = linkOpening + address + canonicalRelation
+	return sent
 }
 
 // New is a server of the site the store holds.
-func New(store *content.Store) *Server {
+func New(store *release.Store) *Server {
 	mux := http.NewServeMux()
-	server := &Server{drawn: content.Derive(store, draw), handler: mux}
+	server := &Server{drawn: release.Derive(store, draw), handler: mux}
 	mux.HandleFunc(pagePattern, server.servePage)
 	return server
 }
 
-// ServeHTTP serves a request: a page read, or a refusal.
-// Every answer passes here, a refusal net/http writes itself among them, so here it is told what a browser may do
-// with it.
+// ServeHTTP serves a request: a page or a file read, or a refusal. Every answer passes here, a refusal net/http
+// writes itself among them, so here it is told what a browser may do with it.
 func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	header := writer.Header()
 	header.Set(typeOptions, noSniffing)
@@ -177,7 +190,7 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
 	drawn := server.drawn.Current()
-	if found, isPage := drawn.pages[request.URL.Path]; isPage {
+	if found, isFixed := drawn.fixed[request.URL.Path]; isFixed {
 		send(writer, http.StatusOK, found)
 		return
 	}
@@ -245,16 +258,16 @@ func qualityOf(parameters map[string]string) float64 {
 	return value
 }
 
-func send(writer http.ResponseWriter, status int, page drawnPage) {
+func send(writer http.ResponseWriter, status int, sent answer) {
 	header := writer.Header()
-	header.Set(contentType, page.contentType)
-	if page.link != "" {
-		header.Set(linkHeader, page.link)
+	header.Set(contentType, sent.contentType)
+	if sent.link != "" {
+		header.Set(linkHeader, sent.link)
 	}
-	header.Set(cacheControl, askEveryTime)
+	header.Set(cacheControl, sent.cacheControl)
 	writer.WriteHeader(status)
 	// A write fails only when the reader has gone, and nobody is left to tell
-	_, _ = writer.Write(page.body)
+	_, _ = writer.Write(sent.body)
 }
 
 // statusLine is a status as HTTP writes it in a response's first line: its code, then its reason.
@@ -262,13 +275,17 @@ func statusLine(status int) string {
 	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
 }
 
-// draw draws every page of a snapshot, at the address it is served at.
-func draw(snapshot *content.Snapshot) *drawing {
-	site := routes.New(snapshot.Profile.Site.BaseURL)
-	readPages := compose.Pages(snapshot)
-	index := compose.Index(snapshot)
-	pages := map[string]drawnPage{
+// draw draws every page of a snapshot, at the address it is served at, beside every file of its build.
+func draw(snapshot *release.Snapshot) *drawing {
+	facts, build := snapshot.Content, snapshot.Build
+	site := routes.New(facts.Profile.Site.BaseURL)
+	readPages := compose.Pages(facts)
+	index := compose.Index(facts)
+	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
+	}
+	for path, file := range build.Files() {
+		fixed[path] = builtAs(file)
 	}
 	chosen := make(map[string]choice, len(readPages))
 	for _, composed := range readPages {
@@ -276,15 +293,15 @@ func draw(snapshot *content.Snapshot) *drawing {
 		known := site.Address(page, routes.FormatChosen)
 		markdown := drawnAs(markdownMediaType, text.Markdown(composed.Document, site)).knownAt(known)
 		manual := drawnAs(plainMediaType, text.Manual(composed.Document, site)).knownAt(known)
-		browsed := drawnAs(htmlMediaType, html.Page(composed.Document, composed.Record, site)).knownAt(known)
-		pages[routes.Path(page, routes.FormatMarkdown)] = markdown
-		pages[routes.Path(page, routes.FormatManual)] = manual
+		browsed := drawnAs(htmlMediaType, html.Page(composed.Document, composed.Record, site, build)).knownAt(known)
+		fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
+		fixed[routes.Path(page, routes.FormatManual)] = manual
 		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
 		{mediaType: plainMediaType, draw: text.NewNotFound(site, status).For},
-		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, snapshot.Words.Language()).For},
+		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, facts.Words.Language(), build).For},
 	}
-	return &drawing{pages: pages, chosen: chosen, notFound: notFound}
+	return &drawing{fixed: fixed, chosen: chosen, notFound: notFound}
 }

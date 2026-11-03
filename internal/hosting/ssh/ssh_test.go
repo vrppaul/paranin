@@ -18,12 +18,12 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/fixtures"
+	"github.com/vrppaul/paranin/internal/release"
 )
 
-// The content package's fixture, a terminal's size, and timeouts long enough never to end a test's session
+// A terminal's size, and timeouts long enough never to end a test's session
 const (
-	fixturePath    = "../../content/testdata/content"
 	terminalWidth  = 100
 	terminalHeight = 30
 	longTimeout    = time.Hour
@@ -201,9 +201,9 @@ func serving(test *testing.T, logger *slog.Logger) string {
 
 // servingServer is a server of the fixture, which serves until the test ends, and its address.
 func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
-	store, err := content.Open(os.DirFS(fixturePath))
+	store, err := release.Open(release.FoldersAt(fixtures.ContentFolder(test), fixtures.BuildFolder(test)))
 	if err != nil {
-		test.Fatalf("Open(fixture) = %v, want no error", err)
+		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
 	settings := Settings{HostKeyPath: filepath.Join(test.TempDir(), "host_key"), IdleTimeout: longTimeout, MaxTimeout: longTimeout}
 	server, err := New(store, logger, settings)

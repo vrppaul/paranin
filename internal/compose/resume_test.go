@@ -1,23 +1,19 @@
 package compose
 
 import (
-	"os"
 	"reflect"
 	"slices"
 	"testing"
 	"time"
 
-	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
-
-// The content package's fixture, which compose reads as the site would
-const fixturePath = "../content/testdata/content"
 
 // Every fact of the profile a person reads reaches the résumé, as a phrase of its own: a face that shows every
 // phrase shows every fact.
 func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
-	phrases := document.Phrases(Resume(fixtureSnapshot(test)))
+	phrases := document.Phrases(Resume(fixtures.LoadedContent(test)))
 	cases := []struct {
 		name string
 		want string
@@ -70,7 +66,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 // The résumé's parts stand in one order, decided once here, which every face follows: the summary, then each
 // section under the site's word for it.
 func TestTheResumeKeepsOneOrder(test *testing.T) {
-	blocks := Resume(fixtureSnapshot(test)).Blocks
+	blocks := Resume(fixtures.LoadedContent(test)).Blocks
 	as[document.Paragraph](test, blocks[0])
 	got := []string{}
 	for _, block := range blocks[1:] {
@@ -85,7 +81,7 @@ func TestTheResumeKeepsOneOrder(test *testing.T) {
 // A role's months reach the document typed, so each face writes them its own way, and a role still held stays
 // current.
 func TestEachRoleKeepsItsPeriod(test *testing.T) {
-	experience := sectionTitled(test, Resume(fixtureSnapshot(test)), "Experience")
+	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "Experience")
 	got := []document.Period{}
 	for _, block := range experience.Blocks {
 		got = append(got, as[document.Entry](test, block).Period)
@@ -102,7 +98,7 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
-	documents := Documents(fixtureSnapshot(test))
+	documents := Documents(fixtures.LoadedContent(test))
 	resume := documentOf(test, documents, document.Page{Kind: document.PageResume, Slug: ""})
 	project := documentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
 	projects := sectionTitled(test, resume, "Projects")
@@ -131,7 +127,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 // The index lists each page under the site's word for its kind, by the title and the line its own page opens
 // with, so an agent finds each page by what it is called there.
 func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
-	index := Index(fixtureSnapshot(test))
+	index := Index(fixtures.LoadedContent(test))
 	cases := []struct {
 		name    string
 		section string
@@ -160,7 +156,7 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 // The index lists every page compose makes, in the order it makes them: a page added to the site is a page added
 // to the index.
 func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	index := Index(snapshot)
 	got := []document.Page{}
 	for _, title := range []string{"Résumé", "Projects"} {
@@ -179,7 +175,7 @@ func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 
 // The projects' word stands in the index only where a project has a page to list under it.
 func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
-	withoutPages := *fixtureSnapshot(test)
+	withoutPages := *fixtures.LoadedContent(test)
 	withoutPages.Profile.Projects = slices.Clone(withoutPages.Profile.Projects)
 	for index := range withoutPages.Profile.Projects {
 		withoutPages.Profile.Projects[index].Page = false
@@ -196,7 +192,7 @@ func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 // Whose site it is, the site's words and every listing's title and line reach the index as phrases of their own:
 // a face that shows every phrase lists every page.
 func TestEveryPageReachesTheIndex(test *testing.T) {
-	phrases := document.Phrases(Index(fixtureSnapshot(test)))
+	phrases := document.Phrases(Index(fixtures.LoadedContent(test)))
 	cases := []struct {
 		name string
 		want string
@@ -218,7 +214,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 // Every document compose makes is in the language its words are written in, the fixture's English, so a face can
 // name the language its reader reads.
 func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	documents := slices.Concat(Documents(snapshot), []document.Document{Index(snapshot)}, Extras(snapshot))
 	for _, composed := range documents {
 		if got, want := composed.Head.Language, "en"; got != want {
@@ -230,7 +226,7 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 // Each page a person reads has a description, for a search engine's snippet and a link's preview where it is
 // shared: the résumé's is its headline, a project's page's what the project does.
 func TestEachPageHasADescription(test *testing.T) {
-	documents := Documents(fixtureSnapshot(test))
+	documents := Documents(fixtures.LoadedContent(test))
 	cases := []struct {
 		name string
 		page document.Page
@@ -330,14 +326,6 @@ func as[Kind any](test *testing.T, value any) Kind {
 		test.Fatalf("%+v is no %T", value, typed)
 	}
 	return typed
-}
-
-func fixtureSnapshot(test *testing.T) *content.Snapshot {
-	snapshot, err := content.Load(os.DirFS(fixturePath))
-	if err != nil {
-		test.Fatalf("Load(%q) = %v, want no error", fixturePath, err)
-	}
-	return snapshot
 }
 
 func firstMoment(year int, month time.Month) time.Time {

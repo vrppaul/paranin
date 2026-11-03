@@ -48,15 +48,22 @@ var errTokens = errors.New("the tokens have a fault")
 
 // tokensFile is the file as it is written.
 type tokensFile struct {
-	Background themedValue[string] `yaml:"background"`
-	Colours    []colourToken       `yaml:"colours"`
-	Blends     []blendToken        `yaml:"blends"`
+	Background backgroundToken `yaml:"background"`
+	Colours    []colourToken   `yaml:"colours"`
+	Blends     []blendToken    `yaml:"blends"`
 }
 
 // themedValue is one value in each theme.
 type themedValue[Value any] struct {
 	Light Value `yaml:"light"`
 	Dark  Value `yaml:"dark"`
+}
+
+// backgroundToken is the page's own colour as the file writes it: what it is for, and its value in each theme.
+type backgroundToken struct {
+	About string `yaml:"about"`
+	Light string `yaml:"light"`
+	Dark  string `yaml:"dark"`
 }
 
 // colourToken is a colour as the file writes it: its name, what it is for, its value in each theme, and the
@@ -103,9 +110,10 @@ func (basic *basicValue) UnmarshalYAML(node *yaml.Node) error {
 // tokens are the colours and blends of the file read: every value there, each a colour or a strength, every name
 // a word of its own, every blend over a colour the file names.
 type tokens struct {
-	background themedValue[color.RGBA]
-	colours    []readColour
-	blends     []readBlend
+	background      themedValue[color.RGBA]
+	backgroundAbout string
+	colours         []readColour
+	blends          []readBlend
 }
 
 // readColour is a colour of the file with its values read.
@@ -142,6 +150,9 @@ func readTokens(data []byte) (tokens, error) {
 	if err != nil {
 		return tokens{}, fmt.Errorf("background: %w", err)
 	}
+	if written.Background.About == "" {
+		return tokens{}, fmt.Errorf("%w: the background says nothing of what it is for", errTokens)
+	}
 	named := map[string]bool{}
 	colours := make([]readColour, 0, len(written.Colours))
 	for _, token := range written.Colours {
@@ -159,7 +170,7 @@ func readTokens(data []byte) (tokens, error) {
 		}
 		blends = append(blends, blend)
 	}
-	return tokens{background: background, colours: colours, blends: blends}, nil
+	return tokens{background: background, backgroundAbout: written.Background.About, colours: colours, blends: blends}, nil
 }
 
 func readColourToken(token colourToken, named map[string]bool) (readColour, error) {

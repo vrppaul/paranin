@@ -1,0 +1,33 @@
+/* The page's stylesheet: the design's colours, then what every page is drawn in. It keeps what the first
+ * version's look kept of the site's identity (docs/FOUNDATION.md §3.4): monospace text on one grid, the
+ * Catppuccin palettes, one accent; the look of each part arrives with the design (TODO, "The look"). */
+@import url("../tokens/tokens.css");
+
+:root {
+  /* one grid: a cell is 1ch wide and one row tall, and text sits on the rows */
+  --row: 24px;
+  --text-size: 14px;
+  --font: "JetBrains Mono", ui-monospace, "SFMono-Regular", menlo, monospace;
+
+  /* focus looks the same everywhere: an outline in the accent this wide, as far from what it rings */
+  --focus-width: 2px;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: normal var(--text-size) / var(--row) var(--font);
+  font-variant-ligatures: none;
+}
+
+/* a result worth seeing first, marked in the tint */
+mark {
+  background: var(--tint);
+  color: inherit;
+}
+
+:focus-visible {
+  outline: var(--focus-width) solid var(--accent);
+  outline-offset: var(--focus-width);
+}

@@ -10,9 +10,10 @@
 // of no page reads as NotFound: its status, the path asked for, quoted, and a link to where the site begins under
 // its name.
 //
-// The page is markup alone so far: what each part is, a heading by its depth, a period's months as times. How it
-// looks arrives with the page's stylesheet (docs/FOUNDATION.md §5.3), and with it the classes; until then a gap
-// still to fill reads as its text, as the markdown writes it.
+// Every page, the page of no page among them, is drawn in the stylesheet of the build it is served with (assets),
+// which styles its markup: what each part is, a heading by its depth, a period's months as times. The classes of
+// the page's parts arrive with its design (TODO, "The look"); until then a gap still to fill reads as its text, as
+// the markdown writes it.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write
@@ -24,6 +25,7 @@ import (
 
 	"github.com/a-h/templ"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -62,9 +64,11 @@ const (
 	labelEnd = ": "
 )
 
-// pageWriter writes one document; the site writes its addresses.
+// pageWriter writes one document; the site writes its addresses, and the stylesheets are the paths of those the
+// page is drawn in.
 type pageWriter struct {
-	site routes.Site
+	site        routes.Site
+	stylesheets []string
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
@@ -76,11 +80,16 @@ type pageMetadata struct {
 	markdown    string
 }
 
-// Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
-// then its head, then each block.
-func Page(composed document.Document, record compose.Record, site routes.Site) string {
-	writer := pageWriter{site: site}
+// Page writes a document as a page of HTML, drawn in the build's stylesheet: what it says of itself, its record as
+// linked data where it has one, then its head, then each block.
+func Page(composed document.Document, record compose.Record, site routes.Site, build *assets.Build) string {
+	writer := pageWriter{site: site, stylesheets: stylesheetsOf(build)}
 	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
+}
+
+// stylesheetsOf are the paths of the stylesheets of a build every page is drawn in.
+func stylesheetsOf(build *assets.Build) []string {
+	return build.Stylesheets(assets.Stylesheet)
 }
 
 // rendered is the HTML a component writes.

@@ -3,20 +3,19 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/fixtures"
+	"github.com/vrppaul/paranin/internal/release"
 )
 
-// The content package's fixture
-const fixturePath = "../../content/testdata/content"
+// The path the build's fixture serves its stylesheet at
+const stylesheetPath = "/assets/ui-fixture.css"
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	cases := []struct {
 		name        string
 		path        string
@@ -46,7 +45,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 // for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
 // cache keeps one copy for each Accept.
 func TestTheReaderChoosesTheFormat(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	const (
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
@@ -96,7 +95,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 
 // Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	cases := []struct {
 		name  string
 		path  string
@@ -118,7 +117,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
 // its manual as that page; the index, which is no page a person reads, names none.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	cases := []struct {
 		name   string
 		path   string
@@ -147,7 +146,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 // the request decoded it: in plain text to a terminal, an agent and a request naming nothing, in HTML, in the
 // site's language, to a browser; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	const (
 		plain   = "text/plain; charset=utf-8"
 		browsed = "text/html; charset=utf-8"
@@ -185,7 +184,7 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 // Every answer tells a browser not to guess its type, to load nothing and send no form but from and to the site,
 // and to let no site frame it: a page in each format, the page of no page, and a refusal net/http writes itself.
 func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	const policy = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	cases := []struct {
 		name   string
@@ -213,27 +212,56 @@ func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
 
 // A page tells a cache to ask again each time, since a reload can change it.
 func TestAPageTellsCachesToAskAgain(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtureCopy(test))), http.MethodGet, "/index.md", "")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, "/index.md", "")
 	if got := response.Header().Get("Cache-Control"); got != "no-cache" {
 		test.Errorf("GET /index.md: Cache-Control = %q, want %q", got, "no-cache")
 	}
 }
 
+// A file of the build is served at its path as the type its name says, whatever the request asks for, and a cache
+// keeps it for good: a file changed is built under another name.
+func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, stylesheetPath, "*/*")
+	header := response.Header()
+	const (
+		wantType  = "text/css; charset=utf-8"
+		wantCache = "public, max-age=31536000, immutable"
+	)
+	if response.Code != http.StatusOK || header.Get("Content-Type") != wantType || header.Get("Cache-Control") != wantCache ||
+		response.Body.String() != "body{margin:0}\n" {
+		test.Errorf("GET %s = %d %q, Cache-Control %q, %q; want %d %q, %q, the fixture's stylesheet", stylesheetPath,
+			response.Code, header.Get("Content-Type"), header.Get("Cache-Control"), response.Body.String(), http.StatusOK,
+			wantType, wantCache)
+	}
+}
+
+// A page a browser reads, and the page of no page, are drawn in the build's stylesheet.
+func TestABrowsedPageIsDrawnInTheStylesheet(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	want := `<link rel="stylesheet" href="` + stylesheetPath + `">`
+	cases := []struct {
+		name string
+		path string
+	}{
+		{name: "a page", path: "/"},
+		{name: "no page", path: "/nothing"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if body := serve(server, http.MethodGet, testCase.path, "text/html").Body.String(); !strings.Contains(body, want) {
+				test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, body, want)
+			}
+		})
+	}
+}
+
 // A page is drawn again once the store holds new content: a reload reaches the next request.
 func TestAReloadReachesTheNextRequest(test *testing.T) {
-	folder := fixtureCopy(test)
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	store := fixtureStore(test, folder)
 	server := New(store)
 	serve(server, http.MethodGet, "/index.md", "")
-	profilePath := filepath.Join(folder, "profile.yaml")
-	profile, err := os.ReadFile(profilePath)
-	if err != nil {
-		test.Fatalf("read the copy's profile: %v", err)
-	}
-	renamed := strings.Replace(string(profile), "name: Mira Example", "name: Mira Other", 1)
-	if err := os.WriteFile(profilePath, []byte(renamed), 0o600); err != nil {
-		test.Fatalf("write the copy's profile: %v", err)
-	}
+	fixtures.ReplaceIn(test, folder, "profile.yaml", "name: Mira Example", "name: Mira Other")
 	if err := store.Reload(); err != nil {
 		test.Fatalf("Reload = %v, want no error", err)
 	}
@@ -244,7 +272,7 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 
 // A page is only read: a request to change it is refused.
 func TestAPageIsOnlyRead(test *testing.T) {
-	server := New(fixtureStore(test, fixtureCopy(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	if response := serve(server, http.MethodPost, "/index.md", ""); response.Code != http.StatusMethodNotAllowed {
 		test.Errorf("POST /index.md = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
@@ -259,19 +287,11 @@ func serve(server http.Handler, method, path, accept string) *httptest.ResponseR
 	return response
 }
 
-// fixtureCopy is a copy of the fixture content on disk, which a test may change.
-func fixtureCopy(test *testing.T) string {
-	folder := test.TempDir()
-	if err := os.CopyFS(folder, os.DirFS(fixturePath)); err != nil {
-		test.Fatalf("copy the fixture: %v", err)
-	}
-	return folder
-}
-
-func fixtureStore(test *testing.T, folder string) *content.Store {
-	store, err := content.Open(os.DirFS(folder))
+// fixtureStore is a store of a release of the content in a folder and the build's fixture.
+func fixtureStore(test *testing.T, folder string) *release.Store {
+	store, err := release.Open(release.FoldersAt(folder, fixtures.BuildFolder(test)))
 	if err != nil {
-		test.Fatalf("Open(fixture) = %v, want no error", err)
+		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
 	return store
 }

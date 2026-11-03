@@ -47,12 +47,12 @@ repos:
         language: system
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
-      # The design's colours in Go are the ones design/tokens.yaml makes (scripts/tokens/main.go)
+      # The design's colours in Go and in CSS are the ones design/tokens.yaml makes (scripts/tokens/main.go)
       - id: design-tokens
-        name: design tokens (internal/look as design/tokens.yaml makes it)
+        name: design tokens (internal/look and the page's tokens.css as design/tokens.yaml makes them)
         entry: go run ./scripts/tokens
         language: system
-        files: (^design/|^internal/look/|^scripts/tokens/)
+        files: (^design/|^internal/look/|^scripts/tokens/|^web/src/tokens/)
         pass_filenames: false
       # Each templ template as templ formats it, and its Go as templ writes it (scripts/templates/main.go)
       - id: templates
@@ -74,6 +74,25 @@ repos:
         entry: go test ./...
         language: system
         types: [go]
+        pass_filenames: false
+
+  # The page's gates, run by pnpm in web/ with the tools its lockfile pins, once `pnpm --dir web install` has put
+  # them there. Without pnpm or the install they fail and say so: leave them out on purpose with SKIP
+  - repo: local
+    hooks:
+      # Every stylesheet but the generated tokens names its colours from the tokens (web/stylelint.config.js)
+      - id: page-styles
+        name: stylelint (the page's stylesheets)
+        entry: pnpm --dir web run lint:styles
+        language: system
+        files: ^web/(src/.*\.css|stylelint\.config\.js|package\.json)$
+        pass_filenames: false
+      # Checks rather than rewrites: a commit never carries formatting it was not shown
+      - id: page-format
+        name: prettier (the page's files)
+        entry: pnpm --dir web run format:check
+        language: system
+        files: ^web/
         pass_filenames: false
 
   - repo: https://github.com/crate-ci/typos

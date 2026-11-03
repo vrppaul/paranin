@@ -6,6 +6,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // :checkhealth shows the health report in place of the résumé, as Neovim writes its own: each check after the word
@@ -87,14 +88,14 @@ func nestedReportModel(test *testing.T) Model {
 		Head:   document.Head{Page: document.Page{Kind: document.PageHealth, Slug: ""}, Language: "", Title: textOf("report"), Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Section{Title: textOf("outer"), Blocks: []document.Block{warning, inner}}},
 	}
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	return New([]document.Document{compose.Resume(snapshot), report}, fixtureSite(snapshot), commonWidth, commonHeight)
 }
 
 // A session handed no health report knows no :checkhealth, and one handed no list of skills no :Lazy; each says so
 // as Neovim says it of a command it does not know, the résumé still shown.
 func TestAHiddenCommandWithNoPageIsNoCommand(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	model := New([]document.Document{compose.Resume(snapshot)}, fixtureSite(snapshot), commonWidth, commonHeight)
 	cases := []struct {
 		name    string

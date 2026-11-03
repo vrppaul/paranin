@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // Text reads as the text it is, never as markup: not as emphasis, a link, HTML or a block opening a line. A gap
@@ -39,7 +40,7 @@ func TestTextNeverReadsAsMarkup(test *testing.T) {
 				Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 				Blocks: []document.Block{document.Section{Title: []document.Span{testCase.span}, Blocks: nil}, document.Paragraph{Spans: []document.Span{testCase.span}}},
 			}
-			if got := Markdown(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, testCase.want) {
+			if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); !strings.Contains(got, testCase.want) {
 				test.Errorf("Markdown = %q, want it to hold %q", got, testCase.want)
 			}
 		})
@@ -56,7 +57,7 @@ func TestAListItemNeverOpensABlock(test *testing.T) {
 		}}},
 	}
 	want := "- \\- a\n- 1\\. b"
-	if got := Markdown(composed, fixtureSite(fixtureSnapshot(test))); !strings.Contains(got, want) {
+	if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); !strings.Contains(got, want) {
 		test.Errorf("Markdown = %q, want it to hold %q", got, want)
 	}
 }
@@ -83,7 +84,7 @@ func TestALeadReadsAsAQuoteOfItsText(test *testing.T) {
 				},
 				Blocks: nil,
 			}
-			if got := Markdown(composed, fixtureSite(fixtureSnapshot(test))); got != testCase.want {
+			if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); got != testCase.want {
 				test.Errorf("Markdown = %q, want %q", got, testCase.want)
 			}
 		})

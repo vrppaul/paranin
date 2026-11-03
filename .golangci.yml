@@ -116,9 +116,11 @@ linters:
             - "**/internal/content/**"
             - "**/internal/document/**"
             - "**/internal/look/**"
+            - "**/internal/assets/**"
             - "**/internal/compose/**"
             - "**/internal/routes/**"
             - "**/internal/inbox/**"
+            - "**/internal/release/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/face
               desc: a face builds on this part, never the other way
@@ -141,6 +143,7 @@ linters:
             - "**/internal/content/**"
             - "**/internal/document/**"
             - "**/internal/look/**"
+            - "**/internal/assets/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/compose
               desc: compose builds on the foundation, never the other way
@@ -148,6 +151,28 @@ linters:
               desc: routes build on the foundation, never the other way
             - pkg: github.com/vrppaul/paranin/internal/inbox
               desc: the inbox builds on the foundation, never the other way
+            - pkg: github.com/vrppaul/paranin/internal/release
+              desc: a release holds the content and the build, never the other way
+        # A release holds the content and the build as one snapshot for the hosts; compose, routes and the inbox
+        # stand beside it on the foundation, and none of them needs another
+        release-beside-composition:
+          files:
+            - "**/internal/release/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/compose
+              desc: &release-beside a release stands beside compose, routes and the inbox; the hosts bring them together
+            - pkg: github.com/vrppaul/paranin/internal/routes
+              desc: *release-beside
+            - pkg: github.com/vrppaul/paranin/internal/inbox
+              desc: *release-beside
+        beside-the-release:
+          files:
+            - "**/internal/compose/**"
+            - "**/internal/routes/**"
+            - "**/internal/inbox/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/release
+              desc: *release-beside
         compose-over-routes:
           files:
             - "**/internal/routes/**"
@@ -171,14 +196,20 @@ linters:
           deny:
             - pkg: github.com/vrppaul/paranin/internal/inbox
               desc: *inbox-beside
-        # The golden files' helper links testing into whatever imports it; the linters read no test, so every file
-        # they read is one that may not
+        # The tests' helpers, the golden files' and the shared fixtures', link testing into whatever imports them; the
+        # linters read no test, so every file they read is one that may not
         tests-alone-read-golden:
           files:
             - "$all"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/golden
               desc: golden is the tests' helper; only a _test.go file imports it
+        tests-alone-read-fixtures:
+          files:
+            - "$all"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/fixtures
+              desc: fixtures is the tests' way to the shared fixtures; only a _test.go file imports it
         # A part outside internal would be held by none of the rules above
         every-part-inside-internal:
           files:
@@ -206,8 +237,10 @@ linters:
             - "**/internal/content/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/document
-              desc: &foundation-alone the foundation's parts stand side by side; compose brings them together
+              desc: &foundation-alone the foundation's parts stand side by side; compose or a release brings them together
             - pkg: github.com/vrppaul/paranin/internal/look
+              desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/assets
               desc: *foundation-alone
         document-alone:
           files:
@@ -217,6 +250,8 @@ linters:
               desc: *foundation-alone
             - pkg: github.com/vrppaul/paranin/internal/look
               desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/assets
+              desc: *foundation-alone
         look-alone:
           files:
             - "**/internal/look/**"
@@ -225,13 +260,28 @@ linters:
               desc: *foundation-alone
             - pkg: github.com/vrppaul/paranin/internal/document
               desc: *foundation-alone
-        # A face draws documents and compose's records alone, never the content they are made from (ADR-0003)
+            - pkg: github.com/vrppaul/paranin/internal/assets
+              desc: *foundation-alone
+        assets-alone:
+          files:
+            - "**/internal/assets/**"
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/content
+              desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/document
+              desc: *foundation-alone
+            - pkg: github.com/vrppaul/paranin/internal/look
+              desc: *foundation-alone
+        # A face draws documents and compose's records, and links the build's files, never the content they are made
+        # from (ADR-0003), nor the release that holds it
         faces-know-no-content:
           files:
             - "**/internal/face/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/content
               desc: a face draws documents; compose makes them from the content
+            - pkg: github.com/vrppaul/paranin/internal/release
+              desc: a face draws documents; the hosts hand it what it draws from a release
         routes-read-documents-alone:
           files:
             - "**/internal/routes/**"
@@ -308,8 +358,10 @@ linters:
             - "**/internal/content/**"
             - "**/internal/document/**"
             - "**/internal/look/**"
+            - "**/internal/assets/**"
             - "**/internal/compose/**"
             - "**/internal/routes/**"
+            - "**/internal/release/**"
           deny:
             - pkg: net/http
               desc: this part knows no face, so no web server

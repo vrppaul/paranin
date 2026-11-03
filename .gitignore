@@ -19,6 +19,9 @@
 /vendor/
 /dist/
 
+# The page's tools, which pnpm installs from web/pnpm-lock.yaml
+/web/node_modules/
+
 # Contact messages written at runtime
 /data/
 

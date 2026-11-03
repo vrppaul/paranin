@@ -12,8 +12,8 @@
 // with; a panic in a command Bubble Tea runs reaches only those (TODO.md). The server alone ends its sessions: no
 // session's program answers the server's own signals, so a stop waits for the sessions open before it closes them.
 //
-// The documents are composed once for each snapshot the store holds (content.Derived), and each session draws the
-// snapshot current when it opened; a reload reaches the sessions that open after it.
+// The documents are composed once for each snapshot the store holds (release.Derived), from its content alone, and
+// each session draws the snapshot current when it opened; a reload reaches the sessions that open after it.
 package ssh
 
 import (
@@ -31,9 +31,9 @@ import (
 	"charm.land/wish/v2/bubbletea"
 
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/face/tui"
+	"github.com/vrppaul/paranin/internal/release"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -70,7 +70,7 @@ type drawing struct {
 // sessions open each session's TUI on what the current snapshot draws, its panics logged through the logger.
 type sessions struct {
 	logger *slog.Logger
-	drawn  *content.Derived[drawing]
+	drawn  *release.Derived[drawing]
 }
 
 // guard logs each session and ends one that panics.
@@ -79,8 +79,8 @@ type guard struct {
 }
 
 // New is a server of the site the store holds, logging through the logger.
-func New(store *content.Store, logger *slog.Logger, settings Settings) (*Server, error) {
-	opening := sessions{logger: logger, drawn: content.Derive(store, draw)}
+func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server, error) {
+	opening := sessions{logger: logger, drawn: release.Derive(store, draw)}
 	watching := guard{logger: logger}
 	// wish runs the last listed outermost: the log, then the guard against panics, then the refusal of a
 	// session with no terminal, then the TUI
@@ -126,10 +126,11 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// draw is what the sessions of a snapshot draw: its pages, and the extras the TUI opens by a command.
-func draw(snapshot *content.Snapshot) drawing {
-	documents := append(compose.Documents(snapshot), compose.Extras(snapshot)...)
-	return drawing{documents: documents, site: routes.New(snapshot.Profile.Site.BaseURL)}
+// draw is what the sessions of a snapshot draw: the pages of its content, and the extras the TUI opens by a command.
+func draw(snapshot *release.Snapshot) drawing {
+	facts := snapshot.Content
+	documents := append(compose.Documents(facts), compose.Extras(facts)...)
+	return drawing{documents: documents, site: routes.New(facts.Profile.Site.BaseURL)}
 }
 
 // open is a session's TUI, of the size its terminal said it is.

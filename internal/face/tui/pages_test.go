@@ -6,6 +6,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // What the fixture's résumé says under the name, and what the page of its project tidy-tool says under its own
@@ -99,7 +100,7 @@ func TestClosingAPageGoesBackToTheResume(test *testing.T) {
 // The status line names :e where the session holds a project's page to open; a session of the résumé alone names
 // none.
 func TestTheStatusLineNamesEditWhereAPageIsThere(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
 		name  string
 		model Model
@@ -173,7 +174,7 @@ func twoPagesModel(test *testing.T) Model {
 		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "another-tool"}, Language: "", Title: textOf("another-tool"), Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: nil,
 	}
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	documents := append(compose.Documents(snapshot), another)
 	return New(documents, fixtureSite(snapshot), commonWidth, commonHeight)
 }

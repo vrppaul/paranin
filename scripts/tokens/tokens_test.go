@@ -11,6 +11,7 @@ import (
 // A file of tokens with two colours, a blend over the page and one over a colour, its values chosen so each shade
 // is easy to work out
 const fixtureTokens = `background:
+  about: the page itself
   light: "#000000"
   dark: "#000000"
 colours:
@@ -89,6 +90,47 @@ func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
 	}
 }
 
+// The page reads each colour as a custom property, its value in the light theme and the dark one, which theme
+// the page's color-scheme says, the reader's system unless one is chosen; a blend is its colour at its strength,
+// laid over whatever the page puts under it.
+func TestEachColourIsACustomPropertyOfBothThemes(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	written := string(stylesheet(read))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the system's theme until one is chosen", want: "color-scheme: light dark;"},
+		{name: "the page itself", want: "--background: light-dark(#000000, #000000);"},
+		{name: "what the page is", want: "/* the page itself */"},
+		{name: "a colour", want: "--accent: light-dark(#ffffff, #ff8700);"},
+		{name: "a blend at its strength", want: "--tint: light-dark(#ffffff80, #ff870040);"},
+		{name: "a blend laid over the page, whatever it lies over in a terminal", want: "--chosen: light-dark(#76767680, #00000080);"},
+		{name: "what each colour is for", want: "/* what the eye goes to first */"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(written, testCase.want) {
+				test.Errorf("the stylesheet = %q, want it to hold %q", written, testCase.want)
+			}
+		})
+	}
+}
+
+// A name of words parted by underscores is a custom property's, parted by hyphens.
+func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
+	read, err := readTokens([]byte(strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n")))
+	if err != nil {
+		test.Fatalf("readTokens = %v, want no fault", err)
+	}
+	if got := string(stylesheet(read)); !strings.Contains(got, "--on-accent: ") {
+		test.Errorf("the stylesheet = %q, want it to hold %q", got, "--on-accent: ")
+	}
+}
+
 // A file of tokens with a fault is refused, the fault named: nothing is written from tokens the faces would
 // read wrong.
 func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
@@ -106,6 +148,7 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a colour named twice", original: "name: text", replacement: "name: accent", want: `"accent" is named twice`},
 		{name: "a basic colour left out", original: "    basic: own\n", replacement: "", want: "has no basic"},
 		{name: "a colour that says nothing of what it is for", original: "    about: what a reader reads\n", replacement: "", want: "says nothing"},
+		{name: "a background that says nothing of what it is for", original: "  about: the page itself\n", replacement: "", want: "background says nothing"},
 		{name: "a blend's strength left out", original: "    light: 0.5\n", replacement: "", want: "has no light"},
 		{name: "a blend named as a colour is", original: "name: tint", replacement: "name: accent", want: `"accent" is named twice`},
 		{name: "a colour with no name", original: "name: text", replacement: `name: ""`, want: "no name of small words"},
@@ -126,27 +169,32 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 	}
 }
 
-// The check finds a generated file out of step with its tokens, and passes the file the tokens make.
+// The check finds a generated file out of step with its tokens, the palette or the stylesheet, and passes the
+// files the tokens make.
 func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 	root := test.TempDir()
 	writeFixture(test, filepath.Join(root, tokensPath), fixtureTokens)
-	if err := os.MkdirAll(filepath.Join(root, filepath.Dir(palettePath)), 0o750); err != nil {
-		test.Fatalf("make the folder of the palette: %v", err)
+	for _, folder := range []string{filepath.Dir(palettePath), filepath.Dir(stylesheetPath)} {
+		if err := os.MkdirAll(filepath.Join(root, folder), 0o750); err != nil {
+			test.Fatalf("make the folder %s: %v", folder, err)
+		}
 	}
 	if code := run([]string{writeFlag}, root); code != succeeded {
 		test.Fatalf("writing = exit %d, want %d", code, succeeded)
 	}
 	cases := []struct {
 		name   string
+		path   string
 		change func(generated string) string
 		want   int
 	}{
-		{name: "the file the tokens make", change: func(generated string) string { return generated }, want: succeeded},
-		{name: "a file edited by hand", change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the files the tokens make", path: palettePath, change: func(generated string) string { return generated }, want: succeeded},
+		{name: "a palette edited by hand", path: palettePath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "a stylesheet edited by hand", path: stylesheetPath, change: func(generated string) string { return generated + "\n/* edited */\n" }, want: failed},
 	}
-	generatedPath := filepath.Join(root, palettePath)
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			generatedPath := filepath.Join(root, testCase.path)
 			generated, err := os.ReadFile(generatedPath)
 			if err != nil {
 				test.Fatalf("read %s: %v", generatedPath, err)

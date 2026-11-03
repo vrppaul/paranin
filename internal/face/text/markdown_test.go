@@ -1,19 +1,16 @@
 package text
 
 import (
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
 	"github.com/vrppaul/paranin/internal/routes"
 )
-
-// The content package's fixture
-const fixturePath = "../../content/testdata/content"
 
 func TestMain(tests *testing.M) {
 	golden.Main(tests)
@@ -43,7 +40,7 @@ func manualHolds(text, phrase string) bool {
 // The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the
 // fixture, in each format, is held to its golden file, named by the page's own path in that format.
 func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	documents, site := compose.Documents(snapshot), fixtureSite(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
@@ -58,7 +55,7 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 // The index is what an agent reads first, llms.txt: markdown as llmstxt.org lays it out, a title, a quote of what
 // the site is, and each page listed under its section. It is held to its golden file too.
 func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	index := compose.Index(snapshot)
 	path := routes.Path(index.Head.Page, routes.FormatMarkdown)
 	golden.Match(test, path, Markdown(index, fixtureSite(snapshot)))
@@ -67,7 +64,7 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 // Every phrase of a document reaches its text in each format: the facts a reader reads are the facts the
 // document holds, found as each format writes them.
 func TestEveryPhraseReachesEveryFormat(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	documents, site := compose.Documents(snapshot), fixtureSite(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
@@ -84,7 +81,7 @@ func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 // Every phrase of the index reaches llms.txt, the markdown it is served as: an agent reads every page the index
 // lists, by its title and its line.
 func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	index := compose.Index(snapshot)
 	text := Markdown(index, fixtureSite(snapshot))
 	for _, phrase := range document.Phrases(index) {
@@ -92,14 +89,6 @@ func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
 			test.Errorf("the index's markdown %q holds no %q", text, phrase)
 		}
 	}
-}
-
-func fixtureSnapshot(test *testing.T) *content.Snapshot {
-	snapshot, err := content.Load(os.DirFS(fixturePath))
-	if err != nil {
-		test.Fatalf("Load(%q) = %v, want no error", fixturePath, err)
-	}
-	return snapshot
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

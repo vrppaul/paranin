@@ -130,13 +130,18 @@ and web routes.
 
 - **Content lives on disk.** `content` loads a folder (the profile, the
   posts, the word catalogues), checks it whole and makes an immutable
-  snapshot. `content.Store` swaps snapshots whole, in an `atomic.Pointer`,
-  and keeps the last good one when a load fails. The composition root calls
-  `Reload` on SIGHUP and on a change in the folder once the changes settle,
-  and logs a refusal. Nothing of the content is embedded; tests read
-  fixtures.
-- **`paranin check`** runs the same loader, so CI refuses what the server
-  would refuse.
+  snapshot. `release.Store` holds it beside the page's build (ADR-0004),
+  the two loaded as one snapshot, so the pages of a snapshot name only files
+  that snapshot serves; it swaps snapshots whole, in an `atomic.Pointer`,
+  and keeps the last good one when a load of either part fails (amended
+  2026-11-03, when the build arrived; the store was `content.Store` until
+  then). A page fetched before a swap that asks for a file after it finds
+  the file gone, until the files of the snapshot before are kept beside the
+  current ones (TODO). The composition root calls `Reload` on SIGHUP and on
+  a change in the folders once the changes settle, and logs a refusal.
+  Nothing of the content is embedded; tests read fixtures.
+- **`paranin check`** runs the same loader, of the content or of a whole
+  release, so CI refuses what the server would refuse.
 - **One document, every face.** `compose` turns content into documents: the
   résumé, a page for each project that has one, each post, the index of the
   site that `llms.txt` lists, and the extras of the TUI and the vim mode.
@@ -208,12 +213,14 @@ and web routes.
   widget with the first island (step 6), since `face/html` came without
   one; the posts' blocks and spans with the blog (D18).
 - **`routes`** writes every address.
-- **The layers**: `content`, `document` and `look` at the foot, side by
-  side; `routes` on `document`; `compose` on the foundation, and on `routes`
-  once it reads a post's links back into targets; `inbox` on the foot alone,
-  beside both; the faces and `brain` side by side on those, no face on
-  another; `hosting` over everything but the composition root. depguard holds
-  each border once its package lands (`.golangci.yml`).
+- **The layers**: `content`, `document`, `look` and `assets` (the page's
+  build) at the foot, side by side; `routes` on `document`; `compose` on the
+  foundation, and on `routes` once it reads a post's links back into
+  targets; `inbox` on the foot alone, beside both; `release`, which holds the
+  content and the build as one snapshot, on the foot beside them; the faces
+  and `brain` side by side on those, no face on another nor on `release`;
+  `hosting` over everything but the composition root. depguard holds each
+  border once its package lands (`.golangci.yml`).
 
 ### Rationale
 
@@ -248,7 +255,9 @@ and web routes.
 
 - The binary cannot start without a content folder; development points it
   at the repository's own.
-- A face draws from documents and from `compose`'s records alone.
+- A face draws from documents and from `compose`'s records alone; the HTML
+  face reads beside them the page's build (`assets`, ADR-0004), for the
+  files its pages link, and chooses which entry each page links.
 - A new kind of block or span is a change to every face, which the compiler
   and gochecksumtype point at.
 - A month's shape is written twice, in `content` and in `document`, and so
@@ -422,34 +431,38 @@ sessions on a stop.
                                   │    HTML | markdown | manual          │
                                   │  /index.md, .txt; /p/{slug}.md, .txt;│
                                   │    /llms.txt: one format each        │
+                                  │  each built file at its path         │
                                   │  any other path: 404, text | HTML    │
                                   │  any other method: 405 (net/http)    │
                                   └──────────────────┬───────────────────┘
                                                      │ for each snapshot of
-                                                     ▼   internal/content's store
+                                                     ▼   internal/release's store
                      internal/compose, internal/routes: documents, records,
-                       the site's addresses
+                       the site's addresses; internal/assets: the build
                                                      │ handed to
                                                      ▼
                      internal/face/html (templ) · internal/face/text
 ```
 
 - `cmd/paranin` runs the SSH and HTTP servers in one process over one
-  `content.Store`, reloads it on `SIGHUP`, and stops both on `SIGINT` or
-  `SIGTERM`.
+  `release.Store`, the content folder and the page's build, reloads it on
+  `SIGHUP`, and stops both on `SIGINT` or `SIGTERM`.
 - `hosting/web` composes each snapshot of the store with `compose` and
-  `routes`, the first time a request meets it, and hands the documents to
-  the faces to draw (two requests meeting a new snapshot at once may each
-  draw it, `content.Derived`). A request only reads the drawing; the page of
-  no page alone is drawn for each request, since it quotes the path asked
-  for.
-- `face/html` draws each document with templ, and its record as JSON-LD;
-  `face/text` draws the markdown, the manual, `llms.txt` and its own page of
-  no page. `routes` writes every address.
-- templ compiles the templates into Go, and no file is embedded. The
-  stylesheet and the islands are to come from the front-end build ADR-0004
-  decides (D22), not yet built; the CV and the cards come with Typst
-  (ADR-0005).
+  `routes`, the first time a request meets it, and hands the documents and
+  the build to the faces to draw (two requests meeting a new snapshot at
+  once may each draw it, `release.Derived`). A request only reads the
+  drawing; the page of no page alone is drawn for each request, since it
+  quotes the path asked for.
+- `face/html` draws each document with templ, in the build's stylesheet,
+  and its record as JSON-LD; `face/text` draws the markdown, the manual,
+  `llms.txt` and its own page of no page. `routes` writes every address.
+- templ compiles the templates into Go, and no file is embedded. `web/`
+  is the page's pnpm package: Vite builds it into `build/web` with a
+  manifest (ADR-0004, D22); `internal/assets` reads the manifest and every
+  file it names into memory, and `hosting/web` serves each at its path for
+  a cache to keep for good, its name changing with what it holds. The
+  stylesheet is the build's one entry so far; the islands come with step
+  6, the CV and the cards with Typst (ADR-0005).
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md), whose
@@ -459,7 +472,7 @@ sessions on a stop.
 ## Project layout
 
 ```
-cmd/paranin/main.go      # check the content, or serve it: both servers, the signals, the stop
+cmd/paranin/main.go      # check the content, or serve it with the build: both servers, the signals, the stop
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
 internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
@@ -467,16 +480,20 @@ internal/face/html/      # templ pages: each document, its record as JSON-LD, th
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
+internal/release/        # the content and the build as one snapshot: load, the store, what is derived once
 internal/document/       # the face-neutral model
-internal/content/        # the content folder: load, check, the store of snapshots
+internal/content/        # the content folder: load, check
 internal/look/           # the design's colours, generated from design/tokens.yaml
+internal/assets/         # the page's build: its manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone
-scripts/tokens/          # the generator of internal/look and its check
+internal/fixtures/       # the shared fixtures, the content's and the build's, for tests alone
+scripts/tokens/          # the generator of internal/look and the page's tokens.css, and its check
 scripts/templates/       # templ's format and generated Go, checked or written
 scripts/coderules/       # the code rules no linter here holds
 scripts/check_instruction_files.py  # claude-review's gate of the instruction files
 content/                 # the site's content: the profile, the site's words
-design/tokens.yaml       # the design's colours, which internal/look is written from
+design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from
+web/                     # the page: Vite, its stylesheet, the tokens' CSS; built into build/web
 ```
 
 Each part is held to its layer by depguard (`.golangci.yml`, `.claude/rules/go.md`).

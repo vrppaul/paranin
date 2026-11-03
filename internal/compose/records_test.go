@@ -7,13 +7,14 @@ import (
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // Each page a person reads has its record, the facts a search engine reads as data: the résumé the person, with
 // where they work now, the schools, the skills they use and not those still learning, the languages and the public
 // profiles; a project's page the project, with its author and the page that is theirs.
 func TestEachPageHasItsRecord(test *testing.T) {
-	snapshot := fixtureSnapshot(test)
+	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
 		name string
 		page document.Page
@@ -58,7 +59,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 
 // A record's text is plain: the marks of the profile's name, title, company, school and skill are read and gone.
 func TestARecordReadsTheMarksAway(test *testing.T) {
-	marked := *fixtureSnapshot(test)
+	marked := *fixtures.LoadedContent(test)
 	profile := &marked.Profile
 	profile.Person.Name, profile.Person.Title = "==Mira== Example", "==Software== Engineer"
 	profile.Experience = slices.Clone(profile.Experience)
@@ -88,7 +89,7 @@ type markedFacts struct {
 
 // A person whose every role has ended works nowhere now, and the résumé's record names no employer.
 func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
-	ended := *fixtureSnapshot(test)
+	ended := *fixtures.LoadedContent(test)
 	ended.Profile.Experience = slices.DeleteFunc(slices.Clone(ended.Profile.Experience), func(role content.Role) bool {
 		return role.End.Kind() == content.MonthCurrent
 	})

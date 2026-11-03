@@ -1,31 +1,35 @@
 // Command paranin is the composition root of the site: it builds every part and hands each what it needs.
 //
-//	paranin check content    loads a content folder as the site would and lists every fault in it
-//	paranin serve content    serves the site from a content folder over HTTP and SSH
+//	paranin check content              loads a content folder as the site would and lists every fault in it
+//	paranin check content build/web    loads a content folder and the page's build as one release, the same way
+//	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //
-// check prints the faults, one a line. serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and
-// for SSH at PARANIN_SSH_ADDR (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names
-// (.ssh/id_ed25519, made there when missing). It loads the folder again on SIGHUP, keeping what it serves when the
-// new content has faults, and stops on SIGINT or SIGTERM once the requests in hand are answered and the sessions
-// open have ended, or the wait for them runs out. The program exits 0 when it did what it was asked, 1 when the content
-// has faults or the server failed, and 2 when the command itself is written wrong.
+// check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds.
+// serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
+// (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.ssh/id_ed25519, made there when
+// missing). It loads both folders again on SIGHUP, as one release, keeping what it serves when either has faults,
+// and stops on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the
+// wait for them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has
+// faults or the server failed, and 2 when the command itself is written wrong.
 package main
 
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
+	"github.com/vrppaul/paranin/internal/release"
 )
 
 // What the program exits with
@@ -35,14 +39,17 @@ const (
 	usageMistaken = 2
 )
 
-// How the command is written: the program, the command, the folder
+// How the command is written: the program, the command, the content folder, and the build folder a site is served
+// with
 const (
-	checkCommand    = "check"
-	serveCommand    = "serve"
-	usage           = "usage: paranin check|serve <content folder>"
-	commandArgument = 1
-	folderArgument  = 2
-	argumentCount   = 3
+	checkCommand     = "check"
+	serveCommand     = "serve"
+	usage            = "usage: paranin check <content folder> [<build folder>] | paranin serve <content folder> <build folder>"
+	commandArgument  = 1
+	contentArgument  = 2
+	buildArgument    = 3
+	contentArguments = 3
+	releaseArguments = 4
 )
 
 // Where the site is served, and the SSH server's host key, unless the environment says otherwise; and over what
@@ -56,14 +63,18 @@ const (
 	network            = "tcp"
 )
 
-// How faults are printed: the folder, quoted, then each fault on a line of its own
-const faultsFormat = "%q:\n%v\n"
+// How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own
+const (
+	faultsFormat    = "%s:\n%v\n"
+	folderSeparator = " and "
+)
 
 // The keys of what the log says
 const (
 	webKey     = "http"
 	sshKey     = "ssh"
 	contentKey = "content"
+	buildKey   = "build"
 	errorKey   = "error"
 	faultsKey  = "faults"
 )
@@ -89,36 +100,60 @@ func main() {
 }
 
 func run(arguments []string) int {
-	if len(arguments) != argumentCount {
-		fmt.Fprintln(os.Stderr, usage)
-		return usageMistaken
-	}
-	folderName := arguments[folderArgument]
-	folder := os.DirFS(folderName)
-	switch arguments[commandArgument] {
-	case checkCommand:
-		return check(folderName, folder)
-	case serveCommand:
-		return serve(folderName, folder)
+	switch command := commandOf(arguments); {
+	case command == checkCommand && len(arguments) == contentArguments:
+		return check(arguments[contentArgument])
+	case command == checkCommand && len(arguments) == releaseArguments:
+		return checkRelease(arguments[contentArgument], arguments[buildArgument])
+	case command == serveCommand && len(arguments) == releaseArguments:
+		return serve(arguments[contentArgument], arguments[buildArgument])
 	default:
 		fmt.Fprintln(os.Stderr, usage)
 		return usageMistaken
 	}
 }
 
-func check(folderName string, folder fs.FS) int {
-	if _, err := content.Load(folder); err != nil {
-		fmt.Fprintf(os.Stderr, faultsFormat, folderName, err)
-		return failed
+// commandOf is the command the arguments name, or nothing where they name none.
+func commandOf(arguments []string) string {
+	if len(arguments) <= commandArgument {
+		return ""
+	}
+	return arguments[commandArgument]
+}
+
+func check(contentFolder string) int {
+	_, err := content.Load(os.DirFS(contentFolder))
+	return checked(err, contentFolder)
+}
+
+func checkRelease(contentFolder, buildFolder string) int {
+	_, err := release.Load(release.FoldersAt(contentFolder, buildFolder))
+	return checked(err, contentFolder, buildFolder)
+}
+
+// checked is what a check of folders exits with: success, or a failure once their faults are printed.
+func checked(err error, folders ...string) int {
+	if err != nil {
+		return refused(err, folders...)
 	}
 	return succeeded
 }
 
-func serve(folderName string, folder fs.FS) int {
-	store, err := content.Open(folder)
+// refused prints the faults of folders that did not load, after the folders, quoted, and is what the program then
+// exits with.
+func refused(err error, folders ...string) int {
+	quoted := make([]string, 0, len(folders))
+	for _, folder := range folders {
+		quoted = append(quoted, strconv.Quote(folder))
+	}
+	fmt.Fprintf(os.Stderr, faultsFormat, strings.Join(quoted, folderSeparator), err)
+	return failed
+}
+
+func serve(contentFolder, buildFolder string) int {
+	store, err := release.Open(release.FoldersAt(contentFolder, buildFolder))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, faultsFormat, folderName, err)
-		return failed
+		return refused(err, contentFolder, buildFolder)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	settings := ssh.Settings{HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout}
@@ -148,7 +183,7 @@ func serve(folderName string, folder fs.FS) int {
 	signal.Notify(running.reloads, syscall.SIGHUP)
 	go func() { running.failures <- webServer.Serve(webListener) }()
 	go func() { running.failures <- sshServer.Serve(sshListener) }()
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folderName)
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, contentFolder, buildKey, buildFolder)
 	return running.watch(stopping)
 }
 
@@ -196,7 +231,7 @@ type server interface {
 // serving is the site while it is served: the store it reads, its servers, and the signals it answers.
 type serving struct {
 	logger   *slog.Logger
-	store    *content.Store
+	store    *release.Store
 	servers  []server
 	reloads  chan os.Signal
 	failures chan error
@@ -220,13 +255,14 @@ func (running serving) watch(stopping context.Context) int {
 	}
 }
 
-// reload loads the content again; content with faults is refused, and the site serves what it served.
+// reload loads the release again; a release with faults in either folder is refused, and the site serves what it
+// served.
 func (running serving) reload() {
 	if err := running.store.Reload(); err != nil {
-		running.logger.Error("the new content is refused", faultsKey, err.Error())
+		running.logger.Error("the new release is refused", faultsKey, err.Error())
 		return
 	}
-	running.logger.Info("the content is loaded again")
+	running.logger.Info("the release is loaded again")
 }
 
 // shutDown stops every server at once, so none takes new work while another finishes its own, and waits for

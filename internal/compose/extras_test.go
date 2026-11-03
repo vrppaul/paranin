@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // The health report is a page of its own, under the site's word for it, and holds each group of checks the profile
 // lists, in its order: each check at its level, with its advice where it has one.
 func TestTheHealthReportHoldsEachCheck(test *testing.T) {
-	report := Health(fixtureSnapshot(test))
+	report := Health(fixtures.LoadedContent(test))
 	if report.Head.Page.Kind != document.PageHealth {
 		test.Errorf("the report's page = %+v, want the health report's", report.Head.Page)
 	}
@@ -27,7 +28,7 @@ func TestTheHealthReportHoldsEachCheck(test *testing.T) {
 // The list of skills is a page of its own, under the site's word for skills, and holds every skill of every group:
 // those the author uses first, then those they are still learning, each in the profile's order.
 func TestTheListOfSkillsHoldsEverySkill(test *testing.T) {
-	list := Skills(fixtureSnapshot(test))
+	list := Skills(fixtures.LoadedContent(test))
 	if list.Head.Page.Kind != document.PageSkills {
 		test.Errorf("the list's page = %+v, want the list of skills'", list.Head.Page)
 	}

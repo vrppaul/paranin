@@ -1,0 +1,9 @@
+{
+  "src/ui/ui.css": {
+    "file": "assets/ui-fixture.css",
+    "name": "ui",
+    "names": ["ui.css"],
+    "src": "src/ui/ui.css",
+    "isEntry": true
+  }
+}

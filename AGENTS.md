@@ -9,8 +9,10 @@ The review the rebuild began from, the decisions, D1 onward, and the order of wo
 ```bash
 go test ./...                                           # the tests
 go run ./scripts/coderules ./...                        # the code rules no linter here holds
-go run ./cmd/paranin serve content                      # the site: curl localhost:8080, ssh -p 23234 localhost
-go generate ./internal/look                             # write the design's colours from design/tokens.yaml
+pnpm --dir web install                                  # the page's tools, as web/pnpm-lock.yaml pins them
+pnpm --dir web build                                    # the page's build into build/web; `watch` builds again on each change
+go run ./cmd/paranin serve content build/web            # the site: curl localhost:8080, ssh -p 23234 localhost
+go generate ./internal/look                             # write the design's colours, Go and CSS, from design/tokens.yaml
 go generate ./internal/face/html                        # format the templ templates and write their Go
 pre-commit run --all-files                              # every gate a commit runs, over every tracked file
 pre-commit run --files $(git ls-files -co --exclude-standard)   # the same over files not yet tracked
@@ -20,6 +22,7 @@ go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 fmt   # wr
 - The gates are one list, `.pre-commit-config.yaml`, each with its command. A hook that cannot run fails: leave one out only on purpose, by naming it in `SKIP`.
 - CI, `.github/workflows/gates.yml`, runs the hooks again on what a commit carries, and adds govulncheck, which needs the network, pinned there.
 - Add a Go dependency with `go get`, and let `go mod tidy` write `go.mod`: never a hand edit. A tool the hooks run is pinned in `.pre-commit-config.yaml`; a generator whose output must match its library, as templ's, is a `tool` of `go.mod`.
+- Add a tool of the page with `pnpm --dir web add`, which writes `web/package.json` and its lockfile: never a hand edit.
 
 ## How we work
 
@@ -60,4 +63,5 @@ Before you change or review code in an area, read its file whole; a brief to ano
 - `.claude/rules/scripts.md` — anything under `scripts/`: the gates of our own.
 - `.claude/rules/instructions.md` — this file and the rules of each area.
 - `.claude/rules/tui.md` — the TUI: what is laid out and painted when, where its colours come from, its keys.
-- The rules of the page and the design arrive with their code.
+- `.claude/rules/page.md` — the page under `web/`: its build, its stylesheets, what its policy refuses.
+- The rules of the design arrive with its code.

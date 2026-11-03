@@ -3,7 +3,8 @@
 > This is the contract of the first version, kept on the owner's machine while its
 > replacement lands. ADR-0002 to ADR-0004 of [ARCHITECTURE](ARCHITECTURE.md) change it
 > where they differ; it is rewritten with `face/html` and `hosting/web`. Rewritten so
-> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`".
+> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`" and
+> "Security headers".
 
 `paran.in` serves one résumé to three kinds of reader from one profile:
 
@@ -265,16 +266,30 @@ Markdown and HTML carry the same facts. Nothing appears in one and not the other
   with `name`, `description`, `programmingLanguage`, `codeRepository` (if any)
   and `author`.
 
-## Security headers (HTML and static)
+## Security headers
+
+Every answer carries these headers, a page in each format, the page of no
+page and a refusal `net/http` writes itself (405, a redirect) among them:
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 X-Content-Type-Options: nosniff
-Referrer-Policy: strict-origin-when-cross-origin
 ```
 
-No inline scripts or inline event handlers. JSON blocks
-(`application/ld+json`, `application/json`) are data, not scripts.
+A browser loads scripts, styles, images, fonts and what a script fetches from
+the site's own files alone. It refuses an inline script or handler, an inline
+style (a `style` attribute, a `<style>` element, one a script adds) and a
+`data:` address for an image or a font. `base-uri`, `form-action` and
+`frame-ancestors` are named, since `default-src` does not reach them. What the
+policy lets be: JSON blocks (`application/ld+json`, `application/json`), which
+are data, not scripts; module scripts of the site and their preloads; a style
+a script sets through `element.style`, and `element.animate()`.
+
+So the page's build keeps to it: Vite inlines no asset (`assetsInlineLimit:
+0`), Svelte writes its styles to files, never into the page, and templ writes
+no `<style>`. The fonts come from the site ([FOUNDATION](FOUNDATION.md) §5.6),
+never from Google. No `Referrer-Policy` is sent: `strict-origin-when-cross-origin`,
+which the first version sent, is every browser's own default.
 
 ## Front end
 

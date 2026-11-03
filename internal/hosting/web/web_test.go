@@ -32,7 +32,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path)
+			response := serve(server, http.MethodGet, testCase.path, "")
 			if response.Code != testCase.status || response.Header().Get("Content-Type") != testCase.contentType ||
 				!strings.Contains(response.Body.String(), testCase.holds) {
 				test.Errorf("GET %s = %d %q holding %q, want %d %q holding %q", testCase.path, response.Code,
@@ -83,10 +83,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
-			request.Header.Set("Accept", testCase.accept)
-			response := httptest.NewRecorder()
-			server.ServeHTTP(response, request)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
 			header := response.Header()
 			if header.Get("Content-Type") != testCase.contentType || !strings.Contains(response.Body.String(), testCase.holds) ||
 				header.Get("Vary") != "Accept" {
@@ -110,10 +107,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
-			request.Header.Set("Accept", "text/html")
-			response := httptest.NewRecorder()
-			server.ServeHTTP(response, request)
+			response := serve(server, http.MethodGet, testCase.path, "text/html")
 			if !strings.Contains(response.Body.String(), testCase.holds) {
 				test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, response.Body.String(), testCase.holds)
 			}
@@ -141,10 +135,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
-			request.Header.Set("Accept", testCase.accept)
-			response := httptest.NewRecorder()
-			server.ServeHTTP(response, request)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
 			if got := response.Header().Get("Link"); got != testCase.want {
 				test.Errorf("GET %s, Accept %q: Link = %q, want %q", testCase.path, testCase.accept, got, testCase.want)
 			}
@@ -179,10 +170,7 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
-			request.Header.Set("Accept", testCase.accept)
-			response := httptest.NewRecorder()
-			server.ServeHTTP(response, request)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
 			header := response.Header()
 			if response.Code != http.StatusNotFound || header.Get("Content-Type") != testCase.contentType ||
 				!strings.Contains(response.Body.String(), testCase.holds) || header.Get("Vary") != "Accept" {
@@ -194,23 +182,40 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	}
 }
 
-// A page tells a browser not to guess its type, and a cache to ask again each time, since a reload can change it.
-func TestAPageTellsBrowsersNotToGuessAndCachesToAskAgain(test *testing.T) {
-	header := serve(New(fixtureStore(test, fixtureCopy(test))), http.MethodGet, "/index.md").Header()
+// Every answer tells a browser not to guess its type, to load nothing and send no form but from and to the site,
+// and to let no site frame it: a page in each format, the page of no page, and a refusal net/http writes itself.
+func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
+	server := New(fixtureStore(test, fixtureCopy(test)))
+	const policy = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	cases := []struct {
 		name   string
-		header string
-		want   string
+		method string
+		path   string
+		accept string
 	}{
-		{name: "no guessing its type", header: "X-Content-Type-Options", want: "nosniff"},
-		{name: "a cache asks again", header: "Cache-Control", want: "no-cache"},
+		{name: "a page in a browser", method: http.MethodGet, path: "/", accept: "text/html"},
+		{name: "a page as a manual", method: http.MethodGet, path: "/", accept: "*/*"},
+		{name: "a page in markdown at its own path", method: http.MethodGet, path: "/index.md", accept: ""},
+		{name: "no page in a browser", method: http.MethodGet, path: "/nothing", accept: "text/html"},
+		{name: "no page as text", method: http.MethodGet, path: "/nothing", accept: ""},
+		{name: "a method refused", method: http.MethodPost, path: "/", accept: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := header.Get(testCase.header); got != testCase.want {
-				test.Errorf("%s = %q, want %q", testCase.header, got, testCase.want)
+			header := serve(server, testCase.method, testCase.path, testCase.accept).Header()
+			if sentSniffing, sentPolicy := header.Get("X-Content-Type-Options"), header.Get("Content-Security-Policy"); sentSniffing != "nosniff" || sentPolicy != policy {
+				test.Errorf("%s %s, Accept %q: X-Content-Type-Options %q, Content-Security-Policy %q; want %q, %q",
+					testCase.method, testCase.path, testCase.accept, sentSniffing, sentPolicy, "nosniff", policy)
 			}
 		})
+	}
+}
+
+// A page tells a cache to ask again each time, since a reload can change it.
+func TestAPageTellsCachesToAskAgain(test *testing.T) {
+	response := serve(New(fixtureStore(test, fixtureCopy(test))), http.MethodGet, "/index.md", "")
+	if got := response.Header().Get("Cache-Control"); got != "no-cache" {
+		test.Errorf("GET /index.md: Cache-Control = %q, want %q", got, "no-cache")
 	}
 }
 
@@ -219,7 +224,7 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 	folder := fixtureCopy(test)
 	store := fixtureStore(test, folder)
 	server := New(store)
-	serve(server, http.MethodGet, "/index.md")
+	serve(server, http.MethodGet, "/index.md", "")
 	profilePath := filepath.Join(folder, "profile.yaml")
 	profile, err := os.ReadFile(profilePath)
 	if err != nil {
@@ -232,7 +237,7 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 	if err := store.Reload(); err != nil {
 		test.Fatalf("Reload = %v, want no error", err)
 	}
-	if body := serve(server, http.MethodGet, "/index.md").Body.String(); !strings.Contains(body, "# Mira Other") {
+	if body := serve(server, http.MethodGet, "/index.md", "").Body.String(); !strings.Contains(body, "# Mira Other") {
 		test.Errorf("GET /index.md after a reload = %q, want the new name", body)
 	}
 }
@@ -240,14 +245,17 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 // A page is only read: a request to change it is refused.
 func TestAPageIsOnlyRead(test *testing.T) {
 	server := New(fixtureStore(test, fixtureCopy(test)))
-	if response := serve(server, http.MethodPost, "/index.md"); response.Code != http.StatusMethodNotAllowed {
+	if response := serve(server, http.MethodPost, "/index.md", ""); response.Code != http.StatusMethodNotAllowed {
 		test.Errorf("POST /index.md = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
 }
 
-func serve(server http.Handler, method, path string) *httptest.ResponseRecorder {
+// serve is the server's answer to a request by a method at a path, with an Accept header.
+func serve(server http.Handler, method, path, accept string) *httptest.ResponseRecorder {
+	request := httptest.NewRequest(method, path, nil)
+	request.Header.Set("Accept", accept)
 	response := httptest.NewRecorder()
-	server.ServeHTTP(response, httptest.NewRequest(method, path, nil))
+	server.ServeHTTP(response, request)
 	return response
 }
 

@@ -258,9 +258,9 @@ and web routes.
 
 ## ADR-0004 — Publishing, and the one front-end build
 
-**Status:** accepted in part (2026-11-01): publishing without a new binary, posts in this repository, the four
-statuses, one format and translations later (D5–D8, D12) are decided; the pipeline and the one front-end
-build are proposed, waiting for Pavel. [FOUNDATION](FOUNDATION.md) §5.3 and §5.4.
+**Status:** accepted in part: publishing without a new binary, posts in this repository, the four statuses, one
+format and translations later (D5–D8, D12) on 2026-11-01; the one front-end build on 2026-11-03 (D22). The
+pipeline is proposed, to be settled with hosting (§8, step 7). [FOUNDATION](FOUNDATION.md) §5.3 and §5.4.
 
 ### Context
 
@@ -448,9 +448,13 @@ sessions on a stop.
   no page. `routes` writes every address.
 - templ compiles the templates into Go, and no file is embedded. The
   stylesheet and the islands are to come from the front-end build ADR-0004
-  proposes, not yet built; the CV and the cards come with Typst (ADR-0005).
+  decides (D22), not yet built; the CV and the cards come with Typst
+  (ADR-0005).
+- Every answer tells a browser what it may do: a strict
+  `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md), whose
-  negotiation section holds today; the rest of it is the first version's.
+  negotiation and security headers sections hold today; the rest of it is
+  the first version's.
 
 ## Project layout
 

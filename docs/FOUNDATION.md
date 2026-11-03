@@ -41,6 +41,7 @@ Each decision carries one of three marks:
 | D19 | Every face draws the résumé, the project pages and the posts from one document model, the HTML page and the islands included. The document has the résumé's own kinds beside markdown's, and its kinds are a closed set every face switches over. Its parts, in ADR-0003, are the author's, on Pavel's leave to choose. | 2026-11-01 |
 | D20 | The layers of ADR-0003 are accepted. | 2026-11-01 |
 | D21 | A page's own address chooses its format by the Accept header's ranking alone, with `Vary: Accept`, HTML among the formats once it is served: no reader is told apart by its agent (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
+| D22 | The one front-end build of ADR-0004 is accepted as its bullet is written: one Vite build writing hashed files, one manifest and each widget's props as JSON Schema, files served from a folder and none embedded, the manifest and the props checked when a snapshot loads, `vite build --watch` in development. Embedding would ship a post's widgets only with a new binary (D5), Vite's dev server breaks the CSP (§2), and two builds would ship Svelte twice. | 2026-11-03 |
 
 ## 2. What must hold whatever we build
 
@@ -302,7 +303,7 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
   it inside `testing/synctest` (D15). Errors have kinds, and one table
   turns a kind into an HTTP status. JSON-LD is typed structs.
 
-### 5.3 Front end — **Proposed**
+### 5.3 Front end — **Decided** where marked, the rest **Proposed**
 
 A pnpm package `web/`: Vite, TypeScript strict with `noUncheckedIndexedAccess`
 and `exactOptionalPropertyTypes`, Svelte 5.
@@ -329,16 +330,16 @@ web/src/
   to the page with the client data, a change to the contract in `WEB.md`.
 - The client data's types are generated from the Go structs (tygo); a hook
   fails when they drift.
-- **One build, one manifest.** A single Vite build takes the site's entries
-  and every post's widgets and writes hashed files and one manifest into the
-  release folder (§5.4). Go serves every front-end file from that folder;
-  the binary embeds none. Loading a snapshot checks that the manifest holds
-  every entry the pages name. A change to the islands ships like a post,
-  with no new binary.
-- **Development uses the same path**: `vite build --watch` writes the same
-  files and manifest, Go serves them, and the strict CSP holds. No Vite dev
-  server, whose scripts come from another origin, and no second way of
-  writing script tags.
+- **One build, one manifest** (Decided, D22). A single Vite build takes the
+  site's entries and every post's widgets and writes hashed files and one
+  manifest into the release folder (§5.4). Go serves every front-end file
+  from that folder; the binary embeds none. Loading a snapshot checks that
+  the manifest holds every entry the pages name. A change to the islands
+  ships like a post, with no new binary.
+- **Development uses the same path** (Decided, D22): `vite build --watch`
+  writes the same files and manifest, Go serves them, and the strict CSP
+  holds. No Vite dev server, whose scripts come from another origin, and no
+  second way of writing script tags.
 - One element, one look: templ components and Svelte components put on the
   classes of one library, `ui.css`. stylelint refuses those classes in any
   other stylesheet.

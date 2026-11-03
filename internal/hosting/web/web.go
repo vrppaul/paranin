@@ -6,7 +6,9 @@
 // .txt promises. Each format of a page names in a Link header the address the page is known by, the one where the
 // reader chooses, so a search engine counts its markdown and its manual as the page. Any other path is answered
 // with the page of no page, in text or in HTML, whichever the reader's request ranks higher: drawn for each
-// request, since it quotes the path asked for, in the chosen format alone.
+// request, since it quotes the path asked for, in the chosen format alone. Every answer, a refusal net/http writes
+// among them, tells a browser not to guess its type and to load nothing but the site's own files, so markup
+// slipped into a page runs no script but the site's own.
 package web
 
 import (
@@ -22,16 +24,27 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The headers every page is sent with: what it is, text of UTF-8 whatever its media type, that it is no other
-// kind, and that a cache asks again, since a reload can change any page
+// The headers every page is sent with: what it is, text of UTF-8 whatever its media type, and that a cache asks
+// again, since a reload can change any page
 const (
 	utf8Text     = "; charset=utf-8"
-	noSniffing   = "nosniff"
 	askEveryTime = "no-cache"
 	contentType  = "Content-Type"
-	typeOptions  = "X-Content-Type-Options"
 	cacheControl = "Cache-Control"
 )
+
+// The headers every answer is sent with: that it is no other kind than it says, and what a browser may do with it
+const (
+	noSniffing     = "nosniff"
+	typeOptions    = "X-Content-Type-Options"
+	securityPolicy = "Content-Security-Policy"
+)
+
+// What a browser may do with an answer (docs/WEB.md, "Security headers"): load scripts, styles, images, fonts and
+// whatever it fetches from the site's own files alone, so never a script or a style written inline nor a data:
+// address; take no other base for the page's relative addresses; send a form to the site alone; and be framed by
+// no site at all. The last three are named, since default-src does not reach them
+const ownSiteAlone = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 // How the header a page names its address in is written: <address>; rel="canonical"
 const (
@@ -153,7 +166,12 @@ func New(store *content.Store) *Server {
 }
 
 // ServeHTTP serves a request: a page read, or a refusal.
+// Every answer passes here, a refusal net/http writes itself among them, so here it is told what a browser may do
+// with it.
 func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	header := writer.Header()
+	header.Set(typeOptions, noSniffing)
+	header.Set(securityPolicy, ownSiteAlone)
 	server.handler.ServeHTTP(writer, request)
 }
 
@@ -233,7 +251,6 @@ func send(writer http.ResponseWriter, status int, page drawnPage) {
 	if page.link != "" {
 		header.Set(linkHeader, page.link)
 	}
-	header.Set(typeOptions, noSniffing)
 	header.Set(cacheControl, askEveryTime)
 	writer.WriteHeader(status)
 	// A write fails only when the reader has gone, and nobody is left to tell

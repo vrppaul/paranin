@@ -60,8 +60,8 @@ type Server struct {
 	server *charmssh.Server
 }
 
-// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé and the health
-// report among them, and the site that writes their addresses.
+// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé and the hidden pages
+// among them, and the site that writes their addresses.
 type drawing struct {
 	documents []document.Document
 	site      routes.Site

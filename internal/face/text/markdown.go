@@ -136,9 +136,9 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return writer.card(chunks, typed, depth)
 	case document.Contents:
 		return appendChunk(chunks, writer.contents(typed))
-	case document.Checks:
-		// only the hidden health report holds checks, and no host hands it to a text face: a page served with them
-		// would fail TestEveryPhraseReachesEveryFormat
+	case document.Checks, document.Skills:
+		// only the hidden pages hold checks and the list of skills, and no host hands them to a text face: a page
+		// served with them would fail TestEveryPhraseReachesEveryFormat
 	}
 	return chunks
 }

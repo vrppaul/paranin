@@ -40,6 +40,8 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return listingPhrases(phrases, typed.Listings)
 	case Checks:
 		return checkPhrases(spanPhrases(phrases, typed.Title), typed.List)
+	case Skills:
+		return skillPhrases(phrases, typed.List)
 	}
 	return phrases
 }
@@ -85,6 +87,15 @@ func listingPhrases(phrases []string, listings []Listing) []string {
 func checkPhrases(phrases []string, checks []Check) []string {
 	for _, check := range checks {
 		phrases = spanPhrases(spanPhrases(phrases, check.Spans), check.Advice)
+	}
+	return phrases
+}
+
+// skillPhrases are each skill's name, how long, and where it was proven; whether the author is still learning it is
+// each face's to show.
+func skillPhrases(phrases []string, skills []Skill) []string {
+	for _, skill := range skills {
+		phrases = spanPhrases(spanPhrases(spanPhrases(phrases, skill.Name), skill.Duration), skill.Sources)
 	}
 	return phrases
 }

@@ -11,18 +11,20 @@ import (
 )
 
 // How a tab lays its blocks out: how far what nests under a title stands in, how far a point's lines after its
-// first stand in under its text, the gap after the widest label and between columns, and how many lines of
-// nothing part two blocks
+// first stand in under its text, the gap after the widest label and between columns, the least room a table's last
+// column may have, about two words of a place it names, and how many lines of nothing part two blocks
 const (
-	nestIndent = 2
-	bulletHang = 2
-	columnGap  = 2
-	blockGap   = 1
+	nestIndent          = 2
+	bulletHang          = 2
+	columnGap           = 2
+	narrowestLastColumn = 16
+	blockGap            = 1
 )
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a period
-// from its place, the start of a period from its end; and as Neovim's :checkhealth writes them, the mark after a
-// group's name and the word before a check's advice
+// from its place, the start of a period from its end; as Neovim's :checkhealth writes them, the mark after a
+// group's name and the word before a check's advice; and as lazy.nvim marks a plugin loaded or not, the mark of a
+// skill in use and of one still being learnt
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
@@ -31,6 +33,8 @@ const (
 	monthLayout  = "2006-01"
 	groupMark    = "~"
 	adviceWord   = "ADVICE:"
+	usedMark     = "●"
+	learningMark = "○"
 )
 
 // levelLook is how a check's level reads: the word Neovim's :checkhealth writes it in, and the kind of that word.
@@ -103,7 +107,7 @@ func checksAt(blocks []document.Block, level document.CheckLevel) int {
 		case document.Checks:
 			count += checksOfLevel(typed.List, level)
 		case document.Paragraph, document.Table, document.CodeBlock, document.Facts, document.Entry, document.Card,
-			document.Contents:
+			document.Contents, document.Skills:
 		}
 	}
 	return count
@@ -178,12 +182,12 @@ func (layout layout) head(head document.Head) []line {
 }
 
 // carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as
-// the first version's page drew it; a project's, the index's and the health report's do not.
+// the first version's page drew it; a project's, the index's and the hidden pages' do not.
 func carriesCursor(kind document.PageKind) bool {
 	switch kind {
 	case document.PageResume:
 		return true
-	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth:
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return false
 }
@@ -235,6 +239,8 @@ func (layout layout) block(block document.Block, indent int) []line {
 		return layout.contents(typed, indent)
 	case document.Checks:
 		return layout.checks(typed, indent)
+	case document.Skills:
+		return layout.skills(typed, indent)
 	}
 	return nil
 }
@@ -253,6 +259,26 @@ func (layout layout) checks(checks document.Checks, indent int) []line {
 		}
 	}
 	return lines
+}
+
+// skills lays out each skill as lazy.nvim lays out a plugin, a table's row after the mark of whether the author uses
+// it or is still learning it: its name, how long, and where it was proven.
+func (layout layout) skills(skills document.Skills, indent int) []line {
+	rows := make([]tableRow, 0, len(skills.List))
+	for _, skill := range skills.List {
+		cells := []document.Cell{{Spans: skill.Name}, {Spans: skill.Duration}, {Spans: skill.Sources}}
+		rows = append(rows, tableRow{opening: []run{skillMark(skill.Learning)}, cells: cells})
+	}
+	return layout.rows(rows, indent)
+}
+
+// skillMark is the mark before a skill: lazy.nvim's mark of a plugin loaded for one in use, of one not loaded for
+// one still being learnt.
+func skillMark(learning bool) run {
+	if learning {
+		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: ""}
+	}
+	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: ""}
 }
 
 // entry lays out an entry's title and subtitle with its period and place at the right, then its points.
@@ -303,35 +329,84 @@ func (layout layout) facts(facts []document.Fact, indent int) []line {
 	return lines
 }
 
-// table lays out each row in a line, its cells in columns as wide as the widest cell of each, the last cell
-// wrapping under itself; the first cell reads as text and the rest as what stands beside it.
+// table lays out a table's rows, none opening with a mark.
 func (layout layout) table(table document.Table, indent int) []line {
-	widths := layout.columnWidths(table)
-	lines := []line{}
+	rows := make([]tableRow, 0, len(table.Rows))
 	for _, row := range table.Rows {
-		lead, column := line{indentRun(indent)}, indent
-		for place, cell := range row.Cells {
-			kind := kindMuted
-			if place == 0 {
-				kind = kindText
-			}
-			if place == len(row.Cells)-1 {
-				lines = append(lines, layout.continued(lead, layout.words(cell.Spans, kind), column)...)
-				break
-			}
-			words := layout.words(cell.Spans, kind)
-			lead = append(append(lead, wordRuns(words)...), gapRun(widths[place]+columnGap-wordsWidth(words)))
-			column += widths[place] + columnGap
+		rows = append(rows, tableRow{opening: nil, cells: row.Cells})
+	}
+	return layout.rows(rows, indent)
+}
+
+// tableRow is a row as rows lays it out: the runs it opens with, a mark or none, and its cells.
+type tableRow struct {
+	opening []run
+	cells   []document.Cell
+}
+
+// rows lays out rows a line each after its opening, the openings as wide as the widest, and each cell in a column as
+// wide as the widest cell of its own, the last wrapping under itself. Where the columns would leave the last less
+// room than it needs, each row is words that wrap after its opening, its cells parted by the place mark and its
+// lines after the first standing in under it, as a point's do, so a narrow terminal cuts no cell off and each row
+// shows where it starts.
+func (layout layout) rows(rows []tableRow, indent int) []line {
+	widths, start := layout.columnWidths(rows), indent+openingsWidth(rows)
+	lastColumn := start
+	for _, width := range widths[:max(len(widths)-1, 0)] {
+		lastColumn += width + columnGap
+	}
+	columned := layout.width-lastColumn >= narrowestLastColumn
+	lines := []line{}
+	for _, row := range rows {
+		lead := append(line{indentRun(indent)}, row.opening...)
+		if pad := start - indent - runsWidth(row.opening); pad > 0 {
+			lead = append(lead, gapRun(pad))
 		}
+		if columned {
+			lines = append(lines, layout.columnedRow(lead, row.cells, widths, start)...)
+			continue
+		}
+		lines = append(lines, layout.continued(lead, layout.flowingCells(row.cells), start+bulletHang)...)
 	}
 	return lines
 }
 
-// columnWidths are the widths of a table's columns, each as wide as its widest cell laid in a line.
-func (layout layout) columnWidths(table document.Table) []int {
+// columnedRow lays out a row's cells after its lead, each but the last padded to its column's width, the last
+// wrapping under itself.
+func (layout layout) columnedRow(lead line, cells []document.Cell, widths []int, column int) []line {
+	for place, cell := range cells {
+		words := layout.words(cell.Spans, cellKind(place))
+		if place == len(cells)-1 {
+			return layout.continued(lead, words, column)
+		}
+		lead = append(append(lead, wordRuns(words)...), gapRun(widths[place]+columnGap-wordsWidth(words)))
+		column += widths[place] + columnGap
+	}
+	return []line{lead}
+}
+
+// flowingCells are a row's cells as words in a line, the place mark between two cells.
+func (layout layout) flowingCells(cells []document.Cell) []word {
+	words := []word{}
+	for place, cell := range cells {
+		words = markedWords(words, layout.words(cell.Spans, cellKind(place)), placeMark)
+	}
+	return words
+}
+
+// cellKind is what a cell of a row is: the first is read as text, and the rest as what stands beside it.
+func cellKind(place int) kind {
+	if place == 0 {
+		return kindText
+	}
+	return kindMuted
+}
+
+// columnWidths are the widths of the rows' columns, each as wide as its widest cell laid in a line.
+func (layout layout) columnWidths(rows []tableRow) []int {
 	widths := []int{}
-	for _, row := range table.Rows {
-		for place, cell := range row.Cells {
+	for _, row := range rows {
+		for place, cell := range row.cells {
 			if place == len(widths) {
 				widths = append(widths, 0)
 			}
@@ -339,6 +414,15 @@ func (layout layout) columnWidths(table document.Table) []int {
 		}
 	}
 	return widths
+}
+
+// openingsWidth is how wide the widest opening of the rows is.
+func openingsWidth(rows []tableRow) int {
+	widest := 0
+	for _, row := range rows {
+		widest = max(widest, runsWidth(row.opening))
+	}
+	return widest
 }
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.

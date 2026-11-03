@@ -24,6 +24,37 @@ func TestTheHealthReportHoldsEachCheck(test *testing.T) {
 	}
 }
 
+// The list of skills is a page of its own, under the site's word for skills, and holds every skill of every group:
+// those the author uses first, then those they are still learning, each in the profile's order.
+func TestTheListOfSkillsHoldsEverySkill(test *testing.T) {
+	list := Skills(fixtureSnapshot(test))
+	if list.Head.Page.Kind != document.PageSkills {
+		test.Errorf("the list's page = %+v, want the list of skills'", list.Head.Page)
+	}
+	phrases := []string{
+		"Skills", "Go", "3y", "tidy-tool, a hobby", "Shell scripts for the build machines", "2y", "Northwind, Southwind",
+		"Rust", "weeks", "a hobby", "Docker", "side", "Northwind",
+	}
+	if got := document.Phrases(list); !slices.Equal(got, phrases) {
+		test.Errorf("the list's phrases = %q, want %q", got, phrases)
+	}
+	learning := []bool{false, false, true, true}
+	if got := learningOf(test, list); !slices.Equal(got, learning) {
+		test.Errorf("the list's skills still being learnt = %v, want %v", got, learning)
+	}
+}
+
+// learningOf is whether each skill of a list is one the author is still learning, in the list's order.
+func learningOf(test *testing.T, list document.Document) []bool {
+	learning := []bool{}
+	for _, block := range list.Blocks {
+		for _, skill := range as[document.Skills](test, block).List {
+			learning = append(learning, skill.Learning)
+		}
+	}
+	return learning
+}
+
 // checkLevelsOf are the levels of a report's checks, group after group.
 func checkLevelsOf(test *testing.T, report document.Document) []document.CheckLevel {
 	levels := []document.CheckLevel{}

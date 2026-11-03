@@ -160,6 +160,9 @@ and web routes.
     and a line on what it is, which `llms.txt` lists;
   - the health report's: checks, a group of them under its name, each check
     at a level (OK, a warning, an error) with what it says and its advice;
+  - the skill list's: skills, every skill in one list, each with its name,
+    how long, where it was proven, and whether the author is still
+    learning it;
   - a widget (a name, its props, a caption and an alt text), the form, the
     salary range and the job matcher among them, so `compose` places them
     too;

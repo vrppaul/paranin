@@ -74,16 +74,6 @@ func (model Model) showing(page document.Page) Model {
 	return model.relaid()
 }
 
-// healthPage is the health report :checkhealth shows.
-func healthPage() document.Page {
-	return document.Page{Kind: document.PageHealth, Slug: ""}
-}
-
-// checkedHealth shows the health report, as Neovim's :checkhealth shows its own.
-func (model Model) checkedHealth(string) (Model, tea.Cmd) {
-	return model.showing(healthPage()), nil
-}
-
 // edit shows the page of a project by its slug, as Neovim's :e opens a file, or says it finds no such page.
 func (model Model) edit(slug string) (Model, tea.Cmd) {
 	wanted := document.Page{Kind: document.PageProject, Slug: slug}
@@ -94,7 +84,7 @@ func (model Model) edit(slug string) (Model, tea.Cmd) {
 	return model.showing(wanted), nil
 }
 
-// closed is the model after q, as Neovim's :q closes a window: on a project's page or the health report the
+// closed is the model after q, as Neovim's :q closes a window: on a project's page or a hidden page the
 // résumé shows again, where its reader left it, as the first version closed a report; on the résumé the session
 // ends.
 func (model Model) closed(int) (Model, tea.Cmd) {

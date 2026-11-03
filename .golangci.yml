@@ -16,8 +16,8 @@ linters:
     - goconst
     # The layers
     - depguard
-    # A function does one thing: ten paths through it at most, the limit McCabe gave with his measure
-    - cyclop
+    # A function does one thing: gocognit counts how hard it is to follow, and a switch once, so a match over
+    # every kind of a closed set (gochecksumtype) passes; at 10 it holds flat branching where cyclop held it
     - gocognit
     - nestif
     # No state at package level, no init, every value of an enumeration named, every field of our structs written
@@ -54,10 +54,8 @@ linters:
       min-occurrences: 2
       # A string handed to a call twice is written twice too
       ignore-calls: false
-    cyclop:
-      max-complexity: 10
     gocognit:
-      min-complexity: 15
+      min-complexity: 10
     nestif:
       min-complexity: 4
     exhaustive:

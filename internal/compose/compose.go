@@ -15,7 +15,7 @@ import (
 // The scheme of a link that writes a mail
 const mailScheme = "mailto:"
 
-// What separates the values of one cell: the places a skill was proven
+// What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
 // Documents are the pages a snapshot makes for a person to read: the résumé, then the page of each project that
@@ -206,15 +206,23 @@ func skillsSection(groups []content.SkillGroup, words content.Words) document.Se
 	for _, group := range groups {
 		rows := make([]document.Row, 0, len(group.Skills))
 		for _, skill := range group.Skills {
-			rows = append(rows, document.Row{Cells: []document.Cell{
-				{Spans: markedSpans(skill.Name)},
-				{Spans: markedSpans(skill.Duration)},
-				{Spans: markedSpans(strings.Join(skill.Sources, listSeparator))},
-			}})
+			listed := listedSkill(skill)
+			rows = append(rows, document.Row{Cells: []document.Cell{{Spans: listed.Name}, {Spans: listed.Duration}, {Spans: listed.Sources}}})
 		}
 		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{document.Table{Rows: rows}}})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Blocks: sections}
+}
+
+// listedSkill is a skill as the documents hold it, in the résumé's table and in the list of skills alike: its name,
+// how long, the places it was proven in one text, and whether the author is still learning it.
+func listedSkill(skill content.Skill) document.Skill {
+	return document.Skill{
+		Name:     markedSpans(skill.Name),
+		Duration: markedSpans(skill.Duration),
+		Sources:  markedSpans(strings.Join(skill.Sources, listSeparator)),
+		Learning: skill.Learning,
+	}
 }
 
 func factList(facts []content.Fact) []document.Fact {

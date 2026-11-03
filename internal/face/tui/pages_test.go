@@ -66,8 +66,8 @@ func TestEachPageKeepsWhereItsReaderStood(test *testing.T) {
 	}
 }
 
-// On a project's page, or the health report, q and the commands that close a window go back to the résumé, and the
-// session goes on.
+// On a project's page, the health report or the list of skills, q and the commands that close a window go back to
+// the résumé, and the session goes on.
 func TestClosingAPageGoesBackToTheResume(test *testing.T) {
 	cases := []struct {
 		name    string
@@ -80,6 +80,7 @@ func TestClosingAPageGoesBackToTheResume(test *testing.T) {
 		{name: ":quit", opening: "e tidy-tool", typing: ":quit", last: "enter"},
 		{name: ":q!", opening: "e tidy-tool", typing: ":q!", last: "enter"},
 		{name: "q on the health report", opening: "checkhealth", typing: "", last: "q"},
+		{name: "q on the list of skills", opening: "Lazy", typing: "", last: "q"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

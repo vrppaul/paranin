@@ -110,6 +110,21 @@ const (
 	CheckError
 )
 
+// Skills are every skill of the author in one list, as lazy.nvim lists its plugins: the hidden list of skills holds
+// them so.
+type Skills struct {
+	List []Skill
+}
+
+// Skill is one skill of the list: its name, how long, where it was proven, and whether the author is still learning
+// it.
+type Skill struct {
+	Name     []Span
+	Duration []Span
+	Sources  []Span
+	Learning bool
+}
+
 func (Section) block()   {}
 func (Paragraph) block() {}
 func (Table) block()     {}
@@ -119,3 +134,4 @@ func (Entry) block()     {}
 func (Card) block()      {}
 func (Contents) block()  {}
 func (Checks) block()    {}
+func (Skills) block()    {}

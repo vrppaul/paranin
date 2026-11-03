@@ -242,8 +242,13 @@ func wordRuns(words []word) line {
 
 // wordsWidth is how many columns words take on one line, a space between each two.
 func wordsWidth(words []word) int {
+	return runsWidth(wordRuns(words))
+}
+
+// runsWidth is how many columns runs take.
+func runsWidth(runs []run) int {
 	width := 0
-	for _, piece := range wordRuns(words) {
+	for _, piece := range runs {
 		width += textWidth(piece.text)
 	}
 	return width

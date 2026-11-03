@@ -84,20 +84,33 @@ func nestedReportModel(test *testing.T) Model {
 	warning := document.Checks{Title: textOf("group"), List: []document.Check{{Level: document.CheckWarning, Spans: textOf("look"), Advice: nil}}}
 	inner := document.Section{Title: textOf("inner"), Blocks: []document.Block{warning}}
 	report := document.Document{
-		Head:   document.Head{Page: healthPage(), Title: textOf("report"), Subtitle: nil, Place: "", Lead: nil, Ways: nil},
+		Head:   document.Head{Page: document.Page{Kind: document.PageHealth, Slug: ""}, Title: textOf("report"), Subtitle: nil, Place: "", Lead: nil, Ways: nil},
 		Blocks: []document.Block{document.Section{Title: textOf("outer"), Blocks: []document.Block{warning, inner}}},
 	}
 	snapshot := fixtureSnapshot(test)
 	return New([]document.Document{compose.Resume(snapshot), report}, fixtureSite(snapshot), commonWidth, commonHeight)
 }
 
-// A session handed no health report knows no :checkhealth, and says so as Neovim says it of a command it does not
-// know, the résumé still shown.
-func TestCheckhealthWithNoReportIsNoCommand(test *testing.T) {
+// A session handed no health report knows no :checkhealth, and one handed no list of skills no :Lazy; each says so
+// as Neovim says it of a command it does not know, the résumé still shown.
+func TestAHiddenCommandWithNoPageIsNoCommand(test *testing.T) {
 	snapshot := fixtureSnapshot(test)
 	model := New([]document.Document{compose.Resume(snapshot)}, fixtureSite(snapshot), commonWidth, commonHeight)
-	screen := screenOf(test, commanded(test, model, "checkhealth"))
-	if want := "E492: Not an editor command: checkhealth"; !strings.Contains(screen, want) || !strings.Contains(screen, resumeHeadline) {
-		test.Errorf("after :checkhealth with no report the screen =\n%s\nwant %q, and the résumé still shown", screen, want)
+	cases := []struct {
+		name    string
+		command string
+	}{
+		{name: "the health report", command: "checkhealth"},
+		{name: "the list of skills", command: "Lazy"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, commanded(test, model, testCase.command))
+			want := "E492: Not an editor command: " + testCase.command
+			if !strings.Contains(screen, want) || !strings.Contains(screen, resumeHeadline) {
+				test.Errorf("after :%s with no page of it the screen =\n%s\nwant %q, and the résumé still shown", testCase.command,
+					screen, want)
+			}
+		})
 	}
 }

@@ -33,6 +33,8 @@ const (
 	PageIndex
 	// PageHealth is the hidden health report, after Neovim's :checkhealth; it has no slug
 	PageHealth
+	// PageSkills is the hidden list of every skill, after lazy.nvim's :Lazy; it has no slug
+	PageSkills
 )
 
 func (Address) target() {}

@@ -27,8 +27,21 @@ const (
 	pagesHint   = "pages"
 )
 
-// The hidden command that shows the health report, as Neovim's shows its own
-const healthCommand = "checkhealth"
+// hiddenCommand is a command the window of commands keeps hidden, as the first version did, that shows a page the
+// session may hold: its name, and the page.
+type hiddenCommand struct {
+	name string
+	page document.Page
+}
+
+// hiddenCommands are the commands that show the hidden pages: Neovim's :checkhealth its health report, and
+// lazy.nvim's :Lazy its list of plugins, here the list of skills.
+func hiddenCommands() []hiddenCommand {
+	return []hiddenCommand{
+		{name: "checkhealth", page: document.Page{Kind: document.PageHealth, Slug: ""}},
+		{name: "Lazy", page: document.Page{Kind: document.PageSkills, Slug: ""}},
+	}
+}
 
 // A command runs with no count typed before it
 const noCount = 0
@@ -48,8 +61,7 @@ type commandAction func(model Model, argument string) (Model, tea.Cmd)
 
 // commands are the commands the command line runs, in the order the window lists them, which says what q does on
 // the page shown: Neovim's ways to close a window and to quit, listed by the first alone, and its way to open a
-// file, here a project's page by its slug; and where the session holds the health report, Neovim's way to show its
-// own, which the window keeps hidden, as the first version did.
+// file, here a project's page by its slug; then the hidden commands of the hidden pages the session holds.
 func commands(closing string, buffers map[document.Page][]tab) []command {
 	known := []command{
 		{name: "q", does: closing, takesArgument: false, act: Model.closedByCommand},
@@ -59,10 +71,18 @@ func commands(closing string, buffers map[document.Page][]tab) []command {
 		{name: editCommand, does: "open a page", takesArgument: true, act: Model.edit},
 		{name: "edit", does: "", takesArgument: true, act: Model.edit},
 	}
-	if _, held := buffers[healthPage()]; held {
-		known = append(known, command{name: healthCommand, does: "", takesArgument: false, act: Model.checkedHealth})
+	for _, hidden := range hiddenCommands() {
+		if _, held := buffers[hidden.page]; held {
+			known = append(known, command{name: hidden.name, does: "", takesArgument: false, act: shows(hidden.page)})
+		}
 	}
 	return known
+}
+
+// shows is the action of a hidden command: it shows the command's page in place of the one shown, as :e does a
+// project's.
+func shows(page document.Page) commandAction {
+	return func(model Model, _ string) (Model, tea.Cmd) { return model.showing(page), nil }
 }
 
 // closedByCommand closes the page shown, as q does.

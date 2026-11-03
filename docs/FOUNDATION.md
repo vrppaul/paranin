@@ -61,8 +61,9 @@ Taken from `docs/WEB.md`, `docs/REQUIREMENTS.md` and `docs/ROADMAP.md`:
 
 ## 3. Review of the code as it stands
 
-The paths below are the first version's. It is not in git: it waits in
-_old/tree on the owner's machine, archived beside the repository.
+The paths below are the first version's. It is not in git: it is archived
+beside the repository, and what the rebuild has not yet replaced waits in
+_old/tree on the owner's machine; `internal/tui` is in the archive alone.
 
 ### 3.1 Architecture
 
@@ -574,7 +575,10 @@ once); the small words and the table of abbreviations are **Proposed**:
     arguments of a call included); numbers are coderules';
   - layers: `depguard`, one rule to each border, between layers and between
     the parts of one layer, so every import refused is written once;
-  - complexity: `cyclop` (10), `gocognit` (15), `nestif` (4);
+  - complexity: `gocognit` (10), `nestif` (4); `cyclop` counted each case
+    of a match over every kind of a closed set, which `gochecksumtype`
+    asks for, so the owner dropped it and `gocognit` went from 15 to 10 to
+    hold flat branching as `cyclop` did (2026-11-02);
   - construction: `gochecknoglobals` (Go has no constant slices or maps,
     so a fixed table becomes a function that returns it), `gochecknoinits`,
     `exhaustive` (a default case does not count), `exhaustruct_v5` (for our

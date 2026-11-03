@@ -5,10 +5,43 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// Extras are the pages hidden behind commands, as the first version's reports were: the health report. routes
-// gives them no address, so a host hands them only to a face that opens them by a command (ADR-0003).
+// Extras are the pages hidden behind commands, as the first version's reports were: the health report and the list
+// of skills. routes gives them no address, so a host hands them only to a face that opens them by a command
+// (ADR-0003).
 func Extras(snapshot *content.Snapshot) []document.Document {
-	return []document.Document{Health(snapshot)}
+	return []document.Document{Health(snapshot), Skills(snapshot)}
+}
+
+// Skills is the list of every skill, after lazy.nvim's list of plugins, under the site's word for skills: those the
+// author uses first, then those they are still learning, as lazy.nvim lists the plugins loaded before the rest,
+// each in the profile's order.
+func Skills(snapshot *content.Snapshot) document.Document {
+	return document.Document{
+		Head: document.Head{
+			Page:     document.Page{Kind: document.PageSkills, Slug: ""},
+			Title:    textSpans(snapshot.Words.Text(content.WordSkills)),
+			Subtitle: nil,
+			Place:    "",
+			Lead:     nil,
+			Ways:     nil,
+		},
+		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups)}},
+	}
+}
+
+// skillList is every skill of the groups, those the author uses before those they are still learning.
+func skillList(groups []content.SkillGroup) []document.Skill {
+	used, learning := []document.Skill{}, []document.Skill{}
+	for _, group := range groups {
+		for _, skill := range group.Skills {
+			if skill.Learning {
+				learning = append(learning, listedSkill(skill))
+			} else {
+				used = append(used, listedSkill(skill))
+			}
+		}
+	}
+	return append(used, learning...)
 }
 
 // Health is the health report, after Neovim's :checkhealth, under the site's word for it: each group of checks the

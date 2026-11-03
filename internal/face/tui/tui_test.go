@@ -227,8 +227,9 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 }
 
 // Every phrase of a page reaches the TUI on one tab or another, at any width: of the résumé, so a terminal reader
-// reads every fact a browser reader reads, and of the health report :checkhealth shows. A word wider than a narrow
-// terminal breaks across lines, so the phrases are read with every space and break taken out.
+// reads every fact a browser reader reads, and of the health report and the list of skills :checkhealth and :Lazy
+// show. A word wider than a narrow terminal breaks across lines, so the phrases are read with every space and break
+// taken out.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtureSnapshot(test)
 	cases := []struct {
@@ -245,6 +246,14 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		{
 			name: "the health report, narrow", shown: compose.Health(snapshot),
 			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "checkhealth"),
+		},
+		{
+			name: "the list of skills", shown: compose.Skills(snapshot),
+			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "Lazy"),
+		},
+		{
+			name: "the list of skills, narrow", shown: compose.Skills(snapshot),
+			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "Lazy"),
 		},
 	}
 	for _, testCase := range cases {

@@ -362,9 +362,10 @@ description on request, and every page and post needs a card of its own.
 
 ## System overview — one brain, many faces
 
-> The sections from here to the deployment describe the first version, kept on the owner's
-> machine while its replacements land. ADR-0002 to ADR-0005 and [FOUNDATION](FOUNDATION.md) §5
-> replace them, package by package; each section is rewritten as its package lands.
+> Of the sections from here to the deployment, the overview and the configuration's last two
+> rows still describe the first version, kept on the owner's machine while its replacements
+> land; the two component designs and the project layout hold today. ADR-0002 to ADR-0005 and
+> [FOUNDATION](FOUNDATION.md) §5 replace the rest.
 
 ```
                        ┌────────────────────────────┐
@@ -383,7 +384,7 @@ the content package is designed to be face-agnostic from day one.
 ## Phase 1 component design (SSH TUI)
 
 ```
-   ssh client ──TCP:22/23234──▶ ┌─────────────────────────────────────┐
+   ssh client ───TCP:23234────▶ ┌─────────────────────────────────────┐
                                 │ internal/hosting/ssh (Wish)         │
                                 │  middleware chain (outer→inner):    │
                                 │   logging → recover → activeterm →  │
@@ -393,7 +394,7 @@ the content package is designed to be face-agnostic from day one.
                                                 ▼
                                 ┌─────────────────────────────────────┐
                                 │ internal/face/tui (Bubble Tea)      │
-                                │  tabs of the résumé's document      │
+                                │  a buffer of tabs for each document │
                                 │  laid out once a size, painted once │
                                 │  a theme and a search, from look    │
                                 └─────────────────────────────────────┘
@@ -415,43 +416,66 @@ sessions on a stop.
 
 ```
    browser, curl, agent ──HTTP──▶ ┌──────────────────────────────────────┐
-                                  │ internal/web (net/http)              │
-                                  │  GET /, /p/{slug}: negotiate →       │
-                                  │    HTML template | markdown | man    │
-                                  │  POST /api/contact: validate →       │
-                                  │    rate limit → data/messages.jsonl  │
+                                  │ internal/hosting/web (net/http)      │
+                                  │  GET, HEAD                           │
+                                  │  /, /p/{slug}: Accept ranks →        │
+                                  │    HTML | markdown | manual          │
+                                  │  /index.md, .txt; /p/{slug}.md, .txt;│
+                                  │    /llms.txt: one format each        │
+                                  │  any other path: 404, text | HTML    │
+                                  │  any other method: 405 (net/http)    │
                                   └──────────────────┬───────────────────┘
-                                                     │ reads
+                                                     │ for each snapshot of
+                                                     ▼   internal/content's store
+                     internal/compose, internal/routes: documents, records,
+                       the site's addresses
+                                                     │ handed to
                                                      ▼
-                                  internal/content: Resume from profile.yaml
+                     internal/face/html (templ) · internal/face/text
 ```
 
-- `cmd/paranin` runs the SSH and HTTP servers in one process and stops both
-  on `SIGINT` or `SIGTERM`.
-- `content.Load` parses `profile.yaml` once at start-up. The HTML pages, the
-  markdown, the man page, `llms.txt`, the sitemap and JSON-LD all render from
-  that one `Resume`.
-- Templates and static files are embedded with `go:embed`. Templates are
-  parsed at start-up, so a broken one stops the process before it serves.
-- `make assets` prints `/cv` to `static/cv.pdf` and captures `/og` to
-  `static/og.png` with headless Chrome; the next build embeds them.
-- The contract between server, templates and browser code is
-  [WEB](WEB.md).
+- `cmd/paranin` runs the SSH and HTTP servers in one process over one
+  `content.Store`, reloads it on `SIGHUP`, and stops both on `SIGINT` or
+  `SIGTERM`.
+- `hosting/web` composes each snapshot of the store with `compose` and
+  `routes`, the first time a request meets it, and hands the documents to
+  the faces to draw (two requests meeting a new snapshot at once may each
+  draw it, `content.Derived`). A request only reads the drawing; the page of
+  no page alone is drawn for each request, since it quotes the path asked
+  for.
+- `face/html` draws each document with templ, and its record as JSON-LD;
+  `face/text` draws the markdown, the manual, `llms.txt` and its own page of
+  no page. `routes` writes every address.
+- templ compiles the templates into Go, and no file is embedded. The
+  stylesheet and the islands are to come from the front-end build ADR-0004
+  proposes, not yet built; the CV and the cards come with Typst (ADR-0005).
+- The contract between the server and its readers is [WEB](WEB.md), whose
+  negotiation section holds today; the rest of it is the first version's.
 
 ## Project layout
 
 ```
-cmd/paranin/main.go      # wire config + start both servers; handle signals/shutdown
+cmd/paranin/main.go      # check the content, or serve it: both servers, the signals, the stop
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
+internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
+internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page
+internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
+internal/compose/        # content → documents and their records
+internal/routes/         # every address of the site
+internal/document/       # the face-neutral model
+internal/content/        # the content folder: load, check, the store of snapshots
 internal/look/           # the design's colours, generated from design/tokens.yaml
+internal/golden/         # the golden files' helper, for tests alone
 scripts/tokens/          # the generator of internal/look and its check
-internal/web/            # HTTP routes, renderers, contact API, templates, static files
-internal/content/        # profile.yaml + Resume types (the "brain"); face-agnostic
-scripts/build-assets.sh  # cv.pdf and og.png from the running server
+scripts/templates/       # templ's format and generated Go, checked or written
+scripts/coderules/       # the code rules no linter here holds
+scripts/check_instruction_files.py  # claude-review's gate of the instruction files
+content/                 # the site's content: the profile, the site's words
+design/tokens.yaml       # the design's colours, which internal/look is written from
 ```
 
-The MVP may start with fewer files and grow into this layout.
+Each part is held to its layer by depguard (`.golangci.yml`, `.claude/rules/go.md`).
 
 ## Configuration
 

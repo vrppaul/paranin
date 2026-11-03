@@ -12,7 +12,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## Documents
 
-- `docs/ARCHITECTURE.md` beyond ADR-0001 and the SSH face still draws the first version: the web's component design (`internal/web`, embedded templates, `make assets`), the project layout's `internal/web` and `scripts/build-assets.sh`, and `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet. Rewrite each with the part that replaces it.
+- `docs/ARCHITECTURE.md`'s overview still draws the first version, every face reading `internal/content`: rewrite it from FOUNDATION §5.2's layers; it waits for no package.
+- `docs/ARCHITECTURE.md`'s configuration lists `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet: rewrite them with `inbox` and SEC-6 (§8, step 7).
 
 - `docs/WEB.md` copies facts of the résumé (the email, the employer) as examples: rewrite it with `face/html` against the fixture profile. Its skill groups still carry a `Key` and are grouped from a flat list by `skillGroups` (both gone by D16), and its client data the salary slider's `step` and `bigStep` (gone by D17, the form works them out of the range).
 

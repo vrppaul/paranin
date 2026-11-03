@@ -35,7 +35,7 @@ repos:
         pass_filenames: false
       # The rules no linter here can be told to keep (scripts/coderules/main.go)
       - id: code-rules
-        name: code rules (names, helpers, records, markup, colours, numbers)
+        name: code rules (names, helpers, records, markup, colours, numbers, comment widths)
         entry: go run ./scripts/coderules ./...
         language: system
         types: [go]

@@ -8,6 +8,8 @@
 //   - nomarkup and nocolours: markup lives in a template or a component, a colour in the design tokens.
 //   - nonumbers: a number with a meaning is a named constant. golangci-lint's mnd passes a number assigned to a
 //     variable.
+//   - commentwidth: a comment's line is 120 columns at most. golangci-lint's lll holds every line, and a line of
+//     code may run wider, as a literal with every field written does.
 //
 // The first two are the Go form of the first two rules of claude-review's scripts/check_code_rules.py;
 // its rules on pydantic's models, asyncio's processes, click's commands and the kinds of refusal are
@@ -34,5 +36,6 @@ func main() {
 		noMarkupAnalyzer(),
 		noColoursAnalyzer(),
 		noNumbersAnalyzer(),
+		commentWidthAnalyzer(),
 	)
 }

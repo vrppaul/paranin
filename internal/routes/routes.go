@@ -63,6 +63,20 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
+// Reference is where a link inside one of the site's own pages leads: a page of the site by its path from the
+// root, which a browser reads against the address the page came from, so a page served from this machine or a
+// staging host leads there and not to the live site; an address outside the site as it is. A target with no path
+// leads nowhere, and its reference is empty.
+func Reference(target document.Target, format Format) string {
+	switch typed := target.(type) {
+	case document.Address:
+		return typed.URL
+	case document.Page:
+		return Path(typed, format)
+	}
+	return ""
+}
+
 // Path is where a page is served in a format, empty where it is served in none: PageNone, the hidden pages (the
 // health report and the list of skills), the index in any format but markdown, or no format.
 func Path(page document.Page, format Format) string {

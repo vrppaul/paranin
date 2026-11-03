@@ -29,6 +29,10 @@ func TestColoursInStringsAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), noColoursAnalyzer(), "colours")
 }
 
+func TestCommentLinesWiderThanProseAreRefused(test *testing.T) {
+	analysistest.Run(test, analysistest.TestData(), commentWidthAnalyzer(), "comments")
+}
+
 func TestNumbersOutsideConstantsAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), noNumbersAnalyzer(), "numbers")
 }

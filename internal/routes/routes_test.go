@@ -41,6 +41,30 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	}
 }
 
+// A link inside one of the site's own pages leads to a page of the site by its path from the root, which a browser
+// reads against the address the page came from, so a page served from this machine leads to this machine; an
+// address outside the site is left as it is, and a page with no address leads nowhere.
+func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
+	cases := []struct {
+		name   string
+		target document.Target
+		format Format
+		want   string
+	}{
+		{name: "the résumé as the reader asks", target: document.Page{Kind: document.PageResume, Slug: ""}, format: FormatChosen, want: "/"},
+		{name: "a project's page in markdown", target: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, format: FormatMarkdown, want: "/p/tidy-tool.md"},
+		{name: "a hidden page", target: document.Page{Kind: document.PageHealth, Slug: ""}, format: FormatChosen, want: ""},
+		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := Reference(testCase.target, testCase.format); got != testCase.want {
+				test.Errorf("Reference(%+v) = %q, want %q", testCase.target, got, testCase.want)
+			}
+		})
+	}
+}
+
 // writtenAddress is a base address as a test writes it, its host beside it, as content reads one from a profile.
 type writtenAddress struct {
 	written string

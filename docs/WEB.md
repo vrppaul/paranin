@@ -2,7 +2,8 @@
 
 > This is the contract of the first version, kept on the owner's machine while its
 > replacement lands. ADR-0002 to ADR-0004 of [ARCHITECTURE](ARCHITECTURE.md) change it
-> where they differ; it is rewritten with `face/html` and `hosting/web`.
+> where they differ; it is rewritten with `face/html` and `hosting/web`. Rewritten so
+> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`".
 
 `paran.in` serves one résumé to three kinds of reader from one profile:
 
@@ -61,14 +62,18 @@ link and is not a gap.
 
 ### Negotiation for `/` and `/p/{slug}`
 
-1. `Accept` contains `text/markdown` → markdown, `text/markdown; charset=utf-8`.
-2. Otherwise, if `User-Agent` starts with `curl/`, `Wget/`, `HTTPie/` or `xh/`
-   (case-insensitive) and `Accept` does not contain `text/html` → plain text,
-   `text/plain; charset=utf-8`.
-3. Otherwise → HTML.
+The format the `Accept` header ranks highest, by the closest range that names
+it (RFC 9110, 12.5.1): HTML (`text/html`), markdown (`text/markdown`) or the
+manual (`text/plain`), each with `; charset=utf-8`. Where it ranks two alike
+the manual goes first, then markdown, then HTML, so `curl`, which sends
+`*/*`, and a request with no `Accept` get the manual (D21).
 
-Every negotiated response sets `Vary: Accept, User-Agent`. Markdown and
-plain-text responses set `Link: <canonical URL>; rel="canonical"`.
+Every negotiated response sets `Vary: Accept` alone. Every format of a page,
+at its own path and where the reader chooses, sets
+`Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses;
+the HTML names it in its head too, with `rel="alternate"` to its markdown.
+Links inside the HTML lead to the site's pages by their path from the root;
+the canonical URL and the text formats' links are whole.
 
 ## Templates
 

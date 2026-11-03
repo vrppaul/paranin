@@ -4,9 +4,11 @@ import (
 	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// page is a document's whole page: its language and title for the browser, then its head and its blocks.
+// page is a document's whole page: its language and title for the browser, the address it is known by and its
+// markdown for whoever reads it so, where it has them; then its head and its blocks.
 templ (writer pageWriter) page(composed document.Document) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
@@ -14,6 +16,12 @@ templ (writer pageWriter) page(composed document.Document) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ document.PlainText(composed.Head.Title) }</title>
+			if canonical := writer.site.Address(composed.Head.Page, routes.FormatChosen); canonical != "" {
+				<link rel="canonical" href={ canonical }/>
+			}
+			if markdown := routes.Reference(composed.Head.Page, routes.FormatMarkdown); markdown != "" {
+				<link rel="alternate" type={ markdownType } href={ markdown }/>
+			}
 		</head>
 		<body>
 			@writer.head(composed.Head)

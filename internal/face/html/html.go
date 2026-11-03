@@ -1,8 +1,10 @@
 // Package html draws documents as the pages a browser shows (docs/ARCHITECTURE.md, ADR-0002, ADR-0003), with
 // templ: each kind of block and span is a component of page.templ, and the choice between the kinds is Go's, here,
 // where gochecksumtype holds every switch to every kind, as it cannot inside generated code. A page names the
-// language of its document and is titled by its head; every address is written by routes, at the address where
-// the reader's request chooses the format, which a browser reads as the page.
+// language of its document and is titled by its head, and names the address it is known by, whole, and the path of
+// its markdown. Every address is written by routes; a link inside the page leads to a page of the site by its path
+// from the root, at the address where the reader's request chooses the format, which a browser reads as the page,
+// so a page served from this machine leads to this machine.
 //
 // The page is markup alone so far: what each part is, a heading by its depth, a period's months as times. How it
 // looks arrives with the page's stylesheet (docs/FOUNDATION.md §5.3), and with it the classes; until then a gap
@@ -28,6 +30,9 @@ const (
 	monthLayout        = "01/2006"
 	machineMonthLayout = "2006-01"
 )
+
+// The media type of a page's markdown, which its head names beside the link to it
+const markdownType = "text/markdown"
 
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6
 const (
@@ -99,8 +104,8 @@ func (writer pageWriter) span(span document.Span) templ.Component {
 	case document.Highlight:
 		return writer.highlight(typed.Spans)
 	case document.Link:
-		if address := writer.site.Address(typed.Target, routes.FormatChosen); address != "" {
-			return writer.link(address, typed.Spans)
+		if reference := routes.Reference(typed.Target, routes.FormatChosen); reference != "" {
+			return writer.link(reference, typed.Spans)
 		}
 		return writer.spans(typed.Spans)
 	}

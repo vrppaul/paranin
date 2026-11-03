@@ -616,7 +616,10 @@ once); the small words and the table of abbreviations are **Proposed**:
   - HTML in a string, a tag with an attribute, a closing tag or one that
     closes itself, and a colour in a string, outside tests;
   - a number other than 0 and 1 outside a constant, outside tests. It
-    replaces `mnd`, which passes a number assigned to a variable.
+    replaces `mnd`, which passes a number assigned to a variable;
+  - a line a comment opens wider than 120 columns, counted in letters, a
+    tab one. A line of code may run wider, as a literal with every field
+    written does, so `lll`, which holds every line, is not used.
 
   Generated files are passed over. Each rule was seen to fail its test when
   broken, over three rounds of changes to it by the author and two by

@@ -97,6 +97,37 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 }
 
+// Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
+// its manual as that page; the index, which is no page a person reads, names none.
+func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
+	server := New(fixtureStore(test, fixtureCopy(test)))
+	cases := []struct {
+		name   string
+		path   string
+		accept string
+		want   string
+	}{
+		{name: "the résumé in markdown", path: "/index.md", accept: "", want: `<https://example.test/>; rel="canonical"`},
+		{name: "the résumé as a manual", path: "/index.txt", accept: "", want: `<https://example.test/>; rel="canonical"`},
+		{name: "the résumé, chosen", path: "/", accept: "text/html", want: `<https://example.test/>; rel="canonical"`},
+		{name: "a project's page in markdown", path: "/p/tidy-tool.md", accept: "", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
+		{name: "a project's page, chosen", path: "/p/tidy-tool", accept: "*/*", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
+		{name: "the index", path: "/llms.txt", accept: "", want: ""},
+		{name: "no page", path: "/nothing", accept: "", want: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+			request.Header.Set("Accept", testCase.accept)
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if got := response.Header().Get("Link"); got != testCase.want {
+				test.Errorf("GET %s, Accept %q: Link = %q, want %q", testCase.path, testCase.accept, got, testCase.want)
+			}
+		})
+	}
+}
+
 // An address of no page is not found, in plain text opening with the status it is answered with and the path
 // asked for, as the request decoded it.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {

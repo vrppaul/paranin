@@ -22,6 +22,7 @@ How a package is built is said in its package comment. The rules for code in any
 - `gofumpt` formats every file, tests included (`golangci-lint fmt`).
 - Names: `err` and `ctx` are the only abbreviations kept (D11), since `error` and `context` are taken; a receiver is a word, `(model Model)`; a test is `test *testing.T`.
 - No name hides one of Go's own, `max` or `len` (predeclared).
+- A comment's line is 120 columns at most, wrapped as prose; a line of code may run wider (coderules).
 - An enumeration is a named type with its constants; a `switch` over one names every value (exhaustive).
 - A choice between kinds is a closed set of types behind an interface with an unexported method, marked `//sumtype:decl`; a type switch over it names every kind (gochecksumtype).
 - A struct of our own is built with every field written out (exhaustruct), so a new field reaches every place that makes one.

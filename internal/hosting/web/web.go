@@ -3,8 +3,9 @@
 // no request composes or draws a page. Each page is served at the path routes writes for it in each format, and at its
 // own address in the format the reader's request asks for: HTML for a browser, markdown for an agent that asks for
 // it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as a name ending in
-// .txt promises. Any other path is answered with the text of no page, drawn once like the pages but for the path,
-// which each request quotes in it.
+// .txt promises. Each format of a page names in a Link header the address the page is known by, the one where the
+// reader chooses, so a search engine counts its markdown and its manual as the page. Any other path is answered
+// with the text of no page, drawn once like the pages but for the path, which each request quotes in it.
 package web
 
 import (
@@ -29,6 +30,13 @@ const (
 	contentType  = "Content-Type"
 	typeOptions  = "X-Content-Type-Options"
 	cacheControl = "Cache-Control"
+)
+
+// How the header a page names its address in is written: <address>; rel="canonical"
+const (
+	linkHeader        = "Link"
+	linkOpening       = "<"
+	canonicalRelation = `>; rel="canonical"`
 )
 
 // How a reader's request chooses a format: by the media types its Accept header ranks. A cache keeps one copy
@@ -91,16 +99,24 @@ type drawing struct {
 type choice []drawnPage
 
 // drawnPage is one page as it is sent: the media type it is, which an Accept header ranks, the header that says
-// it, and its text.
+// it, the Link header naming the address the page is known by, empty where it is none a person reads, and its
+// text.
 type drawnPage struct {
 	mediaType   string
 	contentType string
+	link        string
 	body        []byte
 }
 
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is.
 func drawnAs(mediaType, text string) drawnPage {
-	return drawnPage{mediaType: mediaType, contentType: mediaType + utf8Text, body: []byte(text)}
+	return drawnPage{mediaType: mediaType, contentType: mediaType + utf8Text, link: "", body: []byte(text)}
+}
+
+// knownAt is a page naming the address it is known by, as a Link header writes it (RFC 8288, RFC 6596).
+func (page drawnPage) knownAt(address string) drawnPage {
+	page.link = linkOpening + address + canonicalRelation
+	return page
 }
 
 // New is a server of the site the store holds.
@@ -187,6 +203,9 @@ func qualityOf(parameters map[string]string) float64 {
 func send(writer http.ResponseWriter, status int, page drawnPage) {
 	header := writer.Header()
 	header.Set(contentType, page.contentType)
+	if page.link != "" {
+		header.Set(linkHeader, page.link)
+	}
 	header.Set(typeOptions, noSniffing)
 	header.Set(cacheControl, askEveryTime)
 	writer.WriteHeader(status)
@@ -210,9 +229,10 @@ func draw(snapshot *content.Snapshot) *drawing {
 	chosen := make(map[string]choice, len(documents))
 	for _, composed := range documents {
 		page := composed.Head.Page
-		markdown := drawnAs(markdownMediaType, text.Markdown(composed, site))
-		manual := drawnAs(plainMediaType, text.Manual(composed, site))
-		browsed := drawnAs(htmlMediaType, html.Page(composed, site))
+		known := site.Address(page, routes.FormatChosen)
+		markdown := drawnAs(markdownMediaType, text.Markdown(composed, site)).knownAt(known)
+		manual := drawnAs(plainMediaType, text.Manual(composed, site)).knownAt(known)
+		browsed := drawnAs(htmlMediaType, html.Page(composed, site)).knownAt(known)
 		pages[routes.Path(page, routes.FormatMarkdown)] = markdown
 		pages[routes.Path(page, routes.FormatManual)] = manual
 		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}

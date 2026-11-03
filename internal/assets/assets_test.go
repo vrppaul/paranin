@@ -15,29 +15,50 @@ import (
 // The fixture's files a test changes, from its root
 const (
 	manifestPath   = "manifest.json"
-	stylesheetPath = "assets/ui-fixture.css"
+	stylesheetPath = "assets/site-fixture.css"
 )
 
-// Every file the manifest names is served at its path from the site's root, as the type its name says; the
-// manifest itself is no file of the site.
+// The types the fixture's files are served as
+const (
+	styleType  = "text/css; charset=utf-8"
+	scriptType = "text/javascript; charset=utf-8"
+)
+
+// Every file the manifest names, a chunk's script and the stylesheets it imports, is served at its path from the
+// site's root, as the type its name says; the manifest itself is no file of the site.
 func TestABuildServesEveryFileItsManifestNames(test *testing.T) {
 	build := fixtures.LoadedBuild(test)
-	want := map[string]assets.File{"/" + stylesheetPath: {ContentType: "text/css; charset=utf-8", Body: []byte("body{margin:0}\n")}}
+	want := map[string]assets.File{
+		"/assets/site-fixture.js":    {ContentType: scriptType, Body: []byte("import \"./shared-fixture.js\";\nimport \"./base-fixture.js\";\n")},
+		"/assets/shared-fixture.js":  {ContentType: scriptType, Body: []byte("import \"./base-fixture.js\";\n")},
+		"/assets/base-fixture.js":    {ContentType: scriptType, Body: []byte("export {};\n")},
+		"/" + stylesheetPath:         {ContentType: styleType, Body: []byte("body{margin:0}\n")},
+		"/assets/shared-fixture.css": {ContentType: styleType, Body: []byte("p{margin:0}\n")},
+		"/assets/base-fixture.css":   {ContentType: styleType, Body: []byte("h1{margin:0}\n")},
+	}
 	if got := maps.Collect(build.Files()); !maps.EqualFunc(got, want, sameFile) {
 		test.Errorf("Files() = %q, want %q", got, want)
 	}
 }
 
-// A page that includes the stylesheet links the file it was built into.
-func TestTheStylesheetLinksItsBuiltFile(test *testing.T) {
+// A page that runs the site's script includes what Vite's guide to backend integration lays in a page for it: the
+// stylesheets of the entry and of every chunk it reaches, the entry's script, and every chunk it reaches to
+// preload, each once, the deepest first.
+func TestTheSiteEntryIncludesEveryChunkReached(test *testing.T) {
 	build := fixtures.LoadedBuild(test)
-	if got, want := build.Stylesheets(assets.Stylesheet), []string{"/" + stylesheetPath}; !slices.Equal(got, want) {
-		test.Errorf("Stylesheets(%q) = %q, want %q", assets.Stylesheet, got, want)
+	want := assets.Included{
+		Stylesheets: []string{"/" + stylesheetPath, "/assets/base-fixture.css", "/assets/shared-fixture.css"},
+		Script:      "/assets/site-fixture.js",
+		Preloads:    []string{"/assets/base-fixture.js", "/assets/shared-fixture.js"},
+	}
+	if got := build.Includes(assets.Site); !sameIncluded(got, want) {
+		test.Errorf("Includes(%q) = %q, want %q", assets.Site, got, want)
 	}
 }
 
 // A build the site cannot be served from is refused, the fault named: no manifest, one that does not read, one
-// lacking an entry the site names, a file it names missing or of a type the site serves none of.
+// lacking an entry the site names or a chunk one imports, a file it names missing or of a type the site serves
+// none of.
 func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -53,17 +74,24 @@ func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 		{
 			name: "an entry the site names missing",
 			change: func(test *testing.T, folder string) {
-				fixtures.ReplaceIn(test, folder, manifestPath, `"src/ui/ui.css": {`, `"src/ui/other.css": {`)
+				fixtures.ReplaceIn(test, folder, manifestPath, `"src/entries/site.ts": {`, `"src/entries/other.ts": {`)
 			},
-			want: `"src/ui/ui.css"`,
+			want: `"src/entries/site.ts"`,
+		},
+		{
+			name: "a chunk an entry imports missing",
+			change: func(test *testing.T, folder string) {
+				fixtures.ReplaceIn(test, folder, manifestPath, `"_base-fixture.js": {`, `"_other-fixture.js": {`)
+			},
+			want: `"_base-fixture.js"`,
 		},
 		{name: "a file missing", change: func(test *testing.T, folder string) { removeFile(test, folder, stylesheetPath) }, want: stylesheetPath},
 		{
 			name: "a file of no type the site serves",
 			change: func(test *testing.T, folder string) {
-				renameBuilt(test, folder, stylesheetPath, "assets/ui-fixture.png")
+				renameBuilt(test, folder, stylesheetPath, "assets/site-fixture.png")
 			},
-			want: `"assets/ui-fixture.png"`,
+			want: `"assets/site-fixture.png"`,
 		},
 	}
 	for _, testCase := range cases {
@@ -79,6 +107,11 @@ func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 
 func sameFile(first, second assets.File) bool {
 	return first.ContentType == second.ContentType && string(first.Body) == string(second.Body)
+}
+
+func sameIncluded(first, second assets.Included) bool {
+	return slices.Equal(first.Stylesheets, second.Stylesheets) && first.Script == second.Script &&
+		slices.Equal(first.Preloads, second.Preloads)
 }
 
 func removeFile(test *testing.T, folder, file string) {

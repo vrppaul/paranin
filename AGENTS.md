@@ -11,6 +11,7 @@ go test ./...                                           # the tests
 go run ./scripts/coderules ./...                        # the code rules no linter here holds
 pnpm --dir web install                                  # the page's tools, as web/pnpm-lock.yaml pins them
 pnpm --dir web build                                    # the page's build into build/web; `watch` builds on each change, and the site reloads
+pnpm --dir web test                                     # the page's tests, in jsdom
 go run ./cmd/paranin serve content build/web            # the site: curl localhost:8080, ssh -p 23234 localhost
 go generate ./internal/look                             # write the design's colours, Go and CSS, from design/tokens.yaml
 go generate ./internal/face/html                        # format the templ templates and write their Go

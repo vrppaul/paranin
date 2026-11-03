@@ -10,10 +10,11 @@
 // of no page reads as NotFound: its status, the path asked for, quoted, and a link to where the site begins under
 // its name.
 //
-// Every page, the page of no page among them, is drawn in the stylesheet of the build it is served with (assets),
-// which styles its markup: what each part is, a heading by its depth, a period's months as times. The classes of
-// the page's parts arrive with its design (TODO, "The look"); until then a gap still to fill reads as its text, as
-// the markdown writes it.
+// Every page, the page of no page among them, includes what the build it is served with (assets) brings to run the
+// site's script: the stylesheet, which styles its markup, what each part is, a heading by its depth, a period's
+// months as times; and the script, which runs the choice of theme a page of a document offers above its head. The
+// classes of the page's parts arrive with its design (TODO, "The look"); until then a gap still to fill reads as its
+// text, as the markdown writes it.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write
@@ -64,11 +65,21 @@ const (
 	labelEnd = ": "
 )
 
-// pageWriter writes one document; the site writes its addresses, and the stylesheets are the paths of those the
-// page is drawn in.
-type pageWriter struct {
-	site        routes.Site
-	stylesheets []string
+// The choice of theme as the site's script finds and runs it (web/src/controllers/theme.ts): the part it is, the
+// id its label is named by, and the theme each of its buttons chooses, as the page's stylesheet names them
+const (
+	themePart    = "theme"
+	themeLabelID = "theme-label"
+	themeLight   = "light"
+	themeDark    = "dark"
+)
+
+// PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which
+// writes their addresses, what each includes to run the site's script, and the words of the choice of theme.
+type PageWriter struct {
+	site     routes.Site
+	included assets.Included
+	theme    compose.ThemeWords
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
@@ -80,16 +91,16 @@ type pageMetadata struct {
 	markdown    string
 }
 
-// Page writes a document as a page of HTML, drawn in the build's stylesheet: what it says of itself, its record as
-// linked data where it has one, then its head, then each block.
-func Page(composed document.Document, record compose.Record, site routes.Site, build *assets.Build) string {
-	writer := pageWriter{site: site, stylesheets: stylesheetsOf(build)}
-	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
+// NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the choice
+// of theme in its words.
+func NewPageWriter(site routes.Site, build *assets.Build, theme compose.ThemeWords) PageWriter {
+	return PageWriter{site: site, included: build.Includes(assets.Site), theme: theme}
 }
 
-// stylesheetsOf are the paths of the stylesheets of a build every page is drawn in.
-func stylesheetsOf(build *assets.Build) []string {
-	return build.Stylesheets(assets.Stylesheet)
+// Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
+// then the choice of theme, its head, then each block.
+func (writer PageWriter) Page(composed document.Document, record compose.Record) string {
+	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
 }
 
 // rendered is the HTML a component writes.
@@ -102,7 +113,7 @@ func rendered(component templ.Component) string {
 }
 
 // metadataOf is what a page of a head says of itself.
-func (writer pageWriter) metadataOf(head document.Head) pageMetadata {
+func (writer PageWriter) metadataOf(head document.Head) pageMetadata {
 	return pageMetadata{
 		title:       document.PlainText(head.Title),
 		description: document.PlainText(head.Description),
@@ -112,7 +123,7 @@ func (writer pageWriter) metadataOf(head document.Head) pageMetadata {
 }
 
 // block is the component of a block, at the depth of its headings.
-func (writer pageWriter) block(block document.Block, depth int) templ.Component {
+func (writer PageWriter) block(block document.Block, depth int) templ.Component {
 	switch typed := block.(type) {
 	case document.Section:
 		return writer.section(typed, depth)
@@ -138,7 +149,7 @@ func (writer pageWriter) block(block document.Block, depth int) templ.Component 
 }
 
 // span is the component of a span; a link whose target has no address reads as its text.
-func (writer pageWriter) span(span document.Span) templ.Component {
+func (writer PageWriter) span(span document.Span) templ.Component {
 	switch typed := span.(type) {
 	case document.Text:
 		return text(typed.Text)

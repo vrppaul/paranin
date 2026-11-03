@@ -3,18 +3,19 @@ package html
 import (
 	"time"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 )
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
 // address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
-// then its head and its blocks.
-templ (writer pageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
+// then the choice of theme, its head and its blocks.
+templ (writer PageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
 		<head>
-			@headOpening(metadata.title, writer.stylesheets)
+			@headOpening(metadata.title, writer.included)
 			if metadata.description != "" {
 				<meta name="description" content={ metadata.description }/>
 			}
@@ -28,6 +29,7 @@ templ (writer pageWriter) page(composed document.Document, metadata pageMetadata
 			}
 		</head>
 		<body>
+			@themeChoice(writer.theme)
 			@writer.head(composed.Head)
 			<main>
 				for _, block := range composed.Blocks {
@@ -39,19 +41,37 @@ templ (writer pageWriter) page(composed document.Document, metadata pageMetadata
 }
 
 // headOpening is what the head of every page opens with: its text's encoding, its width a phone's own, its title,
-// and the stylesheets it is drawn in.
-templ headOpening(title string, stylesheets []string) {
+// and what it includes to run the site's script, in the order Vite's guide lays it: the stylesheets it is drawn in,
+// the script, then the scripts it imports, to preload. The script holds the first paint until it has run, so a
+// theme the reader chose is the one the page is first seen in; a browser that knows no such hold shows the page
+// first in the system's theme.
+templ headOpening(title string, included assets.Included) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<title>{ title }</title>
-	for _, stylesheet := range stylesheets {
+	for _, stylesheet := range included.Stylesheets {
 		<link rel="stylesheet" href={ stylesheet }/>
 	}
+	<script type="module" src={ included.Script } blocking="render"></script>
+	for _, preload := range included.Preloads {
+		<link rel="modulepreload" href={ preload }/>
+	}
+}
+
+// themeChoice is the reader's choice between the light theme and the dark one, which the site's script shows and
+// runs, pressing the theme the page is in: a page read without the script hides it, and follows the system's
+// theme. Its look arrives with the design (TODO, "The look").
+templ themeChoice(theme compose.ThemeWords) {
+	<div role="group" aria-labelledby={ themeLabelID } data-part={ themePart } hidden>
+		<span id={ themeLabelID }>{ theme.Label }</span>
+		<button type="button" data-theme-choice={ themeLight } aria-pressed="false">{ theme.Light }</button>
+		<button type="button" data-theme-choice={ themeDark } aria-pressed="false">{ theme.Dark }</button>
+	</div>
 }
 
 // openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, its title and
 // description, and the address it is known by. Its picture comes with the cards Typst draws (ADR-0005).
-templ (writer pageWriter) openGraph(metadata pageMetadata) {
+templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:type" content={ openGraphType }/>
 	<meta property="og:site_name" content={ writer.site.Host() }/>
 	<meta property="og:title" content={ metadata.title }/>
@@ -63,7 +83,7 @@ templ (writer pageWriter) openGraph(metadata pageMetadata) {
 
 // head is what the page shows first: its title, the subtitle and the place beside it, the lead, and the ways to
 // reach the author.
-templ (writer pageWriter) head(head document.Head) {
+templ (writer PageWriter) head(head document.Head) {
 	<header>
 		<h1>
 			@writer.spans(head.Title)
@@ -88,7 +108,7 @@ templ (writer pageWriter) head(head document.Head) {
 	</header>
 }
 
-templ (writer pageWriter) section(section document.Section, depth int) {
+templ (writer PageWriter) section(section document.Section, depth int) {
 	<section>
 		@heading(depth, writer.spans(section.Title))
 		for _, block := range section.Blocks {
@@ -97,13 +117,13 @@ templ (writer pageWriter) section(section document.Section, depth int) {
 	</section>
 }
 
-templ (writer pageWriter) paragraph(paragraph document.Paragraph) {
+templ (writer PageWriter) paragraph(paragraph document.Paragraph) {
 	<p>
 		@writer.spans(paragraph.Spans)
 	</p>
 }
 
-templ (writer pageWriter) table(table document.Table) {
+templ (writer PageWriter) table(table document.Table) {
 	<table>
 		<tbody>
 			for _, row := range table.Rows {
@@ -124,7 +144,7 @@ templ codeBlock(text string) {
 	<pre>{ text }</pre>
 }
 
-templ (writer pageWriter) facts(facts []document.Fact) {
+templ (writer PageWriter) facts(facts []document.Fact) {
 	<dl>
 		for _, fact := range facts {
 			<dt>{ fact.Label }</dt>
@@ -136,7 +156,7 @@ templ (writer pageWriter) facts(facts []document.Fact) {
 }
 
 // entry is a role or a school under its title and subtitle, its period and place in a line, then its points.
-templ (writer pageWriter) entry(entry document.Entry, depth int) {
+templ (writer PageWriter) entry(entry document.Entry, depth int) {
 	<article>
 		@heading(depth, writer.titled(entry.Title, entry.Subtitle))
 		<p>
@@ -162,7 +182,7 @@ templ (writer pageWriter) entry(entry document.Entry, depth int) {
 
 // card is a piece of work under its title, a link to its page where it has one; its tag and subtitle in a line,
 // its summary, then its facts.
-templ (writer pageWriter) card(card document.Card, depth int) {
+templ (writer PageWriter) card(card document.Card, depth int) {
 	<article>
 		@heading(depth, writer.spans(linked(card.Page, card.Title)))
 		if card.Tag != "" || len(card.Subtitle) > 0 {
@@ -186,7 +206,7 @@ templ (writer pageWriter) card(card document.Card, depth int) {
 }
 
 // contents are the pages a document leads to, each a link by its title, then the line on what it is.
-templ (writer pageWriter) contents(contents document.Contents) {
+templ (writer PageWriter) contents(contents document.Contents) {
 	<ul>
 		for _, listing := range contents.Listings {
 			<li>
@@ -201,7 +221,7 @@ templ (writer pageWriter) contents(contents document.Contents) {
 }
 
 // titled is a title and its subtitle in one line, a dash between them where both are there.
-templ (writer pageWriter) titled(title, subtitle []document.Span) {
+templ (writer PageWriter) titled(title, subtitle []document.Span) {
 	@writer.spans(title)
 	if len(title) > 0 && len(subtitle) > 0 {
 		@text(dash)
@@ -209,7 +229,7 @@ templ (writer pageWriter) titled(title, subtitle []document.Span) {
 	@writer.spans(subtitle)
 }
 
-templ (writer pageWriter) spans(spans []document.Span) {
+templ (writer PageWriter) spans(spans []document.Span) {
 	for _, span := range spans {
 		@writer.span(span)
 	}
@@ -225,13 +245,13 @@ templ code(text string) {
 	<code>{ text }</code>
 }
 
-templ (writer pageWriter) highlight(spans []document.Span) {
+templ (writer PageWriter) highlight(spans []document.Span) {
 	<mark>
 		@writer.spans(spans)
 	</mark>
 }
 
-templ (writer pageWriter) link(address string, spans []document.Span) {
+templ (writer PageWriter) link(address string, spans []document.Span) {
 	<a href={ address }>
 		@writer.spans(spans)
 	</a>

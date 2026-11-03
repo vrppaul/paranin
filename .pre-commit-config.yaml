@@ -87,6 +87,34 @@ repos:
         language: system
         files: ^web/(src/.*\.css|stylelint\.config\.js|package\.json)$
         pass_filenames: false
+      # The page's TypeScript as the compiler reads it, strict (web/tsconfig.json)
+      - id: page-types
+        name: tsc (the page's types)
+        entry: pnpm --dir web run check:types
+        language: system
+        files: ^web/(src/|tests/|tsconfig\.json|vite\.config\.ts|package\.json)
+        pass_filenames: false
+      # The layers of src/, the names, the helpers and the lookups (web/eslint.config.js)
+      - id: page-scripts
+        name: eslint (the page's scripts)
+        entry: pnpm --dir web run lint:scripts
+        language: system
+        files: ^web/
+        pass_filenames: false
+      # No file, export or tool of the page that nothing uses
+      - id: page-unused
+        name: knip (what nothing of the page uses)
+        entry: pnpm --dir web run check:unused
+        language: system
+        files: ^web/
+        pass_filenames: false
+      # The controllers' tests, run over the HTML face's golden pages, so a change to either runs them
+      - id: page-tests
+        name: vitest (the page's tests)
+        entry: pnpm --dir web run test
+        language: system
+        files: (^web/(src/|tests/|vite\.config\.ts|package\.json)|^internal/face/html/testdata/)
+        pass_filenames: false
       # Checks rather than rewrites: a commit never carries formatting it was not shown
       - id: page-format
         name: prettier (the page's files)

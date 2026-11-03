@@ -13,6 +13,16 @@
   --focus-width: 2px;
 }
 
+/* a theme the reader chose, over the system's: the site's script sets it on the page's root
+ * (src/controllers/theme.ts), and the colour scheme chooses each token's light or dark value */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   background: var(--background);

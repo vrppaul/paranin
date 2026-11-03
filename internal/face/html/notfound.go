@@ -19,20 +19,21 @@ type NotFound struct {
 	// start is the path where the site begins, and siteName the name a link to it reads as
 	start    string
 	siteName string
-	// stylesheets are the paths of the stylesheets the page is drawn in, as every page is
-	stylesheets []string
+	// included is what the page includes to run the site's script, as every page does, so it is seen in the theme
+	// the reader chose
+	included assets.Included
 }
 
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
-// answers with, drawn in the build's stylesheet.
+// answers with, drawn in the build's stylesheet and running its script.
 func NewNotFound(site routes.Site, status, language string, build *assets.Build) NotFound {
 	start := document.Page{Kind: document.PageResume, Slug: ""}
 	return NotFound{
-		status:      status,
-		language:    language,
-		start:       routes.Reference(start, routes.FormatChosen),
-		siteName:    site.Host(),
-		stylesheets: stylesheetsOf(build),
+		status:   status,
+		language: language,
+		start:    routes.Reference(start, routes.FormatChosen),
+		siteName: site.Host(),
+		included: build.Includes(assets.Site),
 	}
 }
 

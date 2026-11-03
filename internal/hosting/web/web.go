@@ -281,6 +281,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 	site := routes.New(facts.Profile.Site.BaseURL)
 	readPages := compose.Pages(facts)
 	index := compose.Index(facts)
+	pageWriter := html.NewPageWriter(site, build, compose.ThemeWordsOf(facts))
 	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}
@@ -293,7 +294,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 		known := site.Address(page, routes.FormatChosen)
 		markdown := drawnAs(markdownMediaType, text.Markdown(composed.Document, site)).knownAt(known)
 		manual := drawnAs(plainMediaType, text.Manual(composed.Document, site)).knownAt(known)
-		browsed := drawnAs(htmlMediaType, html.Page(composed.Document, composed.Record, site, build)).knownAt(known)
+		browsed := drawnAs(htmlMediaType, pageWriter.Page(composed.Document, composed.Record)).knownAt(known)
 		fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 		fixed[routes.Path(page, routes.FormatManual)] = manual
 		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}

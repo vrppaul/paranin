@@ -3,8 +3,8 @@
 > This is the contract of the first version, kept on the owner's machine while its
 > replacement lands. ADR-0002 to ADR-0004 of [ARCHITECTURE](ARCHITECTURE.md) change it
 > where they differ; it is rewritten with `face/html` and `hosting/web`. Rewritten so
-> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`" and
-> "Security headers".
+> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`",
+> "Security headers" and "Theme".
 
 `paran.in` serves one résumé to three kinds of reader from one profile:
 
@@ -312,10 +312,21 @@ Text sizes: 12 and 14px; large text only `on-title`, `on-display`, `on-hero`.
 
 ### Theme
 
-`theme.js` loads in `<head>` without `defer`. It sets `<html class="on latte">`
-or `on mac` from `localStorage["on-theme"]`, else from
-`prefers-color-scheme`. The server renders `class="on latte"` so the page works
-without JavaScript.
+A page follows the system's theme, light or dark, as `color-scheme: light dark`
+on its root lets it: with no script, that is all it does. Every page includes
+the site's script (`web/src/entries/site.ts`) as a module with
+`blocking="render"`, so a browser paints nothing until it has run. Where the
+reader chose a theme on an earlier page, kept in `localStorage["theme"]`, the
+script sets `<html data-theme="light">` or `"dark"`, and `ui.css` turns the
+attribute into the colour scheme; a browser that knows no such hold (Firefox)
+may show the system's theme for a moment first.
+
+A page of a document draws the choice above its head, a group of two buttons
+in the site's words (`theme`, `light`, `dark`), `hidden` until the script
+shows it. The script presses the button of the theme the page is in, the
+system's until the reader chooses, and keeps a choice for every page after;
+where the browser keeps nothing, the choice holds for the page alone. The page
+of no page has no choice, and is shown in the theme chosen.
 
 ### Index page, top to bottom
 

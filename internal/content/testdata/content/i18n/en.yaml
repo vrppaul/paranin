@@ -14,3 +14,6 @@ present: present
 author: author
 resume: Résumé
 health: health
+theme: theme
+light: light
+dark: dark

@@ -68,7 +68,7 @@ type author struct {
 }
 
 // linkedData is the script of a page's record, in schema.org's words, for the page at an address.
-func (writer pageWriter) linkedData(record compose.Record, address string) templ.Component {
+func (writer PageWriter) linkedData(record compose.Record, address string) templ.Component {
 	switch typed := record.(type) {
 	case compose.PersonRecord:
 		return linkedScript(profilePageOf(typed, address))
@@ -121,7 +121,7 @@ func schoolsOf(names []string) []organization {
 	return schools
 }
 
-func (writer pageWriter) sourceCodeOf(record compose.WorkRecord, address string) sourceCode {
+func (writer PageWriter) sourceCodeOf(record compose.WorkRecord, address string) sourceCode {
 	return sourceCode{
 		Context:             vocabulary,
 		Kind:                sourceCodeKind,

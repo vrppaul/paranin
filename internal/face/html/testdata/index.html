@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mira Example</title>
-<link rel="stylesheet" href="/assets/ui-fixture.css">
+<link rel="stylesheet" href="/assets/site-fixture.css">
+<link rel="stylesheet" href="/assets/base-fixture.css">
+<link rel="stylesheet" href="/assets/shared-fixture.css">
+<script type="module" src="/assets/site-fixture.js" blocking="render">
+</script>
+<link rel="modulepreload" href="/assets/base-fixture.js">
+<link rel="modulepreload" href="/assets/shared-fixture.js">
 <meta name="description" content="Builds small tools that last.">
 <link rel="canonical" href="https://example.test/">
 <meta property="og:type" content="website">
@@ -17,6 +23,9 @@
 <link rel="alternate" type="text/markdown" href="/index.md">
 </head>
 <body>
+<div role="group" aria-labelledby="theme-label" data-part="theme" hidden>
+<span id="theme-label">theme</span> <button type="button" data-theme-choice="light" aria-pressed="false">light</button> <button type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+</div>
 <header>
 <h1>Mira Example</h1>
 <p>Software Engineer · Brno, Czechia</p>

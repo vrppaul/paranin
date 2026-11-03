@@ -6,7 +6,7 @@ templ (notFound NotFound) page(quotedPath string) {
 	<!DOCTYPE html>
 	<html lang={ notFound.language }>
 		<head>
-			@headOpening(notFound.status, notFound.stylesheets)
+			@headOpening(notFound.status, notFound.included)
 		</head>
 		<body>
 			<main>

@@ -31,7 +31,8 @@ func ContentFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), contentFromRoot)
 }
 
-// BuildFolder is the folder of the build's fixture: a manifest naming the stylesheet the site names, and its file.
+// BuildFolder is the folder of the build's fixture: a manifest naming the site's entry, the chunks it imports, two
+// deep and one of them twice, and the file each was built into, with the stylesheets each imports.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
 }

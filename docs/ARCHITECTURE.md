@@ -454,21 +454,25 @@ sessions on a stop.
   once may each draw it, `release.Derived`). A request only reads the
   drawing; the page of no page alone is drawn for each request, since it
   quotes the path asked for.
-- `face/html` draws each document with templ, in the build's stylesheet,
-  and its record as JSON-LD; `face/text` draws the markdown, the manual,
-  `llms.txt` and its own page of no page. `routes` writes every address.
+- `face/html` draws each document with templ, in the build's stylesheet
+  and running its script, with the reader's choice of theme in the site's
+  words (`compose.ThemeWordsOf`), and its record as JSON-LD; `face/text`
+  draws the markdown, the manual, `llms.txt` and its own page of no page.
+  `routes` writes every address.
 - templ compiles the templates into Go, and no file is embedded. `web/`
   is the page's pnpm package: Vite builds it into `build/web` with a
   manifest (ADR-0004, D22); `internal/assets` reads the manifest and every
   file it names into memory, and `hosting/web` serves each at its path for
   a cache to keep for good, its name changing with what it holds. The
-  stylesheet is the build's one entry so far; the islands come with step
-  6, the CV and the cards with Typst (ADR-0005).
+  site's script, `src/entries/site.ts`, is the build's one entry so far, the
+  stylesheet among what it imports; `assets` works out once what a page
+  includes for it, as Vite's guide to backend integration walks a manifest.
+  The islands come with step 6, the CV and the cards with Typst (ADR-0005).
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md), whose
-  negotiation and security headers sections hold today; the rest of it is
-  the first version's.
+  negotiation, security headers and theme sections hold today; the rest of
+  it is the first version's.
 
 ## Project layout
 

@@ -2,6 +2,7 @@
 paths:
   - "**/*_test.go"
   - "**/testdata/**"
+  - "web/tests/**"
 ---
 
 # Tests

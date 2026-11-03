@@ -45,7 +45,7 @@ func (notFound NotFound) page(quotedPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = headOpening(notFound.status, notFound.stylesheets).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = headOpening(notFound.status, notFound.included).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

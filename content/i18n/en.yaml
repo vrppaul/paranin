@@ -1,6 +1,7 @@
 # The site's own words in English, which every face shows beside the facts: the titles of the résumé's
 # sections and of the index's, the labels of the ways to reach the author and of a project's details, the end of
-# what still goes on, and the title of the TUI's health report. `paranin check content` requires every one of them.
+# what still goes on, the title of the TUI's health report, and the page's choice of theme, its label and the two
+# themes. `paranin check content` requires every one of them.
 
 facts: Facts
 experience: Experience
@@ -16,3 +17,6 @@ present: present
 author: author
 resume: Résumé
 health: health
+theme: theme
+light: light
+dark: dark

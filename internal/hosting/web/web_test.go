@@ -10,8 +10,11 @@ import (
 	"github.com/vrppaul/paranin/internal/release"
 )
 
-// The path the build's fixture serves its stylesheet at
-const stylesheetPath = "/assets/ui-fixture.css"
+// The build's fixture's stylesheet and script, which every page a browser reads includes
+const (
+	stylesheetPath = "/assets/site-fixture.css"
+	scriptPath     = "/assets/site-fixture.js"
+)
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
@@ -235,10 +238,10 @@ func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
 	}
 }
 
-// A page a browser reads, and the page of no page, are drawn in the build's stylesheet.
-func TestABrowsedPageIsDrawnInTheStylesheet(test *testing.T) {
+// A page a browser reads, and the page of no page, are drawn in the build's stylesheet and run its script.
+func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
-	want := `<link rel="stylesheet" href="` + stylesheetPath + `">`
+	wanted := []string{`<link rel="stylesheet" href="` + stylesheetPath + `">`, `<script type="module" src="` + scriptPath + `"`}
 	cases := []struct {
 		name string
 		path string
@@ -248,8 +251,11 @@ func TestABrowsedPageIsDrawnInTheStylesheet(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if body := serve(server, http.MethodGet, testCase.path, "text/html").Body.String(); !strings.Contains(body, want) {
-				test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, body, want)
+			body := serve(server, http.MethodGet, testCase.path, "text/html").Body.String()
+			for _, want := range wanted {
+				if !strings.Contains(body, want) {
+					test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, body, want)
+				}
 			}
 		})
 	}

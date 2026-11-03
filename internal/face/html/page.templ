@@ -3,12 +3,14 @@ package html
 import (
 	"time"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 )
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
-// address it is known by with Open Graph, and its markdown, each where it has one; then its head and its blocks.
-templ (writer pageWriter) page(composed document.Document, metadata pageMetadata) {
+// address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
+// then its head and its blocks.
+templ (writer pageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
 		<head>
@@ -19,6 +21,7 @@ templ (writer pageWriter) page(composed document.Document, metadata pageMetadata
 			if metadata.canonical != "" {
 				<link rel="canonical" href={ metadata.canonical }/>
 				@writer.openGraph(metadata)
+				@writer.linkedData(record, metadata.canonical)
 			}
 			if metadata.markdown != "" {
 				<link rel="alternate" type={ markdownType } href={ metadata.markdown }/>

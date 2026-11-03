@@ -3,10 +3,12 @@
 // where gochecksumtype holds every switch to every kind, as it cannot inside generated code. A page names the
 // language of its document, takes its title and description from its head, both as plain text, and names the
 // address it is known by, whole, and the path of its markdown; a page with an address carries Open Graph's tags
-// for the preview of a shared link. Every address is written by routes; a link inside the page leads to a page of
-// the site by its path from the root, at the address where the reader's request chooses the format, which a
-// browser reads as the page, so a page served from this machine leads to this machine. An address of no page
-// reads as NotFound: its status, the path asked for, quoted, and a link to where the site begins under its name.
+// for the preview of a shared link, and the record compose makes beside its document, in schema.org's words, as
+// typed structs written as JSON-LD (linkeddata.go). Every address is written by routes; a link inside the page
+// leads to a page of the site by its path from the root, at the address where the reader's request chooses the
+// format, which a browser reads as the page, so a page served from this machine leads to this machine. An address
+// of no page reads as NotFound: its status, the path asked for, quoted, and a link to where the site begins under
+// its name.
 //
 // The page is markup alone so far: what each part is, a heading by its depth, a period's months as times. How it
 // looks arrives with the page's stylesheet (docs/FOUNDATION.md §5.3), and with it the classes; until then a gap
@@ -22,6 +24,7 @@ import (
 
 	"github.com/a-h/templ"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
@@ -73,16 +76,18 @@ type pageMetadata struct {
 	markdown    string
 }
 
-// Page writes a document as a page of HTML: what it says of itself, then its head, then each block.
-func Page(composed document.Document, site routes.Site) string {
+// Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
+// then its head, then each block.
+func Page(composed document.Document, record compose.Record, site routes.Site) string {
 	writer := pageWriter{site: site}
-	return rendered(writer.page(composed, writer.metadataOf(composed.Head)))
+	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
 }
 
 // rendered is the HTML a component writes.
 func rendered(component templ.Component) string {
 	var builder strings.Builder
-	// A builder takes every write, and no component here returns an error of its own
+	// A builder takes every write, no component here returns an error of its own, and the linked data is structs
+	// of strings, which JSON always encodes
 	_ = component.Render(context.Background(), &builder)
 	return builder.String()
 }

@@ -248,18 +248,18 @@ func statusLine(status int) string {
 // draw draws every page of a snapshot, at the address it is served at.
 func draw(snapshot *content.Snapshot) *drawing {
 	site := routes.New(snapshot.Profile.Site.BaseURL)
-	documents := compose.Documents(snapshot)
+	readPages := compose.Pages(snapshot)
 	index := compose.Index(snapshot)
 	pages := map[string]drawnPage{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}
-	chosen := make(map[string]choice, len(documents))
-	for _, composed := range documents {
-		page := composed.Head.Page
+	chosen := make(map[string]choice, len(readPages))
+	for _, composed := range readPages {
+		page := composed.Document.Head.Page
 		known := site.Address(page, routes.FormatChosen)
-		markdown := drawnAs(markdownMediaType, text.Markdown(composed, site)).knownAt(known)
-		manual := drawnAs(plainMediaType, text.Manual(composed, site)).knownAt(known)
-		browsed := drawnAs(htmlMediaType, html.Page(composed, site)).knownAt(known)
+		markdown := drawnAs(markdownMediaType, text.Markdown(composed.Document, site)).knownAt(known)
+		manual := drawnAs(plainMediaType, text.Manual(composed.Document, site)).knownAt(known)
+		browsed := drawnAs(htmlMediaType, html.Page(composed.Document, composed.Record, site)).knownAt(known)
 		pages[routes.Path(page, routes.FormatMarkdown)] = markdown
 		pages[routes.Path(page, routes.FormatManual)] = manual
 		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}

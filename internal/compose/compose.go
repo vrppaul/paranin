@@ -1,7 +1,8 @@
 // Package compose turns content into the documents every face draws (docs/ARCHITECTURE.md, ADR-0003). It
 // decides once which facts a page shows and in what order, so no face picks them again; it reads the profile's
-// marks into spans and carries its months across. It writes no format of any face: how a span or a period reads
-// is each face's own.
+// marks into spans and carries its months across. Beside each page a person reads it makes the page's record, the
+// facts a search engine reads as data, typed and plain. It writes no format of any face: how a span or a period
+// reads, and the vocabulary a record is written in, are each face's own.
 package compose
 
 import (
@@ -18,14 +19,38 @@ const mailScheme = "mailto:"
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
-// Documents are the pages a snapshot makes for a person to read: the résumé, then the page of each project that
-// has one. Index lists them.
+// Composed is a page a person reads, as compose makes it: its document, and its record, made together so neither
+// is ever without the other.
+type Composed struct {
+	Document document.Document
+	Record   Record
+}
+
+// Pages are the pages a snapshot makes for a person to read, each with its record: the résumé, then the page of
+// each project that has one. Index lists them.
+func Pages(snapshot *content.Snapshot) []Composed {
+	profile := snapshot.Profile
+	pages := []Composed{{Document: Resume(snapshot), Record: personRecord(profile)}}
+	for _, project := range projectsWithPages(profile.Projects) {
+		page := Composed{Document: projectDocument(project, profile.Person, snapshot.Words), Record: workRecord(project, profile.Person)}
+		pages = append(pages, page)
+	}
+	return pages
+}
+
+// Documents are the documents of the pages a person reads, in their order, for a face that draws no record.
 func Documents(snapshot *content.Snapshot) []document.Document {
-	documents := []document.Document{Resume(snapshot)}
-	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
-		documents = append(documents, projectDocument(project, snapshot.Profile.Person, snapshot.Words))
+	pages := Pages(snapshot)
+	documents := make([]document.Document, 0, len(pages))
+	for _, page := range pages {
+		documents = append(documents, page.Document)
 	}
 	return documents
+}
+
+// resumePage is the résumé's page, the site's first.
+func resumePage() document.Page {
+	return document.Page{Kind: document.PageResume, Slug: ""}
 }
 
 // projectsWithPages are the projects that have a page of their own, in their order.
@@ -90,7 +115,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	headline := markedSpans(person.Headline)
 	return document.Head{
-		Page:        document.Page{Kind: document.PageResume, Slug: ""},
+		Page:        resumePage(),
 		Language:    words.Language(),
 		Title:       markedSpans(person.Name),
 		Subtitle:    markedSpans(person.Title),
@@ -157,7 +182,7 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 // projectDocument is a project's own page: its name, what it is in a line and what it does; its details, its
 // author first, a link back to the résumé; its recording, where it has one; then its sections.
 func projectDocument(project content.Project, author content.Person, words content.Words) document.Document {
-	resume := document.Page{Kind: document.PageResume, Slug: ""}
+	resume := resumePage()
 	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
 	details = append(details, factList(project.Facts)...)
 	blocks := []document.Block{document.Facts{List: append(details, projectFacts(project, words)...)}}

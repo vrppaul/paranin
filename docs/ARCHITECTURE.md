@@ -202,8 +202,11 @@ and web routes.
   with `face/html`, the CV among the ways with `face/print`; a section's anchor and
   a link's format and anchor with the first link that names one; project
   pages and the index with `face/text`, the first face to serve them; the
-  extras with `face/tui`; a widget with `face/html`; the posts' blocks and
-  spans with the blog (D18).
+  extras with `face/tui`; the records for JSON-LD, the person's and a
+  project's, with `face/html`, and the sitemap's dates with `face/feed`,
+  the `dateModified` of the résumé's `ProfilePage` with them; a
+  widget with the first island (step 6), since `face/html` came without
+  one; the posts' blocks and spans with the blog (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document` and `look` at the foot, side by
   side; `routes` on `document`; `compose` on the foundation, and on `routes`

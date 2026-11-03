@@ -37,7 +37,8 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
-			golden.Match(test, testCase.file, lined(Page(documentOf(test, snapshot, testCase.page), site)))
+			composed := composedOf(test, snapshot, testCase.page)
+			golden.Match(test, testCase.file, lined(Page(composed.Document, composed.Record, site)))
 		})
 	}
 }
@@ -47,11 +48,11 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 func TestEveryPhraseReachesThePage(test *testing.T) {
 	snapshot := fixtureSnapshot(test)
 	site := fixtureSite(snapshot)
-	for _, composed := range compose.Documents(snapshot) {
-		page := Page(composed, site)
-		for _, phrase := range document.Phrases(composed) {
+	for _, composed := range compose.Pages(snapshot) {
+		page := Page(composed.Document, composed.Record, site)
+		for _, phrase := range document.Phrases(composed.Document) {
 			if !strings.Contains(page, html.EscapeString(phrase)) {
-				test.Errorf("the page of %+v holds no %q", composed.Head.Page, phrase)
+				test.Errorf("the page of %+v holds no %q", composed.Document.Head.Page, phrase)
 			}
 		}
 	}
@@ -64,7 +65,7 @@ func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
-	if page, want := Page(composed, fixtureSite(fixtureSnapshot(test))), "<p>the report</p>"; !strings.Contains(page, want) {
+	if page, want := Page(composed, blankPerson(), fixtureSite(fixtureSnapshot(test))), "<p>the report</p>"; !strings.Contains(page, want) {
 		test.Errorf("the page %q holds no %q", page, want)
 	}
 }
@@ -76,7 +77,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
 		Blocks: nil,
 	}
-	page := Page(composed, fixtureSite(fixtureSnapshot(test)))
+	page := Page(composed, blankPerson(), fixtureSite(fixtureSnapshot(test)))
 	for _, unwanted := range []string{`name="description"`, `property="og:description"`} {
 		if strings.Contains(page, unwanted) {
 			test.Errorf("the page %q holds %q", page, unwanted)
@@ -91,6 +92,17 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	missing := NewNotFound(fixtureSite(fixtureSnapshot(test)), "404 Not Found", "en").For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
+}
+
+// A person who works nowhere now is written with no employer, rather than with an employer of no name.
+func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
+	snapshot := fixtureSnapshot(test)
+	resume := document.Page{Kind: document.PageResume, Slug: ""}
+	record := blankPerson()
+	record.Name = "Mira Example"
+	if page := Page(composedOf(test, snapshot, resume).Document, record, fixtureSite(snapshot)); strings.Contains(page, "worksFor") {
+		test.Errorf("the page %q names an employer", page)
+	}
 }
 
 // lined is a page with a line break between each two tags that meet, so its golden file reads in a diff; a space
@@ -112,13 +124,22 @@ func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
 }
 
-// documentOf is the document compose makes of a page of the fixture.
-func documentOf(test *testing.T, snapshot *content.Snapshot, page document.Page) document.Document {
-	for _, composed := range compose.Documents(snapshot) {
-		if composed.Head.Page == page {
+// composedOf is a page of the fixture as compose makes it, its document and its record.
+func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page) compose.Composed {
+	for _, composed := range compose.Pages(snapshot) {
+		if composed.Document.Head.Page == page {
 			return composed
 		}
 	}
 	test.Fatalf("compose made no page %+v", page)
-	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}
+	return compose.Composed{Document: document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}, Record: nil}
+}
+
+// blankPerson is a record of a person with no facts, for a page a test builds by hand: every page a person reads
+// has a record, and a page standing for the résumé has a person's.
+func blankPerson() compose.PersonRecord {
+	return compose.PersonRecord{
+		Name: "", AlternateNames: nil, Title: "", Email: "", Employer: "", Schools: nil, Skills: nil, Languages: nil,
+		Profiles: nil,
+	}
 }

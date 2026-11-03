@@ -97,6 +97,30 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 }
 
+// Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code.
+func TestEveryPageCarriesItsRecord(test *testing.T) {
+	server := New(fixtureStore(test, fixtureCopy(test)))
+	cases := []struct {
+		name  string
+		path  string
+		holds string
+	}{
+		{name: "the résumé", path: "/", holds: `"@type":"ProfilePage"`},
+		{name: "a project's page", path: "/p/tidy-tool", holds: `"@type":"SoftwareSourceCode","name":"tidy-tool"`},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+			request.Header.Set("Accept", "text/html")
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if !strings.Contains(response.Body.String(), testCase.holds) {
+				test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, response.Body.String(), testCase.holds)
+			}
+		})
+	}
+}
+
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
 // its manual as that page; the index, which is no page a person reads, names none.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {

@@ -84,6 +84,15 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 	}
 }
 
+// The page of an address the site has no page at opens its head as every page does, names its language, and its
+// status in its title and on the page; quotes the path asked for as Go quotes a string, so no control character
+// in it reaches the page; and leads to where the site begins, by its path, under the site's name. It is held to
+// its golden file whole.
+func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
+	missing := NewNotFound(fixtureSite(fixtureSnapshot(test)), "404 Not Found", "en").For("/nothing\x1b[2J<b>")
+	golden.Match(test, "notfound.html", lined(missing))
+}
+
 // lined is a page with a line break between each two tags that meet, so its golden file reads in a diff; a space
 // or a word between two tags stays where it is.
 func lined(page string) string {

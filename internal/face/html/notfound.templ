@@ -1,0 +1,19 @@
+package html
+
+// page is the page of a path the site has no page at, quoted: its status, the path, and a link to where the site
+// begins.
+templ (notFound NotFound) page(quotedPath string) {
+	<!DOCTYPE html>
+	<html lang={ notFound.language }>
+		<head>
+			@headOpening(notFound.status)
+		</head>
+		<body>
+			<main>
+				<h1>{ notFound.status }</h1>
+				<p><code>{ quotedPath }</code></p>
+				<p><a href={ notFound.start }>{ notFound.siteName }</a></p>
+			</main>
+		</body>
+	</html>
+}

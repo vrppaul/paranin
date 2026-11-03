@@ -5,7 +5,8 @@
 // it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as a name ending in
 // .txt promises. Each format of a page names in a Link header the address the page is known by, the one where the
 // reader chooses, so a search engine counts its markdown and its manual as the page. Any other path is answered
-// with the text of no page, drawn once like the pages but for the path, which each request quotes in it.
+// with the page of no page, in text or in HTML, whichever the reader's request ranks higher: drawn for each
+// request, since it quotes the path asked for, in the chosen format alone.
 package web
 
 import (
@@ -87,16 +88,40 @@ type Server struct {
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at: in each format at its own path, and
-// in every format at the address where the reader chooses; and the text of an address of no page.
+// in every format at the address where the reader chooses; and the page of an address of no page.
 type drawing struct {
 	pages    map[string]drawnPage
 	chosen   map[string]choice
-	notFound text.NotFound
+	notFound missingChoice
 }
 
 // choice is one page in each format a reader may choose, never none, in the order a tie between two goes: the
 // manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual.
 type choice []drawnPage
+
+// missingChoice is the page of no page in each format a reader may choose, never none, in the order a tie between
+// them goes: text, then HTML.
+type missingChoice []missingFormat
+
+// missingFormat is a format the page of no page is served in: its media type, and how it is drawn for the path
+// asked for, which each request quotes in it.
+type missingFormat struct {
+	mediaType string
+	draw      func(path string) string
+}
+
+// offer is a format a reader may choose, by the media type an Accept header ranks.
+type offer interface {
+	servedAs() string
+}
+
+func (page drawnPage) servedAs() string {
+	return page.mediaType
+}
+
+func (format missingFormat) servedAs() string {
+	return format.mediaType
+}
 
 // drawnPage is one page as it is sent: the media type it is, which an Accept header ranks, the header that says
 // it, the Link header naming the address the page is known by, empty where it is none a person reads, and its
@@ -138,21 +163,23 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		send(writer, http.StatusOK, found)
 		return
 	}
+	writer.Header().Set(varyHeader, acceptHeader)
+	accept := request.Header.Get(acceptHeader)
 	if offered, isChosen := drawn.chosen[request.URL.Path]; isChosen {
-		writer.Header().Set(varyHeader, acceptHeader)
-		send(writer, http.StatusOK, offered.chosenBy(request.Header.Get(acceptHeader)))
+		send(writer, http.StatusOK, rankedFirst(accept, offered))
 		return
 	}
-	send(writer, missingStatus, drawnAs(plainMediaType, drawn.notFound.For(request.URL.Path)))
+	missing := rankedFirst(accept, drawn.notFound)
+	send(writer, missingStatus, drawnAs(missing.mediaType, missing.draw(request.URL.Path)))
 }
 
-// chosenBy is the page in the format an Accept header ranks highest, the first of the choice where it ranks two
-// alike: a browser, which ranks HTML above anything else, gets the page it shows.
-func (offered choice) chosenBy(accept string) drawnPage {
-	first := offered[0]
-	chosen, best := first, quality(accept, first.mediaType)
-	for _, format := range offered[1:] {
-		if ranked := quality(accept, format.mediaType); ranked > best {
+// rankedFirst is the format an Accept header ranks highest, the first of them where it ranks two alike: a browser,
+// which ranks HTML above anything else, gets the page it shows. The formats are never none.
+func rankedFirst[Offer offer](accept string, formats []Offer) Offer {
+	first := formats[0]
+	chosen, best := first, quality(accept, first.servedAs())
+	for _, format := range formats[1:] {
+		if ranked := quality(accept, format.servedAs()); ranked > best {
 			chosen, best = format, ranked
 		}
 	}
@@ -237,5 +264,10 @@ func draw(snapshot *content.Snapshot) *drawing {
 		pages[routes.Path(page, routes.FormatManual)] = manual
 		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
 	}
-	return &drawing{pages: pages, chosen: chosen, notFound: text.NewNotFound(site, statusLine(missingStatus))}
+	status := statusLine(missingStatus)
+	notFound := missingChoice{
+		{mediaType: plainMediaType, draw: text.NewNotFound(site, status).For},
+		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, snapshot.Words.Language()).For},
+	}
+	return &drawing{pages: pages, chosen: chosen, notFound: notFound}
 }

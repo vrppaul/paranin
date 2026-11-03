@@ -12,9 +12,7 @@ templ (writer pageWriter) page(composed document.Document, metadata pageMetadata
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
 		<head>
-			<meta charset="utf-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ metadata.title }</title>
+			@headOpening(metadata.title)
 			if metadata.description != "" {
 				<meta name="description" content={ metadata.description }/>
 			}
@@ -35,6 +33,14 @@ templ (writer pageWriter) page(composed document.Document, metadata pageMetadata
 			</main>
 		</body>
 	</html>
+}
+
+// headOpening is what the head of every page opens with: its text's encoding, its width a phone's own, and its
+// title.
+templ headOpening(title string) {
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>{ title }</title>
 }
 
 // openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, its title and

@@ -128,26 +128,43 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	}
 }
 
-// An address of no page is not found, in plain text opening with the status it is answered with and the path
-// asked for, as the request decoded it.
+// An address of no page is not found, and says so with the status it is answered with and the path asked for, as
+// the request decoded it: in plain text to a terminal, an agent and a request naming nothing, in HTML, in the
+// site's language, to a browser; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	server := New(fixtureStore(test, fixtureCopy(test)))
+	const (
+		plain   = "text/plain; charset=utf-8"
+		browsed = "text/html; charset=utf-8"
+		browser = "text/html,application/xhtml+xml,*/*;q=0.8"
+	)
 	cases := []struct {
-		name  string
-		path  string
-		opens string
+		name        string
+		path        string
+		accept      string
+		contentType string
+		holds       string
 	}{
-		{name: "a project with no page", path: "/p/other-tool.md", opens: `404 Not Found: "/p/other-tool.md"`},
-		{name: "no page at all", path: "/nothing", opens: `404 Not Found: "/nothing"`},
-		{name: "a path written escaped", path: "/no%20thing", opens: `404 Not Found: "/no thing"`},
+		{name: "a project with no page", path: "/p/other-tool.md", accept: "", contentType: plain, holds: `404 Not Found: "/p/other-tool.md"`},
+		{name: "no page at all", path: "/nothing", accept: "", contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "a path written escaped", path: "/no%20thing", accept: "", contentType: plain, holds: `404 Not Found: "/no thing"`},
+		{name: "curl, taking anything", path: "/nothing", accept: "*/*", contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
+		{name: "a browser, in the site's language", path: "/nothing", accept: browser, contentType: browsed, holds: `<html lang="en">`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path)
-			if response.Code != http.StatusNotFound || response.Header().Get("Content-Type") != "text/plain; charset=utf-8" ||
-				!strings.HasPrefix(response.Body.String(), testCase.opens) {
-				test.Errorf("GET %s = %d %q, %q; want %d %q, opening %q", testCase.path, response.Code,
-					response.Header().Get("Content-Type"), response.Body.String(), http.StatusNotFound, "text/plain; charset=utf-8", testCase.opens)
+			request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+			request.Header.Set("Accept", testCase.accept)
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			header := response.Header()
+			if response.Code != http.StatusNotFound || header.Get("Content-Type") != testCase.contentType ||
+				!strings.Contains(response.Body.String(), testCase.holds) || header.Get("Vary") != "Accept" {
+				test.Errorf("GET %s, Accept %q = %d %q, Vary %q, %q; want %d %q, Vary %q, holding %q", testCase.path,
+					testCase.accept, response.Code, header.Get("Content-Type"), header.Get("Vary"), response.Body.String(),
+					http.StatusNotFound, testCase.contentType, "Accept", testCase.holds)
 			}
 		})
 	}

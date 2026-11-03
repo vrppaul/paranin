@@ -5,7 +5,8 @@
 // address it is known by, whole, and the path of its markdown; a page with an address carries Open Graph's tags
 // for the preview of a shared link. Every address is written by routes; a link inside the page leads to a page of
 // the site by its path from the root, at the address where the reader's request chooses the format, which a
-// browser reads as the page, so a page served from this machine leads to this machine.
+// browser reads as the page, so a page served from this machine leads to this machine. An address of no page
+// reads as NotFound: its status, the path asked for, quoted, and a link to where the site begins under its name.
 //
 // The page is markup alone so far: what each part is, a heading by its depth, a period's months as times. How it
 // looks arrives with the page's stylesheet (docs/FOUNDATION.md §5.3), and with it the classes; until then a gap
@@ -75,9 +76,14 @@ type pageMetadata struct {
 // Page writes a document as a page of HTML: what it says of itself, then its head, then each block.
 func Page(composed document.Document, site routes.Site) string {
 	writer := pageWriter{site: site}
+	return rendered(writer.page(composed, writer.metadataOf(composed.Head)))
+}
+
+// rendered is the HTML a component writes.
+func rendered(component templ.Component) string {
 	var builder strings.Builder
 	// A builder takes every write, and no component here returns an error of its own
-	_ = writer.page(composed, writer.metadataOf(composed.Head)).Render(context.Background(), &builder)
+	_ = component.Render(context.Background(), &builder)
 	return builder.String()
 }
 

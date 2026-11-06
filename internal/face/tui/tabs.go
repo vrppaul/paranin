@@ -548,16 +548,6 @@ func (layout layout) bullet(words []word, indent int) []line {
 	return layout.continued(lead, words, indent+bulletHang)
 }
 
-// continued lays out words after a lead already on the line, the words' lines standing in at a column.
-func (layout layout) continued(lead line, words []word, column int) []line {
-	lines := layout.fill(words, column)
-	if len(lines) == 0 {
-		return []line{lead}
-	}
-	lines[0] = append(lead, lines[0][1:]...)
-	return lines
-}
-
 // titleLine lays out left words with right words at the right of the same line, or each on lines of its own
 // where both do not fit.
 func (layout layout) titleLine(left, right []word, indent int) []line {

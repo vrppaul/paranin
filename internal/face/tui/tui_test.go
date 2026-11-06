@@ -31,6 +31,8 @@ const (
 	phoneHeight    = 20
 	smallestWidth  = 10
 	smallestHeight = 3
+	// a page as wide as the label Email, its gap and one column
+	oneColumnLeft = 8
 )
 
 // The résumé's first tab holds its facts as a brief beside the name, as neofetch prints a system's, each once, as
@@ -386,6 +388,52 @@ func TestARoleReadsWithItsPeriodAndPlace(test *testing.T) {
 				test.Errorf("at %d columns the experience tab =\n%s\nwant it to hold %q", testCase.width, screen, testCase.want)
 			}
 		})
+	}
+}
+
+// A table's row that gives way to words, its columns leaving the last too little room, fills its first line to the
+// page's edge.
+func TestARowGivenWayToWordsFillsItsFirstLine(test *testing.T) {
+	// the words of the row's first line, its cells parted by the place mark, exactly as wide as a phone's page
+	const firstLine = "abcdefghijklmn · opqrstuvwxy"
+	row := document.Row{Cells: []document.Cell{{Spans: textOf("abcdefghijklmn")}, {Spans: textOf("opqrstuvwxy z")}}}
+	model := handResume(test, "home", phoneWidth, tallHeight, document.Table{Rows: []document.Row{row}})
+	if page := aboveTheStatusLine(screenOf(test, model)); !strings.Contains(page, firstLine) {
+		test.Errorf("at %d columns the page =\n%s\nwant the row's first line %q whole", phoneWidth, page, firstLine)
+	}
+}
+
+// A word of letters two columns wide, where the line leaves one column for it, does not stop the tab from being laid
+// out: each line takes a letter, though the page cuts it, a letter of one code point or of several.
+func TestAWordOfWideLettersLeavesTheTabLaidOut(test *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+	}{
+		{name: "letters of one code point", value: "中文"},
+		{name: "letters of two code points", value: "❤️❤️"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			facts := document.Facts{List: []document.Fact{{Label: "Email", Value: textOf(testCase.value)}}}
+			if page := aboveTheStatusLine(screenOf(test, handResume(test, "home", oneColumnLeft, tallHeight, facts))); !strings.Contains(page, "Email") {
+				test.Errorf("at %d columns with %q the page =\n%s\nwant the fact's label %q", oneColumnLeft, testCase.value, page, "Email")
+			}
+		})
+	}
+}
+
+// A letter wider than the room its line leaves stands on that line, the next word on the line after: no line is
+// left blank between them.
+func TestALetterWiderThanItsRoomLeavesNoBlankLine(test *testing.T) {
+	facts := document.Facts{List: []document.Fact{{Label: "Email", Value: textOf("中 ab")}}}
+	lines := strings.Split(aboveTheStatusLine(screenOf(test, handResume(test, "home", oneColumnLeft, tallHeight, facts))), lineEnd)
+	label := slices.IndexFunc(lines, func(shown string) bool { return strings.Contains(shown, "Email") })
+	if label < 0 || label+1 >= len(lines) {
+		test.Fatalf("the page =\n%s\nwant a line holding the label %q and one after it", strings.Join(lines, lineEnd), "Email")
+	}
+	if next := strings.TrimSpace(lines[label+1]); next != "a" {
+		test.Errorf("the page =\n%s\nthe line after the label's holds %q, want %q", strings.Join(lines, lineEnd), next, "a")
 	}
 }
 

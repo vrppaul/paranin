@@ -183,45 +183,76 @@ func sameForm(first, second run) bool {
 	return first.kind == second.kind && first.highlighted == second.highlighted && first.address == second.address
 }
 
-// fill lays words out in lines of the layout's width, each from an indent. A word wider than a line breaks where
-// the line ends, as a terminal breaks it, so none of it is lost.
+// fill lays words out in lines of the layout's width, each from an indent; no line where there are no words.
 func (layout layout) fill(words []word, indent int) []line {
-	lines := []line{}
-	current, used := line{indentRun(indent)}, 0
-	for _, next := range brokenWords(words, max(layout.width-indent, 1)) {
-		width := wordsWidth([]word{next})
-		switch {
-		case used == 0:
-			current, used = append(current, next.runs...), width
-		case indent+used+spaceWidth+width <= layout.width:
-			current = append(append(current, spaceRun(next)), next.runs...)
-			used += spaceWidth + width
-		default:
-			lines = append(lines, current)
-			current, used = append(line{indentRun(indent)}, next.runs...), width
-		}
+	if len(words) == 0 {
+		return []line{}
 	}
-	if used > 0 {
-		lines = append(lines, current)
-	}
-	return lines
+	return layout.continued(line{indentRun(indent)}, words, indent)
 }
 
-// brokenWords are words with each one wider than the room broken into pieces as wide as the room.
-func brokenWords(words []word, room int) []word {
-	broken := make([]word, 0, len(words))
+// continued lays out words after a lead already on the line, in lines of the layout's width: each line takes as many
+// words as its room holds, a space between each two, the first line the room the lead leaves, the later ones
+// standing in at a column. A word that opens a line and is wider than its room breaks where the line ends, as a
+// terminal breaks it, so none of it is lost.
+func (layout layout) continued(lead line, words []word, column int) []line {
+	packing := packing{width: layout.width, column: column, lines: []line{}, current: lead, used: runsWidth(lead), holdsWord: false}
 	for _, next := range words {
-		for wordsWidth([]word{next}) > room {
-			piece, rest := cutWord(next, room)
-			broken = append(broken, piece)
-			next = rest
-		}
-		broken = append(broken, next)
+		packing.add(next)
 	}
-	return broken
+	return append(packing.lines, packing.current)
 }
 
-// cutWord parts a word after a width: the piece that fills it, and the rest, with no space before it.
+// packing is words being laid in lines of a width, each line after the first standing in at a column: the lines
+// filled, the line being laid and how many columns it takes, and whether it holds a word yet, which only the first
+// line, a lead alone, may not, since every line opened after it takes its word at once.
+type packing struct {
+	width     int
+	column    int
+	lines     []line
+	current   line
+	used      int
+	holdsWord bool
+}
+
+// add lays a word on the line being laid, a space before it, where it fits; else on a line of its own, broken
+// across lines where it is wider than one.
+func (packing *packing) add(next word) {
+	width := wordsWidth([]word{next})
+	if packing.holdsWord && packing.used+spaceWidth+width <= packing.width {
+		packing.current = append(append(packing.current, spaceRun(next)), next.runs...)
+		packing.used += spaceWidth + width
+		return
+	}
+	if packing.holdsWord {
+		packing.open()
+	}
+	// a line holds a letter at least, where its lead or its column leaves it no room
+	for room := max(packing.width-packing.used, 1); width > room; room = max(packing.width-packing.used, 1) {
+		piece, rest := cutWord(next, room)
+		// a piece that took the whole word, its last letter wider than the room, stays on the line as it is
+		if len(rest.runs) == 0 {
+			next, width = piece, wordsWidth([]word{piece})
+			break
+		}
+		packing.current = append(packing.current, piece.runs...)
+		packing.open()
+		next, width = rest, wordsWidth([]word{rest})
+	}
+	packing.current = append(packing.current, next.runs...)
+	packing.used += width
+	packing.holdsWord = true
+}
+
+// open ends the line being laid and opens the next, standing in at the column.
+func (packing *packing) open() {
+	packing.lines = append(packing.lines, packing.current)
+	packing.current, packing.used = line{indentRun(packing.column)}, packing.column
+}
+
+// cutWord parts a word after a width: the piece that fills it, and the rest, with no space before it. The piece holds
+// at least the word's first letter, as the screen shows it, though that letter be wider than the width, so the rest
+// is always narrower than the word.
 func cutWord(whole word, width int) (word, word) {
 	piece := word{runs: nil, highlightBefore: whole.highlightBefore}
 	rest := word{runs: nil, highlightBefore: false}
@@ -234,9 +265,18 @@ func cutWord(whole word, width int) (word, word) {
 		case used+partWidth <= width:
 			piece.runs = append(piece.runs, part)
 		default:
+			cut := width - used
+			if used == 0 {
+				_, letterWidth := ansi.FirstGraphemeCluster(part.text, ansi.GraphemeWidth)
+				cut = max(cut, letterWidth)
+			}
 			head, tail := part, part
-			head.text, tail.text = ansi.Cut(part.text, 0, width-used), ansi.Cut(part.text, width-used, partWidth)
-			piece.runs, rest.runs = append(piece.runs, head), append(rest.runs, tail)
+			head.text, tail.text = ansi.Cut(part.text, 0, cut), ansi.Cut(part.text, cut, partWidth)
+			piece.runs = append(piece.runs, head)
+			// a letter wider than the width, taken whole, may leave nothing of the run for the rest
+			if tail.text != "" {
+				rest.runs = append(rest.runs, tail)
+			}
 		}
 		used += partWidth
 	}

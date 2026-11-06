@@ -80,7 +80,7 @@ func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 	if _, err := io.WriteString(input, "l"); err != nil {
 		test.Fatalf("press l = %v, want the session still open", err)
 	}
-	readUntil(test, output, "5 years")
+	readUntil(test, output, "Kept the queue")
 }
 
 // A session opens the health report with :checkhealth: the server hands the TUI the extras beside the site's pages.

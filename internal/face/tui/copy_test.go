@@ -25,7 +25,7 @@ func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 		{name: "a link", keys: nil, query: "github.test", value: "github.test/mira"},
 		{name: "the ssh command", keys: nil, query: "ssh ex", value: "ssh example.test"},
 		{
-			name: "a value from its second line", keys: []string{"l"}, query: "next",
+			name: "a value from its second line", keys: nil, query: "next",
 			value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next",
 		},
 	}

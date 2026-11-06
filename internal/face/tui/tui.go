@@ -5,6 +5,15 @@
 // is the prompt, the places and the status line alone. The head of a document and what stands before its first section
 // are the first tab, named by the head's opening title, or by its title where it has none; each section after them is
 // a tab of its own, titled as the document titles it. The head shows its greeting above its title, where it has one.
+// Where the résumé's first section holds facts alone, they join the first tab as a brief, as neofetch prints a
+// system's: the greeting and the name stand in a column, beside the brief where the page has room for both and above
+// it where not. The name stands in the first version's block font where it fits and the font draws every letter of
+// it, as text where not, its colours going from the accent to the host's. The brief opens with the first way to reach
+// the author, the address in two colours parted at its at, then the subtitle and the place, the facts and the other
+// ways, each by its label, then a row of the design's colours. Under them the career's line lays each role, an entry
+// of the first section that holds any, along the months from the first role's start, or the day the session opened
+// where that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
+// running to the site's word for the present, each company over its span; the lead comes last.
 // The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key
 // where they type one, and each tab keeps its place; where more of a tab lies below the page, the rim says how many
 // lines, as Neovim counts them, the two rows above it fade, and a scrollbar at the right shows how far down the page
@@ -34,10 +43,11 @@
 // terminal blinks, as the first version's blinked, in the accent where the terminal shows many colours: the program
 // writes no frame to blink it, so a session left alone writes nothing and its idle timeout runs out. Where they type
 // nothing, the prompt ends in the site's cursor, and so does the résumé's title, the author's name: the bar in the
-// accent the page, the PDF and the card draw there. It stands still, where the first version's blinked for half a
-// minute after a key: a blink would need a tick, a count and the head painted again each half second, where a tab is
-// painted once. What a key says, an error among it, stands alone on the prompt's row, as Neovim's command line says
-// it, so it has the row's whole width.
+// accent the page, the PDF and the card draw there; where the name stands in the block font, a bar as tall as it and
+// as wide as the font's strokes, as the storyboard of the look drew it. It stands still, where the first version's
+// blinked for half a minute after a key: a blink would need a tick, a count and the head painted again each half
+// second, where a tab is painted once. What a key says, an error among it, stands alone on the prompt's row, as
+// Neovim's command line says it, so it has the row's whole width.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the
 // frame around it and the window of keys: a key press only chooses which painted lines show, fades the two above the
@@ -52,6 +62,7 @@ package tui
 
 import (
 	"slices"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
@@ -81,6 +92,8 @@ type Model struct {
 	// site writes the addresses links lead to, and names the site on the prompt
 	site     routes.Site
 	terminal terminal
+	// today is the day the session opened, which a role still held runs to on the career's line
+	today time.Time
 	// frame and laid are where the page sits and each tab laid out in it, worked out again when the terminal's
 	// size changes; paint and drawn are how it looks and each tab painted, worked out again when its size, its
 	// background or its colours change. Never for a key
@@ -112,8 +125,9 @@ type terminal struct {
 }
 
 // New is a session that holds documents, the résumé among them and shown first, in a terminal of a size, a dark one
-// of full colour until it says what it is. A size of nothing is taken for a common terminal's.
-func New(documents []document.Document, site routes.Site, width, height int) Model {
+// of full colour until it says what it is, opened on a day, which a role still held runs to on the career's line. A
+// size of nothing is taken for a common terminal's.
+func New(documents []document.Document, site routes.Site, width, height int, today time.Time) Model {
 	if width <= 0 || height <= 0 {
 		width, height = assumedWidth, assumedHeight
 	}
@@ -127,9 +141,10 @@ func New(documents []document.Document, site routes.Site, width, height int) Mod
 		slugs:      slugs,
 		site:       site,
 		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
+		today:      today,
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, crosses: false, footer: nil},
 		laid:       nil,
-		paint:      paint{kinds: nil, parts: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
+		paint:      paint{kinds: nil, parts: nil, nameTones: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", rim: "", panelGap: "", idlePrompt: "", track: "", thumb: "", keyWindow: paintedWindow{rows: nil, width: 0}},
 		chosen:     0,
 		scrolls:    make([]int, len(buffers[shown])),
@@ -191,7 +206,7 @@ func themeOf(dark bool) look.Theme {
 // relaid is the model with every tab laid out again for the terminal's size, then painted.
 func (model Model) relaid() Model {
 	model.frame = frameOf(model.terminal.width, model.terminal.height)
-	layout := layout{site: model.site, width: model.frame.inner}
+	layout := layout{site: model.site, width: model.frame.inner, today: model.today}
 	model.laid = make([][]line, 0, len(model.tabs))
 	for _, shown := range model.tabs {
 		model.laid = append(model.laid, layout.tab(shown))

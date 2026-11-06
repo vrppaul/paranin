@@ -17,11 +17,11 @@
   --faint: light-dark(#8c8fa1, #8087a2);
   /* a rule between two parts of a bar, or inside a window */
   --quiet: light-dark(#ccd0da, #363a4f);
-  /* the border of a window laid over the page */
+  /* the border of a window laid over the page, and a role that ended on the career's line */
   --edge: light-dark(#9ca0b0, #5b6078);
   /* what the eye goes to first, a command among it */
   --accent: light-dark(#fe640b, #f5a97f);
-  /* the site's host where it is written, as the prompt's */
+  /* the site's host where it is written, as the prompt's, and the far end of the author's name */
   --host: light-dark(#8839ef, #c6a0f6);
   /* what names the text after it, as the place in the prompt */
   --label: light-dark(#1e66f5, #8aadf4);

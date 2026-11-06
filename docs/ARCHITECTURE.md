@@ -159,6 +159,18 @@ and web routes.
   for them, so `Phrases` leaves them out: a greeting before the title, and
   the title of the opening, what stands before the first section, for a face
   that names its parts. The résumé carries both; the TUI shows both.
+  The TUI's opening shows three phrases by its form, as neofetch prints a
+  system (amended 2026-11-06, with the look the owner chose): the name in
+  the block font where the page has room for it and the font draws every
+  letter of it, so a search finds the name only where it reads as text;
+  the résumé's first section, where it holds facts alone, as a brief
+  beside the name, without its title or a tab of its own; and the first
+  way to reach the author, the mail, at the brief's head without its
+  label, the other ways after the facts. Under them a career's line lays
+  out the roles, the entries of the first section that holds any, and the
+  lead comes last. Both the brief and the roles are found by their place
+  in the document, since an entry does not say whether it is a role or a
+  school (TODO).
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a

@@ -13,7 +13,7 @@ import (
 
 // The keys that reach the experience tab, which opens with a role, its point, a blank line, then the next role
 func toExperience() []string {
-	return []string{"l", "l"}
+	return []string{"l"}
 }
 
 // A search finds its text in the tab, whatever its case, scrolls to the first line holding it at or after where
@@ -306,7 +306,7 @@ func TestMatchesNeverOverlap(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{document.Text{Text: "aaa aa"}}}},
 	}
-	model := pressed(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight), "/")
+	model := pressed(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay()), "/")
 	if screen := screenOf(test, pressed(test, typed(test, model, "aa"), "enter")); !strings.Contains(screen, "/aa [1/2]") {
 		test.Errorf("after searching %q in %q the screen =\n%s\nwant two matches", "aa", "aaa aa", screen)
 	}
@@ -401,7 +401,7 @@ func TestANumberAloneChoosesItsTab(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		alone, wait := fixtureModel(test, commonWidth, shortHeight).Update(keyPress(test, "3"))
 		chosen, _ := alone.Update(wait())
-		if screen := screenOf(test, as[Model](test, chosen)); !strings.Contains(screen, "Northwind") {
+		if screen := screenOf(test, as[Model](test, chosen)); !strings.Contains(screen, "other-tool") {
 			test.Errorf("after 3 and a pause the screen =\n%s\nwant the third tab", screen)
 		}
 	})
@@ -418,8 +418,8 @@ func TestANumberBeforeAKeyCountsTheKey(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "3l goes three tabs on", start: []string{"3", "l"}, digit: 0, then: nil, holds: "Projects", lacks: "Northwind"},
-		{name: "2gg goes to the second line", start: append(toExperience(), "2", "g"), digit: 2, then: []string{"g"}, holds: "Kept the queue", lacks: "Northwind"},
+		{name: "2l goes two tabs on", start: []string{"2", "l"}, digit: 0, then: nil, holds: "other-tool", lacks: "Kept the queue"},
+		{name: "2gg goes to the second line", start: append(toExperience(), "2", "g"), digit: len(toExperience()), then: []string{"g"}, holds: "Kept the queue", lacks: "Northwind"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

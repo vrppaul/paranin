@@ -39,16 +39,33 @@ const (
 	kindWarned
 	// kindFailed says a check failed
 	kindFailed
+	// kindName is the author's name, its colours going from the accent to the host's along it
+	kindName
+	// kindLabel names what follows it in the brief
+	kindLabel
+	// kindMailbox is the mailbox of an address, before its at
+	kindMailbox
+	// kindHost is the site's host where the address names it
+	kindHost
+	// kindCurrent is what still goes on: the role still held on the career's line, and the site's word for it
+	kindCurrent
+	// kindPast is a role on the career's line that ended
+	kindPast
+	// kindSwatch is a sample of the design's colours, each sample in the next of them
+	kindSwatch
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address
-// where it is a link, and carrying the value y copies from its line where it is part of a fact's value.
+// where it is a link, and carrying the value y copies from its line where it is part of a fact's value; and, for a
+// kind painted in several colours, its tone: which of them it takes, the name's going along it, the swatches' round
+// the design's.
 type run struct {
 	text        string
 	kind        kind
 	highlighted bool
 	address     string
 	copied      string
+	tone        int
 }
 
 // line is one line of a tab, the runs it is made of; every line a layout makes opens with its indent.
@@ -64,13 +81,13 @@ type word struct {
 // words are the words of spans read as a kind of text: marks become runs of their own kind, a link carries its
 // address, and a command stays one word, its spaces and all, so it never breaks.
 func (layout layout) words(spans []document.Span, base kind) []word {
-	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: ""})
+	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: "", tone: 0})
 }
 
 // valueWords are the words of a fact's value, read as text, each run carrying the value they read as, which y
 // copies from any line of them.
 func (layout layout) valueWords(value []document.Span) []word {
-	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value)})
+	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value), tone: 0})
 }
 
 // formWords are the words of spans read in the form a run gives them.
@@ -84,7 +101,7 @@ func (layout layout) formWords(spans []document.Span, form run) []word {
 func textWords(text string, base kind) []word {
 	words := []word{}
 	for written := range strings.FieldsSeq(text) {
-		words = append(words, word{runs: []run{{text: written, kind: base, highlighted: false, address: "", copied: ""}}, highlightBefore: false})
+		words = append(words, word{runs: []run{{text: written, kind: base, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false})
 	}
 	return words
 }
@@ -225,7 +242,7 @@ func cutWord(whole word, width int) (word, word) {
 
 // spaceRun is the space before a word, highlighted where the space was.
 func spaceRun(next word) run {
-	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: ""}
+	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: "", tone: 0}
 }
 
 // wordRuns are words laid in one line, a space between each two.
@@ -259,7 +276,7 @@ func indentRun(indent int) run {
 }
 
 func gapRun(width int) run {
-	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: ""}
+	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: "", tone: 0}
 }
 
 // padded is a text with spaces after it to a width.

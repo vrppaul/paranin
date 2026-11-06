@@ -18,11 +18,11 @@ const (
 	ColourFaint
 	// ColourQuiet is a rule between two parts of a bar, or inside a window
 	ColourQuiet
-	// ColourEdge is the border of a window laid over the page
+	// ColourEdge is the border of a window laid over the page, and a role that ended on the career's line
 	ColourEdge
 	// ColourAccent is what the eye goes to first, a command among it
 	ColourAccent
-	// ColourHost is the site's host where it is written, as the prompt's
+	// ColourHost is the site's host where it is written, as the prompt's, and the far end of the author's name
 	ColourHost
 	// ColourLabel is what names the text after it, as the place in the prompt
 	ColourLabel

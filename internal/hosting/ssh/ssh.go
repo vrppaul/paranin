@@ -139,7 +139,7 @@ func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.Program
 	drawn := opening.drawn.Current()
 	model := watchedModel{
 		logger: opening.logger,
-		model:  tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height),
+		model:  tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height, time.Now()),
 		remote: session.RemoteAddr().String(),
 	}
 	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}

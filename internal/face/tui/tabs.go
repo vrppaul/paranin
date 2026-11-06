@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -67,16 +68,24 @@ type tab struct {
 	// head is the document's head on the tab that opens with it, and nothing on a section's
 	head   *document.Head
 	blocks []document.Block
+	// brief is, on the résumé's opening tab, the facts of its first section where that section holds them alone,
+	// drawn beside the head as neofetch prints a system's, in place of a tab of their own; and career the résumé's
+	// roles, for the career's line under them. Both are nothing on any other tab
+	brief  []document.Fact
+	career []document.Entry
 }
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
-// opening title, or by its title where it has none, then each section.
+// opening title, or by its title where it has none, and on the résumé its first section's facts where it holds them
+// alone; then each section after.
 func tabsOf(composed document.Document) []tab {
 	title := composed.Head.OpeningTitle
 	if title == "" {
 		title = document.PlainText(composed.Head.Title)
 	}
-	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil}
+	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil, brief: nil, career: nil}
+	// only the résumé opens as neofetch prints a system
+	briefed := composed.Head.Page.Kind == document.PageResume
 	sections := []tab{}
 	for _, block := range composed.Blocks {
 		section, isSection := block.(document.Section)
@@ -84,10 +93,47 @@ func tabsOf(composed document.Document) []tab {
 			opening.blocks = append(opening.blocks, block)
 			continue
 		}
-		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks})
+		if facts, alone := factsAlone(section.Blocks); alone && briefed && len(sections) == 0 && opening.brief == nil {
+			opening.brief, opening.career = facts.List, careerOf(composed.Blocks)
+			continue
+		}
+		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks, brief: nil, career: nil})
 	}
 	opening.tally = checkTally(opening.blocks)
 	return append([]tab{opening}, sections...)
+}
+
+// factsAlone is the facts blocks hold, where they are one block of facts, at least one fact, and nothing else.
+func factsAlone(blocks []document.Block) (document.Facts, bool) {
+	if len(blocks) != 1 {
+		return document.Facts{List: nil}, false
+	}
+	facts, isFacts := blocks[0].(document.Facts)
+	return facts, isFacts && len(facts.List) > 0
+}
+
+// careerOf is the roles a document holds: the entries of its first section that holds any. An entry is a role or a
+// school, and the résumé lists its roles before its schools.
+func careerOf(blocks []document.Block) []document.Entry {
+	for _, block := range blocks {
+		if section, isSection := block.(document.Section); isSection {
+			if entries := entriesIn(section.Blocks); len(entries) > 0 {
+				return entries
+			}
+		}
+	}
+	return nil
+}
+
+// entriesIn are the entries among blocks, in order.
+func entriesIn(blocks []document.Block) []document.Entry {
+	entries := []document.Entry{}
+	for _, block := range blocks {
+		if entry, isEntry := block.(document.Entry); isEntry {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
 }
 
 // checkTally is how many checks a tab's blocks hold at each level that has one, its sections' included, in the
@@ -129,10 +175,12 @@ func checksOfLevel(checks []document.Check, level document.CheckLevel) int {
 	return count
 }
 
-// layout lays a tab out in lines of a width; the site writes the address each link leads to.
+// layout lays a tab out in lines of a width, on a day; the site writes the address each link leads to.
 type layout struct {
 	site  routes.Site
 	width int
+	// today is the day a role still held runs to on the career's line
+	today time.Time
 }
 
 // tab lays out a tab: the head, where it is the opening one, then its blocks.
@@ -140,28 +188,52 @@ func (layout layout) tab(shown tab) []line {
 	if shown.head == nil {
 		return layout.blocks(shown.blocks, 0)
 	}
-	lines := layout.head(*shown.head)
+	var lines []line
+	if shown.brief != nil {
+		lines = layout.about(*shown.head, shown.brief, shown.career)
+	} else {
+		lines = layout.head(*shown.head)
+	}
 	if len(shown.blocks) == 0 {
 		return lines
 	}
 	return append(append(lines, blankLines()...), layout.blocks(shown.blocks, 0)...)
 }
 
+// headParts are the parts of a head every opening lays out alike, about its title: the greeting and the lead; each
+// nothing where the head has none.
+type headParts struct {
+	greeting []line
+	lead     []line
+}
+
+// headParts lays out the parts of a head every opening lays out alike.
+func (layout layout) headParts(head document.Head) headParts {
+	return headParts{
+		greeting: layout.fill(textWords(head.Greeting, kindMuted), 0),
+		lead:     layout.fill(layout.words(head.Lead, kindText), 0),
+	}
+}
+
+// subtitleLines are a head's subtitle with its place beside it, under the title or in the brief.
+func (layout layout) subtitleLines(head document.Head) []line {
+	return layout.fill(placedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted)), 0)
+}
+
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
 // page carries one, the subtitle and place, the lead, and the ways to reach the author.
 func (layout layout) head(head document.Head) []line {
+	parts := layout.headParts(head)
 	title := layout.words(head.Title, kindStrong)
 	if carriesCursor(head.Page.Kind) {
 		title = withCursor(title)
 	}
-	lines := append(layout.fill(textWords(head.Greeting, kindMuted), 0), layout.fill(title, 0)...)
-	beside := placedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted))
-	lines = append(lines, layout.fill(beside, 0)...)
-	if lead := layout.fill(layout.words(head.Lead, kindText), 0); len(lead) > 0 {
-		lines = append(append(lines, blankLines()...), lead...)
+	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head))
+	if len(parts.lead) > 0 {
+		lines = slices.Concat(lines, blankLines(), parts.lead)
 	}
 	if len(head.Ways) > 0 {
-		lines = append(append(lines, blankLines()...), layout.facts(head.Ways, 0)...)
+		lines = append(append(lines, blankLines()...), layout.facts(head.Ways, 0, kindMuted)...)
 	}
 	return lines
 }
@@ -186,7 +258,7 @@ func withCursor(words []word) []word {
 		return words
 	}
 	marked := slices.Clone(words)
-	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: "", copied: ""}
+	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: "", copied: "", tone: 0}
 	marked[last].runs = append(slices.Clone(marked[last].runs), cursor)
 	return marked
 }
@@ -215,7 +287,7 @@ func (layout layout) block(block document.Block, indent int) []line {
 	case document.CodeBlock:
 		return codeLines(typed.Text, indent+nestIndent)
 	case document.Facts:
-		return layout.facts(typed.List, indent)
+		return layout.facts(typed.List, indent, kindMuted)
 	case document.Entry:
 		return layout.entry(typed, indent)
 	case document.Card:
@@ -261,9 +333,9 @@ func (layout layout) skills(skills document.Skills, indent int) []line {
 // one still being learnt.
 func skillMark(learning bool) run {
 	if learning {
-		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: ""}
+		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
 	}
-	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: ""}
+	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: "", tone: 0}
 }
 
 // entry lays out an entry's title and subtitle with its period and place at the right, then its points.
@@ -286,7 +358,7 @@ func (layout layout) card(card document.Card, indent int) []line {
 	}
 	lines := layout.titleLine(joinedWords(title, layout.words(card.Subtitle, kindMuted)), textWords(card.Tag, kindMuted), indent)
 	lines = append(lines, layout.fill(layout.words(card.Summary, kindText), indent)...)
-	return append(lines, layout.facts(card.Facts, indent)...)
+	return append(lines, layout.facts(card.Facts, indent, kindMuted)...)
 }
 
 // contents lays out each listed page as a point: its title, leading to it, and the line on what it is.
@@ -299,8 +371,8 @@ func (layout layout) contents(contents document.Contents, indent int) []line {
 	return lines
 }
 
-// facts lays out labels and their values, each value in a column after the widest label.
-func (layout layout) facts(facts []document.Fact, indent int) []line {
+// facts lays out labels of a kind and their values, each value in a column after the widest label.
+func (layout layout) facts(facts []document.Fact, indent int, labelKind kind) []line {
 	labelWidth := 0
 	for _, fact := range facts {
 		labelWidth = max(labelWidth, textWidth(fact.Label))
@@ -308,7 +380,7 @@ func (layout layout) facts(facts []document.Fact, indent int) []line {
 	column := labelWidth + columnGap
 	lines := []line{}
 	for _, fact := range facts {
-		lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: kindMuted, highlighted: false, address: "", copied: ""}}
+		lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
 		lines = append(lines, layout.continued(lead, layout.valueWords(fact.Value), indent+column)...)
 	}
 	return lines
@@ -412,7 +484,7 @@ func openingsWidth(rows []tableRow) int {
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.
 func (layout layout) bullet(words []word, indent int) []line {
-	lead := line{indentRun(indent), {text: bulletMark + space, kind: kindFaint, highlighted: false, address: "", copied: ""}}
+	lead := line{indentRun(indent), {text: bulletMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
 	return layout.continued(lead, words, indent+bulletHang)
 }
 
@@ -441,7 +513,7 @@ func (layout layout) titleLine(left, right []word, indent int) []line {
 func codeLines(code string, indent int) []line {
 	lines := []line{}
 	for written := range strings.SplitSeq(code, lineEnd) {
-		lines = append(lines, line{indentRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: ""}})
+		lines = append(lines, line{indentRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}})
 	}
 	return lines
 }

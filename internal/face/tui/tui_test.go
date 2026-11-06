@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -31,6 +33,192 @@ const (
 	smallestHeight = 3
 )
 
+// The résumé's first tab holds its facts as a brief beside the name, as neofetch prints a system's, each once, as
+// written: the address, the subtitle and the place, the facts, the other ways to reach the author; the career's line
+// under them, each role by its company, the one still held running to the present; then the summary.
+func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
+	screen := screenOf(test, fixtureModel(test, commonWidth, tallHeight))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "a fact", want: "5 years"},
+		{name: "the address", want: "mira@example.test"},
+		{name: "the subtitle and the place", want: "Software Engineer · Brno, Czechia"},
+		{name: "another way", want: "github.test/mira"},
+		{name: "the role still held", want: "Northwind"},
+		{name: "a role before it", want: "Southwind"},
+		{name: "the present", want: "present"},
+		{name: "the summary", want: "Writes software for people who read it."},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if count := strings.Count(screen, testCase.want); count != 1 {
+				test.Errorf("the first tab =\n%s\nholds %q %d times, want it once", screen, testCase.want, count)
+			}
+		})
+	}
+}
+
+// A brief taller than the name's column stands whole beside it.
+func TestABriefTallerThanTheNameStandsWhole(test *testing.T) {
+	// more facts than the name's column has rows
+	const keptFacts = 12
+	facts := append(slices.Repeat([]document.Fact{{Label: "kept", Value: textOf("a value")}}, keptFacts), document.Fact{Label: "last", Value: textOf("the last value")})
+	model := handResume(test, "home", commonWidth, tallHeight, document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: facts}}})
+	if page := aboveTheStatusLine(screenOf(test, model)); !strings.Contains(page, "the last value") {
+		test.Errorf("the first tab =\n%s\nwant the brief's last fact, %q", page, "the last value")
+	}
+}
+
+// The first tab opens whatever the career holds: a role that starts after the day the session opens, and a word for
+// the present so wide it leaves the career's line no room.
+func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {
+	// a page as wide as the word for the present the second case writes
+	const presentWidth = 30
+	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
+	cases := []struct {
+		name  string
+		role  document.Entry
+		width int
+		holds string
+	}{
+		{
+			name:  "a role that starts after the day",
+			role:  document.Entry{Period: document.Period{Start: knownMonth(2027, time.January), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Futurewind")},
+			width: commonWidth, holds: "2027",
+		},
+		{
+			name:  "a word for the present as wide as the page",
+			role:  document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: strings.Repeat("now", presentWidth/len("now"))}}, Title: textOf("Northwind")},
+			width: presentWidth, holds: "5 years",
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			work := document.Section{Title: textOf("Work"), Blocks: []document.Block{testCase.role}}
+			if page := aboveTheStatusLine(screenOf(test, handResume(test, "home", testCase.width, tallHeight, brief, work))); !strings.Contains(page, testCase.holds) {
+				test.Errorf("the first tab =\n%s\nwant it to hold %q", page, testCase.holds)
+			}
+		})
+	}
+}
+
+// The career's line lays out the roles, the entries of the first section that holds any, whose months are known: not
+// a role whose start or end is still to fill, nor the schools of a section after it.
+func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
+	role := document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Northwind")}
+	unfilled := document.Entry{Period: document.Period{Start: knownMonth(2020, time.January), End: document.GapMonth{Text: "[20XX]"}}, Title: textOf("Eastwind")}
+	unstarted := document.Entry{Period: document.Period{Start: document.GapMonth{Text: "[20XX]"}, End: knownMonth(2019, time.June)}, Title: textOf("Westwind")}
+	school := document.Entry{Period: document.Period{Start: knownMonth(2016, time.September), End: knownMonth(2020, time.June)}, Title: textOf("A School")}
+	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	model := handResume(test, "home", commonWidth, tallHeight,
+		document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}},
+		document.Section{Title: textOf("Work"), Blocks: []document.Block{role, unfilled, unstarted}},
+		document.Section{Title: textOf("Study"), Blocks: []document.Block{school}},
+	)
+	page := aboveTheStatusLine(screenOf(test, model))
+	cases := []struct {
+		name    string
+		company string
+		placed  bool
+	}{
+		{name: "a role", company: "Northwind", placed: true},
+		{name: "a role whose end is still to fill", company: "Eastwind", placed: false},
+		{name: "a role whose start is still to fill", company: "Westwind", placed: false},
+		{name: "a school", company: "A School", placed: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if strings.Contains(page, testCase.company) != testCase.placed {
+				test.Errorf("the first tab =\n%s\nwant %q on the career's line: %t", page, testCase.company, testCase.placed)
+			}
+		})
+	}
+}
+
+// Only the résumé's first section, where it holds facts alone, joins the first tab as its brief: one that holds more,
+// or no fact, one after another section, and one after a first section of facts keep a tab of their own.
+func TestOnlyAFirstSectionOfFactsAloneJoinsTheFirstTab(test *testing.T) {
+	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	paragraph := document.Paragraph{Spans: textOf("the door")}
+	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}
+	cases := []struct {
+		name   string
+		blocks []document.Block
+		listed bool
+	}{
+		{name: "facts alone, first", blocks: []document.Block{section}, listed: false},
+		{
+			name:   "no fact, first",
+			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: nil}}}},
+			listed: true,
+		},
+		{
+			name:   "facts beside a paragraph, first",
+			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts, paragraph}}},
+			listed: true,
+		},
+		{
+			name:   "facts alone after another section",
+			blocks: []document.Block{document.Section{Title: textOf("Work"), Blocks: []document.Block{paragraph}}, section},
+			listed: true,
+		},
+		{
+			name:   "facts alone after a first section of facts",
+			blocks: []document.Block{document.Section{Title: textOf("Brief"), Blocks: []document.Block{facts}}, section},
+			listed: true,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := handResume(test, "home", commonWidth, commonHeight, testCase.blocks...)
+			if places := footerLine(screenOf(test, model), footerPlaces); strings.Contains(places, "facts") != testCase.listed {
+				test.Errorf("the places = %q, want a tab of the facts listed: %t", places, testCase.listed)
+			}
+		})
+	}
+}
+
+// A project's page keeps a first section of facts alone as a tab of its own: only the résumé opens with a brief.
+func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
+	facts := document.Facts{List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
+	project := document.Document{
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "a-tool"}, textOf("a-tool")),
+		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
+	}
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: nil}
+	model := commanded(test, New([]document.Document{resume, project}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay()), "e a-tool")
+	if places := footerLine(screenOf(test, model), footerPlaces); !strings.Contains(places, "facts") {
+		test.Errorf("on the project's page the places = %q, want its tab of the facts", places)
+	}
+}
+
+// The author's name reads as text where the block font cannot draw it: on a page narrower than its banner, wrapped
+// whole on a page narrower than the name, and where the font has not every letter of it.
+func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
+	// a page narrower than the name written in one line
+	const narrowerThanTheName = 10
+	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
+	cases := []struct {
+		name  string
+		title string
+		width int
+		holds string
+	}{
+		{name: "a page narrower than the banner", title: "Mira Example", width: phoneWidth, holds: "Mira Example"},
+		{name: "a page narrower than the name", title: "Mira Example", width: narrowerThanTheName, holds: "Example"},
+		{name: "letters the font has not", title: "José Núñez", width: commonWidth, holds: "José Núñez"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if page := aboveTheStatusLine(screenOf(test, handResume(test, testCase.title, testCase.width, tallHeight, brief))); !strings.Contains(page, testCase.holds) {
+				test.Errorf("at %d columns the page =\n%s\nwant the name's text %q", testCase.width, page, testCase.holds)
+			}
+		})
+	}
+}
+
 // The prompt opens with the site's name: the host of its base address, not the address whole.
 func TestThePromptNamesTheSiteByItsHost(test *testing.T) {
 	if line := footerLine(screenOf(test, fixtureModel(test, wideWidth, commonHeight)), footerPrompt); !strings.HasPrefix(line, "example.test ~") {
@@ -47,11 +235,10 @@ func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
 		want string
 	}{
 		{name: "the greeting", want: "Hello, my name is"},
-		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
 		{name: "the opening's tab, by the site's word", want: "About"},
 		{name: "the headline", want: "Builds small tools that last."},
-		{name: "the first section's place", want: "facts"},
+		{name: "the first section's place", want: "experience"},
 		{name: "the last section's place", want: "languages"},
 	}
 	for _, testCase := range cases {
@@ -71,11 +258,11 @@ func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "l goes to the next tab", keys: []string{"l"}, holds: "5 years", lacks: "Builds small tools that last."},
-		{name: "the right arrow goes to the next tab", keys: []string{"right"}, holds: "5 years", lacks: "Builds small tools that last."},
-		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: "Northwind", lacks: "5 years"},
+		{name: "l goes to the next tab", keys: []string{"l"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
+		{name: "the right arrow goes to the next tab", keys: []string{"right"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
+		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: "other-tool", lacks: "Kept the queue"},
 		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: "fluent", lacks: "Builds small tools that last."},
-		{name: "the left arrow goes back", keys: []string{"l", "left"}, holds: "Builds small tools that last.", lacks: "5 years"},
+		{name: "the left arrow goes back", keys: []string{"l", "left"}, holds: "Builds small tools that last.", lacks: "Kept the queue"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -143,10 +330,10 @@ func TestTheRimSaysWhatLiesBelow(test *testing.T) {
 	}
 }
 
-// A row faded above the rim still carries its link to a terminal that follows links: on a screen of eighteen rows the
+// A row faded above the rim still carries its link to a terminal that follows links: on a screen of nineteen rows the
 // first tab's last row on the page is the fixture's GitHub, faded, as more lies below it.
 func TestALinkOnAFadedRowStillLeads(test *testing.T) {
-	const fadedLinkHeight = 18
+	const fadedLinkHeight = 19
 	if screen := fixtureModel(test, commonWidth, fadedLinkHeight).View().Content; !strings.Contains(screen, "https://github.test/mira") {
 		test.Errorf("the screen =\n%q\nwant the GitHub row's link to https://github.test/mira", screen)
 	}
@@ -154,7 +341,7 @@ func TestALinkOnAFadedRowStillLeads(test *testing.T) {
 
 // Each tab keeps where it was scrolled to while the reader looks at another.
 func TestEachTabKeepsItsPlace(test *testing.T) {
-	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), "l", "l", "G", "l", "h")
+	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "G", "l", "h")...)
 	if screen := screenOf(test, model); !strings.Contains(screen, "one long winter") {
 		test.Errorf("back on the experience tab the screen =\n%s\nwant it still at the end", screen)
 	}
@@ -170,7 +357,7 @@ func TestTheChosenTabIsNamedAtAnyWidth(test *testing.T) {
 
 // A role reads with its period, each month its year and its number, and its place.
 func TestARoleReadsWithItsPeriod(test *testing.T) {
-	screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), "l", "l"))
+	screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), toExperience()...))
 	cases := []struct {
 		name string
 		want string
@@ -228,7 +415,7 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay())); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
@@ -258,34 +445,37 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 	}
 }
 
-// Every phrase of a page reaches the TUI on one tab or another, at any width: of the résumé, so a terminal reader
-// reads every fact a browser reader reads, and of the health report and the list of skills :checkhealth and :Lazy
-// show. A word wider than a narrow terminal breaks across lines, so the phrases are read with every space and break
-// taken out.
+// Every phrase of a page reaches the TUI on one tab or another: of the résumé, so a terminal reader reads every fact
+// a browser reader reads, and of the health report and the list of skills :checkhealth and :Lazy show, each at any
+// width. A word wider than a narrow terminal breaks across lines, so the phrases are read with every space and break
+// taken out. The screen is read row by row, so the résumé is read where it is narrow: wider, its brief stands beside
+// the name, and a row holds a piece of each. Its opening shows two phrases by its form (ADR-0003): the address heads
+// the brief without its label, and the facts stand in the brief without their section's title.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
 		name  string
 		shown document.Document
 		model Model
+		// byForm are the phrases the page shows by its form, not as text
+		byForm []string
 	}{
-		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, commonWidth, tallHeight)},
-		{name: "the résumé, narrow", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight)},
+		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts"}},
 		{
 			name: "the health report", shown: compose.Health(snapshot),
-			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "checkhealth"),
+			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "checkhealth"), byForm: nil,
 		},
 		{
 			name: "the health report, narrow", shown: compose.Health(snapshot),
-			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "checkhealth"),
+			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "checkhealth"), byForm: nil,
 		},
 		{
 			name: "the list of skills", shown: compose.Skills(snapshot),
-			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "Lazy"),
+			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "Lazy"), byForm: nil,
 		},
 		{
 			name: "the list of skills, narrow", shown: compose.Skills(snapshot),
-			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "Lazy"),
+			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "Lazy"), byForm: nil,
 		},
 	}
 	for _, testCase := range cases {
@@ -297,7 +487,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 			}
 			read := strings.Join(strings.Fields(strings.Join(screens, " ")), "")
 			for _, phrase := range document.Phrases(testCase.shown) {
-				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) {
+				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) && !slices.Contains(testCase.byForm, phrase) {
 					test.Errorf("no tab of %s holds %q", testCase.name, phrase)
 				}
 			}
@@ -330,7 +520,23 @@ func fixtureModel(test *testing.T, width, height int) Model {
 
 // sessionModel is a session on what a snapshot draws, as the SSH server opens one: its pages and the TUI's extras.
 func sessionModel(snapshot *content.Snapshot, width, height int) Model {
-	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtureSite(snapshot), width, height)
+	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtureSite(snapshot), width, height, fixtureDay())
+}
+
+// fixtureDay is the day the tests' sessions open on, the fixture's role still held running to it.
+func fixtureDay() time.Time {
+	return time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+}
+
+// handResume is a session on a résumé a test builds by hand: a head titled by a name, then blocks.
+func handResume(test *testing.T, name string, width, height int, blocks ...document.Block) Model {
+	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf(name)), Blocks: blocks}
+	return New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), width, height, fixtureDay())
+}
+
+// knownMonth is a month of a year as a period of a document a test builds by hand names it.
+func knownMonth(year int, month time.Month) document.KnownMonth {
+	return document.KnownMonth{Start: time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)}
 }
 
 // textOf is a text as the spans of a document, for a document a test builds by hand.

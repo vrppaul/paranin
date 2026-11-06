@@ -45,7 +45,7 @@ colours:
     dark: "#363a4f"
     basic: 8
   - name: edge
-    about: the border of a window laid over the page
+    about: the border of a window laid over the page, and a role that ended on the career's line
     light: "#9ca0b0"
     dark: "#5b6078"
     basic: 8
@@ -55,7 +55,7 @@ colours:
     dark: "#f5a97f"
     basic: 3
   - name: host
-    about: the site's host where it is written, as the prompt's
+    about: the site's host where it is written, as the prompt's, and the far end of the author's name
     light: "#8839ef"
     dark: "#c6a0f6"
     basic: 5

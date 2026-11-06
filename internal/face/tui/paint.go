@@ -66,6 +66,10 @@ const (
 type paint struct {
 	kinds map[kind]lipgloss.Style
 	parts map[part]lipgloss.Style
+	// nameTones are the colours of the name's tones, from the accent to the host's, and swatches the design's colours
+	// the swatches go round: each laid over its kind's look
+	nameTones []color.Color
+	swatches  []color.Color
 	// the text of the two rows of the page above the rim, where more of the tab lies below, takes these colours: the
 	// one above the less faded, the last the most
 	fadedLess color.Color
@@ -97,16 +101,25 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	}
 	return paint{
 		kinds: map[kind]lipgloss.Style{
-			kindText:   plain.Foreground(colour(look.ColourText)),
-			kindMuted:  plain.Foreground(colour(look.ColourMuted)),
-			kindFaint:  plain.Foreground(colour(look.ColourFaint)).Faint(noColours),
-			kindStrong: plain.Foreground(colour(look.ColourText)).Bold(true),
-			kindCode:   plain.Foreground(colour(look.ColourAccent)),
-			kindCursor: plain.Foreground(colour(look.ColourAccent)),
-			kindPassed: plain.Foreground(colour(look.ColourPassed)),
-			kindWarned: plain.Foreground(colour(look.ColourWarned)),
-			kindFailed: plain.Foreground(colour(look.ColourError)),
+			kindText:    plain.Foreground(colour(look.ColourText)),
+			kindMuted:   plain.Foreground(colour(look.ColourMuted)),
+			kindFaint:   plain.Foreground(colour(look.ColourFaint)).Faint(noColours),
+			kindStrong:  plain.Foreground(colour(look.ColourText)).Bold(true),
+			kindCode:    plain.Foreground(colour(look.ColourAccent)),
+			kindCursor:  plain.Foreground(colour(look.ColourAccent)),
+			kindPassed:  plain.Foreground(colour(look.ColourPassed)),
+			kindWarned:  plain.Foreground(colour(look.ColourWarned)),
+			kindFailed:  plain.Foreground(colour(look.ColourError)),
+			kindName:    plain.Bold(true),
+			kindLabel:   plain.Foreground(colour(look.ColourLabel)).Bold(true),
+			kindMailbox: plain.Foreground(colour(look.ColourAccent)),
+			kindHost:    plain.Foreground(colour(look.ColourHost)).Bold(true),
+			kindCurrent: plain.Foreground(colour(look.ColourAccent)),
+			kindPast:    plain.Foreground(colour(look.ColourEdge)).Faint(noColours),
+			kindSwatch:  plain,
 		},
+		nameTones: nameTonesOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
+		swatches:  swatchesOf(colour),
 		parts: map[part]lipgloss.Style{
 			partCross:       plain.Foreground(colour(look.ColourFaint)),
 			partTrack:       plain.Foreground(colour(look.ColourQuiet)),
@@ -148,6 +161,48 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 		fewColours:      fewColours,
 		noColours:       noColours,
 	}
+}
+
+// How many tones the name's colours go through from the accent to the host's
+const nameTones = 16
+
+// swatchColours are the design's colours the brief's swatches show, one swatch each, in the order they stand; the
+// layout lays out as many swatches as there are.
+func swatchColours() []look.Colour {
+	return []look.Colour{look.ColourError, look.ColourAccent, look.ColourWarned, look.ColourPassed, look.ColourLabel, look.ColourHost}
+}
+
+// swatchesOf are the swatches' colours as a terminal shows them.
+func swatchesOf(colour func(look.Colour) color.Color) []color.Color {
+	shown := []color.Color{}
+	for _, name := range swatchColours() {
+		shown = append(shown, colour(name))
+	}
+	return shown
+}
+
+// nameTonesOf are the colours of the name's tones: those between the accent and the host's, blended; where the
+// terminal shows few colours, the accent alone, every tone going round to it, which blending would only round to a
+// few of its sixteen.
+func nameTonesOf(accent, host color.Color, fewColours bool) []color.Color {
+	if fewColours {
+		return []color.Color{accent}
+	}
+	return lipgloss.Blend1D(nameTones, accent, host)
+}
+
+// tonesOf are the colours a kind painted in several takes, each run the one its tone names, round them where its tone
+// runs past them; none for a kind of one colour.
+func (paint paint) tonesOf(shown kind) []color.Color {
+	switch shown {
+	case kindName:
+		return paint.nameTones
+	case kindSwatch:
+		return paint.swatches
+	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
+		kindMailbox, kindHost, kindCurrent, kindPast:
+	}
+	return nil
 }
 
 // cursorColourOf is the colour the terminal's cursor takes: the accent, or none where the terminal shows few
@@ -226,6 +281,9 @@ func (paint paint) line(shown []matchedRun, width int, faded color.Color) (strin
 // result, marked where it matches the search, carrying its address where it links.
 func (paint paint) style(piece matchedRun, faded color.Color) lipgloss.Style {
 	style := paint.kinds[piece.kind]
+	if tones := paint.tonesOf(piece.kind); len(tones) > 0 {
+		style = style.Foreground(tones[piece.tone%len(tones)])
+	}
 	if faded != nil {
 		style = style.Foreground(faded)
 	}

@@ -43,6 +43,7 @@ How a package is built is said in its package comment. The rules for code in any
 ## Time, logging and the terminal
 
 - Code reads time and waits with the `time` package itself; a test that holds a moment or a wait runs inside `synctest.Test`, whose clock moves only when every goroutine waits (D15).
+- A part that draws the day, and never waits on it, takes it as a value from the host that reads the clock, as `tui.New` takes the day a session opens; its tests hand it a fixed day. No `Clock` is handed (D15).
 - Nothing prints but the composition root and the scripts: forbidigo refuses `fmt.Print…`, `os.Stdout`, `os.Stderr` and the package-level loggers elsewhere. A part logs through a structured logger it is handed.
 - Whatever came from outside — a path, a header, a form, a key typed over SSH — reaches a log or a terminal quoted (`%q`) or stripped of control characters, never as it came.
 

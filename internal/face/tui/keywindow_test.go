@@ -16,7 +16,7 @@ const keyWindowHeight = 24
 func TestTheWindowOfKeysNamesTheKeys(test *testing.T) {
 	rows := []string{
 		"esc close", "j k", "line down / up", "3j", "move by a count", "gg G", "top / bottom", "h l", "tab before / after",
-		"1-7", "go to a tab", "type a place to go", "complete a place", "find in the tab", "n N", "next / prior match",
+		"1-6", "go to a tab", "type a place to go", "complete a place", "find in the tab", "n N", "next / prior match",
 		"end the search", "quit",
 	}
 	for _, key := range []string{"?", "space"} {
@@ -42,7 +42,7 @@ func TestAKeyClosesTheWindowOfKeys(test *testing.T) {
 		{name: "Esc", key: "esc", holds: "Builds small tools that last."},
 		{name: "the question mark", key: "?", holds: "Builds small tools that last."},
 		{name: "the space", key: "space", holds: "Builds small tools that last."},
-		{name: "a key of normal mode", key: "l", holds: "5 years"},
+		{name: "a key of normal mode", key: "l", holds: "Kept the queue"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

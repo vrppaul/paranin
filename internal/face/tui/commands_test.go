@@ -126,10 +126,10 @@ func TestThePlacesListWhatIsTyped(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "nothing typed", text: "", holds: []string{"facts", "languages", "help"}, lacks: []string{"about", "tidy-tool"}},
-		{name: "the start of two tabs", text: "e", holds: []string{"experience", "education"}, lacks: []string{"facts", "help"}},
-		{name: "the start of a project's page", text: "ti", holds: []string{"tidy-tool"}, lacks: []string{"facts"}},
-		{name: "the start of nothing", text: "x", holds: []string{"↵ run", "esc cancel"}, lacks: []string{"facts"}},
+		{name: "nothing typed", text: "", holds: []string{"experience", "languages", "help"}, lacks: []string{"about", "tidy-tool"}},
+		{name: "the start of two tabs", text: "e", holds: []string{"experience", "education"}, lacks: []string{"projects", "help"}},
+		{name: "the start of a project's page", text: "ti", holds: []string{"tidy-tool"}, lacks: []string{"experience"}},
+		{name: "the start of nothing", text: "x", holds: []string{"↵ run", "esc cancel"}, lacks: []string{"experience"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -151,7 +151,7 @@ func TestThePlacesListWhatIsTyped(test *testing.T) {
 // A second colon opens the prompt on nothing typed, and the places listed before anything is typed.
 func TestASecondColonOpensOnNothing(test *testing.T) {
 	screen := screenOf(test, pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "x"), "esc", ":"))
-	if line, places := footerLine(screen, footerPrompt), footerLine(screen, footerPlaces); line != emptyPrompt || !strings.Contains(places, "facts") {
+	if line, places := footerLine(screen, footerPrompt), footerLine(screen, footerPlaces); line != emptyPrompt || !strings.Contains(places, "experience") {
 		test.Errorf("after :x, Esc and a colon the prompt = %q and the places %q, want %q and every tab listed", line, places, emptyPrompt)
 	}
 }
@@ -211,7 +211,7 @@ func TestHelpStaysInSightOnANarrowScreen(test *testing.T) {
 func TestANameGoesToOnePlace(test *testing.T) {
 	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight)
+	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay())
 	if places := footerLine(screenOf(test, model), footerPlaces); strings.Count(places, "help") != 1 {
 		test.Errorf("on a page with a tab titled Help the places = %q, want help listed once", places)
 	}
@@ -222,7 +222,7 @@ func TestANameGoesToOnePlace(test *testing.T) {
 func TestATabOfSeveralWordsGoesByThemJoined(test *testing.T) {
 	section := document.Section{Title: textOf("Ways In"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight)
+	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay())
 	if screen := screenOf(test, commanded(test, model, "ways-in")); !strings.Contains(screen, "the door") {
 		test.Errorf("after :ways-in the screen =\n%s\nwant the tab titled %q", screen, "Ways In")
 	}
@@ -236,8 +236,8 @@ func TestTabCompletesAPlace(test *testing.T) {
 		keys []string
 		line string
 	}{
-		{name: "Tab on the prompt", keys: []string{":", "tab"}, line: emptyPrompt + " facts"},
-		{name: "Tab in normal mode", keys: []string{"tab"}, line: emptyPrompt + " facts"},
+		{name: "Tab on the prompt", keys: []string{":", "tab"}, line: emptyPrompt + " experience"},
+		{name: "Tab in normal mode", keys: []string{"tab"}, line: emptyPrompt + " experience"},
 		{name: "Shift+Tab in normal mode", keys: []string{"shift+tab"}, line: emptyPrompt + " help"},
 	}
 	for _, testCase := range cases {
@@ -252,24 +252,24 @@ func TestTabCompletesAPlace(test *testing.T) {
 
 // Enter goes to the place Tab chose, and the status line opens with its title.
 func TestEnterGoesToThePlaceTabChose(test *testing.T) {
-	if status := footerLine(screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), "tab", "enter")), footerStatus); !strings.HasPrefix(status, "Facts") {
-		test.Errorf("after Tab and Enter the status line = %q, want it to open with the tab gone to, %q", status, "Facts")
+	if status := footerLine(screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), "tab", "enter")), footerStatus); !strings.HasPrefix(status, "Experience") {
+		test.Errorf("after Tab and Enter the status line = %q, want it to open with the tab gone to, %q", status, "Experience")
 	}
 }
 
 // Tab goes on through the places listed and Shift+Tab back, writing the one chosen on the prompt; past either end the
 // prompt holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
-// tab the fixture lists six other tabs and help.
+// tab the fixture lists five other tabs and help.
 func TestTabGoesRoundThePlaces(test *testing.T) {
 	cases := []struct {
 		name string
 		keys []string
 		line string
 	}{
-		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: emptyPrompt + " experience"},
-		{name: "the seventh Tab the last", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " help"},
-		{name: "a Tab past the last what was typed", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt},
-		{name: "a Tab after that the first again", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " facts"},
+		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: emptyPrompt + " projects"},
+		{name: "the sixth Tab the last", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " help"},
+		{name: "a Tab past the last what was typed", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt},
+		{name: "a Tab after that the first again", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " experience"},
 		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: emptyPrompt + " languages"},
 		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: emptyPrompt},
 	}
@@ -286,7 +286,7 @@ func TestTabGoesRoundThePlaces(test *testing.T) {
 // Editing the line takes the choice away: the places are listed anew, none chosen, so Tab chooses the first of them.
 func TestAnEditTakesTheChoiceAway(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, commonHeight), ":", "tab", "backspace", "tab")
-	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" facts" {
-		test.Errorf("after a colon, Tab, a backspace and Tab the prompt = %q, want %q", line, emptyPrompt+" facts")
+	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" experience" {
+		test.Errorf("after a colon, Tab, a backspace and Tab the prompt = %q, want %q", line, emptyPrompt+" experience")
 	}
 }

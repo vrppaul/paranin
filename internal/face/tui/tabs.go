@@ -22,7 +22,10 @@ const (
 	blockGap            = 1
 )
 
-// The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a period
+// The least room the words of an entry may have beside its period's column, where the period stands above them
+const narrowestEntry = 30
+
+// The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
 // from its place, the start of a period from its end; as Neovim's :checkhealth writes them, the mark after a
 // group's name and the word before a check's advice; and as lazy.nvim marks a plugin loaded or not, the mark of a
 // skill in use and of one still being learnt
@@ -73,6 +76,8 @@ type tab struct {
 	// roles, for the career's line under them. Both are nothing on any other tab
 	brief  []document.Fact
 	career []document.Entry
+	// titled is whether the tab's page stands under its title, as each section of the résumé does
+	titled bool
 }
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
@@ -83,9 +88,9 @@ func tabsOf(composed document.Document) []tab {
 	if title == "" {
 		title = document.PlainText(composed.Head.Title)
 	}
-	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil, brief: nil, career: nil}
-	// only the résumé opens as neofetch prints a system
-	briefed := composed.Head.Page.Kind == document.PageResume
+	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil, brief: nil, career: nil, titled: false}
+	// only the résumé opens as neofetch prints a system, and stands each section under its title
+	isResume := composed.Head.Page.Kind == document.PageResume
 	sections := []tab{}
 	for _, block := range composed.Blocks {
 		section, isSection := block.(document.Section)
@@ -93,11 +98,11 @@ func tabsOf(composed document.Document) []tab {
 			opening.blocks = append(opening.blocks, block)
 			continue
 		}
-		if facts, alone := factsAlone(section.Blocks); alone && briefed && len(sections) == 0 && opening.brief == nil {
+		if facts, alone := factsAlone(section.Blocks); alone && isResume && len(sections) == 0 && opening.brief == nil {
 			opening.brief, opening.career = facts.List, careerOf(composed.Blocks)
 			continue
 		}
-		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks, brief: nil, career: nil})
+		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks, brief: nil, career: nil, titled: isResume})
 	}
 	opening.tally = checkTally(opening.blocks)
 	return append([]tab{opening}, sections...)
@@ -175,16 +180,22 @@ func checksOfLevel(checks []document.Check, level document.CheckLevel) int {
 	return count
 }
 
-// layout lays a tab out in lines of a width, on a day; the site writes the address each link leads to.
+// layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address
+// each link leads to.
 type layout struct {
 	site  routes.Site
 	width int
+	// pageRows are how many rows the page shows
+	pageRows int
 	// today is the day a role still held runs to on the career's line
 	today time.Time
 }
 
-// tab lays out a tab: the head, where it is the opening one, then its blocks.
+// tab lays out a tab: the head, where it is the opening one, or its title, where it stands under it; then its blocks.
 func (layout layout) tab(shown tab) []line {
+	if shown.titled {
+		return slices.Concat(layout.heading(shown.title), layout.blocks(shown.blocks, 0))
+	}
 	if shown.head == nil {
 		return layout.blocks(shown.blocks, 0)
 	}
@@ -263,19 +274,40 @@ func withCursor(words []word) []word {
 	return marked
 }
 
-// blocks lays out blocks at an indent, a blank line between each two.
+// heading is a tab's title over its page, a row of nothing under it: in the block font, its colours going from the
+// accent to the host's, where the font draws every letter of it and it fits the page; as text in the same colours
+// where that fits; nothing where neither does, or the tab has no title, the status line naming the tab.
+func (layout layout) heading(title string) []line {
+	if title == "" {
+		return nil
+	}
+	if rows := bannerRows([]string{strings.ToUpper(title)}); len(rows) > 0 {
+		if banner := append(tonedBanner(rows, kindHeading, rowsWidth(rows[0])), blankLines()...); layout.fits(banner) {
+			return banner
+		}
+	}
+	if text := append(layout.fill(gradientWords(title, kindHeading), 0), blankLines()...); layout.fits(text) {
+		return text
+	}
+	return nil
+}
+
+// blocks lays out blocks at an indent, a blank line between each two, the periods of the entries among them in one
+// column, as wide as the widest of them.
 func (layout layout) blocks(blocks []document.Block, indent int) []line {
+	periodWidth := periodWidthOf(blocks)
 	lines := []line{}
 	for index, block := range blocks {
 		if index > 0 {
 			lines = append(lines, blankLines()...)
 		}
-		lines = append(lines, layout.block(block, indent)...)
+		lines = append(lines, layout.block(block, indent, periodWidth)...)
 	}
 	return lines
 }
 
-func (layout layout) block(block document.Block, indent int) []line {
+// block lays out a block at an indent, an entry's period in a column of a width.
+func (layout layout) block(block document.Block, indent, periodWidth int) []line {
 	switch typed := block.(type) {
 	case document.Section:
 		title := layout.fill(layout.words(typed.Title, kindStrong), indent)
@@ -289,7 +321,7 @@ func (layout layout) block(block document.Block, indent int) []line {
 	case document.Facts:
 		return layout.facts(typed.List, indent, kindMuted)
 	case document.Entry:
-		return layout.entry(typed, indent)
+		return layout.entry(typed, indent, periodWidth)
 	case document.Card:
 		return layout.card(typed, indent)
 	case document.Contents:
@@ -338,12 +370,40 @@ func skillMark(learning bool) run {
 	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: "", tone: 0}
 }
 
-// entry lays out an entry's title and subtitle with its period and place at the right, then its points.
-func (layout layout) entry(entry document.Entry, indent int) []line {
-	left := joinedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted))
-	right := placedWords(textWords(periodText(entry.Period), kindMuted), textWords(entry.Place, kindMuted))
-	lines := layout.titleLine(left, right, indent)
-	for _, point := range entry.Points {
+// entry lays out an entry: its period in a column of a width, the widest period of those laid out with it, the one
+// still going on standing out, and beside it its title, its subtitle and its place, its points under them; where the
+// page leaves the words beside the column too little room, the period stands above them.
+func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line {
+	periodKind := kindMuted
+	if _, current := entry.Period.End.(document.CurrentMonth); current {
+		periodKind = kindCurrent
+	}
+	period := textWords(periodText(entry.Period), periodKind)
+	titleWords := placedWords(joinedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted)), textWords(entry.Place, kindMuted))
+	column := indent + periodWidth + columnGap
+	if layout.width-column < narrowestEntry {
+		return slices.Concat(layout.fill(period, indent), layout.fill(titleWords, indent), layout.points(entry.Points, indent))
+	}
+	lead := append(line{indentRun(indent)}, wordRuns(period)...)
+	lead = append(lead, gapRun(column-runsWidth(lead)))
+	return append(layout.continued(lead, titleWords, column), layout.points(entry.Points, column)...)
+}
+
+// periodWidthOf is how wide the widest period of the entries among blocks is.
+func periodWidthOf(blocks []document.Block) int {
+	width := 0
+	for _, block := range blocks {
+		if entry, isEntry := block.(document.Entry); isEntry {
+			width = max(width, textWidth(periodText(entry.Period)))
+		}
+	}
+	return width
+}
+
+// points lays out an entry's points at an indent, each a bullet.
+func (layout layout) points(points []document.Point, indent int) []line {
+	lines := []line{}
+	for _, point := range points {
 		lines = append(lines, layout.bullet(layout.words(point.Spans, kindText), indent)...)
 	}
 	return lines
@@ -540,10 +600,10 @@ func joinedWords(title, subtitle []word) []word {
 	return markedWords(title, subtitle, subtitleMark)
 }
 
-// placedWords are a period's or a subtitle's words and a place's, the place's mark between them where both are
-// there.
-func placedWords(period, place []word) []word {
-	return markedWords(period, place, placeMark)
+// placedWords are a subtitle's words, or an entry's title and subtitle, and a place's, the place's mark between them
+// where both are there.
+func placedWords(subtitle, place []word) []word {
+	return markedWords(subtitle, place, placeMark)
 }
 
 func markedWords(first, second []word, mark string) []word {

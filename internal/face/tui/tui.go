@@ -7,13 +7,19 @@
 // a tab of its own, titled as the document titles it. The head shows its greeting above its title, where it has one.
 // Where the résumé's first section holds facts alone, they join the first tab as a brief, as neofetch prints a
 // system's: the greeting and the name stand in a column, beside the brief where the page has room for both and above
-// it where not. The name stands in the first version's block font where it fits and the font draws every letter of
-// it, as text where not, its colours going from the accent to the host's. The brief opens with the first way to reach
-// the author, the address in two colours parted at its at, then the subtitle and the place, the facts and the other
-// ways, each by its label, then a row of the design's colours. Under them the career's line lays each role, an entry
-// of the first section that holds any, along the months from the first role's start, or the day the session opened
-// where that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
-// running to the site's word for the present, each company over its span; the lead comes last.
+// it where not. The name stands in the first version's block font where the font draws every letter of it and the
+// page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text where not, its
+// colours going from the accent to the host's. The brief opens with the first way to reach the author, the address
+// in two colours parted at its at, then the subtitle and the place, the facts and the other ways, each by its label,
+// then a row of the design's colours. Under them the career's line lays each role, an entry of the first section
+// that holds any, along the months from the first role's start, or the day the session opened where that comes first,
+// to the day or the last month a role reaches past it, the one still held in the accent and running to the site's
+// word for the present, each company over its span; the lead comes last. Each section of the résumé after it stands
+// under its title, in the block font in the name's colours where it fits as the name does, as text in them where
+// that fits, and with none where neither does. A role or a school stands with its period in the column of the periods
+// of its section, as wide as the widest of them, the one still going on in the accent, its title, subtitle and place
+// beside it and its points under them; where the page leaves too little room beside the column, the period stands
+// above.
 // The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key
 // where they type one, and each tab keeps its place; where more of a tab lies below the page, the rim says how many
 // lines, as Neovim counts them, the two rows above it fade, and a scrollbar at the right shows how far down the page
@@ -144,7 +150,7 @@ func New(documents []document.Document, site routes.Site, width, height int, tod
 		today:      today,
 		frame:      frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, crosses: false, footer: nil},
 		laid:       nil,
-		paint:      paint{kinds: nil, parts: nil, nameTones: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
+		paint:      paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", rim: "", panelGap: "", idlePrompt: "", track: "", thumb: "", keyWindow: paintedWindow{rows: nil, width: 0}},
 		chosen:     0,
 		scrolls:    make([]int, len(buffers[shown])),
@@ -206,7 +212,7 @@ func themeOf(dark bool) look.Theme {
 // relaid is the model with every tab laid out again for the terminal's size, then painted.
 func (model Model) relaid() Model {
 	model.frame = frameOf(model.terminal.width, model.terminal.height)
-	layout := layout{site: model.site, width: model.frame.inner, today: model.today}
+	layout := layout{site: model.site, width: model.frame.inner, pageRows: model.frame.rows, today: model.today}
 	model.laid = make([][]line, 0, len(model.tabs))
 	for _, shown := range model.tabs {
 		model.laid = append(model.laid, layout.tab(shown))

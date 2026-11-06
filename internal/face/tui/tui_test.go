@@ -194,26 +194,36 @@ func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 	}
 }
 
-// The author's name reads as text where the block font cannot draw it: on a page narrower than its banner, wrapped
-// whole on a page narrower than the name, and where the font has not every letter of it.
+// The author's name reads as text where the block font cannot draw it: on a page narrower than its banner, on one
+// too short to show the tab under it, wrapped whole on a page narrower than the name, and where the font has not every
+// letter of it.
 func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
-	// a page narrower than the name written in one line
-	const narrowerThanTheName = 10
+	// a page narrower than the name written in one line; a screen whose page shows four rows; and one whose page has the
+	// rows for the banner and the tab under it, not for the blank row over the banner as well
+	const (
+		narrowerThanTheName = 10
+		shorterThanTheName  = 12
+		noRowOverTheName    = 21
+	)
 	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
 	cases := []struct {
-		name  string
-		title string
-		width int
-		holds string
+		name   string
+		title  string
+		width  int
+		height int
+		holds  string
 	}{
-		{name: "a page narrower than the banner", title: "Mira Example", width: phoneWidth, holds: "Mira Example"},
-		{name: "a page narrower than the name", title: "Mira Example", width: narrowerThanTheName, holds: "Example"},
-		{name: "letters the font has not", title: "José Núñez", width: commonWidth, holds: "José Núñez"},
+		{name: "a page narrower than the banner", title: "Mira Example", width: phoneWidth, height: tallHeight, holds: "Mira Example"},
+		{name: "a page shorter than the banner", title: "Mira Example", width: commonWidth, height: shorterThanTheName, holds: "Mira Example"},
+		{name: "a page shorter than what stands over the name", title: "Mira Example", width: commonWidth, height: noRowOverTheName, holds: "Mira Example"},
+		{name: "a page narrower than the name", title: "Mira Example", width: narrowerThanTheName, height: tallHeight, holds: "Example"},
+		{name: "letters the font has not", title: "José Núñez", width: commonWidth, height: tallHeight, holds: "José Núñez"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if page := aboveTheStatusLine(screenOf(test, handResume(test, testCase.title, testCase.width, tallHeight, brief))); !strings.Contains(page, testCase.holds) {
-				test.Errorf("at %d columns the page =\n%s\nwant the name's text %q", testCase.width, page, testCase.holds)
+			model := handResume(test, testCase.title, testCase.width, testCase.height, brief)
+			if page := aboveTheStatusLine(screenOf(test, model)); !strings.Contains(page, testCase.holds) {
+				test.Errorf("at %d×%d the page =\n%s\nwant the name's text %q", testCase.width, testCase.height, page, testCase.holds)
 			}
 		})
 	}
@@ -291,7 +301,7 @@ func TestTheScrollingKeysMoveThroughATab(test *testing.T) {
 		{name: "G goes to the end", keys: []string{"G"}, holds: "one long winter", lacks: "Northwind"},
 		{name: "gg goes back to the start", keys: []string{"G", "g", "g"}, holds: "Northwind", lacks: "one long winter"},
 		{name: "one g alone stays", keys: []string{"G", "g"}, holds: "one long winter", lacks: "Northwind"},
-		{name: "a key between two g's parts them", keys: []string{"G", "g", "k", "g"}, holds: "one long winter", lacks: "Northwind"},
+		{name: "a key between two g's parts them", keys: []string{"G", "g", "k", "g"}, holds: "Kept the build green", lacks: "Northwind"},
 		{name: "k at the start stays there", keys: []string{"k"}, holds: "Northwind", lacks: "one long winter"},
 		{name: "j at the end stays there", keys: []string{"G", "j"}, holds: "one long winter", lacks: "Northwind"},
 	}
@@ -355,20 +365,71 @@ func TestTheChosenTabIsNamedAtAnyWidth(test *testing.T) {
 	}
 }
 
-// A role reads with its period, each month its year and its number, and its place.
-func TestARoleReadsWithItsPeriod(test *testing.T) {
-	screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), toExperience()...))
+// A role reads with its period, each month its year and its number, and with its title, its subtitle and its place,
+// on a common terminal as on a phone.
+func TestARoleReadsWithItsPeriodAndPlace(test *testing.T) {
 	cases := []struct {
-		name string
-		want string
+		name  string
+		width int
+		want  string
 	}{
-		{name: "a role still held", want: "2023-04 – present · Brno"},
-		{name: "a role that ended", want: "2020-01 – 2023-03 · Prague"},
+		{name: "the period of a role still held", width: commonWidth, want: "2023-04 – present"},
+		{name: "a role still held", width: commonWidth, want: "Northwind — Senior Engineer · Brno"},
+		{name: "the period of a role that ended", width: commonWidth, want: "2020-01 – 2023-03"},
+		{name: "a role that ended", width: commonWidth, want: "Southwind — Engineer · Prague"},
+		{name: "the period of a role on a phone", width: phoneWidth, want: "2023-04 – present"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, pressed(test, fixtureModel(test, testCase.width, tallHeight), toExperience()...))
 			if !strings.Contains(screen, testCase.want) {
-				test.Errorf("the experience tab =\n%s\nwant it to hold %q", screen, testCase.want)
+				test.Errorf("at %d columns the experience tab =\n%s\nwant it to hold %q", testCase.width, screen, testCase.want)
+			}
+		})
+	}
+}
+
+// A role's period stands apart from its title on the line they share: a word of its own.
+func TestAPeriodStandsApartFromItsTitle(test *testing.T) {
+	lines := strings.Split(screenOf(test, pressed(test, fixtureModel(test, commonWidth, tallHeight), toExperience()...)), lineEnd)
+	shared := slices.IndexFunc(lines, func(shown string) bool { return strings.Contains(shown, "Northwind —") })
+	if shared < 0 {
+		test.Fatalf("the experience tab =\n%s\nwant a line holding the role %q", strings.Join(lines, lineEnd), "Northwind —")
+	}
+	if words := strings.Fields(lines[shared]); !slices.Contains(words, "present") || !slices.Contains(words, "Northwind") {
+		test.Errorf("the role's line = %q, want its period's %q and its title's %q apart", lines[shared], "present", "Northwind")
+	}
+}
+
+// A section of the résumé stands under its title, in the block font where the page has room for it and rows of the
+// tab under it, as text where it has room for that alone; on a page too short for either, and on another page, a
+// section stands as it is, its title on the status line alone.
+func TestASectionOfTheResumeStandsUnderItsTitle(test *testing.T) {
+	// a page narrower than the project's tab's title, WHY, in the block font, which would show it as text; and a
+	// screen whose page has the rows for the title as text and the tab under it, not for its banner
+	const (
+		narrowerThanWhy    = 12
+		shorterThanABanner = 17
+	)
+	cases := []struct {
+		name   string
+		model  Model
+		title  string
+		titled bool
+	}{
+		{name: "the résumé's experience", model: pressed(test, fixtureModel(test, phoneWidth, tallHeight), toExperience()...), title: "Experience", titled: true},
+		{name: "a page too short for the banner", model: pressed(test, fixtureModel(test, commonWidth, shorterThanABanner), toExperience()...), title: "Experience", titled: true},
+		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titled: false},
+		{
+			name: "a project's page", title: "Why", titled: false,
+			model: pressed(test, commanded(test, fixtureModel(test, narrowerThanWhy, tallHeight), "e tidy-tool"), "l"),
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			page := aboveTheStatusLine(screenOf(test, testCase.model))
+			if strings.Contains(page, testCase.title) != testCase.titled {
+				test.Errorf("the page =\n%s\nwant the title %q over it: %t", page, testCase.title, testCase.titled)
 			}
 		})
 	}

@@ -170,7 +170,9 @@ and web routes.
   out the roles, the entries of the first section that holds any, and the
   lead comes last. Both the brief and the roles are found by their place
   in the document, since an entry does not say whether it is a role or a
-  school (TODO).
+  school (TODO). Each section of the résumé after the opening stands under
+  its title, in the block font where the page has room for it, so a search
+  finds a section's title on its page only where it reads as text.
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a

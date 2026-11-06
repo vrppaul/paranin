@@ -41,13 +41,16 @@ const (
 	kindFailed
 	// kindName is the author's name, its colours going from the accent to the host's along it
 	kindName
+	// kindHeading is a tab's title over its page, which the paint draws as it draws the name, a kind of its own since
+	// it is not the name
+	kindHeading
 	// kindLabel names what follows it in the brief
 	kindLabel
 	// kindMailbox is the mailbox of an address, before its at
 	kindMailbox
 	// kindHost is the site's host where the address names it
 	kindHost
-	// kindCurrent is what still goes on: the role still held on the career's line, and the site's word for it
+	// kindCurrent is what still goes on: the role still held, its period, and the site's word for the present
 	kindCurrent
 	// kindPast is a role on the career's line that ended
 	kindPast
@@ -267,6 +270,15 @@ func runsWidth(runs []run) int {
 	width := 0
 	for _, piece := range runs {
 		width += textWidth(piece.text)
+	}
+	return width
+}
+
+// linesWidth is how many columns the widest of lines takes.
+func linesWidth(lines []line) int {
+	width := 0
+	for _, shown := range lines {
+		width = max(width, runsWidth(shown))
 	}
 	return width
 }

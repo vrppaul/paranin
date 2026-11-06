@@ -5,19 +5,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// How the name stands in the block font: how many rows a glyph is tall, a column between two glyphs, a row of nothing
-// between its two lines, and the cursor after the second line, a column apart from it, as wide as the font's strokes
-const (
-	glyphRows    = 3
-	glyphGap     = 1
-	blockLineGap = 1
-	blockCursor  = "▌"
-)
+// The cursor after the name's last line in the block font, a column apart from it, as wide as the font's strokes
+const blockCursor = "▌"
 
 // The room between the name's column and the brief's, as the storyboard set them apart, and the least the brief
 // takes beside the name, where the page has not the room for both, the brief standing under the name; the least room
@@ -56,35 +49,11 @@ const (
 	careerRows
 )
 
-// blockFont is the first version's banner font: each capital, digit, space and hyphen three rows tall, of half blocks,
-// each glyph's rows written as one text, a line's end between each two. A name with a letter it has not is drawn as
-// text.
-func blockFont() map[rune][]string {
-	glyphs := map[rune]string{
-		'A': "█▀▀█\n█▀▀█\n▀  ▀", 'B': "█▀▀▄\n█▀▀█\n▀▀▀ ", 'C': "█▀▀▀\n█   \n▀▀▀▀", 'D': "█▀▀▄\n█  █\n▀▀▀ ",
-		'E': "█▀▀▀\n█▀▀ \n▀▀▀▀", 'F': "█▀▀▀\n█▀▀ \n▀   ", 'G': "█▀▀▀\n█ ▀█\n▀▀▀▀", 'H': "█  █\n█▀▀█\n▀  ▀",
-		'I': "▀█▀\n █ \n▀▀▀", 'J': "   █\n▄  █\n▀▀▀▀", 'K': "█ ▄▀\n█▀▄ \n▀  ▀", 'L': "█   \n█   \n▀▀▀▀",
-		'M': "█▄ ▄█\n█ ▀ █\n▀   ▀", 'N': "█▄ █\n█ ▀█\n▀  ▀", 'O': "█▀▀█\n█  █\n▀▀▀▀", 'P': "█▀▀█\n█▀▀▀\n▀   ",
-		'Q': "█▀▀█\n█ ▄█\n▀▀▀▀", 'R': "█▀▀█\n█▀▀▄\n▀  ▀", 'S': "█▀▀▀\n▀▀▀█\n▀▀▀▀", 'T': "▀█▀\n █ \n ▀ ",
-		'U': "█  █\n█  █\n▀▀▀▀", 'V': "█  █\n█  █\n ▀▀ ", 'W': "█   █\n█▄▀▄█\n▀   ▀", 'X': "█  █\n▄▀▀▄\n▀  ▀",
-		'Y': "█  █\n ██ \n ▀▀ ", 'Z': "▀▀▀█\n▄▀▀ \n▀▀▀▀", ' ': "  \n  \n  ", '-': "   \n▀▀▀\n   ",
-		'1': "▀█ \n █ \n▀▀▀", '2': "▀▀▀█\n█▀▀▀\n▀▀▀▀", '3': "▀▀▀█\n ▀▀█\n▀▀▀▀", '4': "█  █\n▀▀▀█\n   ▀",
-		'6': "█▀▀▀\n█▀▀█\n▀▀▀▀", '7': "▀▀▀█\n  █ \n  ▀ ", '8': "█▀▀█\n█▀▀█\n▀▀▀▀", '9': "█▀▀█\n▀▀▀█\n▀▀▀▀",
-	}
-	// the font draws a zero as the O and a five as the S
-	glyphs['0'], glyphs['5'] = glyphs['O'], glyphs['S']
-	font := make(map[rune][]string, len(glyphs))
-	for letter, glyph := range glyphs {
-		font[letter] = strings.Split(glyph, lineEnd)
-	}
-	return font
-}
-
 // about lays out the résumé's opening as neofetch prints a system: the name's column, the greeting and the name,
 // beside the brief where the page has room for both, above it where not; then the career's line, and the lead.
 func (layout layout) about(head document.Head, brief []document.Fact, career []document.Entry) []line {
 	parts := layout.headParts(head)
-	name := slices.Concat(parts.greeting, blankLines(), layout.name(document.PlainText(head.Title)))
+	name := layout.nameColumn(slices.Concat(parts.greeting, blankLines()), document.PlainText(head.Title))
 	nameWidth := linesWidth(name)
 	var lines []line
 	if room := layout.width - nameWidth - columnsApart; room >= narrowestBrief {
@@ -104,132 +73,40 @@ func (layout layout) about(head document.Head, brief []document.Fact, career []d
 	return lines
 }
 
-// name is the author's name: its first word above the rest in the block font, the cursor after them, where the font
-// draws every letter of it and both lines fit the page; else as text in the same colours, the site's cursor after
-// it, wrapped where the page is narrower than the name.
-func (layout layout) name(title string) []line {
-	if banner := bannerOf(strings.Fields(strings.ToUpper(title))); len(banner) > 0 && linesWidth(banner) <= layout.width {
-		return banner
+// nameColumn is the lines over the author's name, then the name: its first word above the rest in the block font, the
+// cursor after them, where the font draws every letter of it and the lines over it and the banner fit the page, in
+// its width and its rows; else as text in the same colours, the site's cursor after it, wrapped where the page is
+// narrower than the name.
+func (layout layout) nameColumn(linesAbove []line, title string) []line {
+	if banner := nameBanner(strings.Fields(strings.ToUpper(title))); len(banner) > 0 {
+		if column := slices.Concat(linesAbove, banner); layout.fits(column) {
+			return column
+		}
 	}
-	return layout.fill(withCursor(textNameWords(title)), 0)
+	return slices.Concat(linesAbove, layout.fill(withCursor(gradientWords(title, kindName)), 0))
 }
 
-// bannerOf is a name's words in the block font: the first above the rest, the cursor after them; nothing where the
+// nameBanner is a name's words in the block font: the first above the rest, the cursor after them; nothing where the
 // name has no words or the font does not draw every letter of them.
-func bannerOf(words []string) []line {
-	font := blockFont()
-	if len(words) == 0 || !drawsEvery(font, words) {
+func nameBanner(words []string) []line {
+	if len(words) == 0 {
 		return nil
 	}
-	rows := [][]string{blockRows(font, words[0])}
+	texts := []string{words[0]}
 	if len(words) > 1 {
-		rows = append(rows, blockRows(font, strings.Join(words[1:], space)))
+		texts = append(texts, strings.Join(words[1:], space))
+	}
+	rows := bannerRows(texts)
+	if len(rows) == 0 {
+		return nil
 	}
 	// the cursor stands after the last line, whose width it adds to
 	last := rows[len(rows)-1]
-	width := max(rowsWidth(rows[0]), rowsWidth(last)+textWidth(space+blockCursor))
-	lines := tonedRows(rows[0], width)
-	for _, written := range rows[1:] {
-		lines = slices.Concat(lines, slices.Repeat(blankLines(), blockLineGap), tonedRows(written, width))
-	}
+	lines := tonedBanner(rows, kindName, max(rowsWidth(rows[0]), rowsWidth(last)+textWidth(space+blockCursor)))
 	for row := len(lines) - len(last); row < len(lines); row++ {
 		lines[row] = append(lines[row], gapRun(spaceWidth), run{text: blockCursor, kind: kindCursor, highlighted: false, address: "", copied: "", tone: 0})
 	}
 	return lines
-}
-
-// drawsEvery is whether the block font has a glyph for every letter of words.
-func drawsEvery(font map[rune][]string, words []string) bool {
-	for _, written := range words {
-		for _, letter := range written {
-			if _, drawn := font[letter]; !drawn {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-// blockRows are a text's rows in the block font, a column between each two glyphs; every letter of it is one the
-// font draws.
-func blockRows(font map[rune][]string, text string) []string {
-	rows := make([]string, glyphRows)
-	for index, letter := range text {
-		glyph := font[letter]
-		for row := range rows {
-			if index > 0 {
-				rows[row] += strings.Repeat(space, glyphGap)
-			}
-			rows[row] += glyph[row]
-		}
-	}
-	return rows
-}
-
-// linesWidth is the widest of lines.
-func linesWidth(lines []line) int {
-	width := 0
-	for _, shown := range lines {
-		width = max(width, runsWidth(shown))
-	}
-	return width
-}
-
-// rowsWidth is the widest of rows of text.
-func rowsWidth(rows []string) int {
-	width := 0
-	for _, row := range rows {
-		width = max(width, textWidth(row))
-	}
-	return width
-}
-
-// tonedRows are rows of the block font as lines, each cell in the tone its column stands at along a width, cells of
-// one tone side by side one run.
-func tonedRows(rows []string, width int) []line {
-	lines := make([]line, 0, len(rows))
-	for _, row := range rows {
-		shown := line{}
-		for column, letter := range []rune(row) {
-			tone := toneAt(column, width)
-			if last := len(shown) - 1; last >= 0 && shown[last].tone == tone {
-				shown[last].text += string(letter)
-				continue
-			}
-			shown = append(shown, run{text: string(letter), kind: kindName, highlighted: false, address: "", copied: "", tone: tone})
-		}
-		lines = append(lines, shown)
-	}
-	return lines
-}
-
-// textNameWords are the words of the name as text, each letter in the tone its place along the whole name stands at,
-// so the colours run on across the words wherever a line breaks them.
-func textNameWords(title string) []word {
-	letters := []rune(title)
-	words, current := []word{}, word{runs: nil, highlightBefore: false}
-	for index, letter := range letters {
-		if unicode.IsSpace(letter) {
-			words, current = appendWord(words, current), word{runs: nil, highlightBefore: false}
-			continue
-		}
-		piece := run{text: string(letter), kind: kindName, highlighted: false, address: "", copied: "", tone: toneAt(index, len(letters))}
-		current.runs = append(current.runs, piece)
-	}
-	return appendWord(words, current)
-}
-
-// appendWord is words with one more after them, where that one holds any text.
-func appendWord(words []word, next word) []word {
-	if len(next.runs) == 0 {
-		return words
-	}
-	return append(words, next)
-}
-
-// toneAt is the tone of a column along a width: the first at its start, the last at its end.
-func toneAt(column, width int) int {
-	return column * (nameTones - 1) / max(width-1, 1)
 }
 
 // besideLines are two columns of lines side by side, the second standing a width in from the first's left edge.

@@ -66,10 +66,10 @@ const (
 type paint struct {
 	kinds map[kind]lipgloss.Style
 	parts map[part]lipgloss.Style
-	// nameTones are the colours of the name's tones, from the accent to the host's, and swatches the design's colours
-	// the swatches go round: each laid over its kind's look
-	nameTones []color.Color
-	swatches  []color.Color
+	// gradient is the colours from the accent to the host's the name and a tab's title go through, and swatches the
+	// design's colours the swatches go round: each laid over its kind's look
+	gradient []color.Color
+	swatches []color.Color
 	// the text of the two rows of the page above the rim, where more of the tab lies below, takes these colours: the
 	// one above the less faded, the last the most
 	fadedLess color.Color
@@ -111,6 +111,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindWarned:  plain.Foreground(colour(look.ColourWarned)),
 			kindFailed:  plain.Foreground(colour(look.ColourError)),
 			kindName:    plain.Bold(true),
+			kindHeading: plain.Bold(true),
 			kindLabel:   plain.Foreground(colour(look.ColourLabel)).Bold(true),
 			kindMailbox: plain.Foreground(colour(look.ColourAccent)),
 			kindHost:    plain.Foreground(colour(look.ColourHost)).Bold(true),
@@ -118,8 +119,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindPast:    plain.Foreground(colour(look.ColourEdge)).Faint(noColours),
 			kindSwatch:  plain,
 		},
-		nameTones: nameTonesOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
-		swatches:  swatchesOf(colour),
+		gradient: gradientOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
+		swatches: swatchesOf(colour),
 		parts: map[part]lipgloss.Style{
 			partCross:       plain.Foreground(colour(look.ColourFaint)),
 			partTrack:       plain.Foreground(colour(look.ColourQuiet)),
@@ -163,8 +164,9 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	}
 }
 
-// How many tones the name's colours go through from the accent to the host's
-const nameTones = 16
+// How many tones the gradient goes through from the accent to the host's colour, along the author's name and a tab's
+// title
+const gradientTones = 16
 
 // swatchColours are the design's colours the brief's swatches show, one swatch each, in the order they stand; the
 // layout lays out as many swatches as there are.
@@ -181,22 +183,22 @@ func swatchesOf(colour func(look.Colour) color.Color) []color.Color {
 	return shown
 }
 
-// nameTonesOf are the colours of the name's tones: those between the accent and the host's, blended; where the
-// terminal shows few colours, the accent alone, every tone going round to it, which blending would only round to a
-// few of its sixteen.
-func nameTonesOf(accent, host color.Color, fewColours bool) []color.Color {
+// gradientOf are the gradient's colours: those between the accent and the host's, blended; where the terminal shows
+// few colours, the accent alone, every tone going round to it, which blending would only round to a few of its
+// sixteen.
+func gradientOf(accent, host color.Color, fewColours bool) []color.Color {
 	if fewColours {
 		return []color.Color{accent}
 	}
-	return lipgloss.Blend1D(nameTones, accent, host)
+	return lipgloss.Blend1D(gradientTones, accent, host)
 }
 
 // tonesOf are the colours a kind painted in several takes, each run the one its tone names, round them where its tone
 // runs past them; none for a kind of one colour.
 func (paint paint) tonesOf(shown kind) []color.Color {
 	switch shown {
-	case kindName:
-		return paint.nameTones
+	case kindName, kindHeading:
+		return paint.gradient
 	case kindSwatch:
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,

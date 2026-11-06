@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -8,27 +9,22 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// How the command line opens, and what it says, as Neovim says it, of a command it does not know, of a command
-// that needs an argument and was given none, and of one that takes none and was given one
+// What the prompt says, as Neovim's command line says it, of a command it does not know, of a command that needs an
+// argument and was given none, and of one that takes none and was given one
 const (
-	commandMark        = ":"
 	unknownCommand     = "E492: Not an editor command: "
 	argumentRequired   = "E471: Argument required"
 	trailingCharacters = "E488: Trailing characters: "
 )
 
-// What the window of commands says the quit command does on the résumé, which the status line and the window of
-// keys say of q there
+// What the window of keys says q does on the résumé
 const quitHint = "quit"
 
-// The command that opens a project's page, as Neovim's opens a file, and what the status line says it opens
-const (
-	editCommand = "e"
-	pagesHint   = "pages"
-)
+// The command that opens a project's page, as Neovim's opens a file
+const editCommand = "e"
 
-// hiddenCommand is a command the window of commands keeps hidden, as the first version did, that shows a page the
-// session may hold: its name, and the page.
+// hiddenCommand is a command that shows a page the session may hold, kept from the places the prompt lists, as the
+// first version kept it hidden: its name, and the page.
 type hiddenCommand struct {
 	name string
 	page document.Page
@@ -46,12 +42,10 @@ func hiddenCommands() []hiddenCommand {
 // A command runs with no count typed before it
 const noCount = 0
 
-// command is a command the command line runs: its name; what the window of commands says it does, or nothing
-// where the window does not list it, as for a second name of a command it lists; whether it takes an argument,
-// which it needs then; and what it does with the argument.
+// command is a command the prompt runs, as Neovim's command line does, though it lists none of them: the names it
+// goes by; whether it takes an argument, which it needs then; and what it does with the argument.
 type command struct {
-	name          string
-	does          string
+	names         []string
 	takesArgument bool
 	act           commandAction
 }
@@ -59,52 +53,32 @@ type command struct {
 // commandAction is what a command does, with the argument typed after it, or nothing where it takes none.
 type commandAction func(model Model, argument string) (Model, tea.Cmd)
 
-// commands are the commands the command line runs, in the order the window lists them, which says what q does on
-// the page shown: Neovim's ways to close a window and to quit, listed by the first alone, and its way to open a
-// file, here a project's page by its slug; then the hidden commands of the hidden pages the session holds.
-func commands(closing string, buffers map[document.Page][]tab) []command {
+// commands are the commands the prompt runs: Neovim's ways to close a window, as q closes it, and to quit, as Ctrl+C
+// does, and its way to open a file, here a project's page by its slug; then the hidden commands of the hidden pages
+// the session holds, each showing its page in place of the one shown, as :e does a project's.
+func commands(buffers map[document.Page][]tab) []command {
 	known := []command{
-		{name: "q", does: closing, takesArgument: false, act: Model.closedByCommand},
-		{name: "quit", does: "", takesArgument: false, act: Model.closedByCommand},
-		{name: "q!", does: "", takesArgument: false, act: Model.closedByCommand},
-		{name: "qa", does: "", takesArgument: false, act: Model.quitByCommand},
-		{name: editCommand, does: "open a page", takesArgument: true, act: Model.edit},
-		{name: "edit", does: "", takesArgument: true, act: Model.edit},
+		{names: []string{"q", "quit", "q!"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.closed(noCount) }},
+		{names: []string{"qa"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.quit(noCount) }},
+		{names: []string{editCommand, "edit"}, takesArgument: true, act: Model.edit},
 	}
 	for _, hidden := range hiddenCommands() {
 		if _, held := buffers[hidden.page]; held {
-			known = append(known, command{name: hidden.name, does: "", takesArgument: false, act: shows(hidden.page)})
+			known = append(known, command{names: []string{hidden.name}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.showing(hidden.page), nil }})
 		}
 	}
 	return known
 }
 
-// shows is the action of a hidden command: it shows the command's page in place of the one shown, as :e does a
-// project's.
-func shows(page document.Page) commandAction {
-	return func(model Model, _ string) (Model, tea.Cmd) { return model.showing(page), nil }
-}
-
-// closedByCommand closes the page shown, as q does.
-func (model Model) closedByCommand(string) (Model, tea.Cmd) {
-	return model.closed(noCount)
-}
-
-// quitByCommand ends the session, as Ctrl+C does.
-func (model Model) quitByCommand(string) (Model, tea.Cmd) {
-	return model.quit(noCount)
-}
-
-// completion is an item the window of commands lists: what it shows, what it says the item does, and what Tab writes
-// on the command line where it chooses the item.
+// completion is an item the places under the prompt list: what it shows, and what Tab writes on the prompt where it
+// chooses the item.
 type completion struct {
 	shown   string
-	does    string
 	written string
 }
 
-// completionState is the window of commands: what the reader typed, what the window lists for it, both worked out
-// each time they edit the line, and the place of the item Tab or Shift+Tab has chosen.
+// completionState is what the places under the prompt list: what the reader typed, what is listed for it, both
+// worked out each time they edit the line, and the place of the item Tab or Shift+Tab has chosen.
 type completionState struct {
 	typed  string
 	listed []completion
@@ -120,20 +94,22 @@ const (
 	backwardStep = -1
 )
 
-// startCommand opens the command line, empty, after a colon; the window lists every command.
-func (model Model) startCommand(int) (Model, tea.Cmd) {
+// promptOpened is the model with the prompt open, empty, as a colon opens it; the places listed are those listed
+// before anything is typed.
+func (model Model) promptOpened() Model {
 	model.keys.mode, model.keys.typing = modeCommand, ""
 	model.completion = model.completionsOf("")
-	return model, nil
+	return model
 }
 
-// completionsOf is the window of commands for what the reader typed, none of it chosen.
+// completionsOf is what the places list for what the reader typed, none of it chosen.
 func (model Model) completionsOf(typed string) completionState {
 	return completionState{typed: typed, listed: model.completions(typed), chosen: noneChosen}
 }
 
-// typedInCommand is the model after a key while the reader types a command: Enter runs it, Tab and Shift+Tab go
-// round what the window lists; any other key edits the line, and the window lists anew, or leaves it unrun.
+// typedInCommand is the model after a key while the reader types a place or a command: Enter goes there or runs it,
+// Tab and Shift+Tab go round the places listed; any other key edits the line, and the places are listed anew, or
+// leaves it unrun.
 func (model Model) typedInCommand(key tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch key.String() {
 	case enterKey:
@@ -155,7 +131,7 @@ func (model Model) typedInCommand(key tea.KeyPressMsg) (Model, tea.Cmd) {
 	return model, nil
 }
 
-// completed is the model with the item a step on chosen and written on the command line, as Neovim's wildmenu goes
+// completed is the model with the item a step on chosen and written on the prompt, as Neovim's wildmenu goes
 // round: what the reader typed is a place in the round, before the first and after the last, so Tab from it
 // chooses the first, Shift+Tab the last, and a step past either end writes what they typed again.
 func (model Model) completed(step int) Model {
@@ -171,31 +147,25 @@ func (model Model) completed(step int) Model {
 	return model
 }
 
-// commandParts are what a command line holds, read as Neovim reads it: a command's name, then, after a space, its
-// argument, spaces before either left out; and whether a space came after the name.
+// commandParts are what the prompt holds, read as Neovim reads its command line: a command's name, then, after a
+// space, its argument, spaces before either left out; and whether a space came after the name.
 func commandParts(typed string) (name, argument string, argued bool) {
 	name, argument, argued = strings.Cut(strings.TrimLeft(typed, space), space)
 	return name, strings.TrimLeft(argument, space), argued
 }
 
-// completions are what the window lists for what the reader typed: before a space, the commands it lists at all
-// whose names start with it; after a command and a space, the pages whose slugs start with what follows, where the
-// command takes an argument, which only a page is.
+// completions are what the prompt lists for what the reader typed: before a space, the places whose names start with
+// it; after a command and a space, the pages whose slugs start with what follows, where the command takes an
+// argument, which only a page is.
 func (model Model) completions(typed string) []completion {
 	name, argument, argued := commandParts(typed)
 	if argued {
 		return model.pageCompletions(name, argument)
 	}
-	listed := []completion{}
-	for _, known := range model.commands {
-		if known.does != "" && strings.HasPrefix(known.name, name) {
-			listed = append(listed, completion{shown: commandMark + known.name, does: known.does, written: known.name})
-		}
-	}
-	return listed
+	return model.placesFor(model.chosen, name)
 }
 
-// pageCompletions are the projects' pages the window lists after a command named and a space, by slug, where the
+// pageCompletions are the projects' pages the prompt lists after a command named and a space, by slug, where the
 // command takes an argument: those whose slugs start with what is typed, each written after the command's name.
 func (model Model) pageCompletions(name, typed string) []completion {
 	listed := []completion{}
@@ -204,7 +174,7 @@ func (model Model) pageCompletions(name, typed string) []completion {
 	}
 	for _, slug := range model.slugs {
 		if strings.HasPrefix(slug, typed) {
-			listed = append(listed, completion{shown: slug, does: "", written: name + space + slug})
+			listed = append(listed, completion{shown: slug, written: name + space + slug})
 		}
 	}
 	return listed
@@ -213,21 +183,24 @@ func (model Model) pageCompletions(name, typed string) []completion {
 // commandNamed is the command of a name, and whether there is one.
 func (model Model) commandNamed(name string) (command, bool) {
 	for _, known := range model.commands {
-		if known.name == name {
+		if slices.Contains(known.names, name) {
 			return known, true
 		}
 	}
-	return command{name: "", does: "", takesArgument: false, act: nil}, false
+	return command{names: nil, takesArgument: false, act: nil}, false
 }
 
-// ranCommand runs the command typed, as Neovim does: the one named by the first word, with what follows it, or none,
-// and the command line says it knows no such command; the keys go back to normal mode either way, and nothing typed
-// runs nothing.
+// ranCommand goes to the place typed, or runs the command typed, as Neovim does: the one named by the first word,
+// with what follows it, or none, and the prompt says it knows no such command; the keys go back to normal mode
+// either way, and nothing typed runs nothing.
 func (model Model) ranCommand() (Model, tea.Cmd) {
 	model.keys.mode = modeNormal
 	typed := strings.TrimSpace(model.keys.typing)
 	if typed == "" {
 		return model, nil
+	}
+	if known, found := model.placeNamed(typed); found {
+		return known.act(model, noCount)
 	}
 	name, argument, _ := commandParts(typed)
 	if known, found := model.commandNamed(name); found {

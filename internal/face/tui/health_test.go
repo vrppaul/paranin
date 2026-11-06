@@ -31,19 +31,11 @@ func TestCheckhealthShowsTheHealthReport(test *testing.T) {
 	}
 }
 
-// Where the count does not fit beside the ruler it drops whole, the ruler kept; and at every width it shows in
-// every mode or in none.
+// Where the count does not fit beside the ruler it drops whole, the ruler kept.
 func TestTheCountOfChecksShowsWholeOrNotAtAll(test *testing.T) {
-	phone := belowThePage(screenOf(test, commanded(test, fixtureModel(test, phoneWidth, commonHeight), "checkhealth")))
-	if strings.Contains(phone, "OK") || !strings.Contains(phone, "All") {
-		test.Errorf("at a phone's width the status and command lines = %q, want no part of the count, and the ruler", phone)
-	}
-	for width := phoneWidth; width <= commonWidth; width++ {
-		normal := commanded(test, fixtureModel(test, width, commonHeight), "checkhealth")
-		inNormal := strings.Contains(belowThePage(screenOf(test, normal)), "ERROR")
-		if afterColon := strings.Contains(belowThePage(screenOf(test, pressed(test, normal, ":"))), "ERROR"); afterColon != inNormal {
-			test.Errorf("at %d columns the count shows in normal mode: %t, after a colon: %t; want the same", width, inNormal, afterColon)
-		}
+	status := footerLine(screenOf(test, commanded(test, fixtureModel(test, phoneWidth, commonHeight), "checkhealth")), footerStatus)
+	if strings.Contains(status, "OK") || !strings.HasSuffix(status, "All") {
+		test.Errorf("at a phone's width the status line = %q, want no part of the count, and the ruler", status)
 	}
 }
 
@@ -59,20 +51,20 @@ func TestTheStatusLineCountsTheChecks(test *testing.T) {
 		{
 			name:  "the health report",
 			model: commanded(test, fixtureModel(test, commonWidth, commonHeight), "checkhealth"),
-			count: "health · 1 OK · 1 WARNING · 1 ERROR", counted: true,
+			count: "health  1 OK · 1 WARNING · 1 ERROR", counted: true,
 		},
 		{name: "the résumé", model: fixtureModel(test, commonWidth, commonHeight), count: "OK", counted: false},
 		{
 			name:  "a tab whose section holds a group of its own",
 			model: pressed(test, commanded(test, nestedReportModel(test), "checkhealth"), "l"),
-			count: "outer · 2 WARNING", counted: true,
+			count: "outer  2 WARNING", counted: true,
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			below := belowThePage(screenOf(test, testCase.model))
-			if strings.Contains(below, testCase.count) != testCase.counted {
-				test.Errorf("on %s the status and command lines = %q, want %q counted: %t", testCase.name, below, testCase.count,
+			status := footerLine(screenOf(test, testCase.model), footerStatus)
+			if strings.Contains(status, testCase.count) != testCase.counted {
+				test.Errorf("on %s the status line = %q, want it to hold %q: %t", testCase.name, status, testCase.count,
 					testCase.counted)
 			}
 		})

@@ -31,30 +31,27 @@ func TestEditOpensAProjectsPage(test *testing.T) {
 // by the project's name.
 func TestAFirstTabWithNoTitleOfItsOwnTakesTheHeads(test *testing.T) {
 	screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"))
-	if !strings.Contains(screen, "1 tidy-tool") {
-		test.Errorf("after :e tidy-tool the screen =\n%s\nwant the first tab titled %q", screen, "1 tidy-tool")
+	if status := footerLine(screen, footerStatus); !strings.HasPrefix(status, "tidy-tool") {
+		test.Errorf("after :e tidy-tool the status line = %q, want it to open with the first tab's title %q", status, "tidy-tool")
 	}
 }
 
-// What the frame says q does follows the page shown: on a project's page q closes it, on the résumé q quits. The
-// status line, the window of keys and the window of commands each say it.
+// What the window of keys says q does follows the page shown: on a project's page q closes it, on the résumé q
+// quits.
 func TestTheFrameSaysWhatTheQuitKeyDoesOnThePageShown(test *testing.T) {
 	cases := []struct {
 		name   string
 		opened string
-		keys   []string
 		want   string
 	}{
-		{name: "the status line on the résumé", opened: "", keys: nil, want: "q quit"},
-		{name: "the status line on a project's page", opened: "e tidy-tool", keys: nil, want: "q close"},
-		{name: "the window of keys on a project's page", opened: "e tidy-tool", keys: []string{"?"}, want: "q     close"},
-		{name: "the window of commands on a project's page", opened: "e tidy-tool", keys: []string{":"}, want: ":q  close"},
+		{name: "on the résumé", opened: "", want: "q     quit"},
+		{name: "on a project's page", opened: "e tidy-tool", want: "q     close"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.opened), testCase.keys...)
+			model := pressed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.opened), "?")
 			if screen := screenOf(test, model); !strings.Contains(screen, testCase.want) {
-				test.Errorf("after :%s and %q the screen =\n%s\nwant %q", testCase.opened, testCase.keys, screen, testCase.want)
+				test.Errorf("after :%s and ? the screen =\n%s\nwant %q", testCase.opened, screen, testCase.want)
 			}
 		})
 	}
@@ -106,29 +103,6 @@ func TestClosingAPageGoesBackToTheResume(test *testing.T) {
 	}
 }
 
-// The status line names :e where the session holds a project's page to open; a session of the résumé alone names
-// none.
-func TestTheStatusLineNamesEditWhereAPageIsThere(test *testing.T) {
-	snapshot := fixtures.LoadedContent(test)
-	cases := []struct {
-		name  string
-		model Model
-		named bool
-	}{
-		{name: "a project's page", model: fixtureModel(test, commonWidth, commonHeight), named: true},
-		{name: "the résumé alone", model: New([]document.Document{compose.Resume(snapshot)}, fixtureSite(snapshot), commonWidth, commonHeight), named: false},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			below := belowThePage(screenOf(test, testCase.model))
-			if named := strings.Contains(below, ":e pages"); named != testCase.named {
-				test.Errorf("on a session of %s the status and command lines = %q, want :e pages named: %t", testCase.name, below,
-					testCase.named)
-			}
-		})
-	}
-}
-
 // :e finds only a project with a page of its own, and names back what it does not find with Neovim's error.
 func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 	cases := []struct {
@@ -149,9 +123,9 @@ func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 	}
 }
 
-// After :e and a space the window of commands lists the projects with a page whose slugs start with what follows,
-// in the order of their letters, which Tab goes through; after a command that takes no argument it lists nothing,
-// and Tab leaves the line as typed. The session holds a second project's page, which sorts first.
+// After :e and a space the places list the projects with a page whose slugs start with what follows, in the order of
+// their letters, which Tab goes through; after a command that takes no argument nothing is listed, and Tab leaves
+// the line as typed. The session holds a second project's page, which sorts first.
 func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 	cases := []struct {
 		name string
@@ -159,19 +133,19 @@ func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 		keys []string
 		line string
 	}{
-		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: " :e another-tool"},
-		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: " :e tidy-tool"},
-		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: " :e tidy-tool"},
-		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: " :e ti"},
-		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: " :e tidy-tool"},
-		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: " :e other"},
-		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: " :q"},
+		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: emptyPrompt + " e another-tool"},
+		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: emptyPrompt + " e tidy-tool"},
+		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: emptyPrompt + " e tidy-tool"},
+		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: emptyPrompt + " e ti"},
+		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: emptyPrompt + " e tidy-tool"},
+		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: emptyPrompt + " e other"},
+		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: emptyPrompt + " q"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := typed(test, pressed(test, twoPagesModel(test), ":"), testCase.text)
-			if line := commandLineOf(screenOf(test, pressed(test, model, testCase.keys...))); line != testCase.line {
-				test.Errorf("after :%s and %q the command line = %q, want %q", testCase.text, testCase.keys, line, testCase.line)
+			if line := footerLine(screenOf(test, pressed(test, model, testCase.keys...)), footerPrompt); line != testCase.line {
+				test.Errorf("after :%s and %q the prompt = %q, want %q", testCase.text, testCase.keys, line, testCase.line)
 			}
 		})
 	}
@@ -188,18 +162,18 @@ func twoPagesModel(test *testing.T) Model {
 	return New(documents, fixtureSite(snapshot), commonWidth, commonHeight)
 }
 
-// Tab after :e and a space writes the page the window lists first, which Enter opens.
+// Tab after :e and a space writes the page listed first, which Enter opens.
 func TestTabCompletesAPage(test *testing.T) {
 	model := pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "e "), "tab")
-	if line := commandLineOf(screenOf(test, model)); line != " :e tidy-tool" {
-		test.Errorf("after :e, a space and Tab the command line = %q, want %q", line, " :e tidy-tool")
+	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" e tidy-tool" {
+		test.Errorf("after :e, a space and Tab the prompt = %q, want %q", line, emptyPrompt+" e tidy-tool")
 	}
 	if screen := screenOf(test, pressed(test, model, "enter")); !strings.Contains(screen, projectTagline) {
 		test.Errorf("after :e, a space, Tab and Enter the screen =\n%s\nwant the project's page", screen)
 	}
 }
 
-// commanded is a model after a command typed on the command line and run.
+// commanded is a model after a place or a command typed on the prompt and run.
 func commanded(test *testing.T, model Model, text string) Model {
 	return pressed(test, typed(test, pressed(test, model, ":"), text), "enter")
 }

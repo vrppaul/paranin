@@ -53,13 +53,13 @@ const (
 	modeNormal mode = iota
 	// modeSearch types a search after the slash
 	modeSearch
-	// modeCommand types a command after the colon
+	// modeCommand types a place to go to, or a command, on the prompt
 	modeCommand
 	// modeKeys shows the window of keys, which the next key closes
 	modeKeys
 )
 
-// keyState is what the keys pressed so far leave pending: the mode, what is typed on the command line after the
+// keyState is what the keys pressed so far leave pending: the mode, what is typed on the prompt after the
 // slash or the colon, a first g, and a number typed before a key, with the sequence of its last digit, so a pause
 // that ends an older number is passed over.
 type keyState struct {
@@ -102,12 +102,12 @@ func normalActions() map[string]action {
 		endKey:           Model.end,
 		nextKey:          Model.nextTab,
 		rightArrow:       Model.nextTab,
-		tabKey:           Model.nextTab,
+		tabKey:           func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened().completed(forwardStep), nil },
 		previousKey:      Model.previousTab,
 		leftArrow:        Model.previousTab,
-		backwardTabKey:   Model.previousTab,
+		backwardTabKey:   func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened().completed(backwardStep), nil },
 		searchKey:        Model.startSearch,
-		commandKey:       Model.startCommand,
+		commandKey:       func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened(), nil },
 		nextMatchKey:     Model.nextMatch,
 		previousMatchKey: Model.previousMatch,
 		copyKey:          Model.copiedValue,

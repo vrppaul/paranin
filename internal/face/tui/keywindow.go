@@ -8,8 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The title of the window of keys, which the status line names it by too, and the word for what Esc does there,
-// which the frame says of q on any page but the résumé
+// The title of the window of keys, and the word for what Esc does there, which the window says of q on any page but
+// the résumé
 const (
 	keysTitle = "keys"
 	closeHint = "close"
@@ -22,7 +22,7 @@ const (
 	keyRangeMark = "-"
 )
 
-// What the command line says where the window of keys has no room on the screen, as Neovim says it of a window
+// What the prompt says where the window of keys has no room on the screen, as Neovim says it of a window
 const notEnoughRoom = "E36: Not enough room"
 
 // windowKeys are the keys that open the window of keys and, while it is open, close it.
@@ -39,19 +39,19 @@ func (model Model) keyNotes() []hint {
 		{key: countExample + downKey, does: "move by a count"},
 		{key: topKey + topKey + space + bottomKey, does: "top / bottom"},
 		{key: previousKey + space + nextKey, does: "tab before / after"},
-		{key: tabKey, does: "next tab"},
 		{key: strconv.Itoa(firstTabNumber) + keyRangeMark + strconv.Itoa(lastTab), does: "go to a tab"},
+		{key: commandKey, does: "type a place to go"},
+		{key: tabKey, does: "complete a place"},
 		{key: searchKey, does: "find in the tab"},
 		{key: nextMatchKey + space + previousMatchKey, does: "next / prior match"},
 		{key: copyKey, does: "copy a found value"},
-		{key: commandKey, does: "command line"},
 		{key: escapeKey, does: "end the search"},
 		{key: quitKey, does: closingHint(model.shown)},
 	}
 }
 
 // openKeys opens the window of keys where it shows whole on the screen; where it does not, the keys stay in normal
-// mode, so no mode opens unseen, and the command line says there is no room, as Neovim does.
+// mode, so no mode opens unseen, and the prompt says there is no room, as Neovim does.
 func (model Model) openKeys(int) (Model, tea.Cmd) {
 	if !model.shows(model.drawn.keyWindow) {
 		model.said = commandMessage{text: notEnoughRoom, failed: true}

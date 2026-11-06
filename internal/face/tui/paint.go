@@ -15,40 +15,50 @@ import (
 type part int
 
 const (
-	// partBar is the ground of the line of tabs and of the status line
-	partBar part = iota
-	// partTabNumber and partTabTitle are a tab not chosen: its number and its title
-	partTabNumber
-	partTabTitle
-	// partChosenNumber and partChosenTitle are the chosen tab, which stands on the page's own ground
-	partChosenNumber
-	partChosenTitle
-	// partHost is the site's name at the end of the line of tabs
-	partHost
-	// partMode is the block that opens the status line
-	partMode
-	// partStatus is what the status line says, and partStatusRule the rule between its parts
-	partStatus
-	partStatusRule
-	// partHintKey is a key the status line names
-	partHintKey
 	// partCross is a corner cross around the page
-	partCross
-	// partCommand is what the command line says, partFailure what it says went wrong, and partPrompt the slash or
-	// the colon the reader types after
-	partCommand
+	partCross part = iota
+	// partTrack and partThumb are the scrollbar's track and its thumb
+	partTrack
+	partThumb
+	// partRim is the rim that parts the footer from the page; partMoreMark, partMore and partMoreKey are its word of
+	// the lines below: the mark, what it says, and the key that scrolls
+	partRim
+	partMoreMark
+	partMore
+	partMoreKey
+	// partPanel is the ground of the panel that holds the prompt and the places
+	partPanel
+	// partHost, partHome and partPromptMark open the prompt: the site's host, the place it stands in, and its mark
+	partHost
+	partHome
+	partPromptMark
+	// partTyped is what the reader types on the prompt, partSaid what it says after a key, partFailure what it says
+	// went wrong, and partSiteCursor the site's cursor, where nothing is typed or said
+	partTyped
+	partSaid
 	partFailure
-	partPrompt
+	partSiteCursor
+	// partPanelKey and partPanelNote are a key the panel names and what it says the key does
+	partPanelKey
+	partPanelNote
+	// partPlace is a place listed; partPlaceTyped and partPlaceRest the start of one the reader typed and the rest of
+	// it; partPlaceChosen the place Tab chose
+	partPlace
+	partPlaceTyped
+	partPlaceRest
+	partPlaceChosen
+	// partStatus is the ground of the status line, partTitle the tab's title that opens it, as Neovim's opens with the
+	// mode, partTally the tab's count of checks, and partRuler the ruler
+	partStatus
+	partTitle
+	partTally
+	partRuler
 	// partEdge is the border of a window over the page, and partWindowRule a rule inside it; partWindowName and
-	// partWindowNote are an item it lists, its name and what it says; partChosenMark, partChosenName and
-	// partChosenNote are the item chosen, its mark among them
+	// partWindowNote are a row it holds, its keys and what they do
 	partEdge
 	partWindowRule
 	partWindowName
 	partWindowNote
-	partChosenMark
-	partChosenName
-	partChosenNote
 )
 
 // paint is how each kind of text and each part of the frame looks in one terminal: its theme, and the colours it
@@ -56,6 +66,10 @@ const (
 type paint struct {
 	kinds map[kind]lipgloss.Style
 	parts map[part]lipgloss.Style
+	// the text of the two rows of the page above the rim, where more of the tab lies below, takes these colours: the
+	// one above the less faded, the last the most
+	fadedLess color.Color
+	fadedMost color.Color
 	// highlight is a result worth seeing first: the tint behind it, and with few colours the text on it darkened,
 	// with none underlined
 	highlightGround color.Color
@@ -75,8 +89,12 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	// colorprofile orders its profiles from none to full colour
 	fewColours, noColours := profile < colorprofile.ANSI256, profile < colorprofile.ANSI
 	plain := lipgloss.NewStyle()
-	bar := plain.Background(colour(look.ColourSunk))
-	chosen := plain.Background(colour(look.ColourChosen))
+	panel := plain.Background(colour(look.ColourSunk))
+	deep := plain.Background(colour(look.ColourDeep))
+	rim := plain.Foreground(colour(look.ColourSunk))
+	if fewColours {
+		rim = plain.Foreground(colour(look.ColourFaint))
+	}
 	return paint{
 		kinds: map[kind]lipgloss.Style{
 			kindText:   plain.Foreground(colour(look.ColourText)),
@@ -90,28 +108,38 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindFailed: plain.Foreground(colour(look.ColourError)),
 		},
 		parts: map[part]lipgloss.Style{
-			partBar:          bar,
-			partTabNumber:    bar.Foreground(colour(look.ColourFaint)),
-			partTabTitle:     bar.Foreground(colour(look.ColourMuted)),
-			partChosenNumber: plain.Foreground(colour(look.ColourFaint)).Reverse(fewColours),
-			partChosenTitle:  plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
-			partHost:         bar.Foreground(colour(look.ColourFaint)),
-			partMode:         plain.Foreground(colour(look.ColourOnAccent)).Background(colour(look.ColourAccent)).Bold(true).Reverse(noColours),
-			partStatus:       bar.Foreground(colour(look.ColourMuted)),
-			partStatusRule:   bar.Foreground(colour(look.ColourQuiet)),
-			partHintKey:      bar.Foreground(colour(look.ColourText)).Bold(true),
-			partCross:        plain.Foreground(colour(look.ColourFaint)),
-			partCommand:      plain.Foreground(colour(look.ColourText)),
-			partFailure:      plain.Foreground(colour(look.ColourError)).Bold(true),
-			partPrompt:       plain.Foreground(colour(look.ColourAccent)).Bold(true),
-			partEdge:         plain.Foreground(colour(look.ColourEdge)),
-			partWindowRule:   bar.Foreground(colour(look.ColourQuiet)),
-			partWindowName:   bar.Foreground(colour(look.ColourText)).Bold(true),
-			partWindowNote:   bar.Foreground(colour(look.ColourMuted)),
-			partChosenMark:   chosen.Foreground(colour(look.ColourAccent)),
-			partChosenName:   chosen.Foreground(colour(look.ColourText)).Bold(true),
-			partChosenNote:   chosen.Foreground(colour(look.ColourText)),
+			partCross:       plain.Foreground(colour(look.ColourFaint)),
+			partTrack:       plain.Foreground(colour(look.ColourQuiet)),
+			partThumb:       plain.Foreground(colour(look.ColourFaint)),
+			partRim:         rim,
+			partMoreMark:    panel.Foreground(colour(look.ColourAccent)).Bold(true),
+			partMore:        panel.Foreground(colour(look.ColourMuted)),
+			partMoreKey:     panel.Foreground(colour(look.ColourText)).Bold(true),
+			partPanel:       panel,
+			partHost:        panel.Foreground(colour(look.ColourHost)).Bold(true),
+			partHome:        panel.Foreground(colour(look.ColourLabel)).Bold(true),
+			partPromptMark:  panel.Foreground(colour(look.ColourPrompt)).Bold(true),
+			partTyped:       panel.Foreground(colour(look.ColourText)),
+			partSaid:        panel.Foreground(colour(look.ColourText)),
+			partFailure:     panel.Foreground(colour(look.ColourError)).Bold(true),
+			partSiteCursor:  panel.Foreground(colour(look.ColourAccent)),
+			partPanelKey:    panel.Foreground(colour(look.ColourText)).Bold(true),
+			partPanelNote:   panel.Foreground(colour(look.ColourFaint)),
+			partPlace:       panel.Foreground(colour(look.ColourMuted)),
+			partPlaceTyped:  panel.Foreground(colour(look.ColourAccent)).Bold(true),
+			partPlaceRest:   panel.Foreground(colour(look.ColourText)).Bold(true),
+			partPlaceChosen: plain.Background(colour(look.ColourChosen)).Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
+			partStatus:      deep,
+			partTitle:       plain.Foreground(colour(look.ColourOnAccent)).Background(colour(look.ColourAccent)).Bold(true).Reverse(noColours),
+			partTally:       deep.Foreground(colour(look.ColourFaint)),
+			partRuler:       deep.Foreground(colour(look.ColourFaint)),
+			partEdge:        plain.Foreground(colour(look.ColourEdge)),
+			partWindowRule:  panel.Foreground(colour(look.ColourQuiet)),
+			partWindowName:  panel.Foreground(colour(look.ColourText)).Bold(true),
+			partWindowNote:  panel.Foreground(colour(look.ColourMuted)),
 		},
+		fadedLess:       colour(look.ColourFaint),
+		fadedMost:       colour(look.ColourEdge),
 		highlightGround: colour(look.ColourTint),
 		highlightText:   colour(look.ColourOnAccent),
 		matchGround:     colour(look.ColourAccent),
@@ -160,19 +188,27 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 }
 
 // tab paints a tab's lines in the frame, each match of the search marked: each at the page's left edge, cut at its
-// right one, the screen's width filled.
-func (paint paint) tab(lines []markedLine, frame frame) []string {
-	drawn := make([]string, 0, len(lines))
+// right one.
+func (paint paint) tab(lines []markedLine, frame frame) []paintedLine {
+	drawn := make([]paintedLine, 0, len(lines))
 	gutter := strings.Repeat(space, frame.left)
 	for _, shown := range lines {
-		painted, width := paint.line(shown.runs, frame.inner)
-		drawn = append(drawn, gutter+painted+strings.Repeat(space, max(frame.width-frame.left-width, 0)))
+		painted, width := paint.line(shown.runs, frame.inner, nil)
+		drawn = append(drawn, paintedLine{text: gutter + painted, width: frame.left + width})
 	}
 	return drawn
 }
 
-// line paints a line cut at a width, and says how many columns it took.
-func (paint paint) line(shown []matchedRun, width int) (string, int) {
+// faded paints a line of the page as a row above the rim fades, its text in a faded colour, its highlight, its marks
+// and its link kept.
+func (paint paint) faded(shown markedLine, frame frame, colour color.Color) string {
+	painted, _ := paint.line(shown.runs, frame.inner, colour)
+	return strings.Repeat(space, frame.left) + painted
+}
+
+// line paints a line cut at a width, its text in a faded colour where one is given, and says how many columns it
+// took.
+func (paint paint) line(shown []matchedRun, width int, faded color.Color) (string, int) {
 	var builder strings.Builder
 	used := 0
 	for _, piece := range shown {
@@ -180,16 +216,19 @@ func (paint paint) line(shown []matchedRun, width int) (string, int) {
 		if text == "" {
 			continue
 		}
-		builder.WriteString(paint.style(piece).Render(text))
+		builder.WriteString(paint.style(piece, faded).Render(text))
 		used += textWidth(text)
 	}
 	return builder.String(), used
 }
 
-// style is the look of a run: its kind's, highlighted where it is a result, marked where it matches the search,
-// carrying its address where it links.
-func (paint paint) style(piece matchedRun) lipgloss.Style {
+// style is the look of a run: its kind's, its text in a faded colour where one is given, highlighted where it is a
+// result, marked where it matches the search, carrying its address where it links.
+func (paint paint) style(piece matchedRun, faded color.Color) lipgloss.Style {
 	style := paint.kinds[piece.kind]
+	if faded != nil {
+		style = style.Foreground(faded)
+	}
 	if piece.highlighted {
 		style = style.Background(paint.highlightGround).Underline(paint.noColours)
 		if paint.fewColours {

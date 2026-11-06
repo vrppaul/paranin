@@ -5,8 +5,10 @@
   color-scheme: light dark;
   /* the page itself, which every blend is laid over */
   --background: light-dark(#eff1f5, #24273a);
-  /* the bars around the page, a shade below it */
+  /* the panel under the page, the prompt's, the rim it rises into, and a window over the page; a shade below the page */
   --sunk: light-dark(#e6e9ef, #1e2030);
+  /* the status line under the panel, a shade below it */
+  --deep: light-dark(#dce0e8, #181926);
   /* what a reader reads */
   --text: light-dark(#4c4f69, #cad3f5);
   /* what stands beside the text and says less */
@@ -19,6 +21,12 @@
   --edge: light-dark(#9ca0b0, #5b6078);
   /* what the eye goes to first, a command among it */
   --accent: light-dark(#fe640b, #f5a97f);
+  /* the site's host where it is written, as the prompt's */
+  --host: light-dark(#8839ef, #c6a0f6);
+  /* what names the text after it, as the place in the prompt */
+  --label: light-dark(#1e66f5, #8aadf4);
+  /* the mark a prompt ends in, after which the reader types */
+  --prompt: light-dark(#40a02b, #a6da95);
   /* text laid on the accent */
   --on-accent: light-dark(#24273a, #24273a);
   /* what says something went wrong, as a search that found nothing */

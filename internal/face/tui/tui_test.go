@@ -20,8 +20,10 @@ const (
 	commonHeight = 30
 	tallHeight   = 400
 	narrowWidth  = 40
-	// a terminal of seven rows shows two lines of a page
-	shortHeight = 7
+	// a terminal too short for the roomy footer shows two lines of a page above the tight one, of three rows
+	shortHeight = 5
+	// a terminal just tall enough for the roomy footer, of seven rows, the row above the page and four lines of it
+	roomyHeight = 12
 	// a phone's terminal, narrower than the page with its margins, and the smallest that still draws
 	phoneWidth     = 28
 	phoneHeight    = 20
@@ -29,15 +31,15 @@ const (
 	smallestHeight = 3
 )
 
-// Where it has room, the line of tabs ends in the site's name: the host of its base address, not the address whole.
-func TestTheLineOfTabsNamesTheSiteByItsHost(test *testing.T) {
-	tabline := strings.TrimRight(strings.Split(screenOf(test, fixtureModel(test, wideWidth, commonHeight)), lineEnd)[0], space)
-	if !strings.HasSuffix(tabline, " example.test") {
-		test.Errorf("the line of tabs = %q, want it to end in the host %q", tabline, "example.test")
+// The prompt opens with the site's name: the host of its base address, not the address whole.
+func TestThePromptNamesTheSiteByItsHost(test *testing.T) {
+	if line := footerLine(screenOf(test, fixtureModel(test, wideWidth, commonHeight)), footerPrompt); !strings.HasPrefix(line, "example.test ~") {
+		test.Errorf("the prompt = %q, want it to open with the host %q", line, "example.test")
 	}
 }
 
-// The first screen is the head of the résumé, and the tabs name every section after it.
+// The first screen is the head of the résumé, the status line names it by the site's word, and the places under the
+// prompt name every section after it.
 func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
 	screen := screenOf(test, fixtureModel(test, commonWidth, commonHeight))
 	cases := []struct {
@@ -47,10 +49,10 @@ func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
 		{name: "the greeting", want: "Hello, my name is"},
 		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
-		{name: "the opening's tab, by the site's word", want: "1 About"},
+		{name: "the opening's tab, by the site's word", want: "About"},
 		{name: "the headline", want: "Builds small tools that last."},
-		{name: "the first section's tab", want: "Facts"},
-		{name: "the last section's tab", want: "Languages"},
+		{name: "the first section's place", want: "facts"},
+		{name: "the last section's place", want: "languages"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -70,11 +72,9 @@ func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 		lacks string
 	}{
 		{name: "l goes to the next tab", keys: []string{"l"}, holds: "5 years", lacks: "Builds small tools that last."},
-		{name: "tab goes to the next tab", keys: []string{"tab"}, holds: "5 years", lacks: "Builds small tools that last."},
 		{name: "the right arrow goes to the next tab", keys: []string{"right"}, holds: "5 years", lacks: "Builds small tools that last."},
 		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: "Northwind", lacks: "5 years"},
 		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: "fluent", lacks: "Builds small tools that last."},
-		{name: "shift and tab go back", keys: []string{"l", "shift+tab"}, holds: "Builds small tools that last.", lacks: "5 years"},
 		{name: "the left arrow goes back", keys: []string{"l", "left"}, holds: "Builds small tools that last.", lacks: "5 years"},
 	}
 	for _, testCase := range cases {
@@ -119,6 +119,39 @@ func TestTheScrollingKeysMoveThroughATab(test *testing.T) {
 	}
 }
 
+// The rim above the footer says how many lines of the tab lie below the page, as Neovim counts lines, and the key that
+// scrolls to them; at the tab's end it says nothing.
+func TestTheRimSaysWhatLiesBelow(test *testing.T) {
+	cases := []struct {
+		name  string
+		keys  []string
+		holds string
+		lacks string
+	}{
+		{name: "the tab's start", keys: nil, holds: "more lines · j", lacks: "more line ·"},
+		{name: "a line before the end", keys: []string{"G", "k"}, holds: "▾ 1 more line · j", lacks: "more lines"},
+		{name: "the end", keys: []string{"G"}, holds: "", lacks: "more"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := pressed(test, fixtureModel(test, commonWidth, roomyHeight), append(toExperience(), testCase.keys...)...)
+			rim := footerLine(screenOf(test, model), footerRim)
+			if !strings.Contains(rim, testCase.holds) || strings.Contains(rim, testCase.lacks) {
+				test.Errorf("after %q the rim = %q, want it to hold %q and not %q", testCase.keys, rim, testCase.holds, testCase.lacks)
+			}
+		})
+	}
+}
+
+// A row faded above the rim still carries its link to a terminal that follows links: on a screen of eighteen rows the
+// first tab's last row on the page is the fixture's GitHub, faded, as more lies below it.
+func TestALinkOnAFadedRowStillLeads(test *testing.T) {
+	const fadedLinkHeight = 18
+	if screen := fixtureModel(test, commonWidth, fadedLinkHeight).View().Content; !strings.Contains(screen, "https://github.test/mira") {
+		test.Errorf("the screen =\n%q\nwant the GitHub row's link to https://github.test/mira", screen)
+	}
+}
+
 // Each tab keeps where it was scrolled to while the reader looks at another.
 func TestEachTabKeepsItsPlace(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), "l", "l", "G", "l", "h")
@@ -127,11 +160,11 @@ func TestEachTabKeepsItsPlace(test *testing.T) {
 	}
 }
 
-// The chosen tab is named in the line of tabs at any width: where the tabs do not fit, the first ones give way.
+// The status line opens with the chosen tab's title at any width.
 func TestTheChosenTabIsNamedAtAnyWidth(test *testing.T) {
 	model := pressed(test, fixtureModel(test, narrowWidth, commonHeight), "h")
-	if tabline := strings.SplitN(screenOf(test, model), "\n", 2)[0]; !strings.Contains(tabline, "7 Languages") {
-		test.Errorf("on the last tab the line of tabs = %q, want it to name %q", tabline, "7 Languages")
+	if status := footerLine(screenOf(test, model), footerStatus); !strings.HasPrefix(status, "Languages") {
+		test.Errorf("on the last tab the status line = %q, want it to open with %q", status, "Languages")
 	}
 }
 

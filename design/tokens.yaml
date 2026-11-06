@@ -15,9 +15,14 @@ background:
 
 colours:
   - name: sunk
-    about: the bars around the page, a shade below it
+    about: the panel under the page, the prompt's, the rim it rises into, and a window over the page; a shade below the page
     light: "#e6e9ef"
     dark: "#1e2030"
+    basic: own
+  - name: deep
+    about: the status line under the panel, a shade below it
+    light: "#dce0e8"
+    dark: "#181926"
     basic: own
   - name: text
     about: what a reader reads
@@ -49,6 +54,21 @@ colours:
     light: "#fe640b"
     dark: "#f5a97f"
     basic: 3
+  - name: host
+    about: the site's host where it is written, as the prompt's
+    light: "#8839ef"
+    dark: "#c6a0f6"
+    basic: 5
+  - name: label
+    about: what names the text after it, as the place in the prompt
+    light: "#1e66f5"
+    dark: "#8aadf4"
+    basic: 4
+  - name: prompt
+    about: the mark a prompt ends in, after which the reader types
+    light: "#40a02b"
+    dark: "#a6da95"
+    basic: 2
   - name: on_accent
     about: text laid on the accent
     light: "#24273a"

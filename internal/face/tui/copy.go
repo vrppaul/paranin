@@ -4,7 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// What the command line says after y: the value copied, written after these words for a terminal that takes no
+// What the prompt says after y: the value copied, written after these words for a terminal that takes no
 // OSC 52, as the first version wrote it; or that no line found holds a value, around the key that finds one
 const (
 	copiedOpening        = "copied: "

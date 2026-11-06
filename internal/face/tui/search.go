@@ -8,7 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// How the command line says where a search stands, and that it found nothing, as Neovim says it
+// How the prompt says where a search stands, and that it found nothing, as Neovim says it
 const (
 	searchMark    = "/"
 	matchOpening  = " ["
@@ -35,7 +35,7 @@ type shownMatch struct {
 	shown  bool
 }
 
-// commandMessage is what the command line says after a key, and whether it says something went wrong.
+// commandMessage is what the prompt says after a key, and whether it says something went wrong.
 type commandMessage struct {
 	text   string
 	failed bool

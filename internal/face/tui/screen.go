@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -21,36 +20,62 @@ const (
 	sides         = 2
 )
 
-// The rows the frame takes: the line of tabs above the page, the status line and, last, the command line below it,
-// and a row of crosses above and below the page; a screen with fewer rows than the crosses need has none
+// footerRow is a row of the footer under the page.
+type footerRow int
+
 const (
-	rowsAbovePage   = 1
-	statusLineRows  = 1
-	commandLineRows = 1
-	rowsBelowPage   = statusLineRows + commandLineRows
-	barRows         = rowsAbovePage + rowsBelowPage
-	crossRows       = 2
-	fewestForCross  = 6
+	// footerRim is the rim that parts the footer from the page
+	footerRim footerRow = iota
+	// footerGap is a row of the panel with nothing on it
+	footerGap
+	// footerPrompt is the prompt, and footerPlaces the places under it that Tab completes to
+	footerPrompt
+	footerPlaces
+	// footerStatus is the status line
+	footerStatus
 )
 
-// The columns the terminal's cursor takes on the command line, after what is typed
-const cursorWidth = 1
+// roomyFooter is the footer's rows, in order, on a screen with room for them: the rim, the panel holding the prompt
+// and the places with a row of nothing above, between and below the two, and the status line last.
+func roomyFooter() []footerRow {
+	return []footerRow{footerRim, footerGap, footerPrompt, footerGap, footerPlaces, footerGap, footerStatus}
+}
 
-// The marks of the frame: a corner cross, the rule between the parts of the status line, what parts a tab's title
-// from its tally there and one level's count from the next, and the room a tab's number and title are padded with,
-// most first
+// tightFooter is the footer's rows on a screen too short to spare rows for nothing: the prompt, the places and the
+// status line alone.
+func tightFooter() []footerRow {
+	return []footerRow{footerPrompt, footerPlaces, footerStatus}
+}
+
+// A screen roomy enough for the roomy footer keeps a row of nothing above the page and has a few lines of the page
+// besides; a row of crosses stands above and below the page where the screen has two rows more to spare for them
 const (
-	crossMark       = "+"
-	statusRuleMark  = "│"
-	tallySeparator  = space + placeMark + space
-	widestTabPad    = 2
-	narrowestTabPad = 1
+	rowsAbovePage = 1
+	roomyPageRows = 4
+	crossRows     = 2
 )
 
-// The words of the status line, as Neovim's ruler and its modes write them
+// The scrollbar stands this many columns in from the screen's right edge, where the page leaves it room
+const scrollbarInset = 2
+
+// The page's rows faded where more of the tab lies below and the rim says so, counted up from the page's last: the
+// last the most, and the one above it the less
 const (
-	normalMode   = "NORMAL"
-	commandMode  = "COMMAND"
+	fadedMostFromBottom = 1
+	fadedLessFromBottom = 2
+)
+
+// The marks of the frame: a corner cross; the scrollbar's track and its thumb; and what parts a tab's title from its
+// tally, and one level's count from the next
+const (
+	crossMark      = "+"
+	trackMark      = "│"
+	thumbMark      = "┃"
+	tallySeparator = space + placeMark + space
+)
+
+// The words of the ruler, as Neovim's writes them
+const (
 	wholeShown   = "All"
 	startShown   = "Top"
 	endShown     = "Bot"
@@ -58,15 +83,17 @@ const (
 	wholePercent = 100
 )
 
-// frame is where the page sits on a screen of a size: its left edge and width, the rows it shows, and whether
-// corner crosses stand around it.
+// frame is where the page sits on a screen of a size: its left edge and width, the rows of nothing above it and the
+// rows it shows, whether corner crosses stand around it, and the footer's rows under it.
 type frame struct {
 	width   int
 	height  int
 	left    int
 	inner   int
+	above   int
 	rows    int
 	crosses bool
+	footer  []footerRow
 }
 
 func frameOf(width, height int) frame {
@@ -75,75 +102,37 @@ func frameOf(width, height int) frame {
 		inner = width
 	}
 	left := (width - inner) / sides
-	crosses := left >= crossRoom && height >= fewestForCross
-	rows := height - barRows
+	footer, above := tightFooter(), 0
+	if roomy := roomyFooter(); height >= rowsAbovePage+len(roomy)+roomyPageRows {
+		footer, above = roomy, rowsAbovePage
+	}
+	crosses := above > 0 && left >= crossRoom && height >= above+len(footer)+roomyPageRows+crossRows
+	rows := height - above - len(footer)
 	if crosses {
 		rows -= crossRows
 	}
-	return frame{width: width, height: height, left: left, inner: inner, rows: max(rows, 0), crosses: crosses}
+	return frame{width: width, height: height, left: left, inner: inner, above: above, rows: max(rows, 0), crosses: crosses, footer: footer}
 }
 
-// Tabs are numbered from one, in the line of tabs and by the number that chooses one
+// rowOf is the row a row of the footer stands on, from the screen's top, and whether the footer has it.
+func (frame frame) rowOf(wanted footerRow) (int, bool) {
+	index := slices.Index(frame.footer, wanted)
+	return frame.height - len(frame.footer) + index, index >= 0
+}
+
+// scrollbarColumn is the column the scrollbar stands in, and whether the page leaves it room there.
+func (frame frame) scrollbarColumn() (int, bool) {
+	column := frame.width - scrollbarInset
+	return column, column >= frame.left+frame.inner
+}
+
+// Tabs are numbered from one, by the number that chooses one
 const firstTabNumber = 1
 
-// hint is a key, or keys, and what they do, as the status line and the window of keys name them.
+// hint is a key, or keys, and what they do, as the footer and the window of keys name them.
 type hint struct {
 	key  string
 	does string
-}
-
-// What parts the two keys of a hint, the widest the ruler ever is with the spaces around it: one of its words, or a
-// percentage below a hundred, which is two digits at most; and the widest a mode's name is with the spaces around it
-const (
-	hintKeySeparator = "/"
-	percentDigits    = 2
-	widestRuler      = 2*spaceWidth + max(len(wholeShown), len(startShown), len(endShown), percentDigits+len(percentMark))
-	widestMode       = 2*spaceWidth + max(len(normalMode), len(commandMode))
-)
-
-// The mark the status line names the Enter key by, the word for what both it and the slash do, and for what Esc
-// does on the command line
-const (
-	enterMark  = "↵"
-	findHint   = "find"
-	cancelHint = "cancel"
-)
-
-// modeLook is how the status line shows a mode: the name it opens with, and the keys it names, the most needed
-// first, as many as fit.
-type modeLook struct {
-	name  string
-	hints []hint
-}
-
-// modeLooks are how the status line shows each mode, saying what q does on the page shown; in normal mode it names
-// :e last, where the session holds a project's page to open.
-func modeLooks(closing string, slugs []string) map[mode]modeLook {
-	normal := []hint{
-		{key: keyWindowKey, does: keysTitle},
-		{key: previousKey + hintKeySeparator + nextKey, does: "tabs"},
-		{key: downKey + hintKeySeparator + upKey, does: "scroll"},
-		{key: searchKey, does: findHint},
-		{key: quitKey, does: closing},
-	}
-	if len(slugs) > 0 {
-		normal = append(normal, hint{key: commandMark + editCommand, does: pagesHint})
-	}
-	return map[mode]modeLook{
-		modeNormal: {name: normalMode, hints: normal},
-		modeSearch: {name: commandMode, hints: []hint{
-			{key: enterMark, does: findHint},
-			{key: escapeKey, does: cancelHint},
-		}},
-		modeCommand: {name: commandMode, hints: []hint{
-			{key: enterMark, does: "run"},
-			{key: tabKey, does: "complete"},
-			{key: escapeKey, does: cancelHint},
-		}},
-		modeKeys: {name: normalMode, hints: []hint{
-			{key: escapeKey, does: closeHint},
-		}},
-	}
 }
 
 // piece is a piece of the frame: its text and the part of the frame it is.
@@ -152,34 +141,40 @@ type piece struct {
 	part part
 }
 
-// drawnScreen is the screen painted for the terminal as it is: each tab, the rows of the page that hold nothing but
-// its crosses, or nothing at all, and the window of keys.
+// drawnScreen is the screen painted for the terminal as it is: each tab; the rows of the page that hold nothing but
+// its crosses, or nothing at all; the rim, the panel's row of nothing, the prompt where nothing is typed or said, and
+// the scrollbar's two cells; and the window of keys.
 type drawnScreen struct {
-	tabs      []drawnTab
-	crossRow  string
-	blankRow  string
-	keyWindow paintedWindow
+	tabs       []drawnTab
+	crossRow   string
+	blankRow   string
+	rim        string
+	panelGap   string
+	idlePrompt string
+	track      string
+	thumb      string
+	keyWindow  paintedWindow
 }
 
-// drawnTab is one tab painted: its page, the line of tabs with it chosen, and the status line in each mode but for
-// its ruler.
+// drawnTab is one tab painted: its page; the status line but for its ruler; and the places listed in normal mode.
 type drawnTab struct {
 	paintedPage
-	tabline string
-	status  map[mode]drawnStatus
+	status paintedBar
+	places string
 }
 
-// paintedPage is a tab's lines painted with the search it marks, and the line of each match, in order: a line
-// holding two matches is there twice.
+// paintedPage is a tab's lines painted with the search it marks, and marked, unpainted, for the two rows a key fades;
+// and the line of each match, in order: a line holding two matches is there twice.
 type paintedPage struct {
-	lines   []string
+	lines   []paintedLine
+	marked  []markedLine
 	matches []int
 }
 
-// drawnStatus is the status line but for its ruler: what stands before the ruler, and the keys after it.
-type drawnStatus struct {
-	opening paintedBar
-	hints   paintedBar
+// paintedLine is a line of a page painted from the screen's left edge to its own end, and the columns it takes.
+type paintedLine struct {
+	text  string
+	width int
 }
 
 // paintedBar is pieces of a bar painted, and the columns they take.
@@ -188,112 +183,152 @@ type paintedBar struct {
 	width int
 }
 
-// drawnScreen paints every tab and the frame around it, all but the ruler, which a key moves.
+// drawnScreen paints every tab and the frame around it, all but what a key moves: the ruler, the rim's word of the
+// lines below, the scrollbar's place, the prompt and the places typed.
 func (model Model) drawnScreen() drawnScreen {
 	width := model.frame.width
 	tabs := make([]drawnTab, 0, len(model.tabs))
-	looks := modeLooks(closingHint(model.shown), model.slugs)
 	for place := range model.tabs {
-		status := make(map[mode]drawnStatus, len(looks))
-		for shown, seen := range looks {
-			status[shown] = model.drawnStatus(place, seen)
-		}
 		tabs = append(tabs, drawnTab{
 			paintedPage: model.paintedPage(place),
-			tabline:     model.paint.bar(model.tabline(place), width),
-			status:      status,
+			status:      model.paint.cut(model.statusOpening(place), width),
+			places:      model.paint.panelRow(model.placePieces(model.placesFor(place, ""), noneChosen, ""), model.frame),
 		})
 	}
 	crossRow := ""
 	if model.frame.crosses {
 		crossRow = model.paint.crossRow(model.frame)
 	}
-	return drawnScreen{tabs: tabs, crossRow: crossRow, blankRow: strings.Repeat(space, width), keyWindow: model.paint.keyWindow(model.keyNotes())}
+	idle := append(model.promptOpening(promptMark+space), piece{text: cursorBar, part: partSiteCursor})
+	return drawnScreen{
+		tabs:       tabs,
+		crossRow:   crossRow,
+		blankRow:   strings.Repeat(space, width),
+		rim:        model.paint.rim(width),
+		panelGap:   model.paint.panelRow(nil, model.frame),
+		idlePrompt: model.paint.panelRow(idle, model.frame),
+		track:      model.paint.parts[partTrack].Render(trackMark),
+		thumb:      model.paint.parts[partThumb].Render(thumbMark),
+		keyWindow:  model.paint.keyWindow(model.keyNotes()),
+	}
 }
 
 // paintedPage paints a tab's lines, each match of the search it marks marked.
 func (model Model) paintedPage(place int) paintedPage {
 	marked := markedLines(model.laid[place], model.markedQuery(place))
-	return paintedPage{lines: model.paint.tab(marked, model.frame), matches: matchLines(marked)}
+	return paintedPage{lines: model.paint.tab(marked, model.frame), marked: marked, matches: matchLines(marked)}
 }
 
-// drawnStatus paints a tab's status line in a mode, all but its ruler.
-func (model Model) drawnStatus(place int, seen modeLook) drawnStatus {
-	width := model.frame.width
-	opening := model.paint.cut(model.statusOpening(place, seen.name), width)
-	return drawnStatus{opening: opening, hints: model.paint.cut(statusHints(seen.hints, width-opening.width-widestRuler), width)}
-}
-
-// screen draws the whole screen: the line of tabs, the page between its crosses, the status line and the command
-// line; and the cursor, where the reader types. All of it is painted already but the ruler and the command line.
+// screen draws the whole screen: the page between its crosses, the footer under it, and over the page the window of
+// keys where it is open; and the cursor, where the reader types. All of it is painted already but what a key moves.
 func (model Model) screen() (string, *tea.Cursor) {
 	frame, drawn := model.frame, model.drawn.tabs[model.chosen]
-	rows := []string{drawn.tabline}
+	rows := slices.Repeat([]string{model.drawn.blankRow}, frame.above)
 	if frame.crosses {
 		rows = append(rows, model.drawn.crossRow)
 	}
-	scroll := model.scrolls[model.chosen]
-	for row := range frame.rows {
-		if scroll+row < len(drawn.lines) {
-			rows = append(rows, drawn.lines[scroll+row])
-			continue
-		}
-		rows = append(rows, model.drawn.blankRow)
-	}
+	rows = append(rows, model.pageRows(drawn)...)
 	if frame.crosses {
 		rows = append(rows, model.drawn.crossRow)
 	}
-	commandLine, cursor := model.commandLine()
-	rows = append(rows, model.statusline(drawn), commandLine)
+	prompt, cursor := model.promptLine()
+	for _, shown := range frame.footer {
+		rows = append(rows, model.footerLine(shown, drawn, prompt))
+	}
 	rows = rows[max(len(rows)-frame.height, 0):]
-	switch model.keys.mode {
-	case modeCommand:
-		rows = model.withCompletions(rows)
-	case modeKeys:
+	if model.keys.mode == modeKeys {
 		rows = model.withKeys(rows)
-	case modeNormal, modeSearch:
 	}
 	return strings.Join(rows, lineEnd), cursor
 }
 
-// commandLine is the last row: what the reader types after the slash or the colon, with the cursor after it, or
-// what the last key said, with no cursor.
-func (model Model) commandLine() (string, *tea.Cursor) {
-	switch model.keys.mode {
-	case modeSearch:
-		return model.typedLine(searchMark)
-	case modeCommand:
-		return model.typedLine(commandMark)
-	case modeNormal, modeKeys:
+// footerLine is a row of the footer as the chosen tab and the keys pressed leave it, the prompt drawn already.
+func (model Model) footerLine(shown footerRow, drawn drawnTab, prompt string) string {
+	switch shown {
+	case footerRim:
+		return model.rimRow()
+	case footerGap:
+		return model.drawn.panelGap
+	case footerPrompt:
+		return prompt
+	case footerPlaces:
+		return model.placesRow(drawn)
+	case footerStatus:
+		return model.statusline(drawn)
 	}
-	said := partCommand
-	if model.said.failed {
-		said = partFailure
-	}
-	return model.paint.plainRow([]piece{{text: space, part: partCommand}, {text: model.said.text, part: said}}, model.frame.width), nil
+	return model.drawn.blankRow
 }
 
-// typedLine is the command line as the reader types on it after a mark, and the terminal's own cursor after what
-// they typed, held within the screen: a bar the terminal blinks, as the first version's cursor blinked, in the
-// accent where the terminal shows many colours.
-func (model Model) typedLine(mark string) (string, *tea.Cursor) {
-	prompt := space + mark
-	shown := model.shownTyping(prompt)
-	row := model.paint.plainRow([]piece{{text: prompt, part: partPrompt}, {text: shown, part: partCommand}}, model.frame.width)
-	position := tea.Position{X: min(textWidth(prompt+shown), model.frame.width-cursorWidth), Y: model.frame.height - commandLineRows}
-	return row, &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}
+// pageRows are the rows of the page the chosen tab shows at its scroll: its lines, the two above the rim faded where
+// more lies below, the rim says so and the terminal shows the colours to fade in, and the scrollbar at the right
+// where the tab is taller than the page and there is room; rows of nothing past its end.
+func (model Model) pageRows(drawn drawnTab) []string {
+	frame, scroll := model.frame, model.scrolls[model.chosen]
+	_, rimShown := frame.rowOf(footerRim)
+	fading, bar := rimShown && model.linesBelow() > 0 && !model.paint.fewColours, model.scrollbar()
+	rows := make([]string, 0, frame.rows)
+	for row := range frame.rows {
+		if scroll+row >= len(drawn.lines) {
+			rows = append(rows, model.drawn.blankRow)
+			continue
+		}
+		shown := drawn.lines[scroll+row]
+		text := shown.text
+		switch {
+		case fading && frame.rows-row == fadedMostFromBottom:
+			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedMost)
+		case fading && frame.rows-row == fadedLessFromBottom:
+			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedLess)
+		}
+		rows = append(rows, text+bar.rest(shown.width, row))
+	}
+	return rows
 }
 
-// shownTyping is what the command line shows of what is typed after a prompt: its end, where the line is too
-// narrow for all of it and the cursor after it.
-func (model Model) shownTyping(prompt string) string {
-	room := model.frame.width - textWidth(prompt) - cursorWidth
-	typed := model.keys.typing
-	for textWidth(typed) > max(room, 0) {
-		_, first := utf8.DecodeRuneInString(typed)
-		typed = typed[first:]
+// linesBelow is how many lines of the chosen tab lie below the page.
+func (model Model) linesBelow() int {
+	return max(len(model.drawn.tabs[model.chosen].lines)-model.scrolls[model.chosen]-model.frame.rows, 0)
+}
+
+// scrollbar is the scrollbar as the chosen tab stands: whether it shows, where the tab is taller than the page and
+// the page leaves it room; the column it stands in; where its thumb stands among the page's rows, from its first row
+// to the row after its last; the screen's width it ends each row at; and its two cells painted.
+type scrollbar struct {
+	shown      bool
+	column     int
+	thumbStart int
+	thumbEnd   int
+	width      int
+	track      string
+	thumb      string
+}
+
+// scrollbar is the scrollbar of the chosen tab at its scroll: its thumb as long as the share of the tab the page
+// shows, at least a row, and as far down as the page is.
+func (model Model) scrollbar() scrollbar {
+	rows, lines := model.frame.rows, len(model.drawn.tabs[model.chosen].lines)
+	column, room := model.frame.scrollbarColumn()
+	bar := scrollbar{shown: false, column: column, thumbStart: 0, thumbEnd: rows, width: model.frame.width, track: model.drawn.track, thumb: model.drawn.thumb}
+	if !room || lines <= rows {
+		return bar
 	}
-	return typed
+	length := max(rows*rows/lines, 1)
+	bar.shown, bar.thumbStart = true, (rows-length)*model.scrolls[model.chosen]/(lines-rows)
+	bar.thumbEnd = bar.thumbStart + length
+	return bar
+}
+
+// rest is the rest of a page's row after a line of a width: blanks to the screen's edge, the scrollbar's cell among
+// them where it shows.
+func (bar scrollbar) rest(lineWidth, row int) string {
+	if !bar.shown {
+		return strings.Repeat(space, max(bar.width-lineWidth, 0))
+	}
+	cell := bar.track
+	if row >= bar.thumbStart && row < bar.thumbEnd {
+		cell = bar.thumb
+	}
+	return strings.Repeat(space, bar.column-lineWidth) + cell + strings.Repeat(space, bar.width-bar.column-textWidth(trackMark))
 }
 
 // markedLines are a tab's lines with each match of a query marked, worked out once for both the painting and the
@@ -317,76 +352,31 @@ func matchLines(marked []markedLine) []int {
 	return lines
 }
 
-// tabline is each tab by its number and title, a chosen one on the page's ground, then the site's name at the
-// right. Where the tabs would not fit, they are padded less, and then the first ones go until the chosen one fits.
-func (model Model) tabline(chosen int) []piece {
-	width := model.frame.width
-	pieces := model.tabPieces(widestTabPad, 0, chosen)
-	for first := 0; piecesWidth(pieces) > width && first <= chosen; first++ {
-		pieces = model.tabPieces(narrowestTabPad, first, chosen)
-	}
-	host := space + model.site.Host() + space
-	if room := width - piecesWidth(pieces) - textWidth(host); room >= 0 {
-		pieces = append(pieces, piece{text: strings.Repeat(space, room), part: partBar}, piece{text: host, part: partHost})
-	}
-	return pieces
-}
-
-// tabPieces are the tabs from a first one on, each padded by as much, one of them chosen.
-func (model Model) tabPieces(padding, first, chosen int) []piece {
-	pad := strings.Repeat(space, padding)
-	pieces := []piece{}
-	for place, shown := range model.tabs[first:] {
-		number, title := partTabNumber, partTabTitle
-		if first+place == chosen {
-			number, title = partChosenNumber, partChosenTitle
-		}
-		pieces = append(pieces, piece{text: pad + strconv.Itoa(first+place+firstTabNumber) + space, part: number}, piece{text: shown.title + pad, part: title})
-	}
-	return pieces
-}
-
-// statusOpening is what the status line opens with on a tab in a mode: the mode, the tab's title, its tally, and
-// the rule before the ruler. The tally shows where it has one that fits whole beside the widest mode's name with
-// room left for the ruler, so it shows in every mode or in none; the keys the line names get the room it leaves, as
-// the first version's count came before its keys.
-func (model Model) statusOpening(place int, modeName string) []piece {
+// statusOpening is what the status line opens with on a tab: its title, as the block that opens Neovim's status line
+// names the mode, then its tally where it has one and it fits whole beside the title with room left for the ruler.
+func (model Model) statusOpening(place int) []piece {
 	shown := model.tabs[place]
-	title := []piece{{text: space + shown.title, part: partStatus}}
-	closing := []piece{{text: space, part: partStatus}, {text: statusRuleMark, part: partStatusRule}}
-	tally := []piece{{text: tallySeparator + shown.tally, part: partStatus}}
-	mode := []piece{{text: space + modeName + space, part: partMode}}
-	if shown.tally == "" || widestMode+piecesWidth(slices.Concat(title, tally, closing))+widestRuler > model.frame.width {
-		return slices.Concat(mode, title, closing)
+	title := []piece{{text: space + shown.title + space, part: partTitle}}
+	tally := []piece{{text: space + shown.tally, part: partTally}}
+	if shown.tally == "" || piecesWidth(title)+piecesWidth(tally)+widestRuler > model.frame.width {
+		return title
 	}
-	return slices.Concat(mode, title, tally, closing)
+	return append(title, tally...)
 }
 
-// statusHints are the keys the status line names in a mode that fit in a room, then the bar's last space; in a
-// room of none, nothing.
-func statusHints(named []hint, room int) []piece {
-	if room < spaceWidth {
-		return nil
-	}
-	shown := []piece{}
-	for _, named := range named {
-		next := append(append([]piece{}, shown...),
-			piece{text: space + space, part: partStatus}, piece{text: named.key, part: partHintKey}, piece{text: space + named.does, part: partStatus})
-		if piecesWidth(next)+spaceWidth > room {
-			break
-		}
-		shown = next
-	}
-	return append(shown, piece{text: space, part: partStatus})
-}
+// The widest the ruler ever is with the spaces around it: one of its words, or a percentage below a hundred, which
+// is two digits at most
+const (
+	percentDigits = 2
+	widestRuler   = 2*spaceWidth + max(len(wholeShown), len(startShown), len(endShown), percentDigits+len(percentMark))
+)
 
-// statusline is the status line of a tab: what it opens with, the ruler, and the keys, a fill between them.
+// statusline is the status line of a tab: what it opens with, a fill, and the ruler at the right.
 func (model Model) statusline(drawn drawnTab) string {
-	width, status := model.frame.width, drawn.status[model.keys.mode]
-	ruler := model.paint.cut([]piece{{text: space + model.position() + space, part: partStatus}}, width-status.opening.width)
-	// the keys were chosen to fit beside the widest ruler, so they fit beside this one
-	fill := strings.Repeat(space, max(width-status.opening.width-ruler.width-status.hints.width, 0))
-	return status.opening.text + ruler.text + model.paint.parts[partBar].Render(fill) + status.hints.text
+	width := model.frame.width
+	ruler := model.paint.cut([]piece{{text: space + model.position() + space, part: partRuler}}, width-drawn.status.width)
+	fill := strings.Repeat(space, max(width-drawn.status.width-ruler.width, 0))
+	return drawn.status.text + model.paint.parts[partStatus].Render(fill) + ruler.text
 }
 
 // position says how far down the tab the page shows, as Neovim's ruler does: all of it, its top, its bottom,
@@ -403,18 +393,6 @@ func (model Model) position() string {
 		return endShown
 	}
 	return strconv.Itoa(scroll*wholePercent/last) + percentMark
-}
-
-// bar paints pieces of the frame as one row of a width, cut at its edge and filled with the bar's ground.
-func (paint paint) bar(pieces []piece, width int) string {
-	painted := paint.cut(pieces, width)
-	return painted.text + paint.parts[partBar].Render(strings.Repeat(space, max(width-painted.width, 0)))
-}
-
-// plainRow paints pieces of the frame as one row of a width on the page's own ground, cut at its edge.
-func (paint paint) plainRow(pieces []piece, width int) string {
-	painted := paint.cut(pieces, width)
-	return painted.text + strings.Repeat(space, max(width-painted.width, 0))
 }
 
 // cut paints pieces of the frame cut at a width, and says how many columns they take.

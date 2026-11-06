@@ -7,8 +7,8 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// The marks of a window over the page: the corners and sides of its border, the mark of the item chosen, and the
-// room between an item's name and what it says
+// The marks of a window over the page: the corners and sides of its border, and the room between a row's keys and
+// what they do
 const (
 	edgeTopLeft     = "╭"
 	edgeTopRight    = "╮"
@@ -16,7 +16,6 @@ const (
 	edgeBottomRight = "╯"
 	edgeAcross      = "─"
 	edgeDown        = "│"
-	chosenMark      = "▎"
 	itemGap         = 2
 )
 
@@ -30,53 +29,20 @@ type paintedWindow struct {
 	width int
 }
 
-// withCompletions lays the window of commands over the rows of a screen, its left edge by the page's left crosses,
-// where it lists any.
-func (model Model) withCompletions(rows []string) []string {
-	if len(model.completion.listed) == 0 {
-		return rows
-	}
-	return model.withWindow(rows, model.paint.commandWindow(model.completion.listed, model.completion.chosen), model.frame.left-crossRoom)
-}
-
-// withWindow lays a window over the rows of a screen, its bottom edge above the status line and its left edge at a
+// withWindow lays a window over the rows of a screen, its bottom edge above the footer and its left edge at a
 // column, held within the screen, where it shows.
 func (model Model) withWindow(rows []string, window paintedWindow, left int) []string {
 	if !model.shows(window) {
 		return rows
 	}
-	top := len(rows) - rowsBelowPage - len(window.rows)
+	top := len(rows) - len(model.frame.footer) - len(window.rows)
 	return laidOver(rows, window.rows, top, min(max(left, 0), model.frame.width-window.width), model.frame.width)
 }
 
-// shows is whether a window shows whole on the screen: no wider than it, and no taller than the rows between the
-// line of tabs and the status line.
+// shows is whether a window shows whole on the screen: no wider than it, and no taller than the rows the frame
+// leaves the page.
 func (model Model) shows(window paintedWindow) bool {
-	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-barRows
-}
-
-// commandWindow paints what the window of commands lists as a window, each item a row, what it shows in a column as
-// wide as the widest and what it does after it, past a gap where any item says what it does; the item chosen marked.
-func (paint paint) commandWindow(listed []completion, chosen int) paintedWindow {
-	nameWidth, doesWidth := 0, 0
-	for _, item := range listed {
-		nameWidth, doesWidth = max(nameWidth, textWidth(item.shown)), max(doesWidth, textWidth(item.does))
-	}
-	nameColumn := nameWidth
-	if doesWidth > 0 {
-		nameColumn += itemGap
-	}
-	inner := textWidth(chosenMark) + nameColumn + doesWidth + spaceWidth
-	inside := make([]string, 0, len(listed))
-	for place, item := range listed {
-		mark, name, does := piece{text: space, part: partWindowNote}, partWindowName, partWindowNote
-		if place == chosen {
-			mark, name, does = piece{text: chosenMark, part: partChosenMark}, partChosenName, partChosenNote
-		}
-		pieces := []piece{mark, {text: padded(item.shown, nameColumn), part: name}, {text: padded(item.does, doesWidth+spaceWidth), part: does}}
-		inside = append(inside, paint.cut(pieces, inner).text)
-	}
-	return paint.framed(inside, inner)
+	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-model.frame.above-len(model.frame.footer)
 }
 
 // framed is a window of rows, each painted as wide as its inside, with the border round them.

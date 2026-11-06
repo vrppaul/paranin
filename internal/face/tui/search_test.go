@@ -137,9 +137,9 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "COMMAND", lacks: "NORMAL"},
+		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "~ /pars", lacks: completeKeyName},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
-		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "NORMAL", lacks: cancelHint},
+		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: promptMark + space + cursorBar, lacks: cancelHint},
 		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
 	}
 	for _, testCase := range cases {
@@ -154,7 +154,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 	}
 }
 
-// What the command line says lasts one key, and the search lasts until it is taken away: Esc in normal mode takes
+// What the prompt says lasts one key, and the search lasts until it is taken away: Esc in normal mode takes
 // it, so n finds nothing to go to; a second slash opens on nothing typed.
 func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 	cases := []struct {
@@ -162,7 +162,7 @@ func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 		keys  []string
 		lacks string
 	}{
-		{name: "a key wipes what the command line said", keys: []string{"j"}, lacks: "[1/4]"},
+		{name: "a key wipes what the prompt said", keys: []string{"j"}, lacks: "[1/4]"},
 		{name: "Esc takes the search away", keys: []string{"esc", "n"}, lacks: "/the"},
 		{name: "a second slash opens on nothing typed", keys: []string{"/"}, lacks: "the"},
 	}
@@ -171,7 +171,7 @@ func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 			model = pressed(test, pressed(test, typed(test, model, "the"), "enter"), testCase.keys...)
 			if below := belowThePage(screenOf(test, model)); strings.Contains(below, testCase.lacks) {
-				test.Errorf("after %q the status and command lines = %q, want no %q", testCase.keys, below, testCase.lacks)
+				test.Errorf("after %q the footer = %q, want no %q", testCase.keys, below, testCase.lacks)
 			}
 		})
 	}
@@ -330,27 +330,37 @@ func TestTypingAfterAResizeKeepsThePage(test *testing.T) {
 			resized, _ := model.Update(tea.WindowSizeMsg{Width: commonWidth, Height: shortHeight})
 			screen := screenOf(test, pressed(test, typed(test, as[Model](test, resized), testCase.text), testCase.keys...))
 			if below := belowThePage(screen); !strings.Contains(below, "Bot") {
-				test.Errorf("after a resize while typing, %q and %q the status and command lines = %q, want the page still at its end",
+				test.Errorf("after a resize while typing, %q and %q the footer = %q, want the page still at its end",
 					testCase.text, testCase.keys, below)
 			}
 		})
 	}
 }
 
-// belowThePage is the status line and the command line of a screen, its last rows.
+// belowThePage is the footer of a screen, its last rows, roomy or tight as the screen's height makes it.
 func belowThePage(screen string) string {
 	rows := strings.Split(screen, lineEnd)
-	return strings.Join(rows[max(len(rows)-rowsBelowPage, 0):], lineEnd)
+	footer := frameOf(textWidth(rows[0]), len(rows)).footer
+	return strings.Join(rows[max(len(rows)-len(footer), 0):], lineEnd)
 }
 
-// aboveTheStatusLine is a screen but for its status line and its command line.
+// aboveTheStatusLine is a screen but for its footer.
 func aboveTheStatusLine(screen string) string {
 	rows := strings.Split(screen, lineEnd)
-	return strings.Join(rows[:max(len(rows)-rowsBelowPage, 0)], lineEnd)
+	footer := frameOf(textWidth(rows[0]), len(rows)).footer
+	return strings.Join(rows[:max(len(rows)-len(footer), 0)], lineEnd)
 }
 
-// A control character sent as typing never reaches the reader's terminal: the search line and the command line
-// show letters alone.
+// footerLine is a row of the footer of a screen, where the frame of the screen's size puts it, without the blanks
+// around it.
+func footerLine(screen string, wanted footerRow) string {
+	rows := strings.Split(screen, lineEnd)
+	row, _ := frameOf(textWidth(rows[0]), len(rows)).rowOf(wanted)
+	return strings.TrimSpace(rows[max(row, 0)])
+}
+
+// A control character sent as typing never reaches the reader's terminal: the prompt, a search or a place typed on
+// it, shows letters alone.
 func TestAControlCharacterTypedNeverReachesTheScreen(test *testing.T) {
 	for _, opening := range []string{"/", ":"} {
 		test.Run(opening, func(test *testing.T) {
@@ -408,7 +418,7 @@ func TestANumberBeforeAKeyCountsTheKey(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "3l goes three tabs on", start: []string{"3", "l"}, digit: 0, then: nil, holds: "Skills", lacks: "Northwind"},
+		{name: "3l goes three tabs on", start: []string{"3", "l"}, digit: 0, then: nil, holds: "Projects", lacks: "Northwind"},
 		{name: "2gg goes to the second line", start: append(toExperience(), "2", "g"), digit: 2, then: []string{"g"}, holds: "Kept the queue", lacks: "Northwind"},
 	}
 	for _, testCase := range cases {

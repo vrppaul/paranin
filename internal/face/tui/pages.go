@@ -9,7 +9,7 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// What the command line says where :e finds no page by the name typed, as Neovim says it of a file
+// What the prompt says where :e finds no page by the name typed, as Neovim says it of a file
 const (
 	pageNotFoundOpening = `E447: Can't find file "`
 	pageNotFoundClosing = `" in path`
@@ -69,7 +69,7 @@ func (model Model) showing(page document.Page) Model {
 	place := left[page]
 	delete(left, page)
 	model.left, model.shown, model.tabs = left, page, model.buffers[page]
-	model.commands = commands(closingHint(page), model.buffers)
+	model.places = placesOf(model.tabs, model.slugs)
 	model.chosen, model.scrolls = place.chosen, place.scrolls
 	return model.relaid()
 }

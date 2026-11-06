@@ -1,9 +1,10 @@
 // Package fixtures is the tests' way to the fixtures the packages' tests share (.claude/rules/tests.md): the
 // content's, in internal/content/testdata, and the build's, in internal/assets/testdata, each found from the root
 // of the module, which go test's folder for a package lies under however the test was built, so no test writes a
-// path that climbs out of its package; each loaded, as the site loads it; and a copy of either on disk, which a test
-// may change. Tests alone import it, as depguard's rule tests-alone-read-fixtures holds; a test of content or
-// assets, which it loads with, imports it from outside its package.
+// path that climbs out of its package; each loaded, as the site loads it; a copy of either on disk, which a test
+// may change; and the head of a page a test builds by hand. Tests alone import it, as depguard's rule
+// tests-alone-read-fixtures holds; a test of content or assets, which it loads with, imports it from outside its
+// package.
 package fixtures
 
 import (
@@ -15,6 +16,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
 )
 
 // Where the fixtures live, from the module's root, the file the root is known by, and who may write a changed file
@@ -35,6 +37,15 @@ func ContentFolder(test *testing.T) string {
 // deep and one of them twice, and the file each was built into, with the stylesheets each imports.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
+}
+
+// HeadOf is the head of a page a test builds by hand: the page and its title, nothing else, so a field the head gains
+// reaches no test that has no use for it.
+func HeadOf(page document.Page, title []document.Span) document.Head {
+	return document.Head{
+		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil,
+		OpeningTitle: "",
+	}
 }
 
 // LoadedContent is the fixture content, loaded.

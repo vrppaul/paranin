@@ -56,7 +56,7 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 	nowhere := document.Link{Target: document.Page{Kind: document.PageHealth, Slug: ""}, Spans: []document.Span{document.Text{Text: "the report"}}}
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageNone, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
 	if page, want := fixtureWriter(test).Page(composed, blankPerson()), "<p>the report</p>"; !strings.Contains(page, want) {
@@ -68,7 +68,7 @@ func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 // than an empty one.
 func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
 		Blocks: nil,
 	}
 	page := fixtureWriter(test).Page(composed, blankPerson())
@@ -124,7 +124,7 @@ func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page)
 		}
 	}
 	test.Fatalf("compose made no page %+v", page)
-	return compose.Composed{Document: document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}, Record: nil}
+	return compose.Composed{Document: document.Document{Head: fixtures.HeadOf(page, nil), Blocks: nil}, Record: nil}
 }
 
 // blankPerson is a record of a person with no facts, for a page a test builds by hand: every page a person reads

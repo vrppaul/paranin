@@ -1,36 +1,36 @@
 // Package tui draws the site's documents in a terminal as a Bubble Tea program laid out like Neovim
 // (docs/ARCHITECTURE.md, ADR-0003): a line of tabs above, the page between two rows of corner crosses, a status line
-// and a command line below. The head of a document and what stands before its first section are the first tab; each
-// section after them is a tab of its own, titled as the document titles it. The reader moves between tabs and
-// scrolls each one, by a count typed before a key where they type one, and each tab keeps its place; a slash
-// searches the tab, and n and N go through its matches. While the reader types a search, the tab marks what they
-// type and its page goes to the first match, as Neovim's incsearch does, but for the slash, which takes the marks of
-// the search before away at once; the command line counts the matches, as Neovim does. A colon opens the command
+// and a command line below. The head of a document and what stands before its first section are the first tab, named
+// by the head's opening title, or by its title where it has none; each section after them is a tab of its own,
+// titled as the document titles it. The head shows its greeting above its title, where it has one. The reader moves
+// between tabs and scrolls each one, by a count typed before a key where they type one, and each tab keeps its place;
+// a slash searches the tab, and n and N go through its matches. While the reader types a search, the tab marks what
+// they type and its page goes to the first match, as Neovim's incsearch does, but for the slash, which takes the marks
+// of the search before away at once; the command line counts the matches, as Neovim does. A colon opens the command
 // line, which runs a command, or names one it does not know with Neovim's error. The session holds the résumé, each
-// project's page and the hidden pages as buffers, as Neovim holds the files it opened: :e and a project's slug
-// shows the project's page in place of the résumé, :checkhealth the health report, written as Neovim writes its
-// own, each tab's checks counted by level on the status line where the count fits whole, :Lazy the list of skills,
-// marked as lazy.nvim marks its plugins, and q, or :q, shows the résumé again, as the first version closed a
-// report; each buffer keeps the tab and the scrolls its reader left. The status line names :e last, where a
-// project's page is there to open; the page holds the document's words, and of the TUI's own only its marks and
-// Neovim's words for a check's level and advice. While the reader types, a window over the page lists the commands
-// whose names start with what is typed, as the first version showed them, where Neovim waits for Tab, and keeps
-// :checkhealth and :Lazy hidden, as the first version did; after :e and a space it lists the projects' pages whose
-// slugs start with what follows. Tab and Shift+Tab go round what it lists, writing the item chosen on the line, and
-// past either end what was typed, as Neovim's wildmenu does. A question mark or a space opens the window of keys,
-// which names the keys of normal mode and what each does, and which the next key closes; the frame says q closes a
-// page it opened and quits on the résumé. A search stands in for the cursor this TUI has not: y copies the value of
-// the fact on the line found, as Neovim's yy yanks a line, to the reader's clipboard over OSC 52, as the first
-// version copied a value of its head; a link gives its text, as its line shows it. A window shows whole or not at
-// all: the window of keys opens only where it fits, where it does not the command line says Neovim's E36, and the
-// window closes when a resize leaves it no room. A table's columns, the skill list's among them, give way to
-// words that wrap where they would leave the last column too little room, so a narrow terminal cuts no cell off. On
-// the command line the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in
-// the accent where the terminal shows many colours: the program writes no frame to blink it, so a session left
-// alone writes nothing and its idle timeout runs out. The résumé's title, the author's name, ends in the site's
-// cursor, the bar in the accent the page, the PDF and the card draw there. It stands still, where the first
-// version's blinked for half a minute after a key: a blink would need a tick, a count and the head painted again
-// each half second, where a tab is painted once.
+// project's page and the hidden pages as buffers, as Neovim holds the files it opened: :e and a project's slug shows
+// the project's page in place of the résumé, :checkhealth the health report, written as Neovim writes its own, each
+// tab's checks counted by level on the status line where the count fits whole, :Lazy the list of skills, marked as
+// lazy.nvim marks its plugins, and q, or :q, shows the résumé again, as the first version closed a report; each
+// buffer keeps the tab and the scrolls its reader left. The status line names :e last, where a project's page is there
+// to open; the page holds the document's words, and of the TUI's own only its marks and Neovim's words for a check's
+// level and advice. While the reader types, a window over the page lists the commands whose names start with what is
+// typed, as the first version showed them, where Neovim waits for Tab, and keeps :checkhealth and :Lazy hidden, as the
+// first version did; after :e and a space it lists the projects' pages whose slugs start with what follows. Tab and
+// Shift+Tab go round what it lists, writing the item chosen on the line, and past either end what was typed, as
+// Neovim's wildmenu does. A question mark or a space opens the window of keys, which names the keys of normal mode and
+// what each does, and which the next key closes; the frame says q closes a page it opened and quits on the résumé. A
+// search stands in for the cursor this TUI has not: y copies the value of the fact on the line found, as Neovim's yy
+// yanks a line, to the reader's clipboard over OSC 52, as the first version copied a value of its head; a link gives
+// its text, as its line shows it. A window shows whole or not at all: the window of keys opens only where it fits,
+// where it does not the command line says Neovim's E36, and the window closes when a resize leaves it no room. A
+// table's columns, the skill list's among them, give way to words that wrap where they would leave the last column too
+// little room, so a narrow terminal cuts no cell off. On the command line the cursor is the terminal's own, a bar the
+// terminal blinks, as the first version's blinked, in the accent where the terminal shows many colours: the program
+// writes no frame to blink it, so a session left alone writes nothing and its idle timeout runs out. The résumé's
+// title, the author's name, ends in the site's cursor, the bar in the accent the page, the PDF and the card draw
+// there. It stands still, where the first version's blinked for half a minute after a key: a blink would need a tick,
+// a count and the head painted again each half second, where a tab is painted once.
 //
 // A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the frame
 // around it and the window of keys: a key press only chooses which painted lines show, and writes the ruler that says

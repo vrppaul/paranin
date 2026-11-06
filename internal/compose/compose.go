@@ -94,14 +94,16 @@ func Index(snapshot *content.Snapshot) document.Document {
 	}
 	return document.Document{
 		Head: document.Head{
-			Page:        document.Page{Kind: document.PageIndex, Slug: ""},
-			Language:    words.Language(),
-			Title:       resume.Title,
-			Subtitle:    nil,
-			Place:       "",
-			Lead:        resume.Lead,
-			Ways:        nil,
-			Description: nil,
+			Page:         document.Page{Kind: document.PageIndex, Slug: ""},
+			Language:     words.Language(),
+			Greeting:     "",
+			Title:        resume.Title,
+			Subtitle:     nil,
+			Place:        "",
+			Lead:         resume.Lead,
+			Ways:         nil,
+			Description:  nil,
+			OpeningTitle: "",
 		},
 		Blocks: blocks,
 	}
@@ -112,19 +114,22 @@ func listing(head document.Head) document.Listing {
 	return document.Listing{Page: head.Page, Title: head.Title, Note: head.Subtitle}
 }
 
-// resumeHead is the résumé's head, its headline its description.
+// resumeHead is the résumé's head, its headline its description: it greets the reader before the author's name,
+// and names its opening, in the site's words.
 func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	headline := markedSpans(person.Headline)
 	return document.Head{
-		Page:        resumePage(),
-		Language:    words.Language(),
-		Title:       markedSpans(person.Name),
-		Subtitle:    markedSpans(person.Title),
-		Place:       person.Location,
-		Lead:        headline,
-		Ways:        ways(person, profile.Site, words),
-		Description: headline,
+		Page:         resumePage(),
+		Language:     words.Language(),
+		Greeting:     words.Text(content.WordGreeting),
+		Title:        markedSpans(person.Name),
+		Subtitle:     markedSpans(person.Title),
+		Place:        person.Location,
+		Lead:         headline,
+		Ways:         ways(person, profile.Site, words),
+		Description:  headline,
+		OpeningTitle: words.Text(content.WordAbout),
 	}
 }
 
@@ -206,14 +211,16 @@ func projectDocument(project content.Project, author content.Person, words conte
 func projectHead(project content.Project, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
-		Page:        projectPage(project),
-		Language:    words.Language(),
-		Title:       markedSpans(project.Name),
-		Subtitle:    markedSpans(project.Tagline),
-		Place:       "",
-		Lead:        description,
-		Ways:        nil,
-		Description: description,
+		Page:         projectPage(project),
+		Language:     words.Language(),
+		Greeting:     "",
+		Title:        markedSpans(project.Name),
+		Subtitle:     markedSpans(project.Tagline),
+		Place:        "",
+		Lead:         description,
+		Ways:         nil,
+		Description:  description,
+		OpeningTitle: "",
 	}
 }
 

@@ -27,6 +27,15 @@ func TestEditOpensAProjectsPage(test *testing.T) {
 	}
 }
 
+// A page whose head gives its opening no title of its own titles its first tab by the head's title: a project's page
+// by the project's name.
+func TestAFirstTabWithNoTitleOfItsOwnTakesTheHeads(test *testing.T) {
+	screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"))
+	if !strings.Contains(screen, "1 tidy-tool") {
+		test.Errorf("after :e tidy-tool the screen =\n%s\nwant the first tab titled %q", screen, "1 tidy-tool")
+	}
+}
+
 // What the frame says q does follows the page shown: on a project's page q closes it, on the résumé q quits. The
 // status line, the window of keys and the window of commands each say it.
 func TestTheFrameSaysWhatTheQuitKeyDoesOnThePageShown(test *testing.T) {
@@ -171,7 +180,7 @@ func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 // twoPagesModel is a session on the fixture's documents and a second project's page, another-tool, of a title alone.
 func twoPagesModel(test *testing.T) Model {
 	another := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageProject, Slug: "another-tool"}, Language: "", Title: textOf("another-tool"), Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "another-tool"}, textOf("another-tool")),
 		Blocks: nil,
 	}
 	snapshot := fixtures.LoadedContent(test)

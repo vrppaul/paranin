@@ -1,5 +1,7 @@
 # The site's own words in English, for the tests: what every face shows beside the facts.
 
+about: About
+greeting: Hello, my name is
 facts: Facts
 experience: Experience
 projects: Projects

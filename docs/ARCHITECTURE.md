@@ -116,7 +116,8 @@ but our own (`script-src 'self'`).
 
 **Status:** accepted (2026-11-01): content published without a new binary (D5), one format for every face
 (D8), the store, one document model every face draws (D19), and the layers (D20). The document's parts below
-are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2.
+are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2. Amended 2026-11-06: the head
+gains a greeting and the title of its opening, for the TUI Pavel chose to redo.
 
 ### Context
 
@@ -154,6 +155,10 @@ and web routes.
   are the name, the title, where the author lives, the headline); a
   description for the page's metadata; and the ways to reach the author
   (mail, the profiles, `ssh`, the CV), since every face shows them first.
+  Two more are the site's words, which a face shows only where it has a use
+  for them, so `Phrases` leaves them out: a greeting before the title, and
+  the title of the opening, what stands before the first section, for a face
+  that names its parts. The résumé carries both; the TUI shows both.
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a
@@ -207,7 +212,8 @@ and web routes.
   with `face/html`, the CV among the ways with `face/print`; a section's anchor and
   a link's format and anchor with the first link that names one; project
   pages and the index with `face/text`, the first face to serve them; the
-  extras with `face/tui`; the records for JSON-LD, the person's and a
+  extras with `face/tui`, and the head's greeting and opening title with its
+  redesign (2026-11-06); the records for JSON-LD, the person's and a
   project's, with `face/html`, and the sitemap's dates with `face/feed`,
   the `dateModified` of the résumé's `ProfilePage` with them; a
   widget with the first island (step 6), since `face/html` came without

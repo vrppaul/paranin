@@ -244,6 +244,32 @@ func TestEachPageHasADescription(test *testing.T) {
 	}
 }
 
+// The résumé's head greets the reader before the author's name and names what stands before its first section, in
+// the site's words; a project's page does neither, its title naming its opening.
+func TestTheResumeHeadGreetsTheReaderAndNamesItsOpening(test *testing.T) {
+	documents := Documents(fixtures.LoadedContent(test))
+	cases := []struct {
+		name             string
+		page             document.Page
+		wantGreeting     string
+		wantOpeningTitle string
+	}{
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, wantGreeting: "Hello, my name is", wantOpeningTitle: "About"},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, wantGreeting: "", wantOpeningTitle: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			head := documentOf(test, documents, testCase.page).Head
+			if head.Greeting != testCase.wantGreeting {
+				test.Errorf("the greeting of %+v = %q, want %q", testCase.page, head.Greeting, testCase.wantGreeting)
+			}
+			if head.OpeningTitle != testCase.wantOpeningTitle {
+				test.Errorf("the opening's title of %+v = %q, want %q", testCase.page, head.OpeningTitle, testCase.wantOpeningTitle)
+			}
+		})
+	}
+}
+
 // contentsOf are a section's contents, wherever compose put them.
 func contentsOf(test *testing.T, section document.Section) document.Contents {
 	for _, block := range section.Blocks {
@@ -263,7 +289,7 @@ func documentOf(test *testing.T, documents []document.Document, page document.Pa
 		}
 	}
 	test.Fatalf("no document is the page %+v", page)
-	return document.Document{Head: document.Head{Page: page, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil}, Blocks: nil}
+	return document.Document{Head: fixtures.HeadOf(page, nil), Blocks: nil}
 }
 
 // cardTitled is a section's card under a title, wherever compose put it.

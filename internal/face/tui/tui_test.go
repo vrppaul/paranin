@@ -44,8 +44,10 @@ func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
 		name string
 		want string
 	}{
+		{name: "the greeting", want: "Hello, my name is"},
 		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
+		{name: "the opening's tab, by the site's word", want: "1 About"},
 		{name: "the headline", want: "Builds small tools that last."},
 		{name: "the first section's tab", want: "Facts"},
 		{name: "the last section's tab", want: "Languages"},
@@ -190,7 +192,7 @@ func TestANarrowTerminalOpensTheResume(test *testing.T) {
 // A fact with no value still reads as its label: a document may leave a value out, and the tab still draws.
 func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	composed := document.Document{
-		Head:   document.Head{Page: document.Page{Kind: document.PageResume, Slug: ""}, Language: "", Title: nil, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil},
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
 	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight)); !strings.Contains(screen, "available") {

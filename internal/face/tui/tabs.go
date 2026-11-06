@@ -69,9 +69,14 @@ type tab struct {
 	blocks []document.Block
 }
 
-// tabsOf parts a document into its tabs: the head with what stands before the first section, then each section.
+// tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
+// opening title, or by its title where it has none, then each section.
 func tabsOf(composed document.Document) []tab {
-	opening := tab{title: document.PlainText(composed.Head.Title), tally: "", head: &composed.Head, blocks: nil}
+	title := composed.Head.OpeningTitle
+	if title == "" {
+		title = document.PlainText(composed.Head.Title)
+	}
+	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil}
 	sections := []tab{}
 	for _, block := range composed.Blocks {
 		section, isSection := block.(document.Section)
@@ -142,14 +147,14 @@ func (layout layout) tab(shown tab) []line {
 	return append(append(lines, blankLines()...), layout.blocks(shown.blocks, 0)...)
 }
 
-// head lays out the title, with the site's cursor after it where the page carries one, the subtitle and place, the
-// lead, and the ways to reach the author.
+// head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
+// page carries one, the subtitle and place, the lead, and the ways to reach the author.
 func (layout layout) head(head document.Head) []line {
 	title := layout.words(head.Title, kindStrong)
 	if carriesCursor(head.Page.Kind) {
 		title = withCursor(title)
 	}
-	lines := layout.fill(title, 0)
+	lines := append(layout.fill(textWords(head.Greeting, kindMuted), 0), layout.fill(title, 0)...)
 	beside := placedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted))
 	lines = append(lines, layout.fill(beside, 0)...)
 	if lead := layout.fill(layout.words(head.Lead, kindText), 0); len(lead) > 0 {

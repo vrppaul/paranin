@@ -62,15 +62,10 @@ func (layout layout) about(head document.Head, brief []document.Fact, career []d
 		briefColumn.width = room
 		lines = besideLines(name, nameWidth+columnsApart, briefColumn.brief(head, brief))
 	} else {
-		lines = slices.Concat(name, blankLines(), layout.brief(head, brief))
+		lines = stacked(name, layout.brief(head, brief))
 	}
-	if careerLine := layout.career(career); len(careerLine) > 0 {
-		lines = slices.Concat(lines, blankLines(), careerLine)
-	}
-	if len(parts.lead) > 0 {
-		lines = slices.Concat(lines, blankLines(), parts.lead)
-	}
-	return lines
+	lines = stacked(lines, layout.career(career))
+	return stacked(lines, parts.lead)
 }
 
 // nameColumn is the lines over the author's name, then the name: its first word above the rest in the name's font, the

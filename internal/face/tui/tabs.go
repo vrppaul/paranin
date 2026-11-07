@@ -61,70 +61,121 @@ func levelLooks() map[document.CheckLevel]levelLook {
 // (docs/FOUNDATION.md §3.4)
 const cursorBar = "▎"
 
-// tab is one screen of a document a reader moves between: the head and the blocks before the first section, or
-// a section's blocks under its title.
+// tab is one screen of a document a reader moves between: its title, as the status line and the places name it, its
+// checks counted, and its body, which says what the tab shows and so how it is laid out.
 type tab struct {
 	title string
 	// tally is the tab's checks counted by level, its sections' included, as the status line names them after the
 	// title, and empty where the tab holds none
 	tally string
-	// head is the document's head on the tab that opens with it, and nothing on a section's
-	head   *document.Head
-	blocks []document.Block
-	// brief is, on the résumé's opening tab, the facts of its first section where that section holds them alone,
-	// drawn beside the head as neofetch prints a system's, in place of a tab of their own; and career the résumé's
-	// roles, for the career's line under them. Both are nothing on any other tab
+	body  tabBody
+}
+
+// tabBody is what a tab shows: a document's opening, beside the brief or as it is, or a section, under its title or
+// as it is.
+//
+//sumtype:decl
+type tabBody interface {
+	tabBody()
+}
+
+// briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts alone: the
+// head, beside it those facts as the brief, in place of a tab of their own, the roles for the career's line under
+// them, and the blocks before the first section.
+type briefOpening struct {
+	head   document.Head
 	brief  []document.Fact
 	career []document.Entry
-	// titled is whether the tab's page stands under its title, as each section of the résumé does
-	titled bool
+	blocks []document.Block
 }
+
+// plainOpening is any other opening: the head, then the blocks before the first section.
+type plainOpening struct {
+	head   document.Head
+	blocks []document.Block
+}
+
+// titledSection is a section of the résumé, which stands under its title.
+type titledSection struct {
+	blocks []document.Block
+}
+
+// plainSection is a section of another document, which stands as it is, its title on the status line alone.
+type plainSection struct {
+	blocks []document.Block
+}
+
+func (briefOpening) tabBody()  {}
+func (plainOpening) tabBody()  {}
+func (titledSection) tabBody() {}
+func (plainSection) tabBody()  {}
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
-// opening title, or by its title where it has none, and on the résumé its first section's facts where it holds them
-// alone; then each section after.
+// opening title, or by its title where it has none; then each section the opening leaves, named by its title.
 func tabsOf(composed document.Document) []tab {
-	title := composed.Head.OpeningTitle
-	if title == "" {
-		title = document.PlainText(composed.Head.Title)
-	}
-	opening := tab{title: title, tally: "", head: &composed.Head, blocks: nil, brief: nil, career: nil, titled: false}
-	// only the résumé opens as neofetch prints a system, and stands each section under its title
-	isResume := composed.Head.Page.Kind == document.PageResume
-	sections := []tab{}
+	openingBlocks, sections := []document.Block{}, []document.Section{}
 	for _, block := range composed.Blocks {
-		section, isSection := block.(document.Section)
-		if !isSection {
-			opening.blocks = append(opening.blocks, block)
-			continue
-		}
-		if facts, alone := factsAlone(section.Blocks); alone && isResume && len(sections) == 0 && opening.brief == nil {
-			opening.brief, opening.career = facts.List, careerOf(composed.Blocks)
-			continue
-		}
-		sections = append(sections, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), head: nil, blocks: section.Blocks, brief: nil, career: nil, titled: isResume})
-	}
-	opening.tally = checkTally(opening.blocks)
-	return append([]tab{opening}, sections...)
-}
-
-// factsAlone is the facts blocks hold, where they are one block of facts, at least one fact, and nothing else.
-func factsAlone(blocks []document.Block) (document.Facts, bool) {
-	if len(blocks) != 1 {
-		return document.Facts{List: nil}, false
-	}
-	facts, isFacts := blocks[0].(document.Facts)
-	return facts, isFacts && len(facts.List) > 0
-}
-
-// careerOf is the roles a document holds: the entries of its first section that holds any. An entry is a role or a
-// school, and the résumé lists its roles before its schools.
-func careerOf(blocks []document.Block) []document.Entry {
-	for _, block := range blocks {
 		if section, isSection := block.(document.Section); isSection {
-			if entries := entriesIn(section.Blocks); len(entries) > 0 {
-				return entries
-			}
+			sections = append(sections, section)
+		} else {
+			openingBlocks = append(openingBlocks, block)
+		}
+	}
+	body, sectionsLeft := openingBody(composed.Head, openingBlocks, sections)
+	tabs := []tab{{title: openingTitle(composed.Head), tally: checkTally(openingBlocks), body: body}}
+	for _, section := range sectionsLeft {
+		tabs = append(tabs, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), body: sectionBody(composed.Head.Page.Kind, section)})
+	}
+	return tabs
+}
+
+// openingTitle is what the opening tab is named: the head's opening title, or its title where it has none.
+func openingTitle(head document.Head) string {
+	if head.OpeningTitle == "" {
+		return document.PlainText(head.Title)
+	}
+	return head.OpeningTitle
+}
+
+// openingBody is what a document's opening shows, and the sections it leaves to tabs of their own: on the résumé
+// whose first section holds facts alone, the head beside them, that section taken; else the head as it is.
+func openingBody(head document.Head, blocks []document.Block, sections []document.Section) (tabBody, []document.Section) {
+	switch head.Page.Kind {
+	case document.PageResume:
+		if brief, alone := briefOf(sections); alone {
+			return briefOpening{head: head, brief: brief, career: careerOf(sections), blocks: blocks}, sections[1:]
+		}
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	}
+	return plainOpening{head: head, blocks: blocks}, sections
+}
+
+// sectionBody is what a section's tab shows: on the résumé the section under its title, on another page as it is.
+func sectionBody(kind document.PageKind, section document.Section) tabBody {
+	switch kind {
+	case document.PageResume:
+		return titledSection{blocks: section.Blocks}
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	}
+	return plainSection{blocks: section.Blocks}
+}
+
+// briefOf is the facts of the first of sections, and whether it holds them alone: one block of facts, at least one
+// fact, and nothing else.
+func briefOf(sections []document.Section) ([]document.Fact, bool) {
+	if len(sections) == 0 || len(sections[0].Blocks) != 1 {
+		return nil, false
+	}
+	facts, isFacts := sections[0].Blocks[0].(document.Facts)
+	return facts.List, isFacts && len(facts.List) > 0
+}
+
+// careerOf is the roles a document's sections hold: the entries of the first section that holds any. An entry is a
+// role or a school, and the résumé lists its roles before its schools.
+func careerOf(sections []document.Section) []document.Entry {
+	for _, section := range sections {
+		if entries := entriesIn(section.Blocks); len(entries) > 0 {
+			return entries
 		}
 	}
 	return nil
@@ -191,24 +242,28 @@ type layout struct {
 	today time.Time
 }
 
-// tab lays out a tab: the head, where it is the opening one, or its title, where it stands under it; then its blocks.
+// tab lays out a tab as its body says: an opening's head, then its blocks; a section of the résumé under its title;
+// another section as it is.
 func (layout layout) tab(shown tab) []line {
-	if shown.titled {
-		return slices.Concat(layout.heading(shown.title), layout.blocks(shown.blocks, 0))
+	switch body := shown.body.(type) {
+	case briefOpening:
+		return stacked(layout.about(body.head, body.brief, body.career), layout.blocks(body.blocks, 0))
+	case plainOpening:
+		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
+	case titledSection:
+		return slices.Concat(layout.heading(shown.title), layout.blocks(body.blocks, 0))
+	case plainSection:
+		return layout.blocks(body.blocks, 0)
 	}
-	if shown.head == nil {
-		return layout.blocks(shown.blocks, 0)
+	return nil
+}
+
+// stacked is lines above others, a row of nothing between, where there are lines below.
+func stacked(above, below []line) []line {
+	if len(below) == 0 {
+		return above
 	}
-	var lines []line
-	if shown.brief != nil {
-		lines = layout.about(*shown.head, shown.brief, shown.career)
-	} else {
-		lines = layout.head(*shown.head)
-	}
-	if len(shown.blocks) == 0 {
-		return lines
-	}
-	return append(append(lines, blankLines()...), layout.blocks(shown.blocks, 0)...)
+	return slices.Concat(above, blankLines(), below)
 }
 
 // headParts are the parts of a head every opening lays out alike, about its title: the greeting and the lead; each
@@ -241,13 +296,8 @@ func (layout layout) head(head document.Head) []line {
 		title = withCursor(title)
 	}
 	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head), layout.fill(tagWords(head.Tags), 0))
-	if len(parts.lead) > 0 {
-		lines = slices.Concat(lines, blankLines(), parts.lead)
-	}
-	if ways := slices.Concat(head.Ways, head.Repository.Facts()); len(ways) > 0 {
-		lines = append(append(lines, blankLines()...), layout.facts(ways, 0, kindMuted)...)
-	}
-	return lines
+	lines = stacked(lines, parts.lead)
+	return stacked(lines, layout.facts(slices.Concat(head.Ways, head.Repository.Facts()), 0, kindMuted))
 }
 
 // tagWords are the words of what a project is made of, the place's mark between each two.

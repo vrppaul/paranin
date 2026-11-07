@@ -65,7 +65,7 @@ const (
 
 // What stands between the parts of one line
 const (
-	// a title and its place, a tag and a subtitle
+	// a title and its place, a tag and a subtitle, and each two of a project's tags
 	dot = " · "
 	// a title and its subtitle, the cells of a row
 	dash = " — "
@@ -103,11 +103,23 @@ func escaperOf(letters string) *strings.Replacer {
 	return strings.NewReplacer(pairs...)
 }
 
+// head writes the title as a heading, then the subtitle and the place on a line, what a project is made of on the
+// next, the lead as a quote, and the ways as a list. Where a project's code lives stands as a line of its own, not
+// an item, since the list of the project's details comes next and markdown would read two lists in a row as one.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place)))
+	tags := make([]string, 0, len(head.Tags))
+	for _, tag := range head.Tags {
+		tags = append(tags, writer.text(tag))
+	}
+	chunks = appendLine(chunks, joined(dot, tags...))
 	chunks = appendChunk(chunks, quote(writer.spans(head.Lead)))
-	return appendChunk(chunks, writer.facts(head.Ways))
+	chunks = appendChunk(chunks, writer.facts(head.Ways))
+	for _, fact := range head.Repository.Facts() {
+		chunks = appendLine(chunks, writer.fact(fact))
+	}
+	return chunks
 }
 
 func (writer markdownWriter) blocks(chunks []string, blocks []document.Block, depth int) []string {
@@ -159,9 +171,14 @@ func (writer markdownWriter) table(table document.Table) string {
 func (writer markdownWriter) facts(facts []document.Fact) string {
 	items := make([]string, 0, len(facts))
 	for _, fact := range facts {
-		items = append(items, writer.text(fact.Label)+labelEnd+writer.spans(fact.Value))
+		items = append(items, writer.fact(fact))
 	}
 	return list(items)
+}
+
+// fact writes a fact as its label and its value.
+func (writer markdownWriter) fact(fact document.Fact) string {
+	return writer.text(fact.Label) + labelEnd + writer.spans(fact.Value)
 }
 
 // entry writes an entry under its title and subtitle, its period and place in a line, then its points.

@@ -26,9 +26,9 @@ const (
 const narrowestEntry = 30
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
-// from its place, the start of a period from its end; as Neovim's :checkhealth writes them, the mark after a
-// group's name and the word before a check's advice; and as lazy.nvim marks a plugin loaded or not, the mark of a
-// skill in use and of one still being learnt
+// from its place or each two of a project's tags, the start of a period from its end; as Neovim's :checkhealth
+// writes them, the mark after a group's name and the word before a check's advice; and as lazy.nvim marks a plugin
+// loaded or not, the mark of a skill in use and of one still being learnt
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
@@ -232,21 +232,31 @@ func (layout layout) subtitleLines(head document.Head) []line {
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
-// page carries one, the subtitle and place, the lead, and the ways to reach the author.
+// page carries one, the subtitle and place, what a project is made of, the lead, and the ways to reach the author or
+// where a project's code lives.
 func (layout layout) head(head document.Head) []line {
 	parts := layout.headParts(head)
 	title := layout.words(head.Title, kindStrong)
 	if carriesCursor(head.Page.Kind) {
 		title = withCursor(title)
 	}
-	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head))
+	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head), layout.fill(tagWords(head.Tags), 0))
 	if len(parts.lead) > 0 {
 		lines = slices.Concat(lines, blankLines(), parts.lead)
 	}
-	if len(head.Ways) > 0 {
-		lines = append(append(lines, blankLines()...), layout.facts(head.Ways, 0, kindMuted)...)
+	if ways := slices.Concat(head.Ways, head.Repository.Facts()); len(ways) > 0 {
+		lines = append(append(lines, blankLines()...), layout.facts(ways, 0, kindMuted)...)
 	}
 	return lines
+}
+
+// tagWords are the words of what a project is made of, the place's mark between each two.
+func tagWords(tags []string) []word {
+	words := []word{}
+	for _, tag := range tags {
+		words = markedWords(words, textWords(tag, kindMuted), placeMark)
+	}
+	return words
 }
 
 // carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as

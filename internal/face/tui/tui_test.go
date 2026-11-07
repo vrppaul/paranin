@@ -558,12 +558,13 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 	}
 }
 
-// Every phrase of a page reaches the TUI on one tab or another: of the résumé, so a terminal reader reads every fact
-// a browser reader reads, and of the health report and the list of skills :checkhealth and :Lazy show, each at any
-// width. A word wider than a narrow terminal breaks across lines, so the phrases are read with every space and break
-// taken out. The screen is read row by row, so the résumé is read where it is narrow: wider, its brief stands beside
-// the name, and a row holds a piece of each. Its opening shows two phrases by its form (ADR-0003): the address heads
-// the brief without its label, and the facts stand in the brief without their section's title.
+// Every phrase of a page reaches the TUI on one tab or another: of the résumé and of a project's page, so a terminal
+// reader reads every fact a browser reader reads, and of the health report and the list of skills :checkhealth and
+// :Lazy show, each at any width. A word wider than a narrow terminal breaks across lines, so the phrases are read
+// with every space and break taken out. The screen is read row by row, so the résumé is read where it is narrow:
+// wider, its brief stands beside the name, and a row holds a piece of each. Its opening shows two phrases by its form
+// (ADR-0003): the address heads the brief without its label, and the facts stand in the brief without their
+// section's title.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
@@ -574,6 +575,10 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		byForm []string
 	}{
 		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts"}},
+		{
+			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool"}),
+			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"), byForm: nil,
+		},
 		{
 			name: "the health report", shown: compose.Health(snapshot),
 			model: commanded(test, sessionModel(snapshot, commonWidth, tallHeight), "checkhealth"), byForm: nil,

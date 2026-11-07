@@ -13,22 +13,23 @@ const slugPattern = `^[a-z0-9]+(-[a-z0-9]+)*$`
 
 // What is said of each kind of fault, as a format for the values it names; a fault of a value written quotes it
 const (
-	emptyProblem       = "is empty"
-	addressProblem     = "%q is no absolute web address"
-	slashProblem       = "%q ends in a slash, which every address adds itself"
-	mailProblem        = "%q is no bare mail address"
-	unknownMonth       = "%q is no month, YYYY-MM"
-	unknownEnd         = unknownMonth + ", nor " + currentWord
-	unknownMonthOrGap  = unknownMonth + ", nor a " + GapOpening + "gap" + GapClosing
-	orderProblem       = "%q comes before the start, %q"
-	slugProblem        = "%q is no slug: small letters and digits, joined by hyphens"
-	sharedSlugProblem  = "%q names another project too"
-	sharedGroupProblem = "%q names another group too"
-	emptyGroupProblem  = "holds no skill"
-	levelProblem       = "%q is none of %s"
-	positiveProblem    = "%d is not above 0"
-	rangeProblem       = "%d is not above min, %d"
-	unknownWordProblem = "is no word of the site"
+	emptyProblem         = "is empty"
+	addressProblem       = "%q is no absolute web address"
+	slashProblem         = "%q ends in a slash, which every address adds itself"
+	mailProblem          = "%q is no bare mail address"
+	unknownMonth         = "%q is no month, YYYY-MM"
+	unknownEnd           = unknownMonth + ", nor " + currentWord
+	unknownMonthOrGap    = unknownMonth + ", nor a " + GapOpening + "gap" + GapClosing
+	orderProblem         = "%q comes before the start, %q"
+	slugProblem          = "%q is no slug: small letters and digits, joined by hyphens"
+	sharedSlugProblem    = "%q names another project too"
+	sharedGroupProblem   = "%q names another group too"
+	stackLanguageProblem = "%q is the project's language already"
+	emptyGroupProblem    = "holds no skill"
+	levelProblem         = "%q is none of %s"
+	positiveProblem      = "%d is not above 0"
+	rangeProblem         = "%d is not above min, %d"
+	unknownWordProblem   = "is no word of the site"
 )
 
 // What separates the levels a level fault lists
@@ -51,9 +52,14 @@ func (inspection *inspection) add(field, format string, values ...any) {
 }
 
 func (inspection *inspection) require(field, value string) {
-	if strings.TrimSpace(value) == "" {
+	if blank(value) {
 		inspection.add(field, emptyProblem)
 	}
+}
+
+// blank is whether a value of the profile says nothing: it holds no text but spaces.
+func blank(value string) bool {
+	return strings.TrimSpace(value) == ""
 }
 
 func (inspection *inspection) requireWebAddress(field string, address WebAddress) {
@@ -157,6 +163,20 @@ func inspectProjects(inspection *inspection, projects []Project) {
 		inspection.require(fmt.Sprintf("projects[%d].name", index), project.Name)
 		if project.Repo != "" {
 			inspection.requireWebAddress(fmt.Sprintf("projects[%d].repo", index), readWebAddress(project.Repo))
+		}
+		inspectStack(inspection, index, project)
+	}
+}
+
+// inspectStack holds each name of a project's stack to some text, and to another than the project's language.
+func inspectStack(inspection *inspection, projectIndex int, project Project) {
+	for stackIndex, name := range project.Stack {
+		field := fmt.Sprintf("projects[%d].stack[%d]", projectIndex, stackIndex)
+		switch {
+		case blank(name):
+			inspection.add(field, emptyProblem)
+		case name == project.Language:
+			inspection.add(field, stackLanguageProblem, name)
 		}
 	}
 }

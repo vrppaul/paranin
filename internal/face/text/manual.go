@@ -1,6 +1,7 @@
 package text
 
 import (
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -40,7 +41,8 @@ const (
 	addressClosing = ">"
 )
 
-// The words that stand between the parts of one line of a manual
+// The words that stand between the parts of one line of a manual: a title and its subtitle, and a subtitle and its
+// place or each two of a project's tags
 const (
 	dashWord = "—"
 	dotWord  = "·"
@@ -76,13 +78,22 @@ func (writer manualWriter) pageName(page document.Page) string {
 	return ""
 }
 
+// head writes the name section, the title with its subtitle and place, and the description: the lead, what a project
+// is made of, and the ways to reach the author or where a project's code lives.
 func (writer manualWriter) head(head document.Head) []string {
 	name := joinedWords(dashWord, writer.words(head.Title), joinedWords(dotWord, writer.words(head.Subtitle), strings.Fields(head.Place)))
 	lines := append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
 	lines = append(lines, "", descriptionSection)
 	lines = append(lines, paragraph(sectionIndent, 0, writer.words(head.Lead))...)
-	if len(head.Ways) > 0 {
-		lines = append(append(lines, ""), writer.pairs(sectionIndent, head.Ways)...)
+	if len(head.Tags) > 0 {
+		tags := make([][]string, 0, len(head.Tags))
+		for _, tag := range head.Tags {
+			tags = append(tags, strings.Fields(tag))
+		}
+		lines = append(append(lines, ""), paragraph(sectionIndent, 0, joinedWords(dotWord, tags...))...)
+	}
+	if ways := slices.Concat(head.Ways, head.Repository.Facts()); len(ways) > 0 {
+		lines = append(append(lines, ""), writer.pairs(sectionIndent, ways)...)
 	}
 	return lines
 }

@@ -2,8 +2,8 @@ package content
 
 // The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
 // [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
-// value, a duration. A label, a place, a language's name, an address, a link's text and a command are shown as
-// written. A gap is also how a month not known yet is written
+// value, a duration. A label, a place, a language's name, a stack's name, an address, a link's text and a command
+// are shown as written. A gap is also how a month not known yet is written
 const (
 	HighlightMark = "=="
 	GapOpening    = "["
@@ -67,13 +67,14 @@ type Role struct {
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of
-// its own gets one.
+// its own gets one. Its stack is what it is built on, by name, after the language it is written in.
 type Project struct {
 	Slug        string    `yaml:"slug"`
 	Name        string    `yaml:"name"`
 	Tagline     string    `yaml:"tagline"`
 	Description string    `yaml:"description"`
 	Language    string    `yaml:"language"`
+	Stack       []string  `yaml:"stack"`
 	Repo        string    `yaml:"repo"`
 	Install     string    `yaml:"install"`
 	Recording   string    `yaml:"recording"`

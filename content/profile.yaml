@@ -3,8 +3,8 @@
 #
 # A role still held ends `current`. A date not known yet is a gap, as in any text.
 #
-# Marks in prose and titles; a label, a place, a language, an address, a link's text and a command are shown
-# as written:
+# Marks in prose and titles; a label, a place, a language, a stack's name, an address, a link's text and a
+# command are shown as written:
 #   ==text==  a result worth highlighting
 #   [text]    a gap still to fill; the site shows it faint
 
@@ -107,7 +107,6 @@ projects:
     page: true
     recording: ""
     facts:
-      - {label: language, value: Python}
       - {label: works in, value: "Claude Code, Cursor, Codex"}
       - {label: modes, value: "diff, files, plan, transcript"}
     sections:
@@ -125,14 +124,13 @@ projects:
       An MCP server that indexes a codebase with embeddings and returns ranked
       results by meaning, instead of iterative grep and glob.
     language: Python
+    stack: [tree-sitter, sentence-transformers, LanceDB]
     repo: https://github.com/vrppaul/semantic-code-mcp
     install: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
     page: true
     recording: ""
     facts:
-      - {label: language, value: Python}
       - {label: indexes, value: "Python, Rust, Markdown"}
-      - {label: built on, value: "tree-sitter, sentence-transformers, LanceDB"}
     sections:
       - title: How it works
         paragraphs:

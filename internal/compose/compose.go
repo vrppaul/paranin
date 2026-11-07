@@ -100,8 +100,10 @@ func Index(snapshot *content.Snapshot) document.Document {
 			Title:        resume.Title,
 			Subtitle:     nil,
 			Place:        "",
+			Tags:         nil,
 			Lead:         resume.Lead,
 			Ways:         nil,
+			Repository:   nil,
 			Description:  nil,
 			OpeningTitle: "",
 		},
@@ -126,8 +128,10 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Title:        markedSpans(person.Name),
 		Subtitle:     markedSpans(person.Title),
 		Place:        person.Location,
+		Tags:         nil,
 		Lead:         headline,
 		Ways:         ways(person, profile.Site, words),
+		Repository:   nil,
 		Description:  headline,
 		OpeningTitle: words.Text(content.WordAbout),
 	}
@@ -179,20 +183,20 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 			Subtitle: markedSpans(project.Tagline),
 			Tag:      project.Language,
 			Summary:  markedSpans(project.Description),
-			Facts:    projectFacts(project, words),
+			Facts:    append(projectRepository(project, words).Facts(), installFacts(project, words)...),
 			Page:     projectPage(project),
 		})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Blocks: cards}
 }
 
-// projectDocument is a project's own page: its name, what it is in a line and what it does; its details, its
-// author first, a link back to the résumé; its recording, where it has one; then its sections.
+// projectDocument is a project's own page: its head; its details, its author first, a link back to the résumé, and
+// how it is installed last; its recording, where it has one; then its sections.
 func projectDocument(project content.Project, author content.Person, words content.Words) document.Document {
 	resume := resumePage()
 	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
 	details = append(details, factList(project.Facts)...)
-	blocks := []document.Block{document.Facts{List: append(details, projectFacts(project, words)...)}}
+	blocks := []document.Block{document.Facts{List: append(details, installFacts(project, words)...)}}
 	if project.Recording != "" {
 		blocks = append(blocks, document.CodeBlock{Text: project.Recording})
 	}
@@ -207,7 +211,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 }
 
 // projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a
-// line, and what it does, its description.
+// line, what it is made of, what it does, its description, and where its code lives.
 func projectHead(project content.Project, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
@@ -217,11 +221,22 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Title:        markedSpans(project.Name),
 		Subtitle:     markedSpans(project.Tagline),
 		Place:        "",
+		Tags:         projectTags(project),
 		Lead:         description,
 		Ways:         nil,
+		Repository:   projectRepository(project, words),
 		Description:  description,
 		OpeningTitle: "",
 	}
+}
+
+// projectTags are what a project is made of: the language it is written in, where the profile names one, then what
+// it is built on.
+func projectTags(project content.Project) []string {
+	if project.Language == "" {
+		return slices.Clone(project.Stack)
+	}
+	return append([]string{project.Language}, project.Stack...)
 }
 
 // projectPage is a project's own page, or no page where it has none.
@@ -232,16 +247,21 @@ func projectPage(project content.Project) document.Page {
 	return document.Page{Kind: document.PageProject, Slug: project.Slug}
 }
 
-// projectFacts are where a project's code lives and how it is installed, each where the project has one.
-func projectFacts(project content.Project, words content.Words) []document.Fact {
-	facts := []document.Fact{}
-	if project.Repo != "" {
-		facts = append(facts, document.Fact{Label: words.Text(content.WordRepository), Value: linkSpans(document.Address{URL: project.Repo}, project.Repo)})
+// projectRepository is where a project's code lives, under the site's word for it; none where the project names no
+// place.
+func projectRepository(project content.Project, words content.Words) *document.Repository {
+	if project.Repo == "" {
+		return nil
 	}
-	if project.Install != "" {
-		facts = append(facts, document.Fact{Label: words.Text(content.WordInstall), Value: []document.Span{document.Code{Text: project.Install}}})
+	return &document.Repository{Label: words.Text(content.WordRepository), Address: document.Address{URL: project.Repo}}
+}
+
+// installFacts are how a project is installed, under the site's word for it, where the project says.
+func installFacts(project content.Project, words content.Words) []document.Fact {
+	if project.Install == "" {
+		return nil
 	}
-	return facts
+	return []document.Fact{{Label: words.Text(content.WordInstall), Value: []document.Span{document.Code{Text: project.Install}}}}
 }
 
 // skillsSection is a section of each group of skills, each a table of a skill, how long, and where it was proven.

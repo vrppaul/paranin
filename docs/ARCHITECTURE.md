@@ -117,7 +117,8 @@ but our own (`script-src 'self'`).
 **Status:** accepted (2026-11-01): content published without a new binary (D5), one format for every face
 (D8), the store, one document model every face draws (D19), and the layers (D20). The document's parts below
 are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2. Amended 2026-11-06: the head
-gains a greeting and the title of its opening, for the TUI Pavel chose to redo.
+gains a greeting and the title of its opening, for the TUI Pavel chose to redo. Amended 2026-11-07, on Pavel's
+choice for a project's page in the TUI: the head gains what a project is made of and where its code lives.
 
 ### Context
 
@@ -152,9 +153,13 @@ and web routes.
   what it makes is the hosts' to say.
 - **A document is a head and its blocks.** The head holds the page it is,
   where it is one; the language it is written in; its title, a subtitle, a place and a lead (the résumé's
-  are the name, the title, where the author lives, the headline); a
-  description for the page's metadata; and the ways to reach the author
-  (mail, the profiles, `ssh`, the CV), since every face shows them first.
+  are the name, the title, where the author lives, the headline); on a
+  project's page its tags, the language it is written in and then its
+  stack, as the profile lists them; a description for the page's
+  metadata; and the ways to reach the author (mail, the profiles, `ssh`,
+  the CV), and on a project's page where its code lives, a repository
+  typed as its address and the site's word for it, since every face shows
+  them first.
   Two more are the site's words, which a face shows only where it has a use
   for them, so `Phrases` leaves them out: a greeting before the title, and
   the title of the opening, what stands before the first section, for a face
@@ -227,7 +232,8 @@ and web routes.
   a link's format and anchor with the first link that names one; project
   pages and the index with `face/text`, the first face to serve them; the
   extras with `face/tui`, and the head's greeting and opening title with its
-  redesign (2026-11-06); the records for JSON-LD, the person's and a
+  redesign (2026-11-06), a project's tags and repository with its page
+  there (2026-11-07); the records for JSON-LD, the person's and a
   project's, with `face/html`, and the sitemap's dates with `face/feed`,
   the `dateModified` of the résumé's `ProfilePage` with them; a
   widget with the first island (step 6), since `face/html` came without

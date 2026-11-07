@@ -55,7 +55,7 @@ const (
 // What stands between the parts of one line, the page's own choice as each face's is: the text faces' are the
 // same today, and the page's stylesheet may part them
 const (
-	// a title and its place, a tag and a subtitle
+	// a title and its place, a card's tag and its subtitle
 	dot = " · "
 	// a title and its subtitle
 	dash = " — "

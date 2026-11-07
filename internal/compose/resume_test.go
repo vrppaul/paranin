@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
@@ -99,8 +100,8 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	documents := Documents(fixtures.LoadedContent(test))
-	resume := documentOf(test, documents, document.Page{Kind: document.PageResume, Slug: ""})
-	project := documentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: ""})
+	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
 	projects := sectionTitled(test, resume, "Projects")
 	pageless, tidy := cardTitled(test, projects, "other-tool"), cardTitled(test, projects, "tidy-tool")
 	cases := []struct {
@@ -114,11 +115,86 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},
 		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
 		{name: "a project's page back to the résumé", got: linkTarget(test, factLabelled(test, detailsOf(test, project), "author").Value), want: document.Page{Kind: document.PageResume, Slug: ""}},
+		{name: "a project's page to its code", got: linkTarget(test, factLabelled(test, project.Head.Repository.Facts(), "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			if testCase.got != testCase.want {
 				test.Errorf("target = %+v, want %+v", testCase.got, testCase.want)
+			}
+		})
+	}
+}
+
+// Every fact of a project the profile gives reaches its page, as a phrase of its own: a face that shows every phrase
+// shows every fact.
+func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
+	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	phrases := document.Phrases(project)
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "its name", want: "tidy-tool"},
+		{name: "its tagline", want: "Tidies files."},
+		{name: "its language", want: "Lua"},
+		{name: "what it is built on", want: "LPeg"},
+		{name: "its repository", want: "https://github.test/mira/tidy-tool"},
+		{name: "a fact of the profile", want: "done"},
+		{name: "its install command", want: "go install example.test/tidy-tool@latest"},
+		{name: "its recording", want: "$ tidy .\ntidied 3 files"},
+		{name: "a section's paragraph", want: "Files were untidy."},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !slices.Contains(phrases, testCase.want) {
+				test.Errorf("phrases = %q, want one %q", phrases, testCase.want)
+			}
+		})
+	}
+}
+
+// A project's page opens with what the project is made of, its language and then its stack, as the profile lists
+// them, so a face shows them beside its name.
+func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
+	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool"}
+	cases := []struct {
+		name     string
+		snapshot *content.Snapshot
+		want     []string
+	}{
+		{name: "a project written in a language", snapshot: fixtures.LoadedContent(test), want: []string{"Lua", "Penlight", "LPeg"}},
+		{name: "a project that names no language", snapshot: withoutLanguages(fixtures.LoadedContent(test)), want: []string{"Penlight", "LPeg"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := fixtures.DocumentOf(test, Documents(testCase.snapshot), tidyTool).Head.Tags; !slices.Equal(got, testCase.want) {
+				test.Errorf("the tags of tidy-tool's page = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
+// A project's page names where its code lives once, in its head, and its details hold the rest: who made it, the
+// profile's facts, how it is installed.
+func TestAProjectsPageNamesItsRepositoryOnce(test *testing.T) {
+	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	cases := []struct {
+		name  string
+		facts []document.Fact
+		want  []string
+	}{
+		{name: "its head", facts: project.Head.Repository.Facts(), want: []string{"repository"}},
+		{name: "its details", facts: detailsOf(test, project), want: []string{"author", "status", "install"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			got := []string{}
+			for _, fact := range testCase.facts {
+				got = append(got, fact.Label)
+			}
+			if !slices.Equal(got, testCase.want) {
+				test.Errorf("labels = %q, want %q", got, testCase.want)
 			}
 		})
 	}
@@ -237,7 +313,7 @@ func TestEachPageHasADescription(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := document.PlainText(documentOf(test, documents, testCase.page).Head.Description); got != testCase.want {
+			if got := document.PlainText(fixtures.DocumentOf(test, documents, testCase.page).Head.Description); got != testCase.want {
 				test.Errorf("the description of %+v = %q, want %q", testCase.page, got, testCase.want)
 			}
 		})
@@ -259,7 +335,7 @@ func TestTheResumeHeadGreetsTheReaderAndNamesItsOpening(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			head := documentOf(test, documents, testCase.page).Head
+			head := fixtures.DocumentOf(test, documents, testCase.page).Head
 			if head.Greeting != testCase.wantGreeting {
 				test.Errorf("the greeting of %+v = %q, want %q", testCase.page, head.Greeting, testCase.wantGreeting)
 			}
@@ -281,15 +357,14 @@ func contentsOf(test *testing.T, section document.Section) document.Contents {
 	return document.Contents{Listings: nil}
 }
 
-// documentOf is the document of a page, wherever compose put it.
-func documentOf(test *testing.T, documents []document.Document, page document.Page) document.Document {
-	for _, found := range documents {
-		if found.Head.Page == page {
-			return found
-		}
+// withoutLanguages is a snapshot whose projects name no language, the rest as it was.
+func withoutLanguages(snapshot *content.Snapshot) *content.Snapshot {
+	changed := *snapshot
+	changed.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
+	for index := range changed.Profile.Projects {
+		changed.Profile.Projects[index].Language = ""
 	}
-	test.Fatalf("no document is the page %+v", page)
-	return document.Document{Head: fixtures.HeadOf(page, nil), Blocks: nil}
+	return &changed
 }
 
 // cardTitled is a section's card under a title, wherever compose put it.

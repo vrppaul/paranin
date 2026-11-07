@@ -46,6 +46,8 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a school that ends before it starts", original: `end: "[20XX]"`, replacement: "end: 2010-01", want: `profile.yaml: education[0].end "2010-01" comes before the start, "2016-09"`},
 		{name: "a slug with capitals", original: "slug: tidy-tool", replacement: "slug: Tidy-Tool", want: `profile.yaml: projects[1].slug "Tidy-Tool" is no slug: small letters and digits, joined by hyphens`},
 		{name: "a slug two projects share", original: "slug: other-tool", replacement: "slug: tidy-tool", want: `profile.yaml: projects[1].slug "tidy-tool" names another project too`},
+		{name: "a stack with no name", original: "stack: [Penlight, LPeg]", replacement: `stack: [Penlight, ""]`, want: "profile.yaml: projects[1].stack[1] is empty"},
+		{name: "a stack naming the language", original: "stack: [Penlight, LPeg]", replacement: "stack: [Lua, LPeg]", want: `profile.yaml: projects[1].stack[0] "Lua" is the project's language already`},
 		{name: "a group with no title", original: "title: Tools", replacement: `title: ""`, want: "profile.yaml: skill_groups[1].title is empty"},
 		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},
 		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},

@@ -2,9 +2,9 @@
 // content's, in internal/content/testdata, and the build's, in internal/assets/testdata, each found from the root
 // of the module, which go test's folder for a package lies under however the test was built, so no test writes a
 // path that climbs out of its package; each loaded, as the site loads it; a copy of either on disk, which a test
-// may change; and the head of a page a test builds by hand. Tests alone import it, as depguard's rule
-// tests-alone-read-fixtures holds; a test of content or assets, which it loads with, imports it from outside its
-// package.
+// may change; the head of a page a test builds by hand; and the document of a page among documents. Tests alone
+// import it, as depguard's rule tests-alone-read-fixtures holds; a test of content or assets, which it loads with,
+// imports it from outside its package.
 package fixtures
 
 import (
@@ -43,9 +43,21 @@ func BuildFolder(test *testing.T) string {
 // reaches no test that has no use for it.
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
-		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Lead: nil, Ways: nil, Description: nil,
-		OpeningTitle: "",
+		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil, Ways: nil,
+		Repository: nil, Description: nil, OpeningTitle: "",
 	}
+}
+
+// DocumentOf is the document among documents that is a page, or the test's end where none is.
+func DocumentOf(test *testing.T, documents []document.Document, page document.Page) document.Document {
+	test.Helper()
+	for _, found := range documents {
+		if found.Head.Page == page {
+			return found
+		}
+	}
+	test.Fatalf("no document is the page %+v", page)
+	return document.Document{Head: HeadOf(page, nil), Blocks: nil}
 }
 
 // LoadedContent is the fixture content, loaded.

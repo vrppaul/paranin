@@ -11,8 +11,9 @@ type Document struct {
 }
 
 // Head is what a face shows first: the page the document is, the language it is written in, its title, a subtitle
-// and the place beside it, a lead, and the ways to reach the author, which every face shows; the page's
-// description; and, for a face that has a use for them, a greeting before the title and the title of its opening.
+// and the place beside it, what a project is made of, a lead, the ways to reach the author and where a project's
+// code lives, which every face shows; the page's description; and, for a face that has a use for them, a greeting
+// before the title and the title of its opening.
 type Head struct {
 	Page Page
 	// Language is a tag of BCP 47, as HTML's lang and Typst's text take it: "en"
@@ -23,8 +24,13 @@ type Head struct {
 	Title    []Span
 	Subtitle []Span
 	Place    string
-	Lead     []Span
-	Ways     []Fact
+	// Tags are what a project's page says the project is made of, by name: the language it is written in, then what
+	// it is built on; none on another page
+	Tags []string
+	Lead []Span
+	Ways []Fact
+	// Repository is where the code of a project's page lives; none on another page or for a project that names none
+	Repository *Repository
 	// Description is what the page is about, for its metadata: a search engine's snippet, a link's preview where
 	// it is shared. A face writes it as plain text; none where no browser reads the page (the index, the hidden
 	// pages) or the content gives none
@@ -38,4 +44,19 @@ type Head struct {
 type Fact struct {
 	Label string
 	Value []Span
+}
+
+// Repository is where a project's code lives: the site's word that names it, and its address.
+type Repository struct {
+	Label   string
+	Address Address
+}
+
+// Facts are the repository as a face lists it among facts: its label, and its address as a link reading as it is
+// written; none where there is no repository.
+func (repository *Repository) Facts() []Fact {
+	if repository == nil {
+		return nil
+	}
+	return []Fact{{Label: repository.Label, Value: []Span{Link{Target: repository.Address, Spans: []Span{Text{Text: repository.Address.URL}}}}}}
 }

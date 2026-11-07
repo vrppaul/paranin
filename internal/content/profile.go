@@ -2,8 +2,8 @@ package content
 
 // The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
 // [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
-// value, a duration. A label, a place, a language's name, a stack's name, an address, a link's text and a command
-// are shown as written. A gap is also how a month not known yet is written
+// value. A label, a place, a language's name, a stack's name, an address, a link's text and a command are shown as
+// written. A gap is also how a month or a duration not known yet is written, the gap its whole value
 const (
 	HighlightMark = "=="
 	GapOpening    = "["
@@ -100,7 +100,7 @@ type SkillGroup struct {
 // proven.
 type Skill struct {
 	Name     string   `yaml:"name"`
-	Duration string   `yaml:"duration"`
+	Duration Duration `yaml:"duration"`
 	Aliases  []string `yaml:"aliases"`
 	Sources  []string `yaml:"sources"`
 	Learning bool     `yaml:"learning"`

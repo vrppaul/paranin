@@ -48,13 +48,13 @@ A tool that **tidies files**.
 
 ### Languages
 
-- Rust — weeks — a hobby
+- Rust — still learning — a hobby
 - Go — 3y — tidy-tool, a hobby
 - Shell scripts for the build machines — 2y — Northwind, Southwind
 
 ### Tools
 
-- Docker — side — Northwind
+- Docker — on the side — Northwind
 
 ## Education
 

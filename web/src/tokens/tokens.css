@@ -35,6 +35,8 @@
   --passed: light-dark(#40a02b, #a6da95);
   /* what says a check passed with something to look at, as the health report's WARNING */
   --warned: light-dark(#df8e1d, #eed49f);
+  /* a bar as long as the time a skill was used, drawn to scale on the list of skills */
+  --time-bar: light-dark(#1e66f5, #8aadf4);
   /* a result worth seeing first, the accent laid over the page */
   --tint: light-dark(#fe640b29, #f5a97f38);
   /* the ground of the item chosen in a window, the text laid faintly over the bars */

@@ -31,19 +31,19 @@ func Skills(snapshot *content.Snapshot) document.Document {
 			Description:  nil,
 			OpeningTitle: "",
 		},
-		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups)}},
+		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups, snapshot.Words)}},
 	}
 }
 
 // skillList is every skill of the groups, those the author uses before those they are still learning.
-func skillList(groups []content.SkillGroup) []document.Skill {
+func skillList(groups []content.SkillGroup, words content.Words) []document.Skill {
 	used, learning := []document.Skill{}, []document.Skill{}
 	for _, group := range groups {
 		for _, skill := range group.Skills {
 			if skill.Learning {
-				learning = append(learning, listedSkill(skill))
+				learning = append(learning, listedSkill(skill, words))
 			} else {
-				used = append(used, listedSkill(skill))
+				used = append(used, listedSkill(skill, words))
 			}
 		}
 	}

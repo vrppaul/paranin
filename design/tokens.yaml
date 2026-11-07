@@ -89,6 +89,11 @@ colours:
     light: "#df8e1d"
     dark: "#eed49f"
     basic: 3
+  - name: time_bar
+    about: a bar as long as the time a skill was used, drawn to scale on the list of skills
+    light: "#1e66f5"
+    dark: "#8aadf4"
+    basic: 4
 
 blends:
   - name: tint

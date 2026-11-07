@@ -127,6 +127,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindRepository: plain.Foreground(colour(look.ColourHost)).Bold(true),
 			kindTag:        panel.Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
 			kindPlate:      onAccent,
+			// a bar's cells and the mark of no measured time differ in shape, so they need no colour to tell them apart
+			kindBar: plain.Foreground(colour(look.ColourTimeBar)).Bold(true),
 		},
 		gradient: gradientOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
 		swatches: swatchesOf(colour),
@@ -211,7 +213,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 	case kindSwatch:
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
-		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindTag, kindPlate:
+		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindTag, kindPlate, kindBar:
 	}
 	return nil
 }

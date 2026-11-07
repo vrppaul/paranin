@@ -119,6 +119,7 @@ but our own (`script-src 'self'`).
 are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2. Amended 2026-11-06: the head
 gains a greeting and the title of its opening, for the TUI Pavel chose to redo. Amended 2026-11-07, on Pavel's
 choice for a project's page in the TUI: the head gains what a project is made of and where its code lives.
+Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its months beside how long.
 
 ### Context
 
@@ -196,8 +197,13 @@ and web routes.
   - the health report's: checks, a group of them under its name, each check
     at a level (OK, a warning, an error) with what it says and its advice;
   - the skill list's: skills, every skill in one list, each with its name,
-    how long, where it was proven, and whether the author is still
-    learning it;
+    how long and, where that is a span, in months, where it was proven,
+    and whether the author is still learning it (amended 2026-11-07, for
+    the TUI's :Lazy the owner chose: `content` reads a duration when the
+    profile loads, a span, `side`, `learning` or a gap, and refuses one it
+    cannot read, and `learning` on a skill whose `learning` is not true;
+    `compose` writes a span and a gap as the profile does, and `side` and
+    `learning` in the site's words, as it writes `current`);
   - a widget (a name, its props, a caption and an alt text), the form, the
     salary range and the job matcher among them, so `compose` places them
     too;

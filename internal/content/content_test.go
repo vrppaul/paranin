@@ -52,6 +52,19 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},
 		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},
 		{name: "a skill with no name", original: "name: Docker", replacement: `name: ""`, want: "profile.yaml: skill_groups[1].skills[0].name is empty"},
+		{name: "a duration of no span", original: "duration: 3y", replacement: "duration: three years", want: `profile.yaml: skill_groups[0].skills[1].duration "three years" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span of months before years", original: "duration: 3y", replacement: "duration: 7m 1y", want: `profile.yaml: skill_groups[0].skills[1].duration "7m 1y" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span of no months", original: "duration: 3y", replacement: "duration: 0m", want: `profile.yaml: skill_groups[0].skills[1].duration "0m" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span with more after its months", original: "duration: 3y", replacement: "duration: 1y 7mo", want: `profile.yaml: skill_groups[0].skills[1].duration "1y 7mo" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a duration left empty", original: "duration: 3y", replacement: `duration: ""`, want: `profile.yaml: skill_groups[0].skills[1].duration "" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a duration left out", original: "duration: 3y, ", replacement: "", want: `profile.yaml: skill_groups[0].skills[1].duration "" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span with no space between years and months", original: "duration: 3y", replacement: "duration: 1y7m", want: `profile.yaml: skill_groups[0].skills[1].duration "1y7m" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span with a space after it", original: "duration: 3y", replacement: `duration: "1y "`, want: `profile.yaml: skill_groups[0].skills[1].duration "1y " is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span with a sign", original: "duration: 3y", replacement: "duration: +1y", want: `profile.yaml: skill_groups[0].skills[1].duration "+1y" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span with a nought before its count", original: "duration: 3y", replacement: "duration: 01y", want: `profile.yaml: skill_groups[0].skills[1].duration "01y" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span of a year's months after years", original: "duration: 3y", replacement: "duration: 1y 12m", want: `profile.yaml: skill_groups[0].skills[1].duration "1y 12m" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a span of a year's months alone", original: "duration: 3y", replacement: "duration: 12m", want: `profile.yaml: skill_groups[0].skills[1].duration "12m" is no span, as 1y 7m, nor side, learning or a [gap]`},
+		{name: "a skill still being learnt by its duration alone", original: "duration: 3y", replacement: "duration: learning", want: `profile.yaml: skill_groups[0].skills[1].duration "learning" says the skill is still being learnt, but learning is not true`},
 		{name: "a level of no kind", original: "level: warn", replacement: "level: bad", want: `profile.yaml: health[0].checks[1].level "bad" is none of error, ok, warn`},
 		{name: "a salary from nothing", original: "min: 1000", replacement: "min: 0", want: "profile.yaml: contact.salary.min 0 is not above 0"},
 		{name: "a salary range upside down", original: "soft_max: 9000", replacement: "soft_max: 500", want: "profile.yaml: contact.salary.soft_max 500 is not above min, 1000"},
@@ -66,6 +79,59 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 			}
 		})
 	}
+}
+
+// How long a skill was used reads as what the profile writes: a span, years before months, as the months it comes to;
+// a skill used on the side, one still being learnt, by its duration and its learning alike, or a gap still to fill,
+// as one of no months.
+func TestASkillsDurationReadsAsItsKindAndMonths(test *testing.T) {
+	// Go's line of the fixture, whose duration each case but the one on Rust's line writes anew
+	const goDuration = "name: Go, duration: 3y"
+	kindNames := map[DurationKind]string{
+		durationUnread: "unread", DurationMeasured: "span", DurationSide: "side", DurationLearning: "learning", DurationGap: "gap",
+	}
+	cases := []struct {
+		name        string
+		original    string
+		replacement string
+		skill       string
+		kind        DurationKind
+		months      int
+	}{
+		{name: "years", original: goDuration, replacement: goDuration, skill: "Go", kind: DurationMeasured, months: 36},
+		{name: "years and months", original: goDuration, replacement: "name: Go, duration: 1y 7m", skill: "Go", kind: DurationMeasured, months: 19},
+		{name: "years of two counts and months", original: goDuration, replacement: "name: Go, duration: 10y 11m", skill: "Go", kind: DurationMeasured, months: 131},
+		{name: "months", original: goDuration, replacement: "name: Go, duration: 11m", skill: "Go", kind: DurationMeasured, months: 11},
+		{name: "on the side", original: goDuration, replacement: "name: Go, duration: side", skill: "Go", kind: DurationSide, months: 0},
+		{name: "a gap", original: goDuration, replacement: `name: Go, duration: "[2y?]"`, skill: "Go", kind: DurationGap, months: 0},
+		{name: "still being learnt", original: "name: Rust", replacement: "name: Rust", skill: "Rust", kind: DurationLearning, months: 0},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot, err := Load(changedProfile(test, testCase.original, testCase.replacement))
+			if err != nil {
+				test.Fatalf("Load with %q = %v, want no error", testCase.replacement, err)
+			}
+			duration := skillNamed(test, snapshot, testCase.skill).Duration
+			if duration.Kind() != testCase.kind || duration.Months() != testCase.months {
+				test.Errorf("%s's duration = a %s of %d months, want a %s of %d", testCase.skill, kindNames[duration.Kind()],
+					duration.Months(), kindNames[testCase.kind], testCase.months)
+			}
+		})
+	}
+}
+
+// skillNamed is the skill of a name, in whichever group the profile lists it.
+func skillNamed(test *testing.T, snapshot *Snapshot, name string) Skill {
+	for _, group := range snapshot.Profile.SkillGroups {
+		for _, skill := range group.Skills {
+			if skill.Name == name {
+				return skill
+			}
+		}
+	}
+	test.Fatalf("the profile lists no skill %q", name)
+	return Skill{Name: name, Duration: Duration{}, Aliases: nil, Sources: nil, Learning: false}
 }
 
 // The site's base address is read once, as the content writes it, and keeps its host, which names the site.

@@ -121,6 +121,9 @@ type Skills struct {
 type Skill struct {
 	Name     []Span
 	Duration []Span
+	// Months is how long the author used it, where the profile writes a span; 0 where it writes none: for a skill
+	// used on the side, one still being learnt, or a gap still to fill
+	Months   int
 	Sources  []Span
 	Learning bool
 }

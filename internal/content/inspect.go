@@ -20,6 +20,8 @@ const (
 	unknownMonth         = "%q is no month, YYYY-MM"
 	unknownEnd           = unknownMonth + ", nor " + currentWord
 	unknownMonthOrGap    = unknownMonth + ", nor a " + GapOpening + "gap" + GapClosing
+	unknownDuration      = "%q is no span, as 1y 7m, nor " + sideWord + ", " + learningWord + " or a " + GapOpening + "gap" + GapClosing
+	unflaggedLearning    = "%q says the skill is still being learnt, but learning is not true"
 	orderProblem         = "%q comes before the start, %q"
 	slugProblem          = "%q is no slug: small letters and digits, joined by hyphens"
 	sharedSlugProblem    = "%q names another project too"
@@ -181,7 +183,8 @@ func inspectStack(inspection *inspection, projectIndex int, project Project) {
 	}
 }
 
-// inspectSkills holds every group to a title of its own and to a skill at least, and every skill to its name.
+// inspectSkills holds every group to a title of its own and to a skill at least, and every skill as inspectSkill
+// does.
 func inspectSkills(inspection *inspection, groups []SkillGroup) {
 	seen := map[string]bool{}
 	for groupIndex, group := range groups {
@@ -195,8 +198,20 @@ func inspectSkills(inspection *inspection, groups []SkillGroup) {
 			inspection.add(fmt.Sprintf("skill_groups[%d].skills", groupIndex), emptyGroupProblem)
 		}
 		for skillIndex, skill := range group.Skills {
-			inspection.require(fmt.Sprintf("skill_groups[%d].skills[%d].name", groupIndex, skillIndex), skill.Name)
+			inspectSkill(inspection, fmt.Sprintf("skill_groups[%d].skills[%d]", groupIndex, skillIndex), skill)
 		}
+	}
+}
+
+// inspectSkill holds a skill, at its place in the profile, to its name and to a duration it reads, which says a
+// skill is still being learnt only of one whose learning says so too.
+func inspectSkill(inspection *inspection, place string, skill Skill) {
+	inspection.require(place+".name", skill.Name)
+	switch {
+	case skill.Duration.Kind() == durationUnread:
+		inspection.add(place+".duration", unknownDuration, skill.Duration.Written())
+	case skill.Duration.Kind() == DurationLearning && !skill.Learning:
+		inspection.add(place+".duration", unflaggedLearning, skill.Duration.Written())
 	}
 }
 

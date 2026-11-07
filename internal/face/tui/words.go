@@ -64,6 +64,8 @@ const (
 	kindTag
 	// kindPlate is a section's title on a project's page, which stands on a plate as a README's heading does
 	kindPlate
+	// kindBar is a bar as long as the months a skill was used, on the list of skills
+	kindBar
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address

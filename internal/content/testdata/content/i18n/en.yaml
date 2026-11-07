@@ -13,6 +13,8 @@ ssh: ssh
 repository: repository
 install: install
 present: present
+side: on the side
+learning: still learning
 author: author
 resume: Résumé
 health: health

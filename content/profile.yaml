@@ -3,6 +3,10 @@
 #
 # A role still held ends `current`. A date not known yet is a gap, as in any text.
 #
+# A skill's duration is a span, years first and months below twelve (`7y`, `1y 7m`, `11m`); `side`, for a skill used
+# on the side; `learning`, for one still being learnt, which says `learning: true` too; or a gap. The site shows
+# `side` and `learning` in its own words, from i18n.
+#
 # Marks in prose and titles; a label, a place, a language, a stack's name, an address, a link's text and a
 # command are shown as written:
 #   ==text==  a result worth highlighting

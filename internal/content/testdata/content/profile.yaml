@@ -64,7 +64,7 @@ projects:
 skill_groups:
   - title: Languages
     skills:
-      - {name: Rust, duration: weeks, aliases: [rust], sources: [a hobby], learning: true}
+      - {name: Rust, duration: learning, aliases: [rust], sources: [a hobby], learning: true}
       - {name: Go, duration: 3y, aliases: [go, golang], sources: [tidy-tool, a hobby]}
       - {name: Shell scripts for the build machines, duration: 2y, aliases: [shell], sources: [Northwind, Southwind]}
   - title: Tools

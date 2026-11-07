@@ -270,7 +270,7 @@ func skillsSection(groups []content.SkillGroup, words content.Words) document.Se
 	for _, group := range groups {
 		rows := make([]document.Row, 0, len(group.Skills))
 		for _, skill := range group.Skills {
-			listed := listedSkill(skill)
+			listed := listedSkill(skill, words)
 			rows = append(rows, document.Row{Cells: []document.Cell{{Spans: listed.Name}, {Spans: listed.Duration}, {Spans: listed.Sources}}})
 		}
 		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{document.Table{Rows: rows}}})
@@ -279,14 +279,33 @@ func skillsSection(groups []content.SkillGroup, words content.Words) document.Se
 }
 
 // listedSkill is a skill as the documents hold it, in the résumé's table and in the list of skills alike: its name,
-// how long, the places it was proven in one text, and whether the author is still learning it.
-func listedSkill(skill content.Skill) document.Skill {
+// how long in text and in months, the places it was proven in one text, and whether the author is still learning it.
+func listedSkill(skill content.Skill, words content.Words) document.Skill {
 	return document.Skill{
 		Name:     markedSpans(skill.Name),
-		Duration: markedSpans(skill.Duration),
+		Duration: durationSpans(skill.Duration, words),
+		Months:   skill.Duration.Months(),
 		Sources:  markedSpans(strings.Join(skill.Sources, listSeparator)),
 		Learning: skill.Learning,
 	}
+}
+
+// durationSpans are how long a skill was used, by every kind a snapshot holds: a span as written, a gap as a gap
+// still to fill, and a skill used on the side or still being learnt in the site's words.
+func durationSpans(duration content.Duration, words content.Words) []document.Span {
+	switch duration.Kind() {
+	case content.DurationMeasured:
+		return textSpans(duration.Written())
+	case content.DurationGap:
+		return markedSpans(duration.Written())
+	case content.DurationSide:
+		return textSpans(words.Text(content.WordSide))
+	case content.DurationLearning:
+		return textSpans(words.Text(content.WordLearning))
+	}
+	// A snapshot holds no other kind: a load refuses a duration it cannot read and one left out alike. Shown as
+	// written, such a duration would say what the content says
+	return textSpans(duration.Written())
 }
 
 func factList(facts []content.Fact) []document.Fact {

@@ -24,16 +24,13 @@ const (
 const narrowestEntry = 30
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
-// from its place, the start of a period from its end; and as lazy.nvim marks a plugin loaded or not, the mark of a
-// skill in use and of one still being learnt
+// from its place, the start of a period from its end
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
 	placeMark    = "·"
 	rangeMark    = "–"
 	monthLayout  = "2006-01"
-	usedMark     = "●"
-	learningMark = "○"
 )
 
 // The site's cursor: the bar after the author's name, as the page, the PDF and the card draw it
@@ -50,8 +47,8 @@ type tab struct {
 	body  tabBody
 }
 
-// tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks or as it
-// is, or a section, under its title, on a plate or as it is.
+// tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
+// of skills or as it is, or a section, under its title, on a plate or as it is.
 //
 //sumtype:decl
 type tabBody interface {
@@ -82,6 +79,13 @@ type reportOpening struct {
 	blocks []document.Block
 }
 
+// skillsOpening is the list of skills' opening as lazy.nvim's :Lazy, laid out anew: the head's title in the titles'
+// font, then the blocks before the first section, the skills among them.
+type skillsOpening struct {
+	head   document.Head
+	blocks []document.Block
+}
+
 // plainOpening is any other opening: the head, then the blocks before the first section.
 type plainOpening struct {
 	head   document.Head
@@ -107,6 +111,7 @@ type plainSection struct {
 func (briefOpening) tabBody()  {}
 func (readmeOpening) tabBody() {}
 func (reportOpening) tabBody() {}
+func (skillsOpening) tabBody() {}
 func (plainOpening) tabBody()  {}
 func (titledSection) tabBody() {}
 func (platedSection) tabBody() {}
@@ -141,7 +146,8 @@ func openingTitle(head document.Head) string {
 
 // openingBody is what a document's opening shows, and the sections it leaves to tabs of their own: on the résumé
 // whose first section holds facts alone, the head beside them, that section taken; on a project's page, the head as
-// a README; on the health report, its title over its checks counted; else the head as it is.
+// a README; on the health report, its title over its checks counted; on the list of skills, its title over the
+// skills; else the head as it is.
 func openingBody(head document.Head, blocks []document.Block, sections []document.Section) (tabBody, []document.Section) {
 	switch head.Page.Kind {
 	case document.PageResume:
@@ -152,7 +158,9 @@ func openingBody(head document.Head, blocks []document.Block, sections []documen
 		return readmeOpening{head: head, blocks: blocks}, sections
 	case document.PageHealth:
 		return reportOpening{head: head, blocks: blocks}, sections
-	case document.PageNone, document.PageIndex, document.PageSkills:
+	case document.PageSkills:
+		return skillsOpening{head: head, blocks: blocks}, sections
+	case document.PageNone, document.PageIndex:
 	}
 	return plainOpening{head: head, blocks: blocks}, sections
 }
@@ -223,6 +231,8 @@ func (layout layout) tab(shown tab) []line {
 		return stacked(layout.readme(body.head), layout.blocks(body.blocks, 0))
 	case reportOpening:
 		return stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0))
+	case skillsOpening:
+		return stacked(layout.titleRows(document.PlainText(body.head.Title)), layout.blocks(body.blocks, 0))
 	case plainOpening:
 		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
 	case titledSection:
@@ -370,26 +380,6 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.skills(typed, indent)
 	}
 	return nil
-}
-
-// skills lays out each skill as lazy.nvim lays out a plugin, a table's row after the mark of whether the author uses
-// it or is still learning it: its name, how long, and where it was proven.
-func (layout layout) skills(skills document.Skills, indent int) []line {
-	rows := make([]tableRow, 0, len(skills.List))
-	for _, skill := range skills.List {
-		cells := []document.Cell{{Spans: skill.Name}, {Spans: skill.Duration}, {Spans: skill.Sources}}
-		rows = append(rows, tableRow{opening: []run{skillMark(skill.Learning)}, cells: cells})
-	}
-	return layout.rows(rows, indent)
-}
-
-// skillMark is the mark before a skill: lazy.nvim's mark of a plugin loaded for one in use, of one not loaded for
-// one still being learnt.
-func skillMark(learning bool) run {
-	if learning {
-		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
-	}
-	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: "", tone: 0}
 }
 
 // entry lays out an entry: its period in a column of a width, the widest period of those laid out with it, the one
@@ -544,44 +534,25 @@ func boxRun(edge string) run {
 	return run{text: edge, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
 }
 
-// table lays out a table's rows, none opening with a mark.
+// table lays out a table's rows a line each, each cell in a column as wide as the widest cell of its own, the last
+// wrapping under itself. Where the columns would leave the last less room than it needs, each row is words that
+// wrap, its cells parted by the place mark and its lines after the first standing in under it, as a point's do, so a
+// narrow terminal cuts no cell off and each row shows where it starts.
 func (layout layout) table(table document.Table, indent int) []line {
-	rows := make([]tableRow, 0, len(table.Rows))
-	for _, row := range table.Rows {
-		rows = append(rows, tableRow{opening: nil, cells: row.Cells})
-	}
-	return layout.rows(rows, indent)
-}
-
-// tableRow is a row as rows lays it out: the runs it opens with, a mark or none, and its cells.
-type tableRow struct {
-	opening []run
-	cells   []document.Cell
-}
-
-// rows lays out rows a line each after its opening, the openings as wide as the widest, and each cell in a column as
-// wide as the widest cell of its own, the last wrapping under itself. Where the columns would leave the last less
-// room than it needs, each row is words that wrap after its opening, its cells parted by the place mark and its
-// lines after the first standing in under it, as a point's do, so a narrow terminal cuts no cell off and each row
-// shows where it starts.
-func (layout layout) rows(rows []tableRow, indent int) []line {
-	widths, start := layout.columnWidths(rows), indent+openingsWidth(rows)
-	lastColumn := start
+	widths := layout.columnWidths(table.Rows)
+	lastColumn := indent
 	for _, width := range widths[:max(len(widths)-1, 0)] {
 		lastColumn += width + columnGap
 	}
 	columned := layout.width-lastColumn >= narrowestLastColumn
 	lines := []line{}
-	for _, row := range rows {
-		lead := append(line{indentRun(indent)}, row.opening...)
-		if pad := start - indent - runsWidth(row.opening); pad > 0 {
-			lead = append(lead, gapRun(pad))
-		}
+	for _, row := range table.Rows {
+		lead := line{indentRun(indent)}
 		if columned {
-			lines = append(lines, layout.columnedRow(lead, row.cells, widths, start)...)
+			lines = append(lines, layout.columnedRow(lead, row.Cells, widths, indent)...)
 			continue
 		}
-		lines = append(lines, layout.continued(lead, layout.flowingCells(row.cells), start+bulletHang)...)
+		lines = append(lines, layout.continued(lead, layout.flowingCells(row.Cells), indent+bulletHang)...)
 	}
 	return lines
 }
@@ -618,10 +589,10 @@ func cellKind(place int) kind {
 }
 
 // columnWidths are the widths of the rows' columns, each as wide as its widest cell laid in a line.
-func (layout layout) columnWidths(rows []tableRow) []int {
+func (layout layout) columnWidths(rows []document.Row) []int {
 	widths := []int{}
 	for _, row := range rows {
-		for place, cell := range row.cells {
+		for place, cell := range row.Cells {
 			if place == len(widths) {
 				widths = append(widths, 0)
 			}
@@ -629,15 +600,6 @@ func (layout layout) columnWidths(rows []tableRow) []int {
 		}
 	}
 	return widths
-}
-
-// openingsWidth is how wide the widest opening of the rows is.
-func openingsWidth(rows []tableRow) int {
-	widest := 0
-	for _, row := range rows {
-		widest = max(widest, runsWidth(row.opening))
-	}
-	return widest
 }
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.

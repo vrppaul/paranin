@@ -58,7 +58,7 @@ func (model Model) rimRow() string {
 	}
 	said := model.paint.cut([]piece{
 		{text: space + moreMark + space, part: partMoreMark},
-		{text: strconv.Itoa(below) + space + lines + tallySeparator, part: partMore},
+		{text: strconv.Itoa(below) + space + lines + moreSeparator, part: partMore},
 		{text: downKey, part: partMoreKey},
 		{text: space, part: partMore},
 	}, model.frame.width)

@@ -67,7 +67,7 @@ func pathParts(address string) []string {
 func chipWords(tags []string) []word {
 	words := make([]word, 0, len(tags))
 	for _, tag := range tags {
-		words = append(words, word{runs: []run{{text: space + tag + space, kind: kindTag, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false})
+		words = append(words, wordOf(space+tag+space, kindTag))
 	}
 	return words
 }
@@ -78,6 +78,5 @@ func (layout layout) plate(title string) []line {
 	if title == "" {
 		return nil
 	}
-	plated := word{runs: []run{{text: space + title + space, kind: kindPlate, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false}
-	return append(layout.fill([]word{plated}, 0), blankLines()...)
+	return append(layout.fill([]word{wordOf(space+title+space, kindPlate)}, 0), blankLines()...)
 }

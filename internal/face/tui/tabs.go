@@ -1,9 +1,7 @@
 package tui
 
 import (
-	"maps"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,36 +24,17 @@ const (
 const narrowestEntry = 30
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
-// from its place, the start of a period from its end; as Neovim's :checkhealth writes them, the mark after a group's
-// name and the word before a check's advice; and as lazy.nvim marks a plugin loaded or not, the mark of a skill in
-// use and of one still being learnt
+// from its place, the start of a period from its end; and as lazy.nvim marks a plugin loaded or not, the mark of a
+// skill in use and of one still being learnt
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
 	placeMark    = "·"
 	rangeMark    = "–"
 	monthLayout  = "2006-01"
-	groupMark    = "~"
-	adviceWord   = "ADVICE:"
 	usedMark     = "●"
 	learningMark = "○"
 )
-
-// levelLook is how a check's level reads: the word Neovim's :checkhealth writes it in, and the kind of that word.
-type levelLook struct {
-	word string
-	kind kind
-}
-
-// levelLooks are how each level of a check reads. exhaustive holds the literal to every level, so a level the
-// document gains reads its own way here too.
-func levelLooks() map[document.CheckLevel]levelLook {
-	return map[document.CheckLevel]levelLook{
-		document.CheckOK:      {word: "OK", kind: kindPassed},
-		document.CheckWarning: {word: "WARNING", kind: kindWarned},
-		document.CheckError:   {word: "ERROR", kind: kindFailed},
-	}
-}
 
 // The site's cursor: the bar after the author's name, as the page, the PDF and the card draw it
 // (docs/FOUNDATION.md §3.4)
@@ -71,8 +50,8 @@ type tab struct {
 	body  tabBody
 }
 
-// tabBody is what a tab shows: a document's opening, beside the brief, as a README or as it is, or a section, under
-// its title, on a plate or as it is.
+// tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks or as it
+// is, or a section, under its title, on a plate or as it is.
 //
 //sumtype:decl
 type tabBody interface {
@@ -92,6 +71,13 @@ type briefOpening struct {
 // readmeOpening is a project's opening as its forge shows its README: the head, then the blocks before the first
 // section.
 type readmeOpening struct {
+	head   document.Head
+	blocks []document.Block
+}
+
+// reportOpening is the health report's opening as Neovim's :checkhealth, laid out anew: the head, then the blocks
+// before the first section.
+type reportOpening struct {
 	head   document.Head
 	blocks []document.Block
 }
@@ -120,6 +106,7 @@ type plainSection struct {
 
 func (briefOpening) tabBody()  {}
 func (readmeOpening) tabBody() {}
+func (reportOpening) tabBody() {}
 func (plainOpening) tabBody()  {}
 func (titledSection) tabBody() {}
 func (platedSection) tabBody() {}
@@ -154,7 +141,7 @@ func openingTitle(head document.Head) string {
 
 // openingBody is what a document's opening shows, and the sections it leaves to tabs of their own: on the résumé
 // whose first section holds facts alone, the head beside them, that section taken; on a project's page, the head as
-// a README; else the head as it is.
+// a README; on the health report, its title over its checks counted; else the head as it is.
 func openingBody(head document.Head, blocks []document.Block, sections []document.Section) (tabBody, []document.Section) {
 	switch head.Page.Kind {
 	case document.PageResume:
@@ -163,7 +150,9 @@ func openingBody(head document.Head, blocks []document.Block, sections []documen
 		}
 	case document.PageProject:
 		return readmeOpening{head: head, blocks: blocks}, sections
-	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
+	case document.PageHealth:
+		return reportOpening{head: head, blocks: blocks}, sections
+	case document.PageNone, document.PageIndex, document.PageSkills:
 	}
 	return plainOpening{head: head, blocks: blocks}, sections
 }
@@ -213,45 +202,6 @@ func entriesIn(blocks []document.Block) []document.Entry {
 	return entries
 }
 
-// checkTally is how many checks a tab's blocks hold at each level that has one, its sections' included, in the
-// order the document gives the levels, the count before Neovim's word for the level: "1 OK · 1 WARNING".
-func checkTally(blocks []document.Block) string {
-	looks, counted := levelLooks(), []string{}
-	for _, level := range slices.Sorted(maps.Keys(looks)) {
-		if count := checksAt(blocks, level); count > 0 {
-			counted = append(counted, strconv.Itoa(count)+space+looks[level].word)
-		}
-	}
-	return strings.Join(counted, tallySeparator)
-}
-
-// checksAt is how many checks blocks hold at a level, the blocks of their sections included.
-func checksAt(blocks []document.Block, level document.CheckLevel) int {
-	count := 0
-	for _, block := range blocks {
-		switch typed := block.(type) {
-		case document.Section:
-			count += checksAt(typed.Blocks, level)
-		case document.Checks:
-			count += checksOfLevel(typed.List, level)
-		case document.Paragraph, document.Table, document.CodeBlock, document.Facts, document.Entry, document.Card,
-			document.Contents, document.Skills:
-		}
-	}
-	return count
-}
-
-// checksOfLevel is how many of a group's checks read at a level.
-func checksOfLevel(checks []document.Check, level document.CheckLevel) int {
-	count := 0
-	for _, check := range checks {
-		if check.Level == level {
-			count++
-		}
-	}
-	return count
-}
-
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address
 // each link leads to.
 type layout struct {
@@ -271,6 +221,8 @@ func (layout layout) tab(shown tab) []line {
 		return stacked(layout.about(body.head, body.brief, body.career), layout.blocks(body.blocks, 0))
 	case readmeOpening:
 		return stacked(layout.readme(body.head), layout.blocks(body.blocks, 0))
+	case reportOpening:
+		return stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0))
 	case plainOpening:
 		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
 	case titledSection:
@@ -350,20 +302,29 @@ func withCursor(words []word) []word {
 	return marked
 }
 
-// heading is a tab's title over its page, a row of nothing under it: in the titles' font, smaller than the name's, its
-// colours going from the accent to the host's, where the font draws every letter of it and it fits the page; as text
-// in the same colours where that fits; nothing where neither does, or the tab has no title, the status line naming
-// the tab.
+// heading is a tab's title over its page as titleRows lays it out, a row of nothing under it; nothing where there is
+// no title to lay out.
 func (layout layout) heading(title string) []line {
+	rows := layout.titleRows(title)
+	if len(rows) == 0 {
+		return nil
+	}
+	return slices.Concat(rows, blankLines())
+}
+
+// titleRows are a tab's title: in the titles' font, smaller than the name's, its colours going from the accent to the
+// host's, where the font draws every letter of it and it and a row of nothing under it fit the page; as text in the
+// same colours where that fits; nothing where neither does, or the tab has no title, the status line naming the tab.
+func (layout layout) titleRows(title string) []line {
 	if title == "" {
 		return nil
 	}
 	if rows := titleFont().bannerRows([]string{strings.ToUpper(title)}); len(rows) > 0 {
-		if banner := append(tonedBanner(rows, kindHeading, rowsWidth(rows[0])), blankLines()...); layout.fits(banner) {
+		if banner := tonedBanner(rows, kindHeading, rowsWidth(rows[0])); layout.fits(slices.Concat(banner, blankLines())) {
 			return banner
 		}
 	}
-	if text := append(layout.fill(gradientWords(title, kindHeading), 0), blankLines()...); layout.fits(text) {
+	if text := layout.fill(gradientWords(title, kindHeading), 0); layout.fits(slices.Concat(text, blankLines())) {
 		return text
 	}
 	return nil
@@ -409,22 +370,6 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.skills(typed, indent)
 	}
 	return nil
-}
-
-// checks lays out a group of checks as Neovim's :checkhealth does: the group's name and its mark, then each check
-// as a point opening with the word of its level, and its advice as a point under it.
-func (layout layout) checks(checks document.Checks, indent int) []line {
-	lines := layout.fill(append(layout.words(checks.Title, kindStrong), textWords(groupMark, kindFaint)...), indent)
-	looks := levelLooks()
-	for _, check := range checks.List {
-		level := looks[check.Level]
-		lines = append(lines, layout.bullet(append(textWords(level.word, level.kind), layout.words(check.Spans, kindText)...), indent)...)
-		if len(check.Advice) > 0 {
-			advice := append(textWords(adviceWord, kindMuted), layout.words(check.Advice, kindText)...)
-			lines = append(lines, layout.bullet(advice, indent+bulletHang)...)
-		}
-	}
-	return lines
 }
 
 // skills lays out each skill as lazy.nvim lays out a plugin, a table's row after the mark of whether the author uses

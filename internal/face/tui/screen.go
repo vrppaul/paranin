@@ -65,13 +65,13 @@ const (
 	fadedLessFromBottom = 2
 )
 
-// The marks of the frame: a corner cross; the scrollbar's track and its thumb; and what parts a tab's title from its
-// tally, and one level's count from the next
+// The marks of the frame: a corner cross; the scrollbar's track and its thumb; and what parts the rim's count of the
+// lines below from the key that scrolls to them
 const (
-	crossMark      = "+"
-	trackMark      = "│"
-	thumbMark      = "┃"
-	tallySeparator = space + placeMark + space
+	crossMark     = "+"
+	trackMark     = "│"
+	thumbMark     = "┃"
+	moreSeparator = space + placeMark + space
 )
 
 // The words of the ruler, as Neovim's writes them

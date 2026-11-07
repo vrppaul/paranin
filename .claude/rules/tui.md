@@ -20,3 +20,4 @@ How the TUI is built is said in the comment of `internal/face/tui`; the rules fo
 - The facts and the site's words come from the document.
 - The TUI's own words are its frame's, as Neovim's and a shell's are: the ruler, `3 more lines`, the prompt's `~`, the keys it names, `help`, a tab's count of checks.
 - On the page the TUI's own words are only Neovim's for a value the document types: `:checkhealth`'s levels (`OK`, `WARNING`, `ERROR`) and `ADVICE:`.
+- The page may count `:checkhealth`'s checks by level in those words, as `4 OK · 1 WARNING`: no other word of the TUI's stands with the counts.

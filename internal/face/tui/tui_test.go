@@ -568,17 +568,21 @@ func TestAFactBlockKeepsItsOrderRoundACommand(test *testing.T) {
 	}
 }
 
-// commandFactsRead is a page of a block of facts round a command, as a test reads it: each row with its runs of
-// spaces read as one, so a label's column reads as a space.
+// commandFactsRead is a page of a block of facts round a command, as readRows reads it.
 func commandFactsRead(test *testing.T) string {
 	facts := document.Facts{List: []document.Fact{
 		{Label: "status", Value: textOf("done")},
 		{Label: "setup", Value: []document.Span{document.Code{Text: "go install example.test/tool"}}},
 		{Label: "steps", Value: []document.Span{document.Code{Text: "make"}, document.Text{Text: " then run"}}},
 	}}
-	page := aboveTheStatusLine(screenOf(test, handResume(test, "Mira", commonWidth, commonHeight, facts)))
+	return readRows(aboveTheStatusLine(screenOf(test, handResume(test, "Mira", commonWidth, commonHeight, facts))))
+}
+
+// readRows is a screen as a test reads its rows: each with its runs of spaces read as one, so a column a row lines
+// up to reads as a space.
+func readRows(screen string) string {
 	rows := []string{}
-	for row := range strings.SplitSeq(page, lineEnd) {
+	for row := range strings.SplitSeq(screen, lineEnd) {
 		rows = append(rows, strings.Join(strings.Fields(row), space))
 	}
 	return strings.Join(rows, lineEnd)

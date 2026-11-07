@@ -26,9 +26,9 @@ const (
 const narrowestEntry = 30
 
 // The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
-// from its place or each two of a project's tags, the start of a period from its end; as Neovim's :checkhealth
-// writes them, the mark after a group's name and the word before a check's advice; and as lazy.nvim marks a plugin
-// loaded or not, the mark of a skill in use and of one still being learnt
+// from its place, the start of a period from its end; as Neovim's :checkhealth writes them, the mark after a group's
+// name and the word before a check's advice; and as lazy.nvim marks a plugin loaded or not, the mark of a skill in
+// use and of one still being learnt
 const (
 	bulletMark   = "-"
 	subtitleMark = "—"
@@ -71,8 +71,8 @@ type tab struct {
 	body  tabBody
 }
 
-// tabBody is what a tab shows: a document's opening, beside the brief or as it is, or a section, under its title or
-// as it is.
+// tabBody is what a tab shows: a document's opening, beside the brief, as a README or as it is, or a section, under
+// its title, on a plate or as it is.
 //
 //sumtype:decl
 type tabBody interface {
@@ -89,6 +89,13 @@ type briefOpening struct {
 	blocks []document.Block
 }
 
+// readmeOpening is a project's opening as its forge shows its README: the head, then the blocks before the first
+// section.
+type readmeOpening struct {
+	head   document.Head
+	blocks []document.Block
+}
+
 // plainOpening is any other opening: the head, then the blocks before the first section.
 type plainOpening struct {
 	head   document.Head
@@ -100,14 +107,22 @@ type titledSection struct {
 	blocks []document.Block
 }
 
+// platedSection is a section of a project's page, which stands under its title on a plate, as a README's heading
+// does.
+type platedSection struct {
+	blocks []document.Block
+}
+
 // plainSection is a section of another document, which stands as it is, its title on the status line alone.
 type plainSection struct {
 	blocks []document.Block
 }
 
 func (briefOpening) tabBody()  {}
+func (readmeOpening) tabBody() {}
 func (plainOpening) tabBody()  {}
 func (titledSection) tabBody() {}
+func (platedSection) tabBody() {}
 func (plainSection) tabBody()  {}
 
 // tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
@@ -138,24 +153,30 @@ func openingTitle(head document.Head) string {
 }
 
 // openingBody is what a document's opening shows, and the sections it leaves to tabs of their own: on the résumé
-// whose first section holds facts alone, the head beside them, that section taken; else the head as it is.
+// whose first section holds facts alone, the head beside them, that section taken; on a project's page, the head as
+// a README; else the head as it is.
 func openingBody(head document.Head, blocks []document.Block, sections []document.Section) (tabBody, []document.Section) {
 	switch head.Page.Kind {
 	case document.PageResume:
 		if brief, alone := briefOf(sections); alone {
 			return briefOpening{head: head, brief: brief, career: careerOf(sections), blocks: blocks}, sections[1:]
 		}
-	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	case document.PageProject:
+		return readmeOpening{head: head, blocks: blocks}, sections
+	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return plainOpening{head: head, blocks: blocks}, sections
 }
 
-// sectionBody is what a section's tab shows: on the résumé the section under its title, on another page as it is.
+// sectionBody is what a section's tab shows: on the résumé the section under its title, on a project's page under
+// its title on a plate, on another page as it is.
 func sectionBody(kind document.PageKind, section document.Section) tabBody {
 	switch kind {
 	case document.PageResume:
 		return titledSection{blocks: section.Blocks}
-	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	case document.PageProject:
+		return platedSection{blocks: section.Blocks}
+	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return plainSection{blocks: section.Blocks}
 }
@@ -242,26 +263,30 @@ type layout struct {
 	today time.Time
 }
 
-// tab lays out a tab as its body says: an opening's head, then its blocks; a section of the résumé under its title;
-// another section as it is.
+// tab lays out a tab as its body says: an opening's head, then its blocks; a section under its title, in the titles'
+// font or on a plate; another section as it is.
 func (layout layout) tab(shown tab) []line {
 	switch body := shown.body.(type) {
 	case briefOpening:
 		return stacked(layout.about(body.head, body.brief, body.career), layout.blocks(body.blocks, 0))
+	case readmeOpening:
+		return stacked(layout.readme(body.head), layout.blocks(body.blocks, 0))
 	case plainOpening:
 		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
 	case titledSection:
 		return slices.Concat(layout.heading(shown.title), layout.blocks(body.blocks, 0))
+	case platedSection:
+		return slices.Concat(layout.plate(shown.title), layout.blocks(body.blocks, 0))
 	case plainSection:
 		return layout.blocks(body.blocks, 0)
 	}
 	return nil
 }
 
-// stacked is lines above others, a row of nothing between, where there are lines below.
+// stacked is lines above others, a row of nothing between where there are lines on both sides.
 func stacked(above, below []line) []line {
-	if len(below) == 0 {
-		return above
+	if len(above) == 0 || len(below) == 0 {
+		return slices.Concat(above, below)
 	}
 	return slices.Concat(above, blankLines(), below)
 }
@@ -287,26 +312,17 @@ func (layout layout) subtitleLines(head document.Head) []line {
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
-// page carries one, the subtitle and place, what a project is made of, the lead, and the ways to reach the author or
-// where a project's code lives.
+// page carries one, the subtitle and place, the lead, and the ways to reach the author. A project's head, the one
+// with tags and a repository, is a README's (readme).
 func (layout layout) head(head document.Head) []line {
 	parts := layout.headParts(head)
 	title := layout.words(head.Title, kindStrong)
 	if carriesCursor(head.Page.Kind) {
 		title = withCursor(title)
 	}
-	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head), layout.fill(tagWords(head.Tags), 0))
+	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head))
 	lines = stacked(lines, parts.lead)
-	return stacked(lines, layout.facts(slices.Concat(head.Ways, head.Repository.Facts()), 0, kindMuted))
-}
-
-// tagWords are the words of what a project is made of, the place's mark between each two.
-func tagWords(tags []string) []word {
-	words := []word{}
-	for _, tag := range tags {
-		words = markedWords(words, textWords(tag, kindMuted), placeMark)
-	}
-	return words
+	return stacked(lines, layout.facts(head.Ways, 0, kindMuted))
 }
 
 // carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as
@@ -380,7 +396,7 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 	case document.CodeBlock:
 		return codeLines(typed.Text, indent+nestIndent)
 	case document.Facts:
-		return layout.facts(typed.List, indent, kindMuted)
+		return layout.factBlock(typed.List, indent)
 	case document.Entry:
 		return layout.entry(typed, indent, periodWidth)
 	case document.Card:
@@ -494,17 +510,93 @@ func (layout layout) contents(contents document.Contents, indent int) []line {
 
 // facts lays out labels of a kind and their values, each value in a column after the widest label.
 func (layout layout) facts(facts []document.Fact, indent int, labelKind kind) []line {
+	column := valueColumn(facts)
+	lines := []line{}
+	for _, fact := range facts {
+		lines = append(lines, layout.fact(fact, indent, column, labelKind)...)
+	}
+	return lines
+}
+
+// valueColumn is how far in from their labels facts' values stand: after the widest label, a gap between.
+func valueColumn(facts []document.Fact) int {
 	labelWidth := 0
 	for _, fact := range facts {
 		labelWidth = max(labelWidth, textWidth(fact.Label))
 	}
-	column := labelWidth + columnGap
-	lines := []line{}
+	return labelWidth + columnGap
+}
+
+// fact lays out a label of a kind and its value, the value in a column a width in from the label.
+func (layout layout) fact(fact document.Fact, indent, column int, labelKind kind) []line {
+	lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
+	return layout.continued(lead, layout.valueWords(fact.Value), indent+column)
+}
+
+// The marks of the box a command stands in, as a README frames a block of code: its corners, and its edges across and
+// down
+const (
+	boxTopLeft     = "╭"
+	boxTopRight    = "╮"
+	boxBottomLeft  = "╰"
+	boxBottomRight = "╯"
+	boxAcross      = "─"
+	boxDown        = "│"
+)
+
+// factBlock lays out a block of facts at an indent, in their order, the values in one column: each fact under its
+// label, but a command, a fact whose value is code alone, in a box with its label in the top edge, as a README frames
+// a command to type, a row of nothing round the box.
+func (layout layout) factBlock(facts []document.Fact, indent int) []line {
+	column := valueColumn(facts)
+	parts, standing := [][]line{}, []line{}
 	for _, fact := range facts {
-		lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
-		lines = append(lines, layout.continued(lead, layout.valueWords(fact.Value), indent+column)...)
+		if box := layout.commandBox(fact, indent); len(box) > 0 {
+			parts, standing = append(parts, standing, box), nil
+			continue
+		}
+		standing = append(standing, layout.fact(fact, indent, column, kindMuted)...)
+	}
+	lines := []line{}
+	for _, part := range append(parts, standing) {
+		lines = stacked(lines, part)
 	}
 	return lines
+}
+
+// isCommand is whether a fact's value is code alone: a command a reader types.
+func isCommand(fact document.Fact) bool {
+	if len(fact.Value) != 1 {
+		return false
+	}
+	_, isCode := fact.Value[0].(document.Code)
+	return isCode
+}
+
+// commandBox is a command in a box as wide as the page, its label in the top edge, the command on one row inside it,
+// so a reader copies it whole; nothing for a fact that is no command, or where the page is too narrow for the box's
+// edges round the label or round the command, the fact then standing under its label.
+func (layout layout) commandBox(fact document.Fact, indent int) []line {
+	if !isCommand(fact) {
+		return nil
+	}
+	width := layout.width - indent
+	topRoom := width - textWidth(boxTopLeft+boxAcross+space+fact.Label+space+boxTopRight)
+	command := wordRuns(layout.valueWords(fact.Value))
+	insideRoom := width - textWidth(boxDown+space+space+boxDown) - runsWidth(command)
+	if topRoom < 1 || insideRoom < 0 {
+		return nil
+	}
+	label := run{text: fact.Label, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
+	top := line{indentRun(indent), boxRun(boxTopLeft + boxAcross + space), label, boxRun(space + strings.Repeat(boxAcross, topRoom) + boxTopRight)}
+	inside := slices.Concat(line{indentRun(indent), boxRun(boxDown + space)}, command, line{gapRun(insideRoom), boxRun(space + boxDown)})
+	bottom := boxBottomLeft + strings.Repeat(boxAcross, width-textWidth(boxBottomLeft+boxBottomRight)) + boxBottomRight
+	return []line{top, inside, {indentRun(indent), boxRun(bottom)}}
+}
+
+// boxRun is a piece of a box's edge, a mark a reader may pass over.
+func boxRun(edge string) run {
+	return run{text: edge, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
 }
 
 // table lays out a table's rows, none opening with a mark.

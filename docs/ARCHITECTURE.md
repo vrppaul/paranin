@@ -178,6 +178,12 @@ and web routes.
   school (TODO). Each section of the résumé after the opening stands under
   its title, in a smaller block font where the page has room for it, so a
   search finds a section's title on its page only where it reads as text.
+  A project's page opens as glow draws its README (amended 2026-11-07,
+  with the look the owner chose): its name in that smaller font where the
+  page has room for it, so a search finds the name on its page only where
+  it reads as text, and its repository by its form, the owner and name its
+  address's path gives, a link to it, without its label; the address is
+  written out only where its path gives no owner and name.
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a

@@ -8,11 +8,11 @@ DESCRIPTION
 
        Lua · Penlight · LPeg
 
-       repository   https://github.test/mira/tidy-tool
+       repository   https://github.test/mira/tidy
 
        author    Mira Example <https://example.test/index.txt>
        status    done
-       install   go install example.test/tidy-tool@latest
+       install   go install example.test/tidy@latest
 
        $ tidy .
        tidied 3 files

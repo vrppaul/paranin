@@ -13,25 +13,30 @@ const wideWidth = 160
 
 // y copies the value of the fact on the line the search found, whole, to the reader's clipboard over OSC 52, and the
 // prompt says what it copied, for a terminal that takes no OSC 52; a link gives its text, as its line shows it,
-// and a value wrapped over lines is copied whole from any of them.
+// and a value wrapped over lines is copied whole from any of them. On a project's page a command in its box is copied
+// without the box's edges, and the repository's owner and name give its address.
 func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
+	resume := fixtureModel(test, wideWidth, commonHeight)
+	project := commanded(test, fixtureModel(test, wideWidth, commonHeight), "e tidy-tool")
 	cases := []struct {
 		name  string
-		keys  []string
+		model Model
 		query string
 		value string
 	}{
-		{name: "the mail", keys: nil, query: "mira@", value: "mira@example.test"},
-		{name: "a link", keys: nil, query: "github.test", value: "github.test/mira"},
-		{name: "the ssh command", keys: nil, query: "ssh ex", value: "ssh example.test"},
+		{name: "the mail", model: resume, query: "mira@", value: "mira@example.test"},
+		{name: "a link", model: resume, query: "github.test", value: "github.test/mira"},
+		{name: "the ssh command", model: resume, query: "ssh ex", value: "ssh example.test"},
 		{
-			name: "a value from its second line", keys: nil, query: "next",
+			name: "a value from its second line", model: resume, query: "next",
 			value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next",
 		},
+		{name: "a command in its box", model: project, query: "go install", value: "go install example.test/tidy@latest"},
+		{name: "a repository's owner and name", model: project, query: "mira /", value: "https://github.test/mira/tidy"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, pressed(test, fixtureModel(test, wideWidth, commonHeight), testCase.keys...), "/")
+			model := pressed(test, testCase.model, "/")
 			model = pressed(test, typed(test, model, testCase.query), "enter")
 			next, command := model.Update(keyPress(test, "y"))
 			if command == nil {

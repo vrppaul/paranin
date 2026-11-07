@@ -33,8 +33,8 @@ PROJECTS
        tidy-tool — Tidies files.                                           Lua
               A tool that tidies files.
               https://example.test/p/tidy-tool.txt
-              repository   https://github.test/mira/tidy-tool
-              install      go install example.test/tidy-tool@latest
+              repository   https://github.test/mira/tidy
+              install      go install example.test/tidy@latest
 
 SKILLS
        Languages

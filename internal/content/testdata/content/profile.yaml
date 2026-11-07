@@ -50,8 +50,8 @@ projects:
     description: A tool that ==tidies files==.
     language: Lua
     stack: [Penlight, LPeg]
-    repo: https://github.test/mira/tidy-tool
-    install: go install example.test/tidy-tool@latest
+    repo: https://github.test/mira/tidy
+    install: go install example.test/tidy@latest
     recording: "$ tidy .\ntidied 3 files"
     page: true
     facts:

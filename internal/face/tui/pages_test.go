@@ -1,8 +1,11 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
@@ -25,6 +28,63 @@ func TestEditOpensAProjectsPage(test *testing.T) {
 			}
 		})
 	}
+}
+
+// A project's page opens, as a README its forge shows, with where its code lives: the owner and the name its
+// repository's address gives, a link to the repository; where the address has no path to read them from, the address
+// as written.
+func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
+	const address = "https://github.test/mira/tidy"
+	cases := []struct {
+		name    string
+		address string
+		want    string
+	}{
+		{name: "an address with a path", address: address, want: "mira / tidy"},
+		{name: "an address of a host alone", address: "https://tidy.test", want: "https://tidy.test"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := commanded(test, projectModel(test, testCase.address), "e tidy-tool")
+			view := model.View().Content
+			page := aboveTheStatusLine(screenOf(test, model))
+			rows := strings.Split(page, lineEnd)
+			if !slices.ContainsFunc(rows, func(row string) bool { return strings.TrimSpace(row) == testCase.want }) || !strings.Contains(view, ansi.SetHyperlink(testCase.address)) {
+				test.Errorf("the project's page =\n%s\nwant a row of %q alone, a link to %q", page, testCase.want, testCase.address)
+			}
+		})
+	}
+}
+
+// A project's page stands under the project's name, in the titles' font where the page has the room for it, as text
+// on a page too narrow for that. A banner is a look, so the cases read only whether the name stands as text.
+func TestAProjectsPageStandsUnderItsName(test *testing.T) {
+	cases := []struct {
+		name       string
+		width      int
+		nameAsText bool
+	}{
+		{name: "a page with room for the banner", width: commonWidth, nameAsText: false},
+		{name: "a page as narrow as a phone", width: phoneWidth, nameAsText: true},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			page := aboveTheStatusLine(screenOf(test, commanded(test, fixtureModel(test, testCase.width, tallHeight), "e tidy-tool")))
+			if strings.Contains(page, "tidy-tool") != testCase.nameAsText {
+				test.Errorf("the project's page =\n%s\nwant its name %q on it as text: %t", page, "tidy-tool", testCase.nameAsText)
+			}
+		})
+	}
+}
+
+// projectModel is a session on the fixture content, the code of each of its projects living at an address.
+func projectModel(test *testing.T, address string) Model {
+	snapshot := *fixtures.LoadedContent(test)
+	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
+	for index := range snapshot.Profile.Projects {
+		snapshot.Profile.Projects[index].Repo = address
+	}
+	return sessionModel(&snapshot, commonWidth, commonHeight)
 }
 
 // A page whose head gives its opening no title of its own titles its first tab by the head's title: a project's page

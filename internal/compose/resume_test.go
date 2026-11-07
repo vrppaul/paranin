@@ -40,8 +40,8 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a tagline", want: "Tidies files."},
 		{name: "a description", want: "tidies files"},
 		{name: "a project's language", want: "Lua"},
-		{name: "a repository", want: "https://github.test/mira/tidy-tool"},
-		{name: "an install command", want: "go install example.test/tidy-tool@latest"},
+		{name: "a repository", want: "https://github.test/mira/tidy"},
+		{name: "an install command", want: "go install example.test/tidy@latest"},
 		{name: "a group of skills", want: "Tools"},
 		{name: "a skill", want: "Docker"},
 		{name: "a skill's duration", want: "side"},
@@ -113,9 +113,9 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 		{name: "a public profile", got: linkTarget(test, factLabelled(test, resume.Head.Ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
 		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}},
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},
-		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
+		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
 		{name: "a project's page back to the résumé", got: linkTarget(test, factLabelled(test, detailsOf(test, project), "author").Value), want: document.Page{Kind: document.PageResume, Slug: ""}},
-		{name: "a project's page to its code", got: linkTarget(test, factLabelled(test, project.Head.Repository.Facts(), "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy-tool"}},
+		{name: "a project's page to its code", got: linkTarget(test, factLabelled(test, project.Head.Repository.Facts(), "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -139,9 +139,9 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 		{name: "its tagline", want: "Tidies files."},
 		{name: "its language", want: "Lua"},
 		{name: "what it is built on", want: "LPeg"},
-		{name: "its repository", want: "https://github.test/mira/tidy-tool"},
+		{name: "its repository", want: "https://github.test/mira/tidy"},
 		{name: "a fact of the profile", want: "done"},
-		{name: "its install command", want: "go install example.test/tidy-tool@latest"},
+		{name: "its install command", want: "go install example.test/tidy@latest"},
 		{name: "its recording", want: "$ tidy .\ntidied 3 files"},
 		{name: "a section's paragraph", want: "Files were untidy."},
 	}

@@ -42,7 +42,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 				Name:        "tidy-tool",
 				Description: "A tool that tidies files.",
 				Language:    "Lua",
-				Repository:  "https://github.test/mira/tidy-tool",
+				Repository:  "https://github.test/mira/tidy",
 				Author:      "Mira Example",
 				AuthorPage:  resumePage(),
 			},

@@ -449,16 +449,15 @@ func TestAPeriodStandsApartFromItsTitle(test *testing.T) {
 	}
 }
 
-// A section of the résumé stands under its title, in the titles' font where the page has room for it and rows of the
-// tab under it, as text where it has room for that alone; on a page too short for either, and on another page, a
-// section stands as it is, its title on the status line alone.
-func TestASectionOfTheResumeStandsUnderItsTitle(test *testing.T) {
-	// a page narrower than the project's tab's title, WHY, in the titles' font, which would show it as text; a screen
-	// whose page has the rows for the title as text and the tab under it, not for its banner; and one a row taller,
-	// whose page has them for the banner. A banner is a look, so no case tells it from no title: they read only
-	// whether the title stands as text
+// A section stands under its title. On the résumé the title stands in the titles' font where the page has room for
+// it and rows of the tab under it, as text where it has room for that alone, and on a page too short for either the
+// section stands as it is, its title on the status line alone; on a project's page, as glow draws a README's
+// heading, the title stands as text on a plate.
+func TestASectionStandsUnderItsTitle(test *testing.T) {
+	// a screen whose page has the rows for the title as text and the tab under it, not for its banner; and one a row
+	// taller, whose page has them for the banner. A banner is a look, so no case tells it from no title: they read
+	// only whether the title stands as text
 	const (
-		narrowerThanWhy      = 12
 		shorterThanABanner   = 16
 		tallEnoughForABanner = shorterThanABanner + 1
 	)
@@ -473,8 +472,12 @@ func TestASectionOfTheResumeStandsUnderItsTitle(test *testing.T) {
 		{name: "a page tall enough for the banner holds no title as text", model: pressed(test, fixtureModel(test, commonWidth, tallEnoughForABanner), toExperience()...), title: "Experience", titleAsText: false},
 		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titleAsText: false},
 		{
-			name: "a project's page", title: "Why", titleAsText: false,
-			model: pressed(test, commanded(test, fixtureModel(test, narrowerThanWhy, tallHeight), "e tidy-tool"), "l"),
+			name: "a project's section", title: "Why", titleAsText: true,
+			model: pressed(test, commanded(test, fixtureModel(test, phoneWidth, tallHeight), "e tidy-tool"), "l"),
+		},
+		{
+			name: "a section of another page", title: "Growing", titleAsText: false,
+			model: pressed(test, commanded(test, handHealth(test, phoneWidth, tallHeight, "Growing"), "checkhealth"), "l"),
 		},
 	}
 	for _, testCase := range cases {
@@ -533,6 +536,54 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	}
 }
 
+// A block of facts frames a command in a box, its label in the top edge: each fact round it stands once, and a fact
+// whose value is code and more is no command, standing beside its label.
+func TestEachFactRoundACommandStandsOnce(test *testing.T) {
+	read := commandFactsRead(test)
+	cases := []struct {
+		name string
+		text string
+	}{
+		{name: "a fact before the command", text: "status done"},
+		{name: "the command", text: "go install example.test/tool"},
+		{name: "the command's label", text: "setup"},
+		{name: "a value of code and more", text: "steps make then run"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if holding := strings.Count(read, testCase.text); holding != 1 {
+				test.Errorf("the page =\n%s\nholds %q %d times, want once", read, testCase.text, holding)
+			}
+		})
+	}
+}
+
+// A block of facts keeps the document's order round a command it frames in a box, as no face picks the facts' order
+// (ADR-0003): the fact before it above it, the one after below.
+func TestAFactBlockKeepsItsOrderRoundACommand(test *testing.T) {
+	read := commandFactsRead(test)
+	places := []int{strings.Index(read, "status done"), strings.Index(read, "go install example.test/tool"), strings.Index(read, "steps make then run")}
+	if slices.Min(places) < 0 || !slices.IsSorted(places) {
+		test.Errorf("the page =\n%s\nholds its facts at %v, want each, in the document's order", read, places)
+	}
+}
+
+// commandFactsRead is a page of a block of facts round a command, as a test reads it: each row with its runs of
+// spaces read as one, so a label's column reads as a space.
+func commandFactsRead(test *testing.T) string {
+	facts := document.Facts{List: []document.Fact{
+		{Label: "status", Value: textOf("done")},
+		{Label: "setup", Value: []document.Span{document.Code{Text: "go install example.test/tool"}}},
+		{Label: "steps", Value: []document.Span{document.Code{Text: "make"}, document.Text{Text: " then run"}}},
+	}}
+	page := aboveTheStatusLine(screenOf(test, handResume(test, "Mira", commonWidth, commonHeight, facts)))
+	rows := []string{}
+	for row := range strings.SplitSeq(page, lineEnd) {
+		rows = append(rows, strings.Join(strings.Fields(row), space))
+	}
+	return strings.Join(rows, lineEnd)
+}
+
 // q and Ctrl+C end the session on the résumé, and Ctrl+C on a project's page too.
 func TestTheQuitKeysEndTheSession(test *testing.T) {
 	cases := []struct {
@@ -564,7 +615,8 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // with every space and break taken out. The screen is read row by row, so the résumé is read where it is narrow:
 // wider, its brief stands beside the name, and a row holds a piece of each. Its opening shows two phrases by its form
 // (ADR-0003): the address heads the brief without its label, and the facts stand in the brief without their
-// section's title.
+// section's title. A project's opening shows its repository by its form too: its owner and name under the title, a
+// link to the address, without its label.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
@@ -577,7 +629,8 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts"}},
 		{
 			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool"}),
-			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"), byForm: nil,
+			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
+			byForm: []string{"repository", "https://github.test/mira/tidy"},
 		},
 		{
 			name: "the health report", shown: compose.Health(snapshot),
@@ -644,6 +697,15 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // fixtureDay is the day the tests' sessions open on, the fixture's role still held running to it.
 func fixtureDay() time.Time {
 	return time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+}
+
+// handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a
+// title.
+func handHealth(test *testing.T, width, height int, title string) Model {
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil), Blocks: nil}
+	section := document.Section{Title: textOf(title), Blocks: []document.Block{document.Paragraph{Spans: textOf("Learning Go")}}}
+	report := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: ""}, textOf("health")), Blocks: []document.Block{section}}
+	return New([]document.Document{resume, report}, fixtureSite(fixtures.LoadedContent(test)), width, height, fixtureDay())
 }
 
 // handResume is a session on a résumé a test builds by hand: a head titled by a name, then blocks.

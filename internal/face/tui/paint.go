@@ -95,6 +95,9 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	plain := lipgloss.NewStyle()
 	panel := plain.Background(colour(look.ColourSunk))
 	deep := plain.Background(colour(look.ColourDeep))
+	// a title laid on the accent, as the status line's and a section's of a project's page stand, reversed where the
+	// terminal shows no colours
+	onAccent := plain.Foreground(colour(look.ColourOnAccent)).Background(colour(look.ColourAccent)).Bold(true).Reverse(noColours)
 	rim := plain.Foreground(colour(look.ColourSunk))
 	if fewColours {
 		rim = plain.Foreground(colour(look.ColourFaint))
@@ -118,6 +121,12 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindCurrent: plain.Foreground(colour(look.ColourAccent)),
 			kindPast:    plain.Foreground(colour(look.ColourEdge)).Faint(noColours),
 			kindSwatch:  plain,
+			// a repository's owner and name in the colours of the mail's two parts; a tag as a chip on the panel's
+			// ground, reversed where the terminal shows sixteen colours or none, whose panel is the terminal's own ground
+			kindOwner:      plain.Foreground(colour(look.ColourAccent)).Bold(true),
+			kindRepository: plain.Foreground(colour(look.ColourHost)).Bold(true),
+			kindTag:        panel.Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
+			kindPlate:      onAccent,
 		},
 		gradient: gradientOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
 		swatches: swatchesOf(colour),
@@ -144,7 +153,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partPlaceRest:   panel.Foreground(colour(look.ColourText)).Bold(true),
 			partPlaceChosen: plain.Background(colour(look.ColourChosen)).Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
 			partStatus:      deep,
-			partTitle:       plain.Foreground(colour(look.ColourOnAccent)).Background(colour(look.ColourAccent)).Bold(true).Reverse(noColours),
+			partTitle:       onAccent,
 			partTally:       deep.Foreground(colour(look.ColourFaint)),
 			partRuler:       deep.Foreground(colour(look.ColourFaint)),
 			partEdge:        plain.Foreground(colour(look.ColourEdge)),
@@ -202,7 +211,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 	case kindSwatch:
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
-		kindMailbox, kindHost, kindCurrent, kindPast:
+		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindTag, kindPlate:
 	}
 	return nil
 }

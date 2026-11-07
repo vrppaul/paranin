@@ -19,7 +19,12 @@
 // the name does, as text in them where that fits, and with none where neither does. A role or a school stands with
 // its period in the column of the periods of its section, as wide as the widest of them, the one still going on in
 // the accent, its title, subtitle and place beside it and its points under them; where the page leaves too little
-// room beside the column, the period stands above.
+// room beside the column, the period stands above. A project's page opens as glow draws its README: the name in the
+// titles' font where it fits, the owner and the name its repository's address gives under it, or the address as
+// written where its path gives none, a link in the colours of the mail's two parts, the project's tags as chips, the
+// tagline and what it does, then its details; each section of it stands under its title on a plate of the accent.
+// In any block of facts a command, a fact whose value is code alone, stands in a box with its label in the top edge,
+// where the page has room for the command on one row, so a reader copies it whole.
 // The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key
 // where they type one, and each tab keeps its place; where more of a tab lies below the page, the rim says how many
 // lines, as Neovim counts them, the two rows above it fade, and a scrollbar at the right shows how far down the page
@@ -42,12 +47,13 @@
 // each does, and which the next key closes; it says q closes a page it opened and quits on the résumé. A search
 // stands in for the cursor this TUI has not: y copies the value of the fact on the line found, as Neovim's yy yanks a
 // line, to the reader's clipboard over OSC 52, as the first version copied a value of its head; a link gives its text,
-// as its line shows it. A window shows whole or not at all: the window of keys opens only where it fits, where it does
-// not the prompt says Neovim's E36, and the window closes when a resize leaves it no room. A table's columns, the skill
-// list's among them, give way to words that wrap where they would leave the last column too little room, so a narrow
-// terminal cuts no cell off. While the reader types on the prompt, the cursor is the terminal's own, a bar the
-// terminal blinks, as the first version's blinked, in the accent where the terminal shows many colours: the program
-// writes no frame to blink it, so a session left alone writes nothing and its idle timeout runs out. Where they type
+// as its line shows it, but a repository's owner and name give its address. A window shows whole or not at all: the
+// window of keys opens only where it fits, where it does not the prompt says Neovim's E36, and the window closes when
+// a resize leaves it no room. A table's columns, the skill list's among them, give way to words that wrap where they
+// would leave the last column too little room, so a narrow terminal cuts no cell off. While the reader types on the
+// prompt, the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in the accent
+// where the terminal shows many colours: the program writes no frame to blink it, so a session left alone writes
+// nothing and its idle timeout runs out. Where they type
 // nothing, the prompt ends in the site's cursor, and so does the résumé's title, the author's name: the bar in the
 // accent the page, the PDF and the card draw there; where the name stands in the name's font, a bar as tall as it and
 // as wide as the font's strokes, as the storyboard of the look drew it. It stands still, where the first version's

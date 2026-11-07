@@ -56,6 +56,14 @@ const (
 	kindPast
 	// kindSwatch is a sample of the design's colours, each sample in the next of them
 	kindSwatch
+	// kindOwner is whom a repository belongs to, before its name
+	kindOwner
+	// kindRepository is a repository's name, after its owner
+	kindRepository
+	// kindTag is a tag of what a project is made of, which stands as a chip
+	kindTag
+	// kindPlate is a section's title on a project's page, which stands on a plate as a README's heading does
+	kindPlate
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address

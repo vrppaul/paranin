@@ -274,14 +274,15 @@ func withCursor(words []word) []word {
 	return marked
 }
 
-// heading is a tab's title over its page, a row of nothing under it: in the block font, its colours going from the
-// accent to the host's, where the font draws every letter of it and it fits the page; as text in the same colours
-// where that fits; nothing where neither does, or the tab has no title, the status line naming the tab.
+// heading is a tab's title over its page, a row of nothing under it: in the titles' font, smaller than the name's, its
+// colours going from the accent to the host's, where the font draws every letter of it and it fits the page; as text
+// in the same colours where that fits; nothing where neither does, or the tab has no title, the status line naming
+// the tab.
 func (layout layout) heading(title string) []line {
 	if title == "" {
 		return nil
 	}
-	if rows := bannerRows([]string{strings.ToUpper(title)}); len(rows) > 0 {
+	if rows := titleFont().bannerRows([]string{strings.ToUpper(title)}); len(rows) > 0 {
 		if banner := append(tonedBanner(rows, kindHeading, rowsWidth(rows[0])), blankLines()...); layout.fits(banner) {
 			return banner
 		}

@@ -9,7 +9,7 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The cursor after the name's last line in the block font, a column apart from it, as wide as the font's strokes
+// The cursor after the name's last line in the name's font, a column apart from it, as wide as the font's strokes
 const blockCursor = "▌"
 
 // The room between the name's column and the brief's, as the storyboard set them apart, and the least the brief
@@ -73,7 +73,7 @@ func (layout layout) about(head document.Head, brief []document.Fact, career []d
 	return lines
 }
 
-// nameColumn is the lines over the author's name, then the name: its first word above the rest in the block font, the
+// nameColumn is the lines over the author's name, then the name: its first word above the rest in the name's font, the
 // cursor after them, where the font draws every letter of it and the lines over it and the banner fit the page, in
 // its width and its rows; else as text in the same colours, the site's cursor after it, wrapped where the page is
 // narrower than the name.
@@ -86,7 +86,7 @@ func (layout layout) nameColumn(linesAbove []line, title string) []line {
 	return slices.Concat(linesAbove, layout.fill(withCursor(gradientWords(title, kindName)), 0))
 }
 
-// nameBanner is a name's words in the block font: the first above the rest, the cursor after them; nothing where the
+// nameBanner is a name's words in the name's font: the first above the rest, the cursor after them; nothing where the
 // name has no words or the font does not draw every letter of them.
 func nameBanner(words []string) []line {
 	if len(words) == 0 {
@@ -96,7 +96,7 @@ func nameBanner(words []string) []line {
 	if len(words) > 1 {
 		texts = append(texts, strings.Join(words[1:], space))
 	}
-	rows := bannerRows(texts)
+	rows := nameFont().bannerRows(texts)
 	if len(rows) == 0 {
 		return nil
 	}

@@ -15,11 +15,11 @@
 // that holds any, along the months from the first role's start, or the day the session opened where that comes first,
 // to the day or the last month a role reaches past it, the one still held in the accent and running to the site's
 // word for the present, each company over its span; the lead comes last. Each section of the résumé after it stands
-// under its title, in the block font in the name's colours where it fits as the name does, as text in them where
-// that fits, and with none where neither does. A role or a school stands with its period in the column of the periods
-// of its section, as wide as the widest of them, the one still going on in the accent, its title, subtitle and place
-// beside it and its points under them; where the page leaves too little room beside the column, the period stands
-// above.
+// under its title, in a block font two rows tall where the name's is three, in the name's colours, where it fits as
+// the name does, as text in them where that fits, and with none where neither does. A role or a school stands with
+// its period in the column of the periods of its section, as wide as the widest of them, the one still going on in
+// the accent, its title, subtitle and place beside it and its points under them; where the page leaves too little
+// room beside the column, the period stands above.
 // The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key
 // where they type one, and each tab keeps its place; where more of a tab lies below the page, the rim says how many
 // lines, as Neovim counts them, the two rows above it fade, and a scrollbar at the right shows how far down the page
@@ -49,7 +49,7 @@
 // terminal blinks, as the first version's blinked, in the accent where the terminal shows many colours: the program
 // writes no frame to blink it, so a session left alone writes nothing and its idle timeout runs out. Where they type
 // nothing, the prompt ends in the site's cursor, and so does the résumé's title, the author's name: the bar in the
-// accent the page, the PDF and the card draw there; where the name stands in the block font, a bar as tall as it and
+// accent the page, the PDF and the card draw there; where the name stands in the name's font, a bar as tall as it and
 // as wide as the font's strokes, as the storyboard of the look drew it. It stands still, where the first version's
 // blinked for half a minute after a key: a blink would need a tick, a count and the head painted again each half
 // second, where a tab is painted once. What a key says, an error among it, stands alone on the prompt's row, as

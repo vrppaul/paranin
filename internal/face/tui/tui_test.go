@@ -196,7 +196,7 @@ func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 	}
 }
 
-// The author's name reads as text where the block font cannot draw it: on a page narrower than its banner, on one
+// The author's name reads as text where the name's font cannot draw it: on a page narrower than its banner, on one
 // too short to show the tab under it, wrapped whole on a page narrower than the name, and where the font has not every
 // letter of it.
 func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
@@ -449,35 +449,39 @@ func TestAPeriodStandsApartFromItsTitle(test *testing.T) {
 	}
 }
 
-// A section of the résumé stands under its title, in the block font where the page has room for it and rows of the
+// A section of the résumé stands under its title, in the titles' font where the page has room for it and rows of the
 // tab under it, as text where it has room for that alone; on a page too short for either, and on another page, a
 // section stands as it is, its title on the status line alone.
 func TestASectionOfTheResumeStandsUnderItsTitle(test *testing.T) {
-	// a page narrower than the project's tab's title, WHY, in the block font, which would show it as text; and a
-	// screen whose page has the rows for the title as text and the tab under it, not for its banner
+	// a page narrower than the project's tab's title, WHY, in the titles' font, which would show it as text; a screen
+	// whose page has the rows for the title as text and the tab under it, not for its banner; and one a row taller,
+	// whose page has them for the banner. A banner is a look, so no case tells it from no title: they read only
+	// whether the title stands as text
 	const (
-		narrowerThanWhy    = 12
-		shorterThanABanner = 17
+		narrowerThanWhy      = 12
+		shorterThanABanner   = 16
+		tallEnoughForABanner = shorterThanABanner + 1
 	)
 	cases := []struct {
-		name   string
-		model  Model
-		title  string
-		titled bool
+		name        string
+		model       Model
+		title       string
+		titleAsText bool
 	}{
-		{name: "the résumé's experience", model: pressed(test, fixtureModel(test, phoneWidth, tallHeight), toExperience()...), title: "Experience", titled: true},
-		{name: "a page too short for the banner", model: pressed(test, fixtureModel(test, commonWidth, shorterThanABanner), toExperience()...), title: "Experience", titled: true},
-		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titled: false},
+		{name: "the résumé's experience", model: pressed(test, fixtureModel(test, phoneWidth, tallHeight), toExperience()...), title: "Experience", titleAsText: true},
+		{name: "a page too short for the banner", model: pressed(test, fixtureModel(test, commonWidth, shorterThanABanner), toExperience()...), title: "Experience", titleAsText: true},
+		{name: "a page tall enough for the banner holds no title as text", model: pressed(test, fixtureModel(test, commonWidth, tallEnoughForABanner), toExperience()...), title: "Experience", titleAsText: false},
+		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titleAsText: false},
 		{
-			name: "a project's page", title: "Why", titled: false,
+			name: "a project's page", title: "Why", titleAsText: false,
 			model: pressed(test, commanded(test, fixtureModel(test, narrowerThanWhy, tallHeight), "e tidy-tool"), "l"),
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			page := aboveTheStatusLine(screenOf(test, testCase.model))
-			if strings.Contains(page, testCase.title) != testCase.titled {
-				test.Errorf("the page =\n%s\nwant the title %q over it: %t", page, testCase.title, testCase.titled)
+			if strings.Contains(page, testCase.title) != testCase.titleAsText {
+				test.Errorf("the page =\n%s\nwant the title %q over it as text: %t", page, testCase.title, testCase.titleAsText)
 			}
 		})
 	}

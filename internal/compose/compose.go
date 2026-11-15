@@ -60,21 +60,29 @@ func projectsWithPages(projects []content.Project) []content.Project {
 	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
 }
 
-// Resume is the résumé as one document: its head, the summary, then its facts, experience, projects, skills,
-// education, languages and the ways to reach the author, each a section under the site's word for it.
+// Resume is the résumé as one document: its head, then five sections, each under the site's word for it, as a
+// reader asks of an author: about them, their experience, their projects, their skills, and how to reach them.
 func Resume(snapshot *content.Snapshot) document.Document {
 	profile, words := snapshot.Profile, snapshot.Words
 	return document.Document{
 		Head: resumeHead(profile, words),
 		Blocks: []document.Block{
-			document.Paragraph{Spans: markedSpans(profile.Summary)},
-			section(words.Text(content.WordFacts), document.Facts{Kind: document.FactsDetails, List: factList(profile.Facts)}),
+			aboutSection(profile, words),
 			experienceSection(profile.Experience, words),
 			projectsSection(profile.Projects, words),
-			skillsSection(profile.SkillGroups, words),
-			educationSection(profile.Education, words),
-			section(words.Text(content.WordLanguages), document.Facts{Kind: document.FactsDetails, List: languageList(profile.Languages)}),
+			skillsSection(profile.SkillGroups, words, languagesSection(profile.Languages, words), educationSection(profile.Education, words)),
 			section(words.Text(content.WordContact), document.Facts{Kind: document.FactsWays, List: ways(profile.Person, profile.Site, words)}),
+		},
+	}
+}
+
+// aboutSection is the section about the author: the summary, then the facts.
+func aboutSection(profile content.Profile, words content.Words) document.Section {
+	return document.Section{
+		Title: textSpans(words.Text(content.WordAbout)),
+		Blocks: []document.Block{
+			document.Paragraph{Spans: markedSpans(profile.Summary)},
+			document.Facts{Kind: document.FactsDetails, List: factList(profile.Facts)},
 		},
 	}
 }
@@ -95,17 +103,16 @@ func Index(snapshot *content.Snapshot) document.Document {
 	}
 	return document.Document{
 		Head: document.Head{
-			Page:         document.Page{Kind: document.PageIndex, Slug: ""},
-			Language:     words.Language(),
-			Greeting:     "",
-			Title:        resume.Title,
-			Subtitle:     nil,
-			Place:        "",
-			Tags:         nil,
-			Lead:         resume.Lead,
-			Repository:   nil,
-			Description:  nil,
-			OpeningTitle: "",
+			Page:        document.Page{Kind: document.PageIndex, Slug: ""},
+			Language:    words.Language(),
+			Greeting:    "",
+			Title:       resume.Title,
+			Subtitle:    nil,
+			Place:       "",
+			Tags:        nil,
+			Lead:        resume.Lead,
+			Repository:  nil,
+			Description: nil,
 		},
 		Blocks: blocks,
 	}
@@ -122,17 +129,16 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	headline := markedSpans(person.Headline)
 	return document.Head{
-		Page:         resumePage(),
-		Language:     words.Language(),
-		Greeting:     words.Text(content.WordGreeting),
-		Title:        markedSpans(person.Name),
-		Subtitle:     markedSpans(person.Title),
-		Place:        person.Location,
-		Tags:         nil,
-		Lead:         headline,
-		Repository:   nil,
-		Description:  headline,
-		OpeningTitle: words.Text(content.WordAbout),
+		Page:        resumePage(),
+		Language:    words.Language(),
+		Greeting:    words.Text(content.WordGreeting),
+		Title:       markedSpans(person.Name),
+		Subtitle:    markedSpans(person.Title),
+		Place:       person.Location,
+		Tags:        nil,
+		Lead:        headline,
+		Repository:  nil,
+		Description: headline,
 	}
 }
 
@@ -216,17 +222,16 @@ func projectDocument(project content.Project, author content.Person, words conte
 func projectHead(project content.Project, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
-		Page:         projectPage(project),
-		Language:     words.Language(),
-		Greeting:     "",
-		Title:        markedSpans(project.Name),
-		Subtitle:     markedSpans(project.Tagline),
-		Place:        "",
-		Tags:         projectTags(project),
-		Lead:         description,
-		Repository:   projectRepository(project, words),
-		Description:  description,
-		OpeningTitle: "",
+		Page:        projectPage(project),
+		Language:    words.Language(),
+		Greeting:    "",
+		Title:       markedSpans(project.Name),
+		Subtitle:    markedSpans(project.Tagline),
+		Place:       "",
+		Tags:        projectTags(project),
+		Lead:        description,
+		Repository:  projectRepository(project, words),
+		Description: description,
 	}
 }
 
@@ -264,9 +269,10 @@ func installFacts(project content.Project, words content.Words) []document.Fact 
 	return []document.Fact{{Label: words.Text(content.WordInstall), Value: []document.Span{document.Code{Text: project.Install}}}}
 }
 
-// skillsSection is a section of each group of skills, each a table of a skill, how long, and where it was proven.
-func skillsSection(groups []content.SkillGroup, words content.Words) document.Section {
-	sections := make([]document.Block, 0, len(groups))
+// skillsSection is what the author can do: a section of each group of skills, each a table of a skill, how long, and
+// where it was proven; then the sections handed after them.
+func skillsSection(groups []content.SkillGroup, words content.Words, after ...document.Block) document.Section {
+	sections := make([]document.Block, 0, len(groups)+len(after))
 	for _, group := range groups {
 		rows := make([]document.Row, 0, len(group.Skills))
 		for _, skill := range group.Skills {
@@ -275,7 +281,12 @@ func skillsSection(groups []content.SkillGroup, words content.Words) document.Se
 		}
 		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{document.Table{Rows: rows}}})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Blocks: sections}
+	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Blocks: append(sections, after...)}
+}
+
+// languagesSection is the languages the author speaks, each with how well.
+func languagesSection(languages []content.Language, words content.Words) document.Section {
+	return section(words.Text(content.WordLanguages), document.Facts{Kind: document.FactsDetails, List: languageList(languages)})
 }
 
 // listedSkill is a skill as the documents hold it, in the résumé's table and in the list of skills alike: its name,

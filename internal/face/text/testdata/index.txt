@@ -6,9 +6,9 @@ NAME
 DESCRIPTION
        Builds small tools that last.
 
+ABOUT
        Writes software for people who read it.
 
-FACTS
        experience   5 years
        available    [notice period]
        focus        Small tools for people who live in the terminal, written
@@ -42,13 +42,13 @@ SKILLS
        Tools
               - Docker — on the side — Northwind
 
-EDUCATION
-       A University — Computer Science and the Engineering of Systems That
-       Last
-       09/2016 – [20XX]
+       Languages
+              English   fluent
 
-LANGUAGES
-       English   fluent
+       Education
+              A University — Computer Science and the Engineering of Systems
+              That Last
+              09/2016 – [20XX]
 
 CONTACT
        mail     mira@example.test

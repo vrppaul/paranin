@@ -40,7 +40,7 @@ const (
 func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, _ := openTerminal(test, clientSession(test, address, "reader"))
-	if read := readUntil(test, output, "languages"); !strings.Contains(read, "experience") {
+	if read := readUntil(test, output, "contact"); !strings.Contains(read, "experience") {
 		test.Errorf("the screen = %q, want the places of the résumé's tabs", read)
 	}
 }
@@ -52,7 +52,7 @@ func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 	lines := make(chan string, logLines)
 	server, address := servingServer(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
 	output, _ := openTerminal(test, clientSession(test, address, "reader"))
-	readUntil(test, output, "languages")
+	readUntil(test, output, "contact")
 	ended, end := context.WithCancel(context.Background())
 	end()
 	if err := server.Shutdown(ended); err != nil {
@@ -69,7 +69,7 @@ func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, input := openTerminal(test, clientSession(test, address, "reader"))
-	readUntil(test, output, "languages")
+	readUntil(test, output, "contact")
 	stops := make(chan os.Signal, 1)
 	signal.Notify(stops, syscall.SIGTERM)
 	defer signal.Stop(stops)
@@ -87,7 +87,7 @@ func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 func TestASessionOpensTheHealthReport(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, input := openTerminal(test, clientSession(test, address, "reader"))
-	readUntil(test, output, "languages")
+	readUntil(test, output, "contact")
 	if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
 		test.Fatalf("type :checkhealth = %v, want the session open", err)
 	}

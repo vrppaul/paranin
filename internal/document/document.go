@@ -12,8 +12,8 @@ type Document struct {
 
 // Head is what a face shows first: the page the document is, the language it is written in, its title, a subtitle
 // and the place beside it, what a project is made of, a lead and where a project's code lives, which every face
-// shows; the page's description; and, for a face that has a use for them, a greeting before the title and the title
-// of its opening. The ways to reach the author are facts of their own kind, which a face places where it chooses.
+// shows; the page's description; and, for a face that has a use for it, a greeting before the title. The ways to
+// reach the author are facts of their own kind, which a face places where it chooses.
 type Head struct {
 	Page Page
 	// Language is a tag of BCP 47, as HTML's lang and Typst's text take it: "en"
@@ -34,9 +34,6 @@ type Head struct {
 	// it is shared. A face writes it as plain text; none where no browser reads the page (the index, the hidden
 	// pages) or the content gives none
 	Description []Span
-	// OpeningTitle is the title, in the site's words, of the head and the blocks before the first section, for a face
-	// that parts the document into parts it names, as the TUI does; none where the head's title names them
-	OpeningTitle string
 }
 
 // Fact is a label and its value: a fact of the résumé, a way to reach its author, a detail of a project.

@@ -163,25 +163,30 @@ and web routes.
   CV) left the head (amended 2026-11-15, the owner's word): they are facts
   of their own kind, in the résumé's last section under the site's word
   for contact, which a face finds by that kind and shows where it chooses.
-  Two more are the site's words, which a face shows only where it has a use
-  for them, so `Phrases` leaves them out: a greeting before the title, and
-  the title of the opening, what stands before the first section, for a face
-  that names its parts. The résumé carries both; the TUI shows both.
+  One more is the site's word, which a face shows only where it has a use
+  for it, so `Phrases` leaves it out: a greeting before the title. The
+  résumé carries it; the TUI shows it.
+  The résumé has five sections, as a reader asks of its author (amended
+  2026-11-15, the owner's word, after the TUI's storyboard E): about them,
+  the summary and the facts; their experience; their projects; their
+  skills, the groups and then the languages and the education, each a
+  section nested in it; and how to reach them. Every face follows them.
   The TUI's opening shows three phrases by its form, as neofetch prints a
   system (amended 2026-11-06, with the look the owner chose): the name in
   the block font where the page has room for it and the font draws every
   letter of it, so a search finds the name only where it reads as text;
-  the résumé's first section, where it holds facts alone, as a brief
-  beside the name, without its title or a tab of its own; and the first
-  way to reach the author, the mail, at the brief's head without its
-  label, the other ways on the contact section's tab alone. Under them a
-  career's line lays out the roles, the entries of a role's kind in any of
-  its top-level sections, and the lead comes last. The brief is found by
-  its place in the document, the roles and the ways by their kind
-  (amended 2026-11-15, the owner's word). Each section of the résumé
-  after the opening stands under its title, in a smaller block font where
-  the page has room for it, so a search finds a section's title on its
-  page only where it reads as text.
+  the résumé's first section, where it holds facts, taken into the first
+  tab, which its title names, its facts as a brief beside the name and
+  what else it holds under the lead; and the first way to reach the
+  author, the mail, at the brief's head without its label, the other ways
+  on the contact section's tab alone. Under them a career's line lays out
+  the roles, the entries of a role's kind in any of its top-level
+  sections, and the lead comes last. The brief is found by its place in
+  the document, the roles and the ways by their kind (amended 2026-11-15,
+  the owner's word). Each section of the résumé after the opening stands
+  under its title, in a smaller block font where the page has room for
+  it, so a search finds a section's title on its page only where it reads
+  as text.
   A project's page opens as glow draws its README (amended 2026-11-07,
   with the look the owner chose): its name in that smaller font where the
   page has room for it, so a search finds the name on its page only where
@@ -247,16 +252,17 @@ and web routes.
   site's word catalogue with them, since `compose` writes the first word of
   the site. The head's page lands with `routes`, its language (the tag of
   the words' catalogue, which a page's `lang` names) and its description
-  with `face/html`, the CV among the ways with `face/print`; a section's anchor and
-  a link's format and anchor with the first link that names one; project
-  pages and the index with `face/text`, the first face to serve them; the
-  extras with `face/tui`, and the head's greeting and opening title with its
+  with `face/html`, the CV among the ways with `face/print`; a section's
+  anchor and a link's format and anchor with the first link that names
+  one; project pages and the index with `face/text`, the first face to
+  serve them; the extras with `face/tui`, and the head's greeting with its
   redesign (2026-11-06), a project's tags and repository with its page
-  there (2026-11-07); the records for JSON-LD, the person's and a
-  project's, with `face/html`, and the sitemap's dates with `face/feed`,
-  the `dateModified` of the résumé's `ProfilePage` with them; a
-  widget with the first island (step 6), since `face/html` came without
-  one; the posts' blocks and spans with the blog (D18).
+  there (2026-11-07), the entry's and the facts' kinds and the five
+  sections with the owner's word (2026-11-15); the records for JSON-LD,
+  the person's and a project's, with `face/html`, and the sitemap's dates
+  with `face/feed`, the `dateModified` of the résumé's `ProfilePage` with
+  them; a widget with the first island (step 6), since `face/html` came
+  without one; the posts' blocks and spans with the blog (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the

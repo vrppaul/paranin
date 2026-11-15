@@ -127,8 +127,8 @@ func TestThePlacesListWhatIsTyped(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "nothing typed", text: "", holds: []string{"experience", "languages", "help"}, lacks: []string{"about", "tidy-tool"}},
-		{name: "the start of two tabs", text: "e", holds: []string{"experience", "education"}, lacks: []string{"projects", "help"}},
+		{name: "nothing typed", text: "", holds: []string{"experience", "contact", "help"}, lacks: []string{"about", "tidy-tool"}},
+		{name: "the start of a tab", text: "e", holds: []string{"experience"}, lacks: []string{"projects", "help"}},
 		{name: "the start of a project's page", text: "ti", holds: []string{"tidy-tool"}, lacks: []string{"experience"}},
 		{name: "the start of nothing", text: "x", holds: []string{"↵ run", "esc cancel"}, lacks: []string{"experience"}},
 	}
@@ -260,10 +260,10 @@ func TestEnterGoesToThePlaceTabChose(test *testing.T) {
 
 // Tab goes on through the places listed and Shift+Tab back, writing the one chosen on the prompt; past either end the
 // prompt holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
-// tab the fixture lists six other tabs and help.
+// tab the fixture lists four other tabs and help.
 func TestTabGoesRoundThePlaces(test *testing.T) {
 	// the presses of Tab that reach the last place: each other tab, then help
-	const lastPlace = 7
+	const lastPlace = 5
 	cases := []struct {
 		name string
 		keys []string

@@ -6,10 +6,9 @@ import (
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
-// résumé or of the index, the name of what stands before its first section and the greeting before the author's
-// name, the label of a way to reach the author or of a detail of a project, the end of what still goes on, how long
-// a skill was used where it was used on the side or is still being learnt, the title of the TUI's health report, or
-// the words of the page's choice of theme.
+// résumé or of the index, the greeting before the author's name, the label of a way to reach the author or of a
+// detail of a project, the end of what still goes on, how long a skill was used where it was used on the side or is
+// still being learnt, the title of the TUI's health report, or the words of the page's choice of theme.
 type Word int
 
 const (
@@ -17,7 +16,6 @@ const (
 	_ Word = iota
 	WordAbout
 	WordGreeting
-	WordFacts
 	WordExperience
 	WordProjects
 	WordSkills
@@ -45,7 +43,6 @@ func wordKeys() map[Word]string {
 	return map[Word]string{
 		WordAbout:      "about",
 		WordGreeting:   "greeting",
-		WordFacts:      "facts",
 		WordExperience: "experience",
 		WordProjects:   "projects",
 		WordSkills:     "skills",

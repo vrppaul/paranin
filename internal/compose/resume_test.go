@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"testing"
@@ -65,18 +66,42 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 	}
 }
 
-// The résumé's parts stand in one order, decided once here, which every face follows: the summary, then each
-// section under the site's word for it.
+// The résumé's parts stand in one order, decided once here, which every face follows: five sections, each under the
+// site's word for it, the summary and the facts in the first; and in the skills, after the groups, the languages and
+// the education.
 func TestTheResumeKeepsOneOrder(test *testing.T) {
-	blocks := Resume(fixtures.LoadedContent(test)).Blocks
-	as[document.Paragraph](test, blocks[0])
-	got := []string{}
-	for _, block := range blocks[1:] {
-		got = append(got, titleOf(test, as[document.Section](test, block)))
+	resume := Resume(fixtures.LoadedContent(test))
+	skills := sectionTitled(test, resume, "Skills").Blocks
+	cases := []struct {
+		name   string
+		blocks []document.Block
+		want   []string
+	}{
+		{name: "the sections", blocks: resume.Blocks, want: []string{"About", "Experience", "Projects", "Skills", "Contact"}},
+		{name: "the skills' last parts", blocks: skills[len(skills)-2:], want: []string{"Languages", "Education"}},
 	}
-	want := []string{"Facts", "Experience", "Projects", "Skills", "Education", "Languages", "Contact"}
-	if !slices.Equal(got, want) {
-		test.Errorf("sections = %q, want %q", got, want)
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			got := []string{}
+			for _, block := range testCase.blocks {
+				got = append(got, titleOf(test, as[document.Section](test, block)))
+			}
+			if !slices.Equal(got, testCase.want) {
+				test.Errorf("sections = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
+// The résumé's first section, about the author, holds the summary and then the facts, and nothing more.
+func TestTheAboutSectionHoldsTheSummaryAndTheFacts(test *testing.T) {
+	about := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "About").Blocks
+	got := make([]string, 0, len(about))
+	for _, block := range about {
+		got = append(got, fmt.Sprintf("%T", block))
+	}
+	if want := []string{"document.Paragraph", "document.Facts"}; !slices.Equal(got, want) {
+		test.Errorf("the about section holds %q, want %q", got, want)
 	}
 }
 
@@ -346,27 +371,21 @@ func TestEachPageHasADescription(test *testing.T) {
 	}
 }
 
-// The résumé's head greets the reader before the author's name and names what stands before its first section, in
-// the site's words; a project's page does neither, its title naming its opening.
-func TestTheResumeHeadGreetsTheReaderAndNamesItsOpening(test *testing.T) {
+// The résumé's head greets the reader before the author's name, in the site's words; a project's page does not.
+func TestTheResumeHeadGreetsTheReader(test *testing.T) {
 	documents := Documents(fixtures.LoadedContent(test))
 	cases := []struct {
-		name             string
-		page             document.Page
-		wantGreeting     string
-		wantOpeningTitle string
+		name string
+		page document.Page
+		want string
 	}{
-		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, wantGreeting: "Hello, my name is", wantOpeningTitle: "About"},
-		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, wantGreeting: "", wantOpeningTitle: ""},
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "Hello, my name is"},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			head := fixtures.DocumentOf(test, documents, testCase.page).Head
-			if head.Greeting != testCase.wantGreeting {
-				test.Errorf("the greeting of %+v = %q, want %q", testCase.page, head.Greeting, testCase.wantGreeting)
-			}
-			if head.OpeningTitle != testCase.wantOpeningTitle {
-				test.Errorf("the opening's title of %+v = %q, want %q", testCase.page, head.OpeningTitle, testCase.wantOpeningTitle)
+			if got := fixtures.DocumentOf(test, documents, testCase.page).Head.Greeting; got != testCase.want {
+				test.Errorf("the greeting of %+v = %q, want %q", testCase.page, got, testCase.want)
 			}
 		})
 	}
@@ -442,15 +461,30 @@ func factLabelled(test *testing.T, facts []document.Fact, label string) document
 	return document.Fact{Label: label, Value: nil}
 }
 
-// sectionTitled is a document's section under a title, wherever compose put it.
+// sectionTitled is a document's section under a title, wherever compose put it, nested in another or not.
 func sectionTitled(test *testing.T, composed document.Document, title string) document.Section {
-	for _, block := range composed.Blocks {
-		if section, isSection := block.(document.Section); isSection && titleOf(test, section) == title {
-			return section
-		}
+	if section, found := sectionIn(test, composed.Blocks, title); found {
+		return section
 	}
 	test.Fatalf("the page %+v has no section %q", composed.Head.Page, title)
 	return document.Section{Title: nil, Blocks: nil}
+}
+
+// sectionIn is the section under a title among blocks or the sections nested in them, and whether there is one.
+func sectionIn(test *testing.T, blocks []document.Block, title string) (document.Section, bool) {
+	for _, block := range blocks {
+		section, isSection := block.(document.Section)
+		if !isSection {
+			continue
+		}
+		if titleOf(test, section) == title {
+			return section, true
+		}
+		if nested, found := sectionIn(test, section.Blocks, title); found {
+			return nested, true
+		}
+	}
+	return document.Section{Title: nil, Blocks: nil}, false
 }
 
 func titleOf(test *testing.T, section document.Section) string {

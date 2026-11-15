@@ -4,9 +4,9 @@ Software Engineer · Brno, Czechia
 
 > Builds small tools that last.
 
-Writes software for people who read it.
+## About
 
-## Facts
+Writes software for people who read it.
 
 - experience: 5 years
 - available: [notice period]
@@ -52,15 +52,15 @@ A tool that **tidies files**.
 
 - Docker — on the side — Northwind
 
-## Education
-
-### A University — Computer Science and the Engineering of Systems That Last
-
-09/2016 – [20XX]
-
-## Languages
+### Languages
 
 - English: fluent
+
+### Education
+
+#### A University — Computer Science and the Engineering of Systems That Last
+
+09/2016 – [20XX]
 
 ## Contact
 

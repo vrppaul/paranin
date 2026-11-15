@@ -208,7 +208,7 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 	}{
 		{name: "a word left empty", original: "experience: Experience", replacement: `experience: ""`, want: "i18n/en.yaml: experience is empty"},
 		{name: "a word left out", original: "experience: Experience\n", replacement: "", want: "i18n/en.yaml: experience is empty"},
-		{name: "a word the site has not", original: "facts: Facts", replacement: "facts: Facts\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
+		{name: "a word the site has not", original: "about: About", replacement: "about: About\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

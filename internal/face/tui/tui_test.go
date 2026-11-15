@@ -138,9 +138,9 @@ func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 	}
 }
 
-// Only the résumé's first section, where it holds facts alone, joins the first tab as its brief: one that holds more,
-// or no fact, one after another section, and one after a first section of facts keep a tab of their own.
-func TestOnlyAFirstSectionOfFactsAloneJoinsTheFirstTab(test *testing.T) {
+// Only the résumé's first section, where it holds facts, joins the first tab, its facts as the brief: one that holds
+// no fact, one after another section, and one after a first section of facts keep a tab of their own.
+func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
 	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	paragraph := document.Paragraph{Spans: textOf("the door")}
 	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}
@@ -156,9 +156,9 @@ func TestOnlyAFirstSectionOfFactsAloneJoinsTheFirstTab(test *testing.T) {
 			listed: true,
 		},
 		{
-			name:   "facts beside a paragraph, first",
-			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts, paragraph}}},
-			listed: true,
+			name:   "facts after a paragraph, first",
+			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{paragraph, facts}}},
+			listed: false,
 		},
 		{
 			name:   "facts alone after another section",
@@ -176,6 +176,33 @@ func TestOnlyAFirstSectionOfFactsAloneJoinsTheFirstTab(test *testing.T) {
 			model := handResume(test, "home", commonWidth, commonHeight, testCase.blocks...)
 			if places := footerLine(screenOf(test, model), footerPlaces); strings.Contains(places, "facts") != testCase.listed {
 				test.Errorf("the places = %q, want a tab of the facts listed: %t", places, testCase.listed)
+			}
+		})
+	}
+}
+
+// The first section the first tab takes in names the tab, and what it holds beside its facts stands on the tab
+// under the career's line; where none joins, the tab is named by the author.
+func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
+	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	paragraph := document.Paragraph{Spans: textOf("the door")}
+	cases := []struct {
+		name       string
+		blocks     []document.Block
+		title      string
+		doorInside bool
+	}{
+		{name: "a section of facts", blocks: []document.Block{document.Section{Title: textOf("Brief"), Blocks: []document.Block{paragraph, facts}}}, title: "Brief", doorInside: true},
+		{name: "no section of facts", blocks: []document.Block{document.Section{Title: textOf("Work"), Blocks: []document.Block{paragraph}}}, title: "home", doorInside: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, handResume(test, "home", commonWidth, tallHeight, testCase.blocks...))
+			if status := footerLine(screen, footerStatus); !strings.HasPrefix(status, testCase.title) {
+				test.Errorf("the status line = %q, want the first tab named %q", status, testCase.title)
+			}
+			if inside := strings.Contains(aboveTheStatusLine(screen), document.PlainText(paragraph.Spans)); inside != testCase.doorInside {
+				test.Errorf("the first tab =\n%s\nholds the section's paragraph: %t, want %t", screen, inside, testCase.doorInside)
 			}
 		})
 	}

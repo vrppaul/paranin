@@ -56,9 +56,9 @@ type tabBody interface {
 	tabBody()
 }
 
-// briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts alone: the
-// head, beside it those facts as the brief, in place of a tab of their own, headed by the address, the first way to
-// reach the author; the roles for the career's line under them, and the blocks before the first section.
+// briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts: the head,
+// beside it those facts as the brief, headed by the address, the first way to reach the author; the roles for the
+// career's line under them; then the blocks before the first section and those the section holds beside its facts.
 type briefOpening struct {
 	head    document.Head
 	brief   []document.Fact
@@ -119,8 +119,8 @@ func (titledSection) tabBody() {}
 func (platedSection) tabBody() {}
 func (plainSection) tabBody()  {}
 
-// tabsOf parts a document into its tabs: the head with what stands before the first section, named by the head's
-// opening title, or by its title where it has none; then each section the opening leaves, named by its title.
+// tabsOf parts a document into its tabs: the head with what stands before the first section, the opening; then each
+// section the opening leaves, named by its title.
 func tabsOf(composed document.Document) []tab {
 	openingBlocks, sections := []document.Block{}, []document.Section{}
 	for _, block := range composed.Blocks {
@@ -130,41 +130,43 @@ func tabsOf(composed document.Document) []tab {
 			openingBlocks = append(openingBlocks, block)
 		}
 	}
-	body, sectionsLeft := openingBody(composed.Head, openingBlocks, sections)
-	tabs := []tab{{title: openingTitle(composed.Head), tally: checkTally(openingBlocks), body: body}}
-	for _, section := range sectionsLeft {
+	first := openingOf(composed.Head, openingBlocks, sections)
+	tabs := []tab{{title: first.title, tally: checkTally(openingBlocks), body: first.body}}
+	for _, section := range first.sectionsLeft {
 		tabs = append(tabs, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), body: sectionBody(composed.Head.Page.Kind, section)})
 	}
 	return tabs
 }
 
-// openingTitle is what the opening tab is named: the head's opening title, or its title where it has none.
-func openingTitle(head document.Head) string {
-	if head.OpeningTitle == "" {
-		return document.PlainText(head.Title)
-	}
-	return head.OpeningTitle
+// opening is a document's first tab before it is laid out: what names it, what it shows, and the sections it leaves
+// to tabs of their own.
+type opening struct {
+	title        string
+	body         tabBody
+	sectionsLeft []document.Section
 }
 
-// openingBody is what a document's opening shows, and the sections it leaves to tabs of their own: on the résumé
-// whose first section holds facts alone, the head beside them, that section taken; on a project's page, the head as
-// a README; on the health report, its title over its checks counted; on the list of skills, its title over the
-// skills; else the head as it is.
-func openingBody(head document.Head, blocks []document.Block, sections []document.Section) (tabBody, []document.Section) {
+// openingOf is a document's first tab, named by the head's title: on the résumé whose first section holds facts, the
+// head beside them as neofetch prints a system, that section taken in and naming the tab; on a project's page, the
+// head as a README; on the health report, its title over its checks counted; on the list of skills, its title over
+// the skills; else the head as it is.
+func openingOf(head document.Head, blocks []document.Block, sections []document.Section) opening {
+	title := document.PlainText(head.Title)
 	switch head.Page.Kind {
 	case document.PageResume:
-		if brief, alone := briefOf(sections); alone {
-			return briefOpening{head: head, brief: brief, address: addressOf(sections), career: careerOf(sections), blocks: blocks}, sections[1:]
+		if brief, rest, takenIn := briefOf(sections); takenIn {
+			body := briefOpening{head: head, brief: brief, address: addressOf(sections), career: careerOf(sections), blocks: slices.Concat(blocks, rest)}
+			return opening{title: document.PlainText(sections[0].Title), body: body, sectionsLeft: sections[1:]}
 		}
 	case document.PageProject:
-		return readmeOpening{head: head, blocks: blocks}, sections
+		return opening{title: title, body: readmeOpening{head: head, blocks: blocks}, sectionsLeft: sections}
 	case document.PageHealth:
-		return reportOpening{head: head, blocks: blocks}, sections
+		return opening{title: title, body: reportOpening{head: head, blocks: blocks}, sectionsLeft: sections}
 	case document.PageSkills:
-		return skillsOpening{head: head, blocks: blocks}, sections
+		return opening{title: title, body: skillsOpening{head: head, blocks: blocks}, sectionsLeft: sections}
 	case document.PageNone, document.PageIndex:
 	}
-	return plainOpening{head: head, blocks: blocks}, sections
+	return opening{title: title, body: plainOpening{head: head, blocks: blocks}, sectionsLeft: sections}
 }
 
 // sectionBody is what a section's tab shows: on the résumé the section under its title, on a project's page under
@@ -180,14 +182,19 @@ func sectionBody(kind document.PageKind, section document.Section) tabBody {
 	return plainSection{blocks: section.Blocks}
 }
 
-// briefOf is the facts of the first of sections, and whether it holds them alone: one block of facts, at least one
-// fact, and nothing else.
-func briefOf(sections []document.Section) ([]document.Fact, bool) {
-	if len(sections) == 0 || len(sections[0].Blocks) != 1 {
-		return nil, false
+// briefOf is the facts of the first of sections, its first block of facts that holds any; the blocks it holds beside
+// them; and whether it holds such facts at all.
+func briefOf(sections []document.Section) ([]document.Fact, []document.Block, bool) {
+	if len(sections) == 0 {
+		return nil, nil, false
 	}
-	facts, isFacts := sections[0].Blocks[0].(document.Facts)
-	return facts.List, isFacts && len(facts.List) > 0
+	blocks := sections[0].Blocks
+	for index, block := range blocks {
+		if facts, isFacts := block.(document.Facts); isFacts && len(facts.List) > 0 {
+			return facts.List, slices.Concat(blocks[:index], blocks[index+1:]), true
+		}
+	}
+	return nil, nil, false
 }
 
 // careerOf is the roles a document's sections hold, the entries whose kind is a role, in order.

@@ -1,18 +1,17 @@
 # The site's own words in English, which every face shows beside the facts: the titles of the résumé's
-# sections and of the index's, the name of what stands before the first section and the greeting before the
-# author's name, the labels of the ways to reach the author and of a project's details, the end of what still goes
-# on, how long a skill was used where the profile says `side` or `learning`, the title of the TUI's health report,
-# and the page's choice of theme, its label and the two themes.
+# sections and of the index's, the greeting before the author's name, the labels of the ways to reach the author
+# and of a project's details, the end of what still goes on, how long a skill was used where the profile says
+# `side` or `learning`, the title of the TUI's health report, and the page's choice of theme, its label and the
+# two themes.
 # `paranin check content` requires every one of them.
 
 about: About
 greeting: Hi, my name is
-facts: Facts
 experience: Experience
 projects: Projects
 skills: Skills
 education: Education
-languages: Languages
+languages: Spoken languages
 contact: Contact
 mail: mail
 ssh: ssh

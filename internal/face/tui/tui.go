@@ -3,17 +3,17 @@
 // parts it from the page, a panel holding the prompt and the places it goes to, and the status line, which says where
 // the reader is: the tab's title, its checks, the ruler. On a screen too short to spare rows for nothing, the footer
 // is the prompt, the places and the status line alone. The head of a document and what stands before its first section
-// are the first tab, named by the head's opening title, or by its title where it has none; each section after them is
-// a tab of its own, titled as the document titles it. The head shows its greeting above its title, where it has one.
-// Where the résumé's first section holds facts alone, they join the first tab as a brief, as neofetch prints a
-// system's: the greeting and the name stand in a column, beside the brief where the page has room for both and above
-// it where not. The name stands in the first version's block font where the font draws every letter of it and the
-// page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text where not, its
-// colours going from the accent to the host's. The brief opens with the first way to reach the author, the address
-// in two colours parted at its at, then the subtitle and the place, the facts, each by its label, then a row of the
-// design's colours; the other ways stand on the contact section's tab alone. Under them the career's line lays each
-// role of the top-level sections, along the months from the first role's start, or the day the session opened where
-// that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
+// are the first tab, named by the head's title; each section after them is a tab of its own, titled as the document
+// titles it. The head shows its greeting above its title, where it has one. Where the résumé's first section holds
+// facts, the first tab takes it in, its title naming the tab, its facts the brief and the rest under the lead. As
+// neofetch prints a system, the greeting and the name stand in a column, beside the brief where the page has room for
+// both and above it where not. The name stands in the first version's block font where the font draws every letter of
+// it and the page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text
+// where not, its colours going from the accent to the host's. The brief opens with the first way to reach the author,
+// the address in two colours parted at its at, then the subtitle and the place, the facts, each by its label, then a
+// row of the design's colours; the other ways stand on the contact section's tab alone. Under them the career's line
+// lays each role of the top-level sections, along the months from the first role's start, or the day the session opened
+// where that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
 // running to the site's word for the present, each company over its span; the lead comes last. Each section of the
 // résumé after it stands under its title, in a block font two rows tall where the name's is three, in the name's
 // colours, where it fits as the name does, as text in them where that fits, and with none where neither does. A role or

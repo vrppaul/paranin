@@ -11,10 +11,10 @@
 // page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text where not, its
 // colours going from the accent to the host's. The brief opens with the first way to reach the author, the address
 // in two colours parted at its at, then the subtitle and the place, the facts and the other ways, each by its label,
-// then a row of the design's colours. Under them the career's line lays each role, an entry of the first section
-// that holds any, along the months from the first role's start, or the day the session opened where that comes first,
-// to the day or the last month a role reaches past it, the one still held in the accent and running to the site's
-// word for the present, each company over its span; the lead comes last. Each section of the résumé after it stands
+// then a row of the design's colours. Under them the career's line lays each role of the top-level sections, along
+// the months from the first role's start, or the day the session opened where that comes first, to the day or the
+// last month a role reaches past it, the one still held in the accent and running to the site's word for the
+// present, each company over its span; the lead comes last. Each section of the résumé after it stands
 // under its title, in a block font two rows tall where the name's is three, in the name's colours, where it fits as
 // the name does, as text in them where that fits, and with none where neither does. A role or a school stands with
 // its period in the column of the periods of its section, as wide as the widest of them, the one still going on in

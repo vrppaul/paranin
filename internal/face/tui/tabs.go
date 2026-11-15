@@ -188,26 +188,17 @@ func briefOf(sections []document.Section) ([]document.Fact, bool) {
 	return facts.List, isFacts && len(facts.List) > 0
 }
 
-// careerOf is the roles a document's sections hold: the entries of the first section that holds any. An entry is a
-// role or a school, and the résumé lists its roles before its schools.
+// careerOf is the roles a document's sections hold, the entries whose kind is a role, in order.
 func careerOf(sections []document.Section) []document.Entry {
+	roles := []document.Entry{}
 	for _, section := range sections {
-		if entries := entriesIn(section.Blocks); len(entries) > 0 {
-			return entries
+		for _, block := range section.Blocks {
+			if entry, isEntry := block.(document.Entry); isEntry && entry.Kind == document.EntryRole {
+				roles = append(roles, entry)
+			}
 		}
 	}
-	return nil
-}
-
-// entriesIn are the entries among blocks, in order.
-func entriesIn(blocks []document.Block) []document.Entry {
-	entries := []document.Entry{}
-	for _, block := range blocks {
-		if entry, isEntry := block.(document.Entry); isEntry {
-			entries = append(entries, entry)
-		}
-	}
-	return entries
+	return roles
 }
 
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address

@@ -97,6 +97,30 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 	}
 }
 
+// Each entry of the résumé says what its time was spent on: an entry of the experience is a role, one of the
+// education a school, so a face takes either by its kind, not by the section it stands in.
+func TestEachEntryTellsARoleFromASchool(test *testing.T) {
+	resume := Resume(fixtures.LoadedContent(test))
+	kindNames := map[document.EntryKind]string{0: "of no kind", document.EntryRole: "a role", document.EntrySchool: "a school"}
+	cases := []struct {
+		name    string
+		section string
+		want    document.EntryKind
+	}{
+		{name: "a role", section: "Experience", want: document.EntryRole},
+		{name: "a school", section: "Education", want: document.EntrySchool},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, block := range sectionTitled(test, resume, testCase.section).Blocks {
+				if got := as[document.Entry](test, block).Kind; got != testCase.want {
+					test.Errorf("an entry of %q is %s, want %s", testCase.section, kindNames[got], kindNames[testCase.want])
+				}
+			}
+		})
+	}
+}
+
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {

@@ -151,6 +151,7 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 	entries := make([]document.Block, 0, len(roles))
 	for _, role := range roles {
 		entries = append(entries, document.Entry{
+			Kind:     document.EntryRole,
 			Period:   periodOf(role.Start, role.End, words),
 			Title:    markedSpans(role.Company),
 			Subtitle: markedSpans(role.Title),
@@ -165,6 +166,7 @@ func educationSection(schools []content.School, words content.Words) document.Se
 	entries := make([]document.Block, 0, len(schools))
 	for _, school := range schools {
 		entries = append(entries, document.Entry{
+			Kind:     document.EntrySchool,
 			Period:   periodOf(school.Start, school.End, words),
 			Title:    markedSpans(school.Name),
 			Subtitle: markedSpans(school.Field),

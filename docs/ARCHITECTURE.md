@@ -173,12 +173,12 @@ and web routes.
   beside the name, without its title or a tab of its own; and the first
   way to reach the author, the mail, at the brief's head without its
   label, the other ways after the facts. Under them a career's line lays
-  out the roles, the entries of the first section that holds any, and the
-  lead comes last. Both the brief and the roles are found by their place
-  in the document, since an entry does not say whether it is a role or a
-  school (TODO). Each section of the résumé after the opening stands under
-  its title, in a smaller block font where the page has room for it, so a
-  search finds a section's title on its page only where it reads as text.
+  out the roles, the entries of a role's kind in any of its top-level
+  sections, and the lead comes last. The brief is found by its place in the document, the
+  roles by their kind (amended 2026-11-15, the owner's word). Each section
+  of the résumé after the opening stands under its title, in a smaller
+  block font where the page has room for it, so a search finds a section's
+  title on its page only where it reads as text.
   A project's page opens as glow draws its README (amended 2026-11-07,
   with the look the owner chose): its name in that smaller font where the
   page has room for it, so a search finds the name on its page only where
@@ -189,9 +189,9 @@ and web routes.
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a
     paragraph, a table (each skill group is a section holding one), facts
-    (labels and their values), an entry (a period, a title, a subtitle, a
-    place and its points: a role, a school) and a card (a title, a subtitle,
-    a tag, a summary, its facts and its page: a project);
+    (labels and their values), an entry (its kind, role or school; a
+    period, a title, a subtitle, a place and its points) and a card (a
+    title, a subtitle, a tag, a summary, its facts and its page: a project);
   - the index's: contents, the pages a document leads to, each by its title
     and a line on what it is, which `llms.txt` lists;
   - the health report's: checks, a group of them under its name, each check

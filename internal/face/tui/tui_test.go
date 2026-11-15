@@ -87,12 +87,12 @@ func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {
 	}{
 		{
 			name:  "a role that starts after the day",
-			role:  document.Entry{Period: document.Period{Start: knownMonth(2027, time.January), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Futurewind")},
+			role:  document.Entry{Kind: document.EntryRole, Period: document.Period{Start: knownMonth(2027, time.January), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Futurewind")},
 			width: commonWidth, holds: "2027",
 		},
 		{
 			name:  "a word for the present as wide as the page",
-			role:  document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: strings.Repeat("now", presentWidth/len("now"))}}, Title: textOf("Northwind")},
+			role:  document.Entry{Kind: document.EntryRole, Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: strings.Repeat("now", presentWidth/len("now"))}}, Title: textOf("Northwind")},
 			width: presentWidth, holds: "5 years",
 		},
 	}
@@ -106,18 +106,18 @@ func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {
 	}
 }
 
-// The career's line lays out the roles, the entries of the first section that holds any, whose months are known: not
-// a role whose start or end is still to fill, nor the schools of a section after it.
+// The career's line lays out the roles, the entries of a role's kind in any top-level section, whose months are known:
+// not a role whose start or end is still to fill, nor a school, even one in a section before the roles.
 func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
-	role := document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Northwind")}
-	unfilled := document.Entry{Period: document.Period{Start: knownMonth(2020, time.January), End: document.GapMonth{Text: "[20XX]"}}, Title: textOf("Eastwind")}
-	unstarted := document.Entry{Period: document.Period{Start: document.GapMonth{Text: "[20XX]"}, End: knownMonth(2019, time.June)}, Title: textOf("Westwind")}
-	school := document.Entry{Period: document.Period{Start: knownMonth(2016, time.September), End: knownMonth(2020, time.June)}, Title: textOf("A School")}
+	role := document.Entry{Kind: document.EntryRole, Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Northwind")}
+	unfilled := document.Entry{Kind: document.EntryRole, Period: document.Period{Start: knownMonth(2020, time.January), End: document.GapMonth{Text: "[20XX]"}}, Title: textOf("Eastwind")}
+	unstarted := document.Entry{Kind: document.EntryRole, Period: document.Period{Start: document.GapMonth{Text: "[20XX]"}, End: knownMonth(2019, time.June)}, Title: textOf("Westwind")}
+	school := document.Entry{Kind: document.EntrySchool, Period: document.Period{Start: knownMonth(2016, time.September), End: knownMonth(2020, time.June)}, Title: textOf("A School")}
 	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	model := handResume(test, "home", commonWidth, tallHeight,
 		document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}},
-		document.Section{Title: textOf("Work"), Blocks: []document.Block{role, unfilled, unstarted}},
 		document.Section{Title: textOf("Study"), Blocks: []document.Block{school}},
+		document.Section{Title: textOf("Work"), Blocks: []document.Block{role, unfilled, unstarted}},
 	)
 	page := aboveTheStatusLine(screenOf(test, model))
 	cases := []struct {

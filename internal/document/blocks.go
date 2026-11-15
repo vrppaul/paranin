@@ -43,14 +43,27 @@ type Facts struct {
 	List []Fact
 }
 
-// Entry is a span of time spent somewhere: a role or a school, with what came of it.
+// Entry is a span of time spent somewhere, a role or a school as its kind says, with what came of it.
 type Entry struct {
+	Kind     EntryKind
 	Period   Period
 	Title    []Span
 	Subtitle []Span
 	Place    string
 	Points   []Point
 }
+
+// EntryKind is what an entry's time was spent on.
+type EntryKind int
+
+const (
+	// The zero kind names none
+	_ EntryKind = iota
+	// EntryRole is a role: work for an employer or a client
+	EntryRole
+	// EntrySchool is a school: a course of study
+	EntrySchool
+)
 
 // Point is one thing an entry holds up.
 type Point struct {

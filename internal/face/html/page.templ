@@ -82,7 +82,7 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 }
 
 // head is what the page shows first: its title, the subtitle and the place beside it, what a project is made of, the
-// lead, the ways to reach the author, and where a project's code lives.
+// lead, and where a project's code lives.
 templ (writer PageWriter) head(head document.Head) {
 	<header>
 		<h1>
@@ -108,9 +108,6 @@ templ (writer PageWriter) head(head document.Head) {
 			<p>
 				@writer.spans(head.Lead)
 			</p>
-		}
-		if len(head.Ways) > 0 {
-			@writer.facts(head.Ways)
 		}
 		if repository := head.Repository.Facts(); len(repository) > 0 {
 			@writer.facts(repository)

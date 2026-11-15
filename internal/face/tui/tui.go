@@ -10,19 +10,20 @@
 // it where not. The name stands in the first version's block font where the font draws every letter of it and the
 // page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text where not, its
 // colours going from the accent to the host's. The brief opens with the first way to reach the author, the address
-// in two colours parted at its at, then the subtitle and the place, the facts and the other ways, each by its label,
-// then a row of the design's colours. Under them the career's line lays each role of the top-level sections, along
-// the months from the first role's start, or the day the session opened where that comes first, to the day or the
-// last month a role reaches past it, the one still held in the accent and running to the site's word for the
-// present, each company over its span; the lead comes last. Each section of the résumé after it stands
-// under its title, in a block font two rows tall where the name's is three, in the name's colours, where it fits as
-// the name does, as text in them where that fits, and with none where neither does. A role or a school stands with
-// its period in the column of the periods of its section, as wide as the widest of them, the one still going on in
-// the accent, its title, subtitle and place beside it and its points under them; where the page leaves too little
-// room beside the column, the period stands above. A project's page opens as glow draws its README: the name in the
-// titles' font where it fits, the owner and the name its repository's address gives under it, or the address as
-// written where its path gives none, a link in the colours of the mail's two parts, the project's tags as chips, the
-// tagline and what it does, then its details; each section of it stands under its title on a plate of the accent.
+// in two colours parted at its at, then the subtitle and the place, the facts, each by its label, then a row of the
+// design's colours; the other ways stand on the contact section's tab alone. Under them the career's line lays each
+// role of the top-level sections, along the months from the first role's start, or the day the session opened where
+// that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
+// running to the site's word for the present, each company over its span; the lead comes last. Each section of the
+// résumé after it stands under its title, in a block font two rows tall where the name's is three, in the name's
+// colours, where it fits as the name does, as text in them where that fits, and with none where neither does. A role or
+// a school stands with its period in the column of the periods of its section, as wide as the widest of them, the one
+// still going on in the accent, its title, subtitle and place beside it and its points under them; where the page
+// leaves too little room beside the column, the period stands above. A project's page opens as glow draws its README:
+// the name in the titles' font where it fits, the owner and the name its repository's address gives under it, or the
+// address as written where its path gives none, a link in the colours of the mail's two parts, the project's tags as
+// chips, the tagline and what it does, then its details; each section of it stands under its title on a plate of the
+// accent.
 // In any block of facts a command, a fact whose value is code alone, stands in a box with its label in the top edge,
 // where the page has room for the command on one row, so a reader copies it whole.
 // The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key

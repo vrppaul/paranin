@@ -51,7 +51,7 @@ const (
 
 // about lays out the résumé's opening as neofetch prints a system: the name's column, the greeting and the name,
 // beside the brief where the page has room for both, above it where not; then the career's line, and the lead.
-func (layout layout) about(head document.Head, brief []document.Fact, career []document.Entry) []line {
+func (layout layout) about(head document.Head, brief []document.Fact, address []document.Span, career []document.Entry) []line {
 	parts := layout.headParts(head)
 	name := layout.nameColumn(slices.Concat(parts.greeting, blankLines()), document.PlainText(head.Title))
 	nameWidth := linesWidth(name)
@@ -60,9 +60,9 @@ func (layout layout) about(head document.Head, brief []document.Fact, career []d
 		// the brief lays out in the column beside the name
 		briefColumn := layout
 		briefColumn.width = room
-		lines = besideLines(name, nameWidth+columnsApart, briefColumn.brief(head, brief))
+		lines = besideLines(name, nameWidth+columnsApart, briefColumn.brief(head, brief, address))
 	} else {
-		lines = stacked(name, layout.brief(head, brief))
+		lines = stacked(name, layout.brief(head, brief, address))
 	}
 	lines = stacked(lines, layout.career(career))
 	return stacked(lines, parts.lead)
@@ -120,18 +120,17 @@ func besideLines(left []line, rightStart int, right []line) []line {
 	return lines
 }
 
-// brief is the brief as neofetch prints a system's: the first way to reach the head's author, the address, parted
-// into its mailbox and its host, a rule under it; the subtitle and the place; then the facts and the other ways, each
-// by its label; then a row of swatches of the design's colours.
-func (layout layout) brief(head document.Head, facts []document.Fact) []line {
-	lines, ways := []line{}, head.Ways
-	if len(ways) > 0 {
-		address := addressRuns(layout.valueWords(ways[0].Value))
-		rule := run{text: strings.Repeat(briefRuleMark, runsWidth(address)), kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
-		lines = append(lines, address, line{rule})
-		ways = ways[1:]
+// brief is the brief as neofetch prints a system's: the address, the first way to reach the author, parted into its
+// mailbox and its host, a rule under it; the subtitle and the place; then the facts, each by its label; then a row of
+// swatches of the design's colours. The other ways stand on a tab of their own.
+func (layout layout) brief(head document.Head, facts []document.Fact, address []document.Span) []line {
+	lines := []line{}
+	if len(address) > 0 {
+		parted := addressRuns(layout.valueWords(address))
+		rule := run{text: strings.Repeat(briefRuleMark, runsWidth(parted)), kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
+		lines = append(lines, parted, line{rule})
 	}
-	lines = slices.Concat(lines, layout.subtitleLines(head), layout.facts(slices.Concat(facts, ways), 0, kindLabel))
+	lines = slices.Concat(lines, layout.subtitleLines(head), layout.facts(facts, 0, kindLabel))
 	swatches := line{}
 	for tone := range len(swatchColours()) {
 		swatches = append(swatches, run{text: swatchMark, kind: kindSwatch, highlighted: false, address: "", copied: "", tone: tone})

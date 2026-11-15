@@ -6,10 +6,6 @@ NAME
 DESCRIPTION
        Builds small tools that last.
 
-       mail     mira@example.test
-       GitHub   github.test/mira
-       ssh      ssh example.test
-
        Writes software for people who read it.
 
 FACTS
@@ -53,5 +49,10 @@ EDUCATION
 
 LANGUAGES
        English   fluent
+
+CONTACT
+       mail     mira@example.test
+       GitHub   github.test/mira
+       ssh      ssh example.test
 
 example.test                                                   EXAMPLE.TEST(1)

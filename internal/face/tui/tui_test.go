@@ -36,8 +36,8 @@ const (
 )
 
 // The résumé's first tab holds its facts as a brief beside the name, as neofetch prints a system's, each once, as
-// written: the address, the subtitle and the place, the facts, the other ways to reach the author; the career's line
-// under them, each role by its company, the one still held running to the present; then the summary.
+// written: the address, the subtitle and the place, the facts; the career's line under them, each role by its
+// company, the one still held running to the present; then the summary.
 func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 	screen := screenOf(test, fixtureModel(test, commonWidth, tallHeight))
 	cases := []struct {
@@ -47,7 +47,6 @@ func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 		{name: "a fact", want: "5 years"},
 		{name: "the address", want: "mira@example.test"},
 		{name: "the subtitle and the place", want: "Software Engineer · Brno, Czechia"},
-		{name: "another way", want: "github.test/mira"},
 		{name: "the role still held", want: "Northwind"},
 		{name: "a role before it", want: "Southwind"},
 		{name: "the present", want: "present"},
@@ -251,7 +250,7 @@ func TestTheFirstScreenShowsTheHeadAndEveryTab(test *testing.T) {
 		{name: "the opening's tab, by the site's word", want: "About"},
 		{name: "the headline", want: "Builds small tools that last."},
 		{name: "the first section's place", want: "experience"},
-		{name: "the last section's place", want: "languages"},
+		{name: "the last section's place", want: "contact"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -273,7 +272,7 @@ func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 		{name: "l goes to the next tab", keys: []string{"l"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
 		{name: "the right arrow goes to the next tab", keys: []string{"right"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
 		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: "other-tool", lacks: "Kept the queue"},
-		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: "fluent", lacks: "Builds small tools that last."},
+		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: "github.test/mira", lacks: "Builds small tools that last."},
 		{name: "the left arrow goes back", keys: []string{"l", "left"}, holds: "Builds small tools that last.", lacks: "Kept the queue"},
 	}
 	for _, testCase := range cases {
@@ -342,12 +341,12 @@ func TestTheRimSaysWhatLiesBelow(test *testing.T) {
 	}
 }
 
-// A row faded above the rim still carries its link to a terminal that follows links: on a screen of nineteen rows the
-// first tab's last row on the page is the fixture's GitHub, faded, as more lies below it.
+// A row faded above the rim still carries its link to a terminal that follows links: on a narrow screen of thirteen
+// rows the first tab's last row on the page is the fixture's address, faded, as more lies below it.
 func TestALinkOnAFadedRowStillLeads(test *testing.T) {
-	const fadedLinkHeight = 19
-	if screen := fixtureModel(test, commonWidth, fadedLinkHeight).View().Content; !strings.Contains(screen, "https://github.test/mira") {
-		test.Errorf("the screen =\n%q\nwant the GitHub row's link to https://github.test/mira", screen)
+	const fadedLinkHeight = 13
+	if screen := fixtureModel(test, narrowWidth, fadedLinkHeight).View().Content; !strings.Contains(screen, "mailto:mira@example.test") {
+		test.Errorf("the screen =\n%q\nwant the address row's link to mailto:mira@example.test", screen)
 	}
 }
 
@@ -362,8 +361,8 @@ func TestEachTabKeepsItsPlace(test *testing.T) {
 // The status line opens with the chosen tab's title at any width.
 func TestTheChosenTabIsNamedAtAnyWidth(test *testing.T) {
 	model := pressed(test, fixtureModel(test, narrowWidth, commonHeight), "h")
-	if status := footerLine(screenOf(test, model), footerStatus); !strings.HasPrefix(status, "Languages") {
-		test.Errorf("on the last tab the status line = %q, want it to open with %q", status, "Languages")
+	if status := footerLine(screenOf(test, model), footerStatus); !strings.HasPrefix(status, "Contact") {
+		test.Errorf("on the last tab the status line = %q, want it to open with %q", status, "Contact")
 	}
 }
 
@@ -672,18 +671,57 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 
 // A link leads where its target does in a terminal that follows links: its text carries its address.
 func TestALinkCarriesItsAddress(test *testing.T) {
-	view := fixtureModel(test, commonWidth, commonHeight).View().Content
 	cases := []struct {
 		name    string
+		model   Model
 		address string
 	}{
-		{name: "a public profile", address: "https://github.test/mira"},
-		{name: "the mail address", address: "mailto:mira@example.test"},
+		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
+		{name: "a public profile on the contact tab", model: commanded(test, fixtureModel(test, commonWidth, commonHeight), "contact"), address: "https://github.test/mira"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if !strings.Contains(view, ansi.SetHyperlink(testCase.address)) {
-				test.Errorf("the first screen links no %q", testCase.address)
+			if view := testCase.model.View().Content; !strings.Contains(view, ansi.SetHyperlink(testCase.address)) {
+				test.Errorf("the screen links no %q", testCase.address)
+			}
+		})
+	}
+}
+
+// Of the ways to reach the author the brief keeps the mail alone: the others stand once, on the contact tab.
+func TestTheBriefKeepsTheMailAloneOfTheWays(test *testing.T) {
+	screen := readRows(aboveTheStatusLine(screenOf(test, fixtureModel(test, commonWidth, tallHeight))))
+	cases := []struct {
+		name string
+		way  string
+	}{
+		{name: "a public profile", way: "github.test/mira"},
+		{name: "ssh", way: "ssh example.test"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if strings.Contains(screen, testCase.way) {
+				test.Errorf("the first tab =\n%s\nholds %q, want it on the contact tab alone", screen, testCase.way)
+			}
+		})
+	}
+}
+
+// The résumé's contact tab holds every way to reach the author, each by its label.
+func TestTheContactTabHoldsEveryWayToReachTheAuthor(test *testing.T) {
+	screen := readRows(aboveTheStatusLine(screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), "contact"))))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the mail", want: "mail mira@example.test"},
+		{name: "a public profile", want: "GitHub github.test/mira"},
+		{name: "ssh, a command", want: "ssh example.test"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(screen, testCase.want) {
+				test.Errorf("the contact tab =\n%s\nwant %q on it", screen, testCase.want)
 			}
 		})
 	}

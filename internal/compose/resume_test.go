@@ -74,7 +74,7 @@ func TestTheResumeKeepsOneOrder(test *testing.T) {
 	for _, block := range blocks[1:] {
 		got = append(got, titleOf(test, as[document.Section](test, block)))
 	}
-	want := []string{"Facts", "Experience", "Projects", "Skills", "Education", "Languages"}
+	want := []string{"Facts", "Experience", "Projects", "Skills", "Education", "Languages", "Contact"}
 	if !slices.Equal(got, want) {
 		test.Errorf("sections = %q, want %q", got, want)
 	}
@@ -129,13 +129,14 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
 	projects := sectionTitled(test, resume, "Projects")
 	pageless, tidy := cardTitled(test, projects, "other-tool"), cardTitled(test, projects, "tidy-tool")
+	ways := waysOf(test, resume)
 	cases := []struct {
 		name string
 		got  document.Target
 		want document.Target
 	}{
-		{name: "the mail address", got: linkTarget(test, factLabelled(test, resume.Head.Ways, "mail").Value), want: document.Address{URL: "mailto:mira@example.test"}},
-		{name: "a public profile", got: linkTarget(test, factLabelled(test, resume.Head.Ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
+		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Address{URL: "mailto:mira@example.test"}},
+		{name: "a public profile", got: linkTarget(test, factLabelled(test, ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
 		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}},
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},
 		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
@@ -411,6 +412,22 @@ func detailsOf(test *testing.T, page document.Document) []document.Fact {
 		}
 	}
 	test.Fatalf("the page %+v has no facts", page.Head.Page)
+	return nil
+}
+
+// waysOf are the ways to reach the author a page holds, the facts of their kind in any of its sections, found as a
+// face finds them.
+func waysOf(test *testing.T, page document.Document) []document.Fact {
+	for _, block := range page.Blocks {
+		// a block that is no section holds no block of its own
+		section, _ := block.(document.Section)
+		for _, inner := range section.Blocks {
+			if facts, isFacts := inner.(document.Facts); isFacts && facts.Kind == document.FactsWays {
+				return facts.List
+			}
+		}
+	}
+	test.Fatalf("the page %+v has no ways to reach its author", page.Head.Page)
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -259,18 +260,20 @@ func TestEnterGoesToThePlaceTabChose(test *testing.T) {
 
 // Tab goes on through the places listed and Shift+Tab back, writing the one chosen on the prompt; past either end the
 // prompt holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
-// tab the fixture lists five other tabs and help.
+// tab the fixture lists six other tabs and help.
 func TestTabGoesRoundThePlaces(test *testing.T) {
+	// the presses of Tab that reach the last place: each other tab, then help
+	const lastPlace = 7
 	cases := []struct {
 		name string
 		keys []string
 		line string
 	}{
 		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: emptyPrompt + " projects"},
-		{name: "the sixth Tab the last", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " help"},
-		{name: "a Tab past the last what was typed", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt},
-		{name: "a Tab after that the first again", keys: []string{"tab", "tab", "tab", "tab", "tab", "tab", "tab", "tab"}, line: emptyPrompt + " experience"},
-		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: emptyPrompt + " languages"},
+		{name: "the last Tab help", keys: slices.Repeat([]string{"tab"}, lastPlace), line: emptyPrompt + " help"},
+		{name: "a Tab past the last what was typed", keys: slices.Repeat([]string{"tab"}, lastPlace+1), line: emptyPrompt},
+		{name: "a Tab after that the first again", keys: slices.Repeat([]string{"tab"}, lastPlace+2), line: emptyPrompt + " experience"},
+		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: emptyPrompt + " contact"},
 		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: emptyPrompt},
 	}
 	for _, testCase := range cases {

@@ -157,10 +157,12 @@ and web routes.
   are the name, the title, where the author lives, the headline); on a
   project's page its tags, the language it is written in and then its
   stack, as the profile lists them; a description for the page's
-  metadata; and the ways to reach the author (mail, the profiles, `ssh`,
-  the CV), and on a project's page where its code lives, a repository
+  metadata; and on a project's page where its code lives, a repository
   typed as its address and the site's word for it, since every face shows
-  them first.
+  it first. The ways to reach the author (mail, the profiles, `ssh`, the
+  CV) left the head (amended 2026-11-15, the owner's word): they are facts
+  of their own kind, in the résumé's last section under the site's word
+  for contact, which a face finds by that kind and shows where it chooses.
   Two more are the site's words, which a face shows only where it has a use
   for them, so `Phrases` leaves them out: a greeting before the title, and
   the title of the opening, what stands before the first section, for a face
@@ -172,13 +174,14 @@ and web routes.
   the résumé's first section, where it holds facts alone, as a brief
   beside the name, without its title or a tab of its own; and the first
   way to reach the author, the mail, at the brief's head without its
-  label, the other ways after the facts. Under them a career's line lays
-  out the roles, the entries of a role's kind in any of its top-level
-  sections, and the lead comes last. The brief is found by its place in the document, the
-  roles by their kind (amended 2026-11-15, the owner's word). Each section
-  of the résumé after the opening stands under its title, in a smaller
-  block font where the page has room for it, so a search finds a section's
-  title on its page only where it reads as text.
+  label, the other ways on the contact section's tab alone. Under them a
+  career's line lays out the roles, the entries of a role's kind in any of
+  its top-level sections, and the lead comes last. The brief is found by
+  its place in the document, the roles and the ways by their kind
+  (amended 2026-11-15, the owner's word). Each section of the résumé
+  after the opening stands under its title, in a smaller block font where
+  the page has room for it, so a search finds a section's title on its
+  page only where it reads as text.
   A project's page opens as glow draws its README (amended 2026-11-07,
   with the look the owner chose): its name in that smaller font where the
   page has room for it, so a search finds the name on its page only where
@@ -189,9 +192,13 @@ and web routes.
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a
     paragraph, a table (each skill group is a section holding one), facts
-    (labels and their values), an entry (its kind, role or school; a
-    period, a title, a subtitle, a place and its points) and a card (a
-    title, a subtitle, a tag, a summary, its facts and its page: a project);
+    (their kind, details or the ways to reach the author; labels and their
+    values), an entry (its kind, role or school; a period, a title, a
+    subtitle, a place and its points) and a card (a title, a subtitle, a
+    tag, a summary, its facts and its page: a project). A kind is a field,
+    not a block of its own, as the owner chose for the entry (2026-11-15):
+    every face draws both kinds alike, and the one that places them apart
+    reads the field;
   - the index's: contents, the pages a document leads to, each by its title
     and a line on what it is, which `llms.txt` lists;
   - the health report's: checks, a group of them under its name, each check

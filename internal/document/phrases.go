@@ -13,7 +13,6 @@ func Phrases(document Document) []string {
 		phrases = textPhrase(phrases, tag)
 	}
 	phrases = spanPhrases(phrases, head.Lead)
-	phrases = factPhrases(phrases, head.Ways)
 	phrases = factPhrases(phrases, head.Repository.Facts())
 	return blockPhrases(phrases, document.Blocks)
 }

@@ -104,8 +104,8 @@ func escaperOf(letters string) *strings.Replacer {
 }
 
 // head writes the title as a heading, then the subtitle and the place on a line, what a project is made of on the
-// next, the lead as a quote, and the ways as a list. Where a project's code lives stands as a line of its own, not
-// an item, since the list of the project's details comes next and markdown would read two lists in a row as one.
+// next, and the lead as a quote. Where a project's code lives stands as a line of its own, not an item, since the
+// list of the project's details comes next and markdown would read two lists in a row as one.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place)))
@@ -115,7 +115,6 @@ func (writer markdownWriter) head(head document.Head) []string {
 	}
 	chunks = appendLine(chunks, joined(dot, tags...))
 	chunks = appendChunk(chunks, quote(writer.spans(head.Lead)))
-	chunks = appendChunk(chunks, writer.facts(head.Ways))
 	for _, fact := range head.Repository.Facts() {
 		chunks = appendLine(chunks, writer.fact(fact))
 	}

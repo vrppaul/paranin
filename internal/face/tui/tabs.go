@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"iter"
 	"slices"
 	"strings"
 	"time"
@@ -56,13 +57,14 @@ type tabBody interface {
 }
 
 // briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts alone: the
-// head, beside it those facts as the brief, in place of a tab of their own, the roles for the career's line under
-// them, and the blocks before the first section.
+// head, beside it those facts as the brief, in place of a tab of their own, headed by the address, the first way to
+// reach the author; the roles for the career's line under them, and the blocks before the first section.
 type briefOpening struct {
-	head   document.Head
-	brief  []document.Fact
-	career []document.Entry
-	blocks []document.Block
+	head    document.Head
+	brief   []document.Fact
+	address []document.Span
+	career  []document.Entry
+	blocks  []document.Block
 }
 
 // readmeOpening is a project's opening as its forge shows its README: the head, then the blocks before the first
@@ -152,7 +154,7 @@ func openingBody(head document.Head, blocks []document.Block, sections []documen
 	switch head.Page.Kind {
 	case document.PageResume:
 		if brief, alone := briefOf(sections); alone {
-			return briefOpening{head: head, brief: brief, career: careerOf(sections), blocks: blocks}, sections[1:]
+			return briefOpening{head: head, brief: brief, address: addressOf(sections), career: careerOf(sections), blocks: blocks}, sections[1:]
 		}
 	case document.PageProject:
 		return readmeOpening{head: head, blocks: blocks}, sections
@@ -191,14 +193,36 @@ func briefOf(sections []document.Section) ([]document.Fact, bool) {
 // careerOf is the roles a document's sections hold, the entries whose kind is a role, in order.
 func careerOf(sections []document.Section) []document.Entry {
 	roles := []document.Entry{}
-	for _, section := range sections {
-		for _, block := range section.Blocks {
-			if entry, isEntry := block.(document.Entry); isEntry && entry.Kind == document.EntryRole {
-				roles = append(roles, entry)
-			}
+	for block := range sectionBlocks(sections) {
+		if entry, isEntry := block.(document.Entry); isEntry && entry.Kind == document.EntryRole {
+			roles = append(roles, entry)
 		}
 	}
 	return roles
+}
+
+// addressOf is the first way to reach the author a document's sections hold, the mail, as its value: the first fact
+// of the first facts of the ways' kind; none where no section holds one.
+func addressOf(sections []document.Section) []document.Span {
+	for block := range sectionBlocks(sections) {
+		if facts, isFacts := block.(document.Facts); isFacts && facts.Kind == document.FactsWays && len(facts.List) > 0 {
+			return facts.List[0].Value
+		}
+	}
+	return nil
+}
+
+// sectionBlocks are the blocks each section holds, in order, not those of the sections nested in them.
+func sectionBlocks(sections []document.Section) iter.Seq[document.Block] {
+	return func(yield func(document.Block) bool) {
+		for _, section := range sections {
+			for _, block := range section.Blocks {
+				if !yield(block) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address
@@ -217,7 +241,7 @@ type layout struct {
 func (layout layout) tab(shown tab) []line {
 	switch body := shown.body.(type) {
 	case briefOpening:
-		return stacked(layout.about(body.head, body.brief, body.career), layout.blocks(body.blocks, 0))
+		return stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0))
 	case readmeOpening:
 		return stacked(layout.readme(body.head), layout.blocks(body.blocks, 0))
 	case reportOpening:
@@ -265,8 +289,8 @@ func (layout layout) subtitleLines(head document.Head) []line {
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
-// page carries one, the subtitle and place, the lead, and the ways to reach the author. A project's head, the one
-// with tags and a repository, is a README's (readme).
+// page carries one, the subtitle and place, and the lead. A project's head, the one with tags and a repository, is a
+// README's (readme).
 func (layout layout) head(head document.Head) []line {
 	parts := layout.headParts(head)
 	title := layout.words(head.Title, kindStrong)
@@ -274,8 +298,7 @@ func (layout layout) head(head document.Head) []line {
 		title = withCursor(title)
 	}
 	lines := slices.Concat(parts.greeting, layout.fill(title, 0), layout.subtitleLines(head))
-	lines = stacked(lines, parts.lead)
-	return stacked(lines, layout.facts(head.Ways, 0, kindMuted))
+	return stacked(lines, parts.lead)
 }
 
 // carriesCursor is whether a page's head ends in the site's cursor: the résumé's does, after the author's name, as

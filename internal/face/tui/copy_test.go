@@ -17,6 +17,7 @@ const wideWidth = 160
 // without the box's edges, and the repository's owner and name give its address.
 func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 	resume := fixtureModel(test, wideWidth, commonHeight)
+	contact := commanded(test, fixtureModel(test, wideWidth, commonHeight), "contact")
 	project := commanded(test, fixtureModel(test, wideWidth, commonHeight), "e tidy-tool")
 	cases := []struct {
 		name  string
@@ -25,8 +26,8 @@ func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 		value string
 	}{
 		{name: "the mail", model: resume, query: "mira@", value: "mira@example.test"},
-		{name: "a link", model: resume, query: "github.test", value: "github.test/mira"},
-		{name: "the ssh command", model: resume, query: "ssh ex", value: "ssh example.test"},
+		{name: "a link", model: contact, query: "github.test", value: "github.test/mira"},
+		{name: "the ssh command in its box", model: contact, query: "ssh ex", value: "ssh example.test"},
 		{
 			name: "a value from its second line", model: resume, query: "next",
 			value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next",

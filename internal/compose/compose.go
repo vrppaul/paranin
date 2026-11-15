@@ -61,19 +61,20 @@ func projectsWithPages(projects []content.Project) []content.Project {
 }
 
 // Resume is the résumé as one document: its head, the summary, then its facts, experience, projects, skills,
-// education and languages, each a section under the site's word for it.
+// education, languages and the ways to reach the author, each a section under the site's word for it.
 func Resume(snapshot *content.Snapshot) document.Document {
 	profile, words := snapshot.Profile, snapshot.Words
 	return document.Document{
 		Head: resumeHead(profile, words),
 		Blocks: []document.Block{
 			document.Paragraph{Spans: markedSpans(profile.Summary)},
-			section(words.Text(content.WordFacts), document.Facts{List: factList(profile.Facts)}),
+			section(words.Text(content.WordFacts), document.Facts{Kind: document.FactsDetails, List: factList(profile.Facts)}),
 			experienceSection(profile.Experience, words),
 			projectsSection(profile.Projects, words),
 			skillsSection(profile.SkillGroups, words),
 			educationSection(profile.Education, words),
-			section(words.Text(content.WordLanguages), document.Facts{List: languageList(profile.Languages)}),
+			section(words.Text(content.WordLanguages), document.Facts{Kind: document.FactsDetails, List: languageList(profile.Languages)}),
+			section(words.Text(content.WordContact), document.Facts{Kind: document.FactsWays, List: ways(profile.Person, profile.Site, words)}),
 		},
 	}
 }
@@ -102,7 +103,6 @@ func Index(snapshot *content.Snapshot) document.Document {
 			Place:        "",
 			Tags:         nil,
 			Lead:         resume.Lead,
-			Ways:         nil,
 			Repository:   nil,
 			Description:  nil,
 			OpeningTitle: "",
@@ -130,7 +130,6 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Place:        person.Location,
 		Tags:         nil,
 		Lead:         headline,
-		Ways:         ways(person, profile.Site, words),
 		Repository:   nil,
 		Description:  headline,
 		OpeningTitle: words.Text(content.WordAbout),
@@ -198,7 +197,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 	resume := resumePage()
 	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
 	details = append(details, factList(project.Facts)...)
-	blocks := []document.Block{document.Facts{List: append(details, installFacts(project, words)...)}}
+	blocks := []document.Block{document.Facts{Kind: document.FactsDetails, List: append(details, installFacts(project, words)...)}}
 	if project.Recording != "" {
 		blocks = append(blocks, document.CodeBlock{Text: project.Recording})
 	}
@@ -225,7 +224,6 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Place:        "",
 		Tags:         projectTags(project),
 		Lead:         description,
-		Ways:         nil,
 		Repository:   projectRepository(project, words),
 		Description:  description,
 		OpeningTitle: "",

@@ -4,10 +4,6 @@ Software Engineer · Brno, Czechia
 
 > Builds small tools that last.
 
-- mail: [mira@example.test](mailto:mira@example.test)
-- GitHub: [github.test/mira](https://github.test/mira)
-- ssh: `ssh example.test`
-
 Writes software for people who read it.
 
 ## Facts
@@ -65,3 +61,9 @@ A tool that **tidies files**.
 ## Languages
 
 - English: fluent
+
+## Contact
+
+- mail: [mira@example.test](mailto:mira@example.test)
+- GitHub: [github.test/mira](https://github.test/mira)
+- ssh: `ssh example.test`

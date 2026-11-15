@@ -1,7 +1,6 @@
 package text
 
 import (
-	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -79,7 +78,7 @@ func (writer manualWriter) pageName(page document.Page) string {
 }
 
 // head writes the name section, the title with its subtitle and place, and the description: the lead, what a project
-// is made of, and the ways to reach the author or where a project's code lives.
+// is made of, and where a project's code lives.
 func (writer manualWriter) head(head document.Head) []string {
 	name := joinedWords(dashWord, writer.words(head.Title), joinedWords(dotWord, writer.words(head.Subtitle), strings.Fields(head.Place)))
 	lines := append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
@@ -92,8 +91,8 @@ func (writer manualWriter) head(head document.Head) []string {
 		}
 		lines = append(append(lines, ""), paragraph(sectionIndent, 0, joinedWords(dotWord, tags...))...)
 	}
-	if ways := slices.Concat(head.Ways, head.Repository.Facts()); len(ways) > 0 {
-		lines = append(append(lines, ""), writer.pairs(sectionIndent, ways)...)
+	if repository := head.Repository.Facts(); len(repository) > 0 {
+		lines = append(append(lines, ""), writer.pairs(sectionIndent, repository)...)
 	}
 	return lines
 }

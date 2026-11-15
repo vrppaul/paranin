@@ -43,7 +43,7 @@ func BuildFolder(test *testing.T) string {
 // reaches no test that has no use for it.
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
-		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil, Ways: nil,
+		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil,
 		Repository: nil, Description: nil, OpeningTitle: "",
 	}
 }

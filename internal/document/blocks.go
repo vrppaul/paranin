@@ -38,10 +38,24 @@ type CodeBlock struct {
 	Text string
 }
 
-// Facts is a list of labels and their values.
+// Facts is a list of labels and their values, of a kind a face finds them by, not by their place.
 type Facts struct {
+	Kind FactsKind
 	List []Fact
 }
+
+// FactsKind is what a list of facts tells.
+type FactsKind int
+
+const (
+	// The zero kind names none
+	_ FactsKind = iota
+	// FactsDetails are details of what the document is about: the author's facts, the languages they speak, a
+	// project's details
+	FactsDetails
+	// FactsWays are the ways to reach the author, the mail first, which a face shows where it chooses
+	FactsWays
+)
 
 // Entry is a span of time spent somewhere, a role or a school as its kind says, with what came of it.
 type Entry struct {

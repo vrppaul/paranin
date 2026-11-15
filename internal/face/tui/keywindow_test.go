@@ -16,7 +16,7 @@ const keyWindowHeight = 24
 func TestTheWindowOfKeysNamesTheKeys(test *testing.T) {
 	rows := []string{
 		"esc close", "j k", "line down / up", "3j", "move by a count", "gg G", "top / bottom", "h l", "tab before / after",
-		"1-6", "go to a tab", "type a place to go", "complete a place", "find in the tab", "n N", "next / prior match",
+		"1-7", "go to a tab", "type a place to go", "complete a place", "find in the tab", "n N", "next / prior match",
 		"end the search", "quit",
 	}
 	for _, key := range []string{"?", "space"} {

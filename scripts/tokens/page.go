@@ -21,12 +21,19 @@ const (
 	weightStep     = 100
 )
 
-// The keys a text style's and a length's numbers are written under, as their tags say
+// The keys a text style's, a length's and a time's numbers are written under, as their tags say
 const (
-	sizeKey   = "size"
-	lineKey   = "line"
-	weightKey = "weight"
-	pixelsKey = "pixels"
+	sizeKey         = "size"
+	lineKey         = "line"
+	weightKey       = "weight"
+	pixelsKey       = "pixels"
+	millisecondsKey = "milliseconds"
+)
+
+// How a time is written in the stylesheet: its milliseconds
+const (
+	millisecondUnit  = "ms"
+	millisecondValue = "%d" + millisecondUnit
 )
 
 // The face's own name, the property every rule of the page's text inherits it from
@@ -99,7 +106,15 @@ type lengthToken struct {
 	Pixels *wholeNumber `yaml:"pixels"`
 }
 
-// wholeNumber is a number of the file that counts whole things: pixels, or a weight.
+// timeToken is a time the page waits or moves by, as the file writes it: its name, what it is for, and how many
+// milliseconds long it is.
+type timeToken struct {
+	Name         string       `yaml:"name"`
+	About        string       `yaml:"about"`
+	Milliseconds *wholeNumber `yaml:"milliseconds"`
+}
+
+// wholeNumber is a number of the file that counts whole things: pixels, milliseconds, or a weight.
 type wholeNumber uint
 
 // UnmarshalYAML reads a whole number written in decimal digits alone, unquoted: the YAML library would cut a
@@ -133,11 +148,12 @@ func (style readType) properties() []styleProperty {
 	}
 }
 
-// pageTokens are the tokens the page alone reads, read: its face, its text styles and its lengths.
+// pageTokens are the tokens the page alone reads, read: its face, its text styles, its lengths and its times.
 type pageTokens struct {
 	face    readFace
 	types   []readType
 	lengths []readLength
+	times   []readTime
 }
 
 // readFace is the face read: what it is for, and its families, each a name of letters, digits, hyphens and spaces.
@@ -162,8 +178,15 @@ type readLength struct {
 	pixels wholeNumber
 }
 
-// readPageTokens reads the face, the text styles and the lengths of the file, each property a name of its own
-// beside every property named already.
+// readTime is a time read, in milliseconds.
+type readTime struct {
+	name         string
+	about        string
+	milliseconds wholeNumber
+}
+
+// readPageTokens reads the face, the text styles, the lengths and the times of the file, each property a name of its
+// own beside every property named already.
 func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, error) {
 	face, err := readFaceToken(written.Face, named)
 	if err != nil {
@@ -185,7 +208,15 @@ func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, erro
 		}
 		lengths = append(lengths, length)
 	}
-	return pageTokens{face: face, types: types, lengths: lengths}, nil
+	times := make([]readTime, 0, len(written.Times))
+	for _, token := range written.Times {
+		timed, err := readTimeToken(token, named)
+		if err != nil {
+			return pageTokens{}, err
+		}
+		times = append(times, timed)
+	}
+	return pageTokens{face: face, types: types, lengths: lengths, times: times}, nil
 }
 
 // readFaceToken refuses a face that says nothing of what it is for, names no family, or names one in anything but
@@ -215,11 +246,11 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	if err := checkName(token.Name, token.About); err != nil {
 		return readType{}, err
 	}
-	size, err := pixels(token.Size, token.Name, sizeKey)
+	size, err := counted(token.Size, token.Name, sizeKey)
 	if err != nil {
 		return readType{}, err
 	}
-	line, err := pixels(token.Line, token.Name, lineKey)
+	line, err := counted(token.Line, token.Name, lineKey)
 	if err != nil {
 		return readType{}, err
 	}
@@ -245,21 +276,33 @@ func readLengthToken(token lengthToken, named map[string]bool) (readLength, erro
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
 	}
-	length, err := pixels(token.Pixels, token.Name, pixelsKey)
+	length, err := counted(token.Pixels, token.Name, pixelsKey)
 	if err != nil {
 		return readLength{}, err
 	}
 	return readLength{name: token.Name, about: token.About, pixels: length}, nil
 }
 
-// pixels is a number of pixels the file must write, more than none.
-func pixels(written *wholeNumber, token, key string) (wholeNumber, error) {
+// readTimeToken reads a time, more than no milliseconds long.
+func readTimeToken(token timeToken, named map[string]bool) (readTime, error) {
+	if err := checkToken(token.Name, token.About, named); err != nil {
+		return readTime{}, err
+	}
+	milliseconds, err := counted(token.Milliseconds, token.Name, millisecondsKey)
+	if err != nil {
+		return readTime{}, err
+	}
+	return readTime{name: token.Name, about: token.About, milliseconds: milliseconds}, nil
+}
+
+// counted is a whole number the file must write, pixels or milliseconds, more than none.
+func counted(written *wholeNumber, token, key string) (wholeNumber, error) {
 	value, err := required(written, token, key)
 	if err != nil {
 		return 0, err
 	}
 	if value == 0 {
-		return 0, fmt.Errorf("%w: %q has the %s 0, which draws nothing", errTokens, token, key)
+		return 0, fmt.Errorf("%w: %q has the %s 0, which is nothing", errTokens, token, key)
 	}
 	return value, nil
 }

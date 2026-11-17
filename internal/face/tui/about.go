@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The cursor after the name's last line in the name's font, a column apart from it, as wide as the font's strokes
@@ -73,7 +74,7 @@ func (layout layout) about(head document.Head, brief []document.Fact, address []
 // its width and its rows; else as text in the same colours, the site's cursor after it, wrapped where the page is
 // narrower than the name.
 func (layout layout) nameColumn(linesAbove []line, title string) []line {
-	if banner := nameBanner(strings.Fields(strings.ToUpper(title))); len(banner) > 0 {
+	if banner := nameBanner(look.NameLines(title)); len(banner) > 0 {
 		if column := slices.Concat(linesAbove, banner); layout.fits(column) {
 			return column
 		}
@@ -81,17 +82,10 @@ func (layout layout) nameColumn(linesAbove []line, title string) []line {
 	return slices.Concat(linesAbove, layout.fill(withCursor(gradientWords(title, kindName)), 0))
 }
 
-// nameBanner is a name's words in the name's font: the first above the rest, the cursor after them; nothing where the
-// name has no words or the font does not draw every letter of them.
-func nameBanner(words []string) []line {
-	if len(words) == 0 {
-		return nil
-	}
-	texts := []string{words[0]}
-	if len(words) > 1 {
-		texts = append(texts, strings.Join(words[1:], space))
-	}
-	rows := nameFont().bannerRows(texts)
+// nameBanner is a name's lines in the name's font, the cursor after them; nothing where the name has no lines or the
+// font does not draw every letter of them.
+func nameBanner(texts []string) []line {
+	rows := look.NameFont().Banner(texts)
 	if len(rows) == 0 {
 		return nil
 	}

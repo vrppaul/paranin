@@ -55,6 +55,10 @@ lengths:
   - name: row
     about: the grid's one row
     pixels: 24
+times:
+  - name: blink
+    about: a cursor's blink
+    milliseconds: 1060
 `
 
 // A colour keeps its value whole for a terminal of full colour, falls to the nearest of xterm's 256 for one of
@@ -155,6 +159,7 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		{name: "what each of a text style's properties is for", want: "/* the text read: its size */"},
 		{name: "a length", want: "--row: 24px;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
+		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -231,6 +236,9 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
 		{name: "a length named as the face's property is", original: "name: row", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a length named as a text style's property is", original: "name: row", replacement: "name: type_body_size", want: `"type_body_size" is named twice`},
+		{name: "a time that takes none", original: "milliseconds: 1060", replacement: "milliseconds: 0", want: `"blink" has the milliseconds 0`},
+		{name: "a time's milliseconds left out", original: "    milliseconds: 1060\n", replacement: "", want: `"blink" has no milliseconds`},
+		{name: "a time named as a length is", original: "name: blink", replacement: "name: row", want: `"row" is named twice`},
 		{name: "a blend named as the face's property is", original: "name: chosen", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
 		{name: "a blend named as the page's own colour is", original: "name: tint", replacement: "name: background", want: `"background" is named twice`},

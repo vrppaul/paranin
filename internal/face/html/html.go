@@ -12,9 +12,11 @@
 //
 // Every page, the page of no page among them, includes what the build it is served with (assets) brings to run the
 // site's script: the stylesheet, which styles its markup, what each part is, a heading by its depth, a period's
-// months as times; and the script, which runs the choice of theme a page of a document offers above its head. The
-// classes of the page's parts arrive with its design (TODO, "The look"); until then a gap still to fill reads as its
-// text, as the markdown writes it.
+// months as times; and the script, which runs the choice of theme a page of a document offers above its head. A
+// page's title, and on the résumé each section's, stands in the design's block letters (letters.go), drawn as SVG a
+// screen reader skips, the heading named by its words; a title with a letter the font does not draw stays its words.
+// The classes of the page's other parts arrive with its design (TODO, "The look"); until then a gap still to fill
+// reads as its text, as the markdown writes it.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write

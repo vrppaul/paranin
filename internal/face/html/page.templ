@@ -1,6 +1,7 @@
 package html
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
@@ -33,7 +34,7 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 			@writer.head(composed.Head)
 			<main>
 				for _, block := range composed.Blocks {
-					@writer.block(block, firstHeadingDepth)
+					@writer.topBlock(composed.Head.Page.Kind, block)
 				}
 			</main>
 		</body>
@@ -85,9 +86,7 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 // lead, and where a project's code lives.
 templ (writer PageWriter) head(head document.Head) {
 	<header>
-		<h1>
-			@writer.spans(head.Title)
-		</h1>
+		@writer.drawnTitle(head)
 		if len(head.Subtitle) > 0 || head.Place != "" {
 			<p>
 				@writer.spans(head.Subtitle)
@@ -267,6 +266,67 @@ templ (writer PageWriter) link(address string, spans []document.Span) {
 // knownMonth is a month of a year as a time: as a reader reads it, and as a machine does.
 templ knownMonth(start time.Time) {
 	<time datetime={ machineMonth(start) }>{ monthText(start) }</time>
+}
+
+// letteredSection is a section of the résumé under its title in block letters, named by its words.
+templ (writer PageWriter) letteredSection(section document.Section, title letterDrawing) {
+	<section>
+		<h2 aria-label={ title.words }>
+			@blockLetters(title)
+		</h2>
+		for _, block := range section.Blocks {
+			@writer.block(block, firstHeadingDepth+1)
+		}
+	</section>
+}
+
+// letteredHeadingOne is a page's title in block letters, named by its words.
+templ letteredHeadingOne(title letterDrawing) {
+	<h1 aria-label={ title.words }>
+		@blockLetters(title)
+	</h1>
+}
+
+// blockLetters is a drawing of block letters as an SVG a screen reader skips, its heading naming its words: its
+// rectangles filled with one gradient from the accent to the host's colour, which the stylesheet gives its stops, and
+// the cursor after them where it has one. Its width and height are in em, a cell an em, so the stylesheet sizes it
+// by its font size, and it shrinks to its column.
+templ blockLetters(drawing letterDrawing) {
+	<svg class={ drawing.class } viewBox={ drawing.viewBox() } width={ drawing.svgWidth() } height={ drawing.svgHeight() } shape-rendering="crispEdges" aria-hidden="true">
+		<defs>
+			<linearGradient id={ drawing.gradientID() } gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={ strconv.Itoa(drawing.width) } y2="0">
+				<stop class="letters-start" offset="0"></stop>
+				<stop class="letters-end" offset="1"></stop>
+			</linearGradient>
+		</defs>
+		<g fill={ "url(#" + drawing.gradientID() + ")" }>
+			for _, rectangle := range drawing.rectangles {
+				@letterRectangleOf(rectangle, "")
+			}
+		</g>
+		if drawing.cursor != nil {
+			@letterRectangleOf(*drawing.cursor, "letters-cursor")
+		}
+	</svg>
+}
+
+// letterRectangleOf is one rectangle of a drawing, of a class where it has one.
+templ letterRectangleOf(rectangle letterRectangle, class string) {
+	<rect
+		if class != "" {
+			class={ class }
+		}
+		x={ strconv.Itoa(rectangle.left) }
+		y={ strconv.Itoa(rectangle.top) }
+		width={ strconv.Itoa(rectangle.width) }
+		height={ strconv.Itoa(rectangle.height) }
+	></rect>
+}
+
+templ headingOne(title templ.Component) {
+	<h1>
+		@title
+	</h1>
 }
 
 templ headingTwo(title templ.Component) {

@@ -53,6 +53,10 @@ export default {
     // stylesheet names, and a value written here in any unit would be a second source of the design. A unit joins
     // the list with its first user, a cell's ch or a grid's fr, in the chunk that writes it
     "declaration-property-unit-allowed-list": {
+      // a drawing is at most as wide as its column: the block letters. The rule takes the first key that matches a
+      // property, so each property's own key stands above the catch-all
+
+      "/^max-width$/": ["%"],
       "/.*/": [],
     },
     // A media query holds no width at all yet, and a container query is refused whole, since neither has a user:

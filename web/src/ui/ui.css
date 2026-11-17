@@ -56,3 +56,47 @@ mark {
   outline: var(--focus-width) solid var(--accent);
   outline-offset: var(--focus-width);
 }
+
+/* block letters, the name and the titles drawn as SVG from the TUI's glyphs (DESIGN.md, Block letters): the SVG is as
+ * many em wide as it has cells, so its font size is a cell's width; it shrinks to its column, never past it */
+.letters {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.letters-name {
+  font-size: var(--name-cell);
+}
+
+.letters-title {
+  font-size: var(--title-cell);
+}
+
+/* one gradient across the letters, from the accent to the host's colour */
+.letters-start {
+  stop-color: var(--accent);
+}
+
+.letters-end {
+  stop-color: var(--host);
+}
+
+/* the cursor after the name blinks, as a terminal's does: the one thing on the page that moves on its own, and still
+ * for a reader who asks for less motion */
+.letters-cursor {
+  fill: var(--accent);
+  animation: cursor-blink var(--blink) steps(1) infinite;
+}
+
+@keyframes cursor-blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letters-cursor {
+    animation: none;
+  }
+}

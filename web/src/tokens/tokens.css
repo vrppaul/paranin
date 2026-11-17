@@ -55,4 +55,10 @@
   --type-body-weight: 400;
   /* how wide a focus ring is, and how far it stands from what it rings */
   --focus-width: 2px;
+  /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
+  --name-cell: 16px;
+  /* a cell of a title in block letters at its natural size, which shrinks to its column */
+  --title-cell: 12px;
+  /* one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks */
+  --blink: 1060ms;
 }

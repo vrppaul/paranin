@@ -81,7 +81,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 		{name: "HTML and markdown alike", path: "/", accept: "text/html, text/markdown, text/plain;q=0.1", contentType: markdown, holds: "# Mira Example"},
 		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", contentType: markdown, holds: "# tidy-tool"},
 		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", contentType: manual, holds: "TIDY-TOOL(1)"},
-		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: "<h1>tidy-tool</h1>"},
+		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: `<h1 aria-label="tidy-tool">`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

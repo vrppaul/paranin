@@ -64,6 +64,73 @@ func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 	}
 }
 
+// A page's title stands in block letters, a drawing a screen reader skips, the heading named by its words; the
+// résumé's in the name's font with the cursor after it, another page's in the titles'; a title with a letter the font
+// does not draw stays its words.
+func TestATitleInBlockLettersIsNamedByItsWords(test *testing.T) {
+	cases := []struct {
+		name  string
+		page  document.Page
+		title string
+		want  []string
+		lacks []string
+	}{
+		{
+			name: "the résumé's name, with the cursor", page: document.Page{Kind: document.PageResume, Slug: ""}, title: "Ada Lovelace",
+			want: []string{`<h1 aria-label="Ada Lovelace">`, `aria-hidden="true"`, `class="letters-cursor"`}, lacks: nil,
+		},
+		{
+			name: "a project's name, with no cursor", page: document.Page{Kind: document.PageProject, Slug: "tidy"}, title: "Tidy",
+			want: []string{`<h1 aria-label="Tidy">`, `aria-hidden="true"`}, lacks: []string{`class="letters-cursor"`},
+		},
+		{
+			name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "cafe"}, title: "Café",
+			want: []string{"<h1>Café</h1>"}, lacks: []string{"<svg"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			composed := document.Document{
+				Head:   fixtures.HeadOf(testCase.page, []document.Span{document.Text{Text: testCase.title}}),
+				Blocks: nil,
+			}
+			page := lined(fixtureWriter(test).Page(composed, blankPerson()))
+			for _, want := range testCase.want {
+				if !strings.Contains(page, want) {
+					test.Errorf("the page %q holds no %q", page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(page, unwanted) {
+					test.Errorf("the page %q holds %q", page, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// A section of the résumé stands under its title in block letters, named by its words; a section of another page
+// under its title as words.
+func TestTheResumesSectionsStandUnderBlockLetters(test *testing.T) {
+	section := document.Section{Title: []document.Span{document.Text{Text: "About"}}, Blocks: nil}
+	cases := []struct {
+		name string
+		page document.Page
+		want string
+	}{
+		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: ""}, want: `<h2 aria-label="About">`},
+		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy"}, want: "<h2>About</h2>"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			composed := document.Document{Head: fixtures.HeadOf(testCase.page, nil), Blocks: []document.Block{section}}
+			if page := lined(fixtureWriter(test).Page(composed, blankPerson())); !strings.Contains(page, testCase.want) {
+				test.Errorf("the page %q holds no %q", page, testCase.want)
+			}
+		})
+	}
+}
+
 // A page whose content gives no description names none, so a search engine or a preview writes its own rather
 // than an empty one.
 func TestAPageWithNoDescriptionNamesNone(test *testing.T) {

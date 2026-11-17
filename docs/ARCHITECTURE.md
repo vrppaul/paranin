@@ -539,7 +539,7 @@ internal/routes/         # every address of the site
 internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch
 internal/document/       # the face-neutral model
 internal/content/        # the content folder: load, check
-internal/look/           # the design's colours, generated from design/tokens.yaml
+internal/look/           # the design's colours, generated from design/tokens.yaml, and its block fonts
 internal/assets/         # the page's build: its manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone
 internal/fixtures/       # the shared fixtures, the content's and the build's, for tests alone

@@ -1,7 +1,8 @@
 // Package look is the design's tokens as the faces read them (docs/FOUNDATION.md §5.5). palette.go, which
 // scripts/tokens writes from design/tokens.yaml, names each colour and gives its shade in each theme; this file
 // holds the types it fills. No colour of the design is written anywhere else in Go. Its generate writes the page's
-// tokens.css too, under web/src/tokens, from the same tokens.
+// tokens.css too, under web/src/tokens, from the same tokens. letters.go holds the design's block fonts, in which
+// the TUI and the page both draw the author's name and the titles, each its own way.
 package look
 
 import (

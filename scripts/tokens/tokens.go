@@ -54,6 +54,7 @@ type tokensFile struct {
 	Face       faceToken       `yaml:"face"`
 	Type       []typeToken     `yaml:"type"`
 	Lengths    []lengthToken   `yaml:"lengths"`
+	Times      []timeToken     `yaml:"times"`
 }
 
 // themedValue is one value in each theme.

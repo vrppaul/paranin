@@ -114,9 +114,8 @@ size: a control that seems to need one is the wrong control.
 ## Block letters
 
 - The name and the five sections' titles are drawn in the TUI's block fonts, the same glyphs
-  (`internal/face/tui/banner.go`), as SVG rectangles: they need no font and shrink to their column, never past it.
-- Natural size: `name_cell` (16px) a cell for the name, PARANIN 528px, 608px with its cursor; `title_cell` (12px) for
-  a title, EXPERIENCE 480px with the three-cell X.
+  (`internal/look/letters.go`), as SVG rectangles: they need no font and shrink to their column, never past it.
+- Natural size: `name_cell` a cell for the name, `title_cell` for a title.
 - One gradient, `accent` to `host`, left to right: the only gradient on the page. `shape-rendering: crispEdges`, so no
   seam shows between two rectangles.
 - The title font's X is drawn on three cells (▀▄▀ over ▄▀▄), in the TUI too: on five it read as )(.

@@ -67,6 +67,9 @@ func stylesheet(read tokens) []byte {
 	for _, length := range read.page.lengths {
 		writeProperty(&builder, length.name, length.about, fmt.Sprintf(pixelValue, length.pixels))
 	}
+	for _, timed := range read.page.times {
+		writeProperty(&builder, timed.name, timed.about, fmt.Sprintf(millisecondValue, timed.milliseconds))
+	}
 	builder.WriteString(ruleClosing)
 	return []byte(builder.String())
 }

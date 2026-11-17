@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -350,7 +351,7 @@ func (layout layout) titleRows(title string) []line {
 	if title == "" {
 		return nil
 	}
-	if rows := titleFont().bannerRows([]string{strings.ToUpper(title)}); len(rows) > 0 {
+	if rows := look.TitleFont().Banner([]string{strings.ToUpper(title)}); len(rows) > 0 {
 		if banner := tonedBanner(rows, kindHeading, rowsWidth(rows[0])); layout.fits(slices.Concat(banner, blankLines())) {
 			return banner
 		}

@@ -1,12 +1,18 @@
-# The design's colours, each named for what it does, in the light theme (Catppuccin Latte) and the dark one
-# (Catppuccin Macchiato), the palettes the first version kept (docs/FOUNDATION.md §3.4). scripts/tokens writes
-# them into internal/look, where the TUI reads them, and into web/src/tokens/tokens.css, where the page does:
+# The design's tokens. First its colours, each named for what it does, in the light theme (Catppuccin Latte) and
+# the dark one (Catppuccin Macchiato), the palettes the first version kept (docs/FOUNDATION.md §3.4). scripts/tokens
+# writes them into internal/look, where the TUI reads them, and into web/src/tokens/tokens.css, where the page does:
 # `go generate ./internal/look`.
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
 # 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays at a strength over
 # its background, or over the colour the blend names `under` it; a terminal has no opacity, so the blend is worked
 # out into a colour of its own.
+#
+# The face, the text styles and the lengths after the colours are the page's alone, since a terminal has a face, a
+# size and a grid of its own: each becomes custom properties of tokens.css and nothing of internal/look. The face
+# is its families by name, in the order a browser tries them. A text style is its size and its line's height in
+# whole pixels, and its weight; a line is in pixels, not rows, since a style's line need not be a whole row. A
+# length is a whole number of pixels. Each comes with the first part of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -112,3 +118,19 @@ blends:
     dark: 0.06
     basic: own
     indexed_lean: 0
+
+face:
+  about: the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
+  families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
+
+type:
+  - name: body
+    about: the text read, every page's own
+    size: 16
+    line: 24
+    weight: 400
+
+lengths:
+  - name: focus_width
+    about: how wide a focus ring is, and how far it stands from what it rings
+    pixels: 2

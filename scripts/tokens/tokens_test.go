@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"os"
 	"path/filepath"
@@ -41,6 +42,19 @@ blends:
     dark: 0.5
     basic: own
     indexed_lean: 0
+face:
+  about: the one face
+  families: [Mono Face, 3270, Monospace]
+type:
+  - name: body
+    about: the text read
+    size: 16
+    line: 24
+    weight: 400
+lengths:
+  - name: row
+    about: the grid's one row
+    pixels: 24
 `
 
 // A colour keeps its value whole for a terminal of full colour, falls to the nearest of xterm's 256 for one of
@@ -120,6 +134,37 @@ func TestEachColourIsACustomPropertyOfBothThemes(test *testing.T) {
 	}
 }
 
+// The page reads its face, each text style and each length as custom properties of the page's root, the same in
+// both themes: the face's families each by name, a text style as its size, its line's height and its weight.
+func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	written := string(stylesheet(read))
+	opening := strings.LastIndex(written, ":root {")
+	rule := written[opening : opening+strings.Index(written[opening:], "}")]
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the face, each name quoted but a generic family in any case", want: `--face: "Mono Face", "3270", Monospace;`},
+		{name: "a text style's size", want: "--type-body-size: 16px;"},
+		{name: "a text style's line", want: "--type-body-line: 24px;"},
+		{name: "a text style's weight", want: "--type-body-weight: 400;"},
+		{name: "what each of a text style's properties is for", want: "/* the text read: its size */"},
+		{name: "a length", want: "--row: 24px;"},
+		{name: "what each length is for", want: "/* the grid's one row */"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(rule, testCase.want) {
+				test.Errorf("the root's last rule = %q, want it to hold %q", rule, testCase.want)
+			}
+		})
+	}
+}
+
 // A name of words parted by underscores is a custom property's, parted by hyphens.
 func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	read, err := readTokens([]byte(strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n")))
@@ -131,9 +176,22 @@ func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	}
 }
 
+// A length may take a text style's name: the style's properties are named for their kind, so the two never meet.
+func TestALengthMayTakeATextStylesName(test *testing.T) {
+	read, err := readTokens([]byte(strings.Replace(fixtureTokens, "name: row", "name: body", 1)))
+	if err != nil {
+		test.Fatalf("readTokens = %v, want no fault", err)
+	}
+	if got := string(stylesheet(read)); !strings.Contains(got, "--body: 24px;") {
+		test.Errorf("the stylesheet = %q, want it to hold %q", got, "--body: 24px;")
+	}
+}
+
 // A file of tokens with a fault is refused, the fault named: nothing is written from tokens the faces would
 // read wrong.
 func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
+	// the fixture's line of the length's pixels, which a fault in them names
+	pixelsLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "pixels: 24")], "\n") + 1
 	cases := []struct {
 		name        string
 		original    string
@@ -154,6 +212,28 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a colour with no name", original: "name: text", replacement: `name: ""`, want: "no name of small words"},
 		{name: "a name that is no word", original: "name: text", replacement: "name: Text-2", want: `"Text-2"`},
 		{name: "a strength beyond the whole", original: "    dark: 0.25\n    basic: 3\n", replacement: "    dark: 1.5\n    basic: 3\n", want: "1.5"},
+		{name: "a face with no family", original: "  families: [Mono Face, 3270, Monospace]\n", replacement: "", want: "face has no family"},
+		{name: "a family of no name", original: "[Mono Face, 3270, Monospace]", replacement: `["", monospace]`, want: `family "" is no name`},
+		{name: "a family that would close its quotes", original: "[Mono Face, 3270, Monospace]", replacement: `["Mono\"; } body {", monospace]`, want: `"Mono\"; } body {"`},
+		{name: "a face that says nothing of what it is for", original: "  about: the one face\n", replacement: "", want: `"face" says nothing`},
+		{name: "a text style's size left out", original: "    size: 16\n", replacement: "", want: "has no size"},
+		{name: "a text style of no size", original: "    size: 16\n", replacement: "    size: 0\n", want: `"body" has the size 0`},
+		{name: "a weight between a face's", original: "    weight: 400\n", replacement: "    weight: 450\n", want: "450"},
+		{name: "a weight beyond the heaviest", original: "    weight: 400\n", replacement: "    weight: 1000\n", want: "1000"},
+		{name: "a weight of none", original: "    weight: 400\n", replacement: "    weight: 0\n", want: "the weight 0"},
+		{name: "a length of part of a pixel, its line named", original: "pixels: 24", replacement: "pixels: 1.5", want: fmt.Sprintf(`line %d: "1.5" is no whole number`, pixelsLine)},
+		{name: "a length with its unit written", original: "pixels: 24", replacement: "pixels: 24px", want: `"24px" is no whole number`},
+		{name: "a length written as a string", original: "pixels: 24", replacement: `pixels: "24"`, want: `"24" is no whole number`},
+		{name: "a length named as a text style's line is", original: "name: row", replacement: "name: type_body_line", want: `"type_body_line" is named twice`},
+		{name: "a length named as a text style's weight is", original: "name: row", replacement: "name: type_body_weight", want: `"type_body_weight" is named twice`},
+		{name: "a length of no pixels", original: "pixels: 24", replacement: "pixels: 0", want: `"row" has the pixels 0`},
+		{name: "a length's pixels left out", original: "    pixels: 24\n", replacement: "", want: `"row" has no pixels`},
+		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
+		{name: "a length named as the face's property is", original: "name: row", replacement: "name: face", want: `"face" is named twice`},
+		{name: "a length named as a text style's property is", original: "name: row", replacement: "name: type_body_size", want: `"type_body_size" is named twice`},
+		{name: "a blend named as the face's property is", original: "name: chosen", replacement: "name: face", want: `"face" is named twice`},
+		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
+		{name: "a blend named as the page's own colour is", original: "name: tint", replacement: "name: background", want: `"background" is named twice`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

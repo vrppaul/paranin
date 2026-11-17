@@ -42,3 +42,17 @@
   /* the ground of the item chosen in a window, the text laid faintly over the bars */
   --chosen: light-dark(#4c4f6912, #cad3f50f);
 }
+
+/* The page's face, its text styles and the lengths it lays out by, which the page alone reads */
+:root {
+  /* the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
+  --face: "JetBrains Mono", ui-monospace, "SFMono-Regular", "menlo", monospace;
+  /* the text read, every page's own: its size */
+  --type-body-size: 16px;
+  /* the text read, every page's own: its line's height */
+  --type-body-line: 24px;
+  /* the text read, every page's own: its weight */
+  --type-body-weight: 400;
+  /* how wide a focus ring is, and how far it stands from what it rings */
+  --focus-width: 2px;
+}

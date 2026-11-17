@@ -5,7 +5,8 @@
 //     for each kind of terminal, its value whole, the nearest of xterm's 256, and the one of sixteen the file names;
 //     a blend is worked out into a colour of its own;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
-//     blend its colour at its strength, which the browser lays over whatever is under it.
+//     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
+//     reads: the face, each text style as its size, its line's height and its weight, and each length.
 //
 // Its usage:
 //

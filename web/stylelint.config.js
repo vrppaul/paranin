@@ -39,5 +39,12 @@ export default {
     "declaration-property-value-disallowed-list": {
       [COLOUR_PROPERTIES.toString()]: [SYSTEM_COLOURS],
     },
+    // The font shorthand with values sets the face's every longhand again, the page's ligatures off among them, and
+    // so do font-variant and all: a text style sets its size, line and weight, and a control takes the page's face
+    // whole, by inherit alone. A property's name is read in any case, as CSS reads it
+    "declaration-property-value-allowed-list": {
+      "/^font(-variant)?$/i": ["inherit"],
+    },
+    "property-disallowed-list": ["/^all$/i"],
   },
 };

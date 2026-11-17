@@ -13,7 +13,7 @@ pnpm --dir web install                                  # the page's tools, as w
 pnpm --dir web build                                    # the page's build into build/web; `watch` builds on each change, and the site reloads
 pnpm --dir web test                                     # the page's tests, in jsdom
 go run ./cmd/paranin serve content build/web            # the site: curl localhost:8080, ssh -p 23234 localhost
-go generate ./internal/look                             # write the design's colours, Go and CSS, from design/tokens.yaml
+go generate ./internal/look                             # write the design's tokens, Go and CSS, from design/tokens.yaml
 go generate ./internal/face/html                        # format the templ templates and write their Go
 pre-commit run --all-files                              # every gate a commit runs, over every tracked file
 pre-commit run --files $(git ls-files -co --exclude-standard)   # the same over files not yet tracked

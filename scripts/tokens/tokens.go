@@ -51,6 +51,9 @@ type tokensFile struct {
 	Background backgroundToken `yaml:"background"`
 	Colours    []colourToken   `yaml:"colours"`
 	Blends     []blendToken    `yaml:"blends"`
+	Face       faceToken       `yaml:"face"`
+	Type       []typeToken     `yaml:"type"`
+	Lengths    []lengthToken   `yaml:"lengths"`
 }
 
 // themedValue is one value in each theme.
@@ -93,7 +96,8 @@ type blendToken struct {
 // basicValue is one of a terminal's sixteen colours, or ownBasic.
 type basicValue uint8
 
-// UnmarshalYAML reads a basic colour: a number below sixteen, or the word for the terminal's own.
+// UnmarshalYAML reads a basic colour: a number below sixteen, or the word for the terminal's own. Its fault names
+// the line; readTokens marks it as the tokens' own.
 func (basic *basicValue) UnmarshalYAML(node *yaml.Node) error {
 	if node.Value == ownWord {
 		*basic = ownBasic
@@ -101,19 +105,20 @@ func (basic *basicValue) UnmarshalYAML(node *yaml.Node) error {
 	}
 	number, err := strconv.ParseUint(node.Value, decimal, basicBits)
 	if err != nil || number >= basicColours {
-		return fmt.Errorf("%w: basic %q is neither %s nor a colour of 0 to %d", errTokens, node.Value, ownWord, basicColours-1)
+		return fmt.Errorf("line %d: basic %q is neither %s nor a colour of 0 to %d", node.Line, node.Value, ownWord, basicColours-1)
 	}
 	*basic = basicValue(number)
 	return nil
 }
 
-// tokens are the colours and blends of the file read: every value there, each a colour or a strength, every name
-// a word of its own, every blend over a colour the file names.
+// tokens are the tokens of the file read: every value there, each a colour, a strength, a family or a number, every
+// property a name of its own, every blend over a colour the file names.
 type tokens struct {
 	background      themedValue[color.RGBA]
 	backgroundAbout string
 	colours         []readColour
 	blends          []readBlend
+	page            pageTokens
 }
 
 // readColour is a colour of the file with its values read.
@@ -137,8 +142,8 @@ type readBlend struct {
 }
 
 // readTokens reads the file strictly: a key it has no place for or one it leaves out, a value that is no colour,
-// a strength beyond the whole, a name that is no word or written twice, and a blend over a colour the file does
-// not name are each a fault.
+// a strength beyond the whole, a weight no face has, a length in no whole pixels, a name that is no word or written
+// twice, and a blend over a colour the file does not name are each a fault.
 func readTokens(data []byte) (tokens, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
@@ -146,14 +151,11 @@ func readTokens(data []byte) (tokens, error) {
 	if err := decoder.Decode(&written); err != nil {
 		return tokens{}, fmt.Errorf("%w: %w", errTokens, err)
 	}
-	background, err := themedColour(written.Background.Light, written.Background.Dark)
-	if err != nil {
-		return tokens{}, fmt.Errorf("background: %w", err)
-	}
-	if written.Background.About == "" {
-		return tokens{}, fmt.Errorf("%w: the background says nothing of what it is for", errTokens)
-	}
 	named := map[string]bool{}
+	background, err := readBackground(written.Background, named)
+	if err != nil {
+		return tokens{}, err
+	}
 	colours := make([]readColour, 0, len(written.Colours))
 	for _, token := range written.Colours {
 		colour, err := readColourToken(token, named)
@@ -170,7 +172,24 @@ func readTokens(data []byte) (tokens, error) {
 		}
 		blends = append(blends, blend)
 	}
-	return tokens{background: background, backgroundAbout: written.Background.About, colours: colours, blends: blends}, nil
+	page, err := readPageTokens(written, named)
+	if err != nil {
+		return tokens{}, err
+	}
+	return tokens{background: background, backgroundAbout: written.Background.About, colours: colours, blends: blends, page: page}, nil
+}
+
+// readBackground reads the page's own colour, which must say what it is for, and claims its name, so no other token
+// is written as the same property.
+func readBackground(token backgroundToken, named map[string]bool) (themedValue[color.RGBA], error) {
+	background, err := themedColour(token.Light, token.Dark)
+	if err != nil {
+		return themedValue[color.RGBA]{}, fmt.Errorf("background: %w", err)
+	}
+	if token.About == "" {
+		return themedValue[color.RGBA]{}, fmt.Errorf("%w: the background says nothing of what it is for", errTokens)
+	}
+	return background, claim(backgroundName, named)
 }
 
 func readColourToken(token colourToken, named map[string]bool) (readColour, error) {
@@ -226,19 +245,34 @@ func namedColour(colours []readColour, name, blend, does string) (themedValue[co
 	return colours[found].values, nil
 }
 
-// checkToken refuses a token whose name is no word, or words parted by underscores, or is one the file has named
-// already, and one that says nothing of what it is for; it marks the name as given.
+// checkToken refuses a token whose name is no word, or words parted by underscores, or is a property the file has
+// named already, and one that says nothing of what it is for; it claims the name as the property it is written as.
 func checkToken(name, about string, named map[string]bool) error {
+	if err := checkName(name, about); err != nil {
+		return err
+	}
+	return claim(name, named)
+}
+
+// checkName refuses a name that is no word, or words parted by underscores, and a token that says nothing of what
+// it is for.
+func checkName(name, about string) error {
 	if !isTokenName(name) {
 		return fmt.Errorf("%w: %q is no name of small words parted by underscores", errTokens, name)
-	}
-	if named[name] {
-		return fmt.Errorf("%w: %q is named twice", errTokens, name)
 	}
 	if about == "" {
 		return fmt.Errorf("%w: %q says nothing of what it is for", errTokens, name)
 	}
-	named[name] = true
+	return nil
+}
+
+// claim marks a property's name as given, and refuses one given already: every token of the file is written as
+// properties of one stylesheet, so no two may share a name.
+func claim(property string, named map[string]bool) error {
+	if named[property] {
+		return fmt.Errorf("%w: %q is named twice", errTokens, property)
+	}
+	named[property] = true
 	return nil
 }
 

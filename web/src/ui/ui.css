@@ -1,17 +1,7 @@
-/* The page's stylesheet: the design's colours, then what every page is drawn in. It keeps what the first
- * version's look kept of the site's identity (docs/FOUNDATION.md §3.4): monospace text on one grid, the
- * Catppuccin palettes, one accent; the look of each part arrives with the design (TODO, "The look"). */
+/* The page's stylesheet: the design's tokens, then what every page is drawn in. It keeps what the first
+ * version's look kept of the site's identity (docs/FOUNDATION.md §3.4): monospace text, the Catppuccin palettes,
+ * one accent; the grid and the look of each part arrive with the parts that lay out by them (TODO, "The look"). */
 @import url("../tokens/tokens.css");
-
-:root {
-  /* one grid: a cell is 1ch wide and one row tall, and text sits on the rows */
-  --row: 24px;
-  --text-size: 14px;
-  --font: "JetBrains Mono", ui-monospace, "SFMono-Regular", menlo, monospace;
-
-  /* focus looks the same everywhere: an outline in the accent this wide, as far from what it rings */
-  --focus-width: 2px;
-}
 
 /* a theme the reader chose, over the system's: the site's script sets it on the page's root
  * (src/controllers/theme.ts), and the colour scheme chooses each token's light or dark value */
@@ -27,8 +17,33 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text);
-  font: normal var(--text-size) / var(--row) var(--font);
+
+  /* the face once, here, with its ligatures off, for every element to inherit: a text style sets only its size,
+   * line and weight, never `font` or `font-variant` with values, nor `all`, which would set the ligatures again */
+  font-family: var(--face);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line);
   font-variant-ligatures: none;
+
+  /* a word longer than the line, as an address is, breaks rather than push the page wider than the screen */
+  overflow-wrap: break-word;
+}
+
+/* the elements the browser gives a face of its own take the page's: code its monospace, a control its system font
+ * at its own size, and each its ligatures with it */
+code,
+kbd,
+samp,
+pre {
+  font-family: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 /* a result worth seeing first, marked in the tint */

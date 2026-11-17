@@ -308,7 +308,7 @@ which the first version sent, is every browser's own default.
 7. Focus looks the same everywhere: 2px accent outline, 2px away.
 8. Text on the accent is always dark (`--on-accent`).
 
-Text sizes: 12 and 14px; large text only `on-title`, `on-display`, `on-hero`.
+Text sizes are the text styles of `design/tokens.yaml`; the text read is 16px.
 
 ### Theme
 

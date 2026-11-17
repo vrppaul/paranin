@@ -209,7 +209,7 @@ author's head, which is why one review found so many breaks.
 | A component library: every kind of element in one place, refused elsewhere | claude-review `lib/ui` | `face/html/ui`, `web/src/ui` |
 | A script that finds elements by `data-part` and writes no style, only custom properties | livereel `stage.js` | `web/src/dom`, `controllers` |
 | Types for what the server sends generated from the server, checked by a hook | claude-review `api:check` | tygo |
-| Design rules from the owner's canvas; a sheet of states in both themes before a design is built | claude-review `design*.md` | `.claude/rules/design.md` |
+| Design rules from the owner's canvas; a sheet of states in both themes before a design is built | claude-review `design*.md` | `DESIGN.md` |
 | Test rules: one behaviour per test, no branch, no look, the cheapest level, a code rule is a gate and never a test | both | `.claude/rules/tests.md` |
 | `TODO.md` (a done item is removed), `CHANGELOG.md`, Conventional Commits, typos | both | repo root, gates |
 
@@ -497,10 +497,18 @@ One file, `design/tokens.yaml`. A Go generator writes `tokens.css`,
 `look/palette.go` and `tokens.ts` (canvas widgets cannot read CSS custom
 properties cheaply, and study's slides hard-code colours). A hook checks the
 generated files against the source. The rules at the top of `ui.css` move to
-`.claude/rules/design.md`; what a tool can hold (one radius, one line weight,
-sizes in rows and ch, colours only from tokens) stylelint holds.
+`DESIGN.md` (2026-11-17: the design approved that day is a document of tables
+and components, longer than a rule file holds); what a tool can hold
+stylelint holds: colours, sizes, times and weights only from the tokens.
 
 ### 5.6 Design work — **Proposed**
+
+2026-11-17: the owner approved the design of the résumé and a project's page,
+now `DESIGN.md`, which settles the first, second and fifth items below as it
+says (a role's dates stand in their own column, the page one column under
+860px), and the fourth for the résumé, whose top bar holds its five sections.
+The reading layout and the blog's place in the navigation wait for the blog
+(§8, step 8); serving the face waits for its own chunk.
 
 Each goes through a sheet of states in both themes before code:
 
@@ -657,8 +665,9 @@ model level, the browser with Playwright.
 
 `AGENTS.md` (with `CLAUDE.md` as its symlink): commands, how we work,
 layers, rules for all code, only better, rules by area. Under
-`.claude/rules/`: `go.md`, `tui.md`, `page.md`, `design.md`, `tests.md`,
-`scripts.md`, `instructions.md`.
+`.claude/rules/`: `go.md`, `tui.md`, `page.md`, `tests.md`, `scripts.md`,
+`instructions.md`. The design's reference, `DESIGN.md`, stands beside
+`PRODUCT.md`; it is no instruction file, and is read by the section in hand.
 
 ## 8. Order of work — **Proposed**
 

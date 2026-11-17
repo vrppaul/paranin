@@ -65,4 +65,3 @@ Before you change or review code in an area, read its file whole; a brief to ano
 - `.claude/rules/instructions.md` — this file and the rules of each area.
 - `.claude/rules/tui.md` — the TUI: what is laid out and painted when, where its colours come from, its keys.
 - `.claude/rules/page.md` — the page under `web/`: its build, its stylesheets, what its policy refuses.
-- The rules of the design arrive with its code.

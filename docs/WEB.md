@@ -295,20 +295,9 @@ which the first version sent, is every browser's own default.
 
 ### Design rules
 
-`static/ui.css` is the design library (`paranin ui`). Use its tokens and
-`on-*` components; `site.css` only lays pages out. The rules:
-
-1. One grid: a cell is 1ch wide and one row (24px) tall. Sizes are rows or ch.
-2. One radius: 2px on controls and pop-ups, 0 on surfaces. No pills, no circles.
-3. One line weight: 1px. Quiet lines divide, normal lines outline controls.
-4. Shadows only on things that float above the page.
-5. Selection has three meanings: reverse = chosen option, tint = matched or
-   important text, cursorline = the current row.
-6. One accent (peach). State and mode colours are separate.
-7. Focus looks the same everywhere: 2px accent outline, 2px away.
-8. Text on the accent is always dark (`--on-accent`).
-
-Text sizes are the text styles of `design/tokens.yaml`; the text read is 16px.
+The page's look, its grid, sizes, colours, type, states and components, is
+`DESIGN.md`, as the owner approved it on 2026-11-17; its tokens are
+`design/tokens.yaml`.
 
 ### Theme
 

@@ -30,7 +30,7 @@ One source of facts, drawn in every form a technical reader uses: an SSH TUI (`s
 - The TUI moves between tabs and scrolls, and offers `/` search, `:` commands (`:e <project>`, `:checkhealth`, `:Lazy`) and a window of keys; `y` copies a value over OSC 52.
 - The web page has a theme choice. Islands come later: a hint, a matcher, a vim mode, a contact form.
 - Planned: a blog, an LLM grounded in the content, and a CV tailored to a job description. Neither of the last two ever invents experience.
-- Undecided: the theme choice's form on the web (two buttons, or a radio group with a way back to the system's theme).
+- The theme choice on the web is one button: the page starts in the system's theme, and a choice that lands back on it is forgotten (owner, 2026-11-17; `DESIGN.md`, ThemeSwitch).
 
 ## Brand Commitments
 
@@ -38,7 +38,7 @@ These hold in every face: TUI, web, PDF and social cards (docs/FOUNDATION.md §3
 
 - Monospace type on a 1ch × 24px grid.
 - Catppuccin Latte for the light theme and Macchiato for the dark one; every colour comes from `design/tokens.yaml`.
-- The cursor `▎` after the author's name.
+- The cursor after the author's name: `▎` in the TUI, PDF and cards; on the web page an underscore that blinks, since beside the block letters `▎` read as one more letter (owner, 2026-11-17).
 - Corner crosses `+`.
 - The vim and tmux metaphor: modes, a status line, `:` commands and tabs.
 

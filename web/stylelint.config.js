@@ -1,7 +1,8 @@
 // What every stylesheet of the page is held to beyond stylelint's standard rules. A colour lives in the design
 // tokens alone (.claude/rules/code.md): src/tokens/tokens.css, which scripts/tokens writes from design/tokens.yaml,
 // so no other stylesheet writes one, by its value, its name, a system's colour or a function that makes one; it
-// names a token.
+// names a token. So does a size, a time and a weight: no other stylesheet writes a unit, nor a weight, a line, an
+// opacity or a layer of its own.
 
 // CSS's system colours, the browser's own, which are no tokens either: a property that takes a colour, every one
 // named for a colour (stop-color, -webkit-tap-highlight-color) and every custom property among them, since one may
@@ -42,9 +43,23 @@ export default {
     // The font shorthand with values sets the face's every longhand again, the page's ligatures off among them, and
     // so do font-variant and all: a text style sets its size, line and weight, and a control takes the page's face
     // whole, by inherit alone. A property's name is read in any case, as CSS reads it
+    // A weight, a line's height, an opacity and a layer, numbers with no unit, are tokens too, named by var()
     "declaration-property-value-allowed-list": {
       "/^font(-variant)?$/i": ["inherit"],
+      "/^(font-weight|line-height|opacity|z-index)$/i": ["/^var\\(--[\\w-]+\\)$/", "inherit"],
     },
     "property-disallowed-list": ["/^all$/i"],
+    // No unit at all: a size or a time is a token of design/tokens.yaml, which tokens.css writes and every other
+    // stylesheet names, and a value written here in any unit would be a second source of the design. A unit joins
+    // the list with its first user, a cell's ch or a grid's fr, in the chunk that writes it
+    "declaration-property-unit-allowed-list": {
+      "/.*/": [],
+    },
+    // A media query holds no width at all yet, and a container query is refused whole, since neither has a user:
+    // the first media query brings the page's two widths into media-feature-name-value-allowed-list
+    "media-feature-name-unit-allowed-list": {
+      "/.*/": [],
+    },
+    "at-rule-disallowed-list": ["container"],
   },
 };

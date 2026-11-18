@@ -55,6 +55,9 @@ lengths:
   - name: row
     about: the grid's one row
     rem: 1.5
+  - name: cell
+    about: the grid's one cell
+    cells: 1
 times:
   - name: blink
     about: a cursor's blink
@@ -159,6 +162,7 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		{name: "a text style's weight", want: "--type-body-weight: 400;"},
 		{name: "what each of a text style's properties is for", want: "/* the text read: its size */"},
 		{name: "a length", want: "--row: 1.5rem;"},
+		{name: "a length in cells, a mono face's ch", want: "--cell: 1ch;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
 		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
 	}
@@ -236,7 +240,10 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a length named as a text style's weight is", original: "name: row", replacement: "name: type_body_weight", want: `"type_body_weight" is named twice`},
 		{name: "a length of no rem", original: "rem: 1.5", replacement: "rem: 0", want: `"row" has the rem 0`},
 		{name: "a length less than none", original: "rem: 1.5", replacement: "rem: -1.5", want: `"row" has the rem -1.5`},
-		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has no rem`},
+		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has neither rem nor cells`},
+		{name: "a length in rem and in cells", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    cells: 2\n", want: `"row" has both rem and cells`},
+		{name: "a length of no cells", original: "cells: 1", replacement: "cells: 0", want: `"cell" has the cells 0`},
+		{name: "a length of part of a cell", original: "cells: 1", replacement: "cells: 1.5", want: `"1.5" is no whole number`},
 		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
 		{name: "a length named as the face's property is", original: "name: row", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a length named as a text style's property is", original: "name: row", replacement: "name: type_body_size", want: `"type_body_size" is named twice`},

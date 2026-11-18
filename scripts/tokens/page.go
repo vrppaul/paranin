@@ -33,8 +33,13 @@ const (
 	lineKey         = "line"
 	weightKey       = "weight"
 	remKey          = "rem"
+	cellsKey        = "cells"
 	millisecondsKey = "milliseconds"
 )
+
+// How a length in cells is written in the stylesheet: in ch, a cell of the page's mono face, so a space inside a line
+// stands on the face's own grid
+const cellsValue = "%dch"
 
 // How a time is written in the stylesheet: its milliseconds
 const (
@@ -104,12 +109,13 @@ type typeToken struct {
 	Weight *wholeNumber `yaml:"weight"`
 }
 
-// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how many rem
-// long it is.
+// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how long it is,
+// in rem or in the face's cells, never both.
 type lengthToken struct {
-	Name  string   `yaml:"name"`
-	About string   `yaml:"about"`
-	Rem   *remSize `yaml:"rem"`
+	Name  string       `yaml:"name"`
+	About string       `yaml:"about"`
+	Rem   *remSize     `yaml:"rem"`
+	Cells *wholeNumber `yaml:"cells"`
 }
 
 // timeToken is a time the page waits or moves by, as the file writes it: its name, what it is for, and how many
@@ -120,7 +126,7 @@ type timeToken struct {
 	Milliseconds *wholeNumber `yaml:"milliseconds"`
 }
 
-// wholeNumber is a number of the file that counts whole things: milliseconds, or a weight.
+// wholeNumber is a number of the file that counts whole things: cells, milliseconds, or a weight.
 type wholeNumber uint
 
 // remSize is a size of the file in rem, a fraction among them: a text style's size or line, or a length.
@@ -197,11 +203,26 @@ type readType struct {
 	weight wholeNumber
 }
 
-// readLength is a length read, in rem.
+// readLength is a length read, in rem or in cells.
 type readLength struct {
 	name  string
 	about string
-	rem   remSize
+	value lengthValue
+}
+
+// lengthValue is a length in one of the units the file writes one in, each written in the stylesheet its own way.
+//
+//sumtype:decl
+type lengthValue interface {
+	stylesheetValue() string
+}
+
+// cellCount is a length in whole cells of the page's mono face.
+type cellCount uint
+
+// stylesheetValue is a length in cells as the stylesheet writes it: in ch.
+func (cells cellCount) stylesheetValue() string {
+	return fmt.Sprintf(cellsValue, cells)
 }
 
 // readTime is a time read, in milliseconds.
@@ -297,16 +318,30 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	return style, nil
 }
 
-// readLengthToken reads a length, more than no rem long.
+// readLengthToken reads a length, more than nothing long, in rem or in cells: one of the two, since a length written
+// in both would leave the stylesheet to guess which the file means.
 func readLengthToken(token lengthToken, named map[string]bool) (readLength, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
 	}
-	length, err := counted(token.Rem, token.Name, remKey)
-	if err != nil {
-		return readLength{}, err
+	switch {
+	case token.Rem != nil && token.Cells != nil:
+		return readLength{}, fmt.Errorf("%w: %q has both %s and %s", errTokens, token.Name, remKey, cellsKey)
+	case token.Rem != nil:
+		rem, err := counted(token.Rem, token.Name, remKey)
+		if err != nil {
+			return readLength{}, err
+		}
+		return readLength{name: token.Name, about: token.About, value: rem}, nil
+	case token.Cells != nil:
+		cells, err := counted(token.Cells, token.Name, cellsKey)
+		if err != nil {
+			return readLength{}, err
+		}
+		return readLength{name: token.Name, about: token.About, value: cellCount(cells)}, nil
+	default:
+		return readLength{}, fmt.Errorf("%w: %q has neither %s nor %s", errTokens, token.Name, remKey, cellsKey)
 	}
-	return readLength{name: token.Name, about: token.About, rem: length}, nil
 }
 
 // readTimeToken reads a time, more than no milliseconds long.

@@ -2,8 +2,10 @@
 // is drawn in, then the controllers over the markup the server draws.
 import "../ui/ui.css";
 import { startTheme } from "../controllers/theme";
+import { startTooltips } from "../controllers/tooltip";
 
 // The system's own theme, which a page follows until its reader chooses one
 const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 
 startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
+startTooltips(document);

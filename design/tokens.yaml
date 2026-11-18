@@ -12,8 +12,9 @@
 # a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of internal/look.
 # The face is its families by name, in the order a browser tries them. Every size is in rem, the text size the reader
 # set, so the whole page grows with it; none is in pixels. A text style is its size and its line's height, and its
-# weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is in rem, a time in whole
-# milliseconds. Each comes with the first part of the page that draws by it.
+# weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is in rem, or in whole
+# cells of the face, ch, for a space inside a line; a time is in whole milliseconds. Each comes with the first part of
+# the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -132,6 +133,11 @@ type:
     size: 1
     line: 1.5
     weight: 400
+  - name: caption
+    about: a word on a compact control, a tooltip's among them; never prose
+    size: 0.8125
+    line: 1
+    weight: 400
 
 lengths:
   - name: focus_width
@@ -143,8 +149,29 @@ lengths:
   - name: title_cell
     about: a cell of a title in block letters at its natural size, which shrinks to its column
     rem: 0.75
+  - name: cell
+    about: a cell of the face, the gap inside a compact control and either side of it
+    cells: 1
+  - name: nudge
+    about: an offset inside a row, as far as a tooltip stands from its control
+    rem: 0.25
+  - name: control_compact
+    about: how tall a compact control is, one row, and how wide its square
+    rem: 1.5
+  - name: box
+    about: the square a drawn mark stands in
+    rem: 1
+  - name: radius
+    about: the corner of a button, a chip, a field, a dialog and a tooltip
+    rem: 0.125
+  - name: hairline
+    about: how wide every line is, a border's or a rule's
+    rem: 0.0625
 
 times:
   - name: blink
     about: one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks
     milliseconds: 1060
+  - name: quick
+    about: how long a colour takes to change under the pointer
+    milliseconds: 120

@@ -281,7 +281,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 	site := routes.New(facts.Profile.Site.BaseURL)
 	readPages := compose.Pages(facts)
 	index := compose.Index(facts)
-	pageWriter := html.NewPageWriter(site, build, compose.ThemeWordsOf(facts))
+	pageWriter := html.NewPageWriter(site, build, compose.FrameWordsOf(facts))
 	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}

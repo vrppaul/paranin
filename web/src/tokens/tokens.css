@@ -53,12 +53,32 @@
   --type-body-line: 1.5rem;
   /* the text read, every page's own: its weight */
   --type-body-weight: 400;
+  /* a word on a compact control, a tooltip's among them; never prose: its size */
+  --type-caption-size: 0.8125rem;
+  /* a word on a compact control, a tooltip's among them; never prose: its line's height */
+  --type-caption-line: 1rem;
+  /* a word on a compact control, a tooltip's among them; never prose: its weight */
+  --type-caption-weight: 400;
   /* how wide a focus ring is, and how far it stands from what it rings */
   --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
   --name-cell: 1rem;
   /* a cell of a title in block letters at its natural size, which shrinks to its column */
   --title-cell: 0.75rem;
+  /* a cell of the face, the gap inside a compact control and either side of it */
+  --cell: 1ch;
+  /* an offset inside a row, as far as a tooltip stands from its control */
+  --nudge: 0.25rem;
+  /* how tall a compact control is, one row, and how wide its square */
+  --control-compact: 1.5rem;
+  /* the square a drawn mark stands in */
+  --box: 1rem;
+  /* the corner of a button, a chip, a field, a dialog and a tooltip */
+  --radius: 0.125rem;
+  /* how wide every line is, a border's or a rule's */
+  --hairline: 0.0625rem;
   /* one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks */
   --blink: 1060ms;
+  /* how long a colour takes to change under the pointer */
+  --quick: 120ms;
 }

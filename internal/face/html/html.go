@@ -12,7 +12,7 @@
 //
 // Every page, the page of no page among them, includes what the build it is served with (assets) brings to run the
 // site's script: the stylesheet, which styles its markup, what each part is, a heading by its depth, a period's
-// months as times; and the script, which runs the choice of theme a page of a document offers above its head. A
+// months as times; and the script, which runs the theme button a page of a document draws above its head. A
 // page's title, and on the résumé each section's, stands in the design's block letters (letters.go), drawn as SVG a
 // screen reader skips, the heading named by its words; a title with a letter the font does not draw stays its words.
 // The classes of the page's other parts arrive with its design (TODO, "The look"); until then a gap still to fill
@@ -67,21 +67,21 @@ const (
 	labelEnd = ": "
 )
 
-// The choice of theme as the site's script finds and runs it (web/src/controllers/theme.ts): the part it is, the
-// id its label is named by, and the theme each of its buttons chooses, as the page's stylesheet names them
+// The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
+// and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
+// (web/src/controllers/tooltip.ts)
 const (
-	themePart    = "theme"
-	themeLabelID = "theme-label"
-	themeLight   = "light"
-	themeDark    = "dark"
+	themePart   = "theme"
+	themeNameID = "theme-name"
+	tooltipPart = "tooltip"
 )
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which
-// writes their addresses, what each includes to run the site's script, and the words of the choice of theme.
+// writes their addresses, what each includes to run the site's script, and the words of the frame round each.
 type PageWriter struct {
 	site     routes.Site
 	included assets.Included
-	theme    compose.ThemeWords
+	frame    compose.FrameWords
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
@@ -93,14 +93,14 @@ type pageMetadata struct {
 	markdown    string
 }
 
-// NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the choice
-// of theme in its words.
-func NewPageWriter(site routes.Site, build *assets.Build, theme compose.ThemeWords) PageWriter {
-	return PageWriter{site: site, included: build.Includes(assets.Site), theme: theme}
+// NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
+// round each in its words.
+func NewPageWriter(site routes.Site, build *assets.Build, frame compose.FrameWords) PageWriter {
+	return PageWriter{site: site, included: build.Includes(assets.Site), frame: frame}
 }
 
 // Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
-// then the choice of theme, its head, then each block.
+// then the theme button, its head, then each block.
 func (writer PageWriter) Page(composed document.Document, record compose.Record) string {
 	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
 }

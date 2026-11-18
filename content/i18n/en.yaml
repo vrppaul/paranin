@@ -1,8 +1,8 @@
 # The site's own words in English, which every face shows beside the facts: the titles of the résumé's
 # sections and of the index's, the greeting before the author's name, the labels of the ways to reach the author
 # and of a project's details, the end of what still goes on, how long a skill was used where the profile says
-# `side` or `learning`, the title of the TUI's health report, and the page's choice of theme, its label and the
-# two themes.
+# `side` or `learning`, the title of the TUI's health report, and the name of the page's theme button, which is
+# pressed while the page is dark.
 # `paranin check content` requires every one of them.
 
 about: About
@@ -23,6 +23,4 @@ learning: learning
 author: author
 resume: Résumé
 health: health
-theme: theme
-light: light
-dark: dark
+dark_theme: Dark theme

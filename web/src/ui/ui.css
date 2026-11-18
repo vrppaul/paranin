@@ -59,6 +59,96 @@ mark {
   outline-offset: var(--focus-width);
 }
 
+/* the theme: one quiet square button, a drawn mark and no words, compact in size, no border and no ground (DESIGN.md,
+ * ThemeSwitch); the words that name it show as its tooltip under the pointer and on focus */
+.theme-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-compact);
+  height: var(--control-compact);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  vertical-align: middle;
+  cursor: pointer;
+  transition: color var(--quick);
+}
+
+.theme-button:hover {
+  color: var(--text);
+}
+
+/* a mark drawn in a box of sixteen units, in the colour of the words round it: its lines stroked, its halves filled */
+.mark {
+  width: var(--box);
+  height: var(--box);
+}
+
+.mark-line {
+  fill: none;
+  stroke: currentcolor;
+}
+
+.mark-fill {
+  fill: currentcolor;
+}
+
+/* a word or two about a control, a nudge under the part the control stands in, on the ground a shade below the page;
+ * never the only place something is said. Hidden, it still names its control, as aria-labelledby reads hidden words */
+:has(> .tooltip) {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(var(--control-compact) + var(--nudge));
+  left: 0;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--control-compact);
+  padding: 0 var(--cell);
+  border: var(--hairline) solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  color: var(--text);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+  white-space: nowrap;
+  visibility: hidden;
+}
+
+/* it shows while its part is under the pointer, itself among it, or holds the keyboard's focus; the nudge above it is
+ * its own, unseen, so the pointer crosses onto it without leaving the part (WCAG 1.4.13) */
+:hover > .tooltip,
+:has(> :focus-visible) > .tooltip {
+  visibility: visible;
+}
+
+.tooltip::before {
+  position: absolute;
+  top: calc(-1 * (var(--nudge) + var(--hairline)));
+  right: 0;
+  left: 0;
+  height: calc(var(--nudge) + var(--hairline));
+  content: "";
+}
+
+/* Esc put it away (src/controllers/tooltip.ts) until its part is left: the class's display would show it otherwise */
+.tooltip[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-button {
+    transition: none;
+  }
+}
+
 /* block letters, the name and the titles drawn as SVG from the TUI's glyphs (DESIGN.md, Block letters): the SVG is as
  * many em wide as it has cells, so its font size is a cell's width; it shrinks to its column, never past it */
 .letters {

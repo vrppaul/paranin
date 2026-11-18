@@ -1,4 +1,4 @@
-// The reader's choice of theme, run over the pages the server draws: the HTML face's golden pages
+// The reader's theme, run over the pages the server draws: the HTML face's golden pages
 // (internal/face/html/testdata), which that face's own tests hold to what it writes, so a change to the markup the
 // controller runs over fails here too.
 import { beforeEach, expect, test } from "vitest";
@@ -11,9 +11,9 @@ const THEME_ATTRIBUTE = "data-theme";
 const PRESSED = "aria-pressed";
 // Where the controller keeps a choice in the browser's storage
 const STORAGE_KEY = "theme";
-// The choice's markup as the server draws it
-const CHOICE = '[data-part="theme"]';
-const BUTTONS = "button[data-theme-choice]";
+// The button's markup as the server draws it: the part it stands in, and the button
+const SWITCH = '[data-part="theme"]';
+const BUTTON = `${SWITCH} button`;
 
 /** The system's theme, dark or not, which a test turns as a reader turns their system's. */
 class FakeSystem extends EventTarget implements SystemScheme {
@@ -45,31 +45,26 @@ function themeOf(page: Document): string | null {
   return page.documentElement.getAttribute(THEME_ATTRIBUTE);
 }
 
-/** Whether each button of a page's choice says it is pressed, by the theme it chooses. */
-function pressed(page: Document): Record<string, string | null> {
-  const buttons = [...page.querySelectorAll<HTMLButtonElement>(BUTTONS)];
-  return Object.fromEntries(
-    buttons.map((button) => [String(button.dataset["themeChoice"]), button.getAttribute(PRESSED)]),
-  );
+/** The page's theme button. */
+function buttonOf(page: Document): HTMLButtonElement {
+  const button = page.querySelector<HTMLButtonElement>(BUTTON);
+  if (button === null) {
+    throw new Error("the page has no theme button");
+  }
+  return button;
 }
 
-/** The button of a page's choice that chooses a theme. */
-function buttonFor(page: Document, theme: string): HTMLButtonElement {
-  const found = [...page.querySelectorAll<HTMLButtonElement>(BUTTONS)].find(
-    (button) => button.dataset["themeChoice"] === theme,
-  );
-  if (found === undefined) {
-    throw new Error(`the page has no button choosing ${theme}`);
-  }
-  return found;
+/** Whether the page's theme button says it is pressed, as it does while the page is dark. */
+function pressed(page: Document): string | null {
+  return buttonOf(page).getAttribute(PRESSED);
 }
 
 beforeEach(() => localStorage.clear());
 
-test("a theme the reader chooses is the page's at once, and every next page's before it is seen", () => {
+test("a press turns the page to the theme it is not in, and every next page with it, before it is seen", () => {
   const first = parsed(resumePage);
   startTheme(first, () => localStorage, new FakeSystem(false));
-  buttonFor(first, "dark").click();
+  buttonOf(first).click();
   const next = parsed(resumePage);
   startTheme(next, () => localStorage, new FakeSystem(false));
   const missing = parsed(missingPage);
@@ -82,27 +77,47 @@ test("a theme the reader chooses is the page's at once, and every next page's be
     missing: themeOf(missing),
   }).toEqual({
     first: "dark",
-    firstPressed: { light: "false", dark: "true" },
+    firstPressed: "true",
     next: "dark",
-    nextPressed: { light: "false", dark: "true" },
+    nextPressed: "true",
     missing: "dark",
   });
 });
 
-test("a page the reader chose no theme on follows the system's, and says which it is in", () => {
+test("a press that lands back on the system's theme forgets the choice: the page follows the system again", () => {
+  const page = parsed(resumePage);
+  startTheme(page, () => localStorage, new FakeSystem(false));
+  buttonOf(page).click();
+  buttonOf(page).click();
+  const next = parsed(resumePage);
+  const system = new FakeSystem(false);
+  startTheme(next, () => localStorage, system);
+  system.turn(true);
+  expect({
+    theme: themeOf(page),
+    pressed: pressed(page),
+    kept: localStorage.getItem(STORAGE_KEY),
+    nextTheme: themeOf(next),
+    nextPressedOnceTheSystemIsDark: pressed(next),
+  }).toEqual({
+    theme: null,
+    pressed: "false",
+    kept: null,
+    nextTheme: null,
+    nextPressedOnceTheSystemIsDark: "true",
+  });
+});
+
+test("a page the reader chose no theme on follows the system's, and says whether it is dark", () => {
   const page = parsed(resumePage);
   const system = new FakeSystem(true);
   startTheme(page, () => localStorage, system);
   const whileDark = pressed(page);
   system.turn(false);
-  expect({
-    theme: themeOf(page),
-    whileDark,
-    whileLight: pressed(page),
-  }).toEqual({
+  expect({ theme: themeOf(page), whileDark, whileLight: pressed(page) }).toEqual({
     theme: null,
-    whileDark: { light: "false", dark: "true" },
-    whileLight: { light: "true", dark: "false" },
+    whileDark: "true",
+    whileLight: "false",
   });
 });
 
@@ -110,31 +125,27 @@ test("a word kept that names no theme is no choice: the page follows the system'
   localStorage.setItem(STORAGE_KEY, "blue");
   const page = parsed(resumePage);
   startTheme(page, () => localStorage, new FakeSystem(true));
-  expect({ theme: themeOf(page), pressed: pressed(page) }).toEqual({
-    theme: null,
-    pressed: { light: "false", dark: "true" },
-  });
+  expect({ theme: themeOf(page), pressed: pressed(page) }).toEqual({ theme: null, pressed: "true" });
 });
 
-test("the choice shows only where the script runs: the server draws it hidden", () => {
+test("the button shows only where the script runs: the server draws it hidden", () => {
   const page = parsed(resumePage);
-  const drawnHidden = page.querySelector<HTMLElement>(CHOICE)?.hidden;
+  const drawnHidden = page.querySelector<HTMLElement>(SWITCH)?.hidden;
   startTheme(page, () => localStorage, new FakeSystem(false));
   expect({
     drawnHidden,
-    shown: page.querySelector<HTMLElement>(CHOICE)?.hidden === false,
-  }).toEqual({
-    drawnHidden: true,
-    shown: true,
-  });
+    shown: page.querySelector<HTMLElement>(SWITCH)?.hidden === false,
+  }).toEqual({ drawnHidden: true, shown: true });
 });
 
-test("a choice the browser will not keep still holds for the page", () => {
+test("a choice the browser will not keep still holds for the page, and still lands back on the system's", () => {
   const page = parsed(resumePage);
   startTheme(page, refusedStorage, new FakeSystem(false));
-  buttonFor(page, "dark").click();
-  expect({ theme: themeOf(page), pressed: pressed(page) }).toEqual({
-    theme: "dark",
-    pressed: { light: "false", dark: "true" },
+  buttonOf(page).click();
+  const pressedOnce = { theme: themeOf(page), pressed: pressed(page) };
+  buttonOf(page).click();
+  expect({ pressedOnce, pressedTwice: { theme: themeOf(page), pressed: pressed(page) } }).toEqual({
+    pressedOnce: { theme: "dark", pressed: "true" },
+    pressedTwice: { theme: null, pressed: "false" },
   });
 });

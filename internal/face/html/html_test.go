@@ -77,15 +77,16 @@ func TestATitleInBlockLettersIsNamedByItsWords(test *testing.T) {
 	}{
 		{
 			name: "the résumé's name, with the cursor", page: document.Page{Kind: document.PageResume, Slug: ""}, title: "Ada Lovelace",
-			want: []string{`<h1 aria-label="Ada Lovelace">`, `aria-hidden="true"`, `class="letters-cursor"`}, lacks: nil,
+			want:  []string{`<h1 aria-label="Ada Lovelace">`, `<svg class="letters letters-name" aria-hidden="true"`, `class="letters-cursor"`},
+			lacks: nil,
 		},
 		{
 			name: "a project's name, with no cursor", page: document.Page{Kind: document.PageProject, Slug: "tidy"}, title: "Tidy",
-			want: []string{`<h1 aria-label="Tidy">`, `aria-hidden="true"`}, lacks: []string{`class="letters-cursor"`},
+			want: []string{`<h1 aria-label="Tidy">`, `<svg class="letters letters-title" aria-hidden="true"`}, lacks: []string{`class="letters-cursor"`},
 		},
 		{
 			name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "cafe"}, title: "Café",
-			want: []string{"<h1>Café</h1>"}, lacks: []string{"<svg"},
+			want: []string{"<h1>Café</h1>"}, lacks: []string{`class="letters`},
 		},
 	}
 	for _, testCase := range cases {
@@ -175,7 +176,7 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtureSite(snapshot), fixtures.LoadedBuild(test), compose.ThemeWordsOf(snapshot))
+	return NewPageWriter(fixtureSite(snapshot), fixtures.LoadedBuild(test), compose.FrameWordsOf(snapshot))
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

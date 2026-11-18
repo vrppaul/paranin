@@ -43,13 +43,13 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 
 | token | value | for |
 | --- | --- | --- |
-| `nudge` | 0.25rem | an offset inside a row: an underline's distance |
+| `nudge` | `design/tokens.yaml` | an offset inside a row: an underline's distance |
 | `row_half` | 0.75rem | gaps inside a component |
 | `row` | 1.5rem | between a heading and what it heads |
 | `row_2` | 3rem | between two entries, the brief's top |
 | `row_3` | 4.5rem | between the name and the brief's columns |
 | `row_4` | 6rem | between two top-level sections |
-| `cell`, `cell_2`, `cell_3` | 1ch, 2ch, 3ch | a gap inside a chip; a control's side padding; a list's indent |
+| `cell`, `cell_2`, `cell_3` | `cell` in `design/tokens.yaml`, 2ch, 3ch | a gap inside a chip; a control's side padding; a list's indent |
 | `content` | 80rem | the widest the content runs |
 | `gutter`, `gutter_phone` | 3rem, 1rem | either side of the content, and on a phone |
 | `measure` | 64ch | the longest line of prose |
@@ -68,10 +68,10 @@ size: a control that seems to need one is the wrong control.
 | size | height | either side | gap inside | words | controls |
 | --- | --- | --- | --- | --- | --- |
 | regular | `control` 3rem, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
-| compact | `control_compact` 1.5rem, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
+| compact | `control_compact`, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
 | tick | three cells, `[x]` or `(*)`, on a row | label `cell` away | | `body` | Checkbox, Radio |
 
-- Corners `radius` (0.125rem) on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
+- Corners `radius` on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
 - Controls side by side stand `cell_2` apart, rows of them `row_half` apart.
 - A dialog pads `row` and a half above, `row` below, `cell_3` either side.
 
@@ -107,7 +107,7 @@ size: a control that seems to need one is the wrong control.
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | 1/1.5 | 700 | a role, a company, a project's name, a button's words |
 | `small` | 0.875/1.5 | 400 | the top bar, a field's hint, the footer |
-| `caption` | 0.8125/1 | 400 | the career line's names and years, a chip's word, a tooltip; never prose |
+| `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip; never prose |
 
 - The page's one `h1` and the résumé's five `h2` are block letters; another page's `h2` is `heading`; every heading
   below is `strong`, its level shown by the space before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels
@@ -129,8 +129,8 @@ size: a control that seems to need one is the wrong control.
 
 ## Shape, depth and motion
 
-- Lines are `hairline` (0.0625rem). No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
-- Nothing moves on its own but the cursor. Colours change under the pointer in `quick` (120ms); with reduced motion, at
+- Lines are `hairline`. No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
+- Nothing moves on its own but the cursor. Colours change under the pointer in `quick`; with reduced motion, at
   once. A toast stays `toast` (2.4s).
 
 ## States
@@ -165,7 +165,7 @@ size: a control that seems to need one is the wrong control.
 - No icon set. The page uses the terminal's glyphs: `[x]` and `(*)` for a checkbox and a radio, ❯ before a command
   (`prompt`), the cursor after the name, ✓ in a toast (`passed`), + at the first screen's corners (`edge`, `cross`),
   and `-` before a point (`faint`).
-- Two drawn marks, SVGs in `currentColor`, `box` (1rem), one stroke of 1.5 of its 16 units: the theme button's
+- Two drawn marks, SVGs in `currentColor`, `box` square, one stroke of 1.5 of its 16 units: the theme button's
   half-filled circle and the dialog's close cross. A mark that needs drawing is drawn as these are, never taken from a
   set.
 

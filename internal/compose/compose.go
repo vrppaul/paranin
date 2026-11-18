@@ -1,8 +1,8 @@
 // Package compose turns content into the documents every face draws (docs/ARCHITECTURE.md, ADR-0003). It
 // decides once which facts a page shows and in what order, so no face picks them again; it reads the profile's
 // marks into spans and carries its months across. Beside each page a person reads it makes the page's record, the
-// facts a search engine reads as data, typed and plain. Beside the documents it hands a face the words of the
-// controls it lays round them, the page's choice of theme (controls.go), since a face reads no content. It writes
+// facts a search engine reads as data, typed and plain. Beside the documents it hands a face the words of the frame
+// it lays round them, the page's theme button among them (frame.go), since a face reads no content. It writes
 // no format of any face: how a span or a period reads, and the vocabulary a record is written in, are each face's
 // own.
 package compose

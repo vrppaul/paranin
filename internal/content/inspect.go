@@ -32,6 +32,7 @@ const (
 	positiveProblem      = "%d is not above 0"
 	rangeProblem         = "%d is not above min, %d"
 	unknownWordProblem   = "is no word of the site"
+	placeProblem         = "%q holds no place for its value, %s, or more than one"
 )
 
 // What separates the levels a level fault lists

@@ -7,17 +7,19 @@ import (
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The marks of the footer: the rim, the panel's ground rising half a row above it, and the rule that stands in for it
 // where the terminal shows few colours; the mark before the word of the lines below; and the prompt's, the place it
-// stands in, home, as a shell's prompt names it, and the mark it ends in, which the search's slash takes the place of
+// stands in, home, as a shell's prompt names it; the mark it ends in, which the search's slash takes the place of, is
+// the design's own (look.PromptMark)
 const (
 	rimMark     = "▄"
 	rimRuleMark = "─"
 	moreMark    = "▾"
 	homeMark    = "~"
-	promptMark  = "❯"
 )
 
 // The mark that stands among the places for those that give way where they do not all fit
@@ -75,7 +77,7 @@ func (model Model) promptLine() (string, *tea.Cursor) {
 	case modeSearch:
 		return model.typedLine(searchMark)
 	case modeCommand:
-		return model.typedLine(promptMark + space)
+		return model.typedLine(look.PromptMark + space)
 	case modeNormal, modeKeys:
 	}
 	switch {

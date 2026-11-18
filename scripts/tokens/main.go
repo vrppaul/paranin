@@ -6,11 +6,13 @@
 //     a blend is worked out into a colour of its own;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
-//     reads: the face, each text style as its size, its line's height and its weight, and each length.
+//     reads: the face, each text style as its size, its line's height and its weight, and each length;
+//   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
+//     since the build writes the stylesheet's times the shortest way.
 //
 // Its usage:
 //
-//	go run ./scripts/tokens           checks both files against the tokens: the pre-commit hook
+//	go run ./scripts/tokens           checks every file against the tokens: the pre-commit hook
 //	go run ./scripts/tokens -write    writes them, as `go generate ./internal/look` does
 //
 // Run it in the repository's root. It prints a fault of the tokens, or which generated file is out of step, and
@@ -40,6 +42,7 @@ const (
 	tokensPath     = "design/tokens.yaml"
 	palettePath    = "internal/look/palette.go"
 	stylesheetPath = "web/src/tokens/tokens.css"
+	timesPath      = "web/src/tokens/times.ts"
 	// a generated file may be read by anyone, as the rest of the tree
 	generatedMode = 0o644
 )
@@ -107,7 +110,11 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []generatedFile{{path: palettePath, body: palette}, {path: stylesheetPath, body: stylesheet(read)}}, nil
+	return []generatedFile{
+		{path: palettePath, body: palette},
+		{path: stylesheetPath, body: stylesheet(read)},
+		{path: timesPath, body: timesScript(read)},
+	}, nil
 }
 
 func write(target string, generated []byte) int {

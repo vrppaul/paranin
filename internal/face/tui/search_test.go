@@ -9,6 +9,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The keys that reach the experience tab, which opens with a role, its point, a blank line, then the next role
@@ -139,7 +140,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 	}{
 		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "~ /pars", lacks: completeKeyName},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
-		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: promptMark + space + cursorBar, lacks: cancelHint},
+		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: look.PromptMark + space + cursorBar, lacks: cancelHint},
 		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
 	}
 	for _, testCase := range cases {

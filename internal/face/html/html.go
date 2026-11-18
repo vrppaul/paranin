@@ -17,8 +17,8 @@
 // screen reader skips, the heading named by its words; a title with a letter the font does not draw stays its words.
 // The résumé whose first section holds facts opens with its first screen (firstscreen.go): the greeting, the name and
 // the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
-// sections as the TUI reads its brief (document.BriefOf); the facts the brief leaves stay in their section, where
-// the brief stood.
+// sections as the TUI reads its brief (document.BriefOf), and the ssh command as a chip the script lets copy
+// (frame.go); the facts the brief leaves stay in their section, where the brief stood.
 // The classes of the page's other parts arrive with its design (TODO, "The look"); until then a gap still to fill
 // reads as its text, as the markdown writes it.
 package html
@@ -81,6 +81,17 @@ const (
 	tooltipPart  = "tooltip"
 	sectionsPart = "sections"
 	sectionPart  = "section"
+)
+
+// A command's chip as the site's script finds and runs it (web/src/controllers/command.ts): the chip, the words it
+// copies, and its button, hidden until the script shows it; and the toast that says what was copied, with the place
+// its words go
+const (
+	commandPart      = "command"
+	commandWordsPart = "command-words"
+	copyPart         = "copy"
+	toastPart        = "toast"
+	toastWordsPart   = "toast-words"
 )
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which

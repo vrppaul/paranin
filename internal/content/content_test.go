@@ -209,6 +209,14 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 		{name: "a word left empty", original: "experience: Experience", replacement: `experience: ""`, want: "i18n/en.yaml: experience is empty"},
 		{name: "a word left out", original: "experience: Experience\n", replacement: "", want: "i18n/en.yaml: experience is empty"},
 		{name: "a word the site has not", original: "about: About", replacement: "about: About\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
+		{
+			name: "a phrase with no place for its value", original: `write_to: "Write to {}"`, replacement: "write_to: Write to me",
+			want: `i18n/en.yaml: write_to "Write to me" holds no place for its value, {}, or more than one`,
+		},
+		{
+			name: "a phrase with two places", original: `write_to: "Write to {}"`, replacement: `write_to: "Write {} to {}"`,
+			want: `i18n/en.yaml: write_to "Write {} to {}" holds no place for its value, {}, or more than one`,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

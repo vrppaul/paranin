@@ -8,6 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // How the page sits on the screen: no wider than a text is read at, standing in from each side by at least
@@ -199,7 +201,7 @@ func (model Model) drawnScreen() drawnScreen {
 	if model.frame.crosses {
 		crossRow = model.paint.crossRow(model.frame)
 	}
-	idle := append(model.promptOpening(promptMark+space), piece{text: cursorBar, part: partSiteCursor})
+	idle := append(model.promptOpening(look.PromptMark+space), piece{text: cursorBar, part: partSiteCursor})
 	return drawnScreen{
 		tabs:       tabs,
 		crossRow:   crossRow,

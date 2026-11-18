@@ -9,8 +9,9 @@ import tseslint from "typescript-eslint";
 // What each part of src/ may build on. A part importing one it is not listed with fails here: nothing reaches up
 // into what is built on it. A part comes into the list with its first module
 const LAYERS = {
-  // The scripts a page runs: the stylesheet it is drawn in, and the controllers over the server's markup
-  entries: ["controllers", "ui"],
+  // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, and the design's
+  // times they wait
+  entries: ["controllers", "ui", "tokens"],
   // Behaviour over the markup the server draws, each over one part of it
   controllers: [],
 };

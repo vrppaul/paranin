@@ -7,6 +7,7 @@ import (
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
@@ -80,7 +81,7 @@ templ topBar(frame frame) {
 templ footer(frame frame, reading, markdown string) {
 	<footer class="footer">
 		<div class="footer-row content-width">
-			<code>{ frame.ssh }</code>
+			<code>{ frame.ssh.Text }</code>
 			<code>{ reading }</code>
 			if markdown != "" {
 				<a href={ markdown }>{ markdown }</a>
@@ -144,8 +145,10 @@ templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
 }
 
 // firstScreen is the résumé's first screen (DESIGN.md, Pages): the greeting, the author's name in block letters and
-// the lead in one column; beside it the brief, in two parts a row apart: the address heading it, the subtitle and the
-// place; then the facts.
+// the lead in one column; beside it the brief, its parts a row apart: the address heading it, the subtitle and the
+// place; the facts; and what the brief offers to do, side by side: the primary button that writes to the author,
+// which opens the form once there is one (TODO, Hosting) and does nothing until then, and the command that reaches the
+// site over ssh, to copy. The toast that says what was copied follows.
 templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 	<div class="first-screen">
 		<div class="name-column">
@@ -172,7 +175,31 @@ templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 				}
 			</div>
 			@writer.facts(parts.brief)
+			<div class="actions">
+				<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
+				@command(writer.frame.ssh)
+			</div>
 		</div>
+	</div>
+	@toast()
+}
+
+// command is a command the reader can run (DESIGN.md, Command): the prompt's mark, the command as code a reader may
+// select, and the button that copies it, hidden until the site's script shows it and lets the whole chip copy.
+templ command(command compose.Command) {
+	<div class="command" data-part={ commandPart }>
+		<span class="command-prompt" aria-hidden="true">{ look.PromptMark }</span>
+		<code data-part={ commandWordsPart }>{ command.Text }</code>
+		<button type="button" class="command-copy" data-part={ copyPart } aria-label={ command.CopyName } data-copied={ command.Copied } data-toast={ command.Toast } hidden>{ command.Copy }</button>
+	</div>
+}
+
+// toast says what was done (DESIGN.md, Tooltip and Toast): the tick, then the words the site's script puts in, at the
+// foot of the screen while it shows. It stands in a region a screen reader reads out as it changes, which holds no
+// box of its own.
+templ toast() {
+	<div role="status">
+		<p class="toast" data-part={ toastPart } hidden><span class="toast-mark" aria-hidden="true">{ look.DoneMark }</span><span data-part={ toastWordsPart }></span></p>
 	</div>
 }
 

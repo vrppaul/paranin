@@ -20,3 +20,8 @@ resume: Résumé
 health: health
 skip_to_content: Skip to content
 dark_theme: Dark theme
+copy: copy
+copied: copied
+copy_command: "copy {}"
+copied_command: "Copied {}"
+write_to: "Write to {}"

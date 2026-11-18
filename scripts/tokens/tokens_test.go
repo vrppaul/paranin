@@ -175,6 +175,30 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 	}
 }
 
+// Each time reaches the page's script as a number of milliseconds, under what it is for, named as a script names a
+// property: a name of two words in camel case.
+func TestEachTimeReachesThePagesScriptInMilliseconds(test *testing.T) {
+	cases := []struct {
+		name   string
+		tokens string
+		want   string
+	}{
+		{name: "a time, under what it is for", tokens: fixtureTokens, want: "  /** a cursor's blink */\n  blink: 1060,\n"},
+		{name: "a time of two words", tokens: strings.Replace(fixtureTokens, "name: blink", "name: slow_blink", 1), want: "  slowBlink: 1060,\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			read, err := readTokens([]byte(testCase.tokens))
+			if err != nil {
+				test.Fatalf("readTokens = %v, want no fault", err)
+			}
+			if got := string(timesScript(read)); !strings.Contains(got, testCase.want) {
+				test.Errorf("the times' script = %q, want it to hold %q", got, testCase.want)
+			}
+		})
+	}
+}
+
 // A name of words parted by underscores is a custom property's, parted by hyphens.
 func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	read, err := readTokens([]byte(strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n")))

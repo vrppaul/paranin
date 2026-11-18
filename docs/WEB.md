@@ -318,6 +318,21 @@ dark. The script keeps a choice for every page after, and forgets it when a
 press lands back on the system's theme, so the page follows the system
 again; where the browser keeps nothing, the choice holds for the page alone.
 
+### Commands
+
+A command the reader can run, as `ssh paran.in` on the first screen, is a
+chip: the prompt's mark, the command as code a reader may select, and a
+button in the site's words (`copy`), `hidden` until the script
+(`web/src/controllers/command.ts`) shows it. With no script the command is
+words to select. A press anywhere on the chip writes the command to the
+clipboard, unless the reader selected words in it; the button then says
+`copied` and a toast at the foot of the screen says what was copied
+(`copied_command`), both for the design's `toast` time, which the script
+reads from `web/src/tokens/times.ts`. A copy the browser refuses selects the
+command instead, for the reader to copy by hand. A word selected by a drag is
+left alone; a double click selects a word and copies the whole command too,
+since its first click cannot tell it from a press.
+
 ### Index page, top to bottom
 
 `#top` (top line with the mode switch, name, title, actions) · `#facts` ·

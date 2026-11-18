@@ -90,7 +90,8 @@ size: a control that seems to need one is the wrong control.
   the name. In Latte it is a fill and a display colour, never small text (2.64:1).
 - `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first. `error`, `passed`
   and `warned` only for states, always with words.
-- Borders: `quiet` for rules between parts, `muted` for a control's border, `edge` for the corner crosses.
+- Borders: `quiet` for rules between parts, `muted` for a control's border, `edge` for the corner crosses and for
+  what lies over the page, a tooltip and a toast.
 - `scrim` fades the page behind a dialog towards its own ground: Latte's and Macchiato's background at 85%.
 
 ## Type
@@ -131,7 +132,7 @@ size: a control that seems to need one is the wrong control.
 
 - Lines are `hairline`. No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
 - Nothing moves on its own but the cursor. Colours change under the pointer in `quick`; with reduced motion, at
-  once. A toast stays `toast` (2.4s).
+  once. A toast stays `toast`.
 
 ## States
 
@@ -197,7 +198,8 @@ of 180px for a phone's home screen. The picture a shared link shows is Typst's, 
 
 Does one thing its words say, verb first.
 
-- Primary: `accent` fill, `on_accent` words. At most one a screen: writing to Pavel.
+- Primary: `accent` fill, `on_accent` words; under the pointer `host`, pressed `text`, each with `background` words.
+  At most one a screen: writing to Pavel. Until the form is there (with `inbox`) it does nothing.
 - Quiet: no fill, a `muted` hairline, `text` words. Everything else.
 - Regular size, `strong` words. A link that leaves the page is a link, not a button.
 
@@ -206,7 +208,9 @@ Does one thing its words say, verb first.
 A command the reader can run: ❯ in `prompt`, the command in `text`, then "copy" in `text` and `small` after a `muted`
 rule. `sunk` ground and a `muted` hairline, so it shows on any ground; under the pointer the hairline turns `text` and
 the ground `deep`. The whole chip is the button; the command stays selectable text. On copy the word turns to "copied"
-in `passed` and a Toast says what was copied. A command never wraps: on a narrow screen it scrolls inside itself.
+in `passed` and a Toast says what was copied. A command never wraps: on a narrow screen it scrolls inside itself. The
+button inside it is what a keyboard reaches, and its focus rings the whole chip; without the script the button is
+hidden and the command is words to select, and a copy the browser refuses selects the command.
 
 ### Link
 
@@ -312,8 +316,8 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 - Tooltip: a word or two about a control, on hover and on focus; `sunk` ground, an `edge` hairline, `caption`; never
   the only place something is said.
-- Toast: ✓ in `passed`, then what was done, in the past tense, at the foot of the screen for `toast`. Errors are not
-  toasts: they stand where they happened.
+- Toast: ✓ in `passed`, then what was done, in the past tense, at the foot of the screen for `toast`; regular size,
+  `sunk` ground and an `edge` hairline, as the Tooltip's. Errors are not toasts: they stand where they happened.
 
 ### Frame and Section
 

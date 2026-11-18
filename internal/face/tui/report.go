@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // How the health report stands: the room between its title and the meter beside it, how far a check stands in under
@@ -36,7 +37,7 @@ type levelLook struct {
 // document gains reads its own way here too.
 func levelLooks() map[document.CheckLevel]levelLook {
 	return map[document.CheckLevel]levelLook{
-		document.CheckOK:      {mark: "✓", cell: "█", word: "OK", kind: kindPassed},
+		document.CheckOK:      {mark: look.DoneMark, cell: "█", word: "OK", kind: kindPassed},
 		document.CheckWarning: {mark: "⚠", cell: "▒", word: "WARNING", kind: kindWarned},
 		document.CheckError:   {mark: "✗", cell: "░", word: "ERROR", kind: kindFailed},
 	}

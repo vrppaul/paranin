@@ -253,3 +253,6 @@ times:
   - name: quick
     about: how long a colour takes to change under the pointer
     milliseconds: 120
+  - name: toast
+    about: how long a toast stays, and a copied command's button says so
+    milliseconds: 2400

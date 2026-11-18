@@ -472,6 +472,153 @@ mark {
   text-underline-offset: var(--nudge);
 }
 
+/* what the brief offers to do, side by side, a row of them under another where they do not fit. As an item of the
+ * brief's grid it would be at least as wide as a chip's whole command; it narrows to the brief instead, and the chip
+ * scrolls inside itself, as at a large text size on a phone */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--row-half) var(--cell-2);
+  min-width: 0;
+}
+
+/* the primary button (DESIGN.md, Button): a regular control filled in the accent, its words strong; under the pointer
+ * it turns the host's colour, pressed the text's, its words then the page's ground */
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--control);
+  padding: 0 var(--cell-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+  cursor: pointer;
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.button-primary:hover {
+  background: var(--host);
+  color: var(--background);
+}
+
+.button-primary:active {
+  background: var(--text);
+  color: var(--background);
+}
+
+/* a command the reader can run (DESIGN.md, Command): a regular chip on the ground a shade below the page, a muted
+ * hairline round it, the prompt's mark, the command, and its button after a muted rule. It never wraps: where the
+ * screen is narrower it scrolls inside itself */
+.command {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cell);
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: var(--control);
+  padding: 0 var(--cell-2);
+  overflow-x: auto;
+  border: var(--hairline) solid var(--muted);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  white-space: nowrap;
+  transition:
+    background-color var(--quick),
+    border-color var(--quick);
+}
+
+.command-prompt {
+  color: var(--prompt);
+  font-weight: var(--type-strong-weight);
+}
+
+/* the command's own ground is the chip's */
+.command code {
+  background: none;
+}
+
+.command-copy {
+  padding: 0 0 0 var(--cell);
+  border: 0;
+  border-left: var(--hairline) solid var(--muted);
+  background: none;
+  color: var(--text);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+  cursor: pointer;
+}
+
+/* the focus on the button rings the whole chip, which is the control */
+.command:has(> :focus-visible) {
+  outline: var(--focus-width) solid var(--label);
+  outline-offset: var(--focus-width);
+}
+
+.command-copy:focus-visible {
+  outline: none;
+}
+
+/* once the script shows the button the whole chip copies, and answers the pointer */
+.command:has(> .command-copy:not([hidden])) {
+  cursor: pointer;
+}
+
+.command:has(> .command-copy:not([hidden])):hover {
+  border-color: var(--text);
+  background: var(--deep);
+}
+
+/* the word a copy turns the button to, in the colour of a thing done */
+.command-copy[data-state="copied"] {
+  color: var(--passed);
+}
+
+/* the toast (DESIGN.md, Tooltip and Toast): a regular chip at the foot of the screen, over the page, the tick in the
+ * colour of a thing done */
+.toast {
+  position: fixed;
+  right: 0;
+  bottom: var(--row);
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--cell);
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: calc(100% - 2 * var(--gutter-phone));
+  min-height: var(--control);
+  margin: 0 auto;
+  padding: 0 var(--cell-2);
+  border: var(--hairline) solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  color: var(--text);
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast-mark {
+  color: var(--passed);
+  font-weight: var(--type-strong-weight);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-primary,
+  .command {
+    transition: none;
+  }
+}
+
 /* below the wide screen's width the brief narrows, so the name keeps its room */
 @media (width < 80rem) {
   .brief {

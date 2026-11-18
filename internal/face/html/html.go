@@ -68,12 +68,15 @@ const (
 )
 
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
-// and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
-// (web/src/controllers/tooltip.ts)
+// and the id of the words that name it and show as its tooltip; the part a tooltip is, which Esc hides
+// (web/src/controllers/tooltip.ts); and the top bar's links to the résumé's sections and each section they lead to,
+// which mark the section the reader is in (web/src/controllers/sections.ts)
 const (
-	themePart   = "theme"
-	themeNameID = "theme-name"
-	tooltipPart = "tooltip"
+	themePart    = "theme"
+	themeNameID  = "theme-name"
+	tooltipPart  = "tooltip"
+	sectionsPart = "sections"
+	sectionPart  = "section"
 )
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which

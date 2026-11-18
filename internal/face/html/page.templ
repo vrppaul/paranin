@@ -67,7 +67,7 @@ templ topBar(frame frame) {
 		<a class="skip" href={ frame.toMain }>{ frame.skipToContent }</a>
 		<div class="bar-row">
 			<a class="site" href={ frame.start }>{ frame.siteName }</a>
-			<nav class="sections">
+			<nav class="sections" data-part={ sectionsPart }>
 				for _, section := range frame.sections {
 					<a href={ section.address }>{ section.title }</a>
 				}
@@ -298,7 +298,7 @@ templ knownMonth(start time.Time) {
 
 // resumeSection is a section of the résumé, at the place the top bar leads to, under its heading.
 templ (writer PageWriter) resumeSection(section document.Section, heading templ.Component) {
-	<section id={ sectionID(document.PlainText(section.Title)) }>
+	<section id={ sectionID(document.PlainText(section.Title)) } data-part={ sectionPart }>
 		@heading
 		for _, block := range section.Blocks {
 			@writer.block(block, firstHeadingDepth+1)

@@ -156,7 +156,7 @@ func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 		{name: "the page of no page", page: missing.For("/nothing"), want: bar},
 		{
 			name: "the résumé's sections, where the bar leads", page: writer.Page(resume.Document, resume.Record),
-			want: []string{`<section id="about">`, `<section id="experience">`, `<section id="projects">`, `<section id="skills">`, `<section id="contact">`},
+			want: []string{`<section id="about"`, `<section id="experience"`, `<section id="projects"`, `<section id="skills"`, `<section id="contact"`},
 		},
 	}
 	for _, testCase := range cases {

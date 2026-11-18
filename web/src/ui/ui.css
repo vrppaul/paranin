@@ -108,6 +108,14 @@ mark {
   color: var(--text);
 }
 
+/* the section the reader is in (src/controllers/sections.ts), reversed and bold as the TUI's tab: a mark of form, not
+ * of colour alone */
+.sections a[aria-current] {
+  background: var(--text);
+  color: var(--background);
+  font-weight: var(--type-strong-weight);
+}
+
 /* a place a link leads to stops a row below the sticky bar */
 [id] {
   scroll-margin-top: calc(var(--bar) + var(--row));
@@ -171,8 +179,10 @@ mark {
     column-gap: var(--cell);
   }
 
+  /* a name takes no more room than its words, while the current one's reversed ground still reaches a nudge past them */
   .sections a {
-    padding: 0;
+    margin: 0 calc(-1 * var(--nudge));
+    padding: 0 var(--nudge);
   }
 
   .skip {

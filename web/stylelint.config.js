@@ -59,10 +59,15 @@ export default {
       "/^max-width$/": ["%"],
       "/.*/": [],
     },
-    // A media query holds no width at all yet, and a container query is refused whole, since neither has a user:
-    // the first media query brings the page's two widths into media-feature-name-value-allowed-list
+    // A media query holds a width alone, in rem, and only the page's widths, since a custom property cannot stand in
+    // one (DESIGN.md, Layout): the phone's, which the top bar first laid out by; the wide screen's joins with its first
+    // user. The rule takes the first key that matches a feature. A container query is refused whole: it has no user
     "media-feature-name-unit-allowed-list": {
+      width: ["rem"],
       "/.*/": [],
+    },
+    "media-feature-name-value-allowed-list": {
+      width: ["53.75rem"],
     },
     "at-rule-disallowed-list": ["container"],
     // Never a length fixed in pixels or another of CSS's absolute units, in a declaration or a media query, whatever

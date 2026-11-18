@@ -44,19 +44,19 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 | token | value | for |
 | --- | --- | --- |
 | `nudge` | `design/tokens.yaml` | an offset inside a row: an underline's distance |
-| `row_half` | 0.75rem | gaps inside a component |
-| `row` | 1.5rem | between a heading and what it heads |
+| `row_half` | `design/tokens.yaml` | gaps inside a component |
+| `row` | `design/tokens.yaml` | between a heading and what it heads |
 | `row_2` | 3rem | between two entries, the brief's top |
 | `row_3` | 4.5rem | between the name and the brief's columns |
 | `row_4` | 6rem | between two top-level sections |
-| `cell`, `cell_2`, `cell_3` | `cell` in `design/tokens.yaml`, 2ch, 3ch | a gap inside a chip; a control's side padding; a list's indent |
-| `content` | 80rem | the widest the content runs |
-| `gutter`, `gutter_phone` | 3rem, 1rem | either side of the content, and on a phone |
+| `cell`, `cell_2`, `cell_3` | `cell` and `cell_2` in `design/tokens.yaml`, 3ch | a gap inside a chip; a control's side padding; a list's indent |
+| `content` | `design/tokens.yaml` | the widest the content runs |
+| `gutter`, `gutter_phone` | `design/tokens.yaml` | either side of the content, and on a phone |
 | `measure` | 64ch | the longest line of prose |
 | `brief`, `brief_mid` | 27.5rem, 23.75rem | the brief beside the name, from `wide` and from `phone` |
 | `lead` | 40ch | the longest line of the headline |
 | `when`, `years` | 20ch, 10ch | an entry's dates column; the phone's career list's years |
-| `bar` | 3rem | the top bar |
+| `bar` | `design/tokens.yaml` | the top bar |
 | `dialog` | 35rem | the widest a dialog runs |
 | `textarea` | 7.5rem | a message field's least height |
 
@@ -67,7 +67,7 @@ size: a control that seems to need one is the wrong control.
 
 | size | height | either side | gap inside | words | controls |
 | --- | --- | --- | --- | --- | --- |
-| regular | `control` 3rem, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
+| regular | `control`, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
 | compact | `control_compact`, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
 | tick | three cells, `[x]` or `(*)`, on a row | label `cell` away | | `body` | Checkbox, Radio |
 
@@ -105,8 +105,8 @@ size: a control that seems to need one is the wrong control.
 | `lead` | 1.25/2 | 400 | the headline under the name; 1.0625/1.625 on a phone |
 | `heading` | 1.25/2 | 700 | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
-| `strong` | 1/1.5 | 700 | a role, a company, a project's name, a button's words |
-| `small` | 0.875/1.5 | 400 | the top bar, a field's hint, the footer |
+| `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
+| `small` | `design/tokens.yaml` | `design/tokens.yaml` | the top bar, a field's hint, the footer |
 | `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip; never prose |
 
 - The page's one `h1` and the résumé's five `h2` are block letters; another page's `h2` is `heading`; every heading
@@ -216,7 +216,8 @@ Never coloured: the underline says it is a link. Nothing is marked with an arrow
 ### TopBar
 
 The site, the five sections, the theme button. `sunk` ground, a `quiet` hairline under it, `bar` tall. It sticks to the
-top on a wide screen; on a phone it scrolls away and the sections take a second row. The current section is reversed,
+top on a wide screen; on a phone it scrolls away and the sections take a second row, wrapping to a third on a screen
+too narrow for them all (below about 375px). The current section is reversed,
 as the TUI's tab, and follows the reader's scroll. Section names are lower case.
 
 ### ThemeSwitch

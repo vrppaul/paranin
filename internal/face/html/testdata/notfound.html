@@ -13,7 +13,29 @@
 <link rel="modulepreload" href="/assets/shared-fixture.js">
 </head>
 <body>
-<main>
+<header class="bar">
+<a class="skip" href="#main">Skip to content</a>
+<div class="bar-row">
+<a class="site" href="/">example.test</a>
+<nav class="sections">
+<a href="/#about">About</a>
+<a href="/#experience">Experience</a>
+<a href="/#projects">Projects</a>
+<a href="/#skills">Skills</a>
+<a href="/#contact">Contact</a>
+</nav>
+<span class="theme" data-part="theme" hidden>
+<button type="button" class="theme-button" aria-pressed="false" aria-labelledby="theme-name">
+<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5">
+</circle> <path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z">
+</path>
+</svg>
+</button> <span id="theme-name" class="tooltip" data-part="tooltip">Dark theme</span>
+</span>
+</div>
+</header>
+<main id="main">
 <h1>404 Not Found</h1>
 <p>
 <code>&#34;/nothing\x1b[2J&lt;b&gt;&#34;</code>

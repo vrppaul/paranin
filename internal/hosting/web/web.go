@@ -281,7 +281,8 @@ func draw(snapshot *release.Snapshot) *drawing {
 	site := routes.New(facts.Profile.Site.BaseURL)
 	readPages := compose.Pages(facts)
 	index := compose.Index(facts)
-	pageWriter := html.NewPageWriter(site, build, compose.FrameWordsOf(facts))
+	frame := compose.FrameOf(facts.Words, readPages)
+	pageWriter := html.NewPageWriter(site, build, frame)
 	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}
@@ -302,7 +303,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
 		{mediaType: plainMediaType, draw: text.NewNotFound(site, status).For},
-		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, facts.Words.Language(), build).For},
+		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, facts.Words.Language(), build, frame).For},
 	}
 	return &drawing{fixed: fixed, chosen: chosen, notFound: notFound}
 }

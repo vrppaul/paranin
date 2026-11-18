@@ -186,6 +186,17 @@ func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	}
 }
 
+// A word of a name may be a number, as a length counted in the grid's steps is named: row_2 is --row-2.
+func TestANameMayHoldANumber(test *testing.T) {
+	read, err := readTokens([]byte(strings.Replace(fixtureTokens, "name: row", "name: row_2", 1)))
+	if err != nil {
+		test.Fatalf("readTokens = %v, want no fault", err)
+	}
+	if got := string(stylesheet(read)); !strings.Contains(got, "--row-2: 1.5rem;") {
+		test.Errorf("the stylesheet = %q, want it to hold %q", got, "--row-2: 1.5rem;")
+	}
+}
+
 // A length may take a text style's name: the style's properties are named for their kind, so the two never meet.
 func TestALengthMayTakeATextStylesName(test *testing.T) {
 	read, err := readTokens([]byte(strings.Replace(fixtureTokens, "name: row", "name: body", 1)))

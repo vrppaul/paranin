@@ -132,6 +132,44 @@ func TestTheResumesSectionsStandUnderBlockLetters(test *testing.T) {
 	}
 }
 
+// Every page opens with the top bar, the page of no page among them: a link past it to the page's main part, the
+// site's name leading to where it begins, each of the résumé's sections leading to its place on the résumé, and the
+// theme button. The résumé's sections stand at those places.
+func TestEveryPageOpensWithTheTopBar(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	writer := fixtureWriter(test)
+	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
+	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	bar := []string{
+		`href="#main">Skip to content</a>`, `<main id="main">`, `href="/">example.test</a>`,
+		`<a href="/#about">About</a>`, `<a href="/#experience">Experience</a>`, `<a href="/#projects">Projects</a>`,
+		`<a href="/#skills">Skills</a>`, `<a href="/#contact">Contact</a>`, `data-part="theme"`,
+	}
+	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+	cases := []struct {
+		name string
+		page string
+		want []string
+	}{
+		{name: "the résumé", page: writer.Page(resume.Document, resume.Record), want: bar},
+		{name: "a project's page", page: writer.Page(project.Document, project.Record), want: bar},
+		{name: "the page of no page", page: missing.For("/nothing"), want: bar},
+		{
+			name: "the résumé's sections, where the bar leads", page: writer.Page(resume.Document, resume.Record),
+			want: []string{`<section id="about">`, `<section id="experience">`, `<section id="projects">`, `<section id="skills">`, `<section id="contact">`},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, want := range testCase.want {
+				if !strings.Contains(testCase.page, want) {
+					test.Errorf("the page %q holds no %q", testCase.page, want)
+				}
+			}
+		})
+	}
+}
+
 // A page whose content gives no description names none, so a search engine or a preview writes its own rather
 // than an empty one.
 func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
@@ -152,7 +190,8 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 // in it reaches the page; and leads to where the site begins, by its path, under the site's name. It is held to
 // its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
-	missing := NewNotFound(fixtureSite(fixtures.LoadedContent(test)), "404 Not Found", "en", fixtures.LoadedBuild(test)).For("/nothing\x1b[2J<b>")
+	snapshot := fixtures.LoadedContent(test)
+	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot)).For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
 }
 
@@ -176,7 +215,12 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtureSite(snapshot), fixtures.LoadedBuild(test), compose.FrameWordsOf(snapshot))
+	return NewPageWriter(fixtureSite(snapshot), fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+}
+
+// fixtureFrame is the frame of the fixture's pages, in its words.
+func fixtureFrame(snapshot *content.Snapshot) compose.Frame {
+	return compose.FrameOf(snapshot.Words, compose.Pages(snapshot))
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

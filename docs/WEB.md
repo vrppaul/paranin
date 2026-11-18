@@ -310,14 +310,13 @@ script sets `<html data-theme="light">` or `"dark"`, and `ui.css` turns the
 attribute into the colour scheme; a browser that knows no such hold (Firefox)
 may show the system's theme for a moment first.
 
-A page of a document draws one theme button above its head, a drawn mark
-named by the site's words (`dark_theme`), which show as its tooltip, `hidden`
-until the script shows it. A press turns the page to the theme it is not in;
-the button is pressed while the page is dark. The script keeps a choice for
-every page after, and forgets it when a press lands back on the system's
-theme, so the page follows the system again; where the browser keeps
-nothing, the choice holds for the page alone. The page of no page has no
-button yet, and is shown in the theme chosen.
+Every page, the page of no page among them, draws one theme button at the
+end of its top bar, a drawn mark named by the site's words (`dark_theme`),
+which show as its tooltip, `hidden` until the script shows it. A press turns
+the page to the theme it is not in; the button is pressed while the page is
+dark. The script keeps a choice for every page after, and forgets it when a
+press lands back on the system's theme, so the page follows the system
+again; where the browser keeps nothing, the choice holds for the page alone.
 
 ### Index page, top to bottom
 

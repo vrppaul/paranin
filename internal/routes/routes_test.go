@@ -65,6 +65,27 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 	}
 }
 
+// A link to a place on a page leads to it by its id: on a page of the site by the page's path then the place, on the
+// page the link stands on by the place alone.
+func TestALinkToAPlaceLeadsByItsID(test *testing.T) {
+	cases := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{name: "a section of the résumé", got: PlaceReference(document.Page{Kind: document.PageResume, Slug: ""}, FormatChosen, "about"), want: "/#about"},
+		{name: "a place on a project's page", got: PlaceReference(document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, FormatChosen, "usage"), want: "/p/tidy-tool#usage"},
+		{name: "a place on the page itself", got: Place("main"), want: "#main"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if testCase.got != testCase.want {
+				test.Errorf("the reference = %q, want %q", testCase.got, testCase.want)
+			}
+		})
+	}
+}
+
 // writtenAddress is a base address as a test writes it, its host beside it, as content reads one from a profile.
 type writtenAddress struct {
 	written string

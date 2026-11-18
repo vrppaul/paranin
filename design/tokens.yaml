@@ -133,6 +133,16 @@ type:
     size: 1
     line: 1.5
     weight: 400
+  - name: strong
+    about: what names, as the site in the top bar, and a regular control's words
+    size: 1
+    line: 1.5
+    weight: 700
+  - name: small
+    about: the top bar's words, a field's hint, the footer
+    size: 0.875
+    line: 1.5
+    weight: 400
   - name: caption
     about: a word on a compact control, a tooltip's among them; never prose
     size: 0.8125
@@ -152,6 +162,30 @@ lengths:
   - name: cell
     about: a cell of the face, the gap inside a compact control and either side of it
     cells: 1
+  - name: cell_2
+    about: two cells, either side of a regular control and of a section's name in the top bar
+    cells: 2
+  - name: row
+    about: the grid's row, which the text read sits on; how far below the top bar a section a link leads to stops
+    rem: 1.5
+  - name: row_half
+    about: half a row, the gap inside a component
+    rem: 0.75
+  - name: control
+    about: how tall a regular control is, two rows
+    rem: 3
+  - name: bar
+    about: how tall the top bar is
+    rem: 3
+  - name: content
+    about: the widest the page's content runs
+    rem: 80
+  - name: gutter
+    about: the room either side of the content
+    rem: 3
+  - name: gutter_phone
+    about: the room either side of the content on a phone
+    rem: 1
   - name: nudge
     about: an offset inside a row, as far as a tooltip stands from its control
     rem: 0.25

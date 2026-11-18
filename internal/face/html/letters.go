@@ -79,8 +79,9 @@ func (writer PageWriter) drawnTitle(head document.Head) templ.Component {
 	return headingOne(writer.spans(head.Title))
 }
 
-// topBlock is a block at the top of a page's main part: on the résumé a section stands under its title in block
-// letters, where the titles' font draws every letter of it; any other block, and on any other page, as its kind is.
+// topBlock is a block at the top of a page's main part: on the résumé a section stands at the place the top bar leads
+// to, under its title in block letters where the titles' font draws every letter of it, as words where it does not;
+// any other block, and on any other page, as its kind is.
 func (writer PageWriter) topBlock(kind document.PageKind, block document.Block) templ.Component {
 	section, isSection := block.(document.Section)
 	if kind != document.PageResume || !isSection {
@@ -88,9 +89,9 @@ func (writer PageWriter) topBlock(kind document.PageKind, block document.Block) 
 	}
 	words := document.PlainText(section.Title)
 	if drawing, drawn := drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters); drawn {
-		return writer.letteredSection(section, drawing)
+		return writer.resumeSection(section, letteredHeadingTwo(drawing))
 	}
-	return writer.block(block, firstHeadingDepth)
+	return writer.resumeSection(section, heading(firstHeadingDepth, writer.spans(section.Title)))
 }
 
 // drawLetters is texts in a font as a drawing of the words they show, of the font's class, a row of nothing between

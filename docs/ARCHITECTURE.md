@@ -507,7 +507,7 @@ sessions on a stop.
   quotes the path asked for.
 - `face/html` draws each document with templ, in the build's stylesheet
   and running its script, with the frame round each page in the site's
-  words (`compose.FrameWordsOf`), and its record as JSON-LD; `face/text`
+  words (`compose.FrameOf`), and its record as JSON-LD; `face/text`
   draws the markdown, the manual, `llms.txt` and its own page of no page.
   `routes` writes every address.
 - templ compiles the templates into Go, and no file is embedded. `web/`

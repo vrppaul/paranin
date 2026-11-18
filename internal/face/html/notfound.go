@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/vrppaul/paranin/internal/assets"
-	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -16,24 +16,22 @@ type NotFound struct {
 	// language is the tag of the language of the site's words. The page's own words are HTTP's English status and
 	// the site's name, so the two agree only while the site is in English alone (D12)
 	language string
-	// start is the path where the site begins, and siteName the name a link to it reads as
-	start    string
-	siteName string
 	// included is what the page includes to run the site's script, as every page does, so it is seen in the theme
 	// the reader chose
 	included assets.Included
+	// frame is what every page lays round its main part, the top bar, whose site's name and start the page's own
+	// link to where the site begins reads
+	frame frame
 }
 
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
-// answers with, drawn in the build's stylesheet and running its script.
-func NewNotFound(site routes.Site, status, language string, build *assets.Build) NotFound {
-	start := document.Page{Kind: document.PageResume, Slug: ""}
+// answers with, drawn in the build's stylesheet and running its script, in the frame of every page.
+func NewNotFound(site routes.Site, status, language string, build *assets.Build, composed compose.Frame) NotFound {
 	return NotFound{
 		status:   status,
 		language: language,
-		start:    routes.Reference(start, routes.FormatChosen),
-		siteName: site.Host(),
 		included: build.Includes(assets.Site),
+		frame:    frameOf(site, composed),
 	}
 }
 

@@ -59,6 +59,133 @@ mark {
   outline-offset: var(--focus-width);
 }
 
+/* the top bar every page opens with (DESIGN.md, TopBar): the site, the résumé's sections, the theme button, on the
+ * ground a shade below the page, a quiet hairline under it; it sticks to the top as the page scrolls under it */
+.bar {
+  position: sticky;
+  top: 0;
+  border-bottom: var(--hairline) solid var(--quiet);
+  background: var(--sunk);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+/* the bar's row runs as wide as the content, a gutter either side */
+.bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  max-width: calc(var(--content) + 2 * var(--gutter));
+  min-height: var(--bar);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* the site's name leads to where it begins, bold as what names */
+.site {
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+  text-decoration: none;
+}
+
+/* each section's name, lower case as the TUI writes its tabs, quiet until the pointer is over it */
+.sections {
+  display: flex;
+}
+
+.sections a {
+  padding: 0 var(--cell-2);
+  color: var(--muted);
+  line-height: var(--bar);
+  text-decoration: none;
+  text-transform: lowercase;
+  transition: color var(--quick);
+}
+
+.sections a:hover {
+  color: var(--text);
+}
+
+/* a place a link leads to stops a row below the sticky bar */
+[id] {
+  scroll-margin-top: calc(var(--bar) + var(--row));
+}
+
+/* the link past the bar to the page's main part (DESIGN.md, SkipLink): the first thing a keyboard reaches, above the
+ * screen until it is focused, then at the top left over the bar, reversed, a regular control */
+.skip {
+  position: absolute;
+  top: calc(-1 * var(--control));
+  left: var(--gutter);
+  display: flex;
+  align-items: center;
+  min-height: var(--control);
+  padding: 0 var(--cell-2);
+  background: var(--text);
+  color: var(--background);
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+  text-decoration: none;
+}
+
+.skip:focus {
+  top: 0;
+}
+
+/* on a phone the bar scrolls away with the page, the gutters narrow, and the sections take a row of their own below,
+ * spread across it, their names a cell apart at the least */
+@media (width < 53.75rem) {
+  .bar {
+    position: static;
+  }
+
+  [id] {
+    scroll-margin-top: var(--row);
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    padding: 0 var(--gutter-phone);
+  }
+
+  .site {
+    line-height: var(--bar);
+  }
+
+  /* the theme button keeps the end of the first row, which the sections' row below widens */
+  .theme {
+    justify-self: end;
+  }
+
+  /* the names wrap to a row more where the screen is too narrow for them all, so the page is never wider than it */
+  .sections {
+    flex-wrap: wrap;
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    column-gap: var(--cell);
+  }
+
+  .sections a {
+    padding: 0;
+  }
+
+  .skip {
+    left: var(--gutter-phone);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sections a {
+    transition: none;
+  }
+}
+
 /* the theme: one quiet square button, a drawn mark and no words, compact in size, no border and no ground (DESIGN.md,
  * ThemeSwitch); the words that name it show as its tooltip under the pointer and on focus */
 .theme-button {
@@ -105,7 +232,7 @@ mark {
 .tooltip {
   position: absolute;
   top: calc(var(--control-compact) + var(--nudge));
-  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   box-sizing: border-box;

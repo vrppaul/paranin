@@ -11,7 +11,7 @@ import (
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
 // address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
-// then the theme button, its head and its blocks.
+// then the top bar, and its main part, its head and its blocks.
 templ (writer PageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
@@ -30,9 +30,9 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 			}
 		</head>
 		<body>
-			@themeButton(writer.frame)
-			@writer.head(composed.Head)
-			<main>
+			@topBar(writer.frame)
+			<main id={ mainID }>
+				@writer.head(composed.Head)
 				for _, block := range composed.Blocks {
 					@writer.topBlock(composed.Head.Page.Kind, block)
 				}
@@ -59,15 +59,33 @@ templ headOpening(title string, included assets.Included) {
 	}
 }
 
+// topBar is the bar every page opens with (DESIGN.md, TopBar and SkipLink): the link past it to the page's main part,
+// the first thing a keyboard reaches; the site's name, leading to where it begins; each section of the résumé,
+// leading to its place there; and the theme button.
+templ topBar(frame frame) {
+	<header class="bar">
+		<a class="skip" href={ frame.toMain }>{ frame.skipToContent }</a>
+		<div class="bar-row">
+			<a class="site" href={ frame.start }>{ frame.siteName }</a>
+			<nav class="sections">
+				for _, section := range frame.sections {
+					<a href={ section.address }>{ section.title }</a>
+				}
+			</nav>
+			@themeButton(frame.darkTheme)
+		</div>
+	</header>
+}
+
 // themeButton is the reader's theme: one button that turns the page to the theme it is not in, pressed while the
 // page is dark, named by the words beside it, which show as its tooltip under the pointer and on focus. The site's
 // script shows it and runs it; a page read without the script hides it, and follows the system's theme.
-templ themeButton(frame compose.FrameWords) {
+templ themeButton(name string) {
 	<span class="theme" data-part={ themePart } hidden>
 		<button type="button" class="theme-button" aria-pressed="false" aria-labelledby={ themeNameID }>
 			@themeMark()
 		</button>
-		<span id={ themeNameID } class="tooltip" data-part={ tooltipPart }>{ frame.DarkTheme }</span>
+		<span id={ themeNameID } class="tooltip" data-part={ tooltipPart }>{ name }</span>
 	</span>
 }
 
@@ -93,36 +111,35 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:url" content={ metadata.canonical }/>
 }
 
-// head is what the page shows first: its title, the subtitle and the place beside it, what a project is made of, the
-// lead, and where a project's code lives.
+// head is what the page's main part shows first: its title, the subtitle and the place beside it, what a project is
+// made of, the lead, and where a project's code lives. It stands in no header: a page has one, the top bar
+// (DESIGN.md, Layout).
 templ (writer PageWriter) head(head document.Head) {
-	<header>
-		@writer.drawnTitle(head)
-		if len(head.Subtitle) > 0 || head.Place != "" {
-			<p>
-				@writer.spans(head.Subtitle)
-				if len(head.Subtitle) > 0 && head.Place != "" {
-					@text(dot)
-				}
-				@text(head.Place)
-			</p>
-		}
-		if len(head.Tags) > 0 {
-			<ul>
-				for _, tag := range head.Tags {
-					<li>{ tag }</li>
-				}
-			</ul>
-		}
-		if len(head.Lead) > 0 {
-			<p>
-				@writer.spans(head.Lead)
-			</p>
-		}
-		if repository := head.Repository.Facts(); len(repository) > 0 {
-			@writer.facts(repository)
-		}
-	</header>
+	@writer.drawnTitle(head)
+	if len(head.Subtitle) > 0 || head.Place != "" {
+		<p>
+			@writer.spans(head.Subtitle)
+			if len(head.Subtitle) > 0 && head.Place != "" {
+				@text(dot)
+			}
+			@text(head.Place)
+		</p>
+	}
+	if len(head.Tags) > 0 {
+		<ul>
+			for _, tag := range head.Tags {
+				<li>{ tag }</li>
+			}
+		</ul>
+	}
+	if len(head.Lead) > 0 {
+		<p>
+			@writer.spans(head.Lead)
+		</p>
+	}
+	if repository := head.Repository.Facts(); len(repository) > 0 {
+		@writer.facts(repository)
+	}
 }
 
 templ (writer PageWriter) section(section document.Section, depth int) {
@@ -279,16 +296,21 @@ templ knownMonth(start time.Time) {
 	<time datetime={ machineMonth(start) }>{ monthText(start) }</time>
 }
 
-// letteredSection is a section of the résumé under its title in block letters, named by its words.
-templ (writer PageWriter) letteredSection(section document.Section, title letterDrawing) {
-	<section>
-		<h2 aria-label={ title.words }>
-			@blockLetters(title)
-		</h2>
+// resumeSection is a section of the résumé, at the place the top bar leads to, under its heading.
+templ (writer PageWriter) resumeSection(section document.Section, heading templ.Component) {
+	<section id={ sectionID(document.PlainText(section.Title)) }>
+		@heading
 		for _, block := range section.Blocks {
 			@writer.block(block, firstHeadingDepth+1)
 		}
 	</section>
+}
+
+// letteredHeadingTwo is a section's title in block letters, named by its words.
+templ letteredHeadingTwo(title letterDrawing) {
+	<h2 aria-label={ title.words }>
+		@blockLetters(title)
+	</h2>
 }
 
 // letteredHeadingOne is a page's title in block letters, named by its words.

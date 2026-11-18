@@ -259,7 +259,7 @@ func checkToken(name, about string, named map[string]bool) error {
 // it is for.
 func checkName(name, about string) error {
 	if !isTokenName(name) {
-		return fmt.Errorf("%w: %q is no name of small words parted by underscores", errTokens, name)
+		return fmt.Errorf("%w: %q is no name of small words and numbers parted by underscores", errTokens, name)
 	}
 	if about == "" {
 		return fmt.Errorf("%w: %q says nothing of what it is for", errTokens, name)
@@ -277,14 +277,19 @@ func claim(property string, named map[string]bool) error {
 	return nil
 }
 
-// isTokenName is whether a name is small words parted by underscores: on_accent.
+// isTokenName is whether a name is small words parted by underscores, a number among them: on_accent, row_2.
 func isTokenName(name string) bool {
 	for word := range strings.SplitSeq(name, wordSeparator) {
-		if word == "" || strings.ContainsFunc(word, func(letter rune) bool { return letter < 'a' || letter > 'z' }) {
+		if word == "" || strings.ContainsFunc(word, isNoNameLetter) {
 			return false
 		}
 	}
 	return true
+}
+
+// isNoNameLetter is whether a letter has no place in a token's name: anything but a small letter or a digit.
+func isNoNameLetter(letter rune) bool {
+	return (letter < 'a' || letter > 'z') && (letter < '0' || letter > '9')
 }
 
 // required is a value the file must write, or a fault naming the token and the key it left out.

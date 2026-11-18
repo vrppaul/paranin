@@ -82,8 +82,9 @@ size: a control that seems to need one is the wrong control.
 - `background` is the page; `sunk` lies a shade below it (the top bar, a command chip, code); `deep` below that (a
   pressed quiet control).
 - `text` for what is read, `muted` for what stands beside it, `faint` for what a reader may pass over. In Latte `muted`
-  is subtext1 and `faint` subtext0, one tone darker than the TUI first had them: `muted` reads 4.7:1 or more on every
-  ground, `faint` 3.7:1 or more, so `faint` is never the only ink of something a reader needs.
+  is subtext1 and `faint` subtext0, one tone darker than the TUI first had them: `muted` reads 4.7:1 or more on
+  `background`, `sunk` and `deep`, `faint` 3.7:1 or more, so `faint` is never the only ink of something a reader needs.
+  Neither stands on `tint`.
 - A fact's label is `muted`. `label` blue rings the focus: blue, and 3:1 or more on every ground in both themes.
 - `accent` is spent where the eye should go first: the primary button, the cursor, the current role, the near end of
   the name. In Latte it is a fill and a display colour, never small text (2.64:1).

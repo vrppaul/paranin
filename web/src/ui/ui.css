@@ -52,8 +52,10 @@ mark {
   color: inherit;
 }
 
+/* the focus, by keyboard, ringed in the label's blue, which shows on every ground where the accent does not, and stands
+ * apart from the accent the eye goes to first (DESIGN.md, States) */
 :focus-visible {
-  outline: var(--focus-width) solid var(--accent);
+  outline: var(--focus-width) solid var(--label);
   outline-offset: var(--focus-width);
 }
 

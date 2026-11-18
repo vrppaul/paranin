@@ -12,9 +12,9 @@
   /* what a reader reads */
   --text: light-dark(#4c4f69, #cad3f5);
   /* what stands beside the text and says less */
-  --muted: light-dark(#6c6f85, #a5adcb);
+  --muted: light-dark(#5c5f77, #a5adcb);
   /* what a reader may pass over, a gap still to fill among it */
-  --faint: light-dark(#8c8fa1, #8087a2);
+  --faint: light-dark(#6c6f85, #8087a2);
   /* a rule between two parts of a bar, or inside a window */
   --quiet: light-dark(#ccd0da, #363a4f);
   /* the border of a window laid over the page, and a role that ended on the career's line */

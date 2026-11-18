@@ -38,12 +38,14 @@ colours:
     basic: own
   - name: muted
     about: what stands beside the text and says less
-    light: "#6c6f85"
+    # Latte's subtext1, for the contrast DESIGN.md asks
+    light: "#5c5f77"
     dark: "#a5adcb"
     basic: own
   - name: faint
     about: what a reader may pass over, a gap still to fill among it
-    light: "#8c8fa1"
+    # Latte's subtext0, for the contrast DESIGN.md asks
+    light: "#6c6f85"
     dark: "#8087a2"
     basic: 8
   - name: quiet

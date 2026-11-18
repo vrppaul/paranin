@@ -15,6 +15,7 @@ templ (notFound NotFound) page(quotedPath string) {
 				<p><code>{ quotedPath }</code></p>
 				<p><a href={ notFound.frame.start }>{ notFound.frame.siteName }</a></p>
 			</main>
+			@footer(notFound.frame, notFound.reading, "")
 		</body>
 	</html>
 }

@@ -33,6 +33,12 @@ const (
 	placeMark = "#"
 )
 
+// The program a terminal reads the site with, and what parts it from the address in a command
+const (
+	readingCommand = "curl"
+	commandSpace   = " "
+)
+
 // Site writes the site's addresses whole, from the address it is served at, and knows the site's own name.
 type Site struct {
 	base string
@@ -49,6 +55,12 @@ type BaseAddress interface {
 // New is the site served at a base address, and named by the address's host.
 func New(base BaseAddress) Site {
 	return Site{base: base.Written(), host: base.Host()}
+}
+
+// ReadCommand is the command a terminal reads a page of the site with: curl and the page's whole address, where the
+// site answers a terminal with the manual.
+func (site Site) ReadCommand(page document.Page) string {
+	return readingCommand + commandSpace + site.Address(page, FormatChosen)
 }
 
 // Address is where a target leads, written whole: a page's in a format, or an address outside the site as it is.

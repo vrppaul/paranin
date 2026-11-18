@@ -81,8 +81,12 @@
   --cell: 1ch;
   /* two cells, either side of a regular control and of a section's name in the top bar */
   --cell-2: 2ch;
+  /* three cells, between the ways the footer lists */
+  --cell-3: 3ch;
   /* the grid's row, which the text read sits on; how far below the top bar a section a link leads to stops */
   --row: 1.5rem;
+  /* two rows, the air above and below the footer's ways */
+  --row-2: 3rem;
   /* half a row, the gap inside a component */
   --row-half: 0.75rem;
   /* how tall a regular control is, two rows */

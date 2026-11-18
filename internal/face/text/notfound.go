@@ -7,9 +7,6 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The program a terminal reads the site with
-const readingCommand = "curl"
-
 // NotFound is the text of an address the site has no page at, for a terminal, drawn once for a site: each path
 // asked for is all that differs.
 type NotFound struct {
@@ -22,7 +19,7 @@ type NotFound struct {
 // NewNotFound is the text of an address of no page of a site, opening with the status the host answers with.
 func NewNotFound(site routes.Site, status string) NotFound {
 	start := document.Page{Kind: document.PageResume, Slug: ""}
-	return NotFound{status: status, startCommand: readingCommand + space + site.Address(start, routes.FormatChosen)}
+	return NotFound{status: status, startCommand: site.ReadCommand(start)}
 }
 
 // For is the text for a path asked for: the status, the path quoted as Go quotes a string, so no control

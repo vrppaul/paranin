@@ -11,7 +11,7 @@ import (
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
 // address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
-// then the top bar, and its main part, its head and its blocks.
+// then the top bar, its main part, its head and its blocks, and the footer.
 templ (writer PageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
@@ -37,6 +37,7 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 					@writer.topBlock(composed.Head.Page.Kind, block)
 				}
 			</main>
+			@footer(writer.frame, writer.site.ReadCommand(composed.Head.Page), metadata.markdown)
 		</body>
 	</html>
 }
@@ -65,7 +66,7 @@ templ headOpening(title string, included assets.Included) {
 templ topBar(frame frame) {
 	<header class="bar">
 		<a class="skip" href={ frame.toMain }>{ frame.skipToContent }</a>
-		<div class="bar-row">
+		<div class="bar-row content-width">
 			<a class="site" href={ frame.start }>{ frame.siteName }</a>
 			<nav class="sections" data-part={ sectionsPart }>
 				for _, section := range frame.sections {
@@ -75,6 +76,21 @@ templ topBar(frame frame) {
 			@themeButton(frame.darkTheme)
 		</div>
 	</header>
+}
+
+// footer ends every page (DESIGN.md, Footer): the ways the same page is served, the command that reaches the site over
+// ssh, the one that reads the page in a terminal, the page's markdown where it has one, and the index agents read.
+templ footer(frame frame, reading, markdown string) {
+	<footer class="footer">
+		<div class="footer-row content-width">
+			<code>{ frame.ssh }</code>
+			<code>{ reading }</code>
+			if markdown != "" {
+				<a href={ markdown }>{ markdown }</a>
+			}
+			<a href={ frame.agentsIndex }>{ frame.agentsIndex }</a>
+		</div>
+	</footer>
 }
 
 // themeButton is the reader's theme: one button that turns the page to the theme it is not in, pressed while the

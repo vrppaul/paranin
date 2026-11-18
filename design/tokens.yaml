@@ -165,9 +165,15 @@ lengths:
   - name: cell_2
     about: two cells, either side of a regular control and of a section's name in the top bar
     cells: 2
+  - name: cell_3
+    about: three cells, between the ways the footer lists
+    cells: 3
   - name: row
     about: the grid's row, which the text read sits on; how far below the top bar a section a link leads to stops
     rem: 1.5
+  - name: row_2
+    about: two rows, the air above and below the footer's ways
+    rem: 3
   - name: row_half
     about: half a row, the gap inside a component
     rem: 0.75

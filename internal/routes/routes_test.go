@@ -86,6 +86,26 @@ func TestALinkToAPlaceLeadsByItsID(test *testing.T) {
 	}
 }
 
+// A page of the site is read in a terminal with curl and its whole address, which answers a terminal with the manual.
+func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
+	cases := []struct {
+		name string
+		page document.Page
+		want string
+	}{
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "curl https://example.test/"},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: "curl https://example.test/p/tidy-tool"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := site.ReadCommand(testCase.page); got != testCase.want {
+				test.Errorf("ReadCommand(%+v) = %q, want %q", testCase.page, got, testCase.want)
+			}
+		})
+	}
+}
+
 // writtenAddress is a base address as a test writes it, its host beside it, as content reads one from a profile.
 type writtenAddress struct {
 	written string

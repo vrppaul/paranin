@@ -7,16 +7,19 @@ import (
 
 // Frame is what a face lays round the documents it draws, on every page alike, in the site's words: the words of
 // the link past it to the page's main part, the titles of the résumé's sections, which it leads to in their order,
-// and the name of the theme button, which is pressed while the page is dark.
+// the name of the theme button, which is pressed while the page is dark, and the command that reaches the site over
+// ssh, one of the ways it is served.
 type Frame struct {
 	SkipToContent string
 	Sections      []string
 	DarkTheme     string
+	SSH           string
 }
 
-// FrameOf is the frame of a site's pages in its words, its sections those of the résumé among the pages composed;
-// none where they hold no résumé.
-func FrameOf(words content.Words, pages []Composed) Frame {
+// FrameOf is the frame of a site's pages, its sections those of the résumé among the pages composed; none where they
+// hold no résumé.
+func FrameOf(snapshot *content.Snapshot, pages []Composed) Frame {
+	words := snapshot.Words
 	sections := []string{}
 	for _, page := range pages {
 		if page.Document.Head.Page.Kind != document.PageResume {
@@ -32,5 +35,6 @@ func FrameOf(words content.Words, pages []Composed) Frame {
 		SkipToContent: words.Text(content.WordSkipToContent),
 		Sections:      sections,
 		DarkTheme:     words.Text(content.WordDarkTheme),
+		SSH:           snapshot.Profile.Site.SSH,
 	}
 }

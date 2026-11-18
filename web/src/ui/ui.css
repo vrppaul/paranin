@@ -46,6 +46,25 @@ textarea {
   font: inherit;
 }
 
+/* a link reads in the text's colour, its underline saying it is one (DESIGN.md, Link): muted, and under the pointer
+ * the accent, twice as thick; never an arrow */
+a {
+  color: var(--text);
+  text-decoration-color: var(--muted);
+  text-underline-offset: var(--nudge);
+  transition: text-decoration-color var(--quick);
+}
+
+a:hover {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: calc(2 * var(--hairline));
+}
+
+/* code in a line, told by its ground a shade below the page, since the whole page is one face */
+code {
+  background: var(--sunk);
+}
+
 /* a result worth seeing first, marked in the tint */
 mark {
   background: var(--tint);
@@ -71,16 +90,20 @@ mark {
   line-height: var(--type-small-line);
 }
 
-/* the bar's row runs as wide as the content, a gutter either side */
+/* a part of the page as wide as its content, a gutter either side, on a ground that runs the screen's width: the
+ * bar's row, the footer's */
+.content-width {
+  box-sizing: border-box;
+  max-width: calc(var(--content) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
 .bar-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-sizing: border-box;
-  max-width: calc(var(--content) + 2 * var(--gutter));
   min-height: var(--bar);
-  margin: 0 auto;
-  padding: 0 var(--gutter);
 }
 
 /* the site's name leads to where it begins, bold as what names */
@@ -121,6 +144,23 @@ mark {
   scroll-margin-top: calc(var(--bar) + var(--row));
 }
 
+/* the footer every page ends with (DESIGN.md, Footer): a quiet hairline across the screen above it, as under the bar,
+ * then the ways the same page is served, in small muted words, two rows of air round them */
+.footer {
+  border-top: var(--hairline) solid var(--quiet);
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--row-half) var(--cell-3);
+  padding-block: var(--row-2);
+}
+
 /* the link past the bar to the page's main part (DESIGN.md, SkipLink): the first thing a keyboard reaches, above the
  * screen until it is focused, then at the top left over the bar, reversed, a regular control */
 .skip {
@@ -150,6 +190,10 @@ mark {
     position: static;
   }
 
+  .content-width {
+    padding-inline: var(--gutter-phone);
+  }
+
   [id] {
     scroll-margin-top: var(--row);
   }
@@ -158,7 +202,6 @@ mark {
     display: grid;
     grid-template-columns: auto auto;
     justify-content: space-between;
-    padding: 0 var(--gutter-phone);
   }
 
   .site {
@@ -191,6 +234,7 @@ mark {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  a,
   .sections a {
     transition: none;
   }

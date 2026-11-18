@@ -5,6 +5,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -19,9 +20,12 @@ type NotFound struct {
 	// included is what the page includes to run the site's script, as every page does, so it is seen in the theme
 	// the reader chose
 	included assets.Included
-	// frame is what every page lays round its main part, the top bar, whose site's name and start the page's own
-	// link to where the site begins reads
+	// frame is what every page lays round its main part, the top bar and the footer, whose site's name and start the
+	// page's own link to where the site begins reads
 	frame frame
+	// reading is the command that reads where the site begins in a terminal, which the footer offers, as the page has
+	// no page of its own to read
+	reading string
 }
 
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
@@ -32,6 +36,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		language: language,
 		included: build.Includes(assets.Site),
 		frame:    frameOf(site, composed),
+		reading:  site.ReadCommand(document.Page{Kind: document.PageResume, Slug: ""}),
 	}
 }
 

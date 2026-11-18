@@ -170,6 +170,59 @@ func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 	}
 }
 
+// Every page ends with the footer, the page of no page among them: the ways the same résumé is served, the command
+// that reaches it over ssh, the one that reads the page in a terminal, the page's markdown where it has one, and the
+// index agents read.
+func TestEveryPageEndsWithTheFooter(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	writer := fixtureWriter(test)
+	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
+	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+	cases := []struct {
+		name  string
+		page  string
+		want  []string
+		lacks []string
+	}{
+		{
+			name: "the résumé", page: writer.Page(resume.Document, resume.Record),
+			want: []string{
+				"<footer", "<code>ssh example.test</code>", "<code>curl https://example.test/</code>",
+				`href="/index.md">/index.md</a>`, `href="/llms.txt">/llms.txt</a>`,
+			},
+			lacks: nil,
+		},
+		{
+			name: "a project's page", page: writer.Page(project.Document, project.Record),
+			want: []string{
+				"<code>ssh example.test</code>", "<code>curl https://example.test/p/tidy-tool</code>",
+				`href="/p/tidy-tool.md">/p/tidy-tool.md</a>`, `href="/llms.txt">/llms.txt</a>`,
+			},
+			lacks: nil,
+		},
+		{
+			name: "the page of no page, which has no markdown", page: missing.For("/nothing"),
+			want:  []string{"<code>ssh example.test</code>", "<code>curl https://example.test/</code>", `href="/llms.txt">/llms.txt</a>`},
+			lacks: []string{".md"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, want := range testCase.want {
+				if !strings.Contains(testCase.page, want) {
+					test.Errorf("the page %q holds no %q", testCase.page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(testCase.page, unwanted) {
+					test.Errorf("the page %q holds %q", testCase.page, unwanted)
+				}
+			}
+		})
+	}
+}
+
 // A page whose content gives no description names none, so a search engine or a preview writes its own rather
 // than an empty one.
 func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
@@ -220,7 +273,7 @@ func fixtureWriter(test *testing.T) PageWriter {
 
 // fixtureFrame is the frame of the fixture's pages, in its words.
 func fixtureFrame(snapshot *content.Snapshot) compose.Frame {
-	return compose.FrameOf(snapshot.Words, compose.Pages(snapshot))
+	return compose.FrameOf(snapshot, compose.Pages(snapshot))
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.

@@ -46,10 +46,10 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 | `nudge` | `design/tokens.yaml` | an offset inside a row: an underline's distance |
 | `row_half` | `design/tokens.yaml` | gaps inside a component |
 | `row` | `design/tokens.yaml` | between a heading and what it heads |
-| `row_2` | 3rem | between two entries, the brief's top |
+| `row_2` | `design/tokens.yaml` | between two entries, the brief's top |
 | `row_3` | 4.5rem | between the name and the brief's columns |
 | `row_4` | 6rem | between two top-level sections |
-| `cell`, `cell_2`, `cell_3` | `cell` and `cell_2` in `design/tokens.yaml`, 3ch | a gap inside a chip; a control's side padding; a list's indent |
+| `cell`, `cell_2`, `cell_3` | `design/tokens.yaml` | a gap inside a chip; a control's side padding; a list's indent |
 | `content` | `design/tokens.yaml` | the widest the content runs |
 | `gutter`, `gutter_phone` | `design/tokens.yaml` | either side of the content, and on a phone |
 | `measure` | 64ch | the longest line of prose |
@@ -233,7 +233,8 @@ Tooltip under the pointer. Without the script it is hidden and the page follows 
 - The skip link is the first thing a keyboard reaches: hidden until focused, then at the top left over the bar,
   reversed, regular size.
 - The footer ends every page: a `quiet` hairline above, `row_2` of air, `small` and `muted`, the ways the same résumé
-  is served (ssh, curl, markdown, llms.txt, cv.pdf) as links. Social profiles are in Contact.
+  is served: the commands that reach it as Code (ssh, curl), its files as links (markdown, llms.txt, cv.pdf). Social
+  profiles are in Contact.
 
 ### Facts
 

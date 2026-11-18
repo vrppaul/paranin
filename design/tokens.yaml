@@ -148,6 +148,26 @@ type:
     size: 0.8125
     line: 1
     weight: 400
+  - name: mail
+    about: the mail address heading the first screen's brief, the one text in the heaviest weight
+    size: 1.5
+    line: 2
+    weight: 800
+  - name: mail_phone
+    about: the mail address heading the brief on a phone
+    size: 1.25
+    line: 2
+    weight: 800
+  - name: lead
+    about: the headline under the author's name
+    size: 1.25
+    line: 2
+    weight: 400
+  - name: lead_phone
+    about: the headline under the author's name on a phone
+    size: 1.0625
+    line: 1.625
+    weight: 400
 
 lengths:
   - name: focus_width
@@ -177,6 +197,21 @@ lengths:
   - name: row_half
     about: half a row, the gap inside a component
     rem: 0.75
+  - name: row_3
+    about: three rows, between the name's column and the brief's, and under the first screen
+    rem: 4.5
+  - name: row_4
+    about: four rows, above the first screen
+    rem: 6
+  - name: brief
+    about: how wide the first screen's brief is beside the name
+    rem: 27.5
+  - name: brief_mid
+    about: how wide the brief is below the wide screen's width
+    rem: 23.75
+  - name: lead
+    about: the longest line of the headline under the name
+    cells: 40
   - name: control
     about: how tall a regular control is, two rows
     rem: 3
@@ -207,6 +242,9 @@ lengths:
   - name: hairline
     about: how wide every line is, a border's or a rule's
     rem: 0.0625
+  - name: underline_hover
+    about: how thick a link's underline is under the pointer, two hairlines
+    rem: 0.125
 
 times:
   - name: blink

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"iter"
 	"slices"
 	"strings"
 	"time"
@@ -123,14 +122,7 @@ func (plainSection) tabBody()  {}
 // tabsOf parts a document into its tabs: the head with what stands before the first section, the opening; then each
 // section the opening leaves, named by its title.
 func tabsOf(composed document.Document) []tab {
-	openingBlocks, sections := []document.Block{}, []document.Section{}
-	for _, block := range composed.Blocks {
-		if section, isSection := block.(document.Section); isSection {
-			sections = append(sections, section)
-		} else {
-			openingBlocks = append(openingBlocks, block)
-		}
-	}
+	openingBlocks, sections := document.SectionsOf(composed.Blocks)
 	first := openingOf(composed.Head, openingBlocks, sections)
 	tabs := []tab{{title: first.title, tally: checkTally(openingBlocks), body: first.body}}
 	for _, section := range first.sectionsLeft {
@@ -155,9 +147,12 @@ func openingOf(head document.Head, blocks []document.Block, sections []document.
 	title := document.PlainText(head.Title)
 	switch head.Page.Kind {
 	case document.PageResume:
-		if brief, rest, takenIn := briefOf(sections); takenIn {
-			body := briefOpening{head: head, brief: brief, address: addressOf(sections), career: careerOf(sections), blocks: slices.Concat(blocks, rest)}
-			return opening{title: document.PlainText(sections[0].Title), body: body, sectionsLeft: sections[1:]}
+		if briefed := document.BriefOf(sections); briefed != nil {
+			body := briefOpening{
+				head: head, brief: briefed.Brief.List, address: briefed.Address, career: briefed.Career,
+				blocks: slices.Concat(blocks, briefed.Before, briefed.After),
+			}
+			return opening{title: document.PlainText(briefed.Title), body: body, sectionsLeft: briefed.Rest}
 		}
 	case document.PageProject:
 		return opening{title: title, body: readmeOpening{head: head, blocks: blocks}, sectionsLeft: sections}
@@ -181,56 +176,6 @@ func sectionBody(kind document.PageKind, section document.Section) tabBody {
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return plainSection{blocks: section.Blocks}
-}
-
-// briefOf is the facts of the first of sections, its first block of facts that holds any; the blocks it holds beside
-// them; and whether it holds such facts at all.
-func briefOf(sections []document.Section) ([]document.Fact, []document.Block, bool) {
-	if len(sections) == 0 {
-		return nil, nil, false
-	}
-	blocks := sections[0].Blocks
-	for index, block := range blocks {
-		if facts, isFacts := block.(document.Facts); isFacts && len(facts.List) > 0 {
-			return facts.List, slices.Concat(blocks[:index], blocks[index+1:]), true
-		}
-	}
-	return nil, nil, false
-}
-
-// careerOf is the roles a document's sections hold, the entries whose kind is a role, in order.
-func careerOf(sections []document.Section) []document.Entry {
-	roles := []document.Entry{}
-	for block := range sectionBlocks(sections) {
-		if entry, isEntry := block.(document.Entry); isEntry && entry.Kind == document.EntryRole {
-			roles = append(roles, entry)
-		}
-	}
-	return roles
-}
-
-// addressOf is the first way to reach the author a document's sections hold, the mail, as its value: the first fact
-// of the first facts of the ways' kind; none where no section holds one.
-func addressOf(sections []document.Section) []document.Span {
-	for block := range sectionBlocks(sections) {
-		if facts, isFacts := block.(document.Facts); isFacts && facts.Kind == document.FactsWays && len(facts.List) > 0 {
-			return facts.List[0].Value
-		}
-	}
-	return nil
-}
-
-// sectionBlocks are the blocks each section holds, in order, not those of the sections nested in them.
-func sectionBlocks(sections []document.Section) iter.Seq[document.Block] {
-	return func(yield func(document.Block) bool) {
-		for _, section := range sections {
-			for _, block := range section.Blocks {
-				if !yield(block) {
-					return
-				}
-			}
-		}
-	}
 }
 
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address

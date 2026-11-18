@@ -71,6 +71,30 @@
   --type-caption-line: 1rem;
   /* a word on a compact control, a tooltip's among them; never prose: its weight */
   --type-caption-weight: 400;
+  /* the mail address heading the first screen's brief, the one text in the heaviest weight: its size */
+  --type-mail-size: 1.5rem;
+  /* the mail address heading the first screen's brief, the one text in the heaviest weight: its line's height */
+  --type-mail-line: 2rem;
+  /* the mail address heading the first screen's brief, the one text in the heaviest weight: its weight */
+  --type-mail-weight: 800;
+  /* the mail address heading the brief on a phone: its size */
+  --type-mail-phone-size: 1.25rem;
+  /* the mail address heading the brief on a phone: its line's height */
+  --type-mail-phone-line: 2rem;
+  /* the mail address heading the brief on a phone: its weight */
+  --type-mail-phone-weight: 800;
+  /* the headline under the author's name: its size */
+  --type-lead-size: 1.25rem;
+  /* the headline under the author's name: its line's height */
+  --type-lead-line: 2rem;
+  /* the headline under the author's name: its weight */
+  --type-lead-weight: 400;
+  /* the headline under the author's name on a phone: its size */
+  --type-lead-phone-size: 1.0625rem;
+  /* the headline under the author's name on a phone: its line's height */
+  --type-lead-phone-line: 1.625rem;
+  /* the headline under the author's name on a phone: its weight */
+  --type-lead-phone-weight: 400;
   /* how wide a focus ring is, and how far it stands from what it rings */
   --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
@@ -89,6 +113,16 @@
   --row-2: 3rem;
   /* half a row, the gap inside a component */
   --row-half: 0.75rem;
+  /* three rows, between the name's column and the brief's, and under the first screen */
+  --row-3: 4.5rem;
+  /* four rows, above the first screen */
+  --row-4: 6rem;
+  /* how wide the first screen's brief is beside the name */
+  --brief: 27.5rem;
+  /* how wide the brief is below the wide screen's width */
+  --brief-mid: 23.75rem;
+  /* the longest line of the headline under the name */
+  --lead: 40ch;
   /* how tall a regular control is, two rows */
   --control: 3rem;
   /* how tall the top bar is */
@@ -109,6 +143,8 @@
   --radius: 0.125rem;
   /* how wide every line is, a border's or a rule's */
   --hairline: 0.0625rem;
+  /* how thick a link's underline is under the pointer, two hairlines */
+  --underline-hover: 0.125rem;
   /* one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks */
   --blink: 1060ms;
   /* how long a colour takes to change under the pointer */

@@ -11,6 +11,9 @@
 # command are shown as written:
 #   ==text==  a result worth highlighting
 #   [text]    a gap still to fill; the site shows it faint
+#
+# The first four facts brief the reader beside the name on the page's first screen, so the ones a reader should see
+# first come first; the rest stand under the summary.
 
 site:
   base_url: https://paran.in
@@ -42,10 +45,10 @@ summary: >-
 facts:
   - {label: experience, value: 7+ years}
   - {label: stack, value: Python · Kubernetes}
+  - {label: now, value: "Kiwi.com, since 2024"}
+  - {label: languages, value: "English, Czech, Russian"}
   - {label: looking for, value: "[later]"}
   - {label: where, value: "Prague · [remote?]"}
-  - {label: languages, value: "English, Czech, Russian"}
-  - {label: now, value: "Kiwi.com, since 2024"}
   - {label: available, value: "[notice period]"}
   - {label: open source, value: 2 tools for AI agents}
 

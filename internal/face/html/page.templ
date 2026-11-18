@@ -31,11 +31,8 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 		</head>
 		<body>
 			@topBar(writer.frame)
-			<main id={ mainID }>
-				@writer.head(composed.Head)
-				for _, block := range composed.Blocks {
-					@writer.topBlock(composed.Head.Page.Kind, block)
-				}
+			<main id={ mainID } class="content-width">
+				@writer.mainPart(composed)
 			</main>
 			@footer(writer.frame, writer.site.ReadCommand(composed.Head.Page), metadata.markdown)
 		</body>
@@ -127,6 +124,70 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:url" content={ metadata.canonical }/>
 }
 
+// plainMain is a page's main part as it stands: its head, then each block.
+templ (writer PageWriter) plainMain(composed document.Document) {
+	@writer.head(composed.Head)
+	for _, block := range composed.Blocks {
+		@writer.topBlock(composed.Head.Page.Kind, block)
+	}
+}
+
+// resumeMain is the résumé's main part: its first screen, then the blocks that are no section, then its sections.
+templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
+	@writer.firstScreen(head, parts)
+	for _, block := range parts.others {
+		@writer.block(block, firstHeadingDepth)
+	}
+	for _, section := range parts.sections {
+		@writer.topBlock(head.Page.Kind, section)
+	}
+}
+
+// firstScreen is the résumé's first screen (DESIGN.md, Pages): the greeting, the author's name in block letters and
+// the lead in one column; beside it the brief, in two parts a row apart: the address heading it, the subtitle and the
+// place; then the facts.
+templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
+	<div class="first-screen">
+		<div class="name-column">
+			if head.Greeting != "" {
+				<p class="greeting">{ head.Greeting }</p>
+			}
+			@writer.drawnTitle(head)
+			if len(head.Lead) > 0 {
+				<p class="lead">
+					@writer.spans(head.Lead)
+				</p>
+			}
+		</div>
+		<div class="brief">
+			<div>
+				@writer.mail(parts.address)
+				if len(head.Subtitle) > 0 {
+					<p class="role">
+						@writer.spans(head.Subtitle)
+					</p>
+				}
+				if head.Place != "" {
+					<p class="place">{ head.Place }</p>
+				}
+			</div>
+			@writer.facts(parts.brief)
+		</div>
+	</div>
+}
+
+// mail is the address heading the brief (DESIGN.md, Mail): a link that writes to it, its mailbox, its at and its host
+// each a part the stylesheet colours; as its words where it is no such link.
+templ (writer PageWriter) mail(address []document.Span) {
+	if mail, parted := mailOf(address); parted {
+		<a class="mail" href={ mail.reference }><span class="mail-box">{ mail.box }</span><span class="mail-at">{ addressAt }</span><span class="mail-host">{ mail.host }</span></a>
+	} else if len(address) > 0 {
+		<p>
+			@writer.spans(address)
+		</p>
+	}
+}
+
 // head is what the page's main part shows first: its title, the subtitle and the place beside it, what a project is
 // made of, the lead, and where a project's code lives. It stands in no header: a page has one, the top bar
 // (DESIGN.md, Layout).
@@ -195,7 +256,7 @@ templ codeBlock(text string) {
 }
 
 templ (writer PageWriter) facts(facts []document.Fact) {
-	<dl>
+	<dl class="facts">
 		for _, fact := range facts {
 			<dt>{ fact.Label }</dt>
 			<dd>

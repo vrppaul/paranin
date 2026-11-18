@@ -47,14 +47,14 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 | `row_half` | `design/tokens.yaml` | gaps inside a component |
 | `row` | `design/tokens.yaml` | between a heading and what it heads |
 | `row_2` | `design/tokens.yaml` | between two entries, the brief's top |
-| `row_3` | 4.5rem | between the name and the brief's columns |
-| `row_4` | 6rem | between two top-level sections |
+| `row_3` | `design/tokens.yaml` | between the name and the brief's columns |
+| `row_4` | `design/tokens.yaml` | between two top-level sections, above the first screen |
 | `cell`, `cell_2`, `cell_3` | `design/tokens.yaml` | a gap inside a chip; a control's side padding; a list's indent |
 | `content` | `design/tokens.yaml` | the widest the content runs |
 | `gutter`, `gutter_phone` | `design/tokens.yaml` | either side of the content, and on a phone |
 | `measure` | 64ch | the longest line of prose |
-| `brief`, `brief_mid` | 27.5rem, 23.75rem | the brief beside the name, from `wide` and from `phone` |
-| `lead` | 40ch | the longest line of the headline |
+| `brief`, `brief_mid` | `design/tokens.yaml` | the brief beside the name, from `wide` and from `phone` |
+| `lead` | `design/tokens.yaml` | the longest line of the headline |
 | `when`, `years` | 20ch, 10ch | an entry's dates column; the phone's career list's years |
 | `bar` | `design/tokens.yaml` | the top bar |
 | `dialog` | 35rem | the widest a dialog runs |
@@ -101,8 +101,8 @@ size: a control that seems to need one is the wrong control.
 
 | style | size / line, rem | weight | for |
 | --- | --- | --- | --- |
-| `mail` | 1.5/2 | 800 | the mail heading the brief; 1.25 on a phone |
-| `lead` | 1.25/2 | 400 | the headline under the name; 1.0625/1.625 on a phone |
+| `mail`, `mail_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the mail heading the brief, and on a phone |
+| `lead`, `lead_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the headline under the name, and on a phone |
 | `heading` | 1.25/2 | 700 | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
@@ -113,7 +113,7 @@ size: a control that seems to need one is the wrong control.
   below is `strong`, its level shown by the space before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels
   never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
-- Weights: 400 for text, 700 for what names (a role, a company, a button), 800 only for the mail.
+- Weights: 400 for text, 700 for what names (a role, a company, a button), 800 only for the mail, its @ left at 400.
 
 ## Block letters
 
@@ -138,7 +138,7 @@ size: a control that seems to need one is the wrong control.
 | state | how it shows |
 | --- | --- |
 | rest | as its component says |
-| hover | a quiet control one shade down (`sunk`); the primary turns `host`; a link's underline turns `accent` and two hairlines thick; a field's border `text` |
+| hover | a quiet control one shade down (`sunk`); the primary turns `host`; a link's underline turns `accent` and `underline_hover` thick; a field's border `text` |
 | pressed | one shade further (`deep`); the primary turns `text` |
 | focus | a `focus_width` ring in `label`, as far from what it rings, on every control, by keyboard |
 | current, chosen | reversed, `text` ground and `background` words, bold, as the TUI's tab: a mark of form, not of colour alone |
@@ -184,9 +184,9 @@ A top-level section's `h2` in the title font: only About, Experience, Projects, 
 
 ### Mail
 
-The address as the site writes it: the box in `accent`, @ in `faint`, the host in `host`. It heads the brief in `mail`;
-elsewhere the same three colours at `body` size. A `mailto:` link; under the pointer it underlines, two hairlines
-thick, `nudge` below.
+The address as the site writes it: the box in `accent`, @ in `faint` at the body's weight, the host in `host`. It heads
+the brief in `mail`; elsewhere the same three colours at `body` size. A `mailto:` link; under the pointer the box and
+the host underline, `underline_hover` thick, `nudge` below.
 
 ### Favicon
 
@@ -210,7 +210,7 @@ in `passed` and a Toast says what was copied. A command never wraps: on a narrow
 
 ### Link
 
-The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and two hairlines thick.
+The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and `underline_hover` thick.
 Never coloured: the underline says it is a link. Nothing is marked with an arrow.
 
 ### TopBar
@@ -239,7 +239,8 @@ Tooltip under the pointer. Without the script it is hidden and the page follows 
 ### Facts
 
 Label and value, two cells apart: the label `muted`, one or two lower-case words as the profile writes them; the value
-in `text`. On the first screen four at most: experience, stack, now, languages.
+in `text`. On the first screen the first four the profile lists, its author's choice (experience, stack, now,
+languages); the rest stand in About under the summary (owner, 2026-11-18).
 
 ### CareerLine
 

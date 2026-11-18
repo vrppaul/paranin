@@ -15,6 +15,10 @@
 // months as times; and the script, which runs the theme button in the top bar every page opens with (frame.go). A
 // page's title, and on the résumé each section's, stands in the design's block letters (letters.go), drawn as SVG a
 // screen reader skips, the heading named by its words; a title with a letter the font does not draw stays its words.
+// The résumé whose first section holds facts opens with its first screen (firstscreen.go): the greeting, the name and
+// the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
+// sections as the TUI reads its brief (document.BriefOf); the facts the brief leaves stay in their section, where
+// the brief stood.
 // The classes of the page's other parts arrive with its design (TODO, "The look"); until then a gap still to fill
 // reads as its text, as the markdown writes it.
 package html

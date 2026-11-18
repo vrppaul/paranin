@@ -45,7 +45,10 @@
 </span>
 </div>
 </header>
-<main id="main">
+<main id="main" class="content-width">
+<div class="first-screen">
+<div class="name-column">
+<p class="greeting">Hello, my name is</p>
 <h1 aria-label="Mira Example">
 <svg class="letters letters-name" aria-hidden="true" viewBox="0 0 240 70" width="40em" height="11.6667em" shape-rendering="crispEdges">
 <defs>
@@ -221,8 +224,28 @@
 </rect>
 </svg>
 </h1>
-<p>Software Engineer · Brno, Czechia</p>
-<p>Builds small tools that last.</p>
+<p class="lead">Builds small tools that last.</p>
+</div>
+<div class="brief">
+<div>
+<a class="mail" href="mailto:mira@example.test">
+<span class="mail-box">mira</span>
+<span class="mail-at">@</span>
+<span class="mail-host">example.test</span>
+</a>
+<p class="role">Software Engineer</p>
+<p class="place">Brno, Czechia</p>
+</div>
+<dl class="facts">
+<dt>experience</dt>
+<dd>5 years</dd>
+<dt>available</dt>
+<dd>[notice period]</dd>
+<dt>focus</dt>
+<dd>Small tools for people who live in the terminal, written to last and to be read by whoever comes next</dd>
+</dl>
+</div>
+</div>
 <section id="about" data-part="section">
 <h2 aria-label="About">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 114 20" width="19em" height="3.3333em" shape-rendering="crispEdges">
@@ -292,14 +315,6 @@
 </g> </svg>
 </h2>
 <p>Writes software for people who read it.</p>
-<dl>
-<dt>experience</dt>
-<dd>5 years</dd>
-<dt>available</dt>
-<dd>[notice period]</dd>
-<dt>focus</dt>
-<dd>Small tools for people who live in the terminal, written to last and to be read by whoever comes next</dd>
-</dl>
 </section>
 <section id="experience" data-part="section">
 <h2 aria-label="Experience">
@@ -526,7 +541,7 @@
 </h3>
 <p>Lua · Tidies files.</p>
 <p>A tool that <mark>tidies files</mark>.</p>
-<dl>
+<dl class="facts">
 <dt>repository</dt>
 <dd>
 <a href="https://github.test/mira/tidy">https://github.test/mira/tidy</a>
@@ -640,7 +655,7 @@
 </section>
 <section>
 <h3>Languages</h3>
-<dl>
+<dl class="facts">
 <dt>English</dt>
 <dd>fluent</dd>
 </dl>
@@ -738,7 +753,7 @@
 </rect>
 </g> </svg>
 </h2>
-<dl>
+<dl class="facts">
 <dt>mail</dt>
 <dd>
 <a href="mailto:mira@example.test">mira@example.test</a>

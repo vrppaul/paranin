@@ -165,7 +165,7 @@ and web routes.
   for contact, which a face finds by that kind and shows where it chooses.
   One more is the site's word, which a face shows only where it has a use
   for it, so `Phrases` leaves it out: a greeting before the title. The
-  résumé carries it; the TUI shows it.
+  résumé carries it; the TUI and the page show it.
   The résumé has five sections, as a reader asks of its author (amended
   2026-11-15, the owner's word, after the TUI's storyboard E): about them,
   the summary and the facts; their experience; their projects; their
@@ -183,7 +183,12 @@ and web routes.
   the roles, the entries of a role's kind in any of its top-level
   sections, and the lead comes last. The brief is found by its place in
   the document, the roles and the ways by their kind (amended 2026-11-15,
-  the owner's word). Each section of the résumé after the opening stands
+  the owner's word). The page's first screen opens from the same reading,
+  which `document.BriefOf` makes for both faces: beside the name the
+  mail, the title, the place and the first four facts in the profile's
+  order, the author's choice of which come first; the facts after them
+  stay in their section, where the brief stood (amended 2026-11-18, the
+  owner's word). Each section of the résumé after the opening stands
   under its title, in a smaller block font where the page has room for
   it, so a search finds a section's title on its page only where it reads
   as text.

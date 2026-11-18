@@ -10,7 +10,7 @@ templ (notFound NotFound) page(quotedPath string) {
 		</head>
 		<body>
 			@topBar(notFound.frame)
-			<main id={ mainID }>
+			<main id={ mainID } class="content-width">
 				<h1>{ notFound.status }</h1>
 				<p><code>{ quotedPath }</code></p>
 				<p><a href={ notFound.frame.start }>{ notFound.frame.siteName }</a></p>

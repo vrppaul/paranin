@@ -141,7 +141,7 @@ func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
 	bar := []string{
-		`href="#main">Skip to content</a>`, `<main id="main">`, `href="/">example.test</a>`,
+		`href="#main">Skip to content</a>`, `<main id="main"`, `href="/">example.test</a>`,
 		`<a href="/#about">About</a>`, `<a href="/#experience">Experience</a>`, `<a href="/#projects">Projects</a>`,
 		`<a href="/#skills">Skills</a>`, `<a href="/#contact">Contact</a>`, `data-part="theme"`,
 	}
@@ -221,6 +221,102 @@ func TestEveryPageEndsWithTheFooter(test *testing.T) {
 			}
 		})
 	}
+}
+
+// The résumé's first screen briefs the reader with the first four facts its first section holds, in their order; the
+// facts after them stay in that section, at the place the top bar leads to, where the facts stood.
+func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
+	facts := []document.Fact{}
+	for _, label := range []string{"first", "second", "third", "fourth", "fifth"} {
+		facts = append(facts, document.Fact{Label: label, Value: []document.Span{document.Text{Text: label + " value"}}})
+	}
+	about := document.Section{
+		Title: []document.Span{document.Text{Text: "About"}},
+		Blocks: []document.Block{
+			document.Paragraph{Spans: []document.Span{document.Text{Text: "before"}}},
+			document.Facts{Kind: document.FactsDetails, List: facts},
+			document.Paragraph{Spans: []document.Span{document.Text{Text: "after"}}},
+		},
+	}
+	firstScreen, aboutSection, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about), blankPerson()), `<section id="about"`)
+	cases := []struct {
+		name  string
+		part  string
+		holds string
+		lacks string
+	}{
+		{
+			name: "the first screen", part: firstScreen,
+			holds: "<dt>first</dt><dd>first value</dd><dt>second</dt><dd>second value</dd><dt>third</dt><dd>third value</dd><dt>fourth</dt><dd>fourth value</dd></dl>",
+			lacks: "<dt>fifth</dt>",
+		},
+		{
+			name: "the section", part: aboutSection,
+			holds: `<p>before</p><dl class="facts"><dt>fifth</dt><dd>fifth value</dd></dl><p>after</p>`,
+			lacks: "<dt>first</dt>",
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(testCase.part, testCase.holds) {
+				test.Errorf("%s %q holds no %q", testCase.name, testCase.part, testCase.holds)
+			}
+			if strings.Contains(testCase.part, testCase.lacks) {
+				test.Errorf("%s %q holds %q", testCase.name, testCase.part, testCase.lacks)
+			}
+		})
+	}
+}
+
+// The brief is headed by the first way to reach the author: a link that writes to the address, parted at its at into
+// the mailbox and the host; an address that is no such link reads as its words.
+func TestTheBriefIsHeadedByTheMail(test *testing.T) {
+	cases := []struct {
+		name    string
+		address []document.Span
+		want    string
+	}{
+		{
+			name:    "a link to an address",
+			address: []document.Span{document.Link{Target: document.Address{URL: "mailto:mira@example.test"}, Spans: []document.Span{document.Text{Text: "mira@example.test"}}}},
+			want:    `<a class="mail" href="mailto:mira@example.test"><span class="mail-box">mira</span><span class="mail-at">@</span><span class="mail-host">example.test</span></a>`,
+		},
+		{
+			name:    "words with no link",
+			address: []document.Span{document.Text{Text: "write to mira"}},
+			want:    "<p>write to mira</p>",
+		},
+		{
+			name:    "a link whose words hold no at",
+			address: []document.Span{document.Link{Target: document.Address{URL: "https://example.test/write"}, Spans: []document.Span{document.Text{Text: "the form"}}}},
+			want:    `<p><a href="https://example.test/write">the form</a></p>`,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			about := document.Section{
+				Title:  []document.Span{document.Text{Text: "About"}},
+				Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: []document.Span{document.Text{Text: "here"}}}}}},
+			}
+			contact := document.Section{
+				Title:  []document.Span{document.Text{Text: "Contact"}},
+				Blocks: []document.Block{document.Facts{Kind: document.FactsWays, List: []document.Fact{{Label: "mail", Value: testCase.address}}}},
+			}
+			firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson()), `<section id="about"`)
+			if !strings.Contains(firstScreen, testCase.want) {
+				test.Errorf("the first screen %q holds no %q", firstScreen, testCase.want)
+			}
+		})
+	}
+}
+
+// resumeOf is a résumé a test builds by hand: its sections under a head with nothing but the résumé's page.
+func resumeOf(sections ...document.Section) document.Document {
+	blocks := []document.Block{}
+	for _, section := range sections {
+		blocks = append(blocks, section)
+	}
+	return document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil), Blocks: blocks}
 }
 
 // A page whose content gives no description names none, so a search engine or a preview writes its own rather

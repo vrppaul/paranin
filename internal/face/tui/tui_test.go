@@ -72,6 +72,22 @@ func TestABriefTallerThanTheNameStandsWhole(test *testing.T) {
 	}
 }
 
+// The blocks the first section holds beside its facts, before them and after them, stand on the first tab under the
+// brief.
+func TestTheBlocksBesideTheBriefStandOnTheFirstTab(test *testing.T) {
+	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{
+		document.Paragraph{Spans: textOf("said before")},
+		document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}},
+		document.Paragraph{Spans: textOf("said after")},
+	}}
+	page := aboveTheStatusLine(screenOf(test, handResume(test, "home", commonWidth, tallHeight, section)))
+	for _, want := range []string{"said before", "said after"} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the first tab =\n%s\nholds no %q", page, want)
+		}
+	}
+}
+
 // The first tab opens whatever the career holds: a role that starts after the day the session opens, and a word for
 // the present so wide it leaves the career's line no room.
 func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {

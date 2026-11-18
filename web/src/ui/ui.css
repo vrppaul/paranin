@@ -57,7 +57,7 @@ a {
 
 a:hover {
   text-decoration-color: var(--accent);
-  text-decoration-thickness: calc(2 * var(--hairline));
+  text-decoration-thickness: var(--underline-hover);
 }
 
 /* code in a line, told by its ground a shade below the page, since the whole page is one face */
@@ -91,7 +91,7 @@ mark {
 }
 
 /* a part of the page as wide as its content, a gutter either side, on a ground that runs the screen's width: the
- * bar's row, the footer's */
+ * bar's row, the main part, the footer's row */
 .content-width {
   box-sizing: border-box;
   max-width: calc(var(--content) + 2 * var(--gutter));
@@ -371,5 +371,138 @@ mark {
 @media (prefers-reduced-motion: reduce) {
   .letters-cursor {
     animation: none;
+  }
+}
+
+/* facts, each a label and its value, two cells apart (DESIGN.md, Facts): the label muted, in the profile's words; a
+ * value may narrow below its longest word, an address, which then breaks rather than push the page wider */
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, auto);
+  column-gap: var(--cell-2);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+/* the résumé's first screen (DESIGN.md, Pages): the name's column, taking the room the brief leaves beside it */
+.first-screen {
+  display: flex;
+  column-gap: var(--row-3);
+  align-items: flex-start;
+  padding-block: var(--row-4) var(--row-3);
+}
+
+.name-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.greeting {
+  margin: 0 0 var(--row);
+  color: var(--muted);
+}
+
+.lead {
+  max-width: var(--lead);
+  margin: var(--row-2) 0 0;
+  font-size: var(--type-lead-size);
+  font-weight: var(--type-lead-weight);
+  line-height: var(--type-lead-line);
+}
+
+/* the brief: the mail heading it, the role and the place under it, then the facts below a quiet rule */
+.brief {
+  display: grid;
+  flex: none;
+  gap: var(--row);
+  width: var(--brief);
+  padding-top: var(--row-2);
+}
+
+.role {
+  margin: var(--row) 0 0;
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+}
+
+.place {
+  margin: 0;
+  color: var(--muted);
+}
+
+.brief .facts {
+  padding-top: var(--row);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+/* the mail (DESIGN.md, Mail): the mailbox in the accent, the at faint, the host in the host's colour; it underlines
+ * under the pointer alone, two hairlines thick, the at left bare */
+.mail {
+  font-size: var(--type-mail-size);
+  font-weight: var(--type-mail-weight);
+  line-height: var(--type-mail-line);
+  text-decoration: none;
+}
+
+.mail-box {
+  color: var(--accent);
+}
+
+.mail-at {
+  color: var(--faint);
+  font-weight: var(--type-body-weight);
+}
+
+.mail-host {
+  color: var(--host);
+}
+
+.mail:hover .mail-box,
+.mail:hover .mail-host {
+  text-decoration: underline;
+  text-decoration-thickness: var(--underline-hover);
+  text-underline-offset: var(--nudge);
+}
+
+/* below the wide screen's width the brief narrows, so the name keeps its room */
+@media (width < 80rem) {
+  .brief {
+    width: var(--brief-mid);
+  }
+}
+
+/* on a phone the brief stands under the name's column, as wide as the page, and the mail and the lead are smaller */
+@media (width < 53.75rem) {
+  .first-screen {
+    flex-direction: column;
+    row-gap: var(--row-half);
+    align-items: stretch;
+    padding-block: var(--row-2);
+  }
+
+  .lead {
+    margin-top: var(--row);
+    font-size: var(--type-lead-phone-size);
+    font-weight: var(--type-lead-phone-weight);
+    line-height: var(--type-lead-phone-line);
+  }
+
+  .brief {
+    width: auto;
+    padding-top: var(--row);
+  }
+
+  .mail {
+    font-size: var(--type-mail-phone-size);
+    font-weight: var(--type-mail-phone-weight);
+    line-height: var(--type-mail-phone-line);
   }
 }

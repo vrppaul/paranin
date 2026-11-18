@@ -143,7 +143,7 @@ type readBlend struct {
 }
 
 // readTokens reads the file strictly: a key it has no place for or one it leaves out, a value that is no colour,
-// a strength beyond the whole, a weight no face has, a length in no whole pixels, a name that is no word or written
+// a strength beyond the whole, a weight no face has, a size that is no number of rem, a name that is no word or written
 // twice, and a blend over a colour the file does not name are each a fault.
 func readTokens(data []byte) (tokens, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))

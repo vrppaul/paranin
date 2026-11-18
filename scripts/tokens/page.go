@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,9 +11,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The unit every number of pixels in the file is written in, once the stylesheet writes it: a text style's size and
-// line, a length
-const pixelUnit = "px"
+// How a size of the file is written in the stylesheet, a text style's size and line and a length: in rem, the root's
+// text size, which is the one its reader set, so the whole page grows with it; in the fewest decimals that write it
+// exactly, a float of 64 bits. No size is written in pixels
+const (
+	remUnit          = "rem"
+	shortestDecimals = -1
+	sizeFloatBits    = 64
+)
 
 // The weights a face is drawn in: a hundred to nine hundred, in steps of a hundred
 const (
@@ -26,7 +32,7 @@ const (
 	sizeKey         = "size"
 	lineKey         = "line"
 	weightKey       = "weight"
-	pixelsKey       = "pixels"
+	remKey          = "rem"
 	millisecondsKey = "milliseconds"
 )
 
@@ -54,11 +60,8 @@ const (
 	familySeparator = ", "
 )
 
-// How a number of pixels is written in the stylesheet, and a weight, which takes no unit
-const (
-	pixelValue  = "%d" + pixelUnit
-	weightValue = "%d"
-)
+// How a weight is written in the stylesheet: its number, with no unit
+const weightValue = "%d"
 
 // What each of a text style's three properties is for, after what the style is for
 const (
@@ -67,10 +70,13 @@ const (
 	weightAbout = "%s: its weight"
 )
 
-// The tag YAML gives a number written in digits alone, unquoted, and how a fault in one names its place
+// The tags YAML gives a number written unquoted, in digits alone or with a fraction, and how a fault in a whole
+// number and in a size names its place
 const (
 	integerTag  = "!!int"
+	floatTag    = "!!float"
 	numberFault = "line %d: %q is no whole number written in digits alone, unquoted"
+	sizeFault   = "line %d: %q is no number of rem written in digits, unquoted and with no unit"
 )
 
 // genericFamilies are CSS's generic families, which the stylesheet writes unquoted.
@@ -89,21 +95,21 @@ type faceToken struct {
 }
 
 // typeToken is a text style as the file writes it: its name, what it is for, its size and the height of its line in
-// pixels, and its weight. A number the file may leave out unseen is a pointer, so its absence is a fault.
+// rem, and its weight. A number the file may leave out unseen is a pointer, so its absence is a fault.
 type typeToken struct {
 	Name   string       `yaml:"name"`
 	About  string       `yaml:"about"`
-	Size   *wholeNumber `yaml:"size"`
-	Line   *wholeNumber `yaml:"line"`
+	Size   *remSize     `yaml:"size"`
+	Line   *remSize     `yaml:"line"`
 	Weight *wholeNumber `yaml:"weight"`
 }
 
-// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how many
-// pixels long it is.
+// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how many rem
+// long it is.
 type lengthToken struct {
-	Name   string       `yaml:"name"`
-	About  string       `yaml:"about"`
-	Pixels *wholeNumber `yaml:"pixels"`
+	Name  string   `yaml:"name"`
+	About string   `yaml:"about"`
+	Rem   *remSize `yaml:"rem"`
 }
 
 // timeToken is a time the page waits or moves by, as the file writes it: its name, what it is for, and how many
@@ -114,8 +120,11 @@ type timeToken struct {
 	Milliseconds *wholeNumber `yaml:"milliseconds"`
 }
 
-// wholeNumber is a number of the file that counts whole things: pixels, milliseconds, or a weight.
+// wholeNumber is a number of the file that counts whole things: milliseconds, or a weight.
 type wholeNumber uint
+
+// remSize is a size of the file in rem, a fraction among them: a text style's size or line, or a length.
+type remSize float64
 
 // UnmarshalYAML reads a whole number written in decimal digits alone, unquoted: the YAML library would cut a
 // fraction off unseen, and the stylesheet would draw a number the file never wrote. Its fault names the line;
@@ -127,6 +136,23 @@ func (number *wholeNumber) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*number = wholeNumber(parsed)
 	return nil
+}
+
+// UnmarshalYAML reads a size written as a number, unquoted, its unit left to the stylesheet: a string would let a
+// unit in, and a number with no end or none at all draws nothing, which YAML lets through only under a tag written
+// out, `!!float inf`. Its fault names the line; readTokens marks it as the tokens' own.
+func (size *remSize) UnmarshalYAML(node *yaml.Node) error {
+	parsed, err := strconv.ParseFloat(node.Value, sizeFloatBits)
+	if (node.Tag != integerTag && node.Tag != floatTag) || err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) {
+		return fmt.Errorf(sizeFault, node.Line, node.Value)
+	}
+	*size = remSize(parsed)
+	return nil
+}
+
+// stylesheetValue is a size as the stylesheet writes it: in rem, in the fewest decimals that write it exactly.
+func (size remSize) stylesheetValue() string {
+	return strconv.FormatFloat(float64(size), 'f', shortestDecimals, sizeFloatBits) + remUnit
 }
 
 // styleProperty is one of the properties a text style is written as: its token's name, what it is for, and its
@@ -142,8 +168,8 @@ type styleProperty struct {
 func (style readType) properties() []styleProperty {
 	property := typePrefix + style.name
 	return []styleProperty{
-		{name: property + sizeSuffix, about: fmt.Sprintf(sizeAbout, style.about), value: fmt.Sprintf(pixelValue, style.size)},
-		{name: property + lineSuffix, about: fmt.Sprintf(lineAbout, style.about), value: fmt.Sprintf(pixelValue, style.line)},
+		{name: property + sizeSuffix, about: fmt.Sprintf(sizeAbout, style.about), value: style.size.stylesheetValue()},
+		{name: property + lineSuffix, about: fmt.Sprintf(lineAbout, style.about), value: style.line.stylesheetValue()},
 		{name: property + weightSuffix, about: fmt.Sprintf(weightAbout, style.about), value: fmt.Sprintf(weightValue, style.weight)},
 	}
 }
@@ -166,16 +192,16 @@ type readFace struct {
 type readType struct {
 	name   string
 	about  string
-	size   wholeNumber
-	line   wholeNumber
+	size   remSize
+	line   remSize
 	weight wholeNumber
 }
 
-// readLength is a length read, in pixels.
+// readLength is a length read, in rem.
 type readLength struct {
-	name   string
-	about  string
-	pixels wholeNumber
+	name  string
+	about string
+	rem   remSize
 }
 
 // readTime is a time read, in milliseconds.
@@ -271,16 +297,16 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	return style, nil
 }
 
-// readLengthToken reads a length, more than no pixels long.
+// readLengthToken reads a length, more than no rem long.
 func readLengthToken(token lengthToken, named map[string]bool) (readLength, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
 	}
-	length, err := counted(token.Pixels, token.Name, pixelsKey)
+	length, err := counted(token.Rem, token.Name, remKey)
 	if err != nil {
 		return readLength{}, err
 	}
-	return readLength{name: token.Name, about: token.About, pixels: length}, nil
+	return readLength{name: token.Name, about: token.About, rem: length}, nil
 }
 
 // readTimeToken reads a time, more than no milliseconds long.
@@ -295,14 +321,14 @@ func readTimeToken(token timeToken, named map[string]bool) (readTime, error) {
 	return readTime{name: token.Name, about: token.About, milliseconds: milliseconds}, nil
 }
 
-// counted is a whole number the file must write, pixels or milliseconds, more than none.
-func counted(written *wholeNumber, token, key string) (wholeNumber, error) {
+// counted is a number the file must write, a size or milliseconds, more than none.
+func counted[Number remSize | wholeNumber](written *Number, token, key string) (Number, error) {
 	value, err := required(written, token, key)
 	if err != nil {
 		return 0, err
 	}
-	if value == 0 {
-		return 0, fmt.Errorf("%w: %q has the %s 0, which is nothing", errTokens, token, key)
+	if value <= 0 {
+		return 0, fmt.Errorf("%w: %q has the %s %v, which is not more than nothing", errTokens, token, key, value)
 	}
 	return value, nil
 }

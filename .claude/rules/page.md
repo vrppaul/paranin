@@ -13,6 +13,7 @@ How the page is built is said at the top of `web/vite.config.ts`; how the server
 - A colour is a token: `web/src/tokens/tokens.css` is written by `scripts/tokens` from `design/tokens.yaml`, never by hand, and every other stylesheet names a token, never a value (stylelint).
 - A size, a time or a weight with a meaning is a token of `design/tokens.yaml` too, and a stylesheet names its property (stylelint).
 - Outside `web/src/tokens/tokens.css` no unit stands but those a part has needed; a weight, a line, an opacity or a layer is a `var()`.
+- No size is in pixels or another absolute unit, a media query's width neither (stylelint's `unit-disallowed-list`): a fixed length is in rem, which `scripts/tokens` writes alone, a space inside a line in `ch`.
 - A unit, a media query's width or a container query joins stylelint's lists with its first user, in the chunk that writes it.
 - A kind of token the generator does not take yet, it learns with the token's first user.
 - A text style is set as its size, its line and its weight: `font` and `font-variant` take `inherit` alone, and `all` is never set, since each sets the ligatures back on (stylelint).

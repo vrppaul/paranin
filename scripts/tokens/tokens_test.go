@@ -48,13 +48,13 @@ face:
 type:
   - name: body
     about: the text read
-    size: 16
-    line: 24
+    size: 1
+    line: 1.5
     weight: 400
 lengths:
   - name: row
     about: the grid's one row
-    pixels: 24
+    rem: 1.5
 times:
   - name: blink
     about: a cursor's blink
@@ -139,7 +139,8 @@ func TestEachColourIsACustomPropertyOfBothThemes(test *testing.T) {
 }
 
 // The page reads its face, each text style and each length as custom properties of the page's root, the same in
-// both themes: the face's families each by name, a text style as its size, its line's height and its weight.
+// both themes: the face's families each by name, a text style as its size, its line's height and its weight, each
+// size in rem.
 func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 	read, err := readTokens([]byte(fixtureTokens))
 	if err != nil {
@@ -153,11 +154,11 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		want string
 	}{
 		{name: "the face, each name quoted but a generic family in any case", want: `--face: "Mono Face", "3270", Monospace;`},
-		{name: "a text style's size", want: "--type-body-size: 16px;"},
-		{name: "a text style's line", want: "--type-body-line: 24px;"},
+		{name: "a text style's size", want: "--type-body-size: 1rem;"},
+		{name: "a text style's line, a fraction of a rem written in full", want: "--type-body-line: 1.5rem;"},
 		{name: "a text style's weight", want: "--type-body-weight: 400;"},
 		{name: "what each of a text style's properties is for", want: "/* the text read: its size */"},
-		{name: "a length", want: "--row: 24px;"},
+		{name: "a length", want: "--row: 1.5rem;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
 		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
 	}
@@ -187,16 +188,17 @@ func TestALengthMayTakeATextStylesName(test *testing.T) {
 	if err != nil {
 		test.Fatalf("readTokens = %v, want no fault", err)
 	}
-	if got := string(stylesheet(read)); !strings.Contains(got, "--body: 24px;") {
-		test.Errorf("the stylesheet = %q, want it to hold %q", got, "--body: 24px;")
+	if got := string(stylesheet(read)); !strings.Contains(got, "--body: 1.5rem;") {
+		test.Errorf("the stylesheet = %q, want it to hold %q", got, "--body: 1.5rem;")
 	}
 }
 
 // A file of tokens with a fault is refused, the fault named: nothing is written from tokens the faces would
 // read wrong.
 func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
-	// the fixture's line of the length's pixels, which a fault in them names
-	pixelsLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "pixels: 24")], "\n") + 1
+	// the fixture's lines of the length's rem and of the time's milliseconds, which a fault in them names
+	remLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "rem: 1.5")], "\n") + 1
+	millisecondsLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "milliseconds: 1060")], "\n") + 1
 	cases := []struct {
 		name        string
 		original    string
@@ -221,22 +223,26 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a family of no name", original: "[Mono Face, 3270, Monospace]", replacement: `["", monospace]`, want: `family "" is no name`},
 		{name: "a family that would close its quotes", original: "[Mono Face, 3270, Monospace]", replacement: `["Mono\"; } body {", monospace]`, want: `"Mono\"; } body {"`},
 		{name: "a face that says nothing of what it is for", original: "  about: the one face\n", replacement: "", want: `"face" says nothing`},
-		{name: "a text style's size left out", original: "    size: 16\n", replacement: "", want: "has no size"},
-		{name: "a text style of no size", original: "    size: 16\n", replacement: "    size: 0\n", want: `"body" has the size 0`},
+		{name: "a text style's size left out", original: "    size: 1\n", replacement: "", want: "has no size"},
+		{name: "a text style of no size", original: "    size: 1\n", replacement: "    size: 0\n", want: `"body" has the size 0`},
 		{name: "a weight between a face's", original: "    weight: 400\n", replacement: "    weight: 450\n", want: "450"},
 		{name: "a weight beyond the heaviest", original: "    weight: 400\n", replacement: "    weight: 1000\n", want: "1000"},
 		{name: "a weight of none", original: "    weight: 400\n", replacement: "    weight: 0\n", want: "the weight 0"},
-		{name: "a length of part of a pixel, its line named", original: "pixels: 24", replacement: "pixels: 1.5", want: fmt.Sprintf(`line %d: "1.5" is no whole number`, pixelsLine)},
-		{name: "a length with its unit written", original: "pixels: 24", replacement: "pixels: 24px", want: `"24px" is no whole number`},
-		{name: "a length written as a string", original: "pixels: 24", replacement: `pixels: "24"`, want: `"24" is no whole number`},
+		{name: "a length with its unit written, its line named", original: "rem: 1.5", replacement: "rem: 1.5rem", want: fmt.Sprintf(`line %d: "1.5rem" is no number of rem`, remLine)},
+		{name: "a length written as a string", original: "rem: 1.5", replacement: `rem: "1.5"`, want: `"1.5" is no number of rem`},
+		{name: "a length of no number", original: "rem: 1.5", replacement: "rem: !!float nan", want: `"nan" is no number of rem`},
+		{name: "a length of no end", original: "rem: 1.5", replacement: "rem: !!float inf", want: `"inf" is no number of rem`},
 		{name: "a length named as a text style's line is", original: "name: row", replacement: "name: type_body_line", want: `"type_body_line" is named twice`},
 		{name: "a length named as a text style's weight is", original: "name: row", replacement: "name: type_body_weight", want: `"type_body_weight" is named twice`},
-		{name: "a length of no pixels", original: "pixels: 24", replacement: "pixels: 0", want: `"row" has the pixels 0`},
-		{name: "a length's pixels left out", original: "    pixels: 24\n", replacement: "", want: `"row" has no pixels`},
+		{name: "a length of no rem", original: "rem: 1.5", replacement: "rem: 0", want: `"row" has the rem 0`},
+		{name: "a length less than none", original: "rem: 1.5", replacement: "rem: -1.5", want: `"row" has the rem -1.5`},
+		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has no rem`},
 		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
 		{name: "a length named as the face's property is", original: "name: row", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a length named as a text style's property is", original: "name: row", replacement: "name: type_body_size", want: `"type_body_size" is named twice`},
 		{name: "a time that takes none", original: "milliseconds: 1060", replacement: "milliseconds: 0", want: `"blink" has the milliseconds 0`},
+		{name: "a time with its unit written, its line named", original: "milliseconds: 1060", replacement: "milliseconds: 1060ms", want: fmt.Sprintf(`line %d: "1060ms" is no whole number`, millisecondsLine)},
+		{name: "a time written as a string", original: "milliseconds: 1060", replacement: `milliseconds: "1060"`, want: `"1060" is no whole number`},
 		{name: "a time's milliseconds left out", original: "    milliseconds: 1060\n", replacement: "", want: `"blink" has no milliseconds`},
 		{name: "a time named as a length is", original: "name: blink", replacement: "name: row", want: `"row" is named twice`},
 		{name: "a blend named as the face's property is", original: "name: chosen", replacement: "name: face", want: `"face" is named twice`},

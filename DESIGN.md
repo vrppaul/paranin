@@ -12,6 +12,9 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 - A token named here lives in `design/tokens.yaml`, which writes it into `web/src/tokens/tokens.css`; once it is
   there, the file's value is the one that counts, and this document names it without its value.
 - A stylesheet names a token, never a value (stylelint, `.claude/rules/page.md`).
+- No size is in pixels or another absolute unit, a media query's width neither (stylelint), so the whole page grows
+  with the text size its reader set (owner, 2026-11-18): a fixed length is in rem, a space inside a line in cells,
+  `ch`. The only pixels are a picture's own, as the favicon's.
 
 ## Content
 
@@ -33,29 +36,29 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 
 ## The grid
 
-- Space is counted in rows of 24px (`row`) and cells of 1ch (`cell`): vertical space in rows, horizontal space inside
+- Space is counted in rows of 1.5rem (`row`) and cells of 1ch (`cell`): vertical space in rows, horizontal space inside
   a line in cells. The text read sits on the rows; every other style's line is its own (Type).
 - The page fills the screen up to `content` with `gutter` either side, `gutter_phone` on a phone. Only running prose is
   held to `measure`; the layout itself uses the width.
 
 | token | value | for |
 | --- | --- | --- |
-| `nudge` | 4px | an offset inside a row: an underline's distance |
-| `row_half` | 12px | gaps inside a component |
-| `row` | 24px | between a heading and what it heads |
-| `row_2` | 48px | between two entries, the brief's top |
-| `row_3` | 72px | between the name and the brief's columns |
-| `row_4` | 96px | between two top-level sections |
+| `nudge` | 0.25rem | an offset inside a row: an underline's distance |
+| `row_half` | 0.75rem | gaps inside a component |
+| `row` | 1.5rem | between a heading and what it heads |
+| `row_2` | 3rem | between two entries, the brief's top |
+| `row_3` | 4.5rem | between the name and the brief's columns |
+| `row_4` | 6rem | between two top-level sections |
 | `cell`, `cell_2`, `cell_3` | 1ch, 2ch, 3ch | a gap inside a chip; a control's side padding; a list's indent |
-| `content` | 1280px | the widest the content runs |
-| `gutter`, `gutter_phone` | 48px, 16px | either side of the content, and on a phone |
+| `content` | 80rem | the widest the content runs |
+| `gutter`, `gutter_phone` | 3rem, 1rem | either side of the content, and on a phone |
 | `measure` | 64ch | the longest line of prose |
-| `brief`, `brief_mid` | 440px, 380px | the brief beside the name, from 1280px and from 860px |
+| `brief`, `brief_mid` | 27.5rem, 23.75rem | the brief beside the name, from `wide` and from `phone` |
 | `lead` | 40ch | the longest line of the headline |
 | `when`, `years` | 20ch, 10ch | an entry's dates column; the phone's career list's years |
-| `bar` | 48px | the top bar |
-| `dialog` | 560px | the widest a dialog runs |
-| `textarea` | 120px | a message field's least height |
+| `bar` | 3rem | the top bar |
+| `dialog` | 35rem | the widest a dialog runs |
+| `textarea` | 7.5rem | a message field's least height |
 
 ## Sizes
 
@@ -64,11 +67,11 @@ size: a control that seems to need one is the wrong control.
 
 | size | height | either side | gap inside | words | controls |
 | --- | --- | --- | --- | --- | --- |
-| regular | `control` 48px, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
-| compact | `control_compact` 24px, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
+| regular | `control` 3rem, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
+| compact | `control_compact` 1.5rem, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
 | tick | three cells, `[x]` or `(*)`, on a row | label `cell` away | | `body` | Checkbox, Radio |
 
-- Corners `radius` (2px) on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
+- Corners `radius` (0.125rem) on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
 - Controls side by side stand `cell_2` apart, rows of them `row_half` apart.
 - A dialog pads `row` and a half above, `row` below, `cell_3` either side.
 
@@ -95,15 +98,15 @@ size: a control that seems to need one is the wrong control.
   the résumé and its pages; an article's reading face is chosen with the blog (FOUNDATION §5.6).
 - A text style is its size, its line and its weight, set as three properties (`.claude/rules/page.md`).
 
-| style | size / line | weight | for |
+| style | size / line, rem | weight | for |
 | --- | --- | --- | --- |
-| `mail` | 24/32 | 800 | the mail heading the brief; 20px on a phone |
-| `lead` | 20/32 | 400 | the headline under the name; 17/26 on a phone |
-| `heading` | 20/32 | 700 | an `h2` on a page that is not the résumé |
+| `mail` | 1.5/2 | 800 | the mail heading the brief; 1.25 on a phone |
+| `lead` | 1.25/2 | 400 | the headline under the name; 1.0625/1.625 on a phone |
+| `heading` | 1.25/2 | 700 | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
-| `strong` | 16/24 | 700 | a role, a company, a project's name, a button's words |
-| `small` | 14/24 | 400 | the top bar, a field's hint, the footer |
-| `caption` | 13/16 | 400 | the career line's names and years, a chip's word, a tooltip; never prose |
+| `strong` | 1/1.5 | 700 | a role, a company, a project's name, a button's words |
+| `small` | 0.875/1.5 | 400 | the top bar, a field's hint, the footer |
+| `caption` | 0.8125/1 | 400 | the career line's names and years, a chip's word, a tooltip; never prose |
 
 - The page's one `h1` and the résumé's five `h2` are block letters; another page's `h2` is `heading`; every heading
   below is `strong`, its level shown by the space before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels
@@ -125,7 +128,7 @@ size: a control that seems to need one is the wrong control.
 
 ## Shape, depth and motion
 
-- Lines are `hairline` (1px). No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
+- Lines are `hairline` (0.0625rem). No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
 - Nothing moves on its own but the cursor. Colours change under the pointer in `quick` (120ms); with reduced motion, at
   once. A toast stays `toast` (2.4s).
 
@@ -134,7 +137,7 @@ size: a control that seems to need one is the wrong control.
 | state | how it shows |
 | --- | --- |
 | rest | as its component says |
-| hover | a quiet control one shade down (`sunk`); the primary turns `host`; a link's underline turns `accent` and 2px; a field's border `text` |
+| hover | a quiet control one shade down (`sunk`); the primary turns `host`; a link's underline turns `accent` and two hairlines thick; a field's border `text` |
 | pressed | one shade further (`deep`); the primary turns `text` |
 | focus | a `focus_width` ring in `label`, as far from what it rings, on every control, by keyboard |
 | current, chosen | reversed, `text` ground and `background` words, bold, as the TUI's tab: a mark of form, not of colour alone |
@@ -146,11 +149,12 @@ size: a control that seems to need one is the wrong control.
 
 ## Layout
 
-- Below `wide` (1280px) the brief narrows to `brief_mid` and a section's title stands above its content.
-- Below `phone` (860px) everything is one column, the gutters `gutter_phone`, the top bar scrolls away, the career line
-  becomes a list, a table scrolls inside itself. No page is ever wider than its screen.
-- The two widths are the only ones a media query may hold, since a custom property cannot stand in one; stylelint
-  holds them from the first media query on, and refuses any width until then.
+- Below `wide` (80rem) the brief narrows to `brief_mid` and a section's title stands above its content.
+- Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the top bar scrolls away, the career
+  line becomes a list, a table scrolls inside itself. No page is ever wider than its screen.
+- The two widths are the only ones a media query may hold, in rem, since a custom property cannot stand in one;
+  stylelint holds them from the first media query on, and refuses any width until then. A media query's rem is the
+  reader's text size too, so a reader who sets larger text gets the narrower layout sooner.
 - Every page has a skip link, one `header` (the top bar), one `main` and one `footer`. A section a link leads to stops
   a row below the sticky bar.
 - A position worked out from data (the career line) is an SVG attribute: the site's policy refuses inline styles.
@@ -160,8 +164,9 @@ size: a control that seems to need one is the wrong control.
 - No icon set. The page uses the terminal's glyphs: `[x]` and `(*)` for a checkbox and a radio, ❯ before a command
   (`prompt`), the cursor after the name, ✓ in a toast (`passed`), + at the first screen's corners (`edge`, `cross`),
   and `-` before a point (`faint`).
-- Two drawn marks, SVGs in `currentColor`, `box` (16px), one stroke of 1.5: the theme button's half-filled circle and
-  the dialog's close cross. A mark that needs drawing is drawn as these are, never taken from a set.
+- Two drawn marks, SVGs in `currentColor`, `box` (1rem), one stroke of 1.5 of its 16 units: the theme button's
+  half-filled circle and the dialog's close cross. A mark that needs drawing is drawn as these are, never taken from a
+  set.
 
 ## Components
 
@@ -179,7 +184,8 @@ A top-level section's `h2` in the title font: only About, Experience, Projects, 
 ### Mail
 
 The address as the site writes it: the box in `accent`, @ in `faint`, the host in `host`. It heads the brief in `mail`;
-elsewhere the same three colours at `body` size. A `mailto:` link; under the pointer it underlines, 2px, `nudge` below.
+elsewhere the same three colours at `body` size. A `mailto:` link; under the pointer it underlines, two hairlines
+thick, `nudge` below.
 
 ### Favicon
 
@@ -203,8 +209,8 @@ in `passed` and a Toast says what was copied. A command never wraps: on a narrow
 
 ### Link
 
-The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and 2px. Never coloured: the
-underline says it is a link. Nothing is marked with an arrow.
+The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and two hairlines thick.
+Never coloured: the underline says it is a link. Nothing is marked with an arrow.
 
 ### TopBar
 
@@ -307,7 +313,7 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 ### Frame and Section
 
-- Four crosses mark the first screen's corners, `cross` (13px) in `edge`: only there.
+- Four crosses mark the first screen's corners, `cross` (0.8125rem) in `edge`: only there.
 - A section: its block title in the left column, its content in the right; sections `row_4` apart, `row_2` on a phone.
   Its `id` is its tab's name, so the top bar links to it.
 

@@ -65,5 +65,9 @@ export default {
       "/.*/": [],
     },
     "at-rule-disallowed-list": ["container"],
+    // Never a length fixed in pixels or another of CSS's absolute units, in a declaration or a media query, whatever
+    // the lists above come to open: a size is in rem, the text size its reader set, or in a cell's ch, so the whole
+    // page grows with it
+    "unit-disallowed-list": ["px", "pt", "pc", "in", "cm", "mm", "q"],
   },
 };

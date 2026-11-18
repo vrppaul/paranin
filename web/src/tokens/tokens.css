@@ -48,17 +48,17 @@
   /* the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
   --face: "JetBrains Mono", ui-monospace, "SFMono-Regular", "menlo", monospace;
   /* the text read, every page's own: its size */
-  --type-body-size: 16px;
+  --type-body-size: 1rem;
   /* the text read, every page's own: its line's height */
-  --type-body-line: 24px;
+  --type-body-line: 1.5rem;
   /* the text read, every page's own: its weight */
   --type-body-weight: 400;
   /* how wide a focus ring is, and how far it stands from what it rings */
-  --focus-width: 2px;
+  --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
-  --name-cell: 16px;
+  --name-cell: 1rem;
   /* a cell of a title in block letters at its natural size, which shrinks to its column */
-  --title-cell: 12px;
+  --title-cell: 0.75rem;
   /* one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks */
   --blink: 1060ms;
 }

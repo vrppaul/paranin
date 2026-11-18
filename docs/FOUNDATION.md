@@ -506,7 +506,9 @@ stylelint holds: colours, sizes, times and weights only from the tokens.
 2026-11-17: the owner approved the design of the résumé and a project's page,
 now `DESIGN.md`, which settles the first, second and fifth items below as it
 says (a role's dates stand in their own column, the page one column under
-860px), and the fourth for the résumé, whose top bar holds its five sections.
+the width `phone`), and the fourth for the résumé, whose top bar holds its
+five sections. Since 2026-11-18 every size of the page is in rem, none in
+pixels (`DESIGN.md`).
 The reading layout and the blog's place in the navigation wait for the blog
 (§8, step 8); serving the face waits for its own chunk.
 

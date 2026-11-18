@@ -10,10 +10,10 @@
 #
 # The face, the text styles, the lengths and the times after the colours are the page's alone, since a terminal has
 # a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of internal/look.
-# The face is its families by name, in the order a browser tries them. A text style is its size and its line's height in
-# whole pixels, and its weight; a line is in pixels, not rows, since a style's line need not be a whole row. A
-# length is a whole number of pixels, a time of milliseconds. Each comes with the first part of the page that draws
-# by it.
+# The face is its families by name, in the order a browser tries them. Every size is in rem, the text size the reader
+# set, so the whole page grows with it; none is in pixels. A text style is its size and its line's height, and its
+# weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is in rem, a time in whole
+# milliseconds. Each comes with the first part of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -127,20 +127,20 @@ face:
 type:
   - name: body
     about: the text read, every page's own
-    size: 16
-    line: 24
+    size: 1
+    line: 1.5
     weight: 400
 
 lengths:
   - name: focus_width
     about: how wide a focus ring is, and how far it stands from what it rings
-    pixels: 2
+    rem: 0.125
   - name: name_cell
     about: a cell of the author's name in block letters at its natural size, which shrinks to its column
-    pixels: 16
+    rem: 1
   - name: title_cell
     about: a cell of a title in block letters at its natural size, which shrinks to its column
-    pixels: 12
+    rem: 0.75
 
 times:
   - name: blink

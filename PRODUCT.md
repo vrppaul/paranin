@@ -36,7 +36,7 @@ One source of facts, drawn in every form a technical reader uses: an SSH TUI (`s
 
 These hold in every face: TUI, web, PDF and social cards (docs/FOUNDATION.md §3.4).
 
-- Monospace type on a 1ch × 24px grid.
+- Monospace type on a grid of cells and rows.
 - Catppuccin Latte for the light theme and Macchiato for the dark one; every colour comes from `design/tokens.yaml`.
 - The cursor after the author's name: `▎` in the TUI, PDF and cards; on the web page an underscore that blinks, since beside the block letters `▎` read as one more letter (owner, 2026-11-17).
 - Corner crosses `+`.

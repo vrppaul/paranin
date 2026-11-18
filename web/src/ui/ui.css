@@ -393,10 +393,42 @@ mark {
 
 /* the résumé's first screen (DESIGN.md, Pages): the introduction, then the career line across the whole width */
 .first-screen {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--row-3);
   padding-block: var(--row-4) var(--row-3);
+}
+
+/* a cross at each of its corners (DESIGN.md, Frame and Section): two hairlines in the edge's colour, a square of
+ * `cross`, centred half a gutter outside the content and two rows in from its top and its foot. Its lines stay a
+ * hairline thick, whatever the square's size */
+.cross {
+  position: absolute;
+  width: var(--cross);
+  height: var(--cross);
+  color: var(--edge);
+}
+
+.cross .mark-line {
+  stroke-width: var(--hairline);
+  vector-effect: non-scaling-stroke;
+}
+
+.cross-top {
+  top: calc(var(--row-2) - var(--cross) / 2);
+}
+
+.cross-bottom {
+  bottom: calc(var(--row-2) - var(--cross) / 2);
+}
+
+.cross-left {
+  left: calc(-1 * (var(--gutter) + var(--cross)) / 2);
+}
+
+.cross-right {
+  right: calc(-1 * (var(--gutter) + var(--cross)) / 2);
 }
 
 /* the name's column, taking the room the brief leaves beside it */
@@ -730,8 +762,10 @@ mark {
     align-items: stretch;
   }
 
+  /* a phone's gutter leaves the crosses no room outside the content */
   .career-line,
-  .career-ends {
+  .career-ends,
+  .cross {
     display: none;
   }
 

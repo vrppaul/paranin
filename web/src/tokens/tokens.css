@@ -123,6 +123,8 @@
   --brief-mid: 23.75rem;
   /* the longest line of the headline under the name */
   --lead: 40ch;
+  /* how big the square of the cross at each corner of the first screen is */
+  --cross: 0.8125rem;
   /* how thick a role's bar is in the phone's career list */
   --span-thin: 0.375rem;
   /* how tall a regular control is, two rows */

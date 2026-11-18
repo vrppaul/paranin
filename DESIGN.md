@@ -165,11 +165,11 @@ size: a control that seems to need one is the wrong control.
 ## Iconography
 
 - No icon set. The page uses the terminal's glyphs: `[x]` and `(*)` for a checkbox and a radio, ❯ before a command
-  (`prompt`), the cursor after the name, ✓ in a toast (`passed`), + at the first screen's corners (`edge`, `cross`),
-  and `-` before a point (`faint`).
+  (`prompt`), the cursor after the name, ✓ in a toast (`passed`), and `-` before a point (`faint`).
 - Two drawn marks, SVGs in `currentColor`, `box` square, one stroke of 1.5 of its 16 units: the theme button's
-  half-filled circle and the dialog's close cross. A mark that needs drawing is drawn as these are, never taken from a
-  set.
+  half-filled circle and the dialog's close cross. The first screen's corner crosses are drawn the same way, a `cross`
+  square with two hairlines across it, the TUI's + on the page. A mark that needs drawing is drawn as these are, never
+  taken from a set.
 
 ## Components
 
@@ -324,7 +324,8 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 ### Frame and Section
 
-- Four crosses mark the first screen's corners, `cross` (0.8125rem) in `edge`: only there.
+- Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
+  from its top and foot: only there, and not on a phone, whose gutter leaves them no room.
 - A section: its block title in the left column, its content in the right; sections `row_4` apart, `row_2` on a phone.
   Its `id` is its tab's name, so the top bar links to it.
 

@@ -83,6 +83,10 @@ const (
 	sectionPart  = "section"
 )
 
+// The box of sixteen units every drawn mark stands in (DESIGN.md, Iconography): the theme button's and the corners'
+// crosses
+const markViewBox = "0 0 16 16"
+
 // A command's chip as the site's script finds and runs it (web/src/controllers/command.ts): the chip, the words it
 // copies, and its button, hidden until the script shows it; and the toast that says what was copied, with the place
 // its words go

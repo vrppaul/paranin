@@ -212,6 +212,9 @@ lengths:
   - name: lead
     about: the longest line of the headline under the name
     cells: 40
+  - name: cross
+    about: how big the square of the cross at each corner of the first screen is
+    rem: 0.8125
   - name: span_thin
     about: how thick a role's bar is in the phone's career list
     rem: 0.375

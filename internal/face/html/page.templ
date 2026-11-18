@@ -107,7 +107,7 @@ templ themeButton(name string) {
 // sixteen units, in the colour of its words, a ring with its right half filled. It is the same in either theme, so it
 // never has to say which way a press goes.
 templ themeMark() {
-	<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+	<svg class="mark" viewBox={ markViewBox } aria-hidden="true">
 		<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5"></circle>
 		<path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z"></path>
 	</svg>
@@ -157,8 +157,26 @@ templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 		if len(parts.career.roles) > 0 {
 			@careerLine(parts.career)
 		}
+		@corners()
 	</div>
 	@toast()
+}
+
+// corners are the crosses that mark the first screen's four corners (DESIGN.md, Frame and Section), as the TUI marks
+// its page's: a look a screen reader skips.
+templ corners() {
+	@crossMark("cross cross-top cross-left")
+	@crossMark("cross cross-top cross-right")
+	@crossMark("cross cross-bottom cross-left")
+	@crossMark("cross cross-bottom cross-right")
+}
+
+// crossMark is a corner's cross, drawn as the design draws its marks (DESIGN.md, Iconography): in a box of sixteen
+// units, two hairlines across it, in the colour of its words.
+templ crossMark(class string) {
+	<svg class={ class } viewBox={ markViewBox } aria-hidden="true">
+		<path class="mark-line" d="M8 0V16M0 8H16"></path>
+	</svg>
 }
 
 // introduction is the first screen's top: the name's column and the brief beside it.

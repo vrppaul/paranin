@@ -3,6 +3,7 @@ package html
 import (
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/a-h/templ"
 
@@ -19,11 +20,12 @@ const briefFacts = 4
 const addressAt = "@"
 
 // resumeParts are the résumé's main part as the page lays it out (DESIGN.md, Pages): the facts its first screen
-// briefs the reader with and the address heading them, beside the head; then the blocks that are no section, and the
-// sections, the first holding the facts the brief leaves.
+// briefs the reader with and the address heading them, beside the head, and the career line under them; then the
+// blocks that are no section, and the sections, the first holding the facts the brief leaves.
 type resumeParts struct {
 	brief    []document.Fact
 	address  []document.Span
+	career   careerDrawing
 	others   []document.Block
 	sections []document.Section
 }
@@ -46,12 +48,12 @@ func (writer PageWriter) mainPart(composed document.Document) templ.Component {
 	if briefed == nil {
 		return writer.plainMain(composed)
 	}
-	return writer.resumeMain(composed.Head, partsOf(briefed, others))
+	return writer.resumeMain(composed.Head, partsOf(briefed, others, writer.today))
 }
 
-// partsOf are the résumé's parts round its brief: the first facts briefed, the rest kept in their section where the
-// brief stood.
-func partsOf(briefed *document.Briefed, others []document.Block) resumeParts {
+// partsOf are the résumé's parts round its brief, on a day: the first facts briefed, the rest kept in their section
+// where the brief stood, and the roles on the career line, which runs to the day.
+func partsOf(briefed *document.Briefed, others []document.Block, today time.Time) resumeParts {
 	list := briefed.Brief.List
 	shown := min(briefFacts, len(list))
 	kept := []document.Block{}
@@ -59,7 +61,10 @@ func partsOf(briefed *document.Briefed, others []document.Block) resumeParts {
 		kept = append(kept, document.Facts{Kind: briefed.Brief.Kind, List: list[shown:]})
 	}
 	first := document.Section{Title: briefed.Title, Blocks: slices.Concat(briefed.Before, kept, briefed.After)}
-	return resumeParts{brief: list[:shown], address: briefed.Address, others: others, sections: slices.Concat([]document.Section{first}, briefed.Rest)}
+	return resumeParts{
+		brief: list[:shown], address: briefed.Address, career: careerDrawingOf(document.CareerOf(briefed.Roles, today)),
+		others: others, sections: slices.Concat([]document.Section{first}, briefed.Rest),
+	}
 }
 
 // mailOf is an address as the brief heads with it, parted at its at; not parted where it is not one link with an

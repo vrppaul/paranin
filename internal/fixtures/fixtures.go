@@ -2,9 +2,9 @@
 // content's, in internal/content/testdata, and the build's, in internal/assets/testdata, each found from the root
 // of the module, which go test's folder for a package lies under however the test was built, so no test writes a
 // path that climbs out of its package; each loaded, as the site loads it; a copy of either on disk, which a test
-// may change; the head of a page a test builds by hand; and the document of a page among documents. Tests alone
-// import it, as depguard's rule tests-alone-read-fixtures holds; a test of content or assets, which it loads with,
-// imports it from outside its package.
+// may change; the day the faces draw on; the head of a page a test builds by hand; and the document of a page among
+// documents. Tests alone import it, as depguard's rule tests-alone-read-fixtures holds; a test of content or assets,
+// which it loads with, imports it from outside its package.
 package fixtures
 
 import (
@@ -37,6 +37,18 @@ func ContentFolder(test *testing.T) string {
 // deep and one of them twice, and the file each was built into, with the stylesheets each imports.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
+}
+
+// The year and the day of the month the faces' tests draw on, in November
+const (
+	dayYear       = 2026
+	dayOfTheMonth = 1
+)
+
+// Day is the day the faces' tests draw on, a TUI's session opening and the page's career line, the fixture's role
+// still held running to it.
+func Day() time.Time {
+	return time.Date(dayYear, time.November, dayOfTheMonth, 0, 0, 0, 0, time.UTC)
 }
 
 // HeadOf is the head of a page a test builds by hand: the page and its title, nothing else, so a field the head gains

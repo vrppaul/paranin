@@ -151,37 +151,79 @@ templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
 // site over ssh, to copy. The toast that says what was copied follows.
 templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 	<div class="first-screen">
-		<div class="name-column">
-			if head.Greeting != "" {
-				<p class="greeting">{ head.Greeting }</p>
-			}
-			@writer.drawnTitle(head)
-			if len(head.Lead) > 0 {
-				<p class="lead">
-					@writer.spans(head.Lead)
-				</p>
-			}
+		<div class="introduction">
+			@writer.introduction(head, parts)
 		</div>
-		<div class="brief">
-			<div>
-				@writer.mail(parts.address)
-				if len(head.Subtitle) > 0 {
-					<p class="role">
-						@writer.spans(head.Subtitle)
-					</p>
-				}
-				if head.Place != "" {
-					<p class="place">{ head.Place }</p>
-				}
-			</div>
-			@writer.facts(parts.brief)
-			<div class="actions">
-				<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
-				@command(writer.frame.ssh)
-			</div>
-		</div>
+		if len(parts.career.roles) > 0 {
+			@careerLine(parts.career)
+		}
 	</div>
 	@toast()
+}
+
+// introduction is the first screen's top: the name's column and the brief beside it.
+templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
+	<div class="name-column">
+		if head.Greeting != "" {
+			<p class="greeting">{ head.Greeting }</p>
+		}
+		@writer.drawnTitle(head)
+		if len(head.Lead) > 0 {
+			<p class="lead">
+				@writer.spans(head.Lead)
+			</p>
+		}
+	</div>
+	<div class="brief">
+		<div>
+			@writer.mail(parts.address)
+			if len(head.Subtitle) > 0 {
+				<p class="role">
+					@writer.spans(head.Subtitle)
+				</p>
+			}
+			if head.Place != "" {
+				<p class="place">{ head.Place }</p>
+			}
+		</div>
+		@writer.facts(parts.brief)
+		<div class="actions">
+			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
+			@command(writer.frame.ssh)
+		</div>
+	</div>
+}
+
+// careerLine is every role of the résumé on one line of time (DESIGN.md, CareerLine), each as long as it lasted, its
+// company over it on one of two rows in turn, the one still held marked; the year the line starts and the word it ends
+// in under it. A phone shows the roles as a list instead: their years, the company and a bar as long as the role
+// beside the longest. A screen reader skips both, at any width: they picture the roles the experience section holds
+// in words.
+templ careerLine(career careerDrawing) {
+	<div class="career">
+		<svg class="career-line" aria-hidden="true" width={ wholeLength } height={ careerLineHeight }>
+			for _, role := range career.roles {
+				<g
+					if role.current {
+						class={ currentRoleClass }
+					}
+				>
+					<text x={ role.left } y={ role.baseline }>{ role.company }</text>
+					<rect class="career-span" x={ role.left } y={ spanTop } width={ role.width } height={ spanHeight }></rect>
+				</g>
+			}
+		</svg>
+		<p class="career-ends" aria-hidden="true"><span>{ career.start }</span><span>{ career.end }</span></p>
+		<ol class="career-list" aria-hidden="true">
+			for _, role := range career.roles {
+				<li
+					if role.current {
+						class={ currentRoleClass }
+					}
+				><span class="career-years">{ role.years }</span><span class="career-company">{ role.company }</span><svg class="career-bar" width={ wholeLength }><rect width={ role.share } height={ wholeLength }></rect></svg></li>
+			}
+		</ol>
+	</div>
 }
 
 // command is a command the reader can run (DESIGN.md, Command): the prompt's mark, the command as code a reader may

@@ -149,7 +149,7 @@ func openingOf(head document.Head, blocks []document.Block, sections []document.
 	case document.PageResume:
 		if briefed := document.BriefOf(sections); briefed != nil {
 			body := briefOpening{
-				head: head, brief: briefed.Brief.List, address: briefed.Address, career: briefed.Career,
+				head: head, brief: briefed.Brief.List, address: briefed.Address, career: briefed.Roles,
 				blocks: slices.Concat(blocks, briefed.Before, briefed.After),
 			}
 			return opening{title: document.PlainText(briefed.Title), body: body, sectionsLeft: briefed.Rest}

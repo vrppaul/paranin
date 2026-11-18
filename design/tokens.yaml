@@ -212,6 +212,9 @@ lengths:
   - name: lead
     about: the longest line of the headline under the name
     cells: 40
+  - name: span_thin
+    about: how thick a role's bar is in the phone's career list
+    rem: 0.375
   - name: control
     about: how tall a regular control is, two rows
     rem: 3

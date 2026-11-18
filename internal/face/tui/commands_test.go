@@ -212,7 +212,7 @@ func TestHelpStaysInSightOnANarrowScreen(test *testing.T) {
 func TestANameGoesToOnePlace(test *testing.T) {
 	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay())
+	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())
 	if places := footerLine(screenOf(test, model), footerPlaces); strings.Count(places, "help") != 1 {
 		test.Errorf("on a page with a tab titled Help the places = %q, want help listed once", places)
 	}
@@ -223,7 +223,7 @@ func TestANameGoesToOnePlace(test *testing.T) {
 func TestATabOfSeveralWordsGoesByThemJoined(test *testing.T) {
 	section := document.Section{Title: textOf("Ways In"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtureDay())
+	model := New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())
 	if screen := screenOf(test, commanded(test, model, "ways-in")); !strings.Contains(screen, "the door") {
 		test.Errorf("after :ways-in the screen =\n%s\nwant the tab titled %q", screen, "Ways In")
 	}

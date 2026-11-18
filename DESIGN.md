@@ -55,7 +55,8 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 | `measure` | 64ch | the longest line of prose |
 | `brief`, `brief_mid` | `design/tokens.yaml` | the brief beside the name, from `wide` and from `phone` |
 | `lead` | `design/tokens.yaml` | the longest line of the headline |
-| `when`, `years` | 20ch, 10ch | an entry's dates column; the phone's career list's years |
+| `when` | 20ch | an entry's dates column |
+| `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `bar` | `design/tokens.yaml` | the top bar |
 | `dialog` | 35rem | the widest a dialog runs |
 | `textarea` | 7.5rem | a message field's least height |
@@ -249,8 +250,10 @@ languages); the rest stand in About under the summary (owner, 2026-11-18).
 ### CareerLine
 
 Every role on one line of time, each as long as it lasted: ended roles in `edge`, the current one in `accent`, its name
-bold. Names alternate between two rows, so a short role keeps its name; the years stand only at the ends, the first
-year and `now`. Below `phone` it becomes a list: years, company and a bar as long as the role.
+bold. Names alternate between two rows, so a short role keeps its name; under the line stand only its ends, the first
+year and the site's word for the present (`present`). It runs to the day the page is drawn. Below `phone` it becomes a
+list: years in a column as wide as the widest, company, and a bar as long as the role beside the longest. A role with a
+month still to fill is left out of both.
 
 ### Entry
 

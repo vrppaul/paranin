@@ -7,7 +7,8 @@ import (
 
 // Briefed is a document's sections read for the brief a résumé opens with: the brief, the first facts the first
 // section holds; that section's title, and the blocks it holds before the brief and after it; the sections after it;
-// the address, the first way to reach the author they give, the mail; and the career, the roles they hold, in order.
+// the address, the first way to reach the author they give, the mail; and the roles they hold, in order, which
+// CareerOf lays on a line.
 // Its lists share the sections' arrays, each clipped to its length, so a face that appends to one writes no section.
 type Briefed struct {
 	Brief   Facts
@@ -16,7 +17,7 @@ type Briefed struct {
 	After   []Block
 	Rest    []Section
 	Address []Span
-	Career  []Entry
+	Roles   []Entry
 }
 
 // BriefOf is sections read for their brief; nothing where the first holds no facts.
@@ -34,7 +35,7 @@ func BriefOf(sections []Section) *Briefed {
 				After:   slices.Clip(first.Blocks[index+1:]),
 				Rest:    slices.Clip(sections[1:]),
 				Address: addressOf(sections),
-				Career:  careerOf(sections),
+				Roles:   rolesOf(sections),
 			}
 		}
 	}
@@ -54,8 +55,8 @@ func SectionsOf(blocks []Block) ([]Block, []Section) {
 	return others, sections
 }
 
-// careerOf is the roles sections hold, the entries whose kind is a role, in order.
-func careerOf(sections []Section) []Entry {
+// rolesOf is the roles sections hold, the entries whose kind is a role, in order.
+func rolesOf(sections []Section) []Entry {
 	roles := []Entry{}
 	for block := range sectionBlocks(sections) {
 		if entry, isEntry := block.(Entry); isEntry && entry.Kind == EntryRole {

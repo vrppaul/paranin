@@ -219,7 +219,7 @@ func twoPagesModel(test *testing.T) Model {
 	}
 	snapshot := fixtures.LoadedContent(test)
 	documents := append(compose.Documents(snapshot), another)
-	return New(documents, fixtureSite(snapshot), commonWidth, commonHeight, fixtureDay())
+	return New(documents, fixtureSite(snapshot), commonWidth, commonHeight, fixtures.Day())
 }
 
 // Tab after :e and a space writes the page listed first, which Enter opens.

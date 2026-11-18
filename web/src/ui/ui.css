@@ -391,12 +391,19 @@ mark {
   margin: 0;
 }
 
-/* the résumé's first screen (DESIGN.md, Pages): the name's column, taking the room the brief leaves beside it */
+/* the résumé's first screen (DESIGN.md, Pages): the introduction, then the career line across the whole width */
 .first-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-3);
+  padding-block: var(--row-4) var(--row-3);
+}
+
+/* the name's column, taking the room the brief leaves beside it */
+.introduction {
   display: flex;
   column-gap: var(--row-3);
   align-items: flex-start;
-  padding-block: var(--row-4) var(--row-3);
 }
 
 .name-column {
@@ -619,6 +626,89 @@ mark {
   }
 }
 
+/* the career line (DESIGN.md, CareerLine): every role along the whole width, its name in captions over its span,
+ * muted, the one still held bold in the text's colour; each span in the edge's colour, the one still held in the
+ * accent, a hairline of the page's ground between two that meet. Its SVG lays its rows in ems of the caption */
+.career-line {
+  display: block;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+.career-line text {
+  fill: var(--muted);
+}
+
+.career-line .career-now text {
+  fill: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+.career-span {
+  fill: var(--edge);
+  stroke: var(--background);
+  stroke-width: var(--hairline);
+}
+
+.career-now .career-span {
+  fill: var(--accent);
+}
+
+/* the years at the line's ends, faint, a nudge under it */
+.career-ends {
+  display: flex;
+  justify-content: space-between;
+  margin: var(--nudge) 0 0;
+  color: var(--faint);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+/* the phone's list of the same roles: their years in a column of their own, as wide as the widest, the company, and
+ * under it a bar as long as the role beside the longest; drawn only on a phone */
+.career-list {
+  display: none;
+  grid-template-columns: max-content auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.career-list li {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.career-years {
+  grid-row: 1 / span 2;
+  color: var(--muted);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+.career-list .career-now .career-company {
+  font-weight: var(--type-strong-weight);
+}
+
+.career-bar {
+  display: block;
+  grid-column: 2;
+  height: var(--span-thin);
+}
+
+.career-bar rect {
+  fill: var(--edge);
+}
+
+.career-list .career-now rect {
+  fill: var(--accent);
+}
+
 /* below the wide screen's width the brief narrows, so the name keeps its room */
 @media (width < 80rem) {
   .brief {
@@ -626,13 +716,28 @@ mark {
   }
 }
 
-/* on a phone the brief stands under the name's column, as wide as the page, and the mail and the lead are smaller */
+/* on a phone the brief stands under the name's column, as wide as the page, the mail and the lead are smaller, and
+ * the career is a list */
 @media (width < 53.75rem) {
   .first-screen {
+    gap: var(--row-2);
+    padding-block: var(--row-2);
+  }
+
+  .introduction {
     flex-direction: column;
     row-gap: var(--row-half);
     align-items: stretch;
-    padding-block: var(--row-2);
+  }
+
+  .career-line,
+  .career-ends {
+    display: none;
+  }
+
+  .career-list {
+    display: grid;
+    gap: var(--row-half) var(--cell);
   }
 
   .lead {

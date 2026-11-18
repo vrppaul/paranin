@@ -15,13 +15,12 @@ const blockCursor = "▌"
 
 // The room between the name's column and the brief's, as the storyboard set them apart, and the least the brief
 // takes beside the name, where the page has not the room for both, the brief standing under the name; the least room
-// the career's line is drawn in, beside the site's word for the present; and how the career's line counts and spaces
-// what it draws
+// the career's line is drawn in, beside the site's word for the present; and how the career's line spaces what it
+// draws
 const (
 	columnsApart    = 4
 	narrowestBrief  = 36
 	narrowestCareer = 24
-	monthsInYear    = 12
 	yearLabelGap    = 1
 	presentGap      = 1
 	shortestCutName = 2
@@ -154,43 +153,26 @@ func retold(piece run, text string, shown kind) run {
 	return piece
 }
 
-// careerSpan is a role on the career's line: its company, its first and last month, whether it is still held, and
-// the site's word for what still goes on where it is.
-type careerSpan struct {
-	company string
-	start   time.Time
-	end     time.Time
-	current bool
-	present string
-}
-
-// career is the career's line: each role a span on a line of months from the first role's start, or the day where
-// every role starts after it, to the day or the last month a role reaches past it, the one still held standing out;
-// each company over its span, cut to it; and under them each year's tick and the year, as many as have room. Roles
-// with a month still to fill are left out, and the line where the page has not the room for it and the site's word
-// for the present.
+// career is the career's line (document.CareerOf, on the session's day): each role a span on a line of months, the
+// one still held standing out; each company over its span, cut to it; and under them each year's tick and the year,
+// as many as have room. The line is left out where the page has not the room for it and the site's word for the
+// present.
 func (layout layout) career(entries []document.Entry) []line {
-	spans := layout.careerSpans(entries)
-	present := presentWord(spans)
-	if len(spans) == 0 || layout.width < narrowestCareer+presentGap+textWidth(present) {
+	career := document.CareerOf(entries, layout.today)
+	if len(career.Spans) == 0 || layout.width < narrowestCareer+presentGap+textWidth(career.Present) {
 		return nil
 	}
-	// the spans stand in the order of their starts, so the first starts the line, unless it starts after the day
-	first, last := spans[0].start, lastMonth(spans, layout.today)
-	if layout.today.Before(first) {
-		first = layout.today
-	}
 	// the last column is the line's last month, so the columns count one fewer than the room the line takes
-	scale := careerScale{first: first, months: max(monthsBetween(first, last), 1), columns: layout.width - presentGap - textWidth(present) - 1}
+	scale := careerScale{career: career, columns: layout.width - presentGap - textWidth(career.Present) - 1}
 	rows := make([][]cell, careerRows)
 	for row := range rows {
 		rows[row] = slices.Repeat([]cell{{letter: space, kind: kindText}}, layout.width)
 	}
-	lastColumn := scale.column(last)
+	lastColumn := scale.column(career.Last)
 	put(rows[spanRow], 0, strings.Repeat(careerLineMark, lastColumn+1), kindFaint)
-	putSpans(rows, scale, spans)
-	put(rows[spanRow], lastColumn+1+presentGap, present, kindCurrent)
-	putYears(rows, scale, first, last)
+	putSpans(rows, scale, career.Spans)
+	put(rows[spanRow], lastColumn+1+presentGap, career.Present, kindCurrent)
+	putYears(rows, scale, career.First, career.Last)
 	lines := make([]line, 0, careerRows)
 	for _, row := range rows {
 		lines = append(lines, cellRuns(row))
@@ -198,44 +180,20 @@ func (layout layout) career(entries []document.Entry) []line {
 	return lines
 }
 
-// lastMonth is where the career's line ends: the day, or the last month a role starts or ends in after it.
-func lastMonth(spans []careerSpan, today time.Time) time.Time {
-	last := today
-	for _, span := range spans {
-		for _, month := range []time.Time{span.start, span.end} {
-			if month.After(last) {
-				last = month
-			}
-		}
-	}
-	return last
-}
-
-// presentWord is the site's word for the present, which the line ends in where a role is still held; none where none
-// is.
-func presentWord(spans []careerSpan) string {
-	for _, span := range spans {
-		if span.current {
-			return span.present
-		}
-	}
-	return ""
-}
-
 // putSpans writes each role into the career's rows: its span, the one still held standing out from those that ended,
 // and over it its company, cut to end before the next role's span starts, the last role's before the page's edge.
-func putSpans(rows [][]cell, scale careerScale, spans []careerSpan) {
+func putSpans(rows [][]cell, scale careerScale, spans []document.CareerSpan) {
 	for index, span := range spans {
-		start, next := scale.column(span.start), len(rows[companyRow])+1
+		start, next := scale.column(span.Start), len(rows[companyRow])+1
 		if index+1 < len(spans) {
-			next = scale.column(spans[index+1].start)
+			next = scale.column(spans[index+1].Start)
 		}
 		spanKind, companyKind := kindPast, kindMuted
-		if span.current {
+		if span.Current {
 			spanKind, companyKind = kindCurrent, kindCurrent
 		}
-		put(rows[spanRow], start, strings.Repeat(spanMark, max(scale.column(span.end)-start, 1)), spanKind)
-		put(rows[companyRow], start, cutTo(span.company, max(next-start-1, 1)), companyKind)
+		put(rows[spanRow], start, strings.Repeat(spanMark, max(scale.column(span.End)-start, 1)), spanKind)
+		put(rows[companyRow], start, cutTo(span.Company, max(next-start-1, 1)), companyKind)
 	}
 }
 
@@ -253,46 +211,15 @@ func putYears(rows [][]cell, scale careerScale, first, last time.Time) {
 	}
 }
 
-// careerSpans are the roles of entries as spans, in the order of their starts; a role whose start or end is a
-// month still to fill is left out, one that ended runs to the end of its last month, and one still held to the day.
-func (layout layout) careerSpans(entries []document.Entry) []careerSpan {
-	spans := []careerSpan{}
-	for _, entry := range entries {
-		start, known := entry.Period.Start.(document.KnownMonth)
-		if !known {
-			continue
-		}
-		span := careerSpan{company: document.PlainText(entry.Title), start: start.Start, end: layout.today, current: false, present: ""}
-		switch end := entry.Period.End.(type) {
-		case document.KnownMonth:
-			span.end = end.Start.AddDate(0, 1, 0)
-		case document.CurrentMonth:
-			span.current, span.present = true, end.Text
-		case document.GapMonth:
-			continue
-		}
-		spans = append(spans, span)
-	}
-	slices.SortFunc(spans, func(first, second careerSpan) int { return first.start.Compare(second.start) })
-	return spans
-}
-
-// careerScale is how the career's line lays months along columns: from its first month, over how many months, across
-// how many columns.
+// careerScale is how the career's line lays its months along columns: across how many columns.
 type careerScale struct {
-	first   time.Time
-	months  int
+	career  document.Career
 	columns int
 }
 
 // column is the column a month stands at.
 func (scale careerScale) column(month time.Time) int {
-	return monthsBetween(scale.first, month) * scale.columns / scale.months
-}
-
-// monthsBetween is how many months lie from one month to another.
-func monthsBetween(from, to time.Time) int {
-	return (to.Year()-from.Year())*monthsInYear + int(to.Month()-from.Month())
+	return scale.career.MonthsTo(month) * scale.columns / scale.career.Months()
 }
 
 // cutTo is a text cut to a width, its end marked where it was cut and the width leaves room for a letter and the mark.

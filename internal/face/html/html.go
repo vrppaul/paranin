@@ -95,11 +95,13 @@ const (
 )
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which
-// writes their addresses, what each includes to run the site's script, and the frame round each.
+// writes their addresses, what each includes to run the site's script, the frame round each, and the day they are
+// drawn on, which the résumé's career line runs to.
 type PageWriter struct {
 	site     routes.Site
 	included assets.Included
 	frame    frame
+	today    time.Time
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
@@ -112,9 +114,9 @@ type pageMetadata struct {
 }
 
 // NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
-// round each.
-func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame) PageWriter {
-	return PageWriter{site: site, included: build.Includes(assets.Site), frame: frameOf(site, composed)}
+// round each, on a day the host reads off its clock.
+func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame, today time.Time) PageWriter {
+	return PageWriter{site: site, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today}
 }
 
 // Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,

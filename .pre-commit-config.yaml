@@ -50,7 +50,7 @@ repos:
       # The design's colours in Go and in CSS, and the page's face, text styles and lengths in CSS, are the ones
       # design/tokens.yaml makes (scripts/tokens/main.go)
       - id: design-tokens
-        name: design tokens (internal/look and the page's tokens.css as design/tokens.yaml makes them)
+        name: design tokens (internal/look and the page's tokens.css and times.ts as design/tokens.yaml makes them)
         entry: go run ./scripts/tokens
         language: system
         files: (^design/|^internal/look/|^scripts/tokens/|^web/src/tokens/)

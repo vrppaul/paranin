@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
@@ -275,14 +276,15 @@ func statusLine(status int) string {
 	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
 }
 
-// draw draws every page of a snapshot, at the address it is served at, beside every file of its build.
+// draw draws every page of a snapshot, at the address it is served at, beside every file of its build, on the day it
+// is drawn: the résumé's career line runs to it until the store holds another snapshot.
 func draw(snapshot *release.Snapshot) *drawing {
 	facts, build := snapshot.Content, snapshot.Build
 	site := routes.New(facts.Profile.Site.BaseURL)
 	readPages := compose.Pages(facts)
 	index := compose.Index(facts)
 	frame := compose.FrameOf(facts, readPages)
-	pageWriter := html.NewPageWriter(site, build, frame)
+	pageWriter := html.NewPageWriter(site, build, frame, time.Now())
 	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
 	}

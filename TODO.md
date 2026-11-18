@@ -31,6 +31,11 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 ## The owner's
 
 
+- The HTML face's goldens hold every block-letter rectangle's position, which `.claude/rules/tests.md` refuses for a look: a fixture name no font draws (every face's fixture changes), or an exception for the block letters. His choice.
+- On a phone each section's block title shrinks to its own column, so the five stand at different heights (320px: 27 to 40px), as DESIGN.md asks; and below about 375px the top bar's section names take a third row. His eye.
+- The light theme's `muted` takes index 60 (#5f5f87, lavender) in a terminal of 256 colours, between grey text and grey faint; #5f5f5f would keep it grey. His eye.
+- In the footer on a phone a long `curl` command wraps at a hyphen inside its code; DESIGN.md's Command never wraps, its Code does not say. His eye.
+- What the first screen's primary button, "Write to Pavel", does before `inbox` and the form exist (Hosting). Asked before the button is built.
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
 
 ## Upstream

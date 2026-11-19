@@ -514,9 +514,10 @@ sessions on a stop.
   quotes the path asked for.
 - `face/html` draws each document with templ, in the build's stylesheet
   and running its script, with the frame round each page in the site's
-  words (`compose.FrameOf`), and its record as JSON-LD; `face/text`
-  draws the markdown, the manual, `llms.txt` and its own page of no page.
-  `routes` writes every address.
+  words (`compose.FrameOf`), and its record as JSON-LD, and the site's
+  icon its pages link, in SVG and in PNG, drawn from the author's initial;
+  `face/text` draws the markdown, the manual, `llms.txt` and its own page
+  of no page. `routes` writes every address, the icon's among them.
 - templ compiles the templates into Go, and no file is embedded. `web/`
   is the page's pnpm package: Vite builds it into `build/web` with a
   manifest (ADR-0004, D22); `internal/assets` reads the manifest and every
@@ -539,7 +540,7 @@ cmd/paranin/main.go      # check the content, or serve it with the build: both s
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
 internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
-internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page
+internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page, the icon
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site

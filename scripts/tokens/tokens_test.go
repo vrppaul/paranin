@@ -116,6 +116,36 @@ func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
 	}
 }
 
+// The page's own colour reaches Go whole in each theme, under what it is for, as the ground a picture of the site
+// stands on; a terminal keeps a ground of its own, so it is no colour of the palette.
+func TestThePagesGroundReachesGoInEachTheme(test *testing.T) {
+	tokens := strings.Replace(fixtureTokens, "about: the page itself\n  light: \"#000000\"",
+		"about: the page itself\n  light: \"#eff1f5\"", 1)
+	read, err := readTokens([]byte(tokens))
+	if err != nil {
+		test.Fatalf("readTokens = %v, want no fault", err)
+	}
+	written, err := source(read)
+	if err != nil {
+		test.Fatalf("source = %v, want no fault", err)
+	}
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "what it is for", want: "// Background is the page itself\n"},
+		{name: "the light theme's", want: "case ThemeLight:\n\t\treturn color.RGBA{R: 239, G: 241, B: 245, A: 255}\n"},
+		{name: "the dark theme's", want: "case ThemeDark:\n\t\treturn color.RGBA{R: 0, G: 0, B: 0, A: 255}\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(string(written), testCase.want) {
+				test.Errorf("the palette's source = %q, want it to hold %q", written, testCase.want)
+			}
+		})
+	}
+}
+
 // The page reads each colour as a custom property, its value in the light theme and the dark one, which theme
 // the page's color-scheme says, the reader's system unless one is chosen; a blend is its colour at its strength,
 // laid over whatever the page puts under it.

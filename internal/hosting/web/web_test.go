@@ -261,6 +261,38 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 	}
 }
 
+// A browser finds the site's icon: each picture of it a page's head links, among them the one a phone keeps on its home
+// screen and the one a browser asks for by name on a page with no head, as the manual, is served at its path as its
+// type, for a cache to ask for again, since the author's name it is drawn from may change under the same path.
+func TestABrowserFindsTheSiteIcon(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	page := serve(server, http.MethodGet, "/", "text/html").Body.String()
+	cases := []struct {
+		name        string
+		path        string
+		contentType string
+	}{
+		{name: "the drawing", path: "/favicon.svg", contentType: "image/svg+xml"},
+		{name: "the home screen's", path: "/apple-touch-icon.png", contentType: "image/png"},
+		{name: "the one asked for by name", path: "/favicon.ico", contentType: "image/vnd.microsoft.icon"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := serve(server, http.MethodGet, testCase.path, "image/*")
+			header := response.Header()
+			linked := `href="` + testCase.path + `"`
+			const wantCache = "no-cache"
+			if response.Code != http.StatusOK || header.Get("Content-Type") != testCase.contentType ||
+				header.Get("Cache-Control") != wantCache || response.Body.Len() == 0 || !strings.Contains(page, linked) {
+				test.Errorf("GET %s = %d %q, Cache-Control %q, of %d bytes, the page linking it %t; want %d %q, %q, "+
+					"a picture, linked by %q", testCase.path, response.Code, header.Get("Content-Type"),
+					header.Get("Cache-Control"), response.Body.Len(), strings.Contains(page, linked), http.StatusOK,
+					testCase.contentType, wantCache, linked)
+			}
+		})
+	}
+}
+
 // A page is drawn again once the store holds new content: a reload reaches the next request.
 func TestAReloadReachesTheNextRequest(test *testing.T) {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))

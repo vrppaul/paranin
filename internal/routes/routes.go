@@ -1,5 +1,5 @@
-// Package routes writes every address of the site, from a document's link target and a format, so no face and
-// no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
+// Package routes writes every address of the site, from a document's link target and a format, or a picture of the
+// site, so no face and no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
 package routes
 
 import (
@@ -18,6 +18,27 @@ const (
 	FormatManual
 	// FormatChosen is the page at the address where the reader's request chooses its format
 	FormatChosen
+)
+
+// Picture is a picture of the site a browser shows beside its pages.
+type Picture int
+
+const (
+	// The zero picture names none, and has no path
+	_ Picture = iota
+	// PictureDrawing is the site's icon drawn to any size
+	PictureDrawing
+	// PictureHomeScreen is the site's icon a phone keeps on its home screen, where a phone asks for it by name
+	PictureHomeScreen
+	// PictureAskedByName is the site's icon where a browser asks for it by name, on a page whose head links none
+	PictureAskedByName
+)
+
+// Where the site's pictures are served: each at the path a browser or a phone asks for it by, where one does
+const (
+	drawingFile     = "/favicon.svg"
+	homeScreenFile  = "/apple-touch-icon.png"
+	askedByNameFile = "/favicon.ico"
 )
 
 // How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the index
@@ -155,6 +176,19 @@ func indexPath(format Format) string {
 	case FormatMarkdown:
 		return indexFile
 	case FormatManual, FormatChosen:
+	}
+	return ""
+}
+
+// PicturePath is where a picture of the site is served, from the site's root; the zero picture has none.
+func PicturePath(picture Picture) string {
+	switch picture {
+	case PictureDrawing:
+		return drawingFile
+	case PictureHomeScreen:
+		return homeScreenFile
+	case PictureAskedByName:
+		return askedByNameFile
 	}
 	return ""
 }

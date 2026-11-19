@@ -54,6 +54,7 @@ link and is not a gap.
 | `GET /og` | 1200×630 card used to make `og.png`. `X-Robots-Tag: noindex`. |
 | `GET /cv.pdf`, `GET /og.png` | Built assets from `static/`; 404 until built. |
 | `GET /llms.txt` | Short map of the markdown files. |
+| `GET /favicon.svg`, `GET /apple-touch-icon.png`, `GET /favicon.ico` | The site's icon: a drawing in the reader's theme, a PNG of 180px and an icon file of 32px in the dark one. A cache asks again. |
 | `GET /robots.txt` | Allows everything; points to the sitemap. |
 | `GET /sitemap.xml` | `/` and every project page, `lastmod` = `site.updated`. |
 | `GET /static/{file}` | Embedded static files. |
@@ -287,9 +288,12 @@ a script sets through `element.style`, and `element.animate()`.
 
 So the page's build keeps to it: Vite inlines no asset (`assetsInlineLimit:
 0`), Svelte writes its styles to files, never into the page, and templ writes
-no `<style>`. The fonts come from the site ([FOUNDATION](FOUNDATION.md) §5.6),
-never from Google. No `Referrer-Policy` is sent: `strict-origin-when-cross-origin`,
-which the first version sent, is every browser's own default.
+no `<style>` but the site's icon's: a browser shows the icon as an image,
+whose own style the policy does not reach, and the style holds no colour,
+only which theme's part shows. The fonts come from the site
+([FOUNDATION](FOUNDATION.md) §5.6), never from Google. No `Referrer-Policy` is
+sent: `strict-origin-when-cross-origin`, which the first version sent, is every
+browser's own default.
 
 ## Front end
 

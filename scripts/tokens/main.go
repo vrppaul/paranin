@@ -3,7 +3,8 @@
 //
 //   - internal/look/palette.go, for the TUI: each colour becomes a constant of look.Colour and a shade in each theme
 //     for each kind of terminal, its value whole, the nearest of xterm's 256, and the one of sixteen the file names;
-//     a blend is worked out into a colour of its own;
+//     a blend is worked out into a colour of its own; then the page's own colour in each theme, the ground of the
+//     site's icon, which the page's face draws in Go;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
 //     reads: the face, each text style as its size, its line's height and its weight, each length, each time, and
@@ -107,7 +108,7 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", tokensPath, err)
 	}
-	palette, err := source(paletteOf(read))
+	palette, err := source(read)
 	if err != nil {
 		return nil, err
 	}

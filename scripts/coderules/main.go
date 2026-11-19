@@ -8,14 +8,14 @@
 //   - nomarkup and nocolours: markup lives in a template or a component, a colour in the design tokens.
 //   - nonumbers: a number with a meaning is a named constant. golangci-lint's mnd passes a number assigned to a
 //     variable.
-//   - commentwidth: a comment's line is 120 columns at most. golangci-lint's lll holds every line, and a line of
-//     code may run wider, as a literal with every field written does.
+//   - commentwidth: a comment's line is 120 columns at most, a template's too. golangci-lint's lll holds every
+//     line, and a line of code may run wider, as a literal with every field written does.
 //
 // The first two are the Go form of the first two rules of claude-review's scripts/check_code_rules.py;
 // its rules on pydantic's models, asyncio's processes, click's commands and the kinds of refusal are
 // Python's and are left out. The rest are this project's. Generated files are their generator's and are
-// passed over. Test files are read for names, helpers and records, and may hold the markup, the colours and
-// the numbers they expect.
+// passed over, but for the comments templ copies from a template. Test files are read for names, helpers and
+// records, and may hold the markup, the colours and the numbers they expect.
 //
 // Run it in the repository's root, as the pre-commit hook does:
 //

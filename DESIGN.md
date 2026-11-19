@@ -194,8 +194,11 @@ the host underline, `underline_hover` thick, `nudge` below.
 
 ### Favicon
 
-The name font's P and the cursor in the name's gradient on the page's ground, as SVG, sharp at 16, 32 and 180px; a PNG
-of 180px for a phone's home screen. The picture a shared link shows is Typst's, drawn with the CV (ADR-0005).
+The first letter of the author's name in the name font, the P, its cells square, in the name's gradient, and a cursor
+beside it, a beam in `accent` as tall as the letter's lower three half rows, on the page's ground, a square. As SVG with
+crisp edges, in the reader's theme; a PNG of 180px for a phone's home screen, the letter a tenth of its side in from
+each edge so the phone's rounded corners cut none of it, and one of 32px at /favicon.ico, both in the dark theme. The
+picture a shared link shows is Typst's, drawn with the CV (ADR-0005).
 
 ### Button
 

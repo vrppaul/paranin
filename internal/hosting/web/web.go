@@ -1,9 +1,10 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003, ADR-0004). It draws every page of a release's
 // snapshot once, the first time a request meets that snapshot (release.Derived), and serves the drawing until the
 // store holds another, so no request composes or draws a page; beside the pages it serves every file of the
-// snapshot's build at its path, from memory, for a cache to keep for good. Each page is served at the path routes
-// writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
-// browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
+// snapshot's build at its path, from memory, for a cache to keep for good, and each picture of the site the HTML face
+// draws with them, which a cache asks for again. Each page is served at the path routes writes for it in each
+// format, and at its own address in the format the reader's request asks for: HTML for a browser, markdown for an
+// agent that asks for it, and the manual for `curl` and everyone else; the index at
 // llms.txt, sent as plain text, as a name ending in .txt promises. Each format of a page names in a Link header the
 // address the page is known by, the one where the reader chooses, so a search engine counts its markdown and its
 // manual as the page. Any other path is answered with the page of no page, in text or in HTML, whichever the
@@ -166,6 +167,12 @@ func builtAs(file assets.File) answer {
 	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, body: file.Body}
 }
 
+// picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when the
+// author's name changes.
+func picturedAs(icon html.Icon) answer {
+	return answer{mediaType: "", contentType: icon.MediaType, link: "", cacheControl: askEveryTime, body: icon.Body}
+}
+
 // knownAt is a page naming the address it is known by, as a Link header writes it (RFC 8288, RFC 6596).
 func (sent answer) knownAt(address string) answer {
 	sent.link = linkOpening + address + canonicalRelation
@@ -290,6 +297,9 @@ func draw(snapshot *release.Snapshot) *drawing {
 	}
 	for path, file := range build.Files() {
 		fixed[path] = builtAs(file)
+	}
+	for _, icon := range html.Icons(facts.Profile.Person.Name) {
+		fixed[icon.Path] = picturedAs(icon)
 	}
 	chosen := make(map[string]choice, len(readPages))
 	for _, composed := range readPages {

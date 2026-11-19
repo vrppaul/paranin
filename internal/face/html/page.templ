@@ -45,14 +45,15 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 }
 
 // headOpening is what the head of every page opens with: its text's encoding, its width a phone's own, its title,
-// and what it includes to run the site's script, in the order Vite's guide lays it: the stylesheets it is drawn in,
-// the script, then the scripts it imports, to preload. The script holds the first paint until it has run, so a
-// theme the reader chose is the one the page is first seen in; a browser that knows no such hold shows the page
-// first in the system's theme.
+// the pictures of the site a browser shows beside it, and what it includes to run the site's script, in the order
+// Vite's guide lays it: the stylesheets it is drawn in, the script, then the scripts it imports, to preload. The
+// script holds the first paint until it has run, so a theme the reader chose is the one the page is first seen in;
+// a browser that knows no such hold shows the page first in the system's theme.
 templ headOpening(title string, included assets.Included) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<title>{ title }</title>
+	@iconLinks()
 	for _, stylesheet := range included.Stylesheets {
 		<link rel="stylesheet" href={ stylesheet }/>
 	}

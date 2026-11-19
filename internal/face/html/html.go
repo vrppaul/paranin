@@ -25,6 +25,8 @@
 // A page shows a document as a reader of the finished work sees it (document.Written), a fact or a point that is only
 // a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
 // A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it.
+// Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
+// author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write

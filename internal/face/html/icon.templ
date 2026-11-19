@@ -1,0 +1,55 @@
+package html
+
+import (
+	"strconv"
+
+	"github.com/vrppaul/paranin/internal/routes"
+)
+
+// iconDrawing is the site's icon as SVG (DESIGN.md, Favicon): the letter's rectangles drawn once, then the part of
+// each theme, the page's ground, the letter in the name's gradient and the cursor, under the theme's name, which the
+// drawing's own style shows in the reader's theme alone. Its style is the one a template writes (page.md's
+// exception): a browser shows the drawing as an image, whose own style the site's policy does not reach. Opened as a
+// page, under the policy, the drawing loses its style, and the light part, drawn last, covers the dark.
+templ iconDrawing(picture iconPicture, light iconColours, dark iconColours) {
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox={ viewBoxOf(iconSide, iconSide) } shape-rendering="crispEdges">
+		<style>.icon-dark{display:none}@media (prefers-color-scheme:dark){.icon-light{display:none}.icon-dark{display:inline}}</style>
+		<defs>
+			<g id={ iconLetterID }>
+				for _, rectangle := range picture.letter {
+					@letterRectangleOf(rectangle, "")
+				}
+			</g>
+		</defs>
+		@iconThemePart(picture, "icon-dark", dark)
+		@iconThemePart(picture, "icon-light", light)
+	</svg>
+}
+
+// iconThemePart is the icon in one theme's colours, named for the theme, the name its gradient goes by too.
+templ iconThemePart(picture iconPicture, name string, colours iconColours) {
+	<g class={ name }>
+		<linearGradient id={ name } gradientUnits="userSpaceOnUse" x1={ strconv.Itoa(picture.letterLeft) } y1="0" x2={ strconv.Itoa(picture.letterRight) } y2="0">
+			<stop offset="0" stop-color={ hexColour(colours.start) }></stop>
+			<stop offset="1" stop-color={ hexColour(colours.end) }></stop>
+		</linearGradient>
+		<rect width={ strconv.Itoa(iconSide) } height={ strconv.Itoa(iconSide) } fill={ hexColour(colours.ground) }></rect>
+		<use href={ referenceMark + iconLetterID } fill={ "url(" + referenceMark + name + ")" }></use>
+		<rect x={ strconv.Itoa(picture.cursor.left) } y={ strconv.Itoa(picture.cursor.top) } width={ strconv.Itoa(picture.cursor.width) } height={ strconv.Itoa(picture.cursor.height) } fill={ hexColour(colours.cursor) }></rect>
+	</g>
+}
+
+// iconLinks are the head's links to each picture of the site, by how it links it, its media type and the size it
+// names, if any.
+templ iconLinks() {
+	for _, kind := range iconKinds() {
+		<link
+			rel={ kind.relation }
+			href={ routes.PicturePath(kind.picture) }
+			type={ kind.mediaType }
+			if kind.sizes != "" {
+				sizes={ kind.sizes }
+			}
+		/>
+	}
+}

@@ -18,6 +18,7 @@ How the page is built is said at the top of `web/vite.config.ts`; how the server
 - A kind of token the generator does not take yet, it learns with the token's first user.
 - A text style is set as its size, its line and its weight: `font` and `font-variant` take `inherit` alone, and `all` is never set, since each sets the ligatures back on (stylelint).
 - The page's policy refuses an inline script, an inline style and a `data:` address (`docs/WEB.md`, "Security headers"): Vite inlines no file, and a template writes no `<style>` and no `style` attribute.
+- The site's icon (`internal/face/html/icon.templ`) is the one template with a `<style>`: a browser shows it as an image, which the page's policy does not reach, and the style holds no colour, only which theme's part shows.
 - The parts of `web/src/` build on each other in one direction, as `LAYERS` in `web/eslint.config.js` lists them; a part joins the list with its first module.
 - TypeScript is strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (`web/tsconfig.json`): a value read by key or position may be missing, and the code says what then.
 - The site's entry holds a page's first paint (`blocking="render"`): it runs only what a page must have done before it is seen, and anything else loads by a dynamic import.

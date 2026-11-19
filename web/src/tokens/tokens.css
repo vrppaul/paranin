@@ -95,6 +95,12 @@
   --type-lead-phone-line: 1.625rem;
   /* the headline under the author's name on a phone: its weight */
   --type-lead-phone-weight: 400;
+  /* a section's title on a page that is not the résumé: its size */
+  --type-heading-size: 1.25rem;
+  /* a section's title on a page that is not the résumé: its line's height */
+  --type-heading-line: 2rem;
+  /* a section's title on a page that is not the résumé: its weight */
+  --type-heading-weight: 700;
   /* how wide a focus ring is, and how far it stands from what it rings */
   --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */

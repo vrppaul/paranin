@@ -1,6 +1,6 @@
-/* The page's stylesheet: the design's tokens, then what every page is drawn in. It keeps what the first
- * version's look kept of the site's identity (docs/FOUNDATION.md §3.4): monospace text, the Catppuccin palettes,
- * one accent; the grid and the look of each part arrive with the parts that lay out by them (TODO, "The look"). */
+/* The page's stylesheet: the design's tokens, then what every page is drawn in, each part as its section of DESIGN.md
+ * has it. It keeps what the first version's look kept of the site's identity (docs/FOUNDATION.md §3.4): monospace
+ * text, the Catppuccin palettes, one accent. */
 @import url("../tokens/tokens.css");
 
 /* a theme the reader chose, over the system's: the site's script sets it on the page's root
@@ -464,12 +464,17 @@ mark .gap {
   color: var(--muted);
 }
 
-.lead {
-  max-width: var(--lead);
-  margin: var(--row-2) 0 0;
+/* the lead's style: the headline under the name, and the line under another page's title */
+.lead,
+.page-line {
   font-size: var(--type-lead-size);
   font-weight: var(--type-lead-weight);
   line-height: var(--type-lead-line);
+}
+
+.lead {
+  max-width: var(--lead);
+  margin: var(--row-2) 0 0;
 }
 
 /* the brief: the mail heading it, the role and the place under it, then the facts below a quiet rule */
@@ -796,11 +801,15 @@ mark .gap {
     gap: var(--row-half) var(--cell);
   }
 
-  .lead {
-    margin-top: var(--row);
+  .lead,
+  .page-line {
     font-size: var(--type-lead-phone-size);
     font-weight: var(--type-lead-phone-weight);
     line-height: var(--type-lead-phone-line);
+  }
+
+  .lead {
+    margin-top: var(--row);
   }
 
   .brief {
@@ -847,6 +856,7 @@ mark .gap {
 /* running prose is held to the measure; the layout is not */
 .blocks > p,
 .card > p,
+.blocks section > p,
 .points {
   max-width: var(--measure);
 }
@@ -961,16 +971,49 @@ mark .gap {
   scrollbar-width: thin;
 }
 
-/* the page of an address of no page (DESIGN.md, Pages): its status in block letters, the address asked for, the way
- * to the start, a row apart, four rows of air above and below */
-.not-found {
+/* what a page opens with, its title in block letters first, each part a row from the next: the page of an address of
+ * no page (DESIGN.md, Pages), its status, the address asked for, the way to the start, four rows of air above and
+ * below; and the head of a page that is not the résumé (DESIGN.md, Contents and PageHead), its line in the lead's
+ * style, what it is made of in muted words, its lead held to the measure, where its code lives, four rows of air above
+ * and two below */
+.not-found,
+.page-head {
   display: grid;
   gap: var(--row);
+}
+
+.not-found > *,
+.page-head > * {
+  margin: 0;
+}
+
+.not-found {
   padding-block: var(--row-4);
 }
 
-.not-found > * {
-  margin: 0;
+.page-head {
+  padding-block: var(--row-4) var(--row-2);
+}
+
+.page-line,
+.page-lead {
+  max-width: var(--measure);
+}
+
+.page-tags {
+  color: var(--muted);
+}
+
+/* such a page's blocks, after its head, four rows of air above the footer; a section's title among them in the
+ * heading's style, larger than the strong titles under it */
+.page-blocks {
+  padding-bottom: var(--row-4);
+}
+
+.page-blocks h2 {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  line-height: var(--type-heading-line);
 }
 
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
@@ -1021,5 +1064,10 @@ mark .gap {
 
   .facts dd:has(> .command) {
     grid-column: 1 / -1;
+  }
+
+  /* a page's head with less air */
+  .page-head {
+    padding-block: var(--row-2) var(--row);
   }
 }

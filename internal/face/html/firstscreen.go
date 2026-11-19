@@ -26,7 +26,8 @@ type resumeParts struct {
 }
 
 // mainPart is what a page's main part holds: on the résumé whose first section holds facts, the first screen and
-// the résumé's parts under it; on any other page, its head, then each block.
+// the résumé's parts under it; on a résumé with none to brief, its head, then its sections; on any other page, its
+// head, then its blocks.
 func (writer PageWriter) mainPart(composed document.Document) templ.Component {
 	if composed.Head.Page.Kind != document.PageResume {
 		return writer.plainMain(composed)
@@ -34,7 +35,7 @@ func (writer PageWriter) mainPart(composed document.Document) templ.Component {
 	others, sections := document.SectionsOf(composed.Blocks)
 	briefed := document.BriefOf(sections)
 	if briefed == nil {
-		return writer.plainMain(composed)
+		return writer.unbriefedResumeMain(composed)
 	}
 	return writer.resumeMain(composed.Head, partsOf(briefed, others, writer.today))
 }

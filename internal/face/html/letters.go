@@ -91,12 +91,12 @@ func titleDrawing(words string) (letterDrawing, bool) {
 	return drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters)
 }
 
-// topBlock is a block at the top of a page's main part: on the résumé a section stands at the place the top bar leads
-// to, under its title in block letters where the titles' font draws every letter of it, as words where it does not;
-// any other block, and on any other page, as its kind is.
-func (writer PageWriter) topBlock(kind document.PageKind, block document.Block) templ.Component {
+// resumeBlock is a block at the top of the résumé's main part: a section stands at the place the top bar leads to,
+// under its title in block letters where the titles' font draws every letter of it, as words where it does not; any
+// other block as its kind is.
+func (writer PageWriter) resumeBlock(block document.Block) templ.Component {
 	section, isSection := block.(document.Section)
-	if kind != document.PageResume || !isSection {
+	if !isSection {
 		return writer.block(block, firstHeadingDepth)
 	}
 	words := document.PlainText(section.Title)

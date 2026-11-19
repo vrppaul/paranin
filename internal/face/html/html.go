@@ -24,7 +24,7 @@
 // text round it.
 // A page shows a document as a reader of the finished work sees it (document.Written), a fact or a point that is only
 // a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
-// The classes of the page's other parts arrive with its design (TODO, "The look").
+// A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write
@@ -62,11 +62,15 @@ const (
 	deepestHeadingDepth = 6
 )
 
-// What stands between the parts of one line, the page's own choice as each face's is: the text faces' are the
-// same today, and the page's stylesheet may part them
+// A space a line never breaks at, U+00A0, written as its bytes in UTF-8 so the code shows it
+const noBreakSpace = "\xc2\xa0"
+
+// What stands between the parts of one line, the page's own choice as each face's is: the text faces write the same
+// marks, with a plain space before the dot
 const (
-	// a title and its place, a card's tag and its subtitle
-	dot = " · "
+	// a title and its place, a card's tag and its subtitle, a project's tags; a space that never breaks before the dot,
+	// so the dot ends a line and never opens the next
+	dot = noBreakSpace + "· "
 	// a title and its subtitle
 	dash = " — "
 	// the start and the end of a period

@@ -170,6 +170,11 @@ type:
     size: 1.0625
     line: 1.625
     weight: 400
+  - name: heading
+    about: a section's title on a page that is not the résumé
+    size: 1.25
+    line: 2
+    weight: 700
 
 lengths:
   - name: focus_width

@@ -6,8 +6,8 @@ cells, block letters, the Catppuccin palettes, one accent. Its readers are hirer
 write to him.
 
 The owner approved this design on 2026-11-17. Everything here is the target. What holds today is
-`design/tokens.yaml`, `web/stylelint.config.js` and the page itself; the page grows into this design part by part,
-each part with the tokens and the rules it draws by, and `TODO.md`, "The look", lists the parts still to come.
+`design/tokens.yaml`, `web/stylelint.config.js` and the page itself; the page grew into this design part by part,
+each part with the tokens and the rules it draws by; `TODO.md` lists the parts still to come.
 
 - A token named here lives in `design/tokens.yaml`, which writes it into `web/src/tokens/tokens.css`; once it is
   there, the file's value is the one that counts, and this document names it without its value.
@@ -105,7 +105,7 @@ size: a control that seems to need one is the wrong control.
 | --- | --- | --- | --- |
 | `mail`, `mail_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the mail heading the brief, and on a phone |
 | `lead`, `lead_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the headline under the name, and on a phone |
-| `heading` | 1.25/2 | 700 | an `h2` on a page that is not the résumé |
+| `heading` | `design/tokens.yaml` | `design/tokens.yaml` | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the top bar, a field's hint, the footer |

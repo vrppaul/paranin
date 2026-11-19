@@ -2,6 +2,7 @@ package html
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
@@ -128,11 +129,23 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:url" content={ metadata.canonical }/>
 }
 
-// plainMain is a page's main part as it stands: its head, then each block.
+// plainMain is the main part of a page that is not the résumé: its head, then its blocks, a row apart as a résumé
+// section's are.
 templ (writer PageWriter) plainMain(composed document.Document) {
 	@writer.head(composed.Head)
+	<div class="blocks page-blocks">
+		for _, block := range composed.Blocks {
+			@writer.block(block, firstHeadingDepth)
+		}
+	</div>
+}
+
+// unbriefedResumeMain is the main part of a résumé whose first section holds no facts to brief the reader with: its
+// head, then each block, its sections at the places the top bar leads to.
+templ (writer PageWriter) unbriefedResumeMain(composed document.Document) {
+	@writer.head(composed.Head)
 	for _, block := range composed.Blocks {
-		@writer.topBlock(composed.Head.Page.Kind, block)
+		@writer.resumeBlock(block)
 	}
 }
 
@@ -143,7 +156,7 @@ templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
 		@writer.block(block, firstHeadingDepth)
 	}
 	for _, section := range parts.sections {
-		@writer.topBlock(head.Page.Kind, section)
+		@writer.resumeBlock(section)
 	}
 }
 
@@ -290,35 +303,34 @@ templ mailLink(mail document.Mail, heading bool) {
 	</a>
 }
 
-// head is what the page's main part shows first: its title, the subtitle and the place beside it, what a project is
-// made of, the lead, and where a project's code lives. It stands in no header: a page has one, the top bar
+// head is what the page's main part shows first (DESIGN.md, Contents and PageHead): its title in block letters, its
+// line, the subtitle and the place beside it; what a project is made of, joined in one line, words that do nothing
+// when pressed; the lead; and where a project's code lives. It stands in no header: a page has one, the top bar
 // (DESIGN.md, Layout).
 templ (writer PageWriter) head(head document.Head) {
-	@writer.drawnTitle(head)
-	if len(head.Subtitle) > 0 || head.Place != "" {
-		<p>
-			@writer.spans(head.Subtitle)
-			if len(head.Subtitle) > 0 && head.Place != "" {
-				@text(dot)
-			}
-			@text(head.Place)
-		</p>
-	}
-	if len(head.Tags) > 0 {
-		<ul>
-			for _, tag := range head.Tags {
-				<li>{ tag }</li>
-			}
-		</ul>
-	}
-	if len(head.Lead) > 0 {
-		<p>
-			@writer.spans(head.Lead)
-		</p>
-	}
-	if repository := head.Repository.Facts(); len(repository) > 0 {
-		@writer.facts(repository)
-	}
+	<div class="page-head">
+		@writer.drawnTitle(head)
+		if len(head.Subtitle) > 0 || head.Place != "" {
+			<p class="page-line">
+				@writer.spans(head.Subtitle)
+				if len(head.Subtitle) > 0 && head.Place != "" {
+					@text(dot)
+				}
+				@text(head.Place)
+			</p>
+		}
+		if len(head.Tags) > 0 {
+			<p class="page-tags">{ strings.Join(head.Tags, dot) }</p>
+		}
+		if len(head.Lead) > 0 {
+			<p class="page-lead">
+				@writer.spans(head.Lead)
+			</p>
+		}
+		if repository := head.Repository.Facts(); len(repository) > 0 {
+			@writer.facts(repository)
+		}
+	</div>
 }
 
 templ (writer PageWriter) section(section document.Section, depth int) {

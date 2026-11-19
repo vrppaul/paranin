@@ -1,7 +1,8 @@
 package html
 
-// page is the page of a path the site has no page at, quoted, in the frame of every page: its status, the path, and
-// a link to where the site begins.
+// page is the page of a path the site has no page at, quoted, in the frame of every page (DESIGN.md, Pages): its
+// status in block letters, the path, and a link to where the site begins; no apology and no joke. They stand in a part
+// of their own inside the main part, which is the frame's on every page, as the résumé's first screen does.
 templ (notFound NotFound) page(quotedPath string) {
 	<!DOCTYPE html>
 	<html lang={ notFound.language }>
@@ -11,9 +12,11 @@ templ (notFound NotFound) page(quotedPath string) {
 		<body>
 			@topBar(notFound.frame)
 			<main id={ mainID } class="content-width">
-				<h1>{ notFound.status }</h1>
-				<p><code>{ quotedPath }</code></p>
-				<p><a href={ notFound.frame.start }>{ notFound.frame.siteName }</a></p>
+				<div class="not-found">
+					@notFound.heading
+					<p><code>{ quotedPath }</code></p>
+					<p><a href={ notFound.frame.start }>{ notFound.frame.siteName }</a></p>
+				</div>
 			</main>
 			@footer(notFound.frame, notFound.reading, "")
 		</body>

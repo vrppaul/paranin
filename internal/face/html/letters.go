@@ -73,10 +73,22 @@ func (writer PageWriter) drawnTitle(head document.Head) templ.Component {
 		}
 		return headingOne(writer.spans(head.Title))
 	}
-	if drawing, drawn := drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters); drawn {
+	return titleHeading(words, writer.spans(head.Title))
+}
+
+// titleHeading is words as a page's h1 in the titles' block letters, named by the words; the title as it is where the
+// font does not draw every letter of them.
+func titleHeading(words string, title templ.Component) templ.Component {
+	if drawing, drawn := titleDrawing(words); drawn {
 		return letteredHeadingOne(drawing)
 	}
-	return headingOne(writer.spans(head.Title))
+	return headingOne(title)
+}
+
+// titleDrawing is words in the titles' block letters, which have capitals alone: a page's title or a section's of the
+// résumé; not drawn where the font does not draw every letter of them.
+func titleDrawing(words string) (letterDrawing, bool) {
+	return drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters)
 }
 
 // topBlock is a block at the top of a page's main part: on the résumé a section stands at the place the top bar leads
@@ -88,7 +100,7 @@ func (writer PageWriter) topBlock(kind document.PageKind, block document.Block) 
 		return writer.block(block, firstHeadingDepth)
 	}
 	words := document.PlainText(section.Title)
-	if drawing, drawn := drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters); drawn {
+	if drawing, drawn := titleDrawing(words); drawn {
 		return writer.resumeSection(section, letteredHeadingTwo(drawing))
 	}
 	return writer.resumeSection(section, heading(firstHeadingDepth, writer.spans(section.Title)))

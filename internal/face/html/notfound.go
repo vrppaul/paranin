@@ -3,6 +3,8 @@ package html
 import (
 	"strconv"
 
+	"github.com/a-h/templ"
+
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
@@ -26,6 +28,8 @@ type NotFound struct {
 	// reading is the command that reads where the site begins in a terminal, which the footer offers, as the page has
 	// no page of its own to read
 	reading string
+	// heading is the status in the titles' block letters, the page's h1, drawn once for every path asked for
+	heading templ.Component
 }
 
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
@@ -37,6 +41,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		included: build.Includes(assets.Site),
 		frame:    frameOf(site, composed),
 		reading:  site.ReadCommand(document.Page{Kind: document.PageResume, Slug: ""}),
+		heading:  titleHeading(status, text(status)),
 	}
 }
 

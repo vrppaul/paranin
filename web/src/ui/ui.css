@@ -961,6 +961,18 @@ mark .gap {
   scrollbar-width: thin;
 }
 
+/* the page of an address of no page (DESIGN.md, Pages): its status in block letters, the address asked for, the way
+ * to the start, a row apart, four rows of air above and below */
+.not-found {
+  display: grid;
+  gap: var(--row);
+  padding-block: var(--row-4);
+}
+
+.not-found > * {
+  margin: 0;
+}
+
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
  * what stands before it, as space shows its heading's level. Two entries or two cards need no row between them: each
  * has a row of air inside its hairline */

@@ -302,13 +302,6 @@
 </path>
 </svg>
 </div>
-<div role="status">
-<p class="toast" data-part="toast" hidden>
-<span class="toast-mark" aria-hidden="true">✓</span>
-<span data-part="toast-words">
-</span>
-</p>
-</div>
 <section id="about" data-part="section">
 <h2 aria-label="About">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 114 20" width="19em" height="3.3333em" shape-rendering="crispEdges">
@@ -611,7 +604,9 @@
 </dd>
 <dt>install</dt>
 <dd>
-<code>go install example.test/tidy@latest</code>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">go install example.test/tidy@latest</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy go install example.test/tidy@latest" data-copied="copied" data-toast="Copied go install example.test/tidy@latest" hidden>copy</button>
+</div>
 </dd>
 </dl>
 </article>
@@ -828,7 +823,9 @@
 </dd>
 <dt>ssh</dt>
 <dd>
-<code>ssh example.test</code>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy ssh example.test" data-copied="copied" data-toast="Copied ssh example.test" hidden>copy</button>
+</div>
 </dd>
 </dl>
 </section>
@@ -838,5 +835,12 @@
 <code>ssh example.test</code> <code>curl https://example.test/</code> <a href="/index.md">/index.md</a> <a href="/llms.txt">/llms.txt</a>
 </div>
 </footer>
+<div role="status">
+<p class="toast" data-part="toast" hidden>
+<span class="toast-mark" aria-hidden="true">✓</span>
+<span data-part="toast-words">
+</span>
+</p>
+</div>
 </body>
 </html>

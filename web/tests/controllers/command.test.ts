@@ -20,6 +20,9 @@ const COMMAND = "ssh example.test";
 const COPY_WORD = "copy";
 const COPIED_WORD = "copied";
 const TOAST_SAYS = "Copied ssh example.test";
+// The fixture's project's install line, a chip of its own further down the page, and what its toast says
+const INSTALL = "go install example.test/tidy@latest";
+const INSTALL_TOAST_SAYS = "Copied go install example.test/tidy@latest";
 
 /** The browser's clipboard as the chip uses it: what it was handed, and whether it refuses. */
 class FakeClipboard implements CommandClipboard {
@@ -85,6 +88,16 @@ test("a press copies the command, the button says so, and the toast says what wa
     written: [COMMAND],
     button: COPIED_WORD,
     toast: TOAST_SAYS,
+  });
+});
+
+test("each chip copies its own command, and the toast says which", async () => {
+  const clipboard = started();
+  found(`${COPY}[aria-label="copy ${INSTALL}"]`).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect({ written: clipboard.written, toast: found(TOAST_WORDS).textContent }).toEqual({
+    written: [INSTALL],
+    toast: INSTALL_TOAST_SAYS,
   });
 });
 

@@ -12,7 +12,8 @@ import (
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
 // address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
-// then the top bar, its main part, its head and its blocks, and the footer.
+// then the top bar, its main part, its head and its blocks, the footer, and the toast that says what a command's chip
+// on it copied.
 templ (writer PageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
 	<!DOCTYPE html>
 	<html lang={ composed.Head.Language }>
@@ -36,6 +37,7 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 				@writer.mainPart(composed)
 			</main>
 			@footer(writer.frame, writer.site.ReadCommand(composed.Head.Page), metadata.markdown)
+			@toast()
 		</body>
 	</html>
 }
@@ -148,7 +150,7 @@ templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
 // the lead in one column; beside it the brief, its parts a row apart: the address heading it, the subtitle and the
 // place; the facts; and what the brief offers to do, side by side: the primary button that writes to the author,
 // which opens the form once there is one (TODO, Hosting) and does nothing until then, and the command that reaches the
-// site over ssh, to copy. The toast that says what was copied follows.
+// site over ssh, to copy.
 templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 	<div class="first-screen">
 		<div class="introduction">
@@ -159,7 +161,6 @@ templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 		}
 		@corners()
 	</div>
-	@toast()
 }
 
 // corners are the crosses that mark the first screen's four corners (DESIGN.md, Frame and Section), as the TUI marks
@@ -342,12 +343,17 @@ templ codeBlock(text string) {
 	<pre>{ text }</pre>
 }
 
+// facts are labels and their values; a value that is a command alone stands as a chip that copies it.
 templ (writer PageWriter) facts(facts []document.Fact) {
 	<dl class="facts">
 		for _, fact := range facts {
 			<dt>{ fact.Label }</dt>
 			<dd>
-				@writer.spans(fact.Value)
+				if text, isCommand := fact.Command(); isCommand {
+					@command(writer.frame.commandWords.Of(text))
+				} else {
+					@writer.spans(fact.Value)
+				}
 			</dd>
 		}
 	</dl>

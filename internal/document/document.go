@@ -44,6 +44,16 @@ type Fact struct {
 	Value []Span
 }
 
+// Command is the command a fact's value is, where it is code alone: a command a reader types or copies whole, as a
+// project's install line or the ssh way to reach the author; none where the value holds more than the code.
+func (fact Fact) Command() (string, bool) {
+	if len(fact.Value) != 1 {
+		return "", false
+	}
+	code, isCode := fact.Value[0].(Code)
+	return code.Text, isCode
+}
+
 // Repository is where a project's code lives: the site's word that names it, and its address.
 type Repository struct {
 	Label   string

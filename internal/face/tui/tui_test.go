@@ -587,8 +587,8 @@ func TestEachFactRoundACommandStandsOnce(test *testing.T) {
 		text string
 	}{
 		{name: "a fact before the command", text: "status done"},
-		{name: "the command", text: "go install example.test/tool"},
-		{name: "the command's label", text: "setup"},
+		{name: "the command, between the box's sides", text: boxDown + space + "go install example.test/tool" + space + boxDown},
+		{name: "the command's label, in the box's top edge", text: boxTopLeft + boxAcross + space + "setup" + space + boxAcross},
 		{name: "a value of code and more", text: "steps make then run"},
 	}
 	for _, testCase := range cases {

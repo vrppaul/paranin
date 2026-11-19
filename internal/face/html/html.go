@@ -18,7 +18,9 @@
 // The résumé whose first section holds facts opens with its first screen (firstscreen.go): the greeting, the name and
 // the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
 // sections as the TUI reads its brief (document.BriefOf), and the ssh command as a chip the script lets copy
-// (frame.go); the facts the brief leaves stay in their section, where the brief stood.
+// (frame.go); the facts the brief leaves stay in their section, where the brief stood. A fact whose value is a
+// command alone, as a project's install line, stands as such a chip too, and every document's page holds the toast
+// that says what a chip copied.
 // A page shows a document as a reader of the finished work sees it (document.Written), a fact or a point that is only
 // a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
 // The classes of the page's other parts arrive with its design (TODO, "The look").

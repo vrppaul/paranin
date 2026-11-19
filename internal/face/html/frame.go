@@ -17,9 +17,10 @@ const (
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, TopBar,
 // SkipLink and Footer): the link past the top bar, its words and where it leads; the site's name and where it begins;
-// a link to each of the résumé's sections; the theme button's name; the footer's ways the site is served that are the
-// same on every page, the command that reaches it over ssh, with the words of the chip that copies it on the first
-// screen, and the index agents read; and the words of the first screen's button that writes to the author.
+// a link to each of the résumé's sections; the theme button's name; the words of the chip that copies a command; the
+// footer's ways the site is served that are the same on every page, the command that reaches it over ssh, which the
+// first screen offers as a chip, and the index agents read; and the words of the first screen's button that writes to
+// the author.
 type frame struct {
 	skipToContent string
 	toMain        string
@@ -27,6 +28,7 @@ type frame struct {
 	start         string
 	sections      []sectionLink
 	darkTheme     string
+	commandWords  compose.CommandWords
 	ssh           compose.Command
 	agentsIndex   string
 	writeTo       string
@@ -52,6 +54,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		start:         routes.Reference(resume, routes.FormatChosen),
 		sections:      sections,
 		darkTheme:     composed.DarkTheme,
+		commandWords:  composed.CommandWords,
 		ssh:           composed.SSH,
 		agentsIndex:   routes.Reference(document.Page{Kind: document.PageIndex, Slug: ""}, routes.FormatMarkdown),
 		writeTo:       composed.WriteTo,

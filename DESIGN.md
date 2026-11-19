@@ -265,7 +265,7 @@ boxed.
 ### Card
 
 A piece of work: its name as a `strong` heading with a link to its page, its language and line in one `muted` row, its
-summary, its facts. An install line is a fact whose value is Code; the page's script turns it into a Command. Cards are
+summary, its facts. An install line is a fact whose value is Code alone; the page draws it as a Command. Cards are
 `row_2` apart with a `quiet` hairline between, never boxed.
 
 ### Table

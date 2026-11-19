@@ -320,11 +320,12 @@ again; where the browser keeps nothing, the choice holds for the page alone.
 
 ### Commands
 
-A command the reader can run, as `ssh paran.in` on the first screen, is a
-chip: the prompt's mark, the command as code a reader may select, and a
-button in the site's words (`copy`), `hidden` until the script
-(`web/src/controllers/command.ts`) shows it. With no script the command is
-words to select. A press anywhere on the chip writes the command to the
+A command the reader can run is a chip: `ssh paran.in` on the first screen,
+and any fact whose value is a command alone, as a project's install line or
+the ssh way to reach the author. The chip holds the prompt's mark, the
+command as code a reader may select, and a button in the site's words
+(`copy`), `hidden` until the script (`web/src/controllers/command.ts`) shows
+it. With no script the command is words to select. A press anywhere on the chip writes the command to the
 clipboard, unless the reader selected words in it; the button then says
 `copied` and a toast at the foot of the screen says what was copied
 (`copied_command`), both for the design's `toast` time, which the script

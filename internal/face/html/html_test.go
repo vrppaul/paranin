@@ -407,6 +407,34 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 	}
 }
 
+// A fact whose value is a command alone stands as a chip that copies it, named by the command and saying in the toast
+// what it copied, on any page that holds one; code among a fact's words stays code.
+func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
+	tool := document.Card{
+		Title: []document.Span{document.Text{Text: "tidy"}}, Subtitle: nil, Tag: "", Summary: nil, Page: document.Page{Kind: document.PageNone, Slug: ""},
+		Facts: []document.Fact{
+			{Label: "install", Value: []document.Span{document.Code{Text: "go install example.test/tidy@latest"}}},
+			{Label: "use", Value: []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " daily"}}},
+		},
+	}
+	composed := document.Document{
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy"}, []document.Span{document.Text{Text: "tidy"}}),
+		Blocks: []document.Block{tool},
+	}
+	page := fixtureWriter(test).Page(composed, blankPerson())
+	for _, want := range []string{
+		`<dt>install</dt><dd><div class="command" data-part="command">`,
+		`<code data-part="command-words">go install example.test/tidy@latest</code>`,
+		`aria-label="copy go install example.test/tidy@latest" data-copied="copied" data-toast="Copied go install example.test/tidy@latest"`,
+		`<dt>use</dt><dd><code>tidy .</code> daily</dd>`,
+		`data-part="toast"`,
+	} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the page %q holds no %q", page, want)
+		}
+	}
+}
+
 // roleOf is a role a test builds by hand: its company and its months, nothing else.
 func roleOf(company string, start, end document.Month) document.Entry {
 	return document.Entry{

@@ -7,15 +7,22 @@ import (
 
 // Frame is what a face lays round the documents it draws, on every page alike, in the site's words: the words of
 // the link past it to the page's main part, the titles of the résumé's sections, which it leads to in their order,
-// the name of the theme button, which is pressed while the page is dark, the command that reaches the site over ssh,
-// one of the ways it is served, with the words of the button that copies it, and the words of the button that writes
-// to the author.
+// the name of the theme button, which is pressed while the page is dark, the words of the button that copies a
+// command, the command that reaches the site over ssh, one of the ways it is served, with those words, and the words
+// of the button that writes to the author.
 type Frame struct {
 	SkipToContent string
 	Sections      []string
 	DarkTheme     string
+	CommandWords  CommandWords
 	SSH           Command
 	WriteTo       string
+}
+
+// CommandWords are the site's words for the button that copies a command, which a face lays beside each command it
+// draws to copy.
+type CommandWords struct {
+	words content.Words
 }
 
 // Command is a command the reader can run, with the words of the button that copies it: the word on the button, the
@@ -44,22 +51,25 @@ func FrameOf(snapshot *content.Snapshot, pages []Composed) Frame {
 			}
 		}
 	}
+	commandWords := CommandWords{words: words}
 	return Frame{
 		SkipToContent: words.Text(content.WordSkipToContent),
 		Sections:      sections,
 		DarkTheme:     words.Text(content.WordDarkTheme),
-		SSH:           commandOf(words, snapshot.Profile.Site.SSH),
+		CommandWords:  commandWords,
+		SSH:           commandWords.Of(snapshot.Profile.Site.SSH),
 		WriteTo:       words.Phrase(content.PhraseWriteTo, snapshot.Profile.Person.GivenName),
 	}
 }
 
-// commandOf is a command with the words of the button that copies it, in the site's words.
-func commandOf(words content.Words, text string) Command {
+// Of is a command with the words of the button that copies it: the word on it and the word it turns to, then its name
+// and what the toast says, which both name the command.
+func (commandWords CommandWords) Of(text string) Command {
 	return Command{
 		Text:     text,
-		Copy:     words.Text(content.WordCopy),
-		Copied:   words.Text(content.WordCopied),
-		CopyName: words.Phrase(content.PhraseCopyCommand, text),
-		Toast:    words.Phrase(content.PhraseCopiedCommand, text),
+		Copy:     commandWords.words.Text(content.WordCopy),
+		Copied:   commandWords.words.Text(content.WordCopied),
+		CopyName: commandWords.words.Phrase(content.PhraseCopyCommand, text),
+		Toast:    commandWords.words.Phrase(content.PhraseCopiedCommand, text),
 	}
 }

@@ -466,20 +466,11 @@ func (layout layout) factBlock(facts []document.Fact, indent int) []line {
 	return lines
 }
 
-// isCommand is whether a fact's value is code alone: a command a reader types.
-func isCommand(fact document.Fact) bool {
-	if len(fact.Value) != 1 {
-		return false
-	}
-	_, isCode := fact.Value[0].(document.Code)
-	return isCode
-}
-
 // commandBox is a command in a box as wide as the page, its label in the top edge, the command on one row inside it,
 // so a reader copies it whole; nothing for a fact that is no command, or where the page is too narrow for the box's
 // edges round the label or round the command, the fact then standing under its label.
 func (layout layout) commandBox(fact document.Fact, indent int) []line {
-	if !isCommand(fact) {
+	if _, isCommand := fact.Command(); !isCommand {
 		return nil
 	}
 	width := layout.width - indent

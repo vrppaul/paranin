@@ -57,17 +57,20 @@ func (mail Mail) Parts() (box, host string, parted bool) {
 	return mail.Address[:at], mail.Address[at+len(MailAt):], true
 }
 
-// MailOf is the mail spans write to, where they are one link to a mailbox.
-func MailOf(spans []Span) (Mail, bool) {
+// LinkOf is the link spans are, where they are one link alone, with no words beside it.
+func LinkOf(spans []Span) (Link, bool) {
 	if len(spans) != 1 {
-		return Mail{Address: ""}, false
+		return Link{Target: nil, Spans: nil}, false
 	}
 	link, isLink := spans[0].(Link)
-	if !isLink {
-		return Mail{Address: ""}, false
-	}
+	return link, isLink
+}
+
+// MailOf is the mail spans write to, where they are one link to a mailbox.
+func MailOf(spans []Span) (Mail, bool) {
+	link, isLink := LinkOf(spans)
 	mail, isMail := link.Target.(Mail)
-	return mail, isMail
+	return mail, isLink && isMail
 }
 
 func (Address) target() {}

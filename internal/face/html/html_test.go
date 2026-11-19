@@ -435,6 +435,27 @@ func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
 	}
 }
 
+// The brief ends with the ways to the author's profiles, each a link by its label, a dot between two; the mail that
+// heads the brief, a link with words after it and a command to run are none of them.
+func TestTheBriefEndsWithTheProfiles(test *testing.T) {
+	about := document.Section{
+		Title:  []document.Span{document.Text{Text: "About"}},
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: []document.Span{document.Text{Text: "here"}}}}}},
+	}
+	contact := document.Section{Title: []document.Span{document.Text{Text: "Contact"}}, Blocks: []document.Block{document.Facts{Kind: document.FactsWays, List: []document.Fact{
+		{Label: "mail", Value: []document.Span{document.Link{Target: document.Mail{Address: "mira@example.test"}, Spans: []document.Span{document.Text{Text: "mira@example.test"}}}}},
+		{Label: "GitHub", Value: []document.Span{document.Link{Target: document.Address{URL: "https://github.test/mira"}, Spans: []document.Span{document.Text{Text: "github.test/mira"}}}}},
+		{Label: "LinkedIn", Value: []document.Span{document.Link{Target: document.Address{URL: "https://linkedin.test/mira"}, Spans: []document.Span{document.Text{Text: "linkedin.test/mira"}}}}},
+		{Label: "blog", Value: []document.Span{document.Link{Target: document.Address{URL: "https://blog.test"}, Spans: []document.Span{document.Text{Text: "blog.test"}}}, document.Text{Text: ", in Czech"}}},
+		{Label: "ssh", Value: []document.Span{document.Code{Text: "ssh example.test"}}},
+	}}}}
+	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson()), `<section id="about"`)
+	want := `<p class="profiles"><a href="https://github.test/mira">GitHub</a>` + dot + `<a href="https://linkedin.test/mira">LinkedIn</a></p>`
+	if !strings.Contains(firstScreen, want) {
+		test.Errorf("the first screen %q holds no %q", firstScreen, want)
+	}
+}
+
 // roleOf is a role a test builds by hand: its company and its months, nothing else.
 func roleOf(company string, start, end document.Month) document.Entry {
 	return document.Entry{

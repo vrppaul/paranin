@@ -7,17 +7,25 @@ import (
 
 // Briefed is a document's sections read for the brief a résumé opens with: the brief, the first facts the first
 // section holds; that section's title, and the blocks it holds before the brief and after it; the sections after it;
-// the address, the first way to reach the author they give, the mail; and the roles they hold, in order, which
-// CareerOf lays on a line.
+// the ways to reach the author they give, the mail first; and the roles they hold, in order, which CareerOf lays on a
+// line.
 // Its lists share the sections' arrays, each clipped to its length, so a face that appends to one writes no section.
 type Briefed struct {
-	Brief   Facts
-	Title   []Span
-	Before  []Block
-	After   []Block
-	Rest    []Section
-	Address []Span
-	Roles   []Entry
+	Brief  Facts
+	Title  []Span
+	Before []Block
+	After  []Block
+	Rest   []Section
+	Ways   []Fact
+	Roles  []Entry
+}
+
+// Address is the first way to reach the author, the mail, as its value; none where the sections give no way.
+func (briefed *Briefed) Address() []Span {
+	if len(briefed.Ways) == 0 {
+		return nil
+	}
+	return briefed.Ways[0].Value
 }
 
 // BriefOf is sections read for their brief; nothing where the first holds no facts.
@@ -29,13 +37,13 @@ func BriefOf(sections []Section) *Briefed {
 	for index, block := range first.Blocks {
 		if facts, isFacts := block.(Facts); isFacts && len(facts.List) > 0 {
 			return &Briefed{
-				Brief:   facts,
-				Title:   first.Title,
-				Before:  slices.Clip(first.Blocks[:index]),
-				After:   slices.Clip(first.Blocks[index+1:]),
-				Rest:    slices.Clip(sections[1:]),
-				Address: addressOf(sections),
-				Roles:   rolesOf(sections),
+				Brief:  facts,
+				Title:  first.Title,
+				Before: slices.Clip(first.Blocks[:index]),
+				After:  slices.Clip(first.Blocks[index+1:]),
+				Rest:   slices.Clip(sections[1:]),
+				Ways:   waysOf(sections),
+				Roles:  rolesOf(sections),
 			}
 		}
 	}
@@ -66,12 +74,12 @@ func rolesOf(sections []Section) []Entry {
 	return roles
 }
 
-// addressOf is the first way to reach the author sections hold, the mail, as its value: the first fact of the first
-// facts of the ways' kind; none where no section holds one.
-func addressOf(sections []Section) []Span {
+// waysOf are the ways to reach the author sections hold: the first facts of the ways' kind, the mail first; none
+// where no section holds them.
+func waysOf(sections []Section) []Fact {
 	for block := range sectionBlocks(sections) {
 		if facts, isFacts := block.(Facts); isFacts && facts.Kind == FactsWays && len(facts.List) > 0 {
-			return facts.List[0].Value
+			return slices.Clip(facts.List)
 		}
 	}
 	return nil

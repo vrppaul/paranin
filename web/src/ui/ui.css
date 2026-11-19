@@ -546,6 +546,12 @@ mark .gap {
   min-width: 0;
 }
 
+/* the ways to the author's profiles ending the brief, links in the text's colour, the dots between them faint */
+.profiles {
+  margin: 0;
+  color: var(--faint);
+}
+
 /* the primary button (DESIGN.md, Button): a regular control filled in the accent, its words strong; under the pointer
  * it turns the host's colour, pressed the text's, its words then the page's ground */
 .button-primary {

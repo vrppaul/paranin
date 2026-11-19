@@ -224,6 +224,11 @@ templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
 			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
 			@command(writer.frame.ssh)
 		</div>
+		if len(parts.profiles) > 0 {
+			<p class="profiles">
+				@writer.profileLine(parts.profiles)
+			</p>
+		}
 	</div>
 }
 

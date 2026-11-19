@@ -24,10 +24,9 @@ const (
 // The least room the words of an entry may have beside its period's column, where the period stands above them
 const narrowestEntry = 30
 
-// The marks and words of the layout itself: a point's bullet, what parts a title from its subtitle and a subtitle
-// from its place, the start of a period from its end
+// The marks and words of the layout itself: what parts a title from its subtitle and a subtitle from its place, the
+// start of a period from its end
 const (
-	bulletMark   = "-"
 	subtitleMark = "—"
 	placeMark    = "·"
 	rangeMark    = "–"
@@ -354,7 +353,7 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 // page leaves the words beside the column too little room, the period stands above them.
 func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line {
 	periodKind := kindMuted
-	if _, current := entry.Period.End.(document.CurrentMonth); current {
+	if entry.Period.GoesOn() {
 		periodKind = kindCurrent
 	}
 	period := textWords(periodText(entry.Period), periodKind)
@@ -562,7 +561,7 @@ func (layout layout) columnWidths(rows []document.Row) []int {
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.
 func (layout layout) bullet(words []word, indent int) []line {
-	lead := line{indentRun(indent), {text: bulletMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
+	lead := line{indentRun(indent), {text: look.PointMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
 	return layout.continued(lead, words, indent+bulletHang)
 }
 

@@ -212,6 +212,12 @@ lengths:
   - name: lead
     about: the longest line of the headline under the name
     cells: 40
+  - name: measure
+    about: the longest line of prose, a paragraph's or a point's
+    cells: 64
+  - name: when
+    about: an entry's column of dates, wide enough for a range of two months
+    cells: 20
   - name: cross
     about: how big the square of the cross at each corner of the first screen is
     rem: 0.8125

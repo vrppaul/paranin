@@ -8,6 +8,12 @@ type Period struct {
 	End   Month
 }
 
+// GoesOn is whether the period ends in what still goes on: a role still held.
+func (period Period) GoesOn() bool {
+	_, current := period.End.(CurrentMonth)
+	return current
+}
+
 // Month is one kind of month an entry starts or ends in.
 //
 //sumtype:decl

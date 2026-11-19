@@ -52,10 +52,10 @@ each part with the tokens and the rules it draws by, and `TODO.md`, "The look", 
 | `cell`, `cell_2`, `cell_3` | `design/tokens.yaml` | a gap inside a chip; a control's side padding; a list's indent |
 | `content` | `design/tokens.yaml` | the widest the content runs |
 | `gutter`, `gutter_phone` | `design/tokens.yaml` | either side of the content, and on a phone |
-| `measure` | 64ch | the longest line of prose |
+| `measure` | `design/tokens.yaml` | the longest line of prose |
 | `brief`, `brief_mid` | `design/tokens.yaml` | the brief beside the name, from `wide` and from `phone` |
 | `lead` | `design/tokens.yaml` | the longest line of the headline |
-| `when` | 20ch | an entry's dates column |
+| `when` | `design/tokens.yaml` | an entry's dates column |
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `bar` | `design/tokens.yaml` | the top bar |
 | `dialog` | 35rem | the widest a dialog runs |
@@ -244,8 +244,9 @@ Tooltip under the pointer. Without the script it is hidden and the page follows 
 ### Facts
 
 Label and value, two cells apart: the label `muted`, one or two lower-case words as the profile writes them; the value
-in `text`. On the first screen the first four the profile lists, its author's choice (experience, stack, now,
-languages); the rest stand in About under the summary (owner, 2026-11-18).
+in `text`, on the label's baseline. On the first screen the first four the profile lists, its author's choice
+(experience, stack, now, languages); the rest stand in About under the summary (owner, 2026-11-18). On a phone a
+value that is a Command stands under its label across the whole width.
 
 ### CareerLine
 
@@ -271,8 +272,8 @@ summary, its facts. An install line is a fact whose value is Code alone; the pag
 ### Table
 
 Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a length `muted`; cells
-`cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. On a
-phone it scrolls inside itself.
+`cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself. Whatever
+scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
 
 ### Code
 
@@ -327,8 +328,9 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 - Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
   from its top and foot: only there, and not on a phone, whose gutter leaves them no room.
-- A section: its block title in the left column, its content in the right; sections `row_4` apart, `row_2` on a phone.
-  Its `id` is its tab's name, so the top bar links to it.
+- A section: its block title in the left column, its content in the right, as wide as an Entry: `when`, `cell_3` and
+  `measure`, the title taking what is left; sections `row_4` apart, `row_2` on a phone. Its blocks stand a row apart,
+  a subsection two. Its `id` is its tab's name, so the top bar links to it.
 
 ## Pages
 

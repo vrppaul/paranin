@@ -123,6 +123,10 @@
   --brief-mid: 23.75rem;
   /* the longest line of the headline under the name */
   --lead: 40ch;
+  /* the longest line of prose, a paragraph's or a point's */
+  --measure: 64ch;
+  /* an entry's column of dates, wide enough for a range of two months */
+  --when: 20ch;
   /* how big the square of the cross at each corner of the first screen is */
   --cross: 0.8125rem;
   /* how thick a role's bar is in the phone's career list */

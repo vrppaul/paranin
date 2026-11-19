@@ -322,25 +322,29 @@ templ (writer PageWriter) paragraph(paragraph document.Paragraph) {
 	</p>
 }
 
+// table is rows of cells (DESIGN.md, Table), in a part that scrolls sideways where the screen is narrower than the
+// table, so the page never does.
 templ (writer PageWriter) table(table document.Table) {
-	<table>
-		<tbody>
-			for _, row := range table.Rows {
-				<tr>
-					for _, cell := range row.Cells {
-						<td>
-							@writer.spans(cell.Spans)
-						</td>
-					}
-				</tr>
-			}
-		</tbody>
-	</table>
+	<div class="table-scroll">
+		<table class="table">
+			<tbody>
+				for _, row := range table.Rows {
+					<tr>
+						for _, cell := range row.Cells {
+							<td>
+								@writer.spans(cell.Spans)
+							</td>
+						}
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
 }
 
-// codeBlock is text shown as it is, line for line.
+// codeBlock is text shown as it is, line for line, scrolling sideways rather than wrapping (DESIGN.md, Code).
 templ codeBlock(text string) {
-	<pre>{ text }</pre>
+	<pre class="code-block">{ text }</pre>
 }
 
 // facts are labels and their values; a value that is a command alone stands as a chip that copies it.
@@ -359,38 +363,42 @@ templ (writer PageWriter) facts(facts []document.Fact) {
 	</dl>
 }
 
-// entry is a role or a school under its title and subtitle, its period and place in a line, then its points.
+// entry is a role or a school (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on;
+// then its title and subtitle as its heading, its place under them, and its points, each after the point's mark.
 templ (writer PageWriter) entry(entry document.Entry, depth int) {
-	<article>
-		@heading(depth, writer.titled(entry.Title, entry.Subtitle))
-		<p>
+	<article class={ "entry", templ.KV("entry-now", entry.Period.GoesOn()) }>
+		<p class="entry-when">
 			@month(entry.Period.Start)
 			@text(rangeDash)
 			@month(entry.Period.End)
-			if entry.Place != "" {
-				@text(dot)
-				@text(entry.Place)
-			}
 		</p>
-		if len(entry.Points) > 0 {
-			<ul>
-				for _, point := range entry.Points {
-					<li>
-						@writer.spans(point.Spans)
-					</li>
-				}
-			</ul>
-		}
+		<div class="entry-body">
+			@heading(depth, writer.titled(entry.Title, entry.Subtitle))
+			if entry.Place != "" {
+				<p class="entry-place">{ entry.Place }</p>
+			}
+			if len(entry.Points) > 0 {
+				<ul class="points">
+					for _, point := range entry.Points {
+						<li>
+							<span class="point-mark" aria-hidden="true">{ look.PointMark }</span>
+							@text(pointSpace)
+							@writer.spans(point.Spans)
+						</li>
+					}
+				</ul>
+			}
+		</div>
 	</article>
 }
 
-// card is a piece of work under its title, a link to its page where it has one; its tag and subtitle in a line,
-// its summary, then its facts.
+// card is a piece of work (DESIGN.md, Card): its title, a link to its page where it has one; its tag and subtitle in
+// a line, its summary, then its facts.
 templ (writer PageWriter) card(card document.Card, depth int) {
-	<article>
+	<article class="card">
 		@heading(depth, writer.spans(linked(card.Page, card.Title)))
 		if card.Tag != "" || len(card.Subtitle) > 0 {
-			<p>
+			<p class="card-line">
 				@text(card.Tag)
 				if card.Tag != "" && len(card.Subtitle) > 0 {
 					@text(dot)
@@ -472,13 +480,16 @@ templ knownMonth(start time.Time) {
 	<time datetime={ machineMonth(start) }>{ monthText(start) }</time>
 }
 
-// resumeSection is a section of the résumé, at the place the top bar leads to, under its heading.
+// resumeSection is a section of the résumé, at the place the top bar leads to (DESIGN.md, Frame and Section): its
+// heading, and beside it, or under it on a narrower screen, its blocks.
 templ (writer PageWriter) resumeSection(section document.Section, heading templ.Component) {
-	<section id={ sectionID(document.PlainText(section.Title)) } data-part={ sectionPart }>
+	<section id={ sectionID(document.PlainText(section.Title)) } class="section" data-part={ sectionPart }>
 		@heading
-		for _, block := range section.Blocks {
-			@writer.block(block, firstHeadingDepth+1)
-		}
+		<div class="blocks">
+			for _, block := range section.Blocks {
+				@writer.block(block, firstHeadingDepth+1)
+			}
+		</div>
 	</section>
 }
 

@@ -72,6 +72,8 @@ const (
 	rangeDash = " – "
 	// a listing's title and its line
 	labelEnd = ": "
+	// a point's mark and its words, so a point copied reads "- " and its words
+	pointSpace = " "
 )
 
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,

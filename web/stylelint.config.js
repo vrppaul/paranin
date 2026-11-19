@@ -57,6 +57,9 @@ export default {
       // property, so each property's own key stands above the catch-all
 
       "/^max-width$/": ["%"],
+      // a grid's column takes the room the others leave: a section's title beside its blocks, a fact's value beside
+      // its label, an entry's words beside its dates
+      "/^grid-template-columns$/": ["fr"],
       "/.*/": [],
     },
     // A media query holds a width alone, in rem, and only the page's widths, since a custom property cannot stand in

@@ -392,7 +392,7 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 		},
 		{
 			name: "a point with a gap among its words, and none that is only one", part: sections,
-			holds: `<li>Owned <span class="gap">[service]</span></li>`, lacks: "[What was built]",
+			holds: `Owned <span class="gap">[service]</span></li>`, lacks: "[What was built]",
 		},
 	}
 	for _, testCase := range cases {

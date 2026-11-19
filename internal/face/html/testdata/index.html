@@ -302,7 +302,7 @@
 </path>
 </svg>
 </div>
-<section id="about" data-part="section">
+<section id="about" class="section" data-part="section">
 <h2 aria-label="About">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 114 20" width="19em" height="3.3333em" shape-rendering="crispEdges">
 <defs>
@@ -370,9 +370,11 @@
 </rect>
 </g> </svg>
 </h2>
+<div class="blocks">
 <p>Writes software for people who read it.</p>
+</div>
 </section>
-<section id="experience" data-part="section">
+<section id="experience" class="section" data-part="section">
 <h2 aria-label="Experience">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 240 20" width="40em" height="3.3333em" shape-rendering="crispEdges">
 <defs>
@@ -482,25 +484,37 @@
 </rect>
 </g> </svg>
 </h2>
-<article>
+<div class="blocks">
+<article class="entry entry-now">
+<p class="entry-when">
+<time datetime="2023-04">04/2023</time> – present</p>
+<div class="entry-body">
 <h3>Northwind — Senior Engineer</h3>
-<p>
-<time datetime="2023-04">04/2023</time> – present · Brno</p>
-<ul>
-<li>Kept the <mark>queue</mark> moving</li>
+<p class="entry-place">Brno</p>
+<ul class="points">
+<li>
+<span class="point-mark" aria-hidden="true">-</span> Kept the <mark>queue</mark> moving</li>
 </ul>
+</div>
 </article>
-<article>
+<article class="entry">
+<p class="entry-when">
+<time datetime="2020-01">01/2020</time> – <time datetime="2023-03">03/2023</time>
+</p>
+<div class="entry-body">
 <h3>Southwind — Engineer</h3>
-<p>
-<time datetime="2020-01">01/2020</time> – <time datetime="2023-03">03/2023</time> · Prague</p>
-<ul>
-<li>Wrote the first parser</li>
-<li>Kept the build green through three moves of the office, two mergers and one long winter of outages</li>
+<p class="entry-place">Prague</p>
+<ul class="points">
+<li>
+<span class="point-mark" aria-hidden="true">-</span> Wrote the first parser</li>
+<li>
+<span class="point-mark" aria-hidden="true">-</span> Kept the build green through three moves of the office, two mergers and one long winter of outages</li>
 </ul>
+</div>
 </article>
+</div>
 </section>
-<section id="projects" data-part="section">
+<section id="projects" class="section" data-part="section">
 <h2 aria-label="Projects">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 186 20" width="31em" height="3.3333em" shape-rendering="crispEdges">
 <defs>
@@ -588,14 +602,15 @@
 </rect>
 </g> </svg>
 </h2>
-<article>
+<div class="blocks">
+<article class="card">
 <h3>other-tool</h3>
 </article>
-<article>
+<article class="card">
 <h3>
 <a href="/p/tidy-tool">tidy-tool</a>
 </h3>
-<p>Lua · Tidies files.</p>
+<p class="card-line">Lua · Tidies files.</p>
 <p>A tool that <mark>tidies files</mark>.</p>
 <dl class="facts">
 <dt>repository</dt>
@@ -610,8 +625,9 @@
 </dd>
 </dl>
 </article>
+</div>
 </section>
-<section id="skills" data-part="section">
+<section id="skills" class="section" data-part="section">
 <h2 aria-label="Skills">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 138 20" width="23em" height="3.3333em" shape-rendering="crispEdges">
 <defs>
@@ -677,9 +693,11 @@
 </rect>
 </g> </svg>
 </h2>
+<div class="blocks">
 <section>
 <h3>Languages</h3>
-<table>
+<div class="table-scroll">
+<table class="table">
 <tbody>
 <tr>
 <td>Rust</td>
@@ -698,10 +716,12 @@
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section>
 <h3>Tools</h3>
-<table>
+<div class="table-scroll">
+<table class="table">
 <tbody>
 <tr>
 <td>Docker</td>
@@ -710,6 +730,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section>
 <h3>Languages</h3>
@@ -720,15 +741,18 @@
 </section>
 <section>
 <h3>Education</h3>
-<article>
-<h4>A University — Computer Science and the Engineering of Systems That Last</h4>
-<p>
+<article class="entry">
+<p class="entry-when">
 <time datetime="2016-09">09/2016</time> – <span class="gap">[20XX]</span>
 </p>
+<div class="entry-body">
+<h4>A University — Computer Science and the Engineering of Systems That Last</h4>
+</div>
 </article>
 </section>
+</div>
 </section>
-<section id="contact" data-part="section">
+<section id="contact" class="section" data-part="section">
 <h2 aria-label="Contact">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 168 20" width="28em" height="3.3333em" shape-rendering="crispEdges">
 <defs>
@@ -812,6 +836,7 @@
 </rect>
 </g> </svg>
 </h2>
+<div class="blocks">
 <dl class="facts">
 <dt>mail</dt>
 <dd>
@@ -828,6 +853,7 @@
 </div>
 </dd>
 </dl>
+</div>
 </section>
 </main>
 <footer class="footer">

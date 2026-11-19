@@ -386,11 +386,14 @@ mark .gap {
 }
 
 /* facts, each a label and its value, two cells apart (DESIGN.md, Facts): the label muted, in the profile's words; a
- * value may narrow below its longest word, an address, which then breaks rather than push the page wider */
+ * value may narrow below its longest word, an address, which then breaks rather than push the page wider. The
+ * value's column takes what is left, so a value that spans both columns, as a phone's command does, leaves the
+ * labels' column as wide as its labels */
 .facts {
   display: grid;
-  grid-template-columns: max-content minmax(0, auto);
+  grid-template-columns: max-content minmax(0, 1fr);
   column-gap: var(--cell-2);
+  align-items: baseline;
   margin: 0;
 }
 
@@ -564,8 +567,9 @@ mark .gap {
 }
 
 /* a command the reader can run (DESIGN.md, Command): a regular chip on the ground a shade below the page, a muted
- * hairline round it, the prompt's mark, the command, and its button after a muted rule. It never wraps: where the
- * screen is narrower it scrolls inside itself */
+ * hairline round it, the prompt's mark, the command, and its button after a muted rule. It never wraps: where its
+ * column is narrower it scrolls inside itself, as a table and code do, under a thin scrollbar, which says there is
+ * more without weighing as much as what it scrolls */
 .command {
   display: inline-flex;
   align-items: center;
@@ -575,6 +579,7 @@ mark .gap {
   min-height: var(--control);
   padding: 0 var(--cell-2);
   overflow-x: auto;
+  scrollbar-width: thin;
   border: var(--hairline) solid var(--muted);
   border-radius: var(--radius);
   background: var(--sunk);
@@ -801,5 +806,202 @@ mark .gap {
     font-size: var(--type-mail-phone-size);
     font-weight: var(--type-mail-phone-weight);
     line-height: var(--type-mail-phone-line);
+  }
+}
+
+/* a section of the résumé (DESIGN.md, Frame and Section): its block title in the left column, taking what its blocks
+ * leave, and its blocks in the right. Two rows above and below each, so two sections stand four rows apart */
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--row) var(--row-3);
+  align-items: start;
+  padding-block: var(--row-2);
+}
+
+.section > h2 {
+  margin: 0;
+}
+
+/* a section's blocks, as wide as the widest of them, an entry: its dates, the gap after them and a line of prose; no
+ * wider than the screen leaves them */
+.blocks {
+  width: calc(var(--when) + var(--cell-3) + var(--measure));
+  max-width: 100%;
+}
+
+/* a heading below a section's title names in the strong style, its level shown by the space before it, never by its
+ * size (DESIGN.md, Type) */
+.section :is(h3, h4, h5, h6) {
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+}
+
+/* running prose is held to the measure; the layout is not */
+.blocks > p,
+.card > p,
+.points {
+  max-width: var(--measure);
+}
+
+/* an entry (DESIGN.md, Entry): its dates in a column of their own, muted, then its heading, its place, its points;
+ * entries are set apart by a quiet hairline, never boxed */
+.entry {
+  display: grid;
+  grid-template-columns: var(--when) minmax(0, 1fr);
+  column-gap: var(--cell-3);
+  padding-block: var(--row);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.entry-when {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* the dates of what still goes on, bold in the text's colour */
+.entry-now .entry-when {
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+.entry-body > * {
+  margin: 0;
+}
+
+.entry-place {
+  color: var(--muted);
+}
+
+/* each point after its faint dash, which hangs in the margin: two cells, then the space after it, so the point's lines
+ * after the first stand in under its words, and a point copied reads "- " and its words */
+.points {
+  margin-top: var(--row-half);
+  padding: 0;
+  list-style: none;
+}
+
+.points li {
+  padding-left: var(--cell-3);
+  text-indent: calc(-1 * var(--cell-3));
+}
+
+.point-mark {
+  display: inline-block;
+  width: var(--cell-2);
+  color: var(--faint);
+  text-indent: 0;
+}
+
+/* a piece of work (DESIGN.md, Card): its heading, its line muted, its summary, its facts, half a row apart; cards are
+ * set apart by a quiet hairline, a row of air either side of it */
+.card {
+  display: grid;
+  gap: var(--row-half);
+  padding-block: var(--row);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.card > * {
+  margin: 0;
+}
+
+.card-line {
+  color: var(--muted);
+}
+
+/* rows of a few cells (DESIGN.md, Table): the first names the row, bold; cells three cells apart, each row a row and
+ * half a row of air, a quiet hairline between two; numbers line up. A cell but the last keeps its words on one line,
+ * so a narrow screen scrolls the table inside its part rather than breaking a name */
+.table-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table td {
+  padding: calc(var(--row-half) / 2) var(--cell-3) calc(var(--row-half) / 2) 0;
+  vertical-align: top;
+}
+
+.table tr + tr td {
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.table td:not(:last-child) {
+  white-space: nowrap;
+}
+
+.table td:last-child {
+  padding-right: 0;
+}
+
+.table td:first-child {
+  font-weight: var(--type-strong-weight);
+}
+
+/* text on lines of its own (DESIGN.md, Code): on the ground a shade below the page, scrolling sideways inside itself,
+ * never wrapping */
+.code-block {
+  padding: var(--row-half) var(--cell-2);
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--sunk);
+  scrollbar-width: thin;
+}
+
+/* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
+ * what stands before it, as space shows its heading's level. Two entries or two cards need no row between them: each
+ * has a row of air inside its hairline */
+.blocks > * {
+  margin-block: 0;
+}
+
+.blocks > * + * {
+  margin-top: var(--row);
+}
+
+.blocks section > * {
+  margin-block: 0;
+}
+
+.blocks section > * + * {
+  margin-top: var(--row);
+}
+
+.blocks > * + section {
+  margin-top: var(--row-2);
+}
+
+.entry + .entry,
+.card + .card {
+  margin-top: 0;
+}
+
+/* below the wide screen's width a section's title stands above its blocks */
+@media (width < 80rem) {
+  .section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* on a phone sections stand two rows apart, an entry's dates above its heading, and a command under its label across
+ * the whole width, which beside the label would leave it room for a word or two */
+@media (width < 53.75rem) {
+  .section {
+    padding-block: var(--row);
+  }
+
+  .entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .facts dd:has(> .command) {
+    grid-column: 1 / -1;
   }
 }

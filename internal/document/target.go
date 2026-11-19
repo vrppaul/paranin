@@ -1,7 +1,9 @@
 package document
 
-// Target is where a link leads: an address outside the site, or a page of it, whose address routes writes in
-// each face's format.
+import "strings"
+
+// Target is where a link leads: an address outside the site, a page of it, or a mailbox, whose address routes
+// writes in each face's format.
 //
 //sumtype:decl
 type Target interface {
@@ -37,5 +39,37 @@ const (
 	PageSkills
 )
 
+// Mail is a mailbox a link writes to, by its address as the content writes it.
+type Mail struct {
+	Address string
+}
+
+// MailAt is the at a mail address parts at, between its mailbox and its host, which a face draws between the two
+const MailAt = "@"
+
+// Parts are the mail's mailbox and its host, parted at its last at, since a host holds none; not parted where it
+// holds no at.
+func (mail Mail) Parts() (box, host string, parted bool) {
+	at := strings.LastIndex(mail.Address, MailAt)
+	if at < 0 {
+		return mail.Address, "", false
+	}
+	return mail.Address[:at], mail.Address[at+len(MailAt):], true
+}
+
+// MailOf is the mail spans write to, where they are one link to a mailbox.
+func MailOf(spans []Span) (Mail, bool) {
+	if len(spans) != 1 {
+		return Mail{Address: ""}, false
+	}
+	link, isLink := spans[0].(Link)
+	if !isLink {
+		return Mail{Address: ""}, false
+	}
+	mail, isMail := link.Target.(Mail)
+	return mail, isMail
+}
+
 func (Address) target() {}
 func (Page) target()    {}
+func (Mail) target()    {}

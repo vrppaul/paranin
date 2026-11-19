@@ -39,6 +39,9 @@ const (
 	commandSpace   = " "
 )
 
+// The scheme of an address that writes to a mailbox
+const mailScheme = "mailto:"
+
 // Site writes the site's addresses whole, from the address it is served at, and knows the site's own name.
 type Site struct {
 	base string
@@ -63,12 +66,14 @@ func (site Site) ReadCommand(page document.Page) string {
 	return readingCommand + commandSpace + site.Address(page, FormatChosen)
 }
 
-// Address is where a target leads, written whole: a page's in a format, or an address outside the site as it is.
-// A target with no path leads nowhere, and its address is empty.
+// Address is where a target leads, written whole: a page's in a format, an address outside the site as it is, or a
+// mailbox's under the scheme that writes to it. A target with no path leads nowhere, and its address is empty.
 func (site Site) Address(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
 		return typed.URL
+	case document.Mail:
+		return mailScheme + typed.Address
 	case document.Page:
 		if path := Path(typed, format); path != "" {
 			return site.base + path
@@ -79,12 +84,14 @@ func (site Site) Address(target document.Target, format Format) string {
 
 // Reference is where a link inside one of the site's own pages leads: a page of the site by its path from the
 // root, which a browser reads against the address the page came from, so a page served from this machine or a
-// staging host leads there and not to the live site; an address outside the site as it is. A target with no path
-// leads nowhere, and its reference is empty.
+// staging host leads there and not to the live site; an address outside the site as it is; a mailbox under the
+// scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
 func Reference(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
 		return typed.URL
+	case document.Mail:
+		return mailScheme + typed.Address
 	case document.Page:
 		return Path(typed, format)
 	}

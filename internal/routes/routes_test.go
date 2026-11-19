@@ -30,7 +30,8 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "the index has no manual", target: index, format: FormatManual, want: ""},
 		{name: "the index has no address to choose at", target: index, format: FormatChosen, want: ""},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: ""}, format: FormatMarkdown, want: ""},
-		{name: "an address outside the site", target: document.Address{URL: "mailto:mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
+		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
+		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -55,6 +56,7 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "a project's page in markdown", target: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, format: FormatMarkdown, want: "/p/tidy-tool.md"},
 		{name: "a hidden page", target: document.Page{Kind: document.PageHealth, Slug: ""}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
+		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

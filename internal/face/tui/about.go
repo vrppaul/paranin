@@ -26,12 +26,10 @@ const (
 	shortestCutName = 2
 )
 
-// The marks of the brief: the rule under the address, the at the address parts at, and a swatch of the design's
-// colours; and of the career's line: a role's span, the line the spans stand on, a year's tick, and the end of a
-// company's name cut to its span
+// The marks of the brief: the rule under the address and a swatch of the design's colours; and of the career's line:
+// a role's span, the line the spans stand on, a year's tick, and the end of a company's name cut to its span
 const (
 	briefRuleMark  = "─"
-	addressAt      = "@"
 	swatchMark     = "███"
 	spanMark       = "█"
 	careerLineMark = "─"
@@ -119,9 +117,12 @@ func besideLines(left []line, rightStart int, right []line) []line {
 func (layout layout) brief(head document.Head, facts []document.Fact, address []document.Span) []line {
 	lines := []line{}
 	if len(address) > 0 {
-		parted := addressRuns(layout.valueWords(address))
-		rule := run{text: strings.Repeat(briefRuleMark, runsWidth(parted)), kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
-		lines = append(lines, parted, line{rule})
+		addressLine := wordRuns(layout.valueWords(address))
+		if mail, isMail := document.MailOf(address); isMail {
+			addressLine = mailRuns(addressLine, mail)
+		}
+		rule := run{text: strings.Repeat(briefRuleMark, runsWidth(addressLine)), kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
+		lines = append(lines, addressLine, line{rule})
 	}
 	lines = slices.Concat(lines, layout.subtitleLines(head), layout.facts(facts, 0, kindLabel))
 	swatches := line{}
@@ -131,20 +132,19 @@ func (layout layout) brief(head document.Head, facts []document.Fact, address []
 	return slices.Concat(lines, blankLines(), []line{swatches})
 }
 
-// addressRuns are an address's words as one line, parted at its at: the mailbox, the at faint, the host, each part
-// keeping its link.
-func addressRuns(words []word) line {
-	shown := line{}
-	partKind := kindMailbox
-	for _, piece := range wordRuns(words) {
-		before, after, parted := strings.Cut(piece.text, addressAt)
-		shown = append(shown, retold(piece, before, partKind))
-		if parted {
-			partKind = kindHost
-			shown = append(shown, retold(piece, addressAt, kindFaint), retold(piece, after, partKind))
-		}
+// mailRuns are a mail as one line, parted as the mail parts: the mailbox, the at faint, the host, each keeping the
+// link, highlight and copied value of the run the link's words were laid out in; the address whole where it holds no
+// at, as the page draws it.
+func mailRuns(laid line, mail document.Mail) line {
+	if len(laid) == 0 {
+		return laid
 	}
-	return shown
+	piece := laid[0]
+	box, host, parted := mail.Parts()
+	if !parted {
+		return line{retold(piece, mail.Address, kindMailbox)}
+	}
+	return line{retold(piece, box, kindMailbox), retold(piece, document.MailAt, kindFaint), retold(piece, host, kindHost)}
 }
 
 // retold is a run's piece of text in a kind of its own, its highlight, its link and the value it copies kept.

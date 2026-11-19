@@ -15,9 +15,6 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The scheme of a link that writes a mail
-const mailScheme = "mailto:"
-
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
@@ -144,7 +141,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 
 // ways are the ways to reach the author, in the order a reader tries them: mail, the public profiles, ssh.
 func ways(person content.Person, site content.Site, words content.Words) []document.Fact {
-	mail := document.Address{URL: mailScheme + person.Email}
+	mail := document.Mail{Address: person.Email}
 	list := []document.Fact{{Label: words.Text(content.WordMail), Value: linkSpans(mail, person.Email)}}
 	for _, link := range person.Links {
 		list = append(list, document.Fact{Label: link.Label, Value: linkSpans(document.Address{URL: link.URL}, link.Text)})

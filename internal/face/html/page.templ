@@ -8,6 +8,7 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/look"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // page is a document's whole page: its language, and what it says of itself, its title, its description, the
@@ -264,16 +265,29 @@ templ toast() {
 	</div>
 }
 
-// mail is the address heading the brief (DESIGN.md, Mail): a link that writes to it, its mailbox, its at and its host
-// each a part the stylesheet colours; as its words where it is no such link.
+// mail is the address heading the brief (DESIGN.md, Mail), in the heading's size; as its words where it is no link
+// to a mailbox.
 templ (writer PageWriter) mail(address []document.Span) {
-	if mail, parted := mailOf(address); parted {
-		<a class="mail" href={ mail.reference }><span class="mail-box">{ mail.box }</span><span class="mail-at">{ addressAt }</span><span class="mail-host">{ mail.host }</span></a>
+	if mail, isMail := document.MailOf(address); isMail {
+		@mailLink(mail, true)
 	} else if len(address) > 0 {
 		<p>
 			@writer.spans(address)
 		</p>
 	}
+}
+
+// mailLink is a mail address (DESIGN.md, Mail): a link that writes to it, its mailbox, its at and its host each a part
+// the stylesheet colours, or the address whole where it holds no at; in the size of the heading it is, or of the text
+// it stands among.
+templ mailLink(mail document.Mail, heading bool) {
+	<a class={ "mail", templ.KV("mail-heading", heading) } href={ routes.Reference(mail, routes.FormatChosen) }>
+		if box, host, parted := mail.Parts(); parted {
+			<span class="mail-box">{ box }</span><span class="mail-at">{ document.MailAt }</span><span class="mail-host">{ host }</span>
+		} else {
+			{ mail.Address }
+		}
+	</a>
 }
 
 // head is what the page's main part shows first: its title, the subtitle and the place beside it, what a project is
@@ -347,17 +361,13 @@ templ codeBlock(text string) {
 	<pre class="code-block">{ text }</pre>
 }
 
-// facts are labels and their values; a value that is a command alone stands as a chip that copies it.
+// facts are labels and their values, each value as factValue draws it.
 templ (writer PageWriter) facts(facts []document.Fact) {
 	<dl class="facts">
 		for _, fact := range facts {
 			<dt>{ fact.Label }</dt>
 			<dd>
-				if text, isCommand := fact.Command(); isCommand {
-					@command(writer.frame.commandWords.Of(text))
-				} else {
-					@writer.spans(fact.Value)
-				}
+				@writer.factValue(fact)
 			</dd>
 		}
 	</dl>

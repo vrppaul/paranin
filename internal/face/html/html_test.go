@@ -269,7 +269,7 @@ func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
 	}
 }
 
-// The brief is headed by the first way to reach the author: a link that writes to the address, parted at its at into
+// The brief is headed by the first way to reach the author: a link that writes to its mailbox, parted at its at into
 // the mailbox and the host; an address that is no such link reads as its words.
 func TestTheBriefIsHeadedByTheMail(test *testing.T) {
 	cases := []struct {
@@ -278,9 +278,9 @@ func TestTheBriefIsHeadedByTheMail(test *testing.T) {
 		want    string
 	}{
 		{
-			name:    "a link to an address",
-			address: []document.Span{document.Link{Target: document.Address{URL: "mailto:mira@example.test"}, Spans: []document.Span{document.Text{Text: "mira@example.test"}}}},
-			want:    `<a class="mail" href="mailto:mira@example.test"><span class="mail-box">mira</span><span class="mail-at">@</span><span class="mail-host">example.test</span></a>`,
+			name:    "a link to a mailbox",
+			address: []document.Span{document.Link{Target: document.Mail{Address: "mira@example.test"}, Spans: []document.Span{document.Text{Text: "mira@example.test"}}}},
+			want:    `href="mailto:mira@example.test"><span class="mail-box">mira</span><span class="mail-at">@</span><span class="mail-host">example.test</span></a>`,
 		},
 		{
 			name:    "words with no link",
@@ -288,7 +288,7 @@ func TestTheBriefIsHeadedByTheMail(test *testing.T) {
 			want:    "<p>write to mira</p>",
 		},
 		{
-			name:    "a link whose words hold no at",
+			name:    "a link to no mailbox",
 			address: []document.Span{document.Link{Target: document.Address{URL: "https://example.test/write"}, Spans: []document.Span{document.Text{Text: "the form"}}}},
 			want:    `<p><a href="https://example.test/write">the form</a></p>`,
 		},

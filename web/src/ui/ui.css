@@ -499,12 +499,16 @@ mark .gap {
 }
 
 /* the mail (DESIGN.md, Mail): the mailbox in the accent, the at faint, the host in the host's colour; it underlines
- * under the pointer alone, two hairlines thick, the at left bare */
+ * under the pointer alone, two hairlines thick, the at left bare. It heads the brief in the mail's own size, and
+ * stands among the ways to reach the author in the text's */
 .mail {
+  text-decoration: none;
+}
+
+.mail-heading {
   font-size: var(--type-mail-size);
   font-weight: var(--type-mail-weight);
   line-height: var(--type-mail-line);
-  text-decoration: none;
 }
 
 .mail-box {
@@ -804,7 +808,7 @@ mark .gap {
     padding-top: var(--row);
   }
 
-  .mail {
+  .mail-heading {
     font-size: var(--type-mail-phone-size);
     font-weight: var(--type-mail-phone-weight);
     line-height: var(--type-mail-phone-line);

@@ -238,13 +238,15 @@ and web routes.
   goes on carries the site's word for it, `present`, which every face writes
   as it is. `document` imports nothing of `content`, so `compose` carries the
   months across.
-- **A link names its target**: an address outside the site, or a page of it
-  by its kind and slug, with a format where the link names one (the CV as
-  PDF, `index.md`, `llms.txt`) and an anchor where it names a place inside
-  the page. A section's anchor is the one a link names. The kinds of page
-  are `document`'s type; `routes` builds on `document` and writes a target's
-  address in each format (`/p/claude-review`, `/p/claude-review.md`), so the
-  markdown face links to markdown and the TUI can open the page in a buffer.
+- **A link names its target**: an address outside the site, a mailbox by
+  its address, which a face may part at its at and `routes` writes under
+  `mailto:`, or a page of the site by its kind and slug, with a format
+  where the link names one (the CV as PDF, `index.md`, `llms.txt`) and an
+  anchor where it names a place inside the page. A section's anchor is the
+  one a link names. The kinds of page are `document`'s type; `routes`
+  builds on `document` and writes a target's address in each format
+  (`/p/claude-review`, `/p/claude-review.md`), so the markdown face links
+  to markdown and the TUI can open the page in a buffer.
 - **The islands' text is a document's too.** The extras of the TUI and the
   vim mode (`:checkhealth`, `:Lazy`, `:hire`) are documents, which the page
   draws on the server for the island to show. What no person reads comes

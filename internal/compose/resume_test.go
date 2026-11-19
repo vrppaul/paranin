@@ -160,7 +160,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 		got  document.Target
 		want document.Target
 	}{
-		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Address{URL: "mailto:mira@example.test"}},
+		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Mail{Address: "mira@example.test"}},
 		{name: "a public profile", got: linkTarget(test, factLabelled(test, ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
 		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}},
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},

@@ -2,8 +2,9 @@
 // blocks, and text inside a block is a tree of spans. Blocks and spans are closed sets, so a face that switches
 // over every kind, as gochecksumtype holds it to, draws every kind there is. The model knows no content and no
 // face: compose fills it, and each face decides how each kind looks. What a face reads off a document by the model's
-// own terms is read here once: its plain text, its phrases, the brief a résumé opens with (brief.go), and the
-// document as a reader of the finished work sees it, with nothing that is only a gap still to fill (written.go).
+// own terms is read here once: its plain text, its phrases, the brief a résumé opens with (brief.go), the document as
+// a reader of the finished work sees it, with nothing that is only a gap still to fill (written.go), and a link to a
+// mailbox, its mailbox and its host (target.go).
 package document
 
 // Document is one page as every face draws it.

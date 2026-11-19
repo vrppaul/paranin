@@ -1,8 +1,9 @@
 package document
 
-// Phrases are every text of a document every face must show, in its order: the leaves of its spans, its labels,
-// tags and places, and the gaps of its periods; not the head's greeting, which a face may leave out. A face that shows
-// each phrase shows every fact of the document, which is what a test of every face holds it to.
+// Phrases are every text of a document a face must show, in its order: the leaves of its spans, its labels, tags and
+// places, and the gaps of its periods; not the head's greeting, which a face may leave out. A face that shows each
+// phrase of the document it draws, whole or as Written leaves it, shows every fact of it, which is what a test of
+// every face holds it to.
 func Phrases(document Document) []string {
 	head := document.Head
 	phrases := spanPhrases(nil, head.Title)

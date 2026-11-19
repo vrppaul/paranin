@@ -19,8 +19,9 @@
 // the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
 // sections as the TUI reads its brief (document.BriefOf), and the ssh command as a chip the script lets copy
 // (frame.go); the facts the brief leaves stay in their section, where the brief stood.
-// The classes of the page's other parts arrive with its design (TODO, "The look"); until then a gap still to fill
-// reads as its text, as the markdown writes it.
+// A page shows a document as a reader of the finished work sees it (document.Written), a fact or a point that is only
+// a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
+// The classes of the page's other parts arrive with its design (TODO, "The look").
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write
@@ -124,9 +125,9 @@ func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame
 }
 
 // Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
-// then the top bar, and its main part: its head, then each block.
+// then the top bar, and its main part: its head, then each block, but for a fact or a point that is only a gap.
 func (writer PageWriter) Page(composed document.Document, record compose.Record) string {
-	return rendered(writer.page(composed, writer.metadataOf(composed.Head), record))
+	return rendered(writer.page(document.Written(composed), writer.metadataOf(composed.Head), record))
 }
 
 // rendered is the HTML a component writes.
@@ -182,7 +183,7 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 	case document.Code:
 		return code(typed.Text)
 	case document.Gap:
-		return text(typed.Text)
+		return gap(typed.Text)
 	case document.Highlight:
 		return writer.highlight(typed.Spans)
 	case document.Link:
@@ -194,13 +195,13 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 	return templ.NopComponent
 }
 
-// month is the component of a month: a known one as a time, a gap and what still goes on as their text.
+// month is the component of a month: a known one as a time, a gap as a gap, what still goes on as its text.
 func month(month document.Month) templ.Component {
 	switch typed := month.(type) {
 	case document.KnownMonth:
 		return knownMonth(typed.Start)
 	case document.GapMonth:
-		return text(typed.Text)
+		return gap(typed.Text)
 	case document.CurrentMonth:
 		return text(typed.Text)
 	}

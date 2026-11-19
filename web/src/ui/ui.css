@@ -71,6 +71,17 @@ mark {
   color: inherit;
 }
 
+/* a gap still to fill among written words, faint, in its brackets as the profile writes it. Inside a result marked in
+ * the tint it takes the text's colour, since faint on the tint reads too pale (DESIGN.md, Colour): its brackets alone
+ * mark it there */
+.gap {
+  color: var(--faint);
+}
+
+mark .gap {
+  color: inherit;
+}
+
 /* the focus, by keyboard, ringed in the label's blue, which shows on every ground where the accent does not, and stands
  * apart from the accent the eye goes to first (DESIGN.md, States) */
 :focus-visible {

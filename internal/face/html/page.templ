@@ -443,6 +443,12 @@ templ code(text string) {
 	<code>{ text }</code>
 }
 
+// gap is a place the author has still to fill, among written words, written as the content writes it, in its brackets
+// (DESIGN.md, Highlight).
+templ gap(text string) {
+	<span class="gap">{ text }</span>
+}
+
 templ (writer PageWriter) highlight(spans []document.Span) {
 	<mark>
 		@writer.spans(spans)

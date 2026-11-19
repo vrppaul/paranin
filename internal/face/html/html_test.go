@@ -40,12 +40,12 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}
 }
 
-// Every phrase of a document reaches its page, as HTML writes text: the facts a browser shows are the facts the
-// document holds.
+// Every phrase of a document as written, all but a fact or a point that is only a gap, reaches its page, as HTML
+// writes text: the facts a browser shows are the facts the written document holds.
 func TestEveryPhraseReachesThePage(test *testing.T) {
 	for _, composed := range compose.Pages(fixtures.LoadedContent(test)) {
 		page := fixtureWriter(test).Page(composed.Document, composed.Record)
-		for _, phrase := range document.Phrases(composed.Document) {
+		for _, phrase := range document.Phrases(document.Written(composed.Document)) {
 			if !strings.Contains(page, html.EscapeString(phrase)) {
 				test.Errorf("the page of %+v holds no %q", composed.Document.Head.Page, phrase)
 			}
@@ -353,6 +353,58 @@ func TestTheCareerLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 			test.Errorf("the first screen %q holds %q", firstScreen, "Gapwind")
 		}
 	})
+}
+
+// The page shows a document as a reader of the finished work sees it (document.Written): a fact or a point that is
+// only a gap still to fill is left out, so the first screen briefs the reader with the first four facts written; a gap
+// among written words stays, marked as a gap.
+func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
+	about := document.Section{
+		Title: []document.Span{document.Text{Text: "About"}},
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{
+			{Label: "first", Value: []document.Span{document.Text{Text: "first value"}}},
+			{Label: "later", Value: []document.Span{document.Gap{Text: "[later]"}}},
+			{Label: "where", Value: []document.Span{document.Text{Text: "Prague · "}, document.Gap{Text: "[remote?]"}}},
+			{Label: "third", Value: []document.Span{document.Text{Text: "third value"}}},
+			{Label: "fourth", Value: []document.Span{document.Text{Text: "fourth value"}}},
+			{Label: "fifth", Value: []document.Span{document.Text{Text: "fifth value"}}},
+		}}},
+	}
+	role := roleOf("Northwind", monthOf(2023, time.April), document.CurrentMonth{Text: "present"})
+	role.Points = []document.Point{
+		{Spans: []document.Span{document.Gap{Text: "[What was built]"}}},
+		{Spans: []document.Span{document.Text{Text: "Owned "}, document.Gap{Text: "[service]"}}},
+	}
+	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: []document.Block{role}}
+	page := fixtureWriter(test).Page(resumeOf(about, work), blankPerson())
+	firstScreen, sections, _ := strings.Cut(page, `<section id="about"`)
+	cases := []struct {
+		name  string
+		part  string
+		holds string
+		lacks string
+	}{
+		{
+			name: "the brief, of the first four facts written", part: firstScreen,
+			holds: `<dt>first</dt><dd>first value</dd><dt>where</dt><dd>Prague · <span class="gap">[remote?]</span></dd>` +
+				"<dt>third</dt><dd>third value</dd><dt>fourth</dt><dd>fourth value</dd></dl>",
+			lacks: "[later]",
+		},
+		{
+			name: "a point with a gap among its words, and none that is only one", part: sections,
+			holds: `<li>Owned <span class="gap">[service]</span></li>`, lacks: "[What was built]",
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(testCase.part, testCase.holds) {
+				test.Errorf("%s %q holds no %q", testCase.name, testCase.part, testCase.holds)
+			}
+			if strings.Contains(testCase.part, testCase.lacks) {
+				test.Errorf("%s %q holds %q", testCase.name, testCase.part, testCase.lacks)
+			}
+		})
+	}
 }
 
 // roleOf is a role a test builds by hand: its company and its months, nothing else.

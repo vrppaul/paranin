@@ -289,7 +289,8 @@ sideways inside itself, never wrapping.
 
 ### Highlight
 
-A result worth seeing first in `tint`; a gap still to fill in `faint`, with its brackets.
+A result worth seeing first in `tint`; a gap still to fill in `faint`, with its brackets. A gap inside a result is in
+the result's `text`, told by its brackets alone, since `faint` never stands on `tint`.
 
 ### Field, Choice, Checkbox and Radio
 

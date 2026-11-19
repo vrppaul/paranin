@@ -82,8 +82,8 @@ linters:
           msg: panic only at the start of the program, never in a request or a session; return an error (go.md)
     ireturn:
       # A constructor returns its concrete type. Its defaults, and two more: a function that picks one kind of a
-      # closed set returns the set (a sum type, //sumtype:decl, each named with the functions that return it),
-      # and a generic function its type parameter
+      # closed set, or hands back one it was given, changed, returns the set (a sum type, //sumtype:decl, each named
+      # with the functions that return it), and a generic function its type parameter
       allow:
         - anon
         - error
@@ -92,6 +92,8 @@ linters:
         - generic
         # compose's monthOf
         - ^github\.com/vrppaul/paranin/internal/document\.Month$
+        # document's writtenBlock
+        - ^github\.com/vrppaul/paranin/internal/document\.Block$
         # the TUI's openingBody and sectionBody
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return

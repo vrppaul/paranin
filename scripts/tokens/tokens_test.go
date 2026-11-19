@@ -62,6 +62,11 @@ times:
   - name: blink
     about: a cursor's blink
     milliseconds: 1060
+layers:
+  - name: row
+    about: what sticks to the top
+  - name: sheet
+    about: what lies over everything
 `
 
 // A colour keeps its value whole for a terminal of full colour, falls to the nearest of xterm's 256 for one of
@@ -165,6 +170,9 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		{name: "a length in cells, a mono face's ch", want: "--cell: 1ch;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
 		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
+		{name: "a layer, its place among the layers counted from one, named apart from a length", want: "--layer-row: 1;"},
+		{name: "a layer after it, over it", want: "--layer-sheet: 2;"},
+		{name: "what each layer is for", want: "/* what sticks to the top */"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -290,6 +298,9 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a blend named as the face's property is", original: "name: chosen", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
 		{name: "a blend named as the page's own colour is", original: "name: tint", replacement: "name: background", want: `"background" is named twice`},
+		{name: "a layer that says nothing of what it is for", original: "    about: what sticks to the top\n", replacement: "", want: `"row" says nothing`},
+		{name: "a layer named twice", original: "name: sheet", replacement: "name: row", want: `"layer_row" is named twice`},
+		{name: "a layer whose name is no word", original: "name: sheet", replacement: "name: Sheet-2", want: `"Sheet-2"`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

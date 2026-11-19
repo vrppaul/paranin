@@ -132,6 +132,8 @@ size: a control that seems to need one is the wrong control.
 ## Shape, depth and motion
 
 - Lines are `hairline`. No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
+- What stands over the page as it scrolls lies on a layer of `design/tokens.yaml`, the layers listed lowest first:
+  the top bar on `bar`.
 - Nothing moves on its own but the cursor. Colours change under the pointer in `quick`; with reduced motion, at
   once. A toast stays `toast`.
 

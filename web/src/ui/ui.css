@@ -90,10 +90,12 @@ mark .gap {
 }
 
 /* the top bar every page opens with (DESIGN.md, TopBar): the site, the résumé's sections, the theme button, on the
- * ground a shade below the page, a quiet hairline under it; it sticks to the top as the page scrolls under it */
+ * ground a shade below the page, a quiet hairline under it; it sticks to the top as the page scrolls under it, on its
+ * own layer, so a part of the page placed for what it holds, as the first screen for its crosses, passes under it */
 .bar {
   position: sticky;
   top: 0;
+  z-index: var(--layer-bar);
   border-bottom: var(--hairline) solid var(--quiet);
   background: var(--sunk);
   font-size: var(--type-small-size);

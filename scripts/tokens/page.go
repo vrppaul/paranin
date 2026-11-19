@@ -65,8 +65,15 @@ const (
 	familySeparator = ", "
 )
 
-// How a weight is written in the stylesheet: its number, with no unit
-const weightValue = "%d"
+// How a weight and a layer are written in the stylesheet: a number, with no unit
+const numberValue = "%d"
+
+// What a layer's property is named: the word layer, then the layer's name, so a layer may share its name with the
+// length of the part it lifts, as the top bar's does; and the place of the lowest layer, over the page's own
+const (
+	layerPrefix = "layer_"
+	lowestPlace = 1
+)
 
 // What each of a text style's three properties is for, after what the style is for
 const (
@@ -116,6 +123,13 @@ type lengthToken struct {
 	About string       `yaml:"about"`
 	Rem   *remSize     `yaml:"rem"`
 	Cells *wholeNumber `yaml:"cells"`
+}
+
+// layerToken is a layer of what stands over the page, as the file writes it: its name and what stands on it. Its place
+// among the layers, lowest first, is its height over the page.
+type layerToken struct {
+	Name  string `yaml:"name"`
+	About string `yaml:"about"`
 }
 
 // timeToken is a time the page waits or moves by, as the file writes it: its name, what it is for, and how many
@@ -176,16 +190,18 @@ func (style readType) properties() []styleProperty {
 	return []styleProperty{
 		{name: property + sizeSuffix, about: fmt.Sprintf(sizeAbout, style.about), value: style.size.stylesheetValue()},
 		{name: property + lineSuffix, about: fmt.Sprintf(lineAbout, style.about), value: style.line.stylesheetValue()},
-		{name: property + weightSuffix, about: fmt.Sprintf(weightAbout, style.about), value: fmt.Sprintf(weightValue, style.weight)},
+		{name: property + weightSuffix, about: fmt.Sprintf(weightAbout, style.about), value: fmt.Sprintf(numberValue, style.weight)},
 	}
 }
 
-// pageTokens are the tokens the page alone reads, read: its face, its text styles, its lengths and its times.
+// pageTokens are the tokens the page alone reads, read: its face, its text styles, its lengths, its times and its
+// layers.
 type pageTokens struct {
 	face    readFace
 	types   []readType
 	lengths []readLength
 	times   []readTime
+	layers  []readLayer
 }
 
 // readFace is the face read: what it is for, and its families, each a name of letters, digits, hyphens and spaces.
@@ -232,38 +248,55 @@ type readTime struct {
 	milliseconds wholeNumber
 }
 
-// readPageTokens reads the face, the text styles, the lengths and the times of the file, each property a name of its
-// own beside every property named already.
+// readLayer is a layer read: its property's name, what stands on it, and its place among the layers, the lowest
+// first, over the page's own.
+type readLayer struct {
+	name  string
+	about string
+	place int
+}
+
+// readPageTokens reads the face, the text styles, the lengths, the times and the layers of the file, each property a
+// name of its own beside every property named already.
 func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, error) {
 	face, err := readFaceToken(written.Face, named)
 	if err != nil {
 		return pageTokens{}, err
 	}
-	types := make([]readType, 0, len(written.Type))
-	for _, token := range written.Type {
-		style, err := readTypeToken(token, named)
-		if err != nil {
-			return pageTokens{}, err
-		}
-		types = append(types, style)
+	types, err := readEach(written.Type, named, readTypeToken)
+	if err != nil {
+		return pageTokens{}, err
 	}
-	lengths := make([]readLength, 0, len(written.Lengths))
-	for _, token := range written.Lengths {
-		length, err := readLengthToken(token, named)
-		if err != nil {
-			return pageTokens{}, err
-		}
-		lengths = append(lengths, length)
+	lengths, err := readEach(written.Lengths, named, readLengthToken)
+	if err != nil {
+		return pageTokens{}, err
 	}
-	times := make([]readTime, 0, len(written.Times))
-	for _, token := range written.Times {
-		timed, err := readTimeToken(token, named)
-		if err != nil {
-			return pageTokens{}, err
-		}
-		times = append(times, timed)
+	times, err := readEach(written.Times, named, readTimeToken)
+	if err != nil {
+		return pageTokens{}, err
 	}
-	return pageTokens{face: face, types: types, lengths: lengths, times: times}, nil
+	layers, err := readLayerTokens(written.Layers, named)
+	if err != nil {
+		return pageTokens{}, err
+	}
+	return pageTokens{face: face, types: types, lengths: lengths, times: times, layers: layers}, nil
+}
+
+// readLayerTokens reads the layers, each in its place, the lowest first; a layer's property is named by the word layer
+// and its name, which no other property may hold.
+func readLayerTokens(written []layerToken, named map[string]bool) ([]readLayer, error) {
+	layers := make([]readLayer, 0, len(written))
+	for index, token := range written {
+		if err := checkName(token.Name, token.About); err != nil {
+			return nil, err
+		}
+		layer := readLayer{name: layerPrefix + token.Name, about: token.About, place: lowestPlace + index}
+		if err := claim(layer.name, named); err != nil {
+			return nil, err
+		}
+		layers = append(layers, layer)
+	}
+	return layers, nil
 }
 
 // readFaceToken refuses a face that says nothing of what it is for, names no family, or names one in anything but

@@ -6,7 +6,8 @@
 //     a blend is worked out into a colour of its own;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
-//     reads: the face, each text style as its size, its line's height and its weight, and each length;
+//     reads: the face, each text style as its size, its line's height and its weight, each length, each time, and
+//     each layer as its place among the layers, the z-index of what stands on it;
 //   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
 //     since the build writes the stylesheet's times the shortest way.
 //

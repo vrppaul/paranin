@@ -43,7 +43,7 @@
   --chosen: light-dark(#4c4f6912, #cad3f50f);
 }
 
-/* The page's face, its text styles and the lengths it lays out by, which the page alone reads */
+/* What the page alone reads: its face, its text styles, the lengths it lays out by, its times and its layers */
 :root {
   /* the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
   --face: "JetBrains Mono", ui-monospace, "SFMono-Regular", "menlo", monospace;
@@ -159,4 +159,6 @@
   --quick: 120ms;
   /* how long a toast stays, and a copied command's button says so */
   --toast: 2400ms;
+  /* the top bar, which the page scrolls under on a wide screen */
+  --layer-bar: 1;
 }

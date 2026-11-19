@@ -8,13 +8,15 @@
 # its background, or over the colour the blend names `under` it; a terminal has no opacity, so the blend is worked
 # out into a colour of its own.
 #
-# The face, the text styles, the lengths and the times after the colours are the page's alone, since a terminal has
-# a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of internal/look.
+# The face, the text styles, the lengths, the times and the layers after the colours are the page's alone, since a
+# terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of
+# internal/look.
 # The face is its families by name, in the order a browser tries them. Every size is in rem, the text size the reader
 # set, so the whole page grows with it; none is in pixels. A text style is its size and its line's height, and its
 # weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is in rem, or in whole
-# cells of the face, ch, for a space inside a line; a time is in whole milliseconds. Each comes with the first part of
-# the page that draws by it.
+# cells of the face, ch, for a space inside a line; a time is in whole milliseconds; a layer is a height over the page
+# that a part standing over it as it scrolls lies on, the layers listed lowest first, each over those before it. Each
+# comes with the first part of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -268,3 +270,7 @@ times:
   - name: toast
     about: how long a toast stays, and a copied command's button says so
     milliseconds: 2400
+
+layers:
+  - name: bar
+    about: the top bar, which the page scrolls under on a wide screen

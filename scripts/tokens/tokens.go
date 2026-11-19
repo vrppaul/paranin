@@ -55,6 +55,7 @@ type tokensFile struct {
 	Type       []typeToken     `yaml:"type"`
 	Lengths    []lengthToken   `yaml:"lengths"`
 	Times      []timeToken     `yaml:"times"`
+	Layers     []layerToken    `yaml:"layers"`
 }
 
 // themedValue is one value in each theme.
@@ -157,13 +158,9 @@ func readTokens(data []byte) (tokens, error) {
 	if err != nil {
 		return tokens{}, err
 	}
-	colours := make([]readColour, 0, len(written.Colours))
-	for _, token := range written.Colours {
-		colour, err := readColourToken(token, named)
-		if err != nil {
-			return tokens{}, err
-		}
-		colours = append(colours, colour)
+	colours, err := readEach(written.Colours, named, readColourToken)
+	if err != nil {
+		return tokens{}, err
 	}
 	blends := make([]readBlend, 0, len(written.Blends))
 	for _, token := range written.Blends {
@@ -178,6 +175,19 @@ func readTokens(data []byte) (tokens, error) {
 		return tokens{}, err
 	}
 	return tokens{background: background, backgroundAbout: written.Background.About, colours: colours, blends: blends, page: page}, nil
+}
+
+// readEach reads tokens of one kind in their order, each by the reader of its kind; nothing past the first fault.
+func readEach[Token, Read any](written []Token, named map[string]bool, read func(Token, map[string]bool) (Read, error)) ([]Read, error) {
+	all := make([]Read, 0, len(written))
+	for _, token := range written {
+		one, err := read(token, named)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, one)
+	}
+	return all, nil
 }
 
 // readBackground reads the page's own colour, which must say what it is for, and claims its name, so no other token

@@ -805,6 +805,8 @@ func textOf(text string) []document.Span {
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.
+//
+//wrapper:names the fixture's site, which every session the tests open is drawn for
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
 }

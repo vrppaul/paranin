@@ -250,11 +250,3 @@ func linked(page document.Page, spans []document.Span) []document.Span {
 	}
 	return []document.Span{document.Link{Target: page, Spans: spans}}
 }
-
-func monthText(start time.Time) string {
-	return start.Format(monthLayout)
-}
-
-func machineMonth(start time.Time) string {
-	return start.Format(machineMonthLayout)
-}

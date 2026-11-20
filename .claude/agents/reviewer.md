@@ -30,7 +30,7 @@ Then, in this order:
 6. Where a face changed, look at it as its reader would: the TUI over `ssh`, the text through `curl`. Say what you
    saw, with numbers read off the output.
 7. Look yourself where the gates are blind:
-   - a function that only passes its call on with no `//wrapper:` reason: no gate here reads one;
+   - a `//wrapper:` reason that does not hold, and a proxy in a form `scripts/coderules/proxies.go` does not read;
    - a part in the wrong layer, or a layer reached round by passing a value down that belongs above;
    - state with no single owner, or something derived worked out again in a hot path;
    - knowledge written twice: a fact outside the content, a colour or a size outside the tokens, an address outside

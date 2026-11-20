@@ -256,6 +256,8 @@ func iconColoursOf(theme look.Theme) iconColours {
 }
 
 // hexColour is a colour as SVG writes it, #rrggbb.
+//
+//wrapper:names how the icon writes each of its colours
 func hexColour(colour color.RGBA) string {
 	return fmt.Sprintf(hexColourLayout, colour.R, colour.G, colour.B)
 }

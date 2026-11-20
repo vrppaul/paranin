@@ -532,6 +532,8 @@ func fixtureFrame(snapshot *content.Snapshot) compose.Frame {
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.
+//
+//wrapper:names the fixture's site, which every page the tests draw is written for
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
 }

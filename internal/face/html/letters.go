@@ -181,11 +181,6 @@ func withCursor(drawing letterDrawing, letterCells int) letterDrawing {
 	return drawing
 }
 
-// viewBox is the drawing's own units, as the SVG's viewBox writes them.
-func (drawing letterDrawing) viewBox() string {
-	return viewBoxOf(drawing.width, drawing.height)
-}
-
 // viewBoxOf is a drawing's own units, a width and a height from its corner, as an SVG's viewBox writes them.
 func viewBoxOf(width, height int) string {
 	return "0 0 " + strconv.Itoa(width) + " " + strconv.Itoa(height)

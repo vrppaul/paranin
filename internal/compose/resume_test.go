@@ -505,6 +505,9 @@ func as[Kind any](test *testing.T, value any) Kind {
 	return typed
 }
 
+// firstMoment is a month's first moment, as a known month holds it.
+//
+//wrapper:names the moment a known month starts at, which every expected period writes
 func firstMoment(year int, month time.Month) time.Time {
 	return time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 }

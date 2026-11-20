@@ -92,6 +92,8 @@ func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
 }
 
 // fixtureSite is the site of the fixture, at the address its profile gives.
+//
+//wrapper:names the fixture's site, which every text the tests write is written for
 func fixtureSite(snapshot *content.Snapshot) routes.Site {
 	return routes.New(snapshot.Profile.Site.BaseURL)
 }

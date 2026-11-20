@@ -82,10 +82,10 @@ func (layout layout) checks(checks document.Checks, indent int) []line {
 	looks := levelLooks()
 	for _, check := range checks.List {
 		look := looks[check.Level]
-		lead := line{indentRun(indent + checkIndent), {text: look.mark + space + look.word + space, kind: look.kind, highlighted: false, address: "", copied: "", tone: 0}}
+		lead := line{gapRun(indent + checkIndent), {text: look.mark + space + look.word + space, kind: look.kind, highlighted: false, address: "", copied: "", tone: 0}}
 		lines = append(lines, layout.continued(lead, layout.words(check.Spans, kindText), runsWidth(lead))...)
 		if len(check.Advice) > 0 {
-			advice := line{indentRun(indent + checkIndent + adviceIndent), {text: adviceWord + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}}
+			advice := line{gapRun(indent + checkIndent + adviceIndent), {text: adviceWord + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}}
 			lines = append(lines, layout.continued(advice, layout.words(check.Advice, kindText), runsWidth(advice))...)
 		}
 	}

@@ -33,6 +33,10 @@ func TestCommentLinesWiderThanProseAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), commentWidthAnalyzer(), "comments")
 }
 
+func TestFunctionsThatOnlyPassTheirCallOnAreRefused(test *testing.T) {
+	analysistest.Run(test, analysistest.TestData(), noProxiesAnalyzer(), "proxies")
+}
+
 func TestNumbersOutsideConstantsAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), noNumbersAnalyzer(), "numbers")
 }

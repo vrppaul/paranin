@@ -52,6 +52,8 @@ func writtenFacts(facts []Fact) []Fact {
 }
 
 // written is whether spans hold a word the author wrote, not gaps alone.
+//
+//wrapper:the one test every part of a document makes of its words before it is shown
 func written(spans []Span) bool {
 	return slices.ContainsFunc(spans, spanWritten)
 }

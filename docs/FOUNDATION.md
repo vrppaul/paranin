@@ -628,6 +628,10 @@ once); the small words and the table of abbreviations are **Proposed**:
     closes itself, and a colour in a string, outside tests;
   - a number other than 0 and 1 outside a constant, outside tests. It
     replaces `mnd`, which passes a number assigned to a variable;
+  - a function that only passes its call on, with no `//wrapper:` reason
+    above it, as stint's `scripts/check_proxies.py` refuses one; a test, a
+    method a type implements an interface by, and an exported getter of an
+    unexported field are passed over;
   - a line a comment opens wider than 120 columns, counted in letters, a
     tab one. A line of code may run wider, as a literal with every field
     written does, so `lll`, which holds every line, is not used.

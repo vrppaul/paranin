@@ -237,7 +237,7 @@ func (layout layout) headParts(head document.Head) headParts {
 
 // subtitleLines are a head's subtitle with its place beside it, under the title or in the brief.
 func (layout layout) subtitleLines(head document.Head) []line {
-	return layout.fill(placedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted)), 0)
+	return layout.fill(markedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted), placeMark), 0)
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
@@ -357,12 +357,12 @@ func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line
 		periodKind = kindCurrent
 	}
 	period := textWords(periodText(entry.Period), periodKind)
-	titleWords := placedWords(joinedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted)), textWords(entry.Place, kindMuted))
+	titleWords := markedWords(markedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted), subtitleMark), textWords(entry.Place, kindMuted), placeMark)
 	column := indent + periodWidth + columnGap
 	if layout.width-column < narrowestEntry {
 		return slices.Concat(layout.fill(period, indent), layout.fill(titleWords, indent), layout.points(entry.Points, indent))
 	}
-	lead := append(line{indentRun(indent)}, wordRuns(period)...)
+	lead := append(line{gapRun(indent)}, wordRuns(period)...)
 	lead = append(lead, gapRun(column-runsWidth(lead)))
 	return append(layout.continued(lead, titleWords, column), layout.points(entry.Points, column)...)
 }
@@ -394,7 +394,7 @@ func (layout layout) card(card document.Card, indent int) []line {
 	if card.Page.Kind != document.PageNone {
 		title = layout.words([]document.Span{document.Link{Target: card.Page, Spans: card.Title}}, kindStrong)
 	}
-	lines := layout.titleLine(joinedWords(title, layout.words(card.Subtitle, kindMuted)), textWords(card.Tag, kindMuted), indent)
+	lines := layout.titleLine(markedWords(title, layout.words(card.Subtitle, kindMuted), subtitleMark), textWords(card.Tag, kindMuted), indent)
 	lines = append(lines, layout.fill(layout.words(card.Summary, kindText), indent)...)
 	return append(lines, layout.facts(card.Facts, indent, kindMuted)...)
 }
@@ -404,7 +404,7 @@ func (layout layout) contents(contents document.Contents, indent int) []line {
 	lines := []line{}
 	for _, listing := range contents.Listings {
 		title := layout.words([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}}, kindStrong)
-		lines = append(lines, layout.bullet(joinedWords(title, layout.words(listing.Note, kindMuted)), indent)...)
+		lines = append(lines, layout.bullet(markedWords(title, layout.words(listing.Note, kindMuted), subtitleMark), indent)...)
 	}
 	return lines
 }
@@ -430,7 +430,7 @@ func valueColumn(facts []document.Fact) int {
 
 // fact lays out a label of a kind and its value, the value in a column a width in from the label.
 func (layout layout) fact(fact document.Fact, indent, column int, labelKind kind) []line {
-	lead := line{indentRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
+	lead := line{gapRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
 	return layout.continued(lead, layout.valueWords(fact.Value), indent+column)
 }
 
@@ -480,10 +480,10 @@ func (layout layout) commandBox(fact document.Fact, indent int) []line {
 		return nil
 	}
 	label := run{text: fact.Label, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
-	top := line{indentRun(indent), boxRun(boxTopLeft + boxAcross + space), label, boxRun(space + strings.Repeat(boxAcross, topRoom) + boxTopRight)}
-	inside := slices.Concat(line{indentRun(indent), boxRun(boxDown + space)}, command, line{gapRun(insideRoom), boxRun(space + boxDown)})
+	top := line{gapRun(indent), boxRun(boxTopLeft + boxAcross + space), label, boxRun(space + strings.Repeat(boxAcross, topRoom) + boxTopRight)}
+	inside := slices.Concat(line{gapRun(indent), boxRun(boxDown + space)}, command, line{gapRun(insideRoom), boxRun(space + boxDown)})
 	bottom := boxBottomLeft + strings.Repeat(boxAcross, width-textWidth(boxBottomLeft+boxBottomRight)) + boxBottomRight
-	return []line{top, inside, {indentRun(indent), boxRun(bottom)}}
+	return []line{top, inside, {gapRun(indent), boxRun(bottom)}}
 }
 
 // boxRun is a piece of a box's edge, a mark a reader may pass over.
@@ -504,7 +504,7 @@ func (layout layout) table(table document.Table, indent int) []line {
 	columned := layout.width-lastColumn >= narrowestLastColumn
 	lines := []line{}
 	for _, row := range table.Rows {
-		lead := line{indentRun(indent)}
+		lead := line{gapRun(indent)}
 		if columned {
 			lines = append(lines, layout.columnedRow(lead, row.Cells, widths, indent)...)
 			continue
@@ -561,7 +561,7 @@ func (layout layout) columnWidths(rows []document.Row) []int {
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.
 func (layout layout) bullet(words []word, indent int) []line {
-	lead := line{indentRun(indent), {text: look.PointMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
+	lead := line{gapRun(indent), {text: look.PointMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
 	return layout.continued(lead, words, indent+bulletHang)
 }
 
@@ -573,14 +573,14 @@ func (layout layout) titleLine(left, right []word, indent int) []line {
 	if len(right) == 0 || gap < columnGap {
 		return append(layout.fill(left, indent), layout.fill(right, indent)...)
 	}
-	return []line{append(append(line{indentRun(indent)}, wordRuns(left)...), append(line{gapRun(gap)}, wordRuns(right)...)...)}
+	return []line{append(append(line{gapRun(indent)}, wordRuns(left)...), append(line{gapRun(gap)}, wordRuns(right)...)...)}
 }
 
 // codeLines lays out text line for line at an indent, as it is written: never wrapped.
 func codeLines(code string, indent int) []line {
 	lines := []line{}
 	for written := range strings.SplitSeq(code, lineEnd) {
-		lines = append(lines, line{indentRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}})
+		lines = append(lines, line{gapRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}})
 	}
 	return lines
 }
@@ -602,17 +602,8 @@ func monthText(month document.Month) string {
 	return ""
 }
 
-// joinedWords are a title's words and its subtitle's, the subtitle's mark between them where both are there.
-func joinedWords(title, subtitle []word) []word {
-	return markedWords(title, subtitle, subtitleMark)
-}
-
-// placedWords are a subtitle's words, or an entry's title and subtitle, and a place's, the place's mark between them
-// where both are there.
-func placedWords(subtitle, place []word) []word {
-	return markedWords(subtitle, place, placeMark)
-}
-
+// markedWords are two runs of words with a mark between them where both are there: a title and its subtitle, words
+// and their place.
 func markedWords(first, second []word, mark string) []word {
 	if len(first) == 0 || len(second) == 0 {
 		return append(first, second...)

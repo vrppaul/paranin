@@ -60,11 +60,15 @@ func (career Career) Months() int {
 }
 
 // MonthsTo is how many months lie from the line's first month to another.
+//
+//wrapper:where a month stands on the line, which each face reads to place a role
 func (career Career) MonthsTo(month time.Time) int {
 	return monthsBetween(career.First, month)
 }
 
 // Months is how many months a role's span runs.
+//
+//wrapper:a role's length, which the page reads to size its share of the line
 func (span CareerSpan) Months() int {
 	return monthsBetween(span.Start, span.End)
 }

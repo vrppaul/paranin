@@ -38,6 +38,9 @@ const ownBasicConstant = "BasicOwn"
 // How the page's own colour is returned in a theme: the theme's constant, then the colour
 const backgroundCase = "\tcase %s:\n\t\treturn %s\n"
 
+// How the palette writes a colour: a literal of image/color's RGBA, its four channels named
+const rgbaLayout = "color.RGBA{R: %d, G: %d, B: %d, A: %d}"
+
 // source is the Go of the tokens' colours: a constant for each colour, the palette of each theme, then the page's own
 // colour in each theme, which no terminal takes, since it keeps a ground of its own. It is formatted as gofmt would,
 // so the file reads as if written by hand.
@@ -97,8 +100,11 @@ func constantName(token string) string {
 	return builder.String()
 }
 
+// rgbaLiteral is a colour as Go writes it in the palette.
+//
+//wrapper:names how the palette writes each of its colours
 func rgbaLiteral(colour color.RGBA) string {
-	return fmt.Sprintf("color.RGBA{R: %d, G: %d, B: %d, A: %d}", colour.R, colour.G, colour.B, colour.A)
+	return fmt.Sprintf(rgbaLayout, colour.R, colour.G, colour.B, colour.A)
 }
 
 func basicLiteral(basic basicValue) string {

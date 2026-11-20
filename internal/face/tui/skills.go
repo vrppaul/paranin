@@ -87,13 +87,13 @@ func (layout layout) skill(skill document.Skill, indent int, columns skillColumn
 		nameKind = kindMuted
 	}
 	name := layout.words(skill.Name, nameKind)
-	lead := line{indentRun(indent), skillMark(skill.Learning)}
+	lead := line{gapRun(indent), skillMark(skill.Learning)}
 	lines := []line{}
 	if columns.barsBeside {
 		lead = slices.Concat(lead, wordRuns(name), line{gapRun(columns.nameWidth - wordsWidth(name) + columnGap)})
 	} else {
 		lines = layout.continued(lead, name, columns.nameColumn)
-		lead = line{indentRun(columns.nameColumn)}
+		lead = line{gapRun(columns.nameColumn)}
 	}
 	duration := layout.words(skill.Duration, kindMuted)
 	timed := slices.Concat(lead, barRuns(skill.Months, columns), wordRuns(duration))

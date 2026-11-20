@@ -505,7 +505,7 @@ templ (writer PageWriter) link(address string, spans []document.Span) {
 
 // knownMonth is a month of a year as a time: as a reader reads it, and as a machine does.
 templ knownMonth(start time.Time) {
-	<time datetime={ machineMonth(start) }>{ monthText(start) }</time>
+	<time datetime={ start.Format(machineMonthLayout) }>{ start.Format(monthLayout) }</time>
 }
 
 // resumeSection is a section of the résumé, at the place the top bar leads to (DESIGN.md, Frame and Section): its
@@ -540,7 +540,7 @@ templ letteredHeadingOne(title letterDrawing) {
 // the cursor after them where it has one. Its width and height are in em, a cell an em, so the stylesheet sizes it
 // by its font size, and it shrinks to its column.
 templ blockLetters(drawing letterDrawing) {
-	<svg class={ drawing.class } aria-hidden="true" viewBox={ drawing.viewBox() } width={ drawing.svgWidth() } height={ drawing.svgHeight() } shape-rendering="crispEdges">
+	<svg class={ drawing.class } aria-hidden="true" viewBox={ viewBoxOf(drawing.width, drawing.height) } width={ drawing.svgWidth() } height={ drawing.svgHeight() } shape-rendering="crispEdges">
 		<defs>
 			<linearGradient id={ drawing.gradientID() } gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={ strconv.Itoa(drawing.width) } y2="0">
 				<stop class="letters-start" offset="0"></stop>

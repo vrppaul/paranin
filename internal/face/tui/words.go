@@ -212,7 +212,7 @@ func (layout layout) fill(words []word, indent int) []line {
 	if len(words) == 0 {
 		return []line{}
 	}
-	return layout.continued(line{indentRun(indent)}, words, indent)
+	return layout.continued(line{gapRun(indent)}, words, indent)
 }
 
 // continued lays out words after a lead already on the line, in lines of the layout's width: each line takes as many
@@ -271,7 +271,7 @@ func (packing *packing) add(next word) {
 // open ends the line being laid and opens the next, standing in at the column.
 func (packing *packing) open() {
 	packing.lines = append(packing.lines, packing.current)
-	packing.current, packing.used = line{indentRun(packing.column)}, packing.column
+	packing.current, packing.used = line{gapRun(packing.column)}, packing.column
 }
 
 // cutWord parts a word after a width: the piece that fills it, and the rest, with no space before it. The piece holds
@@ -347,10 +347,7 @@ func linesWidth(lines []line) int {
 	return width
 }
 
-func indentRun(indent int) run {
-	return gapRun(indent)
-}
-
+// gapRun is a run of blanks a width wide: an indent, or the room between two columns.
 func gapRun(width int) run {
 	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: "", tone: 0}
 }
@@ -361,6 +358,8 @@ func padded(text string, width int) string {
 }
 
 // textWidth is how many columns of a terminal a text takes.
+//
+//wrapper:the one place the tui says how it measures a text, which every layout and the cursor read
 func textWidth(text string) int {
 	return ansi.StringWidth(text)
 }

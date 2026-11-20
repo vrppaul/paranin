@@ -36,7 +36,7 @@ func TestAChangeIsTakenOnceHeldStill(test *testing.T) {
 			synctest.Test(test, func(test *testing.T) {
 				folders := fixtureCopies(test)
 				watching, stop := context.WithCancel(context.Background())
-				changes := Watch(watching, folders.opened(), lookInterval)
+				changes := Watch(watching, FoldersAt(folders.content, folders.build), lookInterval)
 				time.Sleep(2 * lookInterval)
 				synctest.Wait()
 				unchanged := len(changes)
@@ -70,7 +70,7 @@ func TestAChangeMadeAsTheWatchBeginsIsTaken(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		folders := fixtureCopies(test)
 		watching, stop := context.WithCancel(context.Background())
-		changes := Watch(watching, folders.opened(), lookInterval)
+		changes := Watch(watching, FoldersAt(folders.content, folders.build), lookInterval)
 		writeAnotherAuthor(test, folders)
 		time.Sleep(2 * lookInterval)
 		synctest.Wait()
@@ -88,7 +88,7 @@ func TestAChangeStillGoingOnIsTakenAfterItsLastWrite(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		folders := fixtureCopies(test)
 		watching, stop := context.WithCancel(context.Background())
-		changes := Watch(watching, folders.opened(), lookInterval)
+		changes := Watch(watching, FoldersAt(folders.content, folders.build), lookInterval)
 		for _, write := range []struct{ original, replacement string }{
 			{original: authorName, replacement: "name: Mira Other"},
 			{original: "name: Mira Other", replacement: "name: Mira Third"},
@@ -111,6 +111,8 @@ func TestAChangeStillGoingOnIsTakenAfterItsLastWrite(test *testing.T) {
 }
 
 // writeAnotherAuthor writes the author's name otherwise.
+//
+//wrapper:a case of the table names the change it writes
 func writeAnotherAuthor(test *testing.T, folders folderPaths) {
 	fixtures.ReplaceIn(test, folders.content, profileFile, authorName, "name: Mira Other")
 }
@@ -123,6 +125,8 @@ func renameWords(test *testing.T, folders folderPaths) {
 }
 
 // writeSwap writes a swap file beside the profile, as an editor keeps one.
+//
+//wrapper:a case of the table names the change it writes
 func writeSwap(test *testing.T, folders folderPaths) {
 	fixtures.WriteIn(test, folders.content, swapFile, authorName)
 }

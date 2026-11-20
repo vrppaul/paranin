@@ -47,6 +47,8 @@ const (
 
 // Day is the day the faces' tests draw on, a TUI's session opening and the page's career line, the fixture's role
 // still held running to it.
+//
+//wrapper:names the one day every face's test draws on
 func Day() time.Time {
 	return time.Date(dayYear, time.November, dayOfTheMonth, 0, 0, 0, 0, time.UTC)
 }

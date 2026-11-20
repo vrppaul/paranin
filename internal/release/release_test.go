@@ -28,7 +28,7 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			folders := fixtureCopies(test)
 			testCase.change(test, folders)
-			if store, err := Open(folders.opened()); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
+			if store, err := Open(FoldersAt(folders.content, folders.build)); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
 				test.Errorf("Open = %v, %v; want no store and a fault naming %q", store, err, testCase.want)
 			}
 		})
@@ -39,7 +39,7 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 // swapped apart; a good one swaps in the new snapshot.
 func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(folders.opened())
+	store, err := Open(FoldersAt(folders.content, folders.build))
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -59,7 +59,7 @@ func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 // reload brings the next reader a value of the new one.
 func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(folders.opened())
+	store, err := Open(FoldersAt(folders.content, folders.build))
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -94,21 +94,21 @@ type folderPaths struct {
 	build   string
 }
 
-func (folders folderPaths) opened() Folders {
-	return FoldersAt(folders.content, folders.build)
-}
-
 // fixtureCopies are copies of both fixtures on disk.
 func fixtureCopies(test *testing.T) folderPaths {
 	return folderPaths{content: fixtures.Copy(test, fixtures.ContentFolder(test)), build: fixtures.Copy(test, fixtures.BuildFolder(test))}
 }
 
 // faultyContent leaves the author with no name.
+//
+//wrapper:a case of the table names the fault it writes
 func faultyContent(test *testing.T, folders folderPaths) {
 	fixtures.ReplaceIn(test, folders.content, profileFile, authorName, `name: ""`)
 }
 
 // faultyBuild leaves a manifest that does not read.
+//
+//wrapper:a case of the table names the fault it writes
 func faultyBuild(test *testing.T, folders folderPaths) {
 	fixtures.ReplaceIn(test, folders.build, manifestFile, "{", "[")
 }

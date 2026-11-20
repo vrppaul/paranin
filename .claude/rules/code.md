@@ -27,7 +27,7 @@ The rules for code in any language here; Go's own are in `.claude/rules/go.md`, 
 - No function inside a function: a helper is a function of its package, with a name and parameters of its own. A short lambda handed to a call is fine; a helper with logic inside another function is not.
 - No function only passes its call on, fixed arguments or none, unless it names a notion its call lacks or hides real work: shorter to write is no reason.
 - Such a function's reason stands on the line above it as a Go directive, which no doc prints: `//wrapper:` and the reason, no space after the colon, in small letters.
-- A method an interface asks for needs no reason.
+- A method a type implements an interface by, and an exported getter of an unexported field, need no reason.
 - No state at package level: a fixed table is a function that returns it, and what changes is held by whoever is handed it.
 - Dependencies are explicit, a constructor's or a function's parameters, so each part is tested by itself.
 - Something derived is worked out once, where its inputs change, never again in a hot path: a key press, a request, a frame.

@@ -360,6 +360,9 @@ func trimBlank(lines []string) []string {
 	return lines
 }
 
+// textWidth is how many columns of a terminal a text of the manual takes.
+//
+//wrapper:the one place the manual says how it measures a text, which every line it lays out reads
 func textWidth(text string) int {
 	return utf8.RuneCountInString(text)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 func TestMain(tests *testing.M) {
@@ -146,7 +145,7 @@ func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 		`<a href="/#about">About</a>`, `<a href="/#experience">Experience</a>`, `<a href="/#projects">Projects</a>`,
 		`<a href="/#skills">Skills</a>`, `<a href="/#contact">Contact</a>`, `data-part="theme"`,
 	}
-	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
 	cases := []struct {
 		name string
 		page string
@@ -179,7 +178,7 @@ func TestEveryPageEndsWithTheFooter(test *testing.T) {
 	writer := fixtureWriter(test)
 	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
-	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
 	cases := []struct {
 		name  string
 		page  string
@@ -499,7 +498,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 // its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	missing := NewNotFound(fixtureSite(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot)).For("/nothing\x1b[2J<b>")
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot)).For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
 }
 
@@ -523,19 +522,12 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtureSite(snapshot), fixtures.LoadedBuild(test), fixtureFrame(snapshot), fixtures.Day())
+	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), fixtureFrame(snapshot), fixtures.Day())
 }
 
 // fixtureFrame is the frame of the fixture's pages, in its words.
 func fixtureFrame(snapshot *content.Snapshot) compose.Frame {
 	return compose.FrameOf(snapshot, compose.Pages(snapshot))
-}
-
-// fixtureSite is the site of the fixture, at the address its profile gives.
-//
-//wrapper:names the fixture's site, which every page the tests draw is written for
-func fixtureSite(snapshot *content.Snapshot) routes.Site {
-	return routes.New(snapshot.Profile.Site.BaseURL)
 }
 
 // composedOf is a page of the fixture as compose makes it, its document and its record.

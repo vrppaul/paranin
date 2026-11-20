@@ -10,7 +10,7 @@ import (
 // terminal, and says where the site begins.
 func TestAMissingPageQuotesItsPathAndSaysWhereTheSiteBegins(test *testing.T) {
 	path := "/nothing\x1b[2J"
-	got := NewNotFound(fixtureSite(fixtures.LoadedContent(test)), "404 Not Found").For(path)
+	got := NewNotFound(fixtures.Site(fixtures.LoadedContent(test)), "404 Not Found").For(path)
 	want := "404 Not Found: \"/nothing\\x1b[2J\"\n\ncurl https://example.test/\n"
 	if got != want {
 		test.Errorf("NotFound for %q =\n%q\nwant\n%q", path, got, want)

@@ -13,7 +13,6 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // A terminal of a common size, and one tall enough to show any tab whole
@@ -232,7 +231,7 @@ func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
 	}
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: nil}
-	model := commanded(test, New([]document.Document{resume, project}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day()), "e a-tool")
+	model := commanded(test, New([]document.Document{resume, project}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day()), "e a-tool")
 	if places := footerLine(screenOf(test, model), footerPlaces); !strings.Contains(places, "facts") {
 		test.Errorf("on the project's page the places = %q, want its tab of the facts", places)
 	}
@@ -573,7 +572,7 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
@@ -776,7 +775,7 @@ func fixtureModel(test *testing.T, width, height int) Model {
 
 // sessionModel is a session on what a snapshot draws, as the SSH server opens one: its pages and the TUI's extras.
 func sessionModel(snapshot *content.Snapshot, width, height int) Model {
-	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtureSite(snapshot), width, height, fixtures.Day())
+	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtures.Site(snapshot), width, height, fixtures.Day())
 }
 
 // handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a
@@ -785,13 +784,13 @@ func handHealth(test *testing.T, width, height int, title string) Model {
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil), Blocks: nil}
 	section := document.Section{Title: textOf(title), Blocks: []document.Block{document.Paragraph{Spans: textOf("Learning Go")}}}
 	report := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: ""}, textOf("health")), Blocks: []document.Block{section}}
-	return New([]document.Document{resume, report}, fixtureSite(fixtures.LoadedContent(test)), width, height, fixtures.Day())
+	return New([]document.Document{resume, report}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
 }
 
 // handResume is a session on a résumé a test builds by hand: a head titled by a name, then blocks.
 func handResume(test *testing.T, name string, width, height int, blocks ...document.Block) Model {
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf(name)), Blocks: blocks}
-	return New([]document.Document{composed}, fixtureSite(fixtures.LoadedContent(test)), width, height, fixtures.Day())
+	return New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
 }
 
 // knownMonth is a month of a year as a period of a document a test builds by hand names it.
@@ -802,13 +801,6 @@ func knownMonth(year int, month time.Month) document.KnownMonth {
 // textOf is a text as the spans of a document, for a document a test builds by hand.
 func textOf(text string) []document.Span {
 	return []document.Span{document.Text{Text: text}}
-}
-
-// fixtureSite is the site of the fixture, at the address its profile gives.
-//
-//wrapper:names the fixture's site, which every session the tests open is drawn for
-func fixtureSite(snapshot *content.Snapshot) routes.Site {
-	return routes.New(snapshot.Profile.Site.BaseURL)
 }
 
 // pressed is a model after the keys, each pressed in turn.

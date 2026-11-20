@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
@@ -41,7 +40,7 @@ func manualHolds(text, phrase string) bool {
 // fixture, in each format, is held to its golden file, named by the page's own path in that format.
 func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents, site := compose.Documents(snapshot), fixtureSite(snapshot)
+	documents, site := compose.Documents(snapshot), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
 			path := routes.Path(composed.Head.Page, written.format)
@@ -58,14 +57,14 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	index := compose.Index(snapshot)
 	path := routes.Path(index.Head.Page, routes.FormatMarkdown)
-	golden.Match(test, path, Markdown(index, fixtureSite(snapshot)))
+	golden.Match(test, path, Markdown(index, fixtures.Site(snapshot)))
 }
 
 // Every phrase of a document reaches its text in each format: the facts a reader reads are the facts the
 // document holds, found as each format writes them.
 func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents, site := compose.Documents(snapshot), fixtureSite(snapshot)
+	documents, site := compose.Documents(snapshot), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
 			text := written.write(composed, site)
@@ -83,17 +82,10 @@ func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	index := compose.Index(snapshot)
-	text := Markdown(index, fixtureSite(snapshot))
+	text := Markdown(index, fixtures.Site(snapshot))
 	for _, phrase := range document.Phrases(index) {
 		if !strings.Contains(text, phrase) {
 			test.Errorf("the index's markdown %q holds no %q", text, phrase)
 		}
 	}
-}
-
-// fixtureSite is the site of the fixture, at the address its profile gives.
-//
-//wrapper:names the fixture's site, which every text the tests write is written for
-func fixtureSite(snapshot *content.Snapshot) routes.Site {
-	return routes.New(snapshot.Profile.Site.BaseURL)
 }

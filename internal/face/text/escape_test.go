@@ -40,7 +40,7 @@ func TestTextNeverReadsAsMarkup(test *testing.T) {
 				Head:   fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: ""}, nil),
 				Blocks: []document.Block{document.Section{Title: []document.Span{testCase.span}, Blocks: nil}, document.Paragraph{Spans: []document.Span{testCase.span}}},
 			}
-			if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); !strings.Contains(got, testCase.want) {
+			if got := Markdown(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, testCase.want) {
 				test.Errorf("Markdown = %q, want it to hold %q", got, testCase.want)
 			}
 		})
@@ -57,7 +57,7 @@ func TestAListItemNeverOpensABlock(test *testing.T) {
 		}}},
 	}
 	want := "- \\- a\n- 1\\. b"
-	if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); !strings.Contains(got, want) {
+	if got := Markdown(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, want) {
 		test.Errorf("Markdown = %q, want it to hold %q", got, want)
 	}
 }
@@ -80,7 +80,7 @@ func TestALeadReadsAsAQuoteOfItsText(test *testing.T) {
 			head := fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: ""}, []document.Span{document.Text{Text: "tool"}})
 			head.Lead = testCase.lead
 			composed := document.Document{Head: head, Blocks: nil}
-			if got := Markdown(composed, fixtureSite(fixtures.LoadedContent(test))); got != testCase.want {
+			if got := Markdown(composed, fixtures.Site(fixtures.LoadedContent(test))); got != testCase.want {
 				test.Errorf("Markdown = %q, want %q", got, testCase.want)
 			}
 		})

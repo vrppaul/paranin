@@ -101,14 +101,14 @@ func nestedReportModel(test *testing.T) Model {
 		Blocks: []document.Block{document.Section{Title: textOf("outer"), Blocks: []document.Block{warning, inner}}},
 	}
 	snapshot := fixtures.LoadedContent(test)
-	return New([]document.Document{compose.Resume(snapshot), report}, fixtureSite(snapshot), commonWidth, commonHeight, fixtures.Day())
+	return New([]document.Document{compose.Resume(snapshot), report}, fixtures.Site(snapshot), commonWidth, commonHeight, fixtures.Day())
 }
 
 // A session handed no health report knows no :checkhealth, and one handed no list of skills no :Lazy; each says so
 // as Neovim says it of a command it does not know, the résumé still shown.
 func TestAHiddenCommandWithNoPageIsNoCommand(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	model := New([]document.Document{compose.Resume(snapshot)}, fixtureSite(snapshot), commonWidth, commonHeight, fixtures.Day())
+	model := New([]document.Document{compose.Resume(snapshot)}, fixtures.Site(snapshot), commonWidth, commonHeight, fixtures.Day())
 	cases := []struct {
 		name    string
 		command string

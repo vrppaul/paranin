@@ -1,10 +1,6 @@
-// Package fixtures is the tests' way to the fixtures the packages' tests share (.claude/rules/tests.md): the
-// content's, in internal/content/testdata, and the build's, in internal/assets/testdata, each found from the root
-// of the module, which go test's folder for a package lies under however the test was built, so no test writes a
-// path that climbs out of its package; each loaded, as the site loads it; a copy of either on disk, which a test
-// may change; the day the faces draw on; the head of a page a test builds by hand; and the document of a page among
-// documents. Tests alone import it, as depguard's rule tests-alone-read-fixtures holds; a test of content or assets,
-// which it loads with, imports it from outside its package.
+// Package fixtures is the tests' one way to the fixtures the packages' tests share (.claude/rules/tests.md), so no
+// test writes a path that climbs out of its package. Tests alone import it (depguard's tests-alone-read-fixtures);
+// a test of a package it imports reaches it from an external test package.
 package fixtures
 
 import (
@@ -17,6 +13,7 @@ import (
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // Where the fixtures live, from the module's root, the file the root is known by, and who may write a changed file
@@ -51,6 +48,13 @@ const (
 //wrapper:names the one day every face's test draws on
 func Day() time.Time {
 	return time.Date(dayYear, time.November, dayOfTheMonth, 0, 0, 0, 0, time.UTC)
+}
+
+// Site is the site of a snapshot, at the address its profile gives.
+//
+//wrapper:names the site every face's test writes its pages and sessions for
+func Site(snapshot *content.Snapshot) routes.Site {
+	return routes.New(snapshot.Profile.Site.BaseURL)
 }
 
 // HeadOf is the head of a page a test builds by hand: the page and its title, nothing else, so a field the head gains

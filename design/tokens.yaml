@@ -25,12 +25,12 @@ background:
 
 colours:
   - name: sunk
-    about: the panel under the page, the prompt's, the rim it rises into, and a window over the page; a shade below the page
+    about: the panel under the page, the footer's and the command line's, and a window over the page; a shade below the page
     light: "#e6e9ef"
     dark: "#1e2030"
     basic: own
   - name: deep
-    about: the status line under the panel, a shade below it
+    about: a shade below the panel, the ground of the foot line's chips, of a part of it under the pointer and of a quiet control pressed
     light: "#dce0e8"
     dark: "#181926"
     basic: own
@@ -67,17 +67,17 @@ colours:
     dark: "#f5a97f"
     basic: 3
   - name: host
-    about: the site's host where it is written, as the prompt's, and the far end of the author's name
+    about: the site's host where it is written, as the footer's session, and the far end of the author's name
     light: "#8839ef"
     dark: "#c6a0f6"
     basic: 5
   - name: label
-    about: what names the text after it, as the place in the prompt
+    about: what names the text after it, as a fact's label
     light: "#1e66f5"
     dark: "#8aadf4"
     basic: 4
   - name: prompt
-    about: the mark a prompt ends in, after which the reader types
+    about: the mark after which the reader types, on the command line, or a command stands
     light: "#40a02b"
     dark: "#a6da95"
     basic: 2

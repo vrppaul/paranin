@@ -1,82 +1,8 @@
-// Package tui draws the site's documents in a terminal as a Bubble Tea program, Neovim's keys under a shell's prompt
-// (docs/ARCHITECTURE.md, ADR-0003): the page between two rows of corner crosses, and under it a footer: the rim that
-// parts it from the page, a panel holding the prompt and the places it goes to, and the status line, which says where
-// the reader is: the tab's title, its checks, the ruler. On a screen too short to spare rows for nothing, the footer
-// is the prompt, the places and the status line alone. The head of a document and what stands before its first section
-// are the first tab, named by the head's title; each section after them is a tab of its own, titled as the document
-// titles it. The head shows its greeting above its title, where it has one. Where the résumé's first section holds
-// facts, the first tab takes it in, its title naming the tab, its facts the brief and the rest under the lead. As
-// neofetch prints a system, the greeting and the name stand in a column, beside the brief where the page has room for
-// both and above it where not. The name stands in the first version's block font where the font draws every letter of
-// it and the page has the columns for it and the rows for the greeting, it and a few rows of the tab more, as text
-// where not, its colours going from the accent to the host's. The brief opens with the first way to reach the author,
-// the address in two colours parted at its at, then the subtitle and the place, the facts, each by its label, then a
-// row of the design's colours; the other ways stand on the contact section's tab alone. Under them the career's line
-// lays each role of the top-level sections, along the months from the first role's start, or the day the session opened
-// where that comes first, to the day or the last month a role reaches past it, the one still held in the accent and
-// running to the site's word for the present, each company over its span; the lead comes last. Each section of the
-// résumé after it stands under its title, in a block font two rows tall where the name's is three, in the name's
-// colours, where it fits as the name does, as text in them where that fits, and with none where neither does. A role or
-// a school stands with its period in the column of the periods of its section, as wide as the widest of them, the one
-// still going on in the accent, its title, subtitle and place beside it and its points under them; where the page
-// leaves too little room beside the column, the period stands above. A project's page opens as glow draws its README:
-// the name in the titles' font where it fits, the owner and the name its repository's address gives under it, or the
-// address as written where its path gives none, a link in the colours of the mail's two parts, the project's tags as
-// chips, the tagline and what it does, then its details; each section of it stands under its title on a plate of the
-// accent.
-// In any block of facts a command, a fact whose value is code alone, stands in a box with its label in the top edge,
-// where the page has room for the command on one row, so a reader copies it whole.
-// The reader moves between tabs, by h and l or a tab's number, and scrolls each one, by a count typed before a key
-// where they type one, and each tab keeps its place; where more of a tab lies below the page, the rim says how many
-// lines, as Neovim counts them, the two rows above it fade, and a scrollbar at the right shows how far down the page
-// stands. A slash searches the tab, and n and N go through its matches. While the reader types a search, the tab marks
-// what they type and its page goes to the first match, as Neovim's incsearch does, but for the slash, which takes the
-// marks of the search before away at once; the prompt counts the matches, as Neovim's command line does. A colon opens
-// the prompt, where the reader types the name of a place to go to, or a command, which it runs as Neovim's command
-// line does, or names one it does not know with Neovim's error. The places are the tabs of the page shown, each by its
-// title in small letters, the projects' pages by slug, and help, the window of keys; under the prompt they are listed,
-// before anything is typed the tabs but the one shown and help, after it every place whose name starts with what is
-// typed. Tab and Shift+Tab, in normal mode as on the prompt, go round what is listed, writing the item chosen on the
-// prompt, and past either end what was typed, as Neovim's wildmenu does. The session holds the résumé, each project's
-// page and the hidden pages as buffers, as Neovim holds the files it opened: a project's slug, or :e and the slug,
-// shows the project's page in place of the résumé, :checkhealth the health report and :Lazy the list of skills,
-// marked as lazy.nvim marks its plugins, both kept from the places as the first version kept them hidden, and q, or
-// :q, shows the résumé again, as the first version closed a report; each buffer keeps the tab and the scrolls its
-// reader left. The health report is written as Neovim writes its own, laid out anew: its title in the titles' font,
-// and beside its last row, or under it where the row has not the room, a meter of a cell for each check, in the shape
-// and the colour of its level, and the checks counted by level after the cells; each group's name with its checks
-// counted at the page's right edge, or under the name; each check after the mark and the word of its level. The list
-// of skills stands under its title in the titles' font, each skill after lazy.nvim's mark of a plugin loaded or not:
-// its name, its months as a bar on the scale of the longest skill's, or a dotted mark where it has no span of its
-// own, how long, and where it was proven, beside them or under the name where the page has not the room; the bar stands
-// under a name that leaves it no room beside. Each tab's checks are counted by level on the status line where the count
-// fits whole. The page holds the document's words, and of the TUI's own only its marks, Neovim's words for a check's
-// level and advice, and the checks counted by level in those words. A question mark or a space opens the window of
-// keys, which names the keys of normal mode and what each does, and which the next key closes; it says q closes a page
-// it opened and quits on the résumé. A search stands in for the cursor this TUI has not: y copies the value of the fact
-// on the line found, as Neovim's yy yanks a line, to the reader's clipboard over OSC 52, as the first version copied a
-// value of its head; a link gives its text, as its line shows it, but a repository's owner and name give its address. A
-// window shows whole or not at all: the window of keys opens only where it fits, where it does not the prompt says
-// Neovim's E36, and the window closes when a resize leaves it no room. A table's columns give way to words that wrap
-// where they would leave the last column too little room, so a narrow terminal cuts no cell off. While the reader types
-// on the prompt, the cursor is the terminal's own, a bar the terminal blinks, as the first version's blinked, in the
-// accent where the terminal shows many colours: the program writes no frame to blink it, so a session left alone writes
-// nothing and its idle timeout runs out. Where they type nothing, the prompt ends in the site's cursor, and so does the
-// résumé's title, the author's name: the bar in the accent the page, the PDF and the card draw there; where the name
-// stands in the name's font, a bar as tall as it and as wide as the font's strokes, as the storyboard of the look drew
-// it. It stands still, where the first version's blinked for half a minute after a key: a blink would need a tick, a
-// count and the head painted again each half second, where a tab is painted once. What a key says, an error among it,
-// stands alone on the prompt's row, as Neovim's command line says it, so it has the row's whole width.
-//
-// A tab is laid out once for a size and painted once for a theme, the terminal's colours and the search, with the
-// frame around it and the window of keys: a key press only chooses which painted lines show, fades the two above the
-// rim in one colour each, and writes what says where the page stands, the ruler, the rim's count of the lines below
-// and the scrollbar, and the prompt and the places as typed. Lipgloss lays a window over the rows it covers alone, as
-// the screen is drawn. A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's
-// page again; a search confirmed or taken away paints the tabs again, once; a buffer shown in place of another is
-// laid out and painted, once. What a piece of text is (text, muted, a command, a result worth seeing first) is the
-// layout's to say; how it looks is the paint's, from the design's colours in look, for the colours the terminal shows.
-// Every address is written by routes; a link carries its address to a terminal that follows links.
+// Package tui draws the site's documents for a reader who comes over SSH, as a Bubble Tea program that reads as
+// Neovim inside tmux (docs/ARCHITECTURE.md, ADR-0003): each tab of a page a screen of its own, one line of tmux at
+// the foot naming the tabs as windows, and over it Neovim's command line while the reader types after a colon or a
+// slash, or a key said something. A tab is laid out once for a size and painted once for a theme, so a key press only
+// chooses which painted lines show (.claude/rules/tui.md).
 package tui
 
 import (
@@ -106,9 +32,9 @@ type Model struct {
 	shown   document.Page
 	tabs    []tab
 	left    map[document.Page]readerPlace
-	// slugs are the slugs of the projects' pages the session holds, in order, as the places list them
+	// slugs are the slugs of the projects' pages the session holds, in order, as Tab goes round them
 	slugs []string
-	// site writes the addresses links lead to, and names the site on the prompt
+	// site writes the addresses links lead to, and names the session in the footer
 	site     routes.Site
 	terminal terminal
 	// today is the day the session opened, which a role still held runs to on the career's line
@@ -123,15 +49,15 @@ type Model struct {
 	chosen int
 	// scrolls is how far down each tab the reader has scrolled, by the tab's place
 	scrolls []int
-	// actions are what each key does in normal mode, commands what the prompt runs, and places where it goes from
-	// the page shown
+	// actions are what each key does in normal mode, commands what the command line runs, and places where it goes
+	// from the page shown
 	actions    map[string]action
 	commands   []command
 	places     []place
 	keys       keyState
 	search     searchState
 	completion completionState
-	// said is what the prompt says after the last key
+	// said is what the command line says after the last key
 	said commandMessage
 }
 
@@ -153,18 +79,22 @@ func New(documents []document.Document, site routes.Site, width, height int, tod
 	buffers, shown := buffersOf(documents), resumePage()
 	slugs := projectSlugs(buffers)
 	model := Model{
-		buffers:    buffers,
-		shown:      shown,
-		tabs:       buffers[shown],
-		left:       placesLeft(buffers, shown),
-		slugs:      slugs,
-		site:       site,
-		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
-		today:      today,
-		frame:      frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, crosses: false, footer: nil},
-		laid:       nil,
-		paint:      paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
-		drawn:      drawnScreen{tabs: nil, crossRow: "", blankRow: "", rim: "", panelGap: "", idlePrompt: "", track: "", thumb: "", keyWindow: paintedWindow{rows: nil, width: 0}},
+		buffers:  buffers,
+		shown:    shown,
+		tabs:     buffers[shown],
+		left:     placesLeft(buffers, shown),
+		slugs:    slugs,
+		site:     site,
+		terminal: terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
+		today:    today,
+		frame:    frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, under: 0, crosses: false},
+		laid:     nil,
+		paint:    paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
+		drawn: drawnScreen{
+			tabs: nil, crossRow: "", blankRow: "", track: "", thumb: "",
+			footer:    paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: paintedBar{text: "", width: 0}},
+			keyWindow: paintedWindow{rows: nil, width: 0},
+		},
 		chosen:     0,
 		scrolls:    make([]int, len(buffers[shown])),
 		actions:    normalActions(),

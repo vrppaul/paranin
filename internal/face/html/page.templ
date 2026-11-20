@@ -106,7 +106,7 @@ templ windowLink(window window) {
 // wayChip is a way the site is served, by the program it runs, as a command's chip at the compact size: the prompt's
 // mark, then the program's name.
 templ wayChip(program string) {
-	<button type="button" class="way-chip"><span class="way-mark" aria-hidden="true">{ look.PromptMark }</span>{ program }</button>
+	<button type="button" class="way-chip"><span class="way-mark" aria-hidden="true">{ promptMark }</span>{ program }</button>
 }
 
 // themeButton is the reader's theme: one button that turns the page to the theme it is not in, pressed while the
@@ -284,7 +284,7 @@ templ careerLine(career careerDrawing) {
 // select, and the button that copies it, hidden until the site's script shows it and lets the whole chip copy.
 templ command(command compose.Command) {
 	<div class="command" data-part={ commandPart }>
-		<span class="command-prompt" aria-hidden="true">{ look.PromptMark }</span>
+		<span class="command-prompt" aria-hidden="true">{ promptMark }</span>
 		<code data-part={ commandWordsPart }>{ command.Text }</code>
 		<button type="button" class="command-copy" data-part={ copyPart } aria-label={ command.CopyName } data-copied={ command.Copied } data-toast={ command.Toast } hidden>{ command.Copy }</button>
 	</div>

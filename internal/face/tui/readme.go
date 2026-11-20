@@ -73,7 +73,7 @@ func chipWords(tags []string) []word {
 }
 
 // plate is a section's title on a plate, a space each side, as glow draws a README's heading, and a row of nothing
-// under it; nothing where the section has no title, the status line naming the tab.
+// under it; nothing where the section has no title, the footer naming the tab.
 func (layout layout) plate(title string) []line {
 	if title == "" {
 		return nil

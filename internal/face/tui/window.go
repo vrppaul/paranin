@@ -35,14 +35,14 @@ func (model Model) withWindow(rows []string, window paintedWindow, left int) []s
 	if !model.shows(window) {
 		return rows
 	}
-	top := len(rows) - len(model.frame.footer) - len(window.rows)
+	top := len(rows) - footerRows - len(window.rows)
 	return laidOver(rows, window.rows, top, min(max(left, 0), model.frame.width-window.width), model.frame.width)
 }
 
 // shows is whether a window shows whole on the screen: no wider than it, and no taller than the rows the frame
 // leaves the page.
 func (model Model) shows(window paintedWindow) bool {
-	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-model.frame.above-len(model.frame.footer)
+	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-model.frame.above-footerRows
 }
 
 // framed is a window of rows, each painted as wide as its inside, with the border round them.

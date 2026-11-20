@@ -22,7 +22,7 @@ const (
 	keyRangeMark = "-"
 )
 
-// What the prompt says where the window of keys has no room on the screen, as Neovim says it of a window
+// What the command line says where the window of keys has no room on the screen, as Neovim says it of a window
 const notEnoughRoom = "E36: Not enough room"
 
 // windowKeys are the keys that open the window of keys and, while it is open, close it.
@@ -51,7 +51,7 @@ func (model Model) keyNotes() []hint {
 }
 
 // openKeys opens the window of keys where it shows whole on the screen; where it does not, the keys stay in normal
-// mode, so no mode opens unseen, and the prompt says there is no room, as Neovim does.
+// mode, so no mode opens unseen, and the command line says there is no room, as Neovim does.
 func (model Model) openKeys(int) (Model, tea.Cmd) {
 	if !model.shows(model.drawn.keyWindow) {
 		model.said = commandMessage{text: notEnoughRoom, failed: true}

@@ -60,7 +60,7 @@ func TestEachSkillsBarIsAsLongAsItsMonths(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			read := readRows(aboveTheStatusLine(screenOf(test, testCase.model)))
+			read := readRows(aboveTheFooter(screenOf(test, testCase.model)))
 			longer, shorter := barCells(read, space+testCase.longer.written), barCells(read, space+testCase.shorter.written)
 			share := float64(testCase.shorter.months) / float64(testCase.longer.months)
 			if want := int(math.Round(float64(longer) * share)); longer == 0 || shorter != want {
@@ -76,7 +76,7 @@ func TestEachSkillsBarIsAsLongAsItsMonths(test *testing.T) {
 func TestAWiderPageNeverDrawsShorterBars(test *testing.T) {
 	longest := 0
 	for width := narrowWidth; width <= commonWidth; width++ {
-		read := readRows(aboveTheStatusLine(screenOf(test, commanded(test, fixtureModel(test, width, tallHeight), "Lazy"))))
+		read := readRows(aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, width, tallHeight), "Lazy"))))
 		cells := barCells(read, " 3y")
 		if cells < longest {
 			test.Fatalf("at %d columns the longest bar is %d cells, shorter than the %d of a narrower page:\n%s", width, cells,
@@ -104,8 +104,8 @@ func TestTheBarsStandOnTheScaleOfTheLongestSkill(test *testing.T) {
 		{Name: textOf("Lua"), Duration: []document.Span{document.Gap{Text: "[1y?]"}}, Months: 0, Sources: textOf("Southwind"), Learning: false},
 		{Name: textOf("Zig"), Duration: textOf("1m"), Months: 1, Sources: textOf("a hobby"), Learning: false},
 	}}
-	single := readRows(aboveTheStatusLine(screenOf(test, handResume(test, "Mira", wideWidth, tallHeight, shortSkills()))))
-	twice := readRows(aboveTheStatusLine(screenOf(test, handResume(test, "Mira", wideWidth, tallHeight, doubled))))
+	single := readRows(aboveTheFooter(screenOf(test, handResume(test, "Mira", wideWidth, tallHeight, shortSkills()))))
+	twice := readRows(aboveTheFooter(screenOf(test, handResume(test, "Mira", wideWidth, tallHeight, doubled))))
 	cases := []struct {
 		name string
 		got  int
@@ -140,7 +140,7 @@ func TestASkillOfNoMeasuredTimeHasAMarkOfNone(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if read := readRows(aboveTheStatusLine(screenOf(test, testCase.model))); !strings.Contains(read, testCase.want) {
+			if read := readRows(aboveTheFooter(screenOf(test, testCase.model))); !strings.Contains(read, testCase.want) {
 				test.Errorf("the page =\n%s\nwant %q on it", read, testCase.want)
 			}
 		})
@@ -165,7 +165,7 @@ func TestASkillsPartsStandBesideWhereThePageHasTheRoom(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if read := readRows(aboveTheStatusLine(screenOf(test, testCase.model))); !strings.Contains(read, testCase.want) {
+			if read := readRows(aboveTheFooter(screenOf(test, testCase.model))); !strings.Contains(read, testCase.want) {
 				test.Errorf("the page =\n%s\nwant %q on it", read, testCase.want)
 			}
 		})

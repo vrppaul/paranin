@@ -47,7 +47,7 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := commanded(test, projectModel(test, testCase.address), "e tidy-tool")
 			view := model.View().Content
-			page := aboveTheStatusLine(screenOf(test, model))
+			page := aboveTheFooter(screenOf(test, model))
 			rows := strings.Split(page, lineEnd)
 			if !slices.ContainsFunc(rows, func(row string) bool { return strings.TrimSpace(row) == testCase.want }) || !strings.Contains(view, ansi.SetHyperlink(testCase.address)) {
 				test.Errorf("the project's page =\n%s\nwant a row of %q alone, a link to %q", page, testCase.want, testCase.address)
@@ -69,7 +69,7 @@ func TestAProjectsPageStandsUnderItsName(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			page := aboveTheStatusLine(screenOf(test, commanded(test, fixtureModel(test, testCase.width, tallHeight), "e tidy-tool")))
+			page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, testCase.width, tallHeight), "e tidy-tool")))
 			if strings.Contains(page, "tidy-tool") != testCase.nameAsText {
 				test.Errorf("the project's page =\n%s\nwant its name %q on it as text: %t", page, "tidy-tool", testCase.nameAsText)
 			}
@@ -88,11 +88,11 @@ func projectModel(test *testing.T, address string) Model {
 }
 
 // A page whose head gives its opening no title of its own titles its first tab by the head's title: a project's page
-// by the project's name.
+// by the project's name, which the footer names it by.
 func TestAFirstTabWithNoTitleOfItsOwnTakesTheHeads(test *testing.T) {
 	screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"))
-	if status := footerLine(screen, footerStatus); !strings.HasPrefix(status, "tidy-tool") {
-		test.Errorf("after :e tidy-tool the status line = %q, want it to open with the first tab's title %q", status, "tidy-tool")
+	if footer := footerOf(screen); !strings.Contains(footer, "1:tidy-tool*") {
+		test.Errorf("after :e tidy-tool the footer = %q, want the first tab named %q", footer, "1:tidy-tool*")
 	}
 }
 
@@ -176,16 +176,16 @@ func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.text))
-			if below := belowThePage(screen); !strings.Contains(below, testCase.want) || !strings.Contains(screen, resumeHeadline) {
+			if below := atTheFoot(screen); !strings.Contains(below, testCase.want) || !strings.Contains(screen, resumeHeadline) {
 				test.Errorf("after :%s the screen =\n%s\nwant %q, and the résumé still shown", testCase.text, screen, testCase.want)
 			}
 		})
 	}
 }
 
-// After :e and a space the places list the projects with a page whose slugs start with what follows, in the order of
-// their letters, which Tab goes through; after a command that takes no argument nothing is listed, and Tab leaves
-// the line as typed. The session holds a second project's page, which sorts first.
+// After :e and a space Tab goes through the projects with a page whose slugs start with what follows, in the order of
+// their letters; after a command that takes no argument it leaves the line as typed. The session holds a second
+// project's page, which sorts first.
 func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 	cases := []struct {
 		name string
@@ -193,19 +193,19 @@ func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 		keys []string
 		line string
 	}{
-		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: emptyPrompt + " e another-tool"},
-		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: emptyPrompt + " e tidy-tool"},
-		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: emptyPrompt + " e tidy-tool"},
-		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: emptyPrompt + " e ti"},
-		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: emptyPrompt + " e tidy-tool"},
-		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: emptyPrompt + " e other"},
-		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: emptyPrompt + " q"},
+		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: ":e another-tool"},
+		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: ":e tidy-tool"},
+		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: ":e tidy-tool"},
+		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: ":e ti"},
+		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: ":e tidy-tool"},
+		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: ":e other"},
+		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: ":q"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := typed(test, pressed(test, twoPagesModel(test), ":"), testCase.text)
-			if line := footerLine(screenOf(test, pressed(test, model, testCase.keys...)), footerPrompt); line != testCase.line {
-				test.Errorf("after :%s and %q the prompt = %q, want %q", testCase.text, testCase.keys, line, testCase.line)
+			if line := commandLineOf(screenOf(test, pressed(test, model, testCase.keys...))); line != testCase.line {
+				test.Errorf("after :%s and %q the command line = %q, want %q", testCase.text, testCase.keys, line, testCase.line)
 			}
 		})
 	}
@@ -222,18 +222,18 @@ func twoPagesModel(test *testing.T) Model {
 	return New(documents, fixtures.Site(snapshot), commonWidth, commonHeight, fixtures.Day())
 }
 
-// Tab after :e and a space writes the page listed first, which Enter opens.
+// Tab after :e and a space writes the first page whose slug fits, which Enter opens.
 func TestTabCompletesAPage(test *testing.T) {
 	model := pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "e "), "tab")
-	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" e tidy-tool" {
-		test.Errorf("after :e, a space and Tab the prompt = %q, want %q", line, emptyPrompt+" e tidy-tool")
+	if line := commandLineOf(screenOf(test, model)); line != ":e tidy-tool" {
+		test.Errorf("after :e, a space and Tab the command line = %q, want %q", line, ":e tidy-tool")
 	}
 	if screen := screenOf(test, pressed(test, model, "enter")); !strings.Contains(screen, projectTagline) {
 		test.Errorf("after :e, a space, Tab and Enter the screen =\n%s\nwant the project's page", screen)
 	}
 }
 
-// commanded is a model after a place or a command typed on the prompt and run.
+// commanded is a model after a place or a command typed on the command line and run.
 func commanded(test *testing.T, model Model, text string) Model {
 	return pressed(test, typed(test, pressed(test, model, ":"), text), "enter")
 }

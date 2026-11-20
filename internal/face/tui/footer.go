@@ -4,224 +4,157 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
-
-	tea "charm.land/bubbletea/v2"
-
-	"github.com/vrppaul/paranin/internal/look"
 )
 
-// The marks of the footer: the rim, the panel's ground rising half a row above it, and the rule that stands in for it
-// where the terminal shows few colours; the mark before the word of the lines below; and the prompt's, the place it
-// stands in, home, as a shell's prompt names it; the mark it ends in, which the search's slash takes the place of, is
-// the design's own (look.PromptMark)
+// The marks of the footer, as tmux's status line writes them: what holds the session's name; what parts a window's
+// number from its name; what marks the window shown; and what stands for the windows that give way
 const (
-	rimMark     = "▄"
-	rimRuleMark = "─"
-	moreMark    = "▾"
-	homeMark    = "~"
+	sessionOpening = "["
+	sessionClosing = "]"
+	numberMark     = ":"
+	shownTabMark   = "*"
+	givenWayMark   = "…"
 )
 
-// The mark that stands among the places for those that give way where they do not all fit
-const placesLeftMark = "…"
-
-// The words of the footer: Neovim's for the lines below the page, by how many there are; the key that completes a
-// place, and what it does; and what Enter does on the prompt
+// The room in the footer: a column of the panel on each side of a tab's number and name, as tmux pads a window's, and
+// one before each tab; the least room left before what stands at the right; the room between the key's word and the
+// ruler; and the columns the footer keeps clear at each side where it does not stand on the page's column
 const (
-	moreLines       = "more lines"
-	moreLine        = "more line"
-	completeKeyName = "Tab"
-	completesWord   = "completes"
-	runHint         = "run"
-	findHint        = "find"
-	cancelHint      = "cancel"
-	enterMark       = "↵"
+	tabPadding = 1
+	tabGap     = 1
+	rightGap   = 1
+	keysGap    = 4
+	edgeMargin = 1
 )
 
-// The room the places stand apart by, and the room after what Tab does before the first of them
-const (
-	placeGap     = 3
-	completesGap = 4
-)
-
-// The columns the terminal's cursor takes on the prompt, after what is typed
-const cursorWidth = 1
-
-// rimRow is the rim between the page and the panel: bare where the page shows the tab to its end, and where more of
-// it lies below, saying in the middle how many lines and the key that scrolls to them.
-func (model Model) rimRow() string {
-	below := model.linesBelow()
-	if below == 0 {
-		return model.drawn.rim
-	}
-	lines := moreLines
-	if below == 1 {
-		lines = moreLine
-	}
-	said := model.paint.cut([]piece{
-		{text: space + moreMark + space, part: partMoreMark},
-		{text: strconv.Itoa(below) + space + lines + moreSeparator, part: partMore},
-		{text: downKey, part: partMoreKey},
-		{text: space, part: partMore},
-	}, model.frame.width)
-	left := (model.frame.width - said.width) / sides
-	return model.paint.rim(left) + said.text + model.paint.rim(model.frame.width-left-said.width)
+// footerPlace is where the footer stands on a screen: the columns it keeps clear at each side, the page's margin
+// where it fits on the page's column and the screen's edge where not; whether the key to the window of keys stands
+// in it; and the columns left for the session and the tabs.
+type footerPlace struct {
+	margin    int
+	keysShown bool
+	room      int
 }
 
-// promptLine is the prompt as the reader types on it, after the slash of a search or the prompt's own mark, with the
-// terminal's cursor after what they typed; or, where they type nothing, what the last key said, alone on the row as
-// Neovim's command line says it, so it has the row's whole width, or the prompt as it waits, ending in the site's
-// cursor, and no terminal's cursor.
-func (model Model) promptLine() (string, *tea.Cursor) {
-	switch model.keys.mode {
-	case modeSearch:
-		return model.typedLine(searchMark)
-	case modeCommand:
-		return model.typedLine(look.PromptMark + space)
-	case modeNormal, modeKeys:
-	}
-	switch {
-	case model.said.failed:
-		return model.paint.panelRow([]piece{{text: model.said.text, part: partFailure}}, model.frame), nil
-	case model.said.text != "":
-		return model.paint.panelRow([]piece{{text: model.said.text, part: partSaid}}, model.frame), nil
-	}
-	return model.drawn.idlePrompt, nil
+// paintedFooter is what the footer holds on any tab, painted: where it stands, its margin of the panel's ground, and
+// the key to the window of keys, or nothing where it gives way.
+type paintedFooter struct {
+	place  footerPlace
+	gutter string
+	keys   paintedBar
 }
 
-// promptOpening is what the prompt opens with: the site's host, the place it stands in, and a mark.
-func (model Model) promptOpening(mark string) []piece {
-	return []piece{
-		{text: model.site.Host(), part: partHost},
-		{text: space + homeMark + space, part: partHome},
-		{text: mark, part: partPromptMark},
-	}
-}
-
-// typedLine is the prompt as the reader types on it after a mark, and the terminal's own cursor after what they
-// typed, held within the screen: a bar the terminal blinks, as the first version's cursor blinked, in the accent
-// where the terminal shows many colours; none where the screen is too short to show the prompt.
-func (model Model) typedLine(mark string) (string, *tea.Cursor) {
-	opening := model.promptOpening(mark)
-	shown := model.shownTyping(piecesWidth(opening))
-	row := model.paint.panelRow(append(opening, piece{text: shown, part: partTyped}), model.frame)
-	line, _ := model.frame.rowOf(footerPrompt)
-	if line < 0 {
-		return row, nil
-	}
-	column := min(model.frame.left+piecesWidth(opening)+textWidth(shown), model.frame.width-cursorWidth)
-	position := tea.Position{X: max(column, 0), Y: line}
-	return row, &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}
-}
-
-// shownTyping is what the prompt shows of what is typed after its opening: its end, where the line is too narrow
-// for all of it and the cursor after it.
-func (model Model) shownTyping(openingWidth int) string {
-	room := model.frame.width - model.frame.left - openingWidth - cursorWidth
-	typed := model.keys.typing
-	for textWidth(typed) > max(room, 0) {
-		_, first := utf8.DecodeRuneInString(typed)
-		typed = typed[first:]
-	}
-	return typed
-}
-
-// placesRow is the row under the prompt: in normal mode the places the tab chosen may go to; while the reader types
-// a place or a command, those that start with what is typed, the one Tab chose marked, or, where none does, what
-// Enter and Esc do; while they type a search, what Enter and Esc do.
-func (model Model) placesRow(drawn drawnTab) string {
-	switch model.keys.mode {
-	case modeSearch:
-		return model.paint.panelRow(hintPieces([]hint{{key: enterMark, does: findHint}, {key: escapeKey, does: cancelHint}}), model.frame)
-	case modeCommand:
-		if len(model.completion.listed) == 0 {
-			return model.paint.panelRow(hintPieces([]hint{{key: enterMark, does: runHint}, {key: escapeKey, does: cancelHint}}), model.frame)
+// footerPlaceOf is where a footer of a width, the key to the window of keys aside, stands on a frame: on the page's
+// column with the key, then without it, then at the screen's edges likewise; where none fits, at the edges without
+// the key, the tabs giving way.
+func footerPlaceOf(frame frame, width, keysWidth int) footerPlace {
+	for _, margin := range []int{max(frame.left, edgeMargin), edgeMargin} {
+		for _, keysShown := range []bool{true, false} {
+			if place := placeAt(frame, margin, keysShown, keysWidth); width <= place.room {
+				return place
+			}
 		}
-		name, argument, argued := commandParts(model.completion.typed)
-		if argued {
-			name = argument
-		}
-		return model.paint.panelRow(model.placePieces(model.completion.listed, model.completion.chosen, name), model.frame)
-	case modeNormal, modeKeys:
 	}
-	return drawn.places
+	return placeAt(frame, edgeMargin, false, keysWidth)
 }
 
-// placePieces are what Tab does, then the places listed, the start the reader typed of each marked, and the one Tab
-// chose. Where they would not all fit, the first ones give way until the chosen one does; where none is chosen, the
-// last one stays in sight, help among the places listed idle, and those before it give way from its side, a mark
-// standing for them.
-func (model Model) placePieces(listed []completion, chosen int, typed string) []piece {
-	opening := []piece{
-		{text: completeKeyName, part: partPanelKey},
-		{text: space + completesWord + strings.Repeat(space, completesGap), part: partPanelNote},
+// placeAt is the footer standing a margin in from each side of a frame, the key to the window of keys in it or not:
+// the margin no more than half the screen, and the room the ruler and the key leave.
+func placeAt(frame frame, margin int, keysShown bool, keysWidth int) footerPlace {
+	margin = min(margin, frame.width/sides)
+	right := widestRuler + rightGap
+	if keysShown {
+		right += keysWidth
 	}
-	room := model.frame.width - model.frame.left - piecesWidth(opening)
-	items := placeItems(listed, chosen, typed)
-	shown := items
-	for first := 1; piecesWidth(joinedItems(shown)) > room && first <= chosen; first++ {
-		shown = items[first:]
-	}
-	last := len(items) - 1
-	for kept := last - 1; piecesWidth(joinedItems(shown)) > room && chosen == noneChosen && kept >= 0; kept-- {
-		shown = slices.Concat(items[:kept], [][]piece{{{text: placesLeftMark, part: partPlace}}}, items[last:])
-	}
-	return append(opening, joinedItems(shown)...)
+	return footerPlace{margin: margin, keysShown: keysShown, room: max(frame.width-sides*margin-right, 0)}
 }
 
-// placeItems are the pieces of each place listed: the start the reader typed of it marked, or all of it where Tab
-// chose it.
-func placeItems(listed []completion, chosen int, typed string) [][]piece {
-	items := make([][]piece, 0, len(listed))
-	for index, shown := range listed {
-		switch {
-		case index == chosen:
-			items = append(items, []piece{{text: shown.shown, part: partPlaceChosen}})
-		case typed != "" && strings.HasPrefix(shown.shown, typed):
-			items = append(items, []piece{{text: typed, part: partPlaceTyped}, {text: shown.shown[len(typed):], part: partPlaceRest}})
-		default:
-			items = append(items, []piece{{text: shown.shown, part: partPlace}})
+// paintedFooter paints what the footer holds on any tab, where the session and the tabs leave it room.
+func (model Model) paintedFooter() paintedFooter {
+	keys := []piece{
+		{text: keyWindowKey, part: partPanelKey},
+		{text: space + keysTitle + strings.Repeat(space, keysGap), part: partPanelNote},
+	}
+	whole := slices.Concat(model.sessionPieces(), slices.Concat(model.tabItems(anyTab)...))
+	place := footerPlaceOf(model.frame, piecesWidth(whole), piecesWidth(keys))
+	shownKeys := paintedBar{text: "", width: 0}
+	if place.keysShown {
+		shownKeys = model.paint.cut(keys, piecesWidth(keys))
+	}
+	return paintedFooter{place: place, gutter: model.paint.parts[partPanel].Render(strings.Repeat(space, place.margin)), keys: shownKeys}
+}
+
+// A tab whose items the footer's width is worked out from: the tabs take as many columns whichever is shown
+const anyTab = 0
+
+// sessionPieces are the session the footer opens with, named by the site's host as tmux names its session.
+func (model Model) sessionPieces() []piece {
+	return []piece{{text: sessionOpening + model.site.Host() + sessionClosing, part: partHost}}
+}
+
+// tabItems are each tab as the footer shows it while one is shown, as tmux shows each window: a gap, then its number
+// and its name, the one shown marked, on a plate.
+func (model Model) tabItems(shown int) [][]piece {
+	gap := piece{text: strings.Repeat(space, tabGap), part: partPanel}
+	padding := strings.Repeat(space, tabPadding)
+	items := make([][]piece, 0, len(model.tabs))
+	for place, named := range model.tabs {
+		number := strconv.Itoa(place+firstTabNumber) + numberMark
+		if place == shown {
+			items = append(items, []piece{gap, {text: padding + number + named.slug + shownTabMark + padding, part: partTabShown}})
+			continue
 		}
+		items = append(items, []piece{gap, {text: padding + number, part: partTabNumber}, {text: named.slug + padding, part: partTabName}})
 	}
 	return items
 }
 
-// joinedItems are the pieces of the items of a row of the panel, places or keys, a gap between each two.
-func joinedItems(items [][]piece) []piece {
-	gap := piece{text: strings.Repeat(space, placeGap), part: partPanel}
-	pieces := []piece{}
-	for index, item := range items {
-		if index > 0 {
-			pieces = append(pieces, gap)
+// footerTabs paints the footer's left part while a tab is shown: the session, then the tabs that fit the room a place
+// of the footer has; where the session leaves the tab shown no room, the tabs alone, their marks kept over the
+// session, since they say more tabs lie beside the one shown.
+func (model Model) footerTabs(shown int, place footerPlace) paintedBar {
+	session, items := model.sessionPieces(), model.tabItems(shown)
+	opening := slices.Concat(session, fittedTabs(items, shown, place.room-piecesWidth(session)))
+	if piecesWidth(opening) > place.room {
+		opening = fittedTabs(items, shown, place.room)
+	}
+	return model.paint.cut(opening, place.room)
+}
+
+// fittedTabs are the items of the tabs that fit a room, the one shown always among them: where all do not, those
+// farthest from it give way, the later first where two stand as far, a mark standing for those given way on each side.
+func fittedTabs(items [][]piece, shown, room int) []piece {
+	first, last := 0, len(items)-1
+	for first < last && piecesWidth(tabsBetween(items, first, last)) > room {
+		if last-shown >= shown-first {
+			last--
+		} else {
+			first++
 		}
-		pieces = append(pieces, item...)
 	}
-	return pieces
+	return tabsBetween(items, first, last)
 }
 
-// hintPieces are keys and what each does, a gap between each two, as between places.
-func hintPieces(hints []hint) []piece {
-	items := make([][]piece, 0, len(hints))
-	for _, named := range hints {
-		items = append(items, []piece{{text: named.key, part: partPanelKey}, {text: space + named.does, part: partPanelNote}})
+// tabsBetween are the items of the tabs from a first to a last, a mark on each side where tabs there give way.
+func tabsBetween(items [][]piece, first, last int) []piece {
+	mark := []piece{{text: strings.Repeat(space, tabGap), part: partPanel}, {text: givenWayMark, part: partTabNumber}}
+	row := []piece{}
+	if first > 0 {
+		row = append(row, mark...)
 	}
-	return joinedItems(items)
+	row = append(row, slices.Concat(items[first:last+1]...)...)
+	if last < len(items)-1 {
+		row = append(row, mark...)
+	}
+	return row
 }
 
-// panelRow paints pieces as a row of the panel, standing on the page's left edge, cut at the screen's and filled with
-// the panel's ground.
-func (paint paint) panelRow(pieces []piece, frame frame) string {
-	gutter := paint.parts[partPanel].Render(strings.Repeat(space, frame.left))
-	painted := paint.cut(pieces, frame.width-frame.left)
-	return gutter + painted.text + paint.parts[partPanel].Render(strings.Repeat(space, max(frame.width-frame.left-painted.width, 0)))
-}
-
-// rim paints the rim across a width: the panel's ground rising half a row into it, or with few colours, where the
-// panel has no ground of its own, a rule.
-func (paint paint) rim(width int) string {
-	mark := rimMark
-	if paint.fewColours {
-		mark = rimRuleMark
-	}
-	return paint.parts[partRim].Render(strings.Repeat(mark, max(width, 0)))
+// footerRow is the footer as the chosen tab and its scroll leave it: its session and tabs, painted already, the key
+// to the window of keys, and the ruler at the right.
+func (model Model) footerRow(drawn drawnTab) string {
+	footer := model.drawn.footer
+	inside := model.frame.width - sides*footer.place.margin
+	ruler := model.paint.cut([]piece{{text: model.position(), part: partRuler}}, inside-drawn.footerTabs.width-footer.keys.width)
+	fill := strings.Repeat(space, max(inside-drawn.footerTabs.width-footer.keys.width-ruler.width, 0))
+	return footer.gutter + drawn.footerTabs.text + model.paint.parts[partPanel].Render(fill) + footer.keys.text + ruler.text + footer.gutter
 }

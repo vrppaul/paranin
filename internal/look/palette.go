@@ -6,9 +6,9 @@ import "image/color"
 
 // The design's colours, each named for what it does, in the order design/tokens.yaml names them
 const (
-	// ColourSunk is the panel under the page, the prompt's, the rim it rises into, and a window over the page; a shade below the page
+	// ColourSunk is the panel under the page, the footer's and the command line's, and a window over the page; a shade below the page
 	ColourSunk Colour = iota
-	// ColourDeep is the status line under the panel, a shade below it
+	// ColourDeep is a shade below the panel, the ground of the foot line's chips, of a part of it under the pointer and of a quiet control pressed
 	ColourDeep
 	// ColourText is what a reader reads
 	ColourText
@@ -22,11 +22,11 @@ const (
 	ColourEdge
 	// ColourAccent is what the eye goes to first, a command among it
 	ColourAccent
-	// ColourHost is the site's host where it is written, as the prompt's, and the far end of the author's name
+	// ColourHost is the site's host where it is written, as the footer's session, and the far end of the author's name
 	ColourHost
-	// ColourLabel is what names the text after it, as the place in the prompt
+	// ColourLabel is what names the text after it, as a fact's label
 	ColourLabel
-	// ColourPrompt is the mark a prompt ends in, after which the reader types
+	// ColourPrompt is the mark after which the reader types, on the command line, or a command stands
 	ColourPrompt
 	// ColourOnAccent is text laid on the accent
 	ColourOnAccent

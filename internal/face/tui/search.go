@@ -8,10 +8,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// How the prompt says where a search stands, and that it found nothing, as Neovim says it
+// How the command line says where a search stands, and that it found nothing, as Neovim says it
 const (
 	searchMark    = "/"
-	matchOpening  = " ["
+	matchOpening  = "["
 	matchOf       = "/"
 	matchClosing  = "]"
 	notFoundError = "E486: Pattern not found: "
@@ -35,7 +35,7 @@ type shownMatch struct {
 	shown  bool
 }
 
-// commandMessage is what the prompt says after a key, and whether it says something went wrong.
+// commandMessage is what the command line says after a key, and whether it says something went wrong.
 type commandMessage struct {
 	text   string
 	failed bool
@@ -175,14 +175,16 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 		return model
 	}
 	place := choose(matches)
-	model.said = commandMessage{
-		text:   searchMark + query + matchOpening + strconv.Itoa(place+1) + matchOf + strconv.Itoa(len(matches)) + matchClosing,
-		failed: false,
-	}
+	model.said = commandMessage{text: searchMark + query + space + matchCount(place, len(matches)), failed: false}
 	model = model.scrolledTo(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
 	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.scrolls[model.chosen], shown: true}
 	return model
+}
+
+// matchCount says which match of how many a place among them is, as Neovim counts them: "[2/5]".
+func matchCount(place, count int) string {
+	return matchOpening + strconv.Itoa(place+1) + matchOf + strconv.Itoa(count) + matchClosing
 }
 
 // markedQuery is the search a tab marks: what the reader types, on the chosen tab while they type it; the search

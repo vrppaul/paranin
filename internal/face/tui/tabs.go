@@ -37,14 +37,11 @@ const (
 // (docs/FOUNDATION.md §3.4)
 const cursorBar = "▎"
 
-// tab is one screen of a document a reader moves between: its title, as the status line names it, the name its place
-// goes by, its checks counted, and its body, which says what the tab shows and so how it is laid out.
+// tab is one screen of a document a reader moves between: its title, the name it goes by, as the footer names it and
+// the command line goes to it, and its body, which says what the tab shows and so how it is laid out.
 type tab struct {
 	title string
 	slug  string
-	// tally is the tab's checks counted by level, its sections' included, as the status line names them after the
-	// title, and empty where the tab holds none
-	tally string
 	body  tabBody
 }
 
@@ -105,7 +102,7 @@ type platedSection struct {
 	blocks []document.Block
 }
 
-// plainSection is a section of another document, which stands as it is, its title on the status line alone.
+// plainSection is a section of another document, which stands as it is, named in the footer alone.
 type plainSection struct {
 	blocks []document.Block
 }
@@ -123,10 +120,10 @@ func (plainSection) tabBody()  {}
 func tabsOf(composed document.Document) []tab {
 	parted := document.TabsOf(composed)
 	opening := parted.Opening
-	tabs := []tab{{title: document.PlainText(opening.Title), slug: opening.Slug, tally: checkTally(opening.Blocks), body: openingBody(composed.Head, opening)}}
+	tabs := []tab{{title: document.PlainText(opening.Title), slug: opening.Slug, body: openingBody(composed.Head, opening)}}
 	for _, shown := range parted.Rest {
 		body := sectionBody(composed.Head.Page.Kind, shown.Blocks)
-		tabs = append(tabs, tab{title: document.PlainText(shown.Title), slug: shown.Slug, tally: checkTally(shown.Blocks), body: body})
+		tabs = append(tabs, tab{title: document.PlainText(shown.Title), slug: shown.Slug, body: body})
 	}
 	return tabs
 }
@@ -252,7 +249,7 @@ func carriesCursor(kind document.PageKind) bool {
 
 // withCursor is a title's words with the site's cursor at the end of the last, so a line parts the two only where
 // that word is wider than the line and breaks, bar and all, as fill breaks any; a title of no words is left with
-// none.
+// none. It stands still: a blink would paint the head again each half second, where a tab is painted once.
 func withCursor(words []word) []word {
 	last := len(words) - 1
 	if last < 0 {
@@ -276,7 +273,7 @@ func (layout layout) heading(title string) []line {
 
 // titleRows are a tab's title: in the titles' font, smaller than the name's, its colours going from the accent to the
 // host's, where the font draws every letter of it and it and a row of nothing under it fit the page; as text in the
-// same colours where that fits; nothing where neither does, or the tab has no title, the status line naming the tab.
+// same colours where that fits; nothing where neither does, or the tab has no title, the footer naming the tab.
 func (layout layout) titleRows(title string) []line {
 	if title == "" {
 		return nil

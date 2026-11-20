@@ -142,7 +142,7 @@ html {
   scroll-padding-bottom: var(--row-2);
 }
 
-/* the session: the site's name between tmux's brackets, in the host's colour, as the TUI's prompt writes it; under the
+/* the session: the site's name between tmux's brackets, in the host's colour, as the TUI's footer writes it; under the
  * pointer on the ground a shade down, as a window, which reaches a cell past its words */
 .session {
   margin-inline: calc(-1 * var(--cell));

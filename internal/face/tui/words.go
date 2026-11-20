@@ -124,15 +124,6 @@ func wordOf(text string, shown kind) word {
 	return word{runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false}
 }
 
-// lineText is the text a line's runs read as, one after another.
-func lineText(runs line) string {
-	var text strings.Builder
-	for _, piece := range runs {
-		text.WriteString(piece.text)
-	}
-	return text.String()
-}
-
 // wordReader gathers words from spans read one by one: a word goes on until a space ends it.
 type wordReader struct {
 	site    routes.Site

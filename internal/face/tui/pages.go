@@ -9,7 +9,7 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// What the prompt says where :e finds no page by the name typed, as Neovim says it of a file
+// What the command line says where :e finds no page by the name typed, as Neovim says it of a file
 const (
 	pageNotFoundOpening = `E447: Can't find file "`
 	pageNotFoundClosing = `" in path`

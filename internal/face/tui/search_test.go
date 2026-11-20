@@ -9,7 +9,6 @@ import (
 
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
-	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The keys that reach the experience tab, which opens with a role, its point, a blank line, then the next role
@@ -72,22 +71,24 @@ func TestTheMatchKeysGoRoundTheMatches(test *testing.T) {
 }
 
 // A search starts from where the page stands: its first match is the first at or after the page's top line, the
-// top line itself among them.
+// top line itself among them, counted so while the reader types as once they search.
 func TestASearchStartsWhereThePageStands(test *testing.T) {
 	cases := []struct {
 		name  string
 		keys  []string
 		query string
+		after []string
 		holds string
 	}{
-		{name: "a match after the top line", keys: []string{"3", "j"}, query: "kept", holds: "/kept [2/2]"},
-		{name: "a match on the top line", keys: []string{"j"}, query: "the", holds: "/the [1/4]"},
+		{name: "a match after the top line", keys: []string{"3", "j"}, query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
+		{name: "a match on the top line", keys: []string{"j"}, query: "the", after: []string{"enter"}, holds: "/the [1/4]"},
+		{name: "the count while the reader types", keys: []string{"3", "j"}, query: "kept", after: nil, holds: "[2/2]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(append(toExperience(), testCase.keys...), "/")...)
-			if screen := screenOf(test, pressed(test, typed(test, model, testCase.query), "enter")); !strings.Contains(screen, testCase.holds) {
-				test.Errorf("after %q and searching %q the screen =\n%s\nwant it to hold %q", testCase.keys, testCase.query, screen, testCase.holds)
+			if screen := screenOf(test, pressed(test, typed(test, model, testCase.query), testCase.after...)); !strings.Contains(screen, testCase.holds) {
+				test.Errorf("after %q, searching %q and %q the screen =\n%s\nwant it to hold %q", testCase.keys, testCase.query, testCase.after, screen, testCase.holds)
 			}
 		})
 	}
@@ -128,8 +129,8 @@ func TestASearchThatFindsNothingTellsTheReader(test *testing.T) {
 	}
 }
 
-// What the reader types is shown after the slash as they type it: a backspace takes the last letter back, one on
-// nothing ends the search, and Esc ends it unsought.
+// What the reader types is shown after the slash as they type it, with which of how many matches the page shows: a
+// backspace takes the last letter back, one on nothing ends the search, and Esc ends it unsought.
 func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -138,16 +139,17 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "~ /pars", lacks: completeKeyName},
+		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "/pars", lacks: "tab next"},
+		{name: "the matches are counted as the reader types", text: "the", keys: nil, holds: "[1/4]", lacks: "E486"},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
-		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: look.PromptMark + space + cursorBar, lacks: cancelHint},
+		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "Northwind", lacks: "esc cancel"},
 		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 			screen := screenOf(test, pressed(test, typed(test, model, testCase.text), testCase.keys...))
-			if !strings.Contains(screen, testCase.holds) || strings.Contains(belowThePage(screen), testCase.lacks) {
+			if !strings.Contains(screen, testCase.holds) || strings.Contains(atTheFoot(screen), testCase.lacks) {
 				test.Errorf("after typing %q and %q the screen =\n%s\nwant it to hold %q, below its page not %q", testCase.text,
 					testCase.keys, screen, testCase.holds, testCase.lacks)
 			}
@@ -155,7 +157,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 	}
 }
 
-// What the prompt says lasts one key, and the search lasts until it is taken away: Esc in normal mode takes
+// What the command line says lasts one key, and the search lasts until it is taken away: Esc in normal mode takes
 // it, so n finds nothing to go to; a second slash opens on nothing typed.
 func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 	cases := []struct {
@@ -163,7 +165,7 @@ func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 		keys  []string
 		lacks string
 	}{
-		{name: "a key wipes what the prompt said", keys: []string{"j"}, lacks: "[1/4]"},
+		{name: "a key wipes what the command line said", keys: []string{"j"}, lacks: "[1/4]"},
 		{name: "Esc takes the search away", keys: []string{"esc", "n"}, lacks: "/the"},
 		{name: "a second slash opens on nothing typed", keys: []string{"/"}, lacks: "the"},
 	}
@@ -171,8 +173,31 @@ func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 			model = pressed(test, pressed(test, typed(test, model, "the"), "enter"), testCase.keys...)
-			if below := belowThePage(screenOf(test, model)); strings.Contains(below, testCase.lacks) {
+			if below := atTheFoot(screenOf(test, model)); strings.Contains(below, testCase.lacks) {
 				test.Errorf("after %q the footer = %q, want no %q", testCase.keys, below, testCase.lacks)
+			}
+		})
+	}
+}
+
+// A match the search scrolls to stays in sight under what the command line says of it, on a screen with no row of
+// crosses for the command line to stand on as on one with them: here the experience tab's last line.
+func TestAMatchShowsBesideWhatTheCommandLineSays(test *testing.T) {
+	// a screen shorter than the experience tab, at a phone's width as at a common one
+	const shorterThanTheTab = 10
+	cases := []struct {
+		name  string
+		width int
+	}{
+		{name: "a phone's screen, with no crosses", width: phoneWidth},
+		{name: "a common screen, with crosses", width: commonWidth},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := pressed(test, fixtureModel(test, testCase.width, shorterThanTheTab), append(toExperience(), "/")...)
+			screen := screenOf(test, pressed(test, typed(test, model, "outages"), "enter"))
+			if page := aboveTheCommandLine(screen); !strings.Contains(page, "outages") || !strings.Contains(commandLineOf(screen), "/outages") {
+				test.Errorf("after searching the last line the screen =\n%s\nwant the match on the page over the command line", screen)
 			}
 		})
 	}
@@ -330,7 +355,7 @@ func TestTypingAfterAResizeKeepsThePage(test *testing.T) {
 			model := typed(test, pressed(test, fixtureModel(test, narrowWidth, shortHeight), append(toExperience(), "G", "/")...), "e")
 			resized, _ := model.Update(tea.WindowSizeMsg{Width: commonWidth, Height: shortHeight})
 			screen := screenOf(test, pressed(test, typed(test, as[Model](test, resized), testCase.text), testCase.keys...))
-			if below := belowThePage(screen); !strings.Contains(below, "Bot") {
+			if below := atTheFoot(screen); !strings.Contains(below, "Bot") {
 				test.Errorf("after a resize while typing, %q and %q the footer = %q, want the page still at its end",
 					testCase.text, testCase.keys, below)
 			}
@@ -338,30 +363,47 @@ func TestTypingAfterAResizeKeepsThePage(test *testing.T) {
 	}
 }
 
-// belowThePage is the footer of a screen, its last rows, roomy or tight as the screen's height makes it.
-func belowThePage(screen string) string {
+// The rows at a screen's foot: the command line's, where it shows, and the footer under it
+const footRows = 2
+
+// What parts the command line's left, the mark and what is typed or what a key said, from the keys it names at its
+// right: a gap wider than any typed in a test
+const commandLineGap = "   "
+
+// atTheFoot is the last rows of a screen: the command line's row, where it shows, and the footer.
+func atTheFoot(screen string) string {
 	rows := strings.Split(screen, lineEnd)
-	footer := frameOf(textWidth(rows[0]), len(rows)).footer
-	return strings.Join(rows[max(len(rows)-len(footer), 0):], lineEnd)
+	return strings.Join(rows[max(len(rows)-footRows, 0):], lineEnd)
 }
 
-// aboveTheStatusLine is a screen but for its footer.
-func aboveTheStatusLine(screen string) string {
+// aboveTheCommandLine is a screen but for its foot: the command line's row and the footer.
+func aboveTheCommandLine(screen string) string {
 	rows := strings.Split(screen, lineEnd)
-	footer := frameOf(textWidth(rows[0]), len(rows)).footer
-	return strings.Join(rows[:max(len(rows)-len(footer), 0)], lineEnd)
+	return strings.Join(rows[:max(len(rows)-footRows, 0)], lineEnd)
 }
 
-// footerLine is a row of the footer of a screen, where the frame of the screen's size puts it, without the blanks
-// around it.
-func footerLine(screen string, wanted footerRow) string {
+// aboveTheFooter is a screen but for its footer.
+func aboveTheFooter(screen string) string {
 	rows := strings.Split(screen, lineEnd)
-	row, _ := frameOf(textWidth(rows[0]), len(rows)).rowOf(wanted)
-	return strings.TrimSpace(rows[max(row, 0)])
+	return strings.Join(rows[:len(rows)-1], lineEnd)
 }
 
-// A control character sent as typing never reaches the reader's terminal: the prompt, a search or a place typed on
-// it, shows letters alone.
+// footerOf is the footer of a screen, its last row, without the blanks around it.
+func footerOf(screen string) string {
+	rows := strings.Split(screen, lineEnd)
+	return strings.TrimSpace(rows[len(rows)-1])
+}
+
+// commandLineOf is what the command line of a screen holds at its left, the mark and what is typed or what a key
+// said, without the keys it names at its right.
+func commandLineOf(screen string) string {
+	rows := strings.Split(screen, lineEnd)
+	left, _, _ := strings.Cut(strings.TrimSpace(rows[max(len(rows)-footRows, 0)]), commandLineGap)
+	return left
+}
+
+// A control character sent as typing never reaches the reader's terminal: the command line, a search or a place typed
+// on it, shows letters alone.
 func TestAControlCharacterTypedNeverReachesTheScreen(test *testing.T) {
 	for _, opening := range []string{"/", ":"} {
 		test.Run(opening, func(test *testing.T) {

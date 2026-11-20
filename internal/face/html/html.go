@@ -66,6 +66,9 @@ const (
 	deepestHeadingDepth = 6
 )
 
+// The mark before a command a reader may run, as a shell's prompt ends in (DESIGN.md, Iconography)
+const promptMark = "❯"
+
 // A space a line never breaks at, U+00A0, written as its bytes in UTF-8 so the code shows it
 const noBreakSpace = "\xc2\xa0"
 

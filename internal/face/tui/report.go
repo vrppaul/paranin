@@ -92,12 +92,6 @@ func (layout layout) checks(checks document.Checks, indent int) []line {
 	return lines
 }
 
-// checkTally is the status line's count of a tab's checks, its sections' included, as tallyWords counts them:
-// "1 OK · 1 WARNING".
-func checkTally(blocks []document.Block) string {
-	return lineText(wordRuns(tallyWords(checksIn(blocks))))
-}
-
 // tallyWords are checks counted by level, in the order the document gives the levels, each level's count before
 // Neovim's word for it, a word in its level's kind; each after the first opens with the place's mark, so a line
 // breaks between two counts, never inside one nor before a mark.

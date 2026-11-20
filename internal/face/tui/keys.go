@@ -53,13 +53,13 @@ const (
 	modeNormal mode = iota
 	// modeSearch types a search after the slash
 	modeSearch
-	// modeCommand types a place to go to, or a command, on the prompt
+	// modeCommand types a place to go to, or a command, after the colon
 	modeCommand
 	// modeKeys shows the window of keys, which the next key closes
 	modeKeys
 )
 
-// keyState is what the keys pressed so far leave pending: the mode, what is typed on the prompt after the
+// keyState is what the keys pressed so far leave pending: the mode, what is typed on the command line after the
 // slash or the colon, a first g, and a number typed before a key, with the sequence of its last digit, so a pause
 // that ends an older number is passed over.
 type keyState struct {
@@ -90,24 +90,28 @@ type action func(model Model, count int) (Model, tea.Cmd)
 // normalActions are what each key does in normal mode.
 func normalActions() map[string]action {
 	actions := map[string]action{
-		quitKey:          Model.closed,
-		interruptKey:     Model.quit,
-		downKey:          Model.scrollDown,
-		downArrow:        Model.scrollDown,
-		upKey:            Model.scrollUp,
-		upArrow:          Model.scrollUp,
-		topKey:           Model.toLine,
-		homeKey:          Model.home,
-		bottomKey:        Model.toLineOrEnd,
-		endKey:           Model.end,
-		nextKey:          Model.nextTab,
-		rightArrow:       Model.nextTab,
-		tabKey:           func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened().completed(forwardStep), nil },
-		previousKey:      Model.previousTab,
-		leftArrow:        Model.previousTab,
-		backwardTabKey:   func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened().completed(backwardStep), nil },
+		quitKey:      Model.closed,
+		interruptKey: Model.quit,
+		downKey:      Model.scrollDown,
+		downArrow:    Model.scrollDown,
+		upKey:        Model.scrollUp,
+		upArrow:      Model.scrollUp,
+		topKey:       Model.toLine,
+		homeKey:      Model.home,
+		bottomKey:    Model.toLineOrEnd,
+		endKey:       Model.end,
+		nextKey:      Model.nextTab,
+		rightArrow:   Model.nextTab,
+		tabKey: func(model Model, _ int) (Model, tea.Cmd) {
+			return model.commandLineOpened().completed(forwardStep), nil
+		},
+		previousKey: Model.previousTab,
+		leftArrow:   Model.previousTab,
+		backwardTabKey: func(model Model, _ int) (Model, tea.Cmd) {
+			return model.commandLineOpened().completed(backwardStep), nil
+		},
 		searchKey:        Model.startSearch,
-		commandKey:       func(model Model, _ int) (Model, tea.Cmd) { return model.promptOpened(), nil },
+		commandKey:       func(model Model, _ int) (Model, tea.Cmd) { return model.commandLineOpened(), nil },
 		nextMatchKey:     Model.nextMatch,
 		previousMatchKey: Model.previousMatch,
 		copyKey:          Model.copiedValue,

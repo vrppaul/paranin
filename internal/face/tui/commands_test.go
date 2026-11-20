@@ -11,19 +11,17 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// The prompt as it opens, on the fixture's site, before anything is typed
-const emptyPrompt = "example.test ~ ❯"
-
-// A colon opens the prompt, where what the reader types shows after it.
-func TestTheColonOpensThePrompt(test *testing.T) {
-	model := typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "qa")
-	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" qa" {
-		test.Errorf("after a colon and qa the prompt = %q, want %q", line, emptyPrompt+" qa")
+// A colon opens the command line over the footer, where what the reader types shows after it, the footer still under
+// it.
+func TestTheColonOpensTheCommandLineOverTheFooter(test *testing.T) {
+	screen := screenOf(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "qa"))
+	if line, footer := commandLineOf(screen), footerOf(screen); line != ":qa" || !strings.HasPrefix(footer, "[example.test]") {
+		test.Errorf("after a colon and qa the command line = %q and the footer %q, want %q over the footer", line, footer, ":qa")
 	}
 }
 
-// Each of Neovim's ways to quit, typed on the prompt, ends the session on the résumé, as q does, spaces around it or
-// not; :qa ends it on a project's page too.
+// Each of Neovim's ways to quit, typed on the command line, ends the session on the résumé, as q does, spaces around
+// it or not; :qa ends it on a project's page too.
 func TestAQuitCommandEndsTheSession(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -65,30 +63,31 @@ func TestCommandsRefuseArgumentsTheyCannotTake(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), testCase.text))
-			if line := footerLine(screen, footerPrompt); line != testCase.want || !strings.Contains(screen, resumeHeadline) {
-				test.Errorf("after :%s the screen =\n%s\nwant the prompt to say %q, and the résumé still shown", testCase.text, screen, testCase.want)
+			if line := commandLineOf(screen); line != testCase.want || !strings.Contains(screen, resumeHeadline) {
+				test.Errorf("after :%s the screen =\n%s\nwant the command line to say %q, and the résumé still shown", testCase.text, screen, testCase.want)
 			}
 		})
 	}
 }
 
-// What names no place and no command is named back with Neovim's error, alone on the prompt's row as Neovim's command
-// line says it, and the keys go back to normal, where no cursor shows; the start of a command's name is no command.
+// What names no place and no command is named back with Neovim's error, alone on the command line as Neovim says it,
+// and the keys go back to normal, where no cursor shows; the start of a command's name is no command.
 func TestAnUnknownCommandIsNamedBack(test *testing.T) {
 	for _, name := range []string{"nope", "qui"} {
 		test.Run(name, func(test *testing.T) {
 			model := pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), name), "enter")
 			want := "E492: Not an editor command: " + name
-			if line := footerLine(screenOf(test, model), footerPrompt); line != want || model.View().Cursor != nil {
-				test.Errorf("after :%s the prompt = %q and the cursor %+v, want %q and no cursor", name, line, model.View().Cursor, want)
+			if line := commandLineOf(screenOf(test, model)); line != want || model.View().Cursor != nil {
+				test.Errorf("after :%s the command line = %q and the cursor %+v, want %q and no cursor", name, line, model.View().Cursor, want)
 			}
 		})
 	}
 }
 
-// Esc and Ctrl+C leave the prompt, as do a backspace and Enter on nothing, running nothing: the prompt is back as it
-// opens, with the site's cursor and no terminal's cursor.
-func TestThePromptIsLeftUnrun(test *testing.T) {
+// Esc and Ctrl+C leave the command line, as do a backspace and Enter on nothing, running nothing: the screen is back
+// as it was before the colon, with no command line and no cursor.
+func TestTheCommandLineIsLeftUnrun(test *testing.T) {
+	before := screenOf(test, fixtureModel(test, commonWidth, commonHeight))
 	cases := []struct {
 		name string
 		text string
@@ -109,51 +108,54 @@ func TestThePromptIsLeftUnrun(test *testing.T) {
 				}
 				model = as[Model](test, next)
 			}
-			if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" "+cursorBar || model.View().Cursor != nil {
-				test.Errorf("after :%s and %q the prompt = %q and the cursor %+v, want %q and no cursor", testCase.text, testCase.keys,
-					line, model.View().Cursor, emptyPrompt+" "+cursorBar)
+			if screen := screenOf(test, model); screen != before || model.View().Cursor != nil {
+				test.Errorf("after :%s and %q the screen =\n%s\nand the cursor %+v, want the screen as before the colon and no cursor",
+					testCase.text, testCase.keys, screen, model.View().Cursor)
 			}
 		})
 	}
 }
 
-// Under the prompt the places it goes to are listed: before anything is typed, every tab but the one shown and the
-// window of keys; once the reader types, every place whose name starts with it, a project's page among them; where
-// nothing does, what Enter and Esc do.
-func TestThePlacesListWhatIsTyped(test *testing.T) {
+// At its right the command line names the keys that finish what the reader types: Tab where it has places to go
+// round, Enter, and Esc.
+func TestTheCommandLineNamesTheKeysThatFinishTyping(test *testing.T) {
+	// a line typed that leaves the keys some room on a common terminal, not all they take
+	const tooLongForTheKeys = 80
 	cases := []struct {
-		name  string
-		text  string
-		holds []string
-		lacks []string
+		name    string
+		opening string
+		text    string
+		holds   []string
+		lacks   []string
 	}{
-		{name: "nothing typed", text: "", holds: []string{"experience", "contact", "help"}, lacks: []string{"about", "tidy-tool"}},
-		{name: "the start of a tab", text: "e", holds: []string{"experience"}, lacks: []string{"projects", "help"}},
-		{name: "the start of a project's page", text: "ti", holds: []string{"tidy-tool"}, lacks: []string{"experience"}},
-		{name: "the start of nothing", text: "x", holds: []string{"↵ run", "esc cancel"}, lacks: []string{"experience"}},
+		{name: "a place to go round", opening: ":", text: "", holds: []string{"tab next", "↵ go", "esc cancel"}, lacks: []string{"find"}},
+		{name: "no place to go round", opening: ":", text: "x", holds: []string{"↵ go", "esc cancel"}, lacks: []string{"tab next"}},
+		{name: "a search", opening: "/", text: "", holds: []string{"↵ find", "esc cancel"}, lacks: []string{"tab next"}},
+		{name: "a line too long to leave them room", opening: ":", text: strings.Repeat("x", tooLongForTheKeys), holds: nil, lacks: []string{"↵"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			places := footerLine(screenOf(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), testCase.text)), footerPlaces)
+			model := typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), testCase.opening), testCase.text)
+			foot := atTheFoot(screenOf(test, model))
 			for _, want := range testCase.holds {
-				if !strings.Contains(places, want) {
-					test.Errorf("after :%s the places = %q, want them to hold %q", testCase.text, places, want)
+				if !strings.Contains(foot, want) {
+					test.Errorf("after %s%s the foot =\n%s\nwant it to hold %q", testCase.opening, testCase.text, foot, want)
 				}
 			}
 			for _, unwanted := range testCase.lacks {
-				if strings.Contains(places, unwanted) {
-					test.Errorf("after :%s the places = %q, want them not to hold %q", testCase.text, places, unwanted)
+				if strings.Contains(foot, unwanted) {
+					test.Errorf("after %s%s the foot =\n%s\nwant it not to hold %q", testCase.opening, testCase.text, foot, unwanted)
 				}
 			}
 		})
 	}
 }
 
-// A second colon opens the prompt on nothing typed, and the places listed before anything is typed.
+// A second colon opens the command line on nothing typed, where Tab goes round the places from the first again.
 func TestASecondColonOpensOnNothing(test *testing.T) {
-	screen := screenOf(test, pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "x"), "esc", ":"))
-	if line, places := footerLine(screen, footerPrompt), footerLine(screen, footerPlaces); line != emptyPrompt || !strings.Contains(places, "experience") {
-		test.Errorf("after :x, Esc and a colon the prompt = %q and the places %q, want %q and every tab listed", line, places, emptyPrompt)
+	screen := screenOf(test, pressed(test, typed(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), ":"), "x"), "esc", ":", "tab"))
+	if line := commandLineOf(screen); line != ":experience" {
+		test.Errorf("after :x, Esc, a colon and Tab the command line = %q, want %q", line, ":experience")
 	}
 }
 
@@ -177,44 +179,34 @@ func TestEnterOnAPlaceGoesThere(test *testing.T) {
 	}
 }
 
-// The places follow the page shown: a project's page lists its own tabs, not the résumé's, and q brings the
-// résumé's back.
+// The places follow the page shown: on a project's page Tab goes round its own tabs, not the résumé's, and after q
+// the résumé's again.
 func TestThePlacesFollowThePageShown(test *testing.T) {
 	cases := []struct {
-		name  string
-		keys  []string
-		holds string
-		lacks string
+		name string
+		keys []string
+		line string
 	}{
-		{name: "a project's page", keys: nil, holds: "why", lacks: "experience"},
-		{name: "the résumé again", keys: []string{"q"}, holds: "experience", lacks: "why"},
+		{name: "a project's page", keys: nil, line: ":why"},
+		{name: "the résumé again", keys: []string{"q"}, line: ":experience"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"), append(testCase.keys, ":")...)
-			if places := footerLine(screenOf(test, model), footerPlaces); !strings.Contains(places, testCase.holds) || strings.Contains(places, testCase.lacks) {
-				test.Errorf("after :e tidy-tool, %q and a colon the places = %q, want %q and not %q", testCase.keys, places, testCase.holds, testCase.lacks)
+			model := pressed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"), append(testCase.keys, ":", "tab")...)
+			if line := commandLineOf(screenOf(test, model)); line != testCase.line {
+				test.Errorf("after :e tidy-tool, %q, a colon and Tab the command line = %q, want %q", testCase.keys, line, testCase.line)
 			}
 		})
 	}
 }
 
-// Where the places listed before anything is typed do not fit, the last of them, help, stays in sight, a mark
-// standing for those that give way.
-func TestHelpStaysInSightOnANarrowScreen(test *testing.T) {
-	places := footerLine(screenOf(test, fixtureModel(test, narrowWidth, commonHeight)), footerPlaces)
-	if !strings.HasSuffix(places, "…   help") {
-		test.Errorf("at %d columns the places = %q, want them to end in a mark and help", narrowWidth, places)
-	}
-}
-
-// Each name goes to one place: a tab titled as the window of keys is named takes the name, listed once.
+// Each name goes to one place: a tab titled as the window of keys is named takes the name, so Tab goes round it once.
 func TestANameGoesToOnePlace(test *testing.T) {
 	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{section}}
 	model := New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())
-	if places := footerLine(screenOf(test, model), footerPlaces); strings.Count(places, "help") != 1 {
-		test.Errorf("on a page with a tab titled Help the places = %q, want help listed once", places)
+	if line := commandLineOf(screenOf(test, pressed(test, model, ":", "tab", "tab"))); line != ":" {
+		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, ":")
 	}
 }
 
@@ -229,38 +221,38 @@ func TestATabOfSeveralWordsGoesByThemJoined(test *testing.T) {
 	}
 }
 
-// Tab, in normal mode or on the prompt, chooses the first place listed and writes it on the prompt, which Enter goes
-// to; Shift+Tab in normal mode chooses the last.
+// Tab, in normal mode or on the command line, chooses the first place and writes it on the command line, which Enter
+// goes to; Shift+Tab in normal mode chooses the last.
 func TestTabCompletesAPlace(test *testing.T) {
 	cases := []struct {
 		name string
 		keys []string
 		line string
 	}{
-		{name: "Tab on the prompt", keys: []string{":", "tab"}, line: emptyPrompt + " experience"},
-		{name: "Tab in normal mode", keys: []string{"tab"}, line: emptyPrompt + " experience"},
-		{name: "Shift+Tab in normal mode", keys: []string{"shift+tab"}, line: emptyPrompt + " help"},
+		{name: "Tab on the command line", keys: []string{":", "tab"}, line: ":experience"},
+		{name: "Tab in normal mode", keys: []string{"tab"}, line: ":experience"},
+		{name: "Shift+Tab in normal mode", keys: []string{"shift+tab"}, line: ":help"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, commonHeight), testCase.keys...)
-			if line := footerLine(screenOf(test, model), footerPrompt); line != testCase.line {
-				test.Errorf("after %q the prompt = %q, want %q", testCase.keys, line, testCase.line)
+			if line := commandLineOf(screenOf(test, model)); line != testCase.line {
+				test.Errorf("after %q the command line = %q, want %q", testCase.keys, line, testCase.line)
 			}
 		})
 	}
 }
 
-// Enter goes to the place Tab chose, and the status line opens with its title.
+// Enter goes to the place Tab chose, and the footer marks its tab.
 func TestEnterGoesToThePlaceTabChose(test *testing.T) {
-	if status := footerLine(screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), "tab", "enter")), footerStatus); !strings.HasPrefix(status, "Experience") {
-		test.Errorf("after Tab and Enter the status line = %q, want it to open with the tab gone to, %q", status, "Experience")
+	if footer := footerOf(screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), "tab", "enter"))); !strings.Contains(footer, "2:experience*") {
+		test.Errorf("after Tab and Enter the footer = %q, want the tab gone to marked, %q", footer, "2:experience*")
 	}
 }
 
-// Tab goes on through the places listed and Shift+Tab back, writing the one chosen on the prompt; past either end the
-// prompt holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
-// tab the fixture lists four other tabs and help.
+// Tab goes on through the places and Shift+Tab back, writing the one chosen on the command line; past either end the
+// line holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
+// tab the fixture has four other tabs and help to go to.
 func TestTabGoesRoundThePlaces(test *testing.T) {
 	// the presses of Tab that reach the last place: each other tab, then help
 	const lastPlace = 5
@@ -269,27 +261,27 @@ func TestTabGoesRoundThePlaces(test *testing.T) {
 		keys []string
 		line string
 	}{
-		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: emptyPrompt + " projects"},
-		{name: "the last Tab help", keys: slices.Repeat([]string{"tab"}, lastPlace), line: emptyPrompt + " help"},
-		{name: "a Tab past the last what was typed", keys: slices.Repeat([]string{"tab"}, lastPlace+1), line: emptyPrompt},
-		{name: "a Tab after that the first again", keys: slices.Repeat([]string{"tab"}, lastPlace+2), line: emptyPrompt + " experience"},
-		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: emptyPrompt + " contact"},
-		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: emptyPrompt},
+		{name: "a second Tab the next", keys: []string{"tab", "tab"}, line: ":projects"},
+		{name: "the last Tab help", keys: slices.Repeat([]string{"tab"}, lastPlace), line: ":help"},
+		{name: "a Tab past the last what was typed", keys: slices.Repeat([]string{"tab"}, lastPlace+1), line: ":"},
+		{name: "a Tab after that the first again", keys: slices.Repeat([]string{"tab"}, lastPlace+2), line: ":experience"},
+		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: ":contact"},
+		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: ":"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), append([]string{":"}, testCase.keys...)...))
-			if line := footerLine(screen, footerPrompt); line != testCase.line {
-				test.Errorf("after a colon and %q the prompt = %q, want %q", testCase.keys, line, testCase.line)
+			if line := commandLineOf(screen); line != testCase.line {
+				test.Errorf("after a colon and %q the command line = %q, want %q", testCase.keys, line, testCase.line)
 			}
 		})
 	}
 }
 
-// Editing the line takes the choice away: the places are listed anew, none chosen, so Tab chooses the first of them.
+// Editing the line takes the choice away: the places are worked out anew, none chosen, so Tab chooses the first.
 func TestAnEditTakesTheChoiceAway(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, commonHeight), ":", "tab", "backspace", "tab")
-	if line := footerLine(screenOf(test, model), footerPrompt); line != emptyPrompt+" experience" {
-		test.Errorf("after a colon, Tab, a backspace and Tab the prompt = %q, want %q", line, emptyPrompt+" experience")
+	if line := commandLineOf(screenOf(test, model)); line != ":experience" {
+		test.Errorf("after a colon, Tab, a backspace and Tab the command line = %q, want %q", line, ":experience")
 	}
 }

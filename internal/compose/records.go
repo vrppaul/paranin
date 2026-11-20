@@ -16,7 +16,7 @@ type Record interface {
 
 // PersonRecord is the résumé's record: who it is about, the names they also go by, their title and mail, where
 // they work now, none where no role goes on, the schools they went to, the skills they use, not those still
-// learning, the languages they speak, and the addresses of their public profiles.
+// learning, the languages they speak, the addresses of their public profiles, and the page that is theirs.
 type PersonRecord struct {
 	Name           string
 	AlternateNames []string
@@ -27,10 +27,11 @@ type PersonRecord struct {
 	Skills         []string
 	Languages      []string
 	Profiles       []string
+	Page           document.Page
 }
 
-// WorkRecord is the record of a project's page: the project, what it does, what it is written in, its repository, and
-// its author with the page that is theirs.
+// WorkRecord is the record of a project's page: the project, what it does, what it is written in, its repository,
+// its author with the page that is theirs, and its own page, whole even where a tab of it is shown.
 type WorkRecord struct {
 	Name        string
 	Description string
@@ -38,6 +39,7 @@ type WorkRecord struct {
 	Repository  string
 	Author      string
 	AuthorPage  document.Page
+	Page        document.Page
 }
 
 func (PersonRecord) record() {}
@@ -63,6 +65,7 @@ func personRecord(profile content.Profile) PersonRecord {
 		Skills:         skillsInUse(profile.SkillGroups),
 		Languages:      languages,
 		Profiles:       profiles,
+		Page:           resumePage(),
 	}
 }
 
@@ -105,6 +108,7 @@ func workRecord(project content.Project, author content.Person) WorkRecord {
 		Repository:  project.Repo,
 		Author:      plainText(author.Name),
 		AuthorPage:  resumePage(),
+		Page:        projectPage(project),
 	}
 }
 

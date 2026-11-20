@@ -15,10 +15,12 @@ type Address struct {
 	URL string
 }
 
-// Page is a page of the site, by its kind and slug; the zero page is none.
+// Page is a page of the site, by its kind and slug, and the tab of it shown alone; the zero page is none.
 type Page struct {
 	Kind PageKind
 	Slug string
+	// Tab is the name of the tab shown alone (Tab.Slug); none where the page is shown whole
+	Tab string
 }
 
 // PageKind is what a page of the site is.

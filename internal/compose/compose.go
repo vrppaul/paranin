@@ -37,9 +37,43 @@ func Pages(snapshot *content.Snapshot) []Composed {
 	return pages
 }
 
+// TabPages are the pages' tabs past each opening (document.TabsOf), in their order, each a page that shows the tab
+// alone, with its page's record, since it is the page shown in part.
+func TabPages(pages []Composed) []Composed {
+	tabPages := []Composed{}
+	for _, page := range pages {
+		for _, tab := range document.TabsOf(page.Document).Rest {
+			shown := document.Document{Head: tabHead(page.Document.Head, tab), Blocks: tab.Blocks}
+			tabPages = append(tabPages, Composed{Document: shown, Record: page.Record})
+		}
+	}
+	return tabPages
+}
+
+// tabHead is the head of a tab shown alone: its page's, naming the tab, under the tab's title, with the language and
+// description of its page's head.
+func tabHead(head document.Head, tab document.Tab) document.Head {
+	return document.Head{
+		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug},
+		Language:    head.Language,
+		Greeting:    "",
+		Title:       tab.Title,
+		Subtitle:    nil,
+		Place:       "",
+		Tags:        nil,
+		Lead:        nil,
+		Repository:  nil,
+		Description: head.Description,
+	}
+}
+
 // Documents are the documents of the pages a person reads, in their order, for a face that draws no record.
 func Documents(snapshot *content.Snapshot) []document.Document {
-	pages := Pages(snapshot)
+	return documentsOf(Pages(snapshot))
+}
+
+// documentsOf are the documents of pages, in their order.
+func documentsOf(pages []Composed) []document.Document {
 	documents := make([]document.Document, 0, len(pages))
 	for _, page := range pages {
 		documents = append(documents, page.Document)
@@ -49,7 +83,7 @@ func Documents(snapshot *content.Snapshot) []document.Document {
 
 // resumePage is the résumé's page, the site's first.
 func resumePage() document.Page {
-	return document.Page{Kind: document.PageResume, Slug: ""}
+	return document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 }
 
 // projectsWithPages are the projects that have a page of their own, in their order.
@@ -100,7 +134,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	}
 	return document.Document{
 		Head: document.Head{
-			Page:        document.Page{Kind: document.PageIndex, Slug: ""},
+			Page:        document.Page{Kind: document.PageIndex, Slug: "", Tab: ""},
 			Language:    words.Language(),
 			Greeting:    "",
 			Title:       resume.Title,
@@ -244,9 +278,9 @@ func projectTags(project content.Project) []string {
 // projectPage is a project's own page, or no page where it has none.
 func projectPage(project content.Project) document.Page {
 	if !project.Page {
-		return document.Page{Kind: document.PageNone, Slug: ""}
+		return document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
 	}
-	return document.Page{Kind: document.PageProject, Slug: project.Slug}
+	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: ""}
 }
 
 // projectRepository is where a project's code lives, under the site's word for it; none where the project names no

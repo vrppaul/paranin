@@ -60,7 +60,7 @@ func TestADocumentPartsIntoAnOpeningAndATabForEachSectionLeft(test *testing.T) {
 	}
 	for _, testCase := range testCases {
 		test.Run(testCase.name, func(test *testing.T) {
-			composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: testCase.kind, Slug: ""}, textOf(testCase.title)), Blocks: testCase.blocks}
+			composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: testCase.kind, Slug: "", Tab: ""}, textOf(testCase.title)), Blocks: testCase.blocks}
 			parted := document.TabsOf(composed)
 			got := partedName{opening: nameOf(parted.Opening.Tab), briefed: parted.Opening.Brief != nil, rest: []tabName{}}
 			for _, tab := range parted.Rest {

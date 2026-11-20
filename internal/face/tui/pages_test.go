@@ -214,7 +214,7 @@ func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 // twoPagesModel is a session on the fixture's documents and a second project's page, another-tool, of a title alone.
 func twoPagesModel(test *testing.T) Model {
 	another := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "another-tool"}, textOf("another-tool")),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "another-tool", Tab: ""}, textOf("another-tool")),
 		Blocks: nil,
 	}
 	snapshot := fixtures.LoadedContent(test)

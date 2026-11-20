@@ -52,14 +52,18 @@ type manualWriter struct {
 	site routes.Site
 }
 
-// Manual writes a document as a manual page laid out as text: a title line, NAME and DESCRIPTION from its head
-// and the blocks before its first section, then a section for each of its sections, and a closing line.
+// Manual writes a document as a manual page laid out as text: a title line, NAME from its head, DESCRIPTION from its
+// head and the blocks that are no section, then a section for each of its sections, and a closing line.
 func Manual(composed document.Document, site routes.Site) string {
 	writer := manualWriter{site: site}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
+	others, sections := document.SectionsOf(composed.Blocks)
 	lines := []string{columns(title, manualSectionTitle, title)}
-	lines = append(lines, writer.head(composed.Head)...)
-	lines = append(lines, writer.blocks(composed.Blocks, sectionIndent, true)...)
+	lines = append(lines, writer.name(composed.Head)...)
+	lines = append(lines, writer.description(composed.Head, others)...)
+	for _, section := range sections {
+		lines = append(lines, writer.pageSection(section)...)
+	}
 	lines = append(lines, "", columns(site.Host(), "", title))
 	return strings.Join(lines, lineEnd) + lineEnd
 }
@@ -77,13 +81,16 @@ func (writer manualWriter) pageName(page document.Page) string {
 	return ""
 }
 
-// head writes the name section, the title with its subtitle and place, and the description: the lead, what a project
-// is made of, and where a project's code lives.
-func (writer manualWriter) head(head document.Head) []string {
+// name writes the name section: the title with its subtitle and place.
+func (writer manualWriter) name(head document.Head) []string {
 	name := joinedWords(dashWord, writer.words(head.Title), joinedWords(dotWord, writer.words(head.Subtitle), strings.Fields(head.Place)))
-	lines := append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
-	lines = append(lines, "", descriptionSection)
-	lines = append(lines, paragraph(sectionIndent, 0, writer.words(head.Lead))...)
+	return append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
+}
+
+// description writes the description section: the lead, what a project is made of, where a project's code lives,
+// then the blocks that are no section; none where there is nothing to describe.
+func (writer manualWriter) description(head document.Head, others []document.Block) []string {
+	lines := paragraph(sectionIndent, 0, writer.words(head.Lead))
 	if len(head.Tags) > 0 {
 		tags := make([][]string, 0, len(head.Tags))
 		for _, tag := range head.Tags {
@@ -94,20 +101,23 @@ func (writer manualWriter) head(head document.Head) []string {
 	if repository := head.Repository.Facts(); len(repository) > 0 {
 		lines = append(append(lines, ""), writer.pairs(sectionIndent, repository)...)
 	}
-	return lines
+	lines = trimBlank(append(lines, writer.blocks(others, sectionIndent)...))
+	if len(lines) == 0 {
+		return nil
+	}
+	return append([]string{"", descriptionSection}, lines...)
 }
 
-// blocks writes blocks at an indent, a blank line before each. At the top a section is a section of the page,
-// and the blocks before the first one go on with DESCRIPTION; below the top, a section is a title over its blocks.
-func (writer manualWriter) blocks(blocks []document.Block, indent int, top bool) []string {
+// pageSection writes a section of the page: its title in capitals over its blocks.
+func (writer manualWriter) pageSection(section document.Section) []string {
+	lines := []string{"", strings.ToUpper(strings.Join(writer.words(section.Title), space))}
+	return append(lines, trimBlank(writer.blocks(section.Blocks, sectionIndent))...)
+}
+
+// blocks writes blocks at an indent, a blank line before each; a section among them is a title over its blocks.
+func (writer manualWriter) blocks(blocks []document.Block, indent int) []string {
 	lines := []string{}
 	for _, block := range blocks {
-		section, isSection := block.(document.Section)
-		if isSection && top {
-			lines = append(lines, "", strings.ToUpper(strings.Join(writer.words(section.Title), space)))
-			lines = append(lines, trimBlank(writer.blocks(section.Blocks, indent, false))...)
-			continue
-		}
 		lines = append(append(lines, ""), writer.block(block, indent)...)
 	}
 	return lines
@@ -117,7 +127,7 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	switch typed := block.(type) {
 	case document.Section:
 		title := paragraph(indent, 0, writer.words(typed.Title))
-		return append(title, trimBlank(writer.blocks(typed.Blocks, indent+sectionIndent, false))...)
+		return append(title, trimBlank(writer.blocks(typed.Blocks, indent+sectionIndent))...)
 	case document.Paragraph:
 		return paragraph(indent, 0, writer.words(typed.Spans))
 	case document.Table:

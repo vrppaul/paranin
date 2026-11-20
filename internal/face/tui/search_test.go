@@ -304,7 +304,7 @@ func TestAResizeWhileTypingKeepsTheSearchBefore(test *testing.T) {
 // one match of "aa", and "aa" a second.
 func TestMatchesNeverOverlap(test *testing.T) {
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{document.Text{Text: "aaa aa"}}}},
 	}
 	model := pressed(test, New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day()), "/")

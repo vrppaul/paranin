@@ -6,14 +6,16 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The site's addresses are a contract with whoever links to it: each page has its address in each format, the
-// address a reader's request chooses the format at among them, the index at the address agents look for it,
-// llms.txt, and in markdown alone; and an address outside the site is left as it is.
+// The site's addresses are a contract with whoever links to it: each page and each tab of it shown alone has its
+// address in each format, the address a reader's request chooses the format at among them, the index at the address
+// agents look for it, llms.txt, and in markdown alone; and an address outside the site is left as it is.
 func TestEveryTargetHasItsAddress(test *testing.T) {
 	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
-	resume := document.Page{Kind: document.PageResume, Slug: ""}
-	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool"}
-	index := document.Page{Kind: document.PageIndex, Slug: ""}
+	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
+	resumeTab := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
+	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
+	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
+	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
 	cases := []struct {
 		name   string
 		target document.Target
@@ -26,10 +28,16 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a project's page in markdown", target: project, format: FormatMarkdown, want: "https://example.test/p/tidy-tool.md"},
 		{name: "a project's page as a manual", target: project, format: FormatManual, want: "https://example.test/p/tidy-tool.txt"},
 		{name: "a project's page as the reader asks", target: project, format: FormatChosen, want: "https://example.test/p/tidy-tool"},
+		{name: "a tab of the résumé in markdown", target: resumeTab, format: FormatMarkdown, want: "https://example.test/experience.md"},
+		{name: "a tab of the résumé as a manual", target: resumeTab, format: FormatManual, want: "https://example.test/experience.txt"},
+		{name: "a tab of the résumé as the reader asks", target: resumeTab, format: FormatChosen, want: "https://example.test/experience"},
+		{name: "a tab of a project's page in markdown", target: projectTab, format: FormatMarkdown, want: "https://example.test/p/tidy-tool/why.md"},
+		{name: "a tab of a project's page as a manual", target: projectTab, format: FormatManual, want: "https://example.test/p/tidy-tool/why.txt"},
+		{name: "a tab of a project's page as the reader asks", target: projectTab, format: FormatChosen, want: "https://example.test/p/tidy-tool/why"},
 		{name: "the index in markdown", target: index, format: FormatMarkdown, want: "https://example.test/llms.txt"},
 		{name: "the index has no manual", target: index, format: FormatManual, want: ""},
 		{name: "the index has no address to choose at", target: index, format: FormatChosen, want: ""},
-		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: ""}, format: FormatMarkdown, want: ""},
+		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 	}
@@ -52,9 +60,9 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		format Format
 		want   string
 	}{
-		{name: "the résumé as the reader asks", target: document.Page{Kind: document.PageResume, Slug: ""}, format: FormatChosen, want: "/"},
-		{name: "a project's page in markdown", target: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, format: FormatMarkdown, want: "/p/tidy-tool.md"},
-		{name: "a hidden page", target: document.Page{Kind: document.PageHealth, Slug: ""}, format: FormatChosen, want: ""},
+		{name: "the résumé as the reader asks", target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, want: "/"},
+		{name: "a project's page in markdown", target: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, format: FormatMarkdown, want: "/p/tidy-tool.md"},
+		{name: "a hidden page", target: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 	}
@@ -75,8 +83,8 @@ func TestALinkToAPlaceLeadsByItsID(test *testing.T) {
 		got  string
 		want string
 	}{
-		{name: "a section of the résumé", got: PlaceReference(document.Page{Kind: document.PageResume, Slug: ""}, FormatChosen, "about"), want: "/#about"},
-		{name: "a place on a project's page", got: PlaceReference(document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, FormatChosen, "usage"), want: "/p/tidy-tool#usage"},
+		{name: "a section of the résumé", got: PlaceReference(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, FormatChosen, "about"), want: "/#about"},
+		{name: "a place on a project's page", got: PlaceReference(document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, FormatChosen, "usage"), want: "/p/tidy-tool#usage"},
 		{name: "a place on the page itself", got: Place("main"), want: "#main"},
 	}
 	for _, testCase := range cases {
@@ -96,8 +104,8 @@ func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
 		page document.Page
 		want string
 	}{
-		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "curl https://example.test/"},
-		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: "curl https://example.test/p/tidy-tool"},
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: "curl https://example.test/"},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, want: "curl https://example.test/p/tidy-tool"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

@@ -37,8 +37,8 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 		},
 		{
 			name:  "a card's fact",
-			block: Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where, later}, Page: Page{Kind: PageNone, Slug: ""}},
-			want:  []Block{Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where}, Page: Page{Kind: PageNone, Slug: ""}}},
+			block: Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where, later}, Page: Page{Kind: PageNone, Slug: "", Tab: ""}},
+			want:  []Block{Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where}, Page: Page{Kind: PageNone, Slug: "", Tab: ""}}},
 		},
 		{
 			name:  "a fact in a section inside a section",

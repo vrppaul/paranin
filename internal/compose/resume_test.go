@@ -150,8 +150,8 @@ func TestEachEntryTellsARoleFromASchool(test *testing.T) {
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	documents := Documents(fixtures.LoadedContent(test))
-	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: ""})
-	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	projects := sectionTitled(test, resume, "Projects")
 	pageless, tidy := cardTitled(test, projects, "other-tool"), cardTitled(test, projects, "tidy-tool")
 	ways := waysOf(test, resume)
@@ -162,10 +162,10 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	}{
 		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Mail{Address: "mira@example.test"}},
 		{name: "a public profile", got: linkTarget(test, factLabelled(test, ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
-		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}},
-		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: ""}},
+		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}},
+		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
 		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
-		{name: "a project's page back to the résumé", got: linkTarget(test, factLabelled(test, detailsOf(test, project), "author").Value), want: document.Page{Kind: document.PageResume, Slug: ""}},
+		{name: "a project's page back to the résumé", got: linkTarget(test, factLabelled(test, detailsOf(test, project), "author").Value), want: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}},
 		{name: "a project's page to its code", got: linkTarget(test, factLabelled(test, project.Head.Repository.Facts(), "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
 	}
 	for _, testCase := range cases {
@@ -180,7 +180,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 // Every fact of a project the profile gives reaches its page, as a phrase of its own: a face that shows every phrase
 // shows every fact.
 func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
-	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	phrases := document.Phrases(project)
 	cases := []struct {
 		name string
@@ -208,7 +208,7 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 // A project's page opens with what the project is made of, its language and then its stack, as the profile lists
 // them, so a face shows them beside its name.
 func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
-	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool"}
+	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
 	cases := []struct {
 		name     string
 		snapshot *content.Snapshot
@@ -229,7 +229,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 // A project's page names where its code lives once, in its head, and its details hold the rest: who made it, the
 // profile's facts, how it is installed.
 func TestAProjectsPageNamesItsRepositoryOnce(test *testing.T) {
-	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	project := fixtures.DocumentOf(test, Documents(fixtures.LoadedContent(test)), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	cases := []struct {
 		name  string
 		facts []document.Fact
@@ -261,12 +261,12 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 		want    []document.Listing
 	}{
 		{name: "the résumé", section: "Résumé", want: []document.Listing{{
-			Page:  document.Page{Kind: document.PageResume, Slug: ""},
+			Page:  document.Page{Kind: document.PageResume, Slug: "", Tab: ""},
 			Title: []document.Span{document.Text{Text: "Mira Example"}},
 			Note:  []document.Span{document.Text{Text: "Software Engineer"}},
 		}}},
 		{name: "the projects' pages", section: "Projects", want: []document.Listing{{
-			Page:  document.Page{Kind: document.PageProject, Slug: "tidy-tool"},
+			Page:  document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""},
 			Title: []document.Span{document.Text{Text: "tidy-tool"}},
 			Note:  []document.Span{document.Text{Text: "Tidies files."}},
 		}}},
@@ -342,7 +342,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 // name the language its reader reads.
 func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := slices.Concat(Documents(snapshot), []document.Document{Index(snapshot)}, Extras(snapshot))
+	documents := slices.Concat(Documents(snapshot), documentsOf(TabPages(Pages(snapshot))), []document.Document{Index(snapshot)}, Extras(snapshot))
 	for _, composed := range documents {
 		if got, want := composed.Head.Language, "en"; got != want {
 			test.Errorf("the language of %+v = %q, want %q", composed.Head.Page, got, want)
@@ -351,16 +351,19 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 }
 
 // Each page a person reads has a description, for a search engine's snippet and a link's preview where it is
-// shared: the résumé's is its headline, a project's page's what the project does.
+// shared: the résumé's is its headline, a project's page's what the project does, a tab's its page's.
 func TestEachPageHasADescription(test *testing.T) {
-	documents := Documents(fixtures.LoadedContent(test))
+	snapshot := fixtures.LoadedContent(test)
+	documents := slices.Concat(Documents(snapshot), documentsOf(TabPages(Pages(snapshot))))
 	cases := []struct {
 		name string
 		page document.Page
 		want string
 	}{
-		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "Builds small tools that last."},
-		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: "A tool that tidies files."},
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: "Builds small tools that last."},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, want: "A tool that tidies files."},
+		{name: "a tab of the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, want: "Builds small tools that last."},
+		{name: "a tab of a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, want: "A tool that tidies files."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -379,8 +382,8 @@ func TestTheResumeHeadGreetsTheReader(test *testing.T) {
 		page document.Page
 		want string
 	}{
-		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: ""}, want: "Hello, my name is"},
-		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, want: ""},
+		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: "Hello, my name is"},
+		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, want: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -420,7 +423,7 @@ func cardTitled(test *testing.T, section document.Section, title string) documen
 		}
 	}
 	test.Fatalf("the section has no card %q", title)
-	return document.Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: nil, Page: document.Page{Kind: document.PageNone, Slug: ""}}
+	return document.Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: nil, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}}
 }
 
 // detailsOf are a page's facts, wherever compose put them.

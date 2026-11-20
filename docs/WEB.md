@@ -3,7 +3,7 @@
 > This is the contract of the first version, kept on the owner's machine while its
 > replacement lands. ADR-0002 to ADR-0004 of [ARCHITECTURE](ARCHITECTURE.md) change it
 > where they differ; it is rewritten with `face/html` and `hosting/web`. Rewritten so
-> far, and the contract the code holds: "Negotiation for `/` and `/p/{slug}`",
+> far, and the contract the code holds: "Negotiation for `/`, `/p/{slug}` and their tabs",
 > "Security headers" and "Theme".
 
 `paran.in` serves one résumé to three kinds of reader from one profile:
@@ -62,7 +62,12 @@ link and is not a gap.
 | `GET /healthz` | `ok`. |
 | anything else | 404: HTML template, or plain text for terminals. |
 
-### Negotiation for `/` and `/p/{slug}`
+### Negotiation for `/`, `/p/{slug}` and their tabs
+
+Each tab past a page's opening is served alone under its title's name: a
+tab of the résumé at `/{tab}`, of a project page at `/p/{slug}/{tab}`, each
+also at `.md` and `.txt`; `/`, `/index.md` and `/index.txt` stay the whole
+résumé.
 
 The format the `Accept` header ranks highest, by the closest range that names
 it (RFC 9110, 12.5.1): HTML (`text/html`), markdown (`text/markdown`) or the

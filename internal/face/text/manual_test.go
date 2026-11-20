@@ -13,7 +13,7 @@ import (
 func TestACommandNeverBreaksAcrossLines(test *testing.T) {
 	command := "toolkit add --scope user example -- runner --index example-index=https://packages.example.test example-tool"
 	composed := document.Document{
-		Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool"}, nil),
+		Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{
 			{Label: "install", Value: []document.Span{document.Code{Text: command}}},
 		}}},
@@ -23,13 +23,41 @@ func TestACommandNeverBreaksAcrossLines(test *testing.T) {
 	}
 }
 
+// DESCRIPTION opens with what it holds, the blocks that are no section where the head has no lead, as a tab shown
+// alone has none; and a page with nothing to describe has no DESCRIPTION.
+func TestTheDescriptionHoldsWhatDescribesThePage(test *testing.T) {
+	run := document.Paragraph{Spans: []document.Span{document.Text{Text: "Run it."}}}
+	cases := []struct {
+		name   string
+		blocks []document.Block
+		holds  string
+		lacks  string
+	}{
+		{name: "a block with no lead", blocks: []document.Block{run}, holds: "DESCRIPTION\n" + strings.Repeat(" ", sectionIndent) + "Run it.", lacks: "DESCRIPTION\n\n"},
+		{
+			name:   "sections alone",
+			blocks: []document.Block{document.Section{Title: []document.Span{document.Text{Text: "Usage"}}, Blocks: []document.Block{run}}},
+			holds:  "USAGE\n", lacks: "DESCRIPTION",
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil), Blocks: testCase.blocks}
+			got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+			if !strings.Contains(got, testCase.holds) || strings.Contains(got, testCase.lacks) {
+				test.Errorf("Manual = %q, want it to hold %q and not %q", got, testCase.holds, testCase.lacks)
+			}
+		})
+	}
+}
+
 // A title and its period never touch: where fewer than two spaces would part them, the period takes a line of its
 // own.
 func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 	period := document.Period{Start: document.GapMonth{Text: "[2020]"}, End: document.GapMonth{Text: "[2021]"}}
 	title := strings.Repeat("a", pageWidth-sectionIndent-textWidth("[2020] – [2021]")-1)
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool"}, nil),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil),
 		Blocks: []document.Block{document.Entry{Kind: document.EntryRole, Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Points: nil}},
 	}
 	want := strings.Repeat(" ", sectionIndent) + "[2020] – [2021]\n"
@@ -41,7 +69,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 // Text that touches a command stays with it, as it is written: a full stop after a command is no word of its own.
 func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 	composed := document.Document{
-		Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool"}, nil),
+		Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{
 			document.Text{Text: "Run "}, document.Code{Text: "tool --all"}, document.Text{Text: "."},
 		}}},

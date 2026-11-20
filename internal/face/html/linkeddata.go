@@ -71,9 +71,9 @@ type author struct {
 func (writer PageWriter) linkedData(record compose.Record, address string) templ.Component {
 	switch typed := record.(type) {
 	case compose.PersonRecord:
-		return linkedScript(profilePageOf(typed, address))
+		return linkedScript(writer.profilePageOf(typed, address))
 	case compose.WorkRecord:
-		return linkedScript(writer.sourceCodeOf(typed, address))
+		return linkedScript(writer.sourceCodeOf(typed))
 	}
 	// compose makes every page a person reads with its record, so a record of no kind reaches no page
 	return templ.NopComponent
@@ -84,7 +84,8 @@ func linkedScript(entity any) templ.Component {
 	return templ.JSONScript("", entity).WithType(linkedDataType)
 }
 
-func profilePageOf(record compose.PersonRecord, address string) profilePage {
+// profilePageOf is a page at an address about the person a record names, who is at the page that is theirs.
+func (writer PageWriter) profilePageOf(record compose.PersonRecord, address string) profilePage {
 	return profilePage{
 		Context: vocabulary,
 		Kind:    profilePageKind,
@@ -95,7 +96,7 @@ func profilePageOf(record compose.PersonRecord, address string) profilePage {
 			AlternateName: record.AlternateNames,
 			JobTitle:      record.Title,
 			Email:         record.Email,
-			URL:           address,
+			URL:           writer.site.Address(record.Page, routes.FormatChosen),
 			WorksFor:      employerOf(record.Employer),
 			AlumniOf:      schoolsOf(record.Schools),
 			KnowsAbout:    record.Skills,
@@ -121,14 +122,14 @@ func schoolsOf(names []string) []organization {
 	return schools
 }
 
-func (writer PageWriter) sourceCodeOf(record compose.WorkRecord, address string) sourceCode {
+func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 	return sourceCode{
 		Context:             vocabulary,
 		Kind:                sourceCodeKind,
 		Name:                record.Name,
 		Description:         record.Description,
 		ProgrammingLanguage: record.Language,
-		URL:                 address,
+		URL:                 writer.site.Address(record.Page, routes.FormatChosen),
 		CodeRepository:      record.Repository,
 		Author: author{
 			Kind: personKind,

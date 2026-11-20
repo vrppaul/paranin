@@ -227,10 +227,10 @@ func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 	facts := document.Facts{List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
 	project := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "a-tool"}, textOf("a-tool")),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "a-tool", Tab: ""}, textOf("a-tool")),
 		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
 	}
-	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf("home")), Blocks: nil}
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
 	model := commanded(test, New([]document.Document{resume, project}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day()), "e a-tool")
 	if places := footerLine(screenOf(test, model), footerPlaces); !strings.Contains(places, "facts") {
 		test.Errorf("on the project's page the places = %q, want its tab of the facts", places)
@@ -569,7 +569,7 @@ func TestANarrowTerminalOpensTheResume(test *testing.T) {
 // A fact with no value still reads as its label: a document may leave a value out, and the tab still draws.
 func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
 	if screen := screenOf(test, New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())); !strings.Contains(screen, "available") {
@@ -673,7 +673,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	}{
 		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts"}},
 		{
-			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool"}),
+			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
 			byForm: []string{"repository", "https://github.test/mira/tidy"},
 		},
@@ -781,15 +781,15 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a
 // title.
 func handHealth(test *testing.T, width, height int, title string) Model {
-	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil), Blocks: nil}
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil), Blocks: nil}
 	section := document.Section{Title: textOf(title), Blocks: []document.Block{document.Paragraph{Spans: textOf("Learning Go")}}}
-	report := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: ""}, textOf("health")), Blocks: []document.Block{section}}
+	report := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, textOf("health")), Blocks: []document.Block{section}}
 	return New([]document.Document{resume, report}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
 }
 
 // handResume is a session on a résumé a test builds by hand: a head titled by a name, then blocks.
 func handResume(test *testing.T, name string, width, height int, blocks ...document.Block) Model {
-	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, textOf(name)), Blocks: blocks}
+	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf(name)), Blocks: blocks}
 	return New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
 }
 

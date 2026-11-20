@@ -97,7 +97,7 @@ func nestedReportModel(test *testing.T) Model {
 	warning := document.Checks{Title: textOf("group"), List: []document.Check{{Level: document.CheckWarning, Spans: textOf("look"), Advice: nil}}}
 	inner := document.Section{Title: textOf("inner"), Blocks: []document.Block{warning}}
 	report := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: ""}, textOf("report")),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, textOf("report")),
 		Blocks: []document.Block{document.Section{Title: textOf("outer"), Blocks: []document.Block{warning, inner}}},
 	}
 	snapshot := fixtures.LoadedContent(test)

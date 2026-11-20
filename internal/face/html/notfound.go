@@ -40,7 +40,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		language: language,
 		included: build.Includes(assets.Site),
 		frame:    frameOf(site, composed),
-		reading:  site.ReadCommand(document.Page{Kind: document.PageResume, Slug: ""}),
+		reading:  site.ReadCommand(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
 		heading:  titleHeading(status, text(status)),
 	}
 }

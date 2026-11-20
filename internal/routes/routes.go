@@ -41,13 +41,15 @@ const (
 	askedByNameFile = "/favicon.ico"
 )
 
-// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the index
-// where agents look for it (llmstxt.org), and the endings of the formats
+// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the slash
+// before a tab's name in its page's folder, the index where agents look for it (llmstxt.org), and the endings of the
+// formats
 const (
 	resumeRoot     = "/"
 	resumeFile     = "/index"
 	indexFile      = "/llms.txt"
 	projectFolder  = "/p/"
+	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
 	// the mark before a place's id, where a link leads to a place on a page
@@ -130,42 +132,58 @@ func Place(id string) string {
 	return placeMark + id
 }
 
-// Path is where a page is served in a format, empty where it is served in none: PageNone, the hidden pages (the
-// health report and the list of skills), the index in any format but markdown, or no format.
+// Path is where a page, or a tab of it shown alone, is served in a format, empty where it is served in none:
+// PageNone, the hidden pages (the health report and the list of skills), the index in any format but markdown, or no
+// format.
 func Path(page document.Page, format Format) string {
 	switch page.Kind {
 	case document.PageNone, document.PageHealth, document.PageSkills:
 		return ""
 	case document.PageResume:
-		return resumePath(format)
+		return resumePaths(page.Tab).inFormat(format)
 	case document.PageProject:
-		return projectPath(page.Slug, format)
+		return projectPaths(page.Slug, page.Tab).inFormat(format)
 	case document.PageIndex:
 		return indexPath(format)
 	}
 	return ""
 }
 
-func resumePath(format Format) string {
-	switch format {
-	case FormatMarkdown:
-		return resumeFile + markdownEnding
-	case FormatManual:
-		return resumeFile + manualEnding
-	case FormatChosen:
-		return resumeRoot
-	}
-	return ""
+// paths are where a page is served: its own address, where the reader's request chooses the format, and the name
+// its files are written under, before each format's ending.
+type paths struct {
+	chosen string
+	files  string
 }
 
-func projectPath(slug string, format Format) string {
+// resumePaths are where the résumé is served: whole at the site's root, its files under the name an index takes; a
+// tab of it at the root, by its name.
+func resumePaths(tab string) paths {
+	if tab == "" {
+		return paths{chosen: resumeRoot, files: resumeFile}
+	}
+	return paths{chosen: resumeRoot + tab, files: resumeRoot + tab}
+}
+
+// projectPaths are where a project's page is served: in the projects' folder by its slug, a tab of it in the page's
+// own folder, by the tab's name.
+func projectPaths(slug, tab string) paths {
+	path := projectFolder + slug
+	if tab != "" {
+		path += folderEnd + tab
+	}
+	return paths{chosen: path, files: path}
+}
+
+// inFormat is the path a page is served at in a format.
+func (served paths) inFormat(format Format) string {
 	switch format {
 	case FormatMarkdown:
-		return projectFolder + slug + markdownEnding
+		return served.files + markdownEnding
 	case FormatManual:
-		return projectFolder + slug + manualEnding
+		return served.files + manualEnding
 	case FormatChosen:
-		return projectFolder + slug
+		return served.chosen
 	}
 	return ""
 }

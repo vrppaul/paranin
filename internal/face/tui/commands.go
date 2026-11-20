@@ -34,8 +34,8 @@ type hiddenCommand struct {
 // lazy.nvim's :Lazy its list of plugins, here the list of skills.
 func hiddenCommands() []hiddenCommand {
 	return []hiddenCommand{
-		{name: "checkhealth", page: document.Page{Kind: document.PageHealth, Slug: ""}},
-		{name: "Lazy", page: document.Page{Kind: document.PageSkills, Slug: ""}},
+		{name: "checkhealth", page: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}},
+		{name: "Lazy", page: document.Page{Kind: document.PageSkills, Slug: "", Tab: ""}},
 	}
 }
 

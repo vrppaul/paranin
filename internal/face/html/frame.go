@@ -36,7 +36,7 @@ type sectionLink struct {
 
 // frameOf is the frame of a site's pages: its sections led to on the résumé, by its path from the site's root.
 func frameOf(site routes.Site, composed compose.Frame) frame {
-	resume := document.Page{Kind: document.PageResume, Slug: ""}
+	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	sections := make([]sectionLink, 0, len(composed.Sections))
 	for _, title := range composed.Sections {
 		sections = append(sections, sectionLink{title: title, address: routes.PlaceReference(resume, routes.FormatChosen, document.SlugOf(title))})
@@ -50,7 +50,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		darkTheme:     composed.DarkTheme,
 		commandWords:  composed.CommandWords,
 		ssh:           composed.SSH,
-		agentsIndex:   routes.Reference(document.Page{Kind: document.PageIndex, Slug: ""}, routes.FormatMarkdown),
+		agentsIndex:   routes.Reference(document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}, routes.FormatMarkdown),
 		writeTo:       composed.WriteTo,
 	}
 }

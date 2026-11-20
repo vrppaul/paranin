@@ -18,7 +18,7 @@ type NotFound struct {
 
 // NewNotFound is the text of an address of no page of a site, opening with the status the host answers with.
 func NewNotFound(site routes.Site, status string) NotFound {
-	start := document.Page{Kind: document.PageResume, Slug: ""}
+	start := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	return NotFound{status: status, startCommand: site.ReadCommand(start)}
 }
 

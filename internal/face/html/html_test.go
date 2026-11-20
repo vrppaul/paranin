@@ -28,8 +28,8 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 		page document.Page
 		file string
 	}{
-		{page: document.Page{Kind: document.PageResume, Slug: ""}, file: "index.html"},
-		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool"}, file: "p/tidy-tool.html"},
+		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, file: "index.html"},
+		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
@@ -54,9 +54,9 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 
 // A link whose target has no address, as a hidden page has none, reads as its words, never as a link to nowhere.
 func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
-	nowhere := document.Link{Target: document.Page{Kind: document.PageHealth, Slug: ""}, Spans: []document.Span{document.Text{Text: "the report"}}}
+	nowhere := document.Link{Target: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, Spans: []document.Span{document.Text{Text: "the report"}}}
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: ""}, nil),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
 	if page, want := fixtureWriter(test).Page(composed, blankPerson()), "<p>the report</p>"; !strings.Contains(page, want) {
@@ -76,16 +76,16 @@ func TestATitleInBlockLettersIsNamedByItsWords(test *testing.T) {
 		lacks []string
 	}{
 		{
-			name: "the résumé's name, with the cursor", page: document.Page{Kind: document.PageResume, Slug: ""}, title: "Ada Lovelace",
+			name: "the résumé's name, with the cursor", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, title: "Ada Lovelace",
 			want:  []string{`<h1 aria-label="Ada Lovelace">`, `<svg class="letters letters-name" aria-hidden="true"`, `class="letters-cursor"`},
 			lacks: nil,
 		},
 		{
-			name: "a project's name, with no cursor", page: document.Page{Kind: document.PageProject, Slug: "tidy"}, title: "Tidy",
+			name: "a project's name, with no cursor", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, title: "Tidy",
 			want: []string{`<h1 aria-label="Tidy">`, `<svg class="letters letters-title" aria-hidden="true"`}, lacks: []string{`class="letters-cursor"`},
 		},
 		{
-			name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "cafe"}, title: "Café",
+			name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "cafe", Tab: ""}, title: "Café",
 			want: []string{"<h1>Café</h1>"}, lacks: []string{`class="letters`},
 		},
 	}
@@ -119,8 +119,8 @@ func TestTheResumesSectionsStandUnderBlockLetters(test *testing.T) {
 		page document.Page
 		want string
 	}{
-		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: ""}, want: `<h2 aria-label="About">`},
-		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy"}, want: "<h2>About</h2>"},
+		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: `<h2 aria-label="About">`},
+		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, want: "<h2>About</h2>"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -138,8 +138,8 @@ func TestTheResumesSectionsStandUnderBlockLetters(test *testing.T) {
 func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
-	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
-	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	bar := []string{
 		`href="#main">Skip to content</a>`, `<main id="main"`, `href="/">example.test</a>`,
 		`<a href="/#about">About</a>`, `<a href="/#experience">Experience</a>`, `<a href="/#projects">Projects</a>`,
@@ -176,8 +176,8 @@ func TestEveryPageOpensWithTheTopBar(test *testing.T) {
 func TestEveryPageEndsWithTheFooter(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
-	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: ""})
-	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool"})
+	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
 	cases := []struct {
 		name  string
@@ -410,14 +410,14 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 // what it copied, on any page that holds one; code among a fact's words stays code.
 func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
 	tool := document.Card{
-		Title: []document.Span{document.Text{Text: "tidy"}}, Subtitle: nil, Tag: "", Summary: nil, Page: document.Page{Kind: document.PageNone, Slug: ""},
+		Title: []document.Span{document.Text{Text: "tidy"}}, Subtitle: nil, Tag: "", Summary: nil, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""},
 		Facts: []document.Fact{
 			{Label: "install", Value: []document.Span{document.Code{Text: "go install example.test/tidy@latest"}}},
 			{Label: "use", Value: []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " daily"}}},
 		},
 	}
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy"}, []document.Span{document.Text{Text: "tidy"}}),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, []document.Span{document.Text{Text: "tidy"}}),
 		Blocks: []document.Block{tool},
 	}
 	page := fixtureWriter(test).Page(composed, blankPerson())
@@ -474,14 +474,14 @@ func resumeOf(sections ...document.Section) document.Document {
 	for _, section := range sections {
 		blocks = append(blocks, section)
 	}
-	return document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil), Blocks: blocks}
+	return document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil), Blocks: blocks}
 }
 
 // A page whose content gives no description names none, so a search engine or a preview writes its own rather
 // than an empty one.
 func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 	composed := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: ""}, nil),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
 		Blocks: nil,
 	}
 	page := fixtureWriter(test).Page(composed, blankPerson())
@@ -505,7 +505,7 @@ func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 // A person who works nowhere now is written with no employer, rather than with an employer of no name.
 func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	resume := document.Page{Kind: document.PageResume, Slug: ""}
+	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	record := blankPerson()
 	record.Name = "Mira Example"
 	if page := fixtureWriter(test).Page(composedOf(test, snapshot, resume).Document, record); strings.Contains(page, "worksFor") {
@@ -546,6 +546,6 @@ func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page)
 func blankPerson() compose.PersonRecord {
 	return compose.PersonRecord{
 		Name: "", AlternateNames: nil, Title: "", Email: "", Employer: "", Schools: nil, Skills: nil, Languages: nil,
-		Profiles: nil,
+		Profiles: nil, Page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""},
 	}
 }

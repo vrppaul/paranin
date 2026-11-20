@@ -120,6 +120,8 @@ are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2.
 gains a greeting and the title of its opening, for the TUI Pavel chose to redo. Amended 2026-11-07, on Pavel's
 choice for a project's page in the TUI: the head gains what a project is made of and where its code lives.
 Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its months beside how long.
+Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in the TUI: a page of the site may
+name one of its tabs, shown alone.
 
 ### Context
 
@@ -243,13 +245,16 @@ and web routes.
   months across.
 - **A link names its target**: an address outside the site, a mailbox by
   its address, which a face may part at its at and `routes` writes under
-  `mailto:`, or a page of the site by its kind and slug, with a format
+  `mailto:`, or a page of the site by its kind and slug, and the tab of it
+  shown alone where it names one, with a format
   where the link names one (the CV as PDF, `index.md`, `llms.txt`) and an
   anchor where it names a place inside the page. A section's anchor is the
   one a link names. The kinds of page are `document`'s type; `routes`
   builds on `document` and writes a target's address in each format
-  (`/p/claude-review`, `/p/claude-review.md`), so the markdown face links
-  to markdown and the TUI can open the page in a buffer.
+  (`/p/claude-review`, `/p/claude-review.md`,
+  `/p/claude-review/what-it-does.md`, `/experience`), so the markdown face
+  links to markdown and the TUI can open the page in a buffer. A tab is
+  named by its title (`document.SlugOf`).
 - **The islands' text is a document's too.** The extras of the TUI and the
   vim mode (`:checkhealth`, `:Lazy`, `:hire`) are documents, which the page
   draws on the server for the island to show. What no person reads comes
@@ -488,9 +493,11 @@ sessions on a stop.
    browser, curl, agent ──HTTP──▶ ┌──────────────────────────────────────┐
                                   │ internal/hosting/web (net/http)      │
                                   │  GET, HEAD                           │
-                                  │  /, /p/{slug}: Accept ranks →        │
+                                  │  /, /p/{slug}, /{tab},               │
+                                  │    /p/{slug}/{tab}: Accept ranks →   │
                                   │    HTML | markdown | manual          │
                                   │  /index.md, .txt; /p/{slug}.md, .txt;│
+                                  │    each tab's .md, .txt;             │
                                   │    /llms.txt: one format each        │
                                   │  each built file at its path         │
                                   │  any other path: 404, text | HTML    │

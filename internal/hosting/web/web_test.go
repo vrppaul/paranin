@@ -44,6 +44,46 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	}
 }
 
+// A tab of a page is served alone at its own address in each format, and as the reader asks at the address it is
+// known by: what it holds, with none of the tabs beside it.
+func TestATabIsServedAlone(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	const (
+		markdown = "text/markdown; charset=utf-8"
+		manual   = "text/plain; charset=utf-8"
+		browsed  = "text/html; charset=utf-8"
+		// a line of the résumé's opening tab, and one of a project's opening tab
+		resumeOpening  = "Writes software for people who read it."
+		projectOpening = "go install example.test/tidy@latest"
+	)
+	cases := []struct {
+		name        string
+		path        string
+		accept      string
+		contentType string
+		holds       string
+		lacks       string
+	}{
+		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", contentType: markdown, holds: "# Experience\n\n## Northwind — Senior Engineer", lacks: resumeOpening},
+		{name: "a tab of the résumé as a manual", path: "/experience.txt", accept: "", contentType: manual, holds: "Northwind", lacks: resumeOpening},
+		{name: "a tab of the résumé, chosen by curl", path: "/experience", accept: "*/*", contentType: manual, holds: "Northwind", lacks: resumeOpening},
+		{name: "a tab of the résumé in a browser", path: "/experience", accept: "text/html", contentType: browsed, holds: "Northwind", lacks: resumeOpening},
+		{name: "a tab of a project's page in markdown", path: "/p/tidy-tool/why.md", accept: "", contentType: markdown, holds: "# Why\n\nFiles were untidy.", lacks: projectOpening},
+		{name: "a tab of a project's page, chosen by curl", path: "/p/tidy-tool/why", accept: "*/*", contentType: manual, holds: "Files were untidy.", lacks: projectOpening},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			body := response.Body.String()
+			if response.Code != http.StatusOK || response.Header().Get("Content-Type") != testCase.contentType ||
+				!strings.Contains(body, testCase.holds) || strings.Contains(body, testCase.lacks) {
+				test.Errorf("GET %s, Accept %q = %d %q %q; want %d %q holding %q and not %q", testCase.path, testCase.accept,
+					response.Code, response.Header().Get("Content-Type"), body, http.StatusOK, testCase.contentType, testCase.holds, testCase.lacks)
+			}
+		})
+	}
+}
+
 // At a page's own address the reader's request chooses the format: HTML for a browser, markdown for whoever asks
 // for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
 // cache keeps one copy for each Accept.
@@ -96,7 +136,8 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 }
 
-// Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code.
+// Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code, a
+// tab its page's, the person and the code at their page's address whole.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	cases := []struct {
@@ -106,6 +147,8 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 	}{
 		{name: "the résumé", path: "/", holds: `"@type":"ProfilePage"`},
 		{name: "a project's page", path: "/p/tidy-tool", holds: `"@type":"SoftwareSourceCode","name":"tidy-tool"`},
+		{name: "a tab of the résumé, its page's", path: "/experience", holds: `"email":"mira@example.test","url":"https://example.test/","worksFor"`},
+		{name: "a tab of a project's page, its page's", path: "/p/tidy-tool/why", holds: `"programmingLanguage":"Lua","url":"https://example.test/p/tidy-tool","codeRepository"`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -132,6 +175,8 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "the résumé, chosen", path: "/", accept: "text/html", want: `<https://example.test/>; rel="canonical"`},
 		{name: "a project's page in markdown", path: "/p/tidy-tool.md", accept: "", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
 		{name: "a project's page, chosen", path: "/p/tidy-tool", accept: "*/*", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
+		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", want: `<https://example.test/experience>; rel="canonical"`},
+		{name: "a tab of a project's page, chosen", path: "/p/tidy-tool/why", accept: "text/html", want: `<https://example.test/p/tidy-tool/why>; rel="canonical"`},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
 	}

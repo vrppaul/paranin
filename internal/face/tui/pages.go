@@ -17,7 +17,7 @@ const (
 
 // resumePage is the page a session opens on, and the one q closes any other page back to.
 func resumePage() document.Page {
-	return document.Page{Kind: document.PageResume, Slug: ""}
+	return document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 }
 
 // readerPlace is where a reader stood in a buffer: the tab chosen, and how far down each tab they scrolled.
@@ -76,7 +76,7 @@ func (model Model) showing(page document.Page) Model {
 
 // edit shows the page of a project by its slug, as Neovim's :e opens a file, or says it finds no such page.
 func (model Model) edit(slug string) (Model, tea.Cmd) {
-	wanted := document.Page{Kind: document.PageProject, Slug: slug}
+	wanted := document.Page{Kind: document.PageProject, Slug: slug, Tab: ""}
 	if _, held := model.buffers[wanted]; !held {
 		model.said = commandMessage{text: pageNotFoundOpening + slug + pageNotFoundClosing, failed: true}
 		return model, nil

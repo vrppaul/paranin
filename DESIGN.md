@@ -81,7 +81,8 @@ other size: a control that seems to need one is the wrong control.
 - One palette, Catppuccin Latte for light and Macchiato for dark; every colour is a token named for what it does
   (`design/tokens.yaml`), and nothing else is written.
 - `background` is the page; `sunk` lies a shade below it (the foot line, a command chip, code); `deep` below that (a
-  pressed quiet control).
+  pressed quiet control). In the TUI the menu over the command line stands on `quiet`, apart from the page and the
+  panel.
 - `text` for what is read, `muted` for what stands beside it, `faint` for what a reader may pass over. In Latte `muted`
   is subtext1 and `faint` subtext0, one tone darker than the TUI first had them: `muted` reads 4.7:1 or more on
   `background`, `sunk` and `deep`, `faint` 3.7:1 or more, so `faint` is never the only ink of something a reader needs.

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -10,6 +11,9 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
+
+// The presses of Tab that reach the last place from the résumé's first tab: the fixture's four other tabs, then help
+const lastPlace = 5
 
 // A colon opens the command line over the footer, where what the reader types shows after it, the footer still under
 // it.
@@ -97,6 +101,7 @@ func TestTheCommandLineIsLeftUnrun(test *testing.T) {
 		{name: "Ctrl+C", text: "q", keys: []string{"ctrl+c"}},
 		{name: "a backspace on nothing", text: "q", keys: []string{"backspace", "backspace"}},
 		{name: "Enter on nothing", text: "", keys: []string{"enter"}},
+		{name: "Esc from the menu of the places", text: "", keys: []string{"esc"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -251,11 +256,8 @@ func TestEnterGoesToThePlaceTabChose(test *testing.T) {
 }
 
 // Tab goes on through the places and Shift+Tab back, writing the one chosen on the command line; past either end the
-// line holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does. On the first
-// tab the fixture has four other tabs and help to go to.
+// line holds what the reader typed again, and the next step goes on round, as Neovim's wildmenu does.
 func TestTabGoesRoundThePlaces(test *testing.T) {
-	// the presses of Tab that reach the last place: each other tab, then help
-	const lastPlace = 5
 	cases := []struct {
 		name string
 		keys []string
@@ -273,6 +275,135 @@ func TestTabGoesRoundThePlaces(test *testing.T) {
 			screen := screenOf(test, pressed(test, fixtureModel(test, commonWidth, commonHeight), append([]string{":"}, testCase.keys...)...))
 			if line := commandLineOf(screen); line != testCase.line {
 				test.Errorf("after a colon and %q the command line = %q, want %q", testCase.keys, line, testCase.line)
+			}
+		})
+	}
+}
+
+// Over the command line a menu names what Tab goes round for what is typed, each by its kind, as Neovim's popup menu
+// does: from the colon on, the places offered before anything is typed; a letter on, the places it starts, the
+// projects' pages among them; after :e and a space, every project's page; and where the screen is too narrow for the
+// kinds, the names alone, whole.
+func TestTheMenuNamesWhatTabGoesRound(test *testing.T) {
+	// a screen narrower than a project's slug, its kind and the room round them, wide enough for the slug alone
+	const narrowerThanTheKinds = 16
+	cases := []struct {
+		name  string
+		width int
+		text  string
+		holds []string
+		lacks []string
+	}{
+		{name: "a colon alone", width: commonWidth, text: "", holds: []string{`experience +tab`, `contact +tab`, `help +keys`}, lacks: []string{`tidy-tool`}},
+		{name: "a letter typed", width: commonWidth, text: "t", holds: []string{`tidy-tool +project`}, lacks: []string{`experience +tab`, `help +keys`}},
+		{name: "an edit and a space", width: commonWidth, text: "e ", holds: []string{`tidy-tool +project`}, lacks: []string{`help +keys`}},
+		{name: "a screen too narrow for the kinds", width: narrowerThanTheKinds, text: "e ", holds: []string{`tidy-tool`}, lacks: []string{`tidy-tool +pr`}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			above := aboveTheCommandLine(screenOf(test, typed(test, pressed(test, fixtureModel(test, testCase.width, commonHeight), ":"), testCase.text)))
+			for _, want := range testCase.holds {
+				if !regexp.MustCompile(want).MatchString(above) {
+					test.Errorf("after :%s the screen above the command line =\n%s\nwant it to hold %q", testCase.text, above, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if regexp.MustCompile(unwanted).MatchString(above) {
+					test.Errorf("after :%s the screen above the command line =\n%s\nwant it not to hold %q", testCase.text, above, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// No menu stands over the page where nothing fits what is typed, or the screen has no row of the page to hold it: the
+// screen above the command line is as it was before the colon, as many rows.
+func TestNoMenuStandsWhereNothingFits(test *testing.T) {
+	// a screen of the command line's row and the footer alone
+	const footAlone = 2
+	cases := []struct {
+		name   string
+		height int
+		text   string
+	}{
+		{name: "nothing that fits", height: commonHeight, text: "x"},
+		{name: "no row of the page", height: footAlone, text: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := fixtureModel(test, commonWidth, testCase.height)
+			before, after := screenOf(test, model), screenOf(test, typed(test, pressed(test, model, ":"), testCase.text))
+			if aboveTheCommandLine(after) != aboveTheCommandLine(before) || strings.Count(after, lineEnd) != strings.Count(before, lineEnd) {
+				test.Errorf("after :%s the screen =\n%s\nwant it above the command line as before the colon:\n%s", testCase.text, after, before)
+			}
+		})
+	}
+}
+
+// A menu taller than the page has room for shows the item Tab chose, and stays where it stands while that is in
+// sight, as Neovim's popup menu does: on a short screen, with room for two, the first two after one Tab, the last two
+// after Tab to help and still after Shift+Tab back to contact, the two before them after Shift+Tab once more; and an
+// edit shows it from its first again.
+func TestTheMenuKeepsTheChoiceInSight(test *testing.T) {
+	cases := []struct {
+		name  string
+		keys  []string
+		holds []string
+		lacks []string
+	}{
+		{name: "the first chosen", keys: []string{"tab"}, holds: []string{`experience +tab`, `projects +tab`}, lacks: []string{`help +keys`}},
+		{name: "the last chosen", keys: slices.Repeat([]string{"tab"}, lastPlace), holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`experience +tab`}},
+		{name: "one back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab"), holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`skills +tab`}},
+		{name: "two back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab", "shift+tab"), holds: []string{`skills +tab`, `contact +tab`}, lacks: []string{`help +keys`}},
+		{name: "an edit after the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), slices.Repeat([]string{"backspace"}, len("help"))...), holds: []string{`experience +tab`, `projects +tab`}, lacks: []string{`help +keys`}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			above := aboveTheCommandLine(screenOf(test, pressed(test, fixtureModel(test, commonWidth, shortHeight), append([]string{":"}, testCase.keys...)...)))
+			for _, want := range testCase.holds {
+				if !regexp.MustCompile(want).MatchString(above) {
+					test.Errorf("after a colon and %q the screen above the command line =\n%s\nwant it to hold %q", testCase.keys, above, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if regexp.MustCompile(unwanted).MatchString(above) {
+					test.Errorf("after a colon and %q the screen above the command line =\n%s\nwant it not to hold %q", testCase.keys, above, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// A menu scrolled to its end follows the screen's height: grown taller, it shows every item again; grown shorter, it
+// keeps the item chosen in sight, and stays there while Shift+Tab goes to one in sight.
+func TestAMenuFollowsTheScreensHeight(test *testing.T) {
+	// a screen with room for four rows of the page, under its crosses
+	const fourRows = 8
+	cases := []struct {
+		name  string
+		from  int
+		to    int
+		keys  []string
+		holds []string
+		lacks []string
+	}{
+		{name: "taller", from: shortHeight, to: commonHeight, keys: nil, holds: []string{`experience +tab`, `help +keys`}, lacks: nil},
+		{name: "shorter", from: fourRows, to: shortHeight, keys: []string{"shift+tab"}, holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`skills +tab`}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := pressed(test, fixtureModel(test, commonWidth, testCase.from), append([]string{":"}, slices.Repeat([]string{"tab"}, lastPlace)...)...)
+			resized, _ := model.Update(tea.WindowSizeMsg{Width: commonWidth, Height: testCase.to})
+			above := aboveTheCommandLine(screenOf(test, pressed(test, as[Model](test, resized), testCase.keys...)))
+			for _, want := range testCase.holds {
+				if !regexp.MustCompile(want).MatchString(above) {
+					test.Errorf("after Tab to help, %d rows and %q the screen above the command line =\n%s\nwant it to hold %q", testCase.to, testCase.keys, above, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if regexp.MustCompile(unwanted).MatchString(above) {
+					test.Errorf("after Tab to help, %d rows and %q the screen above the command line =\n%s\nwant it not to hold %q", testCase.to, testCase.keys, above, unwanted)
+				}
 			}
 		})
 	}

@@ -23,7 +23,7 @@ const (
 	// partPanel is the ground of the panel, the footer's and the command line's
 	partPanel
 	// partHost is the session the footer opens with, named by the site's host; partTabNumber a tab's number, and the
-	// mark of tabs given way; partTabName its name; partTabShown the tab shown, on a plate
+	// mark of tabs given way; partTabName its name; partTabShown the tab shown, reversed
 	partHost
 	partTabNumber
 	partTabName
@@ -40,6 +40,15 @@ const (
 	// partPanelKey and partPanelNote are a key the panel names and what it says the key does
 	partPanelKey
 	partPanelNote
+	// partMenu is an item of the menu over the command line, on the menu's ground; partMenuTyped the letters of its
+	// name the reader typed; partMenuKind its kind; partMenuChosen the item Tab chose; partMenuTrack and partMenuThumb
+	// the menu's scrollbar
+	partMenu
+	partMenuTyped
+	partMenuKind
+	partMenuChosen
+	partMenuTrack
+	partMenuThumb
 	// partEdge is the border of a window over the page, and partWindowRule a rule inside it; partWindowName and
 	// partWindowNote are a row it holds, its keys and what they do
 	partEdge
@@ -81,6 +90,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	fewColours, noColours := profile < colorprofile.ANSI256, profile < colorprofile.ANSI
 	plain := lipgloss.NewStyle()
 	panel := plain.Background(colour(look.ColourSunk))
+	// with no colours the menu has no ground to part it from the page, so it is reversed
+	menu := plain.Background(colour(look.ColourQuiet)).Reverse(noColours)
 	return paint{
 		kinds: map[kind]lipgloss.Style{
 			kindText:    plain.Foreground(colour(look.ColourText)),
@@ -129,10 +140,20 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partCount:       panel.Foreground(colour(look.ColourMuted)),
 			partPanelKey:    panel.Foreground(colour(look.ColourText)).Bold(true),
 			partPanelNote:   panel.Foreground(colour(look.ColourFaint)),
-			partEdge:        plain.Foreground(colour(look.ColourEdge)),
-			partWindowRule:  panel.Foreground(colour(look.ColourQuiet)),
-			partWindowName:  panel.Foreground(colour(look.ColourText)).Bold(true),
-			partWindowNote:  panel.Foreground(colour(look.ColourMuted)),
+			partMenu:        menu.Foreground(colour(look.ColourText)),
+			partMenuTyped:   menu.Foreground(colour(look.ColourAccent)).Bold(true),
+			partMenuKind:    menu.Foreground(colour(look.ColourMuted)),
+			// the item chosen reversed, as DESIGN.md marks what is chosen, and as the tab shown is; where the terminal shows
+			// no colours, whose menu is reversed to stand out from the page, it stands upright and underlined instead
+			partMenuChosen: plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(!noColours).Underline(noColours),
+			// the thumb a shade brighter than the track: with sixteen colours the track, the ground's colour, vanishes,
+			// and the thumb stays in sight
+			partMenuTrack:  menu.Foreground(colour(look.ColourFaint)),
+			partMenuThumb:  menu.Foreground(colour(look.ColourMuted)),
+			partEdge:       plain.Foreground(colour(look.ColourEdge)),
+			partWindowRule: panel.Foreground(colour(look.ColourQuiet)),
+			partWindowName: panel.Foreground(colour(look.ColourText)).Bold(true),
+			partWindowNote: panel.Foreground(colour(look.ColourMuted)),
 		},
 		fadedLess:       colour(look.ColourFaint),
 		fadedMost:       colour(look.ColourEdge),

@@ -70,17 +70,25 @@ func commands(buffers map[document.Page][]tab) []command {
 	return known
 }
 
-// completion is a place or a page Tab goes round on the command line: what it writes there where it chooses it.
+// completion is a place or a page Tab goes round on the command line: what it writes there where it chooses it, and
+// the name and the kind the menu over the command line names it by.
 type completion struct {
 	written string
+	name    string
+	kind    string
 }
 
-// completionState is what Tab goes round on the command line: what the reader typed, the completions for it, both
-// worked out each time they edit the line, and the place of the one Tab or Shift+Tab has chosen.
+// completionState is what Tab goes round on the command line: what the reader typed, the completions for it, what of
+// each one's name is typed and the widest name and kind among them, all worked out each time they edit the line; the
+// place of the one Tab or Shift+Tab has chosen, and of the first the menu over the command line shows, which stays
+// while the one chosen is in sight, as Neovim's popup menu stays.
 type completionState struct {
-	typed  string
-	listed []completion
-	chosen int
+	typed   string
+	listed  []completion
+	matched string
+	widest  menuWidths
+	chosen  int
+	first   int
 }
 
 // The place of the item chosen where none is, the line holding what the reader typed; the places what was typed
@@ -100,9 +108,16 @@ func (model Model) commandLineOpened() Model {
 	return model
 }
 
-// completionsOf is what Tab goes round for what the reader typed, none of it chosen.
+// completionsOf is what Tab goes round for what the reader typed, none of it chosen: before a space, the places whose
+// names start with it; after a command and a space, the pages whose slugs start with what follows, where the command
+// takes an argument, which only a page is.
 func (model Model) completionsOf(typed string) completionState {
-	return completionState{typed: typed, listed: model.completions(typed), chosen: noneChosen}
+	name, argument, argued := commandParts(typed)
+	listed, matched := model.placesFor(model.chosen, name), name
+	if argued {
+		listed, matched = model.pageCompletions(name, argument), argument
+	}
+	return completionState{typed: typed, listed: listed, matched: matched, widest: menuWidthsOf(listed), chosen: noneChosen, first: 0}
 }
 
 // typedInCommand is the model after a key while the reader types a place or a command: Enter goes there or runs it,
@@ -139,6 +154,7 @@ func (model Model) completed(step int) Model {
 	}
 	next := wrapped(model.completion.chosen+typedPlaces+step, len(listed)+typedPlaces) - typedPlaces
 	model.keys.typing, model.completion.chosen = model.completion.typed, next
+	model.completion.first = firstInSight(model.completion.first, next, model.frame.rows, len(listed))
 	if next != noneChosen {
 		model.keys.typing = listed[next].written
 	}
@@ -152,17 +168,6 @@ func commandParts(typed string) (name, argument string, argued bool) {
 	return name, strings.TrimLeft(argument, space), argued
 }
 
-// completions are what Tab goes round for what the reader typed: before a space, the places whose names start with
-// it; after a command and a space, the pages whose slugs start with what follows, where the command takes an
-// argument, which only a page is.
-func (model Model) completions(typed string) []completion {
-	name, argument, argued := commandParts(typed)
-	if argued {
-		return model.pageCompletions(name, argument)
-	}
-	return model.placesFor(model.chosen, name)
-}
-
 // pageCompletions are the projects' pages Tab goes round after a command named and a space, by slug, where the
 // command takes an argument: those whose slugs start with what is typed, each written after the command's name.
 func (model Model) pageCompletions(name, typed string) []completion {
@@ -172,7 +177,7 @@ func (model Model) pageCompletions(name, typed string) []completion {
 	}
 	for _, slug := range model.slugs {
 		if strings.HasPrefix(slug, typed) {
-			listed = append(listed, completion{written: name + space + slug})
+			listed = append(listed, completion{written: name + space + slug, name: slug, kind: projectKind})
 		}
 	}
 	return listed

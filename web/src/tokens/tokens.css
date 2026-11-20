@@ -15,7 +15,7 @@
   --muted: light-dark(#5c5f77, #a5adcb);
   /* what a reader may pass over, a gap still to fill among it */
   --faint: light-dark(#6c6f85, #8087a2);
-  /* a rule between two parts of a bar, or inside a window */
+  /* a rule between two parts of a bar or inside a window, and the ground of the TUI's menu */
   --quiet: light-dark(#ccd0da, #363a4f);
   /* the border of a window laid over the page, and a role that ended on the career's line */
   --edge: light-dark(#9ca0b0, #5b6078);

@@ -52,7 +52,7 @@ colours:
     dark: "#8087a2"
     basic: 8
   - name: quiet
-    about: a rule between two parts of a bar, or inside a window
+    about: a rule between two parts of a bar or inside a window, and the ground of the TUI's menu
     light: "#ccd0da"
     dark: "#363a4f"
     basic: 8

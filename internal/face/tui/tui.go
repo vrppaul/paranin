@@ -102,7 +102,7 @@ func New(documents []document.Document, site routes.Site, width, height int, tod
 		places:     placesOf(buffers[shown], slugs),
 		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
-		completion: completionState{typed: "", listed: nil, chosen: noneChosen},
+		completion: completionState{typed: "", listed: nil, matched: "", widest: menuWidths{name: 0, kind: 0}, chosen: noneChosen, first: 0},
 		said:       commandMessage{text: "", failed: false},
 	}
 	return model.relaid()
@@ -165,6 +165,9 @@ func (model Model) relaid() Model {
 	model = model.repainted()
 	// the line a search began at is a scroll of the chosen tab, held to the new layout as every scroll is
 	model.search.begunAt = model.scrollWithin(model.chosen, model.search.begunAt)
+	// the menu over the command line keeps the item chosen in sight and stays full in the rows the new size has
+	completion := model.completion
+	model.completion.first = firstInSight(completion.first, completion.chosen, model.frame.rows, len(completion.listed))
 	// an open window of keys closes where the new size cannot show it whole, so no mode stays open unseen
 	if model.keys.mode == modeKeys && !model.shows(model.drawn.keyWindow) {
 		model.keys.mode = modeNormal

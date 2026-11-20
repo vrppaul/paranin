@@ -27,10 +27,12 @@ const (
 const cursorWidth = 1
 
 // commandLine is the command line as the keys leave it, over the footer as Neovim's stands with no row of its own:
-// the row painted, nothing where it does not show, and the terminal's cursor, where the reader types on it.
+// the row painted, nothing where it does not show; and where the reader types on it, the column what is typed ends
+// at, which the menu over it stands by, and the terminal's cursor.
 type commandLine struct {
-	row    string
-	cursor *tea.Cursor
+	row      string
+	typedEnd int
+	cursor   *tea.Cursor
 }
 
 // commandLine is the command line while the reader types after a slash or a colon; or, where they type nothing,
@@ -48,9 +50,9 @@ func (model Model) commandLine() commandLine {
 		said.part = partFailure
 	}
 	if said.text == "" {
-		return commandLine{row: "", cursor: nil}
+		return commandLine{row: "", typedEnd: 0, cursor: nil}
 	}
-	return commandLine{row: model.paint.panelLine([]piece{said}, nil, model.drawn.footer.place.margin, model.frame.width), cursor: nil}
+	return commandLine{row: model.paint.panelLine([]piece{said}, nil, model.drawn.footer.place.margin, model.frame.width), typedEnd: 0, cursor: nil}
 }
 
 // searchHints are what the command line names at its right while the reader types a search: which of how many
@@ -88,13 +90,13 @@ func (model Model) typedLine(mark string, hints []piece) commandLine {
 	}
 	typed := shownTyping(model.keys.typing, room)
 	row := model.paint.panelLine(append(opening, piece{text: typed, part: partTyped}), hints, margin, model.frame.width)
+	end := margin + piecesWidth(opening) + textWidth(typed)
 	line, shown := model.frame.commandRow()
 	if !shown {
-		return commandLine{row: row, cursor: nil}
+		return commandLine{row: row, typedEnd: end, cursor: nil}
 	}
-	column := min(margin+piecesWidth(opening)+textWidth(typed), model.frame.width-cursorWidth)
-	position := tea.Position{X: max(column, 0), Y: line}
-	return commandLine{row: row, cursor: &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}}
+	position := tea.Position{X: max(min(end, model.frame.width-cursorWidth), 0), Y: line}
+	return commandLine{row: row, typedEnd: end, cursor: &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}}
 }
 
 // shownTyping is what the command line shows of what is typed: its end, where the room is too narrow for all of it.

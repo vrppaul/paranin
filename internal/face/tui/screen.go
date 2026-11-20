@@ -190,8 +190,8 @@ func (model Model) paintedPage(place int) paintedPage {
 }
 
 // screen draws the whole screen: the page between its crosses, the footer under it, the command line over the footer
-// where it shows, and over the page the window of keys where it is open; and the cursor, where the reader types. All
-// of it is painted already but what a key moves.
+// where it shows, and over the page its menu, or the window of keys where it is open; and the cursor, where the reader
+// types. All of it is painted already but what a key moves.
 func (model Model) screen() (string, *tea.Cursor) {
 	frame, drawn := model.frame, model.drawn.tabs[model.chosen]
 	rows := slices.Repeat([]string{model.drawn.blankRow}, frame.above)
@@ -209,8 +209,12 @@ func (model Model) screen() (string, *tea.Cursor) {
 	if row, shown := frame.commandRow(); shown && command.row != "" {
 		rows[row] = command.row
 	}
-	if model.keys.mode == modeKeys {
+	switch model.keys.mode {
+	case modeCommand:
+		rows = model.withMenu(rows, command)
+	case modeKeys:
 		rows = model.withKeys(rows)
+	case modeNormal, modeSearch:
 	}
 	return strings.Join(rows, lineEnd), command.cursor
 }
@@ -246,31 +250,46 @@ func (model Model) linesBelow() int {
 }
 
 // scrollbar is the scrollbar as the chosen tab stands: whether it shows, where the tab is taller than the page and
-// the page leaves it room; the column it stands in; where its thumb stands among the page's rows, from its first row
-// to the row after its last; the screen's width it ends each row at; and its two cells painted.
+// the page leaves it room; the column it stands in; the rows its thumb takes; the screen's width it ends each row at;
+// and its two cells painted.
 type scrollbar struct {
-	shown      bool
-	column     int
-	thumbStart int
-	thumbEnd   int
-	width      int
-	track      string
-	thumb      string
+	shown     bool
+	column    int
+	thumbRows thumbSpan
+	width     int
+	track     string
+	thumb     string
 }
 
-// scrollbar is the scrollbar of the chosen tab at its scroll: its thumb as long as the share of the tab the page
-// shows, at least a row, and as far down as the page is.
+// scrollbar is the scrollbar of the chosen tab at its scroll.
 func (model Model) scrollbar() scrollbar {
 	rows, lines := model.frame.rows, len(model.drawn.tabs[model.chosen].lines)
 	column, room := model.frame.scrollbarColumn()
-	bar := scrollbar{shown: false, column: column, thumbStart: 0, thumbEnd: rows, width: model.frame.width, track: model.drawn.track, thumb: model.drawn.thumb}
+	bar := scrollbar{shown: false, column: column, thumbRows: thumbSpan{start: 0, end: rows}, width: model.frame.width, track: model.drawn.track, thumb: model.drawn.thumb}
 	if !room || lines <= rows {
 		return bar
 	}
-	length := max(rows*rows/lines, 1)
-	bar.shown, bar.thumbStart = true, (rows-length)*model.scrolls[model.chosen]/(lines-rows)
-	bar.thumbEnd = bar.thumbStart + length
+	bar.shown, bar.thumbRows = true, thumbOf(rows, lines, model.scrolls[model.chosen])
 	return bar
+}
+
+// thumbSpan is the rows a scrollbar's thumb takes: from its first to the row after its last.
+type thumbSpan struct {
+	start int
+	end   int
+}
+
+// thumbOf is the rows a scrollbar's thumb takes where rows show more lines, scrolled down so many: as many as the
+// share of the lines the rows show, at least one, and as far down as the scroll is.
+func thumbOf(rows, lines, scroll int) thumbSpan {
+	length := max(rows*rows/lines, 1)
+	start := (rows - length) * scroll / (lines - rows)
+	return thumbSpan{start: start, end: start + length}
+}
+
+// covers is whether the thumb takes a row.
+func (span thumbSpan) covers(row int) bool {
+	return row >= span.start && row < span.end
 }
 
 // rest is the rest of a page's row after a line of a width: blanks to the screen's edge, the scrollbar's cell among
@@ -280,7 +299,7 @@ func (bar scrollbar) rest(lineWidth, row int) string {
 		return strings.Repeat(space, max(bar.width-lineWidth, 0))
 	}
 	cell := bar.track
-	if row >= bar.thumbStart && row < bar.thumbEnd {
+	if bar.thumbRows.covers(row) {
 		cell = bar.thumb
 	}
 	return strings.Repeat(space, bar.column-lineWidth) + cell + strings.Repeat(space, bar.width-bar.column-textWidth(trackMark))

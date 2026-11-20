@@ -5,7 +5,7 @@ paths:
 
 # The TUI
 
-How the TUI is built is said in the comment of `internal/face/tui`; the rules for Go are in `.claude/rules/go.md`.
+The rules for Go are in `.claude/rules/go.md`.
 
 - A tab is laid out once for a size, and painted once for a theme, a terminal's colours and the search, the frame around it and the window of keys with it.
 - A key press chooses which painted lines show, fades the two above the rim, and writes where the page stands (ruler, rim, scrollbar) and the prompt and places as typed.
@@ -14,9 +14,7 @@ How the TUI is built is said in the comment of `internal/face/tui`; the rules fo
 - Showing another buffer, by `:e`, `:checkhealth` or `:Lazy`, or by the key `q` or `:q` on any page but the résumé, lays out and paints the buffer shown, once.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.
 - The layout says what a piece of text is, a kind; the paint says how each kind looks. No colour, weight or style is written in the layout.
-- Every colour comes from `look`, which `scripts/tokens` writes from `design/tokens.yaml`: change the tokens and run `go generate ./internal/look`, never the palette by hand.
 - With sixteen colours or none, what colour alone would tell is told by reversing or underlining as well.
-- Each key is a named constant, and each key's behaviour a test through the model: keys in, the screen's text out, its colours stripped.
 - The facts and the site's words come from the document.
 - The TUI's own words are its frame's, as Neovim's and a shell's are: the ruler, `3 more lines`, the prompt's `~`, the keys it names, `help`, a tab's count of checks.
 - On the page the TUI's own words are only Neovim's for a value the document types: `:checkhealth`'s levels (`OK`, `WARNING`, `ERROR`) and `ADVICE:`.

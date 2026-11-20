@@ -99,7 +99,7 @@ size: a control that seems to need one is the wrong control.
 
 - One face (`face`), monospace, ligatures off, set once on the body for every element to inherit. No second face on
   the résumé and its pages; an article's reading face is chosen with the blog (FOUNDATION §5.6).
-- A text style is its size, its line and its weight, set as three properties (`.claude/rules/page.md`).
+- A text style is its size, its line and its weight, set as three properties (`web/stylelint.config.js`).
 
 | style | size / line, rem | weight | for |
 | --- | --- | --- | --- |

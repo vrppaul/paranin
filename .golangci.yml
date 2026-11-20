@@ -1,5 +1,5 @@
-# What the Go code is held to beyond the compiler and scripts/coderules: the rules of .claude/rules/code.md
-# and .claude/rules/go.md that a linter here can keep, and the layers. Names and numbers are coderules' to hold
+# What the Go code is held to beyond the compiler and scripts/coderules: the rules of code a linter here can keep,
+# most of them written here alone, and the layers. Names and numbers are coderules' to hold
 # (scripts/coderules/main.go says why varnamelen and mnd are not used).
 version: "2"
 
@@ -104,9 +104,9 @@ linters:
       require-explanation: true
       require-specific: true
 
-    # The layers of .claude/rules/go.md: each part builds only on the layers after it, and the parts of one layer
-    # stand side by side. One rule to a border, so every import refused is written once; a file is held to every
-    # rule whose files it is among. Go itself refuses an import of the composition root, a package main
+    # The layers of ADR-0003 (docs/ARCHITECTURE.md): each part builds only on the layers after it, and the parts of
+    # one layer stand side by side. One rule to a border, so every import refused is written once; a file is held to
+    # every rule whose files it is among. Go itself refuses an import of the composition root, a package main
     depguard:
       rules:
         hosting-over-the-rest:

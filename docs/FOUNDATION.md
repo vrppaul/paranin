@@ -200,7 +200,7 @@ author's head, which is why one review found so many breaks.
 | Taken | From | Where it lands here |
 | --- | --- | --- |
 | `AGENTS.md` with `CLAUDE.md` as its symlink; rules per area in `.claude/rules/*.md`, each loaded by its `paths:` | both | §7 |
-| "How we work": small chunks, understand before writing, tests hold behaviour, review before presenting, ask first | both | `AGENTS.md` |
+| "How we work": talk short, small chunks, step back first, each hands over, understand before writing, tests hold behaviour, review before presenting, weigh then decide | both | `AGENTS.md` |
 | "Only better": construction first, simplest first, root cause first, facts not adjectives, the verdict is somebody else's, a regression found becomes a gate, what can be named as worse is not committed | both | `AGENTS.md` |
 | `scripts/check_instruction_files.py`, taken whole | claude-review, as livereel took it | gate |
 | Layers held by a linter (`LAYERS`, import-linter) | both | `depguard`, eslint `LAYERS` |
@@ -209,7 +209,7 @@ author's head, which is why one review found so many breaks.
 | A component library: every kind of element in one place, refused elsewhere | claude-review `lib/ui` | `face/html/ui`, `web/src/ui` |
 | A script that finds elements by `data-part` and writes no style, only custom properties | livereel `stage.js` | `web/src/dom`, `controllers` |
 | Types for what the server sends generated from the server, checked by a hook | claude-review `api:check` | tygo |
-| Design rules from the owner's canvas; a sheet of states in both themes before a design is built | claude-review `design*.md` | `DESIGN.md` |
+| Design rules from the owner's canvas; a sheet of states in both themes before a design is built | claude-review `design*.md` | `DESIGN.md`, `.claude/rules/design.md` |
 | Test rules: one behaviour per test, no branch, no look, the cheapest level, a code rule is a gate and never a test | both | `.claude/rules/tests.md` |
 | `TODO.md` (a done item is removed), `CHANGELOG.md`, Conventional Commits, typos | both | repo root, gates |
 
@@ -666,10 +666,11 @@ model level, the browser with Playwright.
 ## 7. Instruction files — **Proposed**
 
 `AGENTS.md` (with `CLAUDE.md` as its symlink): commands, how we work,
-layers, rules for all code, only better, rules by area. Under
-`.claude/rules/`: `go.md`, `tui.md`, `page.md`, `tests.md`, `scripts.md`,
-`instructions.md`. The design's reference, `DESIGN.md`, stands beside
-`PRODUCT.md`; it is no instruction file, and is read by the section in hand.
+only better, rules by area. Under `.claude/rules/`: `code.md`, `go.md`,
+`tui.md`, `page.md`, `design.md`, `tests.md`, `prose.md`, `scripts.md`,
+`instructions.md`. Under `.claude/agents/`: the reviewer and the page's
+reviewer. The design's reference, `DESIGN.md`, stands beside `PRODUCT.md`;
+it is no instruction file, and is read by the section in hand.
 
 ## 8. Order of work — **Proposed**
 

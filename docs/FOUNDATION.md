@@ -632,6 +632,9 @@ once); the small words and the table of abbreviations are **Proposed**:
     above it, as stint's `scripts/check_proxies.py` refuses one; a test, a
     method a type implements an interface by, and an exported getter of an
     unexported field are passed over;
+  - a comment that tells what the code was (`no longer`, `renamed from`)
+    or holds a date, as claude-review's `scripts/check_prose.py` refuses
+    one, the phrases `scripts/history`'s;
   - a line a comment opens wider than 120 columns, counted in letters, a
     tab one. A line of code may run wider, as a literal with every field
     written does, so `lll`, which holds every line, is not used.
@@ -656,7 +659,9 @@ once); the small words and the table of abbreviations are **Proposed**:
 - **Common:** pre-commit as the one list (`.pre-commit-config.yaml`), run
   again by CI on what a commit carries (`.github/workflows/gates.yml`), typos,
   the standard file checks with `detect-private-key`, Conventional Commits,
-  `check_instruction_files.py`.
+  `check_instruction_files.py`; on the message, `scripts/commitmessage`,
+  stint's check: a subject of 72 letters at most with no phrase of
+  `scripts/history`, and 5 lines of why.
 
 ### 6.3 Tests — **Proposed**
 

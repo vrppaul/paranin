@@ -37,6 +37,10 @@ func TestFunctionsThatOnlyPassTheirCallOnAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), noProxiesAnalyzer(), "proxies")
 }
 
+func TestCommentsThatTellWhatTheCodeWasAreRefused(test *testing.T) {
+	analysistest.Run(test, analysistest.TestData(), noHistoryAnalyzer(), "history")
+}
+
 func TestNumbersOutsideConstantsAreRefused(test *testing.T) {
 	analysistest.Run(test, analysistest.TestData(), noNumbersAnalyzer(), "numbers")
 }

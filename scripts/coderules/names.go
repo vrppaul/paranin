@@ -118,7 +118,7 @@ func wordsLikeAbbreviations() []string {
 }
 
 // refusedAbbreviations are words cut short that the length of a word lets through, each in the singular, and
-// the plural of a kept short name, which no longer stands in for a taken one.
+// the plural of a kept short name, which no taken word excuses.
 func refusedAbbreviations() []string {
 	return []string{
 		"errs", "ctxs",

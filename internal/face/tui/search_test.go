@@ -314,7 +314,7 @@ func TestMatchesNeverOverlap(test *testing.T) {
 }
 
 // A resize while the reader types a search keeps the page where it stands: a letter typed after it, and Enter, go
-// from there, never from a line the new layout no longer has. On a wide terminal the experience tab's last page
+// from there, never from a line the new layout lacks. On a wide terminal the experience tab's last page
 // holds two lines with an e, and three matches of "er" on its top line.
 func TestTypingAfterAResizeKeepsThePage(test *testing.T) {
 	cases := []struct {

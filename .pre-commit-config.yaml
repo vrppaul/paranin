@@ -1,6 +1,8 @@
-# Every hook runs once, before the commit; only the message check runs on the message. A hook that cannot run
-# fails: leave one out only on purpose, by naming it in SKIP. The hooks read the working tree, so CI
-# (.github/workflows/gates.yml) runs them again on what a commit carries, with the check that needs the network
+# Every hook runs once, before the commit; the two message checks run on the message, and `pre-commit install`
+# installs both stages. A hook that cannot run fails: leave one out only on purpose, by naming it in SKIP. The hooks
+# read the working tree, so CI (.github/workflows/gates.yml) runs them again on what a commit carries, with the check
+# that needs the network; a message, CI never sees
+default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [pre-commit]
 
 repos:
@@ -35,11 +37,17 @@ repos:
         pass_filenames: false
       # The rules no linter here can be told to keep (scripts/coderules/main.go)
       - id: code-rules
-        name: code rules (names, helpers, records, markup, colours, numbers, proxies, comment widths)
+        name: code rules (names, helpers, records, markup, colours, numbers, proxies, history, comment widths)
         entry: go run ./scripts/coderules ./...
         language: system
         types: [go]
         pass_filenames: false
+      # A commit's message: a short subject, a few lines of why, no history (scripts/commitmessage/main.go)
+      - id: commit-message
+        name: commit message (its subject, its why, no history)
+        entry: go run ./scripts/commitmessage
+        language: system
+        stages: [commit-msg]
       # go.mod says what the code imports, no more and no less
       - id: go-mod-tidy
         name: go.mod as the code needs it

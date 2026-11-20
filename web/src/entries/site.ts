@@ -10,9 +10,6 @@ const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 
 startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
 void import("../controllers/tooltip").then(({ startTooltips }) => startTooltips(document));
-void import("../controllers/sections").then(({ startSections, WindowReading }) =>
-  startSections(document, new WindowReading(window)),
-);
 void import("../controllers/command").then(({ startCommands }) =>
   startCommands(document, navigator.clipboard, TIMES.toast),
 );

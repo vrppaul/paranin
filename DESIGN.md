@@ -57,19 +57,19 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `lead` | `design/tokens.yaml` | the longest line of the headline |
 | `when` | `design/tokens.yaml` | an entry's dates column |
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
-| `bar` | `design/tokens.yaml` | the top bar |
 | `dialog` | 35rem | the widest a dialog runs |
 | `textarea` | 7.5rem | a message field's least height |
 
 ## Sizes
 
-Every control is one of two sizes; the size fixes its height, its padding, the gap inside it and its words. No third
-size: a control that seems to need one is the wrong control.
+Every control is one of the sizes below; the size fixes its height, its padding, the gap inside it and its words. No
+other size: a control that seems to need one is the wrong control.
 
 | size | height | either side | gap inside | words | controls |
 | --- | --- | --- | --- | --- | --- |
 | regular | `control`, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
 | compact | `control_compact`, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
+| line | a row less two `nudge`, inside the foot line's row | `cell` | `cell` | `caption` | the FootLine's chips |
 | tick | three cells, `[x]` or `(*)`, on a row | label `cell` away | | `body` | Checkbox, Radio |
 
 - Corners `radius` on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
@@ -80,7 +80,7 @@ size: a control that seems to need one is the wrong control.
 
 - One palette, Catppuccin Latte for light and Macchiato for dark; every colour is a token named for what it does
   (`design/tokens.yaml`), and nothing else is written.
-- `background` is the page; `sunk` lies a shade below it (the top bar, a command chip, code); `deep` below that (a
+- `background` is the page; `sunk` lies a shade below it (the foot line, a command chip, code); `deep` below that (a
   pressed quiet control).
 - `text` for what is read, `muted` for what stands beside it, `faint` for what a reader may pass over. In Latte `muted`
   is subtext1 and `faint` subtext0, one tone darker than the TUI first had them: `muted` reads 4.7:1 or more on
@@ -108,12 +108,12 @@ size: a control that seems to need one is the wrong control.
 | `heading` | `design/tokens.yaml` | `design/tokens.yaml` | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
-| `small` | `design/tokens.yaml` | `design/tokens.yaml` | the top bar, a field's hint, the footer |
+| `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
 | `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip; never prose |
 
-- The page's one `h1` and the résumé's five `h2` are block letters; another page's `h2` is `heading`; every heading
-  below is `strong`, its level shown by the space before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels
-  never skip.
+- The page's one `h1`, a tab's title among them, and the `h2` of the résumé's first section under its first screen are
+  block letters; another page's `h2` is `heading`; every heading below is `strong`, its level shown by the space
+  before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
 - Weights: 400 for text, 700 for what names (a role, a company, a button), 800 only for the mail, its @ left at 400.
 
@@ -133,7 +133,7 @@ size: a control that seems to need one is the wrong control.
 
 - Lines are `hairline`. No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
 - What stands over the page as it scrolls lies on a layer of `design/tokens.yaml`, the layers listed lowest first:
-  the top bar on `bar`.
+  the foot line on `foot`.
 - Nothing moves on its own but the cursor. Colours change under the pointer in `quick`; with reduced motion, at
   once. A toast stays `toast`.
 
@@ -155,13 +155,14 @@ size: a control that seems to need one is the wrong control.
 ## Layout
 
 - Below `wide` (80rem) the brief narrows to `brief_mid` and a section's title stands above its content.
-- Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the top bar scrolls away, the career
-  line becomes a list, a table scrolls inside itself. No page is ever wider than its screen.
+- Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the foot line wraps, the career line
+  becomes a list, a table scrolls inside itself. No page is ever wider than its screen.
 - The two widths are the only ones a media query may hold, in rem, since a custom property cannot stand in one;
   stylelint holds them from the first media query on, and refuses any width until then. A media query's rem is the
   reader's text size too, so a reader who sets larger text gets the narrower layout sooner.
-- Every page has a skip link, one `header` (the top bar), one `main` and one `footer`. A section a link leads to stops
-  a row below the sticky bar.
+- A page shows one tab of its document, as the TUI does: the opening at the page's own address, each tab after it at
+  its own. Every page has one `main`, then one `nav`, the foot line; with nothing before the main part, it needs no
+  skip link.
 - A position worked out from data (the career line) is an SVG attribute: the site's policy refuses inline styles.
 
 ## Iconography
@@ -183,8 +184,9 @@ anything over it.
 
 ### SectionTitle
 
-A top-level section's `h2` in the title font: only About, Experience, Projects, Skills and Contact. A subsection
-(Spoken languages, Education, a skill group) is a `strong` heading.
+A tab's title in the title font, the page's `h1`: Experience, Projects, Skills, Contact, and each tab of a project's
+page; About is the `h2` under the first screen. A subsection (Spoken languages, Education, a skill group) is a
+`strong` heading.
 
 ### Mail
 
@@ -223,28 +225,35 @@ hidden and the command is words to select, and a copy the browser refuses select
 The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and `underline_hover` thick.
 Never coloured: the underline says it is a link. Nothing is marked with an arrow.
 
-### TopBar
+### FootLine
 
-The site, the five sections, the theme button. `sunk` ground, a `quiet` hairline under it, `bar` tall. It sticks to the
-top on a wide screen; on a phone it scrolls away and the sections take a second row, wrapping to a third on a screen
-too narrow for them all (below about 375px). The current section is reversed,
-as the TUI's tab, and follows the reader's scroll. Section names are lower case.
+One line of tmux's at the foot of every page, after its main part: it sticks to the screen's foot as the page scrolls
+under it, and on a page shorter than the screen stands at the screen's foot. `sunk` ground, a `quiet` hairline over
+it, one `row` tall and twice `focus_width` under it, so a ring is never cut, `small`, on the content's grid. A part
+wraps whole to a row more where the screen is too narrow for the line; a part the keyboard reaches scrolls `row_2`
+clear of it, `row_4` on a phone.
+
+- The session: `[paran.in]` in `host`, leading to where the site begins.
+- The document's tabs as windows, as the TUI numbers its tabs: `1:about`, the number `faint`, the name lower case, a
+  cell of air either side. The window shown is reversed and bold, as the TUI's tab, and marked `*`, which a screen
+  reader skips: the link is the current page.
+- Under the pointer the session and a window turn `deep`; nothing in the line has a pressed shade, `deep` being the
+  lowest ground.
+- At the line's end the ways the site is served, as the line's chips (Sizes): `❯ ssh` and `❯ curl`, ❯ in `prompt`,
+  which open the hint's window (TODO, the islands) and until then do nothing; then the markdown of the page whole by
+  its file's name, a link, the résumé's on a page that has none. `deep` ground, a `quiet` hairline turning `text`
+  under the pointer, `caption` words.
+- Then the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line.
+- On a phone the session and the theme button share the first row, the windows take the rows `row_half` below by their
+  names alone, a `nudge` either side, wrapping, and the ways give way to them.
 
 ### ThemeSwitch
 
-One quiet button at the end of the top bar: the half-filled circle, no words, a `control_compact` square, no border and
-no ground, `muted` turning `text` under the pointer. The page starts in the system's theme; a press turns it to the
-other, sets `data-theme` on the root and keeps it for the next visit; a press that lands back on the system's theme
-forgets the choice. It is a toggle button named "Dark theme", `aria-pressed` while the page is dark, its name in a
-Tooltip under the pointer. Without the script it is hidden and the page follows the system.
-
-### SkipLink and Footer
-
-- The skip link is the first thing a keyboard reaches: hidden until focused, then at the top left over the bar,
-  reversed, regular size.
-- The footer ends every page: a `quiet` hairline above, `row_2` of air, `small` and `muted`, the ways the same résumé
-  is served: the commands that reach it as Code (ssh, curl), its files as links (markdown, llms.txt, cv.pdf). Social
-  profiles are in Contact.
+One quiet button at the end of the foot line: the half-filled circle, no words, a `control_compact` square, no border
+and no ground, `muted` turning `text` under the pointer. The page starts in the system's theme; a press turns it to
+the other, sets `data-theme` on the root and keeps it for the next visit; a press that lands back on the system's
+theme forgets the choice. It is a toggle button named "Dark theme", `aria-pressed` while the page is dark, its name
+in a Tooltip over it under the pointer. Without the script it is hidden and the page follows the system.
 
 ### Facts
 
@@ -324,9 +333,9 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 ### Tooltip and Toast
 
-- Tooltip: a word or two about a control, on hover and on focus; `sunk` ground, an `edge` hairline, `caption`; never
-  the only place something is said.
-- Toast: ✓ in `passed`, then what was done, in the past tense, at the foot of the screen for `toast`; regular size,
+- Tooltip: a word or two about a control, on hover and on focus, two `nudge` over it; `sunk` ground, an `edge`
+  hairline, `caption`; never the only place something is said.
+- Toast: ✓ in `passed`, then what was done, in the past tense, a row over the FootLine for `toast`; regular size,
   `sunk` ground and an `edge` hairline, as the Tooltip's. Errors are not toasts: they stand where they happened.
 
 ### Frame and Section
@@ -334,14 +343,14 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 - Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
   from its top and foot: only there, and not on a phone, whose gutter leaves them no room.
 - A section: its block title in the left column, its content in the right, as wide as an Entry: `when`, `cell_3` and
-  `measure`, the title taking what is left; sections `row_4` apart, `row_2` on a phone. Its blocks stand a row apart,
-  a subsection two. Its `id` is its tab's name, so the top bar links to it.
+  `measure`, the title taking what is left; `row_2` of air above and below it, `row` on a phone. Its blocks stand a
+  row apart, a subsection two. A tab of the résumé stands as a section, its title the page's `h1`.
 
 ## Pages
 
 - The first screen: left, the greeting, the Name and the headline in `lead`; right, `brief` wide, the Mail, the role,
   the place, the Facts, the primary button and the Command, then cv.pdf, GitHub and LinkedIn. Below, the CareerLine
-  across the whole width; the four crosses at the corners. Nothing more: projects, skills and each role's details come
-  further down.
+  across the whole width; the four crosses at the corners. Under it the About section; the rest of the résumé is its
+  tabs, each a page of its own.
 - The address of no page: its status in block letters, the address quoted as Code, a link to the start; no apology and
-  no joke. The top bar and the footer stand as on every page.
+  no joke. The foot line stands as on every page, with no windows.

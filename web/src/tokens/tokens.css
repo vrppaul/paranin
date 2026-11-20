@@ -53,17 +53,17 @@
   --type-body-line: 1.5rem;
   /* the text read, every page's own: its weight */
   --type-body-weight: 400;
-  /* what names, as the site in the top bar, and a regular control's words: its size */
+  /* what names, as the window shown in the foot line, and a regular control's words: its size */
   --type-strong-size: 1rem;
-  /* what names, as the site in the top bar, and a regular control's words: its line's height */
+  /* what names, as the window shown in the foot line, and a regular control's words: its line's height */
   --type-strong-line: 1.5rem;
-  /* what names, as the site in the top bar, and a regular control's words: its weight */
+  /* what names, as the window shown in the foot line, and a regular control's words: its weight */
   --type-strong-weight: 700;
-  /* the top bar's words, a field's hint, the footer: its size */
+  /* the foot line's words, a field's hint: its size */
   --type-small-size: 0.875rem;
-  /* the top bar's words, a field's hint, the footer: its line's height */
+  /* the foot line's words, a field's hint: its line's height */
   --type-small-line: 1.5rem;
-  /* the top bar's words, a field's hint, the footer: its weight */
+  /* the foot line's words, a field's hint: its weight */
   --type-small-weight: 400;
   /* a word on a compact control, a tooltip's among them; never prose: its size */
   --type-caption-size: 0.8125rem;
@@ -101,7 +101,7 @@
   --type-heading-line: 2rem;
   /* a section's title on a page that is not the résumé: its weight */
   --type-heading-weight: 700;
-  /* how wide a focus ring is, and how far it stands from what it rings */
+  /* how wide a focus ring is, and how far it stands from what it rings; twice it, the room under the foot line */
   --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
   --name-cell: 1rem;
@@ -109,19 +109,19 @@
   --title-cell: 0.75rem;
   /* a cell of the face, the gap inside a compact control and either side of it */
   --cell: 1ch;
-  /* two cells, either side of a regular control and of a section's name in the top bar */
+  /* two cells, either side of a regular control, and between the parts of the foot line */
   --cell-2: 2ch;
-  /* three cells, between the ways the footer lists */
+  /* three cells, between an entry's dates and its words, and a list's indent */
   --cell-3: 3ch;
-  /* the grid's row, which the text read sits on; how far below the top bar a section a link leads to stops */
+  /* the grid's row, which the text read sits on; how tall the foot line is */
   --row: 1.5rem;
-  /* two rows, the air above and below the footer's ways */
+  /* two rows, how far clear of the foot line a part the keyboard reaches scrolls on a wide screen */
   --row-2: 3rem;
   /* half a row, the gap inside a component */
   --row-half: 0.75rem;
   /* three rows, between the name's column and the brief's, and under the first screen */
   --row-3: 4.5rem;
-  /* four rows, above the first screen */
+  /* four rows, above the first screen; how far clear of the foot line a part the keyboard reaches scrolls on a phone */
   --row-4: 6rem;
   /* how wide the first screen's brief is beside the name */
   --brief: 27.5rem;
@@ -139,8 +139,6 @@
   --span-thin: 0.375rem;
   /* how tall a regular control is, two rows */
   --control: 3rem;
-  /* how tall the top bar is */
-  --bar: 3rem;
   /* the widest the page's content runs */
   --content: 80rem;
   /* the room either side of the content */
@@ -165,6 +163,6 @@
   --quick: 120ms;
   /* how long a toast stays, and a copied command's button says so */
   --toast: 2400ms;
-  /* the top bar, which the page scrolls under on a wide screen */
-  --layer-bar: 1;
+  /* the foot line, which the page scrolls under */
+  --layer-foot: 1;
 }

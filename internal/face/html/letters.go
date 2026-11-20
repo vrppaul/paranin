@@ -106,19 +106,14 @@ func titleDrawing(words string) (letterDrawing, bool) {
 	return drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters)
 }
 
-// resumeBlock is a block at the top of the résumé's main part: a section stands at the place the top bar leads to,
-// under its title in block letters where the titles' font draws every letter of it, as words where it does not; any
-// other block as its kind is.
-func (writer PageWriter) resumeBlock(block document.Block) templ.Component {
-	section, isSection := block.(document.Section)
-	if !isSection {
-		return writer.block(block, firstHeadingDepth)
-	}
+// openingSection is the résumé's first section, under its first screen: under its title in block letters where the
+// titles' font draws every letter of it, as words where it does not.
+func (writer PageWriter) openingSection(section document.Section) templ.Component {
 	words := document.PlainText(section.Title)
 	if drawing, drawn := titleDrawing(words); drawn {
-		return writer.resumeSection(section, letteredHeadingTwo(drawing))
+		return writer.resumeSection(section.Blocks, letteredHeadingTwo(drawing))
 	}
-	return writer.resumeSection(section, heading(firstHeadingDepth, writer.spans(section.Title)))
+	return writer.resumeSection(section.Blocks, heading(firstHeadingDepth, writer.spans(section.Title)))
 }
 
 // drawLetters is texts in a font as a drawing of the words they show, of the font's class, a row of nothing between

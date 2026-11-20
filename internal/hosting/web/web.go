@@ -23,6 +23,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/face/html"
 	"github.com/vrppaul/paranin/internal/face/text"
 	"github.com/vrppaul/paranin/internal/release"
@@ -291,7 +292,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 	site := routes.New(facts.Profile.Site.BaseURL)
 	readPages := compose.Pages(facts)
 	index := compose.Index(facts)
-	frame := compose.FrameOf(facts, readPages)
+	frame := compose.FrameOf(facts)
 	pageWriter := html.NewPageWriter(site, build, frame, time.Now())
 	fixed := map[string]answer{
 		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
@@ -302,17 +303,20 @@ func draw(snapshot *release.Snapshot) *drawing {
 	for _, icon := range html.Icons(facts.Profile.Person.Name) {
 		fixed[icon.Path] = picturedAs(icon)
 	}
-	served := slices.Concat(readPages, compose.TabPages(readPages))
-	chosen := make(map[string]choice, len(served))
-	for _, composed := range served {
-		page := composed.Document.Head.Page
-		known := site.Address(page, routes.FormatChosen)
-		markdown := drawnAs(markdownMediaType, text.Markdown(composed.Document, site)).knownAt(known)
-		manual := drawnAs(plainMediaType, text.Manual(composed.Document, site)).knownAt(known)
-		browsed := drawnAs(htmlMediaType, pageWriter.Page(composed.Document, composed.Record)).knownAt(known)
-		fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
-		fixed[routes.Path(page, routes.FormatManual)] = manual
-		chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
+	chosen := map[string]choice{}
+	for _, composed := range readPages {
+		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the
+		// tab an address shows inside its page
+		for _, shown := range slices.Concat([]document.Document{composed.Document}, compose.TabDocuments(composed.Document)) {
+			page := shown.Head.Page
+			known := site.Address(page, routes.FormatChosen)
+			markdown := drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAt(known)
+			manual := drawnAs(plainMediaType, text.Manual(shown, site)).knownAt(known)
+			browsed := drawnAs(htmlMediaType, pageWriter.Page(composed.Document, composed.Record, page.Tab)).knownAt(known)
+			fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
+			fixed[routes.Path(page, routes.FormatManual)] = manual
+			chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
+		}
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{

@@ -320,7 +320,7 @@ attribute into the colour scheme; a browser that knows no such hold (Firefox)
 may show the system's theme for a moment first.
 
 Every page, the page of no page among them, draws one theme button at the
-end of its top bar, a drawn mark named by the site's words (`dark_theme`),
+end of its foot line, a drawn mark named by the site's words (`dark_theme`),
 which show as its tooltip, `hidden` until the script shows it. A press turns
 the page to the theme it is not in; the button is pressed while the page is
 dark. The script keeps a choice for every page after, and forgets it when a

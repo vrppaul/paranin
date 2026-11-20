@@ -75,27 +75,6 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 	}
 }
 
-// A link to a place on a page leads to it by its id: on a page of the site by the page's path then the place, on the
-// page the link stands on by the place alone.
-func TestALinkToAPlaceLeadsByItsID(test *testing.T) {
-	cases := []struct {
-		name string
-		got  string
-		want string
-	}{
-		{name: "a section of the résumé", got: PlaceReference(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, FormatChosen, "about"), want: "/#about"},
-		{name: "a place on a project's page", got: PlaceReference(document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, FormatChosen, "usage"), want: "/p/tidy-tool#usage"},
-		{name: "a place on the page itself", got: Place("main"), want: "#main"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if testCase.got != testCase.want {
-				test.Errorf("the reference = %q, want %q", testCase.got, testCase.want)
-			}
-		})
-	}
-}
-
 // A page of the site is read in a terminal with curl and its whole address, which answers a terminal with the manual.
 func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
 	site := New(writtenAddress{written: "https://example.test", host: "example.test"})

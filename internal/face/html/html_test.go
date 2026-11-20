@@ -2,6 +2,7 @@ package html
 
 import (
 	"html"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -29,26 +30,94 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 		file string
 	}{
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, file: "index.html"},
+		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, file: "experience.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
+		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, file: "p/tidy-tool/why.html"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
-			composed := composedOf(test, snapshot, testCase.page)
-			golden.Match(test, testCase.file, lined(fixtureWriter(test).Page(composed.Document, composed.Record)))
+			whole := document.Page{Kind: testCase.page.Kind, Slug: testCase.page.Slug, Tab: ""}
+			composed := composedOf(test, snapshot, whole)
+			golden.Match(test, testCase.file, lined(fixtureWriter(test).Page(composed.Document, composed.Record, testCase.page.Tab)))
 		})
 	}
 }
 
-// Every phrase of a document as written, all but a fact or a point that is only a gap, reaches its page, as HTML
-// writes text: the facts a browser shows are the facts the written document holds.
+// Every phrase of a document as written, all but a fact or a point that is only a gap, reaches one of its pages, its
+// opening's or a tab's, as HTML writes text: the facts a browser shows are the facts the written document holds.
 func TestEveryPhraseReachesThePage(test *testing.T) {
 	for _, composed := range compose.Pages(fixtures.LoadedContent(test)) {
-		page := fixtureWriter(test).Page(composed.Document, composed.Record)
-		for _, phrase := range document.Phrases(document.Written(composed.Document)) {
-			if !strings.Contains(page, html.EscapeString(phrase)) {
-				test.Errorf("the page of %+v holds no %q", composed.Document.Head.Page, phrase)
+		pages := fixtureWriter(test).Page(composed.Document, composed.Record, "")
+		for _, tab := range document.TabsOf(composed.Document).Rest {
+			pages += fixtureWriter(test).Page(composed.Document, composed.Record, tab.Slug)
+		}
+		written := document.Document{Head: composed.Document.Head, Blocks: document.WrittenBlocks(composed.Document.Blocks)}
+		for _, phrase := range document.Phrases(written) {
+			if !strings.Contains(pages, html.EscapeString(phrase)) {
+				test.Errorf("the pages of %+v hold no %q", composed.Document.Head.Page, phrase)
 			}
 		}
+	}
+}
+
+// A page shows one tab of its document, as the TUI does: at its own address its opening, the résumé's first screen and
+// first section, another page's head and the blocks before its first section; at a tab's address that tab alone,
+// under its title, which titles the page, the address it is known by and its markdown the tab's own.
+func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	writer := fixtureWriter(test)
+	const (
+		// a line of the résumé's first screen, of its first section, and of its experience
+		greeting   = "Hello, my name is"
+		summary    = "Writes software for people who read it."
+		experience = "Northwind — Senior Engineer"
+		// a line of a project's details, and of its section Why
+		details = "go install example.test/tidy@latest"
+		why     = "Files were untidy."
+	)
+	cases := []struct {
+		name  string
+		page  string
+		holds []string
+		lacks []string
+	}{
+		{
+			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
+			holds: []string{greeting, summary, `<link rel="canonical" href="https://example.test/">`}, lacks: []string{experience},
+		},
+		{
+			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
+			holds: []string{
+				experience, `<title>Experience</title>`, `<h1 aria-label="Experience">`,
+				`<link rel="canonical" href="https://example.test/experience">`, `type="text/markdown" href="/experience.md"`,
+			},
+			lacks: []string{greeting, summary},
+		},
+		{
+			name: "a project's opening", page: writer.Page(project.Document, project.Record, ""),
+			holds: []string{details, `<h1 aria-label="tidy-tool">`}, lacks: []string{why},
+		},
+		{
+			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
+			holds: []string{why, `<h1 aria-label="Why">`, `<link rel="canonical" href="https://example.test/p/tidy-tool/why">`},
+			lacks: []string{details},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, want := range testCase.holds {
+				if !strings.Contains(testCase.page, want) {
+					test.Errorf("the page %q holds no %q", testCase.page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(testCase.page, unwanted) {
+					test.Errorf("the page %q holds %q", testCase.page, unwanted)
+				}
+			}
+		})
 	}
 }
 
@@ -59,7 +128,7 @@ func TestALinkWithNoAddressReadsAsItsWords(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Paragraph{Spans: []document.Span{nowhere}}},
 	}
-	if page, want := fixtureWriter(test).Page(composed, blankPerson()), "<p>the report</p>"; !strings.Contains(page, want) {
+	if page, want := fixtureWriter(test).Page(composed, blankPerson(), ""), "<p>the report</p>"; !strings.Contains(page, want) {
 		test.Errorf("the page %q holds no %q", page, want)
 	}
 }
@@ -95,7 +164,7 @@ func TestATitleInBlockLettersIsNamedByItsWords(test *testing.T) {
 				Head:   fixtures.HeadOf(testCase.page, []document.Span{document.Text{Text: testCase.title}}),
 				Blocks: nil,
 			}
-			page := lined(fixtureWriter(test).Page(composed, blankPerson()))
+			page := lined(fixtureWriter(test).Page(composed, blankPerson(), ""))
 			for _, want := range testCase.want {
 				if !strings.Contains(page, want) {
 					test.Errorf("the page %q holds no %q", page, want)
@@ -110,106 +179,85 @@ func TestATitleInBlockLettersIsNamedByItsWords(test *testing.T) {
 	}
 }
 
-// A section of the résumé stands under its title in block letters, named by its words; a section of another page
-// under its title as words.
-func TestTheResumesSectionsStandUnderBlockLetters(test *testing.T) {
-	section := document.Section{Title: []document.Span{document.Text{Text: "About"}}, Blocks: nil}
+// A tab shown alone stands under its title in block letters, the page's h1, named by its words, on the résumé as on
+// any other page; a title with a letter the font does not draw stays its words.
+func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 	cases := []struct {
-		name string
-		page document.Page
-		want string
+		name  string
+		page  document.Page
+		title string
+		want  string
 	}{
-		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: `<h2 aria-label="About">`},
-		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, want: "<h2>About</h2>"},
+		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, title: "Work", want: `<h1 aria-label="Work">`},
+		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, title: "Usage", want: `<h1 aria-label="Usage">`},
+		{name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, title: "Café", want: "<h1>Café</h1>"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			section := document.Section{Title: []document.Span{document.Text{Text: testCase.title}}, Blocks: nil}
 			composed := document.Document{Head: fixtures.HeadOf(testCase.page, nil), Blocks: []document.Block{section}}
-			if page := lined(fixtureWriter(test).Page(composed, blankPerson())); !strings.Contains(page, testCase.want) {
+			page := lined(fixtureWriter(test).Page(composed, blankPerson(), document.SlugOf(testCase.title)))
+			if !strings.Contains(page, testCase.want) {
 				test.Errorf("the page %q holds no %q", page, testCase.want)
 			}
 		})
 	}
 }
 
-// Every page opens with the top bar, the page of no page among them: a link past it to the page's main part, the
-// site's name leading to where it begins, each of the résumé's sections leading to its place on the résumé, and the
-// theme button. The résumé's sections stand at those places.
-func TestEveryPageOpensWithTheTopBar(test *testing.T) {
+// Every page ends with the foot line, the page of no page among them: the session, the site's name leading to where
+// it begins; the document's tabs as windows by their numbers and names, each leading to its page, the one shown the
+// current page; the programs that reach the site and read it in a terminal; the markdown of the page whole,
+// the résumé's where a page has none; and the theme button.
+func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
 	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	bar := []string{
-		`href="#main">Skip to content</a>`, `<main id="main"`, `href="/">example.test</a>`,
-		`<a href="/#about">About</a>`, `<a href="/#experience">Experience</a>`, `<a href="/#projects">Projects</a>`,
-		`<a href="/#skills">Skills</a>`, `<a href="/#contact">Contact</a>`, `data-part="theme"`,
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot))
+	every := []string{
+		`<a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`,
+		`<span class="way-mark" aria-hidden="true">❯</span>ssh</button>`, `<span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
+		`data-part="theme"`,
 	}
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
-	cases := []struct {
-		name string
-		page string
-		want []string
-	}{
-		{name: "the résumé", page: writer.Page(resume.Document, resume.Record), want: bar},
-		{name: "a project's page", page: writer.Page(project.Document, project.Record), want: bar},
-		{name: "the page of no page", page: missing.For("/nothing"), want: bar},
-		{
-			name: "the résumé's sections, where the bar leads", page: writer.Page(resume.Document, resume.Record),
-			want: []string{`<section id="about"`, `<section id="experience"`, `<section id="projects"`, `<section id="skills"`, `<section id="contact"`},
-		},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			for _, want := range testCase.want {
-				if !strings.Contains(testCase.page, want) {
-					test.Errorf("the page %q holds no %q", testCase.page, want)
-				}
-			}
-		})
-	}
-}
-
-// Every page ends with the footer, the page of no page among them: the ways the same résumé is served, the command
-// that reaches it over ssh, the one that reads the page in a terminal, the page's markdown where it has one, and the
-// index agents read.
-func TestEveryPageEndsWithTheFooter(test *testing.T) {
-	snapshot := fixtures.LoadedContent(test)
-	writer := fixtureWriter(test)
-	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
-	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot))
+	// the résumé's markdown, which the page of no page offers too
+	const resumeMarkdown = `<a class="way-chip" href="/index.md">index.md</a>`
 	cases := []struct {
 		name  string
 		page  string
-		want  []string
+		holds []string
 		lacks []string
 	}{
 		{
-			name: "the résumé", page: writer.Page(resume.Document, resume.Record),
-			want: []string{
-				"<footer", "<code>ssh example.test</code>", "<code>curl https://example.test/</code>",
-				`href="/index.md">/index.md</a>`, `href="/llms.txt">/llms.txt</a>`,
-			},
+			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
+			holds: slices.Concat(every, []string{
+				resumeMarkdown, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
+				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
+				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
+			}),
 			lacks: nil,
 		},
 		{
-			name: "a project's page", page: writer.Page(project.Document, project.Record),
-			want: []string{
-				"<code>ssh example.test</code>", "<code>curl https://example.test/p/tidy-tool</code>",
-				`href="/p/tidy-tool.md">/p/tidy-tool.md</a>`, `href="/llms.txt">/llms.txt</a>`,
-			},
+			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
+			holds: slices.Concat(every, []string{
+				resumeMarkdown, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
+				`<a class="window" href="/experience" aria-current="page"><span class="window-number">2:</span>experience</a>`,
+			}),
 			lacks: nil,
 		},
 		{
-			name: "the page of no page, which has no markdown", page: missing.For("/nothing"),
-			want:  []string{"<code>ssh example.test</code>", "<code>curl https://example.test/</code>", `href="/llms.txt">/llms.txt</a>`},
-			lacks: []string{".md"},
+			name: "a project's page", page: writer.Page(project.Document, project.Record, ""),
+			holds: slices.Concat(every, []string{
+				`<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`,
+				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
+				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
+			}),
+			lacks: nil,
 		},
+		{name: "the page of no page", page: missing.For("/nothing"), holds: slices.Concat(every, []string{resumeMarkdown}), lacks: []string{`class="window"`}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			for _, want := range testCase.want {
+			for _, want := range testCase.holds {
 				if !strings.Contains(testCase.page, want) {
 					test.Errorf("the page %q holds no %q", testCase.page, want)
 				}
@@ -224,7 +272,7 @@ func TestEveryPageEndsWithTheFooter(test *testing.T) {
 }
 
 // The résumé's first screen briefs the reader with the first four facts its first section holds, in their order; the
-// facts after them stay in that section, at the place the top bar leads to, where the facts stood.
+// facts after them stay in that section, under the first screen, where the facts stood.
 func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
 	facts := []document.Fact{}
 	for _, label := range []string{"first", "second", "third", "fourth", "fifth"} {
@@ -238,7 +286,7 @@ func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
 			document.Paragraph{Spans: []document.Span{document.Text{Text: "after"}}},
 		},
 	}
-	firstScreen, aboutSection, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about), blankPerson()), `<section id="about"`)
+	firstScreen, aboutSection, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about), blankPerson(), ""), `<section class="section"`)
 	cases := []struct {
 		name  string
 		part  string
@@ -302,7 +350,7 @@ func TestTheBriefIsHeadedByTheMail(test *testing.T) {
 				Title:  []document.Span{document.Text{Text: "Contact"}},
 				Blocks: []document.Block{document.Facts{Kind: document.FactsWays, List: []document.Fact{{Label: "mail", Value: testCase.address}}}},
 			}
-			firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson()), `<section id="about"`)
+			firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson(), ""), `<section class="section"`)
 			if !strings.Contains(firstScreen, testCase.want) {
 				test.Errorf("the first screen %q holds no %q", firstScreen, testCase.want)
 			}
@@ -323,7 +371,7 @@ func TestTheCareerLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 		roleOf("Gapwind", document.GapMonth{Text: "[2019]"}, monthOf(2019, time.December)),
 		roleOf("Southwind", monthOf(2020, time.January), monthOf(2022, time.December)),
 	}}
-	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, work), blankPerson()), `<section id="about"`)
+	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), ""), `<section class="section"`)
 	cases := []struct {
 		name  string
 		holds string
@@ -354,9 +402,9 @@ func TestTheCareerLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 	})
 }
 
-// The page shows a document as a reader of the finished work sees it (document.Written): a fact or a point that is
-// only a gap still to fill is left out, so the first screen briefs the reader with the first four facts written; a gap
-// among written words stays, marked as a gap.
+// The page shows a document as a reader of the finished work sees it (document.WrittenBlocks): a fact or a point that
+// is only a gap still to fill is left out, on the first screen, which briefs the reader with the first four facts
+// written, in a tab, and in another page's opening; a gap among written words stays, marked as a gap.
 func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 	about := document.Section{
 		Title: []document.Span{document.Text{Text: "About"}},
@@ -375,8 +423,13 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 		{Spans: []document.Span{document.Text{Text: "Owned "}, document.Gap{Text: "[service]"}}},
 	}
 	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: []document.Block{role}}
-	page := fixtureWriter(test).Page(resumeOf(about, work), blankPerson())
-	firstScreen, sections, _ := strings.Cut(page, `<section id="about"`)
+	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), ""), `<section class="section"`)
+	workTab := fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), "work")
+	project := document.Document{
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, nil),
+		Blocks: []document.Block{about.Blocks[0]},
+	}
+	projectOpening := fixtureWriter(test).Page(project, blankPerson(), "")
 	cases := []struct {
 		name  string
 		part  string
@@ -390,9 +443,10 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 			lacks: "[later]",
 		},
 		{
-			name: "a point with a gap among its words, and none that is only one", part: sections,
+			name: "a point with a gap among its words, and none that is only one", part: workTab,
 			holds: `Owned <span class="gap">[service]</span></li>`, lacks: "[What was built]",
 		},
+		{name: "another page's opening, its facts written", part: projectOpening, holds: "<dt>first</dt><dd>first value</dd>", lacks: "[later]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -403,6 +457,32 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 				test.Errorf("%s %q holds %q", testCase.name, testCase.part, testCase.lacks)
 			}
 		})
+	}
+}
+
+// A résumé whose brief would hold nothing but gaps keeps its tabs as every face parts them: its first section stays
+// the opening, its words written at the page's own address, and the foot line names the tabs the site serves.
+func TestAnOpeningOfGapsStaysTheOpening(test *testing.T) {
+	about := document.Section{
+		Title: []document.Span{document.Text{Text: "About"}},
+		Blocks: []document.Block{
+			document.Paragraph{Spans: []document.Span{document.Text{Text: "Writes software."}}},
+			document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "later", Value: []document.Span{document.Gap{Text: "[later]"}}}}},
+		},
+	}
+	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: nil}
+	page := fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), "")
+	for _, want := range []string{
+		"<p>Writes software.</p>",
+		`<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about`,
+		`<a class="window" href="/work"><span class="window-number">2:</span>work</a>`,
+	} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the page %q holds no %q", page, want)
+		}
+	}
+	if strings.Contains(page, "[later]") {
+		test.Errorf("the page %q holds the gap %q", page, "[later]")
 	}
 }
 
@@ -420,7 +500,7 @@ func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, []document.Span{document.Text{Text: "tidy"}}),
 		Blocks: []document.Block{tool},
 	}
-	page := fixtureWriter(test).Page(composed, blankPerson())
+	page := fixtureWriter(test).Page(composed, blankPerson(), "")
 	for _, want := range []string{
 		`<dt>install</dt><dd><div class="command" data-part="command">`,
 		`<code data-part="command-words">go install example.test/tidy@latest</code>`,
@@ -448,7 +528,7 @@ func TestTheBriefEndsWithTheProfiles(test *testing.T) {
 		{Label: "blog", Value: []document.Span{document.Link{Target: document.Address{URL: "https://blog.test"}, Spans: []document.Span{document.Text{Text: "blog.test"}}}, document.Text{Text: ", in Czech"}}},
 		{Label: "ssh", Value: []document.Span{document.Code{Text: "ssh example.test"}}},
 	}}}}
-	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson()), `<section id="about"`)
+	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, contact), blankPerson(), ""), `<section class="section"`)
 	want := `<p class="profiles"><a href="https://github.test/mira">GitHub</a>` + dot + `<a href="https://linkedin.test/mira">LinkedIn</a></p>`
 	if !strings.Contains(firstScreen, want) {
 		test.Errorf("the first screen %q holds no %q", firstScreen, want)
@@ -484,7 +564,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
 		Blocks: nil,
 	}
-	page := fixtureWriter(test).Page(composed, blankPerson())
+	page := fixtureWriter(test).Page(composed, blankPerson(), "")
 	for _, unwanted := range []string{`name="description"`, `property="og:description"`} {
 		if strings.Contains(page, unwanted) {
 			test.Errorf("the page %q holds %q", page, unwanted)
@@ -498,7 +578,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 // its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), fixtureFrame(snapshot)).For("/nothing\x1b[2J<b>")
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot)).For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
 }
 
@@ -508,7 +588,7 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	record := blankPerson()
 	record.Name = "Mira Example"
-	if page := fixtureWriter(test).Page(composedOf(test, snapshot, resume).Document, record); strings.Contains(page, "worksFor") {
+	if page := fixtureWriter(test).Page(composedOf(test, snapshot, resume).Document, record, ""); strings.Contains(page, "worksFor") {
 		test.Errorf("the page %q names an employer", page)
 	}
 }
@@ -522,12 +602,7 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), fixtureFrame(snapshot), fixtures.Day())
-}
-
-// fixtureFrame is the frame of the fixture's pages, in its words.
-func fixtureFrame(snapshot *content.Snapshot) compose.Frame {
-	return compose.FrameOf(snapshot, compose.Pages(snapshot))
+	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), compose.FrameOf(snapshot), fixtures.Day())
 }
 
 // composedOf is a page of the fixture as compose makes it, its document and its record.

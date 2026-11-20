@@ -5,17 +5,11 @@ import (
 	"strings"
 )
 
-// Written is a document as a reader of the finished work sees it: a fact or a point that holds
-// nothing but gaps still to fill is left out until its author fills it, and a list of facts left with none goes with
-// it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the document
-// whole. The document it is handed keeps every block it had.
-func Written(document Document) Document {
-	document.Blocks = writtenBlocks(document.Blocks)
-	return document
-}
-
-// writtenBlocks are blocks as Written leaves them, those left with nothing to show left out.
-func writtenBlocks(blocks []Block) []Block {
+// WrittenBlocks are blocks as a reader of the finished work sees them: a fact or a point that holds nothing but gaps
+// still to fill is left out until its author fills it, and a list of facts left with none goes with it; a gap among
+// written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks whole. The blocks
+// it is handed keep everything they had.
+func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
 	for _, block := range blocks {
 		if shown, isShown := writtenBlock(block); isShown {
@@ -30,7 +24,7 @@ func writtenBlocks(blocks []Block) []Block {
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
 	case Section:
-		typed.Blocks = writtenBlocks(typed.Blocks)
+		typed.Blocks = WrittenBlocks(typed.Blocks)
 		return typed, true
 	case Facts:
 		typed.List = writtenFacts(typed.List)

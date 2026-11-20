@@ -12,8 +12,7 @@ import (
 
 // Each page a person reads has its record, the facts a search engine reads as data: the résumé the person, with
 // where they work now, the schools, the skills they use and not those still learning, the languages and the public
-// profiles; a project's page the project, with its author and the page that is theirs. A tab shown alone has its
-// page's record, which names the page whole.
+// profiles; a project's page the project, with its author and the page that is theirs. Each names its own page.
 func TestEachPageHasItsRecord(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
@@ -45,8 +44,6 @@ func TestEachPageHasItsRecord(test *testing.T) {
 	}{
 		{name: "the résumé", page: resumePage(), want: person},
 		{name: "a project's page", page: tidyTool, want: work},
-		{name: "a tab of the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, want: person},
-		{name: "a tab of a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, want: work},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -100,8 +97,7 @@ func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
 
 // recordOf is the record compose makes beside the document of a page.
 func recordOf(test *testing.T, snapshot *content.Snapshot, page document.Page) Record {
-	pages := Pages(snapshot)
-	for _, composed := range slices.Concat(pages, TabPages(pages)) {
+	for _, composed := range Pages(snapshot) {
 		if composed.Document.Head.Page == page {
 			return composed.Record
 		}

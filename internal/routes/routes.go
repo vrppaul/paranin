@@ -52,8 +52,6 @@ const (
 	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
-	// the mark before a place's id, where a link leads to a place on a page
-	placeMark = "#"
 )
 
 // The program a terminal reads the site with, and what parts it from the address in a command
@@ -119,17 +117,6 @@ func Reference(target document.Target, format Format) string {
 		return Path(typed, format)
 	}
 	return ""
-}
-
-// PlaceReference is where a link inside one of the site's pages leads to a place on a page of the site, by the
-// place's id: the page's reference, then the place.
-func PlaceReference(page document.Page, format Format, id string) string {
-	return Reference(page, format) + Place(id)
-}
-
-// Place is where a link leads to a place on the page it stands on, by the place's id.
-func Place(id string) string {
-	return placeMark + id
 }
 
 // Path is where a page, or a tab of it shown alone, is served in a format, empty where it is served in none:

@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { startCommands, type CommandClipboard } from "../../src/controllers/command";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
+import projectPage from "../../../internal/face/html/testdata/p/tidy-tool.html?raw";
 
 // The chip, the words it copies and its button as the server draws them; the toast and its words
 const CHIP = '[data-part="command"]';
@@ -20,7 +21,7 @@ const COMMAND = "ssh example.test";
 const COPY_WORD = "copy";
 const COPIED_WORD = "copied";
 const TOAST_SAYS = "Copied ssh example.test";
-// The fixture's project's install line, a chip of its own further down the page, and what its toast says
+// The fixture's project's install line, a chip of its own on the project's page, and what its toast says
 const INSTALL = "go install example.test/tidy@latest";
 const INSTALL_TOAST_SAYS = "Copied go install example.test/tidy@latest";
 
@@ -45,6 +46,15 @@ function found(selector: string): HTMLElement {
     throw new Error(`the page has no ${selector}`);
   }
   return element;
+}
+
+/** Adds a golden page's main part after the document's own, so the document holds that page's chips too. */
+function withMainOf(page: string): void {
+  const main = new DOMParser().parseFromString(page, "text/html").querySelector("main");
+  if (main === null) {
+    throw new Error("the golden page has no main part");
+  }
+  found("main").after(main);
 }
 
 /** The chips of the golden page, run over a fake clipboard, which the test reads. */
@@ -92,6 +102,7 @@ test("a press copies the command, the button says so, and the toast says what wa
 });
 
 test("each chip copies its own command, and the toast says which", async () => {
+  withMainOf(projectPage);
   const clipboard = started();
   found(`${COPY}[aria-label="copy ${INSTALL}"]`).click();
   await vi.advanceTimersByTimeAsync(0);
@@ -126,7 +137,7 @@ test("a press on a chip whose words the reader selected copies nothing, so the s
 
 test("a press on the chip copies while words elsewhere on the page are selected", async () => {
   const clipboard = started();
-  document.getSelection()?.selectAllChildren(found("footer"));
+  document.getSelection()?.selectAllChildren(found(".foot"));
   await press();
   expect(clipboard.written).toEqual([COMMAND]);
 });

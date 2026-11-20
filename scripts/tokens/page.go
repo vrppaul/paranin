@@ -69,7 +69,7 @@ const (
 const numberValue = "%d"
 
 // What a layer's property is named: the word layer, then the layer's name, so a layer may share its name with the
-// length of the part it lifts, as the top bar's does; and the place of the lowest layer, over the page's own
+// length of the part it lifts; and the place of the lowest layer, over the page's own
 const (
 	layerPrefix = "layer_"
 	lowestPlace = 1

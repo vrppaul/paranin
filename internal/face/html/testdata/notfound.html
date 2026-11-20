@@ -16,29 +16,7 @@
 <link rel="modulepreload" href="/assets/shared-fixture.js">
 </head>
 <body>
-<header class="bar">
-<a class="skip" href="#main">Skip to content</a>
-<div class="bar-row content-width">
-<a class="site" href="/">example.test</a>
-<nav class="sections" data-part="sections">
-<a href="/#about">About</a>
-<a href="/#experience">Experience</a>
-<a href="/#projects">Projects</a>
-<a href="/#skills">Skills</a>
-<a href="/#contact">Contact</a>
-</nav>
-<span class="theme" data-part="theme" hidden>
-<button type="button" class="theme-button" aria-pressed="false" aria-labelledby="theme-name">
-<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
-<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5">
-</circle> <path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z">
-</path>
-</svg>
-</button> <span id="theme-name" class="tooltip" data-part="tooltip">Dark theme</span>
-</span>
-</div>
-</header>
-<main id="main" class="content-width">
+<main class="content-width">
 <div class="not-found">
 <h1 aria-label="404 Not Found">
 <svg class="letters letters-title" aria-hidden="true" viewBox="0 0 306 20" width="51em" height="3.3333em" shape-rendering="crispEdges">
@@ -193,10 +171,27 @@
 </p>
 </div>
 </main>
-<footer class="footer">
-<div class="footer-row content-width">
-<code>ssh example.test</code> <code>curl https://example.test/</code> <a href="/llms.txt">/llms.txt</a>
+<div class="foot">
+<nav class="foot-row content-width">
+<a class="session" href="/">
+<span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span>
+</a> <span class="ways">
+<button type="button" class="way-chip">
+<span class="way-mark" aria-hidden="true">❯</span>ssh</button>
+<button type="button" class="way-chip">
+<span class="way-mark" aria-hidden="true">❯</span>curl</button>
+<a class="way-chip" href="/index.md">index.md</a>
+</span>
+<span class="theme" data-part="theme" hidden>
+<button type="button" class="theme-button" aria-pressed="false" aria-labelledby="theme-name">
+<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5">
+</circle> <path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z">
+</path>
+</svg>
+</button> <span id="theme-name" class="tooltip" data-part="tooltip">Dark theme</span>
+</span>
+</nav>
 </div>
-</footer>
 </body>
 </html>

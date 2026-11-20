@@ -37,17 +37,15 @@ func Pages(snapshot *content.Snapshot) []Composed {
 	return pages
 }
 
-// TabPages are the pages' tabs past each opening (document.TabsOf), in their order, each a page that shows the tab
-// alone, with its page's record, since it is the page shown in part.
-func TabPages(pages []Composed) []Composed {
-	tabPages := []Composed{}
-	for _, page := range pages {
-		for _, tab := range document.TabsOf(page.Document).Rest {
-			shown := document.Document{Head: tabHead(page.Document.Head, tab), Blocks: tab.Blocks}
-			tabPages = append(tabPages, Composed{Document: shown, Record: page.Record})
-		}
+// TabDocuments are a document's tabs past its opening (document.TabsOf), in their order, each a document of the tab
+// alone, for a face that draws a document whole.
+func TabDocuments(composed document.Document) []document.Document {
+	rest := document.TabsOf(composed).Rest
+	documents := make([]document.Document, 0, len(rest))
+	for _, tab := range rest {
+		documents = append(documents, document.Document{Head: tabHead(composed.Head, tab), Blocks: tab.Blocks})
 	}
-	return tabPages
+	return documents
 }
 
 // tabHead is the head of a tab shown alone: its page's, naming the tab, under the tab's title, with the language and
@@ -69,11 +67,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 
 // Documents are the documents of the pages a person reads, in their order, for a face that draws no record.
 func Documents(snapshot *content.Snapshot) []document.Document {
-	return documentsOf(Pages(snapshot))
-}
-
-// documentsOf are the documents of pages, in their order.
-func documentsOf(pages []Composed) []document.Document {
+	pages := Pages(snapshot)
 	documents := make([]document.Document, 0, len(pages))
 	for _, page := range pages {
 		documents = append(documents, page.Document)

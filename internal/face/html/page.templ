@@ -12,13 +12,12 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// page is a document's whole page: its language, and what it says of itself, its title, its description, the
-// address it is known by with Open Graph and its record as linked data, and its markdown, each where it has one;
-// then the top bar, its main part, its head and its blocks, the footer, and the toast that says what a command's chip
-// on it copied.
-templ (writer PageWriter) page(composed document.Document, metadata pageMetadata, record compose.Record) {
+// page is a page of a document in its language: what it says of itself, its title, its description, the address it is
+// known by with Open Graph and its record as linked data, and its markdown, each where it has one; then its main part,
+// the foot line, and the toast that says what a command's chip on it copied.
+templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
-	<html lang={ composed.Head.Language }>
+	<html lang={ language }>
 		<head>
 			@headOpening(metadata.title, writer.included)
 			if metadata.description != "" {
@@ -34,12 +33,12 @@ templ (writer PageWriter) page(composed document.Document, metadata pageMetadata
 			}
 		</head>
 		<body>
-			@topBar(writer.frame)
-			<main id={ mainID } class="content-width">
-				@writer.mainPart(composed)
+			<main class="content-width">
+				@main
 			</main>
-			@footer(writer.frame, writer.site.ReadCommand(composed.Head.Page), metadata.markdown)
-			@toast()
+			@footLineMarkup(foot) {
+				@toast()
+			}
 		</body>
 	</html>
 }
@@ -63,37 +62,51 @@ templ headOpening(title string, included assets.Included) {
 	}
 }
 
-// topBar is the bar every page opens with (DESIGN.md, TopBar and SkipLink): the link past it to the page's main part,
-// the first thing a keyboard reaches; the site's name, leading to where it begins; each section of the résumé,
-// leading to its place there; and the theme button.
-templ topBar(frame frame) {
-	<header class="bar">
-		<a class="skip" href={ frame.toMain }>{ frame.skipToContent }</a>
-		<div class="bar-row content-width">
-			<a class="site" href={ frame.start }>{ frame.siteName }</a>
-			<nav class="sections" data-part={ sectionsPart }>
-				for _, section := range frame.sections {
-					<a href={ section.address }>{ section.title }</a>
-				}
-			</nav>
-			@themeButton(frame.darkTheme)
-		</div>
-	</header>
+// footLineMarkup is the line at the foot of every page (DESIGN.md, FootLine), after its main part, as tmux's status
+// line: the session, the site's name leading to where it begins; the document's tabs as windows, each by its number
+// and name leading to its page, the one shown the current page; the ways the site is served as chips, the programs
+// that reach it and read it in a terminal, which do nothing yet (TODO, the islands), and the page's markdown; then the
+// theme button. A screen reader skips the session's brackets. What it is handed, the toast, stands with it, over it.
+templ footLineMarkup(foot footLine) {
+	<div class="foot">
+		<nav class="foot-row content-width">
+			<a class="session" href={ foot.frame.start }><span aria-hidden="true">{ sessionOpening }</span>{ foot.frame.siteName }<span aria-hidden="true">{ sessionClosing }</span></a>
+			if len(foot.windows) > 0 {
+				<ul class="windows">
+					for _, window := range foot.windows {
+						<li>
+							@windowLink(window)
+						</li>
+					}
+				</ul>
+			}
+			<span class="ways">
+				@wayChip(foot.frame.sshProgram)
+				@wayChip(foot.frame.readingProgram)
+				<a class="way-chip" href={ foot.markdown }>{ foot.markdownName }</a>
+			</span>
+			@themeButton(foot.frame.darkTheme)
+		</nav>
+		{ children... }
+	</div>
 }
 
-// footer ends every page (DESIGN.md, Footer): the ways the same page is served, the command that reaches the site over
-// ssh, the one that reads the page in a terminal, the page's markdown where it has one, and the index agents read.
-templ footer(frame frame, reading, markdown string) {
-	<footer class="footer">
-		<div class="footer-row content-width">
-			<code>{ frame.ssh.Text }</code>
-			<code>{ reading }</code>
-			if markdown != "" {
-				<a href={ markdown }>{ markdown }</a>
-			}
-			<a href={ frame.agentsIndex }>{ frame.agentsIndex }</a>
-		</div>
-	</footer>
+// windowLink is a tab as tmux writes a window, its number, a colon and its name, leading to its page; the current one
+// the page shown, which the stylesheet marks.
+templ windowLink(window window) {
+	<a
+		class="window"
+		href={ window.address }
+		if window.current {
+			aria-current="page"
+		}
+	><span class="window-number">{ window.number + windowColon }</span>{ window.name }</a>
+}
+
+// wayChip is a way the site is served, by the program it runs, as a command's chip at the compact size: the prompt's
+// mark, then the program's name.
+templ wayChip(program string) {
+	<button type="button" class="way-chip"><span class="way-mark" aria-hidden="true">{ look.PromptMark }</span>{ program }</button>
 }
 
 // themeButton is the reader's theme: one button that turns the page to the theme it is not in, pressed while the
@@ -130,35 +143,37 @@ templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:url" content={ metadata.canonical }/>
 }
 
-// plainMain is the main part of a page that is not the résumé: its head, then its blocks, a row apart as a résumé
-// section's are.
-templ (writer PageWriter) plainMain(composed document.Document) {
-	@writer.head(composed.Head)
+// plainMain is the main part of a page under its head: the head, then blocks, a row apart as a résumé section's are.
+templ (writer PageWriter) plainMain(head document.Head, blocks []document.Block) {
+	@writer.head(head)
+	@writer.pageBlocks(blocks)
+}
+
+// tabMain is the main part of a tab of a page that is not the résumé: its title, then its blocks, as a page's head and
+// blocks stand.
+templ (writer PageWriter) tabMain(title templ.Component, blocks []document.Block) {
+	<div class="page-head">
+		@title
+	</div>
+	@writer.pageBlocks(blocks)
+}
+
+// pageBlocks are the blocks after a page's head, a row apart as a résumé section's are.
+templ (writer PageWriter) pageBlocks(blocks []document.Block) {
 	<div class="blocks page-blocks">
-		for _, block := range composed.Blocks {
+		for _, block := range blocks {
 			@writer.block(block, firstHeadingDepth)
 		}
 	</div>
 }
 
-// unbriefedResumeMain is the main part of a résumé whose first section holds no facts to brief the reader with: its
-// head, then each block, its sections at the places the top bar leads to.
-templ (writer PageWriter) unbriefedResumeMain(composed document.Document) {
-	@writer.head(composed.Head)
-	for _, block := range composed.Blocks {
-		@writer.resumeBlock(block)
-	}
-}
-
-// resumeMain is the résumé's main part: its first screen, then the blocks that are no section, then its sections.
+// resumeMain is the résumé's opening: its first screen, then the blocks that are no section, then its first section.
 templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
 	@writer.firstScreen(head, parts)
 	for _, block := range parts.others {
 		@writer.block(block, firstHeadingDepth)
 	}
-	for _, section := range parts.sections {
-		@writer.resumeBlock(section)
-	}
+	@writer.openingSection(parts.first)
 }
 
 // firstScreen is the résumé's first screen (DESIGN.md, Pages): the greeting, the author's name in block letters and
@@ -275,9 +290,9 @@ templ command(command compose.Command) {
 	</div>
 }
 
-// toast says what was done (DESIGN.md, Tooltip and Toast): the tick, then the words the site's script puts in, at the
-// foot of the screen while it shows. It stands in a region a screen reader reads out as it changes, which holds no
-// box of its own.
+// toast says what was done (DESIGN.md, Tooltip and Toast): the tick, then the words the site's script puts in, over
+// the foot line while it shows. It stands in a region a screen reader reads out as it changes, which holds no box of
+// its own.
 templ toast() {
 	<div role="status">
 		<p class="toast" data-part={ toastPart } hidden><span class="toast-mark" aria-hidden="true">{ look.DoneMark }</span><span data-part={ toastWordsPart }></span></p>
@@ -311,8 +326,7 @@ templ mailLink(mail document.Mail, heading bool) {
 
 // head is what the page's main part shows first (DESIGN.md, Contents and PageHead): its title in block letters, its
 // line, the subtitle and the place beside it; what a project is made of, joined in one line, words that do nothing
-// when pressed; the lead; and where a project's code lives. It stands in no header: a page has one, the top bar
-// (DESIGN.md, Layout).
+// when pressed; the lead; and where a project's code lives.
 templ (writer PageWriter) head(head document.Head) {
 	<div class="page-head">
 		@writer.drawnTitle(head)
@@ -508,13 +522,13 @@ templ knownMonth(start time.Time) {
 	<time datetime={ start.Format(machineMonthLayout) }>{ start.Format(monthLayout) }</time>
 }
 
-// resumeSection is a section of the résumé, at the place the top bar leads to (DESIGN.md, Frame and Section): its
-// heading, and beside it, or under it on a narrower screen, its blocks.
-templ (writer PageWriter) resumeSection(section document.Section, heading templ.Component) {
-	<section id={ document.SlugOf(document.PlainText(section.Title)) } class="section" data-part={ sectionPart }>
+// resumeSection is a section of the résumé (DESIGN.md, Frame and Section): its heading, and beside it, or under it on
+// a narrower screen, its blocks.
+templ (writer PageWriter) resumeSection(blocks []document.Block, heading templ.Component) {
+	<section class="section">
 		@heading
 		<div class="blocks">
-			for _, block := range section.Blocks {
+			for _, block := range blocks {
 				@writer.block(block, firstHeadingDepth+1)
 			}
 		</div>

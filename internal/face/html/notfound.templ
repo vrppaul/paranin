@@ -10,15 +10,14 @@ templ (notFound NotFound) page(quotedPath string) {
 			@headOpening(notFound.status, notFound.included)
 		</head>
 		<body>
-			@topBar(notFound.frame)
-			<main id={ mainID } class="content-width">
+			<main class="content-width">
 				<div class="not-found">
 					@notFound.heading
 					<p><code>{ quotedPath }</code></p>
-					<p><a href={ notFound.frame.start }>{ notFound.frame.siteName }</a></p>
+					<p><a href={ notFound.foot.frame.start }>{ notFound.foot.frame.siteName }</a></p>
 				</div>
 			</main>
-			@footer(notFound.frame, notFound.reading, "")
+			@footLineMarkup(notFound.foot)
 		</body>
 	</html>
 }

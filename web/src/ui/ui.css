@@ -28,6 +28,18 @@ body {
 
   /* a word longer than the line, as an address is, breaks rather than push the page wider than the screen */
   overflow-wrap: break-word;
+
+  /* the main part, then the foot line, at least a screen tall, so a short page's line still stands at the screen's
+   * foot (DESIGN.md, FootLine) */
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* the main part takes the room the foot line leaves, as wide as a block of the page would be */
+main {
+  flex-grow: 1;
+  width: 100%;
 }
 
 /* the elements the browser gives a face of its own take the page's: code its monospace, a control its system font
@@ -89,22 +101,8 @@ mark .gap {
   outline-offset: var(--focus-width);
 }
 
-/* the top bar every page opens with (DESIGN.md, TopBar): the site, the résumé's sections, the theme button, on the
- * ground a shade below the page, a quiet hairline under it; it sticks to the top as the page scrolls under it, on its
- * own layer, so a part of the page placed for what it holds, as the first screen for its crosses, passes under it */
-.bar {
-  position: sticky;
-  top: 0;
-  z-index: var(--layer-bar);
-  border-bottom: var(--hairline) solid var(--quiet);
-  background: var(--sunk);
-  font-size: var(--type-small-size);
-  font-weight: var(--type-small-weight);
-  line-height: var(--type-small-line);
-}
-
-/* a part of the page as wide as its content, a gutter either side, on a ground that runs the screen's width: the
- * bar's row, the main part, the footer's row */
+/* a part of the page as wide as its content, a gutter either side, on a ground that runs the screen's width: the main
+ * part, the foot line's row */
 .content-width {
   box-sizing: border-box;
   max-width: calc(var(--content) + 2 * var(--gutter));
@@ -112,143 +110,177 @@ mark .gap {
   padding-inline: var(--gutter);
 }
 
-.bar-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--bar);
-}
-
-/* the site's name leads to where it begins, bold as what names */
-.site {
-  color: var(--text);
-  font-weight: var(--type-strong-weight);
-  text-decoration: none;
-}
-
-/* each section's name, lower case as the TUI writes its tabs, quiet until the pointer is over it */
-.sections {
-  display: flex;
-}
-
-.sections a {
-  padding: 0 var(--cell-2);
-  color: var(--muted);
-  line-height: var(--bar);
-  text-decoration: none;
-  text-transform: lowercase;
-  transition: color var(--quick);
-}
-
-.sections a:hover {
-  color: var(--text);
-}
-
-/* the section the reader is in (src/controllers/sections.ts), reversed and bold as the TUI's tab: a mark of form, not
- * of colour alone */
-.sections a[aria-current] {
-  background: var(--text);
-  color: var(--background);
-  font-weight: var(--type-strong-weight);
-}
-
-/* a place a link leads to stops a row below the sticky bar */
-[id] {
-  scroll-margin-top: calc(var(--bar) + var(--row));
-}
-
-/* the footer every page ends with (DESIGN.md, Footer): a quiet hairline across the screen above it, as under the bar,
- * then the ways the same page is served, in small muted words, two rows of air round them */
-.footer {
+/* the foot line every page ends with (DESIGN.md, FootLine), as tmux's status line: after the main part, it sticks to
+ * the screen's foot as the page scrolls under it, on its own layer, holding its own height however many rows it takes;
+ * on the ground a shade below the page, a quiet hairline over it. The toast it holds keeps its own text style */
+.foot {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--layer-foot);
   border-top: var(--hairline) solid var(--quiet);
-  color: var(--muted);
-  font-size: var(--type-small-size);
-  font-weight: var(--type-small-weight);
-  line-height: var(--type-small-line);
+  background: var(--sunk);
 }
 
-.footer-row {
+/* the line's parts in its small words, two cells apart, with room under them for a focus ring the screen's foot would
+ * cut; a part whose words never break wraps whole to a row more where the screen is too narrow for the line */
+.foot-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--row-half) var(--cell-3);
-  padding-block: var(--row-2);
+  align-items: center;
+  gap: 0 var(--cell-2);
+  min-height: var(--row);
+  padding-bottom: calc(2 * var(--focus-width));
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--row);
+  white-space: nowrap;
 }
 
-/* the link past the bar to the page's main part (DESIGN.md, SkipLink): the first thing a keyboard reaches, above the
- * screen until it is focused, then at the top left over the bar, reversed, a regular control */
-.skip {
-  position: absolute;
-  top: calc(-1 * var(--control));
-  left: var(--gutter);
+/* a part the keyboard reaches scrolls clear of the foot line, which stands over the page's end, its ring too: two rows
+ * on a wide screen, where the line takes one, four and the ring on a phone, where today's tabs take it to three */
+html {
+  scroll-padding-bottom: var(--row-2);
+}
+
+/* the session: the site's name between tmux's brackets, in the host's colour, as the TUI's prompt writes it; under the
+ * pointer on the ground a shade down, as a window, which reaches a cell past its words */
+.session {
+  margin-inline: calc(-1 * var(--cell));
+  padding-inline: var(--cell);
+  color: var(--host);
+  text-decoration: none;
+  transition: background var(--quick);
+}
+
+.session:hover {
+  background: var(--deep);
+}
+
+/* the windows, a cell apart, each its number faint and its name, a cell of air either side, taking the room the ways
+ * leave */
+.windows {
   display: flex;
-  align-items: center;
-  min-height: var(--control);
-  padding: 0 var(--cell-2);
+  flex: 1;
+  gap: 0 var(--cell);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.window {
+  display: block;
+  padding: 0 var(--cell);
+  color: var(--text);
+  text-decoration: none;
+  transition: background var(--quick);
+}
+
+.window:hover {
+  background: var(--deep);
+}
+
+.window-number {
+  color: var(--faint);
+}
+
+/* the window shown, reversed and bold as the TUI's tab: a mark of form, not of colour alone */
+.window[aria-current] {
   background: var(--text);
   color: var(--background);
-  font-size: var(--type-strong-size);
   font-weight: var(--type-strong-weight);
-  line-height: var(--type-strong-line);
+}
+
+.window[aria-current] .window-number {
+  color: var(--background);
+}
+
+/* the mark tmux writes after the window shown; a screen reader takes the current page from the link instead */
+.window[aria-current]::after {
+  content: "*" / "";
+}
+
+/* the ways the site is served, at the line's end before the theme button, a cell apart */
+.ways {
+  display: inline-flex;
+  gap: var(--cell);
+  margin-left: auto;
+}
+
+/* a way as the line's chip (DESIGN.md, Sizes and FootLine): the prompt's mark, then its name, on the ground a shade
+ * below the line's, a quiet hairline round it, a nudge clear of the row's top and foot; under the pointer the hairline
+ * turns the text's colour */
+.way-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cell);
+  box-sizing: border-box;
+  height: calc(var(--row) - 2 * var(--nudge));
+  padding: 0 var(--cell);
+  border: var(--hairline) solid var(--quiet);
+  border-radius: var(--radius);
+  background: var(--deep);
+  color: var(--text);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
   text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--quick);
 }
 
-.skip:focus {
-  top: 0;
+.way-chip:hover {
+  border-color: var(--text);
 }
 
-/* on a phone the bar scrolls away with the page, the gutters narrow, and the sections take a row of their own below,
- * spread across it, their names a cell apart at the least */
+.way-mark {
+  color: var(--prompt);
+}
+
+/* on a phone the gutters narrow; the foot line's session and theme button share its first row, the windows take the
+ * rows below, half a row under it, wrapping, by their names alone, each a nudge past its words, and the ways give way
+ * to them */
 @media (width < 53.75rem) {
-  .bar {
-    position: static;
-  }
-
   .content-width {
     padding-inline: var(--gutter-phone);
   }
 
-  [id] {
-    scroll-margin-top: var(--row);
+  html {
+    scroll-padding-bottom: calc(var(--row-4) + 2 * var(--focus-width));
   }
 
-  .bar-row {
+  .foot-row {
     display: grid;
-    grid-template-columns: auto auto;
-    justify-content: space-between;
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--row-half);
+    padding-block: var(--nudge);
   }
 
-  .site {
-    line-height: var(--bar);
+  .session {
+    justify-self: start;
   }
 
-  /* the theme button keeps the end of the first row, which the sections' row below widens */
-  .theme {
-    justify-self: end;
-  }
-
-  /* the names wrap to a row more where the screen is too narrow for them all, so the page is never wider than it */
-  .sections {
+  .windows {
     flex-wrap: wrap;
     grid-row: 2;
     grid-column: 1 / -1;
-    justify-content: space-between;
-    column-gap: var(--cell);
   }
 
-  /* a name takes no more room than its words, while the current one's reversed ground still reaches a nudge past them */
-  .sections a {
-    margin: 0 calc(-1 * var(--nudge));
-    padding: 0 var(--nudge);
+  .window {
+    padding-inline: var(--nudge);
   }
 
-  .skip {
-    left: var(--gutter-phone);
+  .ways,
+  .window-number,
+  .window[aria-current]::after {
+    display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   a,
-  .sections a {
+  .session,
+  .window,
+  .way-chip {
     transition: none;
   }
 }
@@ -290,16 +322,17 @@ mark .gap {
   fill: currentcolor;
 }
 
-/* a word or two about a control, a nudge under the part the control stands in, on the ground a shade below the page;
- * never the only place something is said. Hidden, it still names its control, as aria-labelledby reads hidden words */
+/* a word or two about a control, two nudges over the part the control stands in, clear of the foot line's padding and
+ * hairline, where every control with one stands; on the ground a shade below the page; never the only place something
+ * is said. Hidden, it still names its control, as aria-labelledby reads hidden words */
 :has(> .tooltip) {
   position: relative;
 }
 
 .tooltip {
   position: absolute;
-  top: calc(var(--control-compact) + var(--nudge));
   right: 0;
+  bottom: calc(var(--control-compact) + 2 * var(--nudge));
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -316,8 +349,8 @@ mark .gap {
   visibility: hidden;
 }
 
-/* it shows while its part is under the pointer, itself among it, or holds the keyboard's focus; the nudge above it is
- * its own, unseen, so the pointer crosses onto it without leaving the part (WCAG 1.4.13) */
+/* it shows while its part is under the pointer, itself among it, or holds the keyboard's focus; the nudges under it
+ * are its own, unseen, so the pointer crosses onto it without leaving the part (WCAG 1.4.13) */
 :hover > .tooltip,
 :has(> :focus-visible) > .tooltip {
   visibility: visible;
@@ -325,10 +358,10 @@ mark .gap {
 
 .tooltip::before {
   position: absolute;
-  top: calc(-1 * (var(--nudge) + var(--hairline)));
   right: 0;
+  bottom: calc(-1 * (2 * var(--nudge) + var(--hairline)));
   left: 0;
-  height: calc(var(--nudge) + var(--hairline));
+  height: calc(2 * var(--nudge) + var(--hairline));
   content: "";
 }
 
@@ -653,12 +686,12 @@ mark .gap {
   color: var(--passed);
 }
 
-/* the toast (DESIGN.md, Tooltip and Toast): a regular chip at the foot of the screen, over the page, the tick in the
- * colour of a thing done */
+/* the toast (DESIGN.md, Tooltip and Toast): a regular chip over the page, a row over the top of the foot line it
+ * stands with, however tall the line and the toast's own words are, the tick in the colour of a thing done */
 .toast {
-  position: fixed;
+  position: absolute;
   right: 0;
-  bottom: var(--row);
+  bottom: calc(100% + var(--row));
   left: 0;
   display: flex;
   align-items: center;
@@ -840,7 +873,7 @@ mark .gap {
   padding-block: var(--row-2);
 }
 
-.section > h2 {
+.section > :is(h1, h2) {
   margin: 0;
 }
 
@@ -1010,7 +1043,7 @@ mark .gap {
   color: var(--muted);
 }
 
-/* such a page's blocks, after its head, four rows of air above the footer; a section's title among them in the
+/* such a page's blocks, after its head, four rows of air under them; a section's title among them in the
  * heading's style, larger than the strong titles under it */
 .page-blocks {
   padding-bottom: var(--row-4);

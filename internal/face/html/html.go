@@ -12,9 +12,10 @@
 //
 // Every page, the page of no page among them, includes what the build it is served with (assets) brings to run the
 // site's script: the stylesheet, which styles its markup, what each part is, a heading by its depth, a period's
-// months as times; and the script, which runs the theme button in the top bar every page opens with (frame.go). A
-// page's title, and on the résumé each section's, stands in the design's block letters (letters.go), drawn as SVG a
-// screen reader skips, the heading named by its words; a title with a letter the font does not draw stays its words.
+// months as times; and the script, which runs the theme button in the foot line every page ends with (frame.go). A
+// page shows one tab of its document, as the TUI does. A page's title, and each tab's, stands in the design's block
+// letters (letters.go), drawn as SVG a screen reader skips, the heading named by its words; a title with a letter the
+// font does not draw stays its words.
 // The résumé whose first section holds facts opens with its first screen (firstscreen.go): the greeting, the name and
 // the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
 // sections as the TUI reads its brief (document.BriefOf), the ssh command as a chip the script lets copy (frame.go),
@@ -22,8 +23,8 @@
 // fact whose value is a command alone, as a project's install line, stands as such a chip too, and every document's
 // page holds the toast that says what a chip copied; a fact whose value is one link to a mailbox stands as the mail,
 // in the size of the text round it.
-// A page shows a document as a reader of the finished work sees it (document.Written), a fact or a point that is only
-// a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
+// A page shows a document as a reader of the finished work sees it (document.WrittenBlocks), a fact or a point that is
+// only a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
 // A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it.
 // Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
 // author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
@@ -33,6 +34,7 @@ package html
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -84,15 +86,20 @@ const (
 )
 
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
-// and the id of the words that name it and show as its tooltip; the part a tooltip is, which Esc hides
-// (web/src/controllers/tooltip.ts); and the top bar's links to the résumé's sections and each section they lead to,
-// which mark the section the reader is in (web/src/controllers/sections.ts)
+// and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
+// (web/src/controllers/tooltip.ts)
 const (
-	themePart    = "theme"
-	themeNameID  = "theme-name"
-	tooltipPart  = "tooltip"
-	sectionsPart = "sections"
-	sectionPart  = "section"
+	themePart   = "theme"
+	themeNameID = "theme-name"
+	tooltipPart = "tooltip"
+)
+
+// How the foot line writes tmux's parts: the session between its brackets, and the colon between a window's number
+// and its name
+const (
+	sessionOpening = "["
+	sessionClosing = "]"
+	windowColon    = ":"
 )
 
 // The box of sixteen units every drawn mark stands in (DESIGN.md, Iconography): the theme button's and the corners'
@@ -135,10 +142,31 @@ func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame
 	return PageWriter{site: site, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today}
 }
 
-// Page writes a document as a page of HTML: what it says of itself, its record as linked data where it has one,
-// then the top bar, and its main part: its head, then each block, but for a fact or a point that is only a gap.
-func (writer PageWriter) Page(composed document.Document, record compose.Record) string {
-	return rendered(writer.page(document.Written(composed), writer.metadataOf(composed.Head), record))
+// Page writes a document as a page of HTML showing one of its tabs (document.TabsOf), parted as every face parts it, by
+// the tab's name, its opening where the name is none of theirs: what the page says of itself, its record as linked
+// data where it has one, the tab as its main part, as a reader of the finished work sees it (document.WrittenBlocks),
+// then the foot line, every tab a window there.
+func (writer PageWriter) Page(composed document.Document, record compose.Record, shown string) string {
+	head := composed.Head
+	tabs := document.TabsOf(composed)
+	page, title := head.Page, head.Title
+	var main templ.Component
+	if tab, isTab := tabNamed(tabs.Rest, shown); isTab {
+		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug}, tab.Title
+		main = writer.tabPart(head.Page.Kind, tab.Title, document.WrittenBlocks(tab.Blocks))
+	} else {
+		main = writer.openingPart(composed, tabs.Opening)
+	}
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), record, main, writer.footOf(page, tabs)))
+}
+
+// tabNamed is the tab of a name among tabs, where one has it.
+func tabNamed(tabs []document.Tab, name string) (document.Tab, bool) {
+	index := slices.IndexFunc(tabs, func(tab document.Tab) bool { return tab.Slug == name })
+	if index < 0 {
+		return document.Tab{Title: nil, Slug: "", Blocks: nil}, false
+	}
+	return tabs[index], true
 }
 
 // rendered is the HTML a component writes.
@@ -150,13 +178,13 @@ func rendered(component templ.Component) string {
 	return builder.String()
 }
 
-// metadataOf is what a page of a head says of itself.
-func (writer PageWriter) metadataOf(head document.Head) pageMetadata {
+// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab.
+func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	return pageMetadata{
-		title:       document.PlainText(head.Title),
+		title:       document.PlainText(title),
 		description: document.PlainText(head.Description),
-		canonical:   writer.site.Address(head.Page, routes.FormatChosen),
-		markdown:    routes.Reference(head.Page, routes.FormatMarkdown),
+		canonical:   writer.site.Address(shown, routes.FormatChosen),
+		markdown:    routes.Reference(shown, routes.FormatMarkdown),
 	}
 }
 

@@ -342,7 +342,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 // name the language its reader reads.
 func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := slices.Concat(Documents(snapshot), documentsOf(TabPages(Pages(snapshot))), []document.Document{Index(snapshot)}, Extras(snapshot))
+	documents := slices.Concat(Documents(snapshot), tabDocumentsOf(snapshot), []document.Document{Index(snapshot)}, Extras(snapshot))
 	for _, composed := range documents {
 		if got, want := composed.Head.Language, "en"; got != want {
 			test.Errorf("the language of %+v = %q, want %q", composed.Head.Page, got, want)
@@ -354,7 +354,7 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 // shared: the résumé's is its headline, a project's page's what the project does, a tab's its page's.
 func TestEachPageHasADescription(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := slices.Concat(Documents(snapshot), documentsOf(TabPages(Pages(snapshot))))
+	documents := slices.Concat(Documents(snapshot), tabDocumentsOf(snapshot))
 	cases := []struct {
 		name string
 		page document.Page
@@ -392,6 +392,15 @@ func TestTheResumeHeadGreetsTheReader(test *testing.T) {
 			}
 		})
 	}
+}
+
+// tabDocumentsOf are the documents of every tab past an opening of the documents a snapshot makes.
+func tabDocumentsOf(snapshot *content.Snapshot) []document.Document {
+	documents := []document.Document{}
+	for _, composed := range Documents(snapshot) {
+		documents = append(documents, TabDocuments(composed)...)
+	}
+	return documents
 }
 
 // contentsOf are a section's contents, wherever compose put them.

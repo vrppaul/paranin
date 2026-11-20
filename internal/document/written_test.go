@@ -49,23 +49,24 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			got := Written(Document{Head: Head{}, Blocks: []Block{testCase.block}}).Blocks
+			got := WrittenBlocks([]Block{testCase.block})
 			if !reflect.DeepEqual(got, testCase.want) {
-				test.Errorf("Written of %+v = %+v, want %+v", testCase.block, got, testCase.want)
+				test.Errorf("WrittenBlocks of %+v = %+v, want %+v", testCase.block, got, testCase.want)
 			}
 		})
 	}
 }
 
-// The document Written is handed keeps every fact and point it had, in its order, for the faces that draw it whole.
-func TestWrittenKeepsTheDocumentHandedWhole(test *testing.T) {
+// The blocks WrittenBlocks is handed keep every fact and point they had, in their order, for the faces that draw them
+// whole.
+func TestWrittenKeepsTheBlocksHandedWhole(test *testing.T) {
 	facts := []Fact{{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}, {Label: "now", Value: []Span{Text{Text: "here"}}}}
 	points := []Point{{Spans: []Span{Gap{Text: "[What was built]"}}}, {Spans: []Span{Text{Text: "Wrote it"}}}}
 	role := Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: points}
 	handed := Document{Head: Head{}, Blocks: []Block{Facts{Kind: FactsDetails, List: facts}, role}}
 	want := Phrases(handed)
-	Written(handed)
+	WrittenBlocks(handed.Blocks)
 	if got := Phrases(handed); !reflect.DeepEqual(got, want) {
-		test.Errorf("after Written the document handed holds %q, want %q", got, want)
+		test.Errorf("after WrittenBlocks the blocks handed hold %q, want %q", got, want)
 	}
 }

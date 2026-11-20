@@ -22,12 +22,9 @@ type NotFound struct {
 	// included is what the page includes to run the site's script, as every page does, so it is seen in the theme
 	// the reader chose
 	included assets.Included
-	// frame is what every page lays round its main part, the top bar and the footer, whose site's name and start the
-	// page's own link to where the site begins reads
-	frame frame
-	// reading is the command that reads where the site begins in a terminal, which the footer offers, as the page has
-	// no page of its own to read
-	reading string
+	// foot is the foot line every page ends with, whose site's name and start the page's own link to where the site
+	// begins reads; it has no windows, as the page has no tabs, and offers the résumé's markdown, as it has none
+	foot footLine
 	// heading is the status in the titles' block letters, the page's h1, drawn once for every path asked for
 	heading templ.Component
 }
@@ -39,8 +36,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		status:   status,
 		language: language,
 		included: build.Includes(assets.Site),
-		frame:    frameOf(site, composed),
-		reading:  site.ReadCommand(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
+		foot:     footLineOf(frameOf(site, composed), nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
 		heading:  titleHeading(status, text(status)),
 	}
 }

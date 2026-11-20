@@ -1,10 +1,9 @@
 # The site's own words in English, which every face shows beside the facts: the titles of the résumé's
 # sections and of the index's, the greeting before the author's name, the labels of the ways to reach the author
 # and of a project's details, the end of what still goes on, how long a skill was used where the profile says
-# `side` or `learning`, the title of the TUI's health report, and the page's frame: its link past the top bar to the
-# main part, the name of its theme button, which is pressed while the page is dark, a command's button that copies
-# it: the word on it, the word it turns to once it has, its name and what the toast says then; and the first screen's
-# button that writes to the author.
+# `side` or `learning`, the title of the TUI's health report, and the page's frame: the name of its theme button,
+# which is pressed while the page is dark, a command's button that copies it: the word on it, the word it turns to
+# once it has, its name and what the toast says then; and the first screen's button that writes to the author.
 # A phrase holds one place, {}, for the value it takes: the command, or the author's given name.
 # `paranin check content` requires every one of them.
 
@@ -26,7 +25,6 @@ learning: learning
 author: author
 resume: Résumé
 health: health
-skip_to_content: Skip to content
 dark_theme: Dark theme
 copy: copy
 copied: copied

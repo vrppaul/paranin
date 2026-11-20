@@ -511,7 +511,7 @@ templ knownMonth(start time.Time) {
 // resumeSection is a section of the résumé, at the place the top bar leads to (DESIGN.md, Frame and Section): its
 // heading, and beside it, or under it on a narrower screen, its blocks.
 templ (writer PageWriter) resumeSection(section document.Section, heading templ.Component) {
-	<section id={ sectionID(document.PlainText(section.Title)) } class="section" data-part={ sectionPart }>
+	<section id={ document.SlugOf(document.PlainText(section.Title)) } class="section" data-part={ sectionPart }>
 		@heading
 		<div class="blocks">
 			for _, block := range section.Blocks {

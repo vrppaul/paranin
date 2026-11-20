@@ -37,10 +37,11 @@ const (
 // (docs/FOUNDATION.md §3.4)
 const cursorBar = "▎"
 
-// tab is one screen of a document a reader moves between: its title, as the status line and the places name it, its
-// checks counted, and its body, which says what the tab shows and so how it is laid out.
+// tab is one screen of a document a reader moves between: its title, as the status line names it, the name its place
+// goes by, its checks counted, and its body, which says what the tab shows and so how it is laid out.
 type tab struct {
 	title string
+	slug  string
 	// tally is the tab's checks counted by level, its sections' included, as the status line names them after the
 	// title, and empty where the tab holds none
 	tally string
@@ -118,63 +119,48 @@ func (titledSection) tabBody() {}
 func (platedSection) tabBody() {}
 func (plainSection) tabBody()  {}
 
-// tabsOf parts a document into its tabs: the head with what stands before the first section, the opening; then each
-// section the opening leaves, named by its title.
+// tabsOf lays a document's tabs (document.TabsOf) out as the TUI shows them.
 func tabsOf(composed document.Document) []tab {
-	openingBlocks, sections := document.SectionsOf(composed.Blocks)
-	first := openingOf(composed.Head, openingBlocks, sections)
-	tabs := []tab{{title: first.title, tally: checkTally(openingBlocks), body: first.body}}
-	for _, section := range first.sectionsLeft {
-		tabs = append(tabs, tab{title: document.PlainText(section.Title), tally: checkTally(section.Blocks), body: sectionBody(composed.Head.Page.Kind, section)})
+	parted := document.TabsOf(composed)
+	opening := parted.Opening
+	tabs := []tab{{title: document.PlainText(opening.Title), slug: opening.Slug, tally: checkTally(opening.Blocks), body: openingBody(composed.Head, opening)}}
+	for _, shown := range parted.Rest {
+		body := sectionBody(composed.Head.Page.Kind, shown.Blocks)
+		tabs = append(tabs, tab{title: document.PlainText(shown.Title), slug: shown.Slug, tally: checkTally(shown.Blocks), body: body})
 	}
 	return tabs
 }
 
-// opening is a document's first tab before it is laid out: what names it, what it shows, and the sections it leaves
-// to tabs of their own.
-type opening struct {
-	title        string
-	body         tabBody
-	sectionsLeft []document.Section
-}
-
-// openingOf is a document's first tab, named by the head's title: on the résumé whose first section holds facts, the
-// head beside them as neofetch prints a system, that section taken in and naming the tab; on a project's page, the
-// head as a README; on the health report, its title over its checks counted; on the list of skills, its title over
-// the skills; else the head as it is.
-func openingOf(head document.Head, blocks []document.Block, sections []document.Section) opening {
-	title := document.PlainText(head.Title)
-	switch head.Page.Kind {
-	case document.PageResume:
-		if briefed := document.BriefOf(sections); briefed != nil {
-			body := briefOpening{
-				head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles,
-				blocks: slices.Concat(blocks, briefed.Before, briefed.After),
-			}
-			return opening{title: document.PlainText(briefed.Title), body: body, sectionsLeft: briefed.Rest}
-		}
-	case document.PageProject:
-		return opening{title: title, body: readmeOpening{head: head, blocks: blocks}, sectionsLeft: sections}
-	case document.PageHealth:
-		return opening{title: title, body: reportOpening{head: head, blocks: blocks}, sectionsLeft: sections}
-	case document.PageSkills:
-		return opening{title: title, body: skillsOpening{head: head, blocks: blocks}, sectionsLeft: sections}
-	case document.PageNone, document.PageIndex:
+// openingBody is what a document's first tab shows: its brief as neofetch prints a system, or by the kind of its page
+// a project's README, the health report, the list of skills, or the head as it is.
+func openingBody(head document.Head, opening document.Opening) tabBody {
+	blocks := opening.Blocks
+	if briefed := opening.Brief; briefed != nil {
+		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, blocks: blocks}
 	}
-	return opening{title: title, body: plainOpening{head: head, blocks: blocks}, sectionsLeft: sections}
+	switch head.Page.Kind {
+	case document.PageProject:
+		return readmeOpening{head: head, blocks: blocks}
+	case document.PageHealth:
+		return reportOpening{head: head, blocks: blocks}
+	case document.PageSkills:
+		return skillsOpening{head: head, blocks: blocks}
+	case document.PageNone, document.PageResume, document.PageIndex:
+	}
+	return plainOpening{head: head, blocks: blocks}
 }
 
-// sectionBody is what a section's tab shows: on the résumé the section under its title, on a project's page under
-// its title on a plate, on another page as it is.
-func sectionBody(kind document.PageKind, section document.Section) tabBody {
+// sectionBody is what a section's tab shows of its blocks: on the résumé under its title, on a project's page under
+// its title on a plate, on another page as they are.
+func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	switch kind {
 	case document.PageResume:
-		return titledSection{blocks: section.Blocks}
+		return titledSection{blocks: blocks}
 	case document.PageProject:
-		return platedSection{blocks: section.Blocks}
+		return platedSection{blocks: blocks}
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
-	return plainSection{blocks: section.Blocks}
+	return plainSection{blocks: blocks}
 }
 
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address

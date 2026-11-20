@@ -7,12 +7,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The name of the place that opens the window of keys, as Neovim's :help opens its own, and what joins the words of
-// a tab's title in its place's name, as a path joins them
-const (
-	helpPlace      = "help"
-	placeWordJoint = "-"
-)
+// The name of the place that opens the window of keys, as Neovim's :help opens its own
+const helpPlace = "help"
 
 // The tab of a place that is no tab
 const noTab = -1
@@ -35,7 +31,7 @@ type place struct {
 func placesOf(tabs []tab, slugs []string) []place {
 	places := make([]place, 0, len(tabs)+len(slugs)+1)
 	for index, shown := range tabs {
-		places = append(places, place{name: placeName(shown.title), tab: index, listedIdle: true, act: func(model Model, _ int) (Model, tea.Cmd) { return model.choose(index), nil }})
+		places = append(places, place{name: shown.slug, tab: index, listedIdle: true, act: func(model Model, _ int) (Model, tea.Cmd) { return model.choose(index), nil }})
 	}
 	for _, slug := range slugs {
 		places = append(places, place{name: slug, tab: noTab, listedIdle: false, act: func(model Model, _ int) (Model, tea.Cmd) { return model.edit(slug) }})
@@ -48,11 +44,6 @@ func placesOf(tabs []tab, slugs []string) []place {
 		}
 	}
 	return unique
-}
-
-// placeName is the name a tab's place goes by: its title in small letters, its words joined as a path joins them.
-func placeName(title string) string {
-	return strings.ToLower(strings.Join(strings.Fields(title), placeWordJoint))
 }
 
 // placesFor are the places the prompt lists for what is typed while a tab is chosen, as completions: before anything

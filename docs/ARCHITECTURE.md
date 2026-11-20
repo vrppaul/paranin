@@ -188,6 +188,9 @@ and web routes.
   mail, the title, the place and the first four facts in the profile's
   order, the author's choice of which come first; the facts after them
   stay in their section, where the brief stood (amended 2026-11-18, the
+  owner's word). `document.TabsOf` parts a document into its tabs, the
+  opening and a tab for each section left, the TUI's; `SlugOf` names
+  each, and the ids of the page's sections (amended 2026-11-20, the
   owner's word). Each section of the résumé after the opening stands
   under its title, in a smaller block font where the page has room for
   it, so a search finds a section's title on its page only where it reads

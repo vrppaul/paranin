@@ -39,8 +39,6 @@
   --time-bar: light-dark(#1e66f5, #8aadf4);
   /* a result worth seeing first, the accent laid over the page */
   --tint: light-dark(#fe640b29, #f5a97f38);
-  /* the ground of the item chosen in a window, the text laid faintly over the bars */
-  --chosen: light-dark(#4c4f6912, #cad3f50f);
 }
 
 /* What the page alone reads: its face, its text styles, the lengths it lays out by, its times and its layers */

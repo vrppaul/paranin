@@ -58,8 +58,8 @@ func paletteOf(read tokens) []worked {
 			name:  blend.name,
 			about: blend.about,
 			shades: themedShade{
-				light: blendShade(blend.under.Light, blend.over.Light, blend.strengths.Light, blend.indexedLean, blend.basic),
-				dark:  blendShade(blend.under.Dark, blend.over.Dark, blend.strengths.Dark, blend.indexedLean, blend.basic),
+				light: blendShade(read.background.Light, blend.over.Light, blend.strengths.Light, blend.indexedLean, blend.basic),
+				dark:  blendShade(read.background.Dark, blend.over.Dark, blend.strengths.Dark, blend.indexedLean, blend.basic),
 			},
 		})
 	}

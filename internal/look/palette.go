@@ -40,8 +40,6 @@ const (
 	ColourTimeBar
 	// ColourTint is a result worth seeing first, the accent laid over the page
 	ColourTint
-	// ColourChosen is the ground of the item chosen in a window, the text laid faintly over the bars
-	ColourChosen
 )
 
 // Palette is each of the design's colours as each kind of terminal shows it, in a theme.
@@ -66,7 +64,6 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourWarned:   {TrueColour: color.RGBA{R: 223, G: 142, B: 29, A: 255}, Indexed: 172, Basic: 3},
 			ColourTimeBar:  {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
 			ColourTint:     {TrueColour: color.RGBA{R: 241, G: 218, B: 208, A: 255}, Indexed: 217, Basic: 3},
-			ColourChosen:   {TrueColour: color.RGBA{R: 219, G: 222, B: 230, A: 255}, Indexed: 254, Basic: BasicOwn},
 		}
 	case ThemeDark:
 		return map[Colour]Shade{
@@ -87,7 +84,6 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourWarned:   {TrueColour: color.RGBA{R: 238, G: 212, B: 159, A: 255}, Indexed: 223, Basic: 3},
 			ColourTimeBar:  {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
 			ColourTint:     {TrueColour: color.RGBA{R: 82, G: 68, B: 73, A: 255}, Indexed: 95, Basic: 3},
-			ColourChosen:   {TrueColour: color.RGBA{R: 40, G: 43, B: 60, A: 255}, Indexed: 236, Basic: BasicOwn},
 		}
 	}
 	return nil

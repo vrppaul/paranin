@@ -9,8 +9,7 @@ import (
 	"testing"
 )
 
-// A file of tokens with two colours, a blend over the page and one over a colour, its values chosen so each shade
-// is easy to work out
+// A file of tokens with two colours and a blend, its values chosen so each shade is easy to work out
 const fixtureTokens = `background:
   about: the page itself
   light: "#000000"
@@ -34,14 +33,6 @@ blends:
     dark: 0.25
     basic: 3
     indexed_lean: 0.5
-  - name: chosen
-    about: an item chosen
-    over: text
-    under: accent
-    light: 0.5
-    dark: 0.5
-    basic: own
-    indexed_lean: 0
 face:
   about: the one face
   families: [Mono Face, 3270, Monospace]
@@ -72,7 +63,7 @@ layers:
 // A colour keeps its value whole for a terminal of full colour, falls to the nearest of xterm's 256 for one of
 // 256, and to the basic colour the file names for one of sixteen, or to the terminal's own.
 func TestEachColourHasAShadeForEachTerminal(test *testing.T) {
-	shades := fixtureShades(test)
+	shades := shadesOf(test, fixtureTokens)
 	cases := []struct {
 		name  string
 		got   shade
@@ -93,10 +84,12 @@ func TestEachColourHasAShadeForEachTerminal(test *testing.T) {
 	}
 }
 
-// A blend is its colour laid over the page at its strength in each theme, or over the colour it names to lie
-// under it; for 256 colours it leans toward its colour first, so a faint blend never rounds to a grey.
+// A blend is its colour laid over the page at its strength in each theme; for 256 colours it leans toward its colour
+// first, so a faint blend never rounds to a grey.
 func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
-	shades := fixtureShades(test)
+	shades := shadesOf(test, fixtureTokens)
+	// the fixture with a white page in the dark theme, so what the blend is laid over shows in its shade
+	onWhite := shadesOf(test, strings.Replace(fixtureTokens, "  dark: \"#000000\"\ncolours:", "  dark: \"#ffffff\"\ncolours:", 1))
 	cases := []struct {
 		name string
 		got  shade
@@ -104,8 +97,7 @@ func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
 	}{
 		{name: "the light theme's strength", got: shades["tint"].light, want: shade{trueColour: color.RGBA{R: 128, G: 128, B: 128, A: 255}, indexed: 250, basic: 3}},
 		{name: "the dark theme's strength", got: shades["tint"].dark, want: shade{trueColour: color.RGBA{R: 64, G: 34, B: 0, A: 255}, indexed: 130, basic: 3}},
-		{name: "over a colour in the light theme", got: shades["chosen"].light, want: shade{trueColour: color.RGBA{R: 187, G: 187, B: 187, A: 255}, indexed: 250, basic: ownBasic}},
-		{name: "over a colour in the dark theme", got: shades["chosen"].dark, want: shade{trueColour: color.RGBA{R: 128, G: 68, B: 0, A: 255}, indexed: 94, basic: ownBasic}},
+		{name: "over a page of another colour", got: onWhite["tint"].dark, want: shade{trueColour: color.RGBA{R: 255, G: 225, B: 191, A: 255}, indexed: 215, basic: 3}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -164,7 +156,6 @@ func TestEachColourIsACustomPropertyOfBothThemes(test *testing.T) {
 		{name: "what the page is", want: "/* the page itself */"},
 		{name: "a colour", want: "--accent: light-dark(#ffffff, #ff8700);"},
 		{name: "a blend at its strength", want: "--tint: light-dark(#ffffff80, #ff870040);"},
-		{name: "a blend laid over the page, whatever it lies over in a terminal", want: "--chosen: light-dark(#76767680, #00000080);"},
 		{name: "what each colour is for", want: "/* what the eye goes to first */"},
 	}
 	for _, testCase := range cases {
@@ -286,7 +277,6 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a value that is no colour", original: `dark: "#ff8700"`, replacement: `dark: "#ff87"`, want: `"#ff87"`},
 		{name: "a basic colour beyond sixteen", original: "    basic: own\n", replacement: "    basic: 16\n", want: "16"},
 		{name: "a blend over a colour the file does not name", original: "over: accent", replacement: "over: border", want: `"border"`},
-		{name: "a blend under a colour the file does not name", original: "under: accent", replacement: "under: border", want: `"border"`},
 		{name: "a colour named twice", original: "name: text", replacement: "name: accent", want: `"accent" is named twice`},
 		{name: "a basic colour left out", original: "    basic: own\n", replacement: "", want: "has no basic"},
 		{name: "a colour that says nothing of what it is for", original: "    about: what a reader reads\n", replacement: "", want: "says nothing"},
@@ -325,7 +315,7 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a time written as a string", original: "milliseconds: 1060", replacement: `milliseconds: "1060"`, want: `"1060" is no whole number`},
 		{name: "a time's milliseconds left out", original: "    milliseconds: 1060\n", replacement: "", want: `"blink" has no milliseconds`},
 		{name: "a time named as a length is", original: "name: blink", replacement: "name: row", want: `"row" is named twice`},
-		{name: "a blend named as the face's property is", original: "name: chosen", replacement: "name: face", want: `"face" is named twice`},
+		{name: "a blend named as the face's property is", original: "name: tint", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
 		{name: "a blend named as the page's own colour is", original: "name: tint", replacement: "name: background", want: `"background" is named twice`},
 		{name: "a layer that says nothing of what it is for", original: "    about: what sticks to the top\n", replacement: "", want: `"row" says nothing`},
@@ -385,9 +375,9 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 	}
 }
 
-// fixtureShades are the shades of the fixture's colours and blends, by name.
-func fixtureShades(test *testing.T) map[string]themedShade {
-	read, err := readTokens([]byte(fixtureTokens))
+// shadesOf are the shades of a file's colours and blends, by name.
+func shadesOf(test *testing.T, tokens string) map[string]themedShade {
+	read, err := readTokens([]byte(tokens))
 	if err != nil {
 		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
 	}

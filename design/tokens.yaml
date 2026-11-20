@@ -5,8 +5,7 @@
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
 # 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays at a strength over
-# its background, or over the colour the blend names `under` it; a terminal has no opacity, so the blend is worked
-# out into a colour of its own.
+# its background; a terminal has no opacity, so the blend is worked out into a colour of its own.
 #
 # The face, the text styles, the lengths, the times and the layers after the colours are the page's alone, since a
 # terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of
@@ -116,14 +115,6 @@ blends:
     basic: 3
     # a terminal of 256 colours would round so faint a blend to a grey, so it leans this far to its colour first
     indexed_lean: 0.25
-  - name: chosen
-    about: the ground of the item chosen in a window, the text laid faintly over the bars
-    over: text
-    under: sunk
-    light: 0.07
-    dark: 0.06
-    basic: own
-    indexed_lean: 0
 
 face:
   about: the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing

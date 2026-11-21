@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"syscall"
@@ -93,6 +94,47 @@ func TestAStopShutsEveryServerDown(test *testing.T) {
 			if code := running.watch(stopping); code != testCase.want || !first.stopped || !second.stopped {
 				test.Errorf("exit %d, the servers stopped %t and %t; want exit %d and both stopped", code, first.stopped,
 					second.stopped, testCase.want)
+			}
+		})
+	}
+}
+
+// How long a test's Accept header is: the longest header line nginx takes, and one over the bound and its slack
+const (
+	longestLineAcceptLength = 8 << 10
+	oversizedAcceptLength   = 32 << 10
+)
+
+// A request whose head is over the bound is refused before any handler reads it; one nginx would pass is answered.
+func TestTheServerRefusesAHeadOverItsBound(test *testing.T) {
+	cases := []struct {
+		name         string
+		acceptLength int
+		want         int
+	}{
+		{name: "the longest header line nginx takes", acceptLength: longestLineAcceptLength, want: http.StatusNoContent},
+		{name: "a head over the bound", acceptLength: oversizedAcceptLength, want: http.StatusRequestHeaderFieldsTooLarge},
+	}
+	answering := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) { writer.WriteHeader(http.StatusNoContent) })
+	// The bound is held where net/http reads the connection, so the test reads it over a socket
+	listening := httptest.NewUnstartedServer(nil)
+	listening.Config = newServer(answering, slog.New(slog.DiscardHandler))
+	listening.Start()
+	defer listening.Close()
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request, err := http.NewRequestWithContext(test.Context(), http.MethodGet, listening.URL, nil)
+			if err != nil {
+				test.Fatalf("NewRequestWithContext(%q) = %v, want no error", listening.URL, err)
+			}
+			request.Header.Set("Accept", strings.Repeat("a", testCase.acceptLength))
+			response, err := listening.Client().Do(request)
+			if err != nil {
+				test.Fatalf("GET with an Accept of %d bytes = %v, want an answer", testCase.acceptLength, err)
+			}
+			defer response.Body.Close()
+			if response.StatusCode != testCase.want {
+				test.Errorf("GET with an Accept of %d bytes = %d, want %d", testCase.acceptLength, response.StatusCode, testCase.want)
 			}
 		})
 	}

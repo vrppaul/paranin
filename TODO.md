@@ -21,6 +21,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - A window narrowed to a phone's width hides the vim keys' switch, and with it the keys, while a search kept stays marked there with no key to put it away; nothing watches the width, which lives in the stylesheet's media query alone.
 - `page.templ`'s page and `notfound.templ`'s each write the whole frame round a page by hand, the doctype, the language, the head's opening, the main part and the foot line, so a part of the frame added to one can be left out of the other, as the toast was: one frame template taking the head's extras and the main part, as templ's own docs build a layout, would hold it once.
 - The theme and the vim keys' switch read the reader's choice once, as a page opens: a page the browser shows again from its cache keeps the choice it opened with, though a page opened after it changed it.
+- `internal/hosting/web/web.go`'s `rankedFirst` calls `quality` once per format, each splitting and parsing the whole Accept header again: parsing it once a request into its ranges would work it out once (`.claude/rules/code.md`).
 
 ## Documents
 

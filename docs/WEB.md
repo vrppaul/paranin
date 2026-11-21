@@ -27,6 +27,7 @@ letters and digits in small letters, a hyphen between each run of them (`Experie
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon: a drawing in the reader's theme, a PNG of 180px and an icon file of 32px, both in the dark theme. |
 | any other `GET` | `404`, the page of no page: the status, the path asked for, quoted, and where the site begins; text or HTML, chosen as a page is. |
 | any other method | `405`, `Allow: GET, HEAD`, from `net/http`. |
+| a request whose line and headers pass the server's bound, 16 KB and the 4 KB of slack `net/http` adds | `431`, from `net/http`, before the handler reads it. |
 
 `HEAD` answers as `GET` does, without the body. A path with an empty segment or a dot segment (`//`, `/a/../b`) is
 redirected to its clean form by `net/http`.
@@ -72,7 +73,7 @@ left out, and a gap among written words stands marked as one.
 
 Every answer that reaches the server's handler carries these headers, a page in each format, the page of no page and
 a refusal the mux writes itself (405, a redirect) among them; a request `net/http` refuses before it, as a `400`
-for a malformed `Host`, carries neither:
+for a malformed `Host` or a `431` for a head past its bound, carries neither:
 
 ```
 Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

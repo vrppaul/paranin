@@ -91,6 +91,11 @@ const (
 	shutdownTimeout   = 30 * time.Second
 )
 
+// How much of a request's head, its line and headers, the server reads; net/http answers 431 past it and its own
+// 4 KB of slack. The bound is twice nginx's 8 KB for one header line, where Go's 1 MB lets one Accept cost about
+// 100 ms to rank.
+const maxHeaderBytes = 16 << 10
+
 // How long an SSH session may stay idle and stay open (SEC-5): a reader who is only reading sends nothing, so
 // the wait for a key is long
 const (
@@ -222,7 +227,8 @@ func listenAt(webAddress, sshAddress string) (webListener, sshListener net.Liste
 	return webListener, sshListener, nil
 }
 
-// newServer is a server of the handler that waits on no slow reader for long and logs its own errors too.
+// newServer is a server of the handler that waits on no slow reader for long, reads no head past its bound, and
+// logs its own errors too.
 func newServer(handler http.Handler, logger *slog.Logger) *http.Server {
 	return &http.Server{
 		Handler:           handler,
@@ -230,6 +236,7 @@ func newServer(handler http.Handler, logger *slog.Logger) *http.Server {
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 }

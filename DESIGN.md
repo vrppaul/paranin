@@ -85,10 +85,11 @@ other size: a control that seems to need one is the wrong control.
   pressed quiet control). In the TUI the menu over the command line stands on `quiet`, apart from the page and the
   panel.
 - `text` for what is read, `muted` for what stands beside it, `faint` for what a reader may pass over. In Latte `muted`
-  is subtext1 and `faint` subtext0, one tone darker than the TUI first had them: `muted` reads 4.7:1 or more on
-  `background`, `sunk` and `deep`, `faint` 3.7:1 or more, so `faint` is never the only ink of something a reader needs.
-  Neither stands on `tint`.
-- A fact's label is `muted`. `label` blue rings the focus: blue, and 3:1 or more on every ground in both themes.
+  is subtext1 and `faint` subtext0, one tone darker than the TUI first had them, so each reads at the least contrast
+  `design/tokens.yaml` gives it over the grounds it names there, which `scripts/tokens` holds; `faint`, the lower, is
+  never the only ink of something a reader needs. Neither stands on `tint`.
+- A fact's label is `muted`. `label` blue rings the focus: blue, at its least contrast over the grounds the tokens
+  name, in both themes.
 - `accent` is spent where the eye should go first: the primary button, the cursor, the current role, the near end of
   the name. In Latte it is a fill and a display colour, never small text (2.64:1).
 - `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first. `error`, `passed`

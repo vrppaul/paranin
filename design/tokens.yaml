@@ -4,8 +4,10 @@
 # `go generate ./internal/look`.
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
-# 0 to 15, or `own` where the terminal's own colour serves. A blend is a colour the page lays at a strength over
-# its background; a terminal has no opacity, so the blend is worked out into a colour of its own.
+# 0 to 15, or `own` where the terminal's own colour serves; and where it must read, `least_contrast`: the ratio, as
+# WCAG 2 works it out, it reads at, at least, over each ground it names, in both themes, which scripts/tokens holds. A
+# blend is a colour the page lays at a strength over its background; a terminal has no opacity, so the blend is
+# worked out into a colour of its own.
 #
 # The face, the text styles, the lengths, the times and the layers after the colours are the page's alone, since a
 # terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of
@@ -40,16 +42,18 @@ colours:
     basic: own
   - name: muted
     about: what stands beside the text and says less
-    # Latte's subtext1, for the contrast DESIGN.md asks
+    # Latte's subtext1, for its least contrast
     light: "#5c5f77"
     dark: "#a5adcb"
     basic: own
+    least_contrast: {ratio: 4.7, over: [background, sunk, deep]}
   - name: faint
     about: what a reader may pass over, a gap still to fill among it
-    # Latte's subtext0, for the contrast DESIGN.md asks
+    # Latte's subtext0, for its least contrast; never the only ink of something a reader needs
     light: "#6c6f85"
     dark: "#8087a2"
     basic: 8
+    least_contrast: {ratio: 3.7, over: [background, sunk, deep]}
   - name: quiet
     about: a rule between two parts of a bar or inside a window, and the ground of the TUI's menu
     light: "#ccd0da"
@@ -75,6 +79,8 @@ colours:
     light: "#1e66f5"
     dark: "#8aadf4"
     basic: 4
+    # the focus ring, which WCAG asks to stand 3:1 from what is around it
+    least_contrast: {ratio: 3, over: [background, sunk, deep]}
   - name: prompt
     about: the mark after which the reader types, on the command line, or a command stands
     light: "#40a02b"

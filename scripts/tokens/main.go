@@ -17,6 +17,8 @@
 //	go run ./scripts/tokens           checks every file against the tokens: the pre-commit hook
 //	go run ./scripts/tokens -write    writes them, as `go generate ./internal/look` does
 //
+// It refuses, as a fault of the tokens, a colour that reads under the least contrast it needs over a ground it names.
+//
 // Run it in the repository's root. It prints a fault of the tokens, or which generated file is out of step, and
 // exits 0 when the files are the ones the tokens make or have just been written, 1 when one is not or the tokens
 // have a fault, and 2 when the command is written wrong.

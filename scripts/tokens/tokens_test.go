@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -331,6 +333,139 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 			_, err := readTokens([]byte(written))
 			if err == nil || !strings.Contains(err.Error(), testCase.want) {
 				test.Errorf("readTokens = %v, want a fault naming %q", err, testCase.want)
+			}
+		})
+	}
+}
+
+// The fixture's last lines of its colours text and accent, after which a test writes the least contrast each needs
+const (
+	textLast   = "    basic: own\n"
+	accentLast = "    dark: \"#ff8700\"\n    basic: 3\n"
+)
+
+// needing is the fixture with the least contrast its colours text and accent each need written under them.
+func needing(test *testing.T, text, accent string) []byte {
+	test.Helper()
+	return []byte(writtenAfter(test, writtenAfter(test, fixtureTokens, textLast, text), accentLast, accent))
+}
+
+// writtenAfter is a file of tokens with lines written after the lines that end a colour.
+func writtenAfter(test *testing.T, tokens, last, lines string) string {
+	test.Helper()
+	if !strings.Contains(tokens, last) {
+		test.Fatalf("the fixture holds no %q", last)
+	}
+	return strings.Replace(tokens, last, last+lines, 1)
+}
+
+// leastContrastLine is a least contrast as the file writes it under a colour.
+func leastContrastLine(written string) string {
+	return "    least_contrast: " + written + "\n"
+}
+
+// refusal is what a fault of a colour under its least contrast names: the colour, the ground and the theme.
+type refusal struct {
+	colour string
+	ground string
+	theme  string
+}
+
+// A colour under its least contrast over a ground it names, in either theme, is refused, the fault naming the
+// colour, the ground and the theme; every colour that needs one is checked, and one that reads its least passes.
+func TestAColourUnderItsLeastContrastIsRefused(test *testing.T) {
+	cases := []struct {
+		name   string
+		text   string
+		accent string
+		want   refusal
+	}{
+		{
+			name: "a grey over black in the dark theme", text: leastContrastLine("{ratio: 3, over: [background]}"),
+			want: refusal{colour: "text", ground: "background", theme: darkKey},
+		},
+		{
+			name: "a grey over black in the light theme", text: leastContrastLine("{ratio: 4.7, over: [background]}"),
+			want: refusal{colour: "text", ground: "background", theme: lightKey},
+		},
+		{
+			name: "a colour that needs one after a colour that needs none", accent: leastContrastLine("{ratio: 21, over: [background]}"),
+			want: refusal{colour: "accent", ground: "background", theme: darkKey},
+		},
+		{
+			name: "the second colour that needs one, the first passing, a ratio of 21:1 taken",
+			text: leastContrastLine("{ratio: 1.5, over: [accent]}"), accent: leastContrastLine("{ratio: 21, over: [background]}"),
+			want: refusal{colour: "accent", ground: "background", theme: darkKey},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			_, err := readTokens(needing(test, testCase.text, testCase.accent))
+			var fault underContrast
+			if !errors.As(err, &fault) {
+				test.Fatalf("readTokens = %v, want %q under its least contrast", err, testCase.want.colour)
+			}
+			if got := (refusal{colour: fault.colour, ground: fault.ground, theme: fault.theme}); got != testCase.want {
+				test.Errorf("readTokens refused %+v, want %+v", got, testCase.want)
+			}
+		})
+	}
+}
+
+// A colour that reads its least contrast over each ground it names, each theme's over that theme's ground, passes:
+// the fixture's accent over text, which reads in the dark theme only over the dark theme's black.
+func TestAColourAtItsLeastContrastPasses(test *testing.T) {
+	if _, err := readTokens(needing(test, "", leastContrastLine("{ratio: 4.5, over: [background, text]}"))); err != nil {
+		test.Errorf("readTokens = %v, want no fault", err)
+	}
+}
+
+// A least contrast written wrong is refused: over a ground the file does not name, over none, and a ratio no two
+// colours have, left out among them.
+func TestALeastContrastWrittenWrongIsRefused(test *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		want error
+	}{
+		{name: "a ground the file does not name", text: "{ratio: 3, over: [border]}", want: errUnknownGround},
+		{name: "no ground", text: "{ratio: 3, over: []}", want: errNoGround},
+		{name: "a ratio of none", text: "{ratio: 1, over: [accent]}", want: errRatioBeyond},
+		{name: "a ratio beyond black on white", text: "{ratio: 22, over: [accent]}", want: errRatioBeyond},
+		{name: "a ratio left out", text: "{over: [accent]}", want: errMissing},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			_, err := readTokens(needing(test, leastContrastLine(testCase.text), ""))
+			if !errors.Is(err, testCase.want) {
+				test.Errorf("readTokens = %v, want %v", err, testCase.want)
+			}
+		})
+	}
+}
+
+// Contrast is read as WCAG 2 reads it, whichever colour is first: on the line of sRGB near black, on its curve above.
+func TestContrastIsWCAGs(test *testing.T) {
+	// the contrast is read to the hundredth, as WCAG's examples write it
+	const hundredths = 100
+	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+	cases := []struct {
+		name   string
+		first  color.RGBA
+		second color.RGBA
+		want   float64
+	}{
+		{name: "white on black", first: white, second: black, want: 21},
+		{name: "black on white", first: black, second: white, want: 21},
+		{name: "the grey that reads 4.54:1 on white", first: color.RGBA{R: 118, G: 118, B: 118, A: 255}, second: white, want: 4.54},
+		{name: "a dark grey on black, on the curve", first: color.RGBA{R: 51, G: 51, B: 51, A: 255}, second: black, want: 1.66},
+		{name: "a near black on black, on the line", first: color.RGBA{R: 10, G: 10, B: 10, A: 255}, second: black, want: 1.06},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := math.Round(contrast(testCase.first, testCase.second)*hundredths) / hundredths; got != testCase.want {
+				test.Errorf("contrast(%v, %v) = %v, want %v", testCase.first, testCase.second, got, testCase.want)
 			}
 		})
 	}

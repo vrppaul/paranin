@@ -44,7 +44,10 @@ const (
 )
 
 // The faults a file of tokens can hold
-var errTokens = errors.New("the tokens have a fault")
+var (
+	errTokens  = errors.New("the tokens have a fault")
+	errMissing = errors.New("a key the file must write is left out")
+)
 
 // tokensFile is the file as it is written.
 type tokensFile struct {
@@ -74,11 +77,12 @@ type backgroundToken struct {
 // colourToken is a colour as the file writes it: its name, what it is for, its value in each theme, and the
 // basic colour it falls back to. A value the file may leave out unseen is a pointer, so its absence is a fault.
 type colourToken struct {
-	Name  string      `yaml:"name"`
-	About string      `yaml:"about"`
-	Light string      `yaml:"light"`
-	Dark  string      `yaml:"dark"`
-	Basic *basicValue `yaml:"basic"`
+	Name          string         `yaml:"name"`
+	About         string         `yaml:"about"`
+	Light         string         `yaml:"light"`
+	Dark          string         `yaml:"dark"`
+	Basic         *basicValue    `yaml:"basic"`
+	LeastContrast *contrastToken `yaml:"least_contrast"`
 }
 
 // blendToken is a blend as the file writes it: the colour it lays over the page, its strength in each theme, the
@@ -127,6 +131,8 @@ type readColour struct {
 	about  string
 	values themedValue[color.RGBA]
 	basic  basicValue
+	// the least contrast it needs over grounds, none where it need not read
+	leastContrast *leastContrast
 }
 
 // readBlend is a blend of the file with its colour found and its strengths read.
@@ -156,6 +162,9 @@ func readTokens(data []byte) (tokens, error) {
 	}
 	colours, err := readEach(written.Colours, named, readColourToken)
 	if err != nil {
+		return tokens{}, err
+	}
+	if err := checkContrasts(colours, background); err != nil {
 		return tokens{}, err
 	}
 	blends := make([]readBlend, 0, len(written.Blends))
@@ -211,7 +220,13 @@ func readColourToken(token colourToken, named map[string]bool) (readColour, erro
 	if err != nil {
 		return readColour{}, err
 	}
-	return readColour{name: token.Name, about: token.About, values: values, basic: basic}, nil
+	var least *leastContrast
+	if token.LeastContrast != nil {
+		if least, err = readLeastContrast(token.Name, *token.LeastContrast); err != nil {
+			return readColour{}, err
+		}
+	}
+	return readColour{name: token.Name, about: token.About, values: values, basic: basic, leastContrast: least}, nil
 }
 
 func readBlendToken(token blendToken, colours []readColour, named map[string]bool) (readBlend, error) {
@@ -296,7 +311,7 @@ func isNoNameLetter(letter rune) bool {
 func required[Value any](written *Value, token, key string) (Value, error) {
 	if written == nil {
 		var none Value
-		return none, fmt.Errorf("%w: %q has no %s", errTokens, token, key)
+		return none, fmt.Errorf("%w: %w: %q has no %s", errTokens, errMissing, token, key)
 	}
 	return *written, nil
 }

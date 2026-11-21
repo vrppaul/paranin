@@ -96,12 +96,13 @@ const (
 // 100 ms to rank.
 const maxHeaderBytes = 16 << 10
 
-// How long an SSH connection may take over its handshake, and a session may stay idle and stay open (SEC-5): a
-// handshake takes about three and a half round trips, so twenty seconds give up on a link whose round trip passes
-// about five and a half, and are all a connection that sends nothing holds a file for; a reader who is only reading
+// How long an SSH connection may take to start its session from when it connects, and a session may stay idle and
+// stay open (SEC-5): the one bound covers the handshake, about three and a half round trips, and starting the
+// session, about one and a half more, so twenty-five seconds give up on a link whose round trip passes about five,
+// and are all a connection that sends nothing, or starts nothing, holds a file for; a reader who is only reading
 // sends nothing, so the wait for a key is long
 const (
-	handshakeTimeout   = 20 * time.Second
+	openingTimeout     = 25 * time.Second
 	sessionIdleTimeout = 15 * time.Minute
 	sessionMaxTimeout  = time.Hour
 )
@@ -177,7 +178,7 @@ func serve(contentFolder, buildFolder string) int {
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	settings := ssh.Settings{
-		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), HandshakeTimeout: handshakeTimeout,
+		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), OpeningTimeout: openingTimeout,
 		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout,
 	}
 	sshServer, err := ssh.New(store, logger, settings)

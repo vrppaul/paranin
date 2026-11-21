@@ -36,8 +36,14 @@ const (
 	// how long a test waits for the server to log, well within the connection's deadline, so what closes a
 	// session the test waits on is the server
 	logWait = 3 * time.Second
-	// how long a test's handshake may take, ample on a busy machine and well within the connection's deadline
-	handshakeTimeout = 5 * time.Second
+	// how long a test's connection may take to start its session, ample on a busy machine and well within the
+	// connection's deadline
+	openingTimeout = 6 * time.Second
+	// how soon after its session a connection is closed, on a synctest bubble's clock, which moves only on the TUI's
+	// frames while the session ends
+	sessionEndTolerance = time.Second
+	// the subsystem a client asks for to move files
+	sftpSubsystem = "sftp"
 )
 
 // commonTerminal is the size of a reader's terminal, well within the bound.
@@ -160,25 +166,109 @@ func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
 	})
 }
 
-// A connection that sends nothing is closed once its handshake's time is up, so a client that only connects holds a
-// file of the server's for that time at most.
-func TestAConnectionSilentThroughItsHandshakeIsClosed(test *testing.T) {
+// A connection that starts no session, however far it goes, is closed once its time to start one is up, so a client
+// that only connects, or only shakes hands, holds a file of the server's for that time at most.
+func TestAConnectionThatStartsNoSessionIsClosed(test *testing.T) {
+	cases := []struct {
+		name    string
+		reaches func(test *testing.T, connection net.Conn)
+	}{
+		{name: "sending nothing", reaches: sendingNothing},
+		{name: "shaking hands", reaches: shakingHands},
+		{name: "opening a channel with no shell", reaches: openingAChannel},
+		{name: "asking for a subsystem", reaches: askingForASubsystem},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			synctest.Test(test, func(test *testing.T) {
+				server := newServer(test, slog.New(slog.DiscardHandler))
+				clientEnd, serverEnd := memoryConnections()
+				go server.server.HandleConn(serverEnd)
+				opened := time.Now()
+				testCase.reaches(test, clientEnd)
+				<-serverEnd.own.closed
+				if held := time.Since(opened); held > openingTimeout {
+					test.Errorf("a connection %s was held %s, want it closed within %s", testCase.name, held, openingTimeout)
+				}
+			})
+		})
+	}
+}
+
+// sendingNothing is a client that connects and sends nothing.
+func sendingNothing(*testing.T, net.Conn) {}
+
+// shakingHands is a client that finishes its handshake and opens no channel.
+//
+//wrapper:a case of the table, in the shape the table hands every case
+func shakingHands(test *testing.T, connection net.Conn) {
+	clientOver(test, connection, memoryAddress, "reader")
+}
+
+// openingAChannel is a client that opens a channel for a session and asks it for nothing.
+func openingAChannel(test *testing.T, connection net.Conn) {
+	if _, err := clientOver(test, connection, memoryAddress, "reader").NewSession(); err != nil {
+		test.Fatalf("NewSession = %v, want a channel for a session", err)
+	}
+}
+
+// askingForASubsystem is a client that asks its session for a subsystem, which a kiosk refuses.
+func askingForASubsystem(test *testing.T, connection net.Conn) {
+	session, err := clientOver(test, connection, memoryAddress, "reader").NewSession()
+	if err != nil {
+		test.Fatalf("NewSession = %v, want a channel for a session", err)
+	}
+	if err := session.RequestSubsystem(sftpSubsystem); err == nil {
+		test.Errorf("RequestSubsystem(%q) = %v, want it refused", sftpSubsystem, err)
+	}
+}
+
+// A connection ends with its one session, since it may open no other: a client that keeps its connection, as
+// OpenSSH's ControlPersist does, holds no file of the server's for a session it has closed.
+func TestAConnectionEndsWithItsSession(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		server := newServer(test, slog.New(slog.DiscardHandler))
 		clientEnd, serverEnd := memoryConnections()
 		go server.server.HandleConn(serverEnd)
-		opened := time.Now()
-		if _, err := io.ReadAll(clientEnd); err != nil {
-			test.Fatalf("read a silent connection to its end = %v, want the server to close it", err)
+		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+		output, _ := openTerminal(test, session, commonTerminal())
+		readUntil(test, output, "contact")
+		closed := time.Now()
+		if err := session.Close(); err != nil {
+			test.Fatalf("Close of the session = %v, want it closed", err)
 		}
-		if held := time.Since(opened); held > handshakeTimeout {
-			test.Errorf("a silent connection was held %s, want it closed within %s", held, handshakeTimeout)
+		if err := client.Wait(); err == nil {
+			test.Fatalf("Wait on the connection after its session = %v, want it ended by the server", err)
+		}
+		if held := time.Since(closed); held > sessionEndTolerance {
+			test.Errorf("a connection was held %s after its session closed, want it closed within %s", held, sessionEndTolerance)
 		}
 	})
 }
 
-// A session its reader closes ends there, its TUI with it, though its connection stays open: a client that keeps
-// its connection, as OpenSSH's ControlPersist does, holds no TUI it has closed. It runs on a socket: a TUI left
+// A connection that starts its session in time keeps it past the time to start one: its reader still reads.
+func TestASessionStartedInTimeOutlivesItsTimeToStart(test *testing.T) {
+	synctest.Test(test, func(test *testing.T) {
+		server := newServer(test, slog.New(slog.DiscardHandler))
+		clientEnd, serverEnd := memoryConnections()
+		go server.server.HandleConn(serverEnd)
+		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+		output, input := openTerminal(test, session, commonTerminal())
+		readUntil(test, output, "contact")
+		time.Sleep(openingTimeout)
+		if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
+			test.Fatalf("type :checkhealth past the time to start = %v, want the session open", err)
+		}
+		readUntil(test, output, "no tests yet")
+		closeClient(client, session)
+		if err := server.Shutdown(test.Context()); err != nil {
+			test.Errorf("Shutdown after the session closed = %v, want the server stopped", err)
+		}
+	})
+}
+
+// A session its reader closes ends there, its TUI with it, though its client keeps the connection, as OpenSSH's
+// ControlPersist does: the client holds no TUI it has closed. It runs on a socket: a TUI left
 // running once its session is closed keeps wish reading the session's closed window changes, which no synctest
 // bubble sees blocked.
 func TestASessionClosedOnAnOpenConnectionEnds(test *testing.T) {
@@ -376,7 +466,7 @@ func newServer(test *testing.T, logger *slog.Logger) *Server {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
 	settings := Settings{
-		HostKeyPath: filepath.Join(test.TempDir(), "host_key"), HandshakeTimeout: handshakeTimeout, IdleTimeout: longTimeout,
+		HostKeyPath: filepath.Join(test.TempDir(), "host_key"), OpeningTimeout: openingTimeout, IdleTimeout: longTimeout,
 		MaxTimeout: longTimeout,
 	}
 	server, err := New(store, logger, settings)
@@ -433,18 +523,24 @@ func dialed(test *testing.T, address string) net.Conn {
 // sessionOver is a client over a connection to an address, of a reader of a name who offers no key or password,
 // and a session of it; both close as the test ends.
 func sessionOver(test *testing.T, connection net.Conn, address, user string) (*gossh.Client, *gossh.Session) {
-	config := &gossh.ClientConfig{User: user, Auth: nil, HostKeyCallback: gossh.InsecureIgnoreHostKey()} //nolint:gosec // a test's own server
-	clientConnection, channels, requests, err := gossh.NewClientConn(connection, address, config)
-	if err != nil {
-		test.Fatalf("NewClientConn = %v, want an SSH connection", err)
-	}
-	client := gossh.NewClient(clientConnection, channels, requests)
+	client := clientOver(test, connection, address, user)
 	session, err := client.NewSession()
 	if err != nil {
 		test.Fatalf("NewSession = %v, want a session", err)
 	}
 	test.Cleanup(func() { closeClient(client, session) })
 	return client, session
+}
+
+// clientOver is a client over a connection to an address, its handshake done, of a reader of a name who offers no
+// key or password.
+func clientOver(test *testing.T, connection net.Conn, address, user string) *gossh.Client {
+	config := &gossh.ClientConfig{User: user, Auth: nil, HostKeyCallback: gossh.InsecureIgnoreHostKey()} //nolint:gosec // a test's own server
+	clientConnection, channels, requests, err := gossh.NewClientConn(connection, address, config)
+	if err != nil {
+		test.Fatalf("NewClientConn = %v, want an SSH connection", err)
+	}
+	return gossh.NewClient(clientConnection, channels, requests)
 }
 
 // closeClient closes a session and its client; a test that ends has no use for a fault in closing them.

@@ -3,6 +3,8 @@ package ssh
 import (
 	"context"
 	"fmt"
+	"net"
+	"time"
 
 	charmssh "charm.land/ssh"
 	gossh "golang.org/x/crypto/ssh"
@@ -16,12 +18,13 @@ const (
 	tallestTerminal = 150
 )
 
-// The kind of channel a session is, and the requests in one that say the size of its terminal (RFC 4254, 6.1, 6.2
-// and 6.7)
+// The kind of channel a session is, the requests in one that say the size of its terminal, and the one that asks
+// for a subsystem (RFC 4254, 6.1, 6.2, 6.7 and 6.5)
 const (
-	sessionChannel      = "session"
-	terminalRequestType = "pty-req"
-	windowChangeType    = "window-change"
+	sessionChannel       = "session"
+	terminalRequestType  = "pty-req"
+	windowChangeType     = "window-change"
+	subsystemRequestType = "subsystem"
 )
 
 // terminalAsked is what a client asks for with a terminal, as RFC 4254 lays it out.
@@ -50,8 +53,12 @@ type sizedPayload interface {
 // Why a second session on a connection is refused, as the client is told
 const secondSessionRefusal = "one session a connection"
 
-// sessionOpened is the key under which a connection's context says it has opened its session.
-type sessionOpened struct{}
+// The keys under which a connection's context says it has opened the channel of its session, and started the
+// session, its shell or command taken
+type (
+	sessionOpened  struct{}
+	sessionStarted struct{}
+)
 
 // limitingSessions has the server open one session a connection, with the size of its terminal bounded before
 // charm.land/ssh, Bubble Tea or the TUI reads it, so none of them draws more; no channel of another kind is opened,
@@ -63,8 +70,9 @@ func limitingSessions(server *charmssh.Server) error {
 }
 
 // openLimited opens a connection's first session as charm.land/ssh does, its client's requests bounded on their
-// way, and refuses every session after it: a reader needs one, and each costs the TUI's memory again. A client that
-// shares one connection among its sessions (OpenSSH's ControlMaster) sees the second refused and opens a connection.
+// way, refuses every session after it, and closes the connection once its session ends: a reader needs one, and
+// each costs the TUI's memory again. A client that shares one connection among its sessions (OpenSSH's ControlMaster)
+// sees the second refused and opens a connection.
 func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel gossh.NewChannel, ctx charmssh.Context) {
 	if !isFirstSession(ctx) {
 		_ = channel.Reject(gossh.ResourceShortage, secondSessionRefusal)
@@ -73,6 +81,7 @@ func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel 
 	session, end := context.WithCancel(ctx)
 	defer end()
 	charmssh.DefaultSessionHandler(server, connection, boundedChannel{NewChannel: channel}, sessionContext{Context: ctx, session: session})
+	_ = connection.Close()
 }
 
 // sessionContext is a connection's context as one of its sessions sees it, which ends, its Done and Err, as the
@@ -102,6 +111,52 @@ func isFirstSession(ctx charmssh.Context) bool {
 		return false
 	}
 	ctx.SetValue(sessionOpened{}, true)
+	return true
+}
+
+// openingLimit is how long a connection may take from connecting to starting its session, an option of the server:
+// past its handshake, charm.land/ssh holds a connection that starts none, with a channel for one or not, until it is
+// idle too long.
+type openingLimit time.Duration
+
+// apply has the server watch each connection for the limit, from before its handshake, so the one limit bounds the
+// handshake too, and mark each session as it starts.
+func (limit openingLimit) apply(server *charmssh.Server) error {
+	server.ConnCallback = limit.watch
+	server.SessionRequestCallback = markStarted
+	return nil
+}
+
+// watch closes a connection that has started no session once the limit has passed since it connected, and forgets
+// it once the connection ends.
+func (limit openingLimit) watch(ctx charmssh.Context, connection net.Conn) net.Conn {
+	timer := time.AfterFunc(time.Duration(limit), func() { closeUnstarted(ctx, connection) })
+	// a timer left to fire would hold the connection and its context for the whole limit, so a flood of short
+	// connections would add them up
+	context.AfterFunc(ctx, func() { timer.Stop() })
+	return connection
+}
+
+// closeUnstarted closes a connection unless it has started its session.
+func closeUnstarted(ctx charmssh.Context, connection net.Conn) {
+	ctx.Lock()
+	defer ctx.Unlock()
+	if ctx.Value(sessionStarted{}) == nil {
+		_ = connection.Close()
+	}
+}
+
+// markStarted marks a session's connection as having started its session, its shell or command taken, and takes
+// it: charm.land/ssh asks as each comes, the one moment a session starts. A subsystem is refused and starts
+// nothing, since a kiosk serves none.
+func markStarted(session charmssh.Session, requestType string) bool {
+	if requestType == subsystemRequestType {
+		return false
+	}
+	ctx := session.Context()
+	ctx.Lock()
+	defer ctx.Unlock()
+	ctx.SetValue(sessionStarted{}, true)
 	return true
 }
 

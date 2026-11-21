@@ -2,11 +2,11 @@
 // and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
 // the projects' pages and the TUI's extras, and nothing else is served: no shell, no command, no file transfer, no
 // forwarding (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never
-// the server (SEC-4), a connection too long over its handshake and a session idle too long or open too long are
-// closed (SEC-5), a connection opens one session and a terminal larger than a bound is drawn at the bound, so no
-// connection's screens take memory without end (SEC-7), and each session is logged as it opens and closes (SEC-13),
-// what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a control character in
-// it (SEC-15).
+// the server (SEC-4), a connection too long in starting its session, its handshake with it, and a session idle too
+// long or open too long are closed (SEC-5), a connection opens one session and a terminal larger than a bound is
+// drawn at the bound, so no connection's screens take memory without end (SEC-7), and each session is logged as it
+// opens and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value
+// with a control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
@@ -48,14 +48,14 @@ const (
 	stackKey  = "stack"
 )
 
-// Settings are what the server is run with: where its host key lives, how long a connection may take over its
-// handshake, and how long a session may stay idle and stay open.
+// Settings are what the server is run with: where its host key lives, how long a connection may take to start its
+// session from when it connects, its handshake within that, and how long a session may stay idle and stay open.
 type Settings struct {
 	// HostKeyPath is the file of the server's key, made there on the first start when it is missing (SEC-10)
-	HostKeyPath      string
-	HandshakeTimeout time.Duration
-	IdleTimeout      time.Duration
-	MaxTimeout       time.Duration
+	HostKeyPath    string
+	OpeningTimeout time.Duration
+	IdleTimeout    time.Duration
+	MaxTimeout     time.Duration
 }
 
 // Server serves the résumé, and the projects' pages a reader opens from it, to each session with a terminal.
@@ -91,7 +91,7 @@ func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server,
 		wish.WithHostKeyPath(settings.HostKeyPath),
 		wish.WithIdleTimeout(settings.IdleTimeout),
 		wish.WithMaxTimeout(settings.MaxTimeout),
-		handshakeLimit(settings.HandshakeTimeout).apply,
+		openingLimit(settings.OpeningTimeout).apply,
 		limitingSessions,
 		wish.WithMiddleware(
 			bubbletea.Middleware(opening.open),
@@ -128,15 +128,6 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	if err := server.server.Close(); err != nil {
 		return fmt.Errorf("close the sessions still open: %w", err)
 	}
-	return nil
-}
-
-// handshakeLimit is how long a connection may take over its handshake, an option of the server: wish has none.
-type handshakeLimit time.Duration
-
-// apply sets the limit on the server.
-func (limit handshakeLimit) apply(server *charmssh.Server) error {
-	server.HandshakeTimeout = time.Duration(limit)
 	return nil
 }
 

@@ -481,12 +481,12 @@ beside `compose`, the brain beside the faces.
 and the Bubble Tea middleware starts a fresh `tea.Program` bound to that
 session's PTY. The program runs The Elm Architecture: `Init → Update(msg) →
 View` until the user quits, closes the session or disconnects: a session's
-program ends with its channel, though the connection stays open. A connection
-opens one session, and a second is refused. The size of the terminal a client
-asks for, and each size it changes to, is bounded as the session's requests come
-in, before `charm.land/ssh` reads them, so no session draws a screen larger than
-the bound (SEC-7); Wish forwards each change into the program as
-`tea.WindowSizeMsg`.
+program ends with its channel. A connection opens one session, and a second is
+refused; it ends with that session, or once it has started none in its time to
+start one (SEC-5). The size of the terminal a client asks for, and each size it
+changes to, is bounded as the session's requests come in, before
+`charm.land/ssh` reads them, so no session draws a screen larger than the bound
+(SEC-7); Wish forwards each change into the program as `tea.WindowSizeMsg`.
 
 **Per-connection isolation:** each session gets its own model instance; a panic
 in one session is contained, by Bubble Tea inside the program and by the recover

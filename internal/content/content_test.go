@@ -2,12 +2,15 @@ package content
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
+	"unicode"
+	"unicode/utf8"
 )
 
 // The fixture content, and the repository's own, from this package
@@ -79,6 +82,86 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 			}
 		})
 	}
+}
+
+// A face passes text on as the content writes it, so a character a terminal or a browser acts on rather than shows
+// is a fault at the field that holds it, wherever the file writes it, as it is or by an escape; a line feed is text.
+func TestACharacterAReaderWouldActOnIsAFaultAtItsField(test *testing.T) {
+	cases := []struct {
+		name        string
+		file        string
+		original    string
+		replacement string
+		field       string
+		value       string
+	}{
+		{
+			name: "an escape that links and clears the screen", file: profileFile, original: "name: Mira Example",
+			replacement: `name: "Mira \e]8;;https://evil.test\e\\Example\e[2J"`, field: "person.name",
+			value: "Mira \x1b]8;;https://evil.test\x1b\\Example\x1b[2J",
+		},
+		{
+			name: "an escape written as binary", file: profileFile, original: "name: Mira Example",
+			replacement: "name: !!binary TWlyYSAbXTg7O2h0dHBzOi8vZXZpbC50ZXN0G1xFeGFtcGxlG1sySg==", field: "person.name",
+			value: "Mira \x1b]8;;https://evil.test\x1b\\Example\x1b[2J",
+		},
+		{name: "a byte of no character written as binary", file: profileFile, original: "name: Mira Example", replacement: "name: !!binary mw==", field: "person.name", value: "\x9b"},
+		{name: "a bell in a point", file: profileFile, original: `- "Kept the ==queue== moving"`, replacement: `- "Kept the ==queue== moving\a"`, field: "experience[0].bullets[0]", value: "Kept the ==queue== moving\a"},
+		{name: "a nul in advice", file: profileFile, original: "advice: look at it", replacement: `advice: "look\0 at it"`, field: "health[0].checks[1].advice", value: "look\x00 at it"},
+		{name: "a tab in a skill's name", file: profileFile, original: "name: Go,", replacement: `name: "G\to",`, field: "skill_groups[0].skills[1].name", value: "G\to"},
+		{name: "a carriage return in a recording", file: profileFile, original: `recording: "$ tidy .\ntidied 3 files"`, replacement: `recording: "$ tidy .\r\ntidied 3 files"`, field: "projects[1].recording", value: "$ tidy .\r\ntidied 3 files"},
+		{name: "a delete in a fact", file: profileFile, original: "value: 5 years", replacement: `value: "5 years\x7f"`, field: "facts[0].value", value: "5 years\x7f"},
+		{name: "a control of the upper half in the summary", file: profileFile, original: "summary: Writes software for people who read it.", replacement: `summary: "Writes software\u009b2J"`, field: "summary", value: "Writes software\u009b2J"},
+		{name: "an override of direction in a name", file: profileFile, original: "name: tidy-tool", replacement: `name: "tidy‮-tool"`, field: "projects[1].name", value: "tidy‮-tool"},
+		{name: "an isolate written as it is in a stack", file: profileFile, original: "LPeg]", replacement: "LP⁦eg]", field: "projects[1].stack[1]", value: "LP⁦eg"},
+		{name: "a mark of direction in the headline", file: profileFile, original: "headline: Builds", replacement: "headline: ‏Builds", field: "person.headline", value: "‏Builds small tools that last."},
+		{name: "an isolate in a word of the site", file: wordsFile(english), original: "about: About", replacement: `about: "Ab⁧out"`, field: "about", value: "Ab⁧out"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), testCase.file, testCase.original, testCase.replacement))
+			want := Faults{{File: testCase.file, Field: testCase.field, Problem: fmt.Sprintf(characterProblem, testCase.value)}}
+			if !slices.Equal(faults, want) {
+				test.Errorf("faults with %q = %q, want %q alone", testCase.replacement, faults, want)
+			}
+		})
+	}
+}
+
+// A fault's line reaches a terminal, and a key or the decoder's words in it come from the file: each fault stands on a
+// line of its own, holding no character a terminal acts on and no byte of no character, each written as %q writes it.
+func TestAFaultsLineHoldsNothingATerminalActsOn(test *testing.T) {
+	cases := []struct {
+		name        string
+		file        string
+		original    string
+		replacement string
+		shown       string
+	}{
+		{name: "an escape in a key the site has no word for", file: wordsFile(english), original: "about: About", replacement: "about: About\n\"evil\\e[2J\": \"x\\e\"", shown: `\x1b`},
+		{name: "a line feed in a key the site has no word for", file: wordsFile(english), original: "about: About", replacement: "about: About\n\"ev\\nil\": x", shown: `\n`},
+		{name: "a byte of no character in a key", file: wordsFile(english), original: "about: About", replacement: "about: About\n!!binary mw==: x", shown: `\x9b`},
+		{name: "a replacement character in a key, which is text", file: wordsFile(english), original: "about: About", replacement: "about: About\n\"ev\\uFFFDil\": x", shown: "ev�il"},
+		{name: "an escape in a key no type knows", file: profileFile, original: "headline:", replacement: "\"head\\e[2Jline\":", shown: `\x1b`},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), testCase.file, testCase.original, testCase.replacement))
+			lines := strings.Split(faults.Error(), "\n")
+			if len(lines) != len(faults) || slices.ContainsFunc(lines, actedOnByATerminal) || !strings.Contains(faults.Error(), testCase.shown) {
+				test.Errorf("faults with %q write %q, want %d lines with no control character, mark of direction or byte of no character, showing %q",
+					testCase.replacement, lines, len(faults), testCase.shown)
+			}
+		})
+	}
+}
+
+// actedOnByATerminal is whether a line holds a character a terminal acts on rather than shows, or bytes of no
+// character, which a terminal may read as one.
+func actedOnByATerminal(line string) bool {
+	return !utf8.ValidString(line) || strings.ContainsFunc(line, func(character rune) bool {
+		return unicode.IsControl(character) || unicode.Is(unicode.Bidi_Control, character)
+	})
 }
 
 // How long a skill was used reads as what the profile writes: a span, years before months, as the months it comes to;

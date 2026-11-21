@@ -33,6 +33,7 @@ const (
 	rangeProblem         = "%d is not above min, %d"
 	unknownWordProblem   = "is no word of the site"
 	placeProblem         = "%q holds no place for its value, %s, or more than one"
+	characterProblem     = "%q holds a control character, a mark of direction or bytes of no character, which every face would pass on"
 )
 
 // What separates the levels a level fault lists

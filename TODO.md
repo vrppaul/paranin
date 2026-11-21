@@ -30,7 +30,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## Content
 
-- A fault names its field by a path written by hand beside the yaml tags (`experience[0].end`). yaml.v3's `Node` knows the line and column of each value, which would name the place (`profile.yaml:171:`) with no second copy of the schema; weigh it before the posts' loader is written.
+- A fault names its field by a path written by hand beside the yaml tags (`experience[0].end`). yaml.v3's `Node` knows the line and column of each value, which would name the place (`profile.yaml:171:`) with no second copy of the schema; every file is parsed into a `Node` already, for the check of its characters; weigh it before the posts' loader is written.
+- Content's faults are told apart by their words in tests (`TestEveryFaultSaysItsFieldAndProblem`), which `.claude/rules/tests.md` refuses: a kind for each fault would let a test read which fault came.
 
 ## Before the design work
 

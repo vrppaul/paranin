@@ -1,7 +1,9 @@
 # Every hook runs once, before the commit; the two message checks run on the message, and `pre-commit install`
 # installs both stages. A hook that cannot run fails: leave one out only on purpose, by naming it in SKIP. The hooks
 # read the working tree, so CI (.github/workflows/gates.yml) runs them again on what a commit carries, with the check
-# that needs the network; a message, CI never sees
+# that needs the network; a message, CI never sees. Each repo of hooks runs at the commit its tag named when it was
+# pinned, in the form `pre-commit autoupdate --freeze` writes, and each package a hook's environment holds is
+# pinned exactly, so a moved tag or a new release runs nothing new
 default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [pre-commit]
 
@@ -133,24 +135,34 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.51.1
+    rev: 7f9d0819ca1c008ade73f4b41fa9d258d48f605b  # frozen: v1.51.1
     hooks:
       - id: typos
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
+      # Every hook of the repo installs its package, which needs ruamel.yaml: each names the same pin, so all
+      # share one environment
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        additional_dependencies: &pre-commit-hooks-dependencies [ruamel.yaml==0.19.1]
       - id: end-of-file-fixer
+        additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-merge-conflict
+        additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-yaml
+        additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-case-conflict
+        additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-symlinks
+        additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-added-large-files
         args: [--maxkb=1024]
+        additional_dependencies: *pre-commit-hooks-dependencies
       # The SSH face holds a host key on disk: none may reach git
       - id: detect-private-key
+        additional_dependencies: *pre-commit-hooks-dependencies
 
   # claude-review's gate of its instruction files, taken whole (scripts/check_instruction_files.py), run in an
   # environment pre-commit makes for it. A path goes stale when the file it names moves, so it runs on every commit
@@ -161,12 +173,13 @@ repos:
         entry: python scripts/check_instruction_files.py
         language: python
         language_version: python3.14
-        additional_dependencies: [pydantic]
+        additional_dependencies:
+          [pydantic==2.14.4, annotated-types==0.8.0, typing-extensions==4.16.0, typing-inspection==0.4.5]
         pass_filenames: false
         always_run: true
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.5.0
+    rev: 33b50eb042bee26eac0ee96ad84aa9c1b4dccdd8  # frozen: v4.5.0
     hooks:
       - id: conventional-pre-commit
         name: conventional-pre-commit

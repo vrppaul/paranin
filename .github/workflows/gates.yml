@@ -1,6 +1,7 @@
 # Every gate of .pre-commit-config.yaml again, on what a commit carries: on a machine the hooks read the working
 # tree, untracked files included, so a commit can pass on a file it does not hold. And the check that needs the
-# network, govulncheck, which the hooks leave out so a commit can be made offline
+# network, govulncheck, which the hooks leave out so a commit can be made offline. An action's pin for a tag is the
+# commit `git ls-remote --tags https://github.com/<owner>/<action>.git <tag> <tag>^{}` prints last
 name: gates
 
 on:
@@ -15,24 +16,29 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      # Each action runs at the commit its tag named when it was pinned, the tag beside it: a moved tag runs nothing
+      # new. The vulnerabilities job takes the first two steps by their anchors, so each pin is written once
+      - &checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - &setup-go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.14"
       # The page's tools, at the pnpm web/package.json names and the versions its lockfile pins
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           package_json_file: web/package.json
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm --dir web install --frozen-lockfile
-      - run: pip install pre-commit==4.5.1
+      # pre-commit and everything it needs, each file checked against its hash
+      - run: pip install --require-hashes -r .github/pre-commit-requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure
       # The page builds, as a release would build it, and the site loads the release it makes
       - run: pnpm --dir web build
@@ -41,8 +47,6 @@ jobs:
   vulnerabilities:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
+      - *checkout
+      - *setup-go
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...

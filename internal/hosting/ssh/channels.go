@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"slices"
 	"time"
 
 	charmssh "charm.land/ssh"
 	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/time/rate"
 )
 
 // The largest terminal a session is drawn for, in columns and rows: a cell drawn costs the server about 240 bytes, so
@@ -18,13 +20,25 @@ const (
 	tallestTerminal = 150
 )
 
-// The kind of channel a session is, the requests in one that say the size of its terminal, and the one that asks
-// for a subsystem (RFC 4254, 6.1, 6.2, 6.7 and 6.5)
+// How fast a session's input reaches the TUI, in bytes a second, and how much of it may come at once. A reader
+// typing, or holding a key down, sends under two hundred bytes a second, and an ordinary paste, or the terminal's
+// answers to the TUI's questions as it opens, a few kilobytes at most at once; each key costs the TUI about half a
+// millisecond, so a client sending faster spends a tenth of a core at most, and a paste it leaves open grows by
+// under a megabyte an hour. The rate holds while the TUI asks for no mouse: a wheel or a motion reported sends ten to
+// fifteen bytes an event, up to sixty a second.
+const (
+	inputRate  = 192
+	inputBurst = 4 << 10
+)
+
+// The kind of channel a session is, the requests in one that say the size of its terminal, the one that asks for a
+// subsystem, and the one that sets a variable of its environment (RFC 4254, 6.1, 6.2, 6.7, 6.5 and 6.4)
 const (
 	sessionChannel       = "session"
 	terminalRequestType  = "pty-req"
 	windowChangeType     = "window-change"
 	subsystemRequestType = "subsystem"
+	environmentType      = "env"
 )
 
 // terminalAsked is what a client asks for with a terminal, as RFC 4254 lays it out.
@@ -80,7 +94,8 @@ func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel 
 	}
 	session, end := context.WithCancel(ctx)
 	defer end()
-	charmssh.DefaultSessionHandler(server, connection, boundedChannel{NewChannel: channel}, sessionContext{Context: ctx, session: session})
+	checked := checkedChannel{NewChannel: channel, session: session}
+	charmssh.DefaultSessionHandler(server, connection, checked, sessionContext{Context: ctx, session: session})
 	_ = connection.Close()
 }
 
@@ -160,44 +175,126 @@ func markStarted(session charmssh.Session, requestType string) bool {
 	return true
 }
 
-// boundedChannel is a session's channel whose requests reach charm.land/ssh with the size of the terminal bounded.
-type boundedChannel struct {
+// checkedChannel is a session's channel whose requests and input reach charm.land/ssh checked: the size of the
+// terminal bounded, the environment taken only as far as the colour profile reads it, the input paced for as long as
+// the session lasts.
+type checkedChannel struct {
 	gossh.NewChannel
+	session context.Context
 }
 
-func (channel boundedChannel) Accept() (gossh.Channel, <-chan *gossh.Request, error) {
+func (channel checkedChannel) Accept() (gossh.Channel, <-chan *gossh.Request, error) {
 	accepted, requests, err := channel.NewChannel.Accept()
 	if err != nil {
 		return nil, nil, fmt.Errorf("accept a session's channel: %w", err)
 	}
-	bounded := make(chan *gossh.Request)
-	go passBounded(requests, bounded)
-	return accepted, bounded, nil
+	checked := make(chan *gossh.Request)
+	go passChecked(requests, checked)
+	paced := pacedChannel{Channel: accepted, pace: rate.NewLimiter(inputRate, inputBurst), session: channel.session}
+	return paced, checked, nil
 }
 
-// passBounded passes each request of a session on with the size of its terminal bounded, and closes the requests
-// passed on once the client's requests end. One whose size cannot be read is refused: charm.land/ssh reads some of
-// those still, unbounded.
-func passBounded(requests <-chan *gossh.Request, bounded chan<- *gossh.Request) {
-	defer close(bounded)
+// passChecked passes each request of a session on, the size of its terminal bounded, and closes the requests passed
+// on once the client's requests end. One refused is answered so here and never passed on: charm.land/ssh would read
+// a size it cannot read whole as far as it could, unbounded, and keep every variable of the environment it was sent.
+func passChecked(requests <-chan *gossh.Request, checked chan<- *gossh.Request) {
+	defer close(checked)
+	check := requestCheck{variablesTaken: map[string]bool{}}
 	for request := range requests {
-		if err := boundTerminal(request); err != nil {
+		if err := check.checked(request); err != nil {
 			_ = request.Reply(false, nil)
 			continue
 		}
-		bounded <- request
+		checked <- request
 	}
 }
 
-// boundTerminal bounds the size of the terminal a request says, if it says one.
-func boundTerminal(request *gossh.Request) error {
+// requestCheck is what a session's requests are checked against: the variables of its environment taken so far.
+type requestCheck struct {
+	variablesTaken map[string]bool
+}
+
+// checked bounds the size of the terminal a request says, if it says one, and refuses a variable of the environment
+// the session does not take.
+func (check requestCheck) checked(request *gossh.Request) error {
 	switch request.Type {
 	case terminalRequestType:
 		return boundPayload(request, new(terminalAsked))
 	case windowChangeType:
 		return boundPayload(request, new(windowChange))
+	case environmentType:
+		return check.takenVariable(request)
 	}
 	return nil
+}
+
+// takenVariable takes a variable of the environment the colour profile reads, once and of a value no longer than it
+// reads, and refuses any other: wish hands the colour profile the session's environment, and nothing else of the
+// site reads it.
+func (check requestCheck) takenVariable(request *gossh.Request) error {
+	var asked environmentVariable
+	if err := gossh.Unmarshal(request.Payload, &asked); err != nil {
+		return fmt.Errorf("read the variable a %q request sets: %w", request.Type, err)
+	}
+	switch {
+	case !slices.Contains(colourVariables(), asked.Name):
+		return refusedRequest{requestType: request.Type, reason: unreadVariable}
+	case check.variablesTaken[asked.Name]:
+		return refusedRequest{requestType: request.Type, reason: variableSetAlready}
+	case len(asked.Value) > longestColourValue:
+		return refusedRequest{requestType: request.Type, reason: valueTooLong}
+	}
+	check.variablesTaken[asked.Name] = true
+	return nil
+}
+
+// environmentVariable is a variable a client sets in its session's environment, as RFC 4254 lays it out.
+type environmentVariable struct {
+	Name  string
+	Value string
+}
+
+// colourVariables are the variables of the environment charmbracelet/colorprofile reads to choose a terminal's
+// colours from its environment, TERM aside, which wish takes from the request for the terminal.
+func colourVariables() []string {
+	return []string{"NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "COLORTERM", "WT_SESSION", "GOOGLE_CLOUD_SHELL"}
+}
+
+// The longest value of a variable of the environment taken: the longest the colour profile reads, Windows
+// Terminal's session, is a GUID of 36 letters
+const longestColourValue = 64
+
+// Why a request is refused
+const (
+	unreadVariable     = "the colour profile reads no such variable"
+	variableSetAlready = "the variable is set already"
+	valueTooLong       = "the value is longer than any the colour profile reads"
+)
+
+// refusedRequest is a request a session refuses, and why.
+type refusedRequest struct {
+	requestType string
+	reason      string
+}
+
+func (refused refusedRequest) Error() string {
+	return fmt.Sprintf("a %q request is refused: %s", refused.requestType, refused.reason)
+}
+
+// pacedChannel is a session's channel whose input reaches charm.land/ssh at a reader's pace, so a flood of it, keys
+// or a paste left open, waits in the channel's window, which x/crypto bounds, and never in the TUI.
+type pacedChannel struct {
+	gossh.Channel
+	pace    *rate.Limiter
+	session context.Context
+}
+
+func (channel pacedChannel) Read(buffer []byte) (int, error) {
+	count, err := channel.Channel.Read(buffer[:min(len(buffer), inputBurst)])
+	if waited := channel.pace.WaitN(channel.session, count); waited != nil {
+		return count, fmt.Errorf("wait for the pace of a session's input: %w", waited)
+	}
+	return count, err //nolint:wrapcheck // a reader's io.EOF stays io.EOF, as its readers compare it
 }
 
 // boundPayload reads a request's payload into its layout, bounds the size in it and writes it back.

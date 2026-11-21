@@ -136,6 +136,55 @@ func TestATerminalOfAnUnreadableSizeIsRefused(test *testing.T) {
 	}
 }
 
+// variable is a variable a client sets in its session's environment, as RFC 4254 lays it out.
+type variable struct {
+	Name  string
+	Value string
+}
+
+// A byte where a variable's payload should start with the length of its name, too short to hold one
+const strayByte = 0xff
+
+// A variable a client sets in its session's environment, as OpenSSH's SendEnv does, is taken only if the colour
+// profile reads it, once, and with a value no longer than the profile reads; any other is refused, and one whose
+// payload cannot be read, since charm.land/ssh would keep every one it was sent.
+func TestOnlyTheColourVariablesOfTheEnvironmentAreTaken(test *testing.T) {
+	noColour := variable{Name: "NO_COLOR", Value: "1"}
+	cases := []struct {
+		name    string
+		before  []variable
+		payload []byte
+		refused bool
+	}{
+		{name: "a variable of colour", before: nil, payload: gossh.Marshal(&noColour), refused: false},
+		{name: "a variable of no colour", before: nil, payload: gossh.Marshal(&variable{Name: "LANG", Value: "C.UTF-8"}), refused: true},
+		{
+			name: "a variable of colour again", before: []variable{noColour},
+			payload: gossh.Marshal(&variable{Name: "NO_COLOR", Value: "0"}), refused: true,
+		},
+		{
+			name: "a variable of colour too long", before: nil,
+			payload: gossh.Marshal(&variable{Name: "COLORTERM", Value: strings.Repeat(floodKey, longestColourValue+1)}), refused: true,
+		},
+		{name: "a payload that cannot be read", before: nil, payload: []byte{strayByte}, refused: true},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			session := clientSession(test, serving(test, slog.New(slog.DiscardHandler)), "reader")
+			for _, taken := range testCase.before {
+				if err := session.Setenv(taken.Name, taken.Value); err != nil {
+					test.Fatalf("Setenv(%q, %q) = %v, want it taken", taken.Name, taken.Value, err)
+				}
+			}
+			accepted, err := session.SendRequest(environmentType, true, testCase.payload)
+			if err != nil || accepted == testCase.refused {
+				test.Errorf("an env request of %q after %+v = %t, %v; want refused %t", testCase.payload, testCase.before,
+					accepted, err, testCase.refused)
+			}
+		})
+	}
+}
+
 // A connection opens one session: a second is refused while the first is open, so one connection cannot hold the
 // TUI's memory many times over.
 func TestASecondSessionOnAConnectionIsRefused(test *testing.T) {
@@ -264,6 +313,85 @@ func TestASessionStartedInTimeOutlivesItsTimeToStart(test *testing.T) {
 		if err := server.Shutdown(test.Context()); err != nil {
 			test.Errorf("Shutdown after the session closed = %v, want the server stopped", err)
 		}
+	})
+}
+
+// What a test floods a session with, and the bytes that open and close a bracketed paste
+const (
+	floodBytes  = 8 << 10
+	floodKey    = "z"
+	pasteOpens  = "\x1b[200~"
+	pasteCloses = "\x1b[201~"
+)
+
+// The pace no reader outruns, in bytes a second, and the most of it an ordinary paste sends at once
+const (
+	readersPace   = 200
+	ordinaryPaste = 4 << 10
+)
+
+// A flood of a client's input, keys or a paste left open, reaches the TUI no faster than a reader types, so a client
+// can spend the server's time and memory only at that pace: a command typed after the flood is answered no sooner.
+func TestAFloodOfInputReachesTheTUIAtAReadersPace(test *testing.T) {
+	cases := []struct {
+		name  string
+		flood string
+	}{
+		{name: "keys", flood: strings.Repeat(floodKey, floodBytes)},
+		{name: "a paste", flood: pasteOpens + strings.Repeat(floodKey, floodBytes) + pasteCloses},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			synctest.Test(test, func(test *testing.T) {
+				server := newServer(test, slog.New(slog.DiscardHandler))
+				clientEnd, serverEnd := memoryConnections()
+				go server.server.HandleConn(serverEnd)
+				client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+				output, input := openTerminal(test, session, commonTerminal())
+				readUntil(test, output, "contact")
+				flooded := time.Now()
+				if _, err := io.WriteString(input, testCase.flood+":checkhealth\r"); err != nil {
+					test.Fatalf("send a flood of %s = %v, want it taken", testCase.name, err)
+				}
+				readUntil(test, output, "no tests yet")
+				paced := time.Duration(len(testCase.flood)-ordinaryPaste) * time.Second / readersPace
+				if taken := time.Since(flooded); taken < paced {
+					test.Errorf("a flood of %d bytes of %s took %s to reach the TUI, want %s at least", len(testCase.flood),
+						testCase.name, taken, paced)
+				}
+				closeClient(client, session)
+			})
+		})
+	}
+}
+
+// What of an ordinary paste a test leaves room for: the paste's marks and the command typed after it, and the
+// terminal's answers as the TUI opens; and how soon a paste must reach the TUI to count as at once
+const (
+	pasteRoom  = 256
+	pasteDelay = time.Second
+)
+
+// An ordinary paste reaches the TUI at once, never stalled by the pace a flood is held to: a command typed after it
+// is answered within a second.
+func TestAnOrdinaryPasteReachesTheTUIAtOnce(test *testing.T) {
+	synctest.Test(test, func(test *testing.T) {
+		server := newServer(test, slog.New(slog.DiscardHandler))
+		clientEnd, serverEnd := memoryConnections()
+		go server.server.HandleConn(serverEnd)
+		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+		output, input := openTerminal(test, session, commonTerminal())
+		readUntil(test, output, "contact")
+		pasted := time.Now()
+		paste := pasteOpens + strings.Repeat(floodKey, ordinaryPaste-pasteRoom) + pasteCloses
+		if _, err := io.WriteString(input, paste+":checkhealth\r"); err != nil {
+			test.Fatalf("paste %d bytes = %v, want them taken", len(paste), err)
+		}
+		readUntil(test, output, "no tests yet")
+		if taken := time.Since(pasted); taken > pasteDelay {
+			test.Errorf("a paste of %d bytes took %s to reach the TUI, want %s at most", len(paste), taken, pasteDelay)
+		}
+		closeClient(client, session)
 	})
 }
 

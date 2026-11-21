@@ -486,7 +486,10 @@ refused; it ends with that session, or once it has started none in its time to
 start one (SEC-5). The size of the terminal a client asks for, and each size it
 changes to, is bounded as the session's requests come in, before
 `charm.land/ssh` reads them, so no session draws a screen larger than the bound
-(SEC-7); Wish forwards each change into the program as `tea.WindowSizeMsg`.
+(SEC-7); Wish forwards each change into the program as `tea.WindowSizeMsg`. A
+session's input reaches the program at a reader's pace, its flood waiting in the
+channel's window, and its environment takes only the variables the colour profile
+reads, each once and short (SEC-7).
 
 **Per-connection isolation:** each session gets its own model instance; a panic
 in one session is contained, by Bubble Tea inside the program and by the recover

@@ -3,10 +3,11 @@
 // the projects' pages and the TUI's extras, and nothing else is served: no shell, no command, no file transfer, no
 // forwarding (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never
 // the server (SEC-4), a connection too long in starting its session, its handshake with it, and a session idle too
-// long or open too long are closed (SEC-5), a connection opens one session and a terminal larger than a bound is
-// drawn at the bound, so no connection's screens take memory without end (SEC-7), and each session is logged as it
-// opens and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value
-// with a control character in it (SEC-15).
+// long or open too long are closed (SEC-5), a connection opens one session, a terminal larger than a bound is drawn
+// at the bound, a session's input reaches the TUI at a reader's pace and its environment holds only what the colour
+// profile reads, so no connection takes memory or time without end (SEC-7), and each session is logged as it opens
+// and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a
+// control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:

@@ -435,26 +435,28 @@ description on request, and every page and post needs a card of its own.
 
 ---
 
-## System overview — one brain, many faces
+## System overview — one source, many faces
 
-> Of the sections from here to the deployment, the overview and the configuration's last two
-> rows still describe the first version, kept on the owner's machine while its replacements
-> land; the two component designs and the project layout hold today. ADR-0002 to ADR-0005 and
-> [FOUNDATION](FOUNDATION.md) §5 replace the rest.
+> Of the sections from here to the deployment, the configuration's last two rows still
+> describe the first version, kept on the owner's machine while their replacements land;
+> the rest holds today.
 
 ```
-                       ┌────────────────────────────┐
-                       │  internal/content (profile) │  single source of truth
-                       └──────────────┬─────────────┘
-                                      │
-        ┌──────────────┬─────────────┼───────────────┬─────────────────┐
-        ▼              ▼             ▼               ▼                 ▼
-   SSH TUI        Web résumé     CV generator   LinkedIn helper   (future faces)
-   (Phase 1)      (Phase 2)      (Phase 5)      (Phase 6)
+cmd/paranin
+  hosting/web · hosting/ssh
+    face/html · face/text · face/tui
+      compose · routes · release
+        document · content · look · assets
 ```
 
-Every face reads from `internal/content`. Phase 1 builds the SSH face only, but
-the content package is designed to be face-agnostic from day one.
+Each part builds only on those below it, as ADR-0003 draws them; what each
+does is in the project layout below. A face draws documents and never reads
+the content they are made from, nor the release a host hands it; `release`
+stands beside `compose` and `routes`, `compose` coming to build on `routes`
+once it reads a post's links, and the hosts bring them together. The parts
+still to come land with their steps of [FOUNDATION](FOUNDATION.md) §8, where
+§5.2 places them: `face/feed` and `face/print` beside the faces, `inbox`
+beside `compose`, the brain beside the faces.
 
 ## Phase 1 component design (SSH TUI)
 

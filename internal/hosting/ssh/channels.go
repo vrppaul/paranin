@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"fmt"
 
 	charmssh "charm.land/ssh"
@@ -69,12 +70,31 @@ func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel 
 		_ = channel.Reject(gossh.ResourceShortage, secondSessionRefusal)
 		return
 	}
-	charmssh.DefaultSessionHandler(server, connection, boundedChannel{NewChannel: channel}, ctx)
+	session, end := context.WithCancel(ctx)
+	defer end()
+	charmssh.DefaultSessionHandler(server, connection, boundedChannel{NewChannel: channel}, sessionContext{Context: ctx, session: session})
+}
+
+// sessionContext is a connection's context as one of its sessions sees it, which ends, its Done and Err, as the
+// session's requests do, when its channel closes: charm.land/ssh hands a session its connection's, so wish would keep
+// its TUI, and read its closed window changes without end, for as long as the connection stays open.
+type sessionContext struct {
+	charmssh.Context
+	session context.Context
+}
+
+func (sessionCtx sessionContext) Done() <-chan struct{} {
+	return sessionCtx.session.Done()
+}
+
+func (sessionCtx sessionContext) Err() error {
+	return sessionCtx.session.Err() //nolint:wrapcheck // a context's Err is context.Canceled itself, as its contract asks
 }
 
 // isFirstSession tells whether a connection opens its first session, and marks its context as having opened it. The
 // lock is the connection's own, which charm.land/ssh holds for limits per connection: its channels open at once. A
-// session closed leaves its place taken, since its TUI goes on until the connection ends.
+// session closed leaves its place taken: its TUI ends only after its requests have, so a place freed with them would
+// let a client opening and closing sessions hold more than one.
 func isFirstSession(ctx charmssh.Context) bool {
 	ctx.Lock()
 	defer ctx.Unlock()

@@ -158,6 +158,25 @@ func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
 	})
 }
 
+// A session its reader closes ends there, its TUI with it, though its connection stays open: a client that keeps
+// its connection, as OpenSSH's ControlPersist does, holds no TUI it has closed. It runs on a socket: a TUI left
+// running once its session is closed keeps wish reading the session's closed window changes, which no synctest
+// bubble sees blocked.
+func TestASessionClosedOnAnOpenConnectionEnds(test *testing.T) {
+	lines := make(chan string, logLines)
+	address := serving(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
+	session := clientSession(test, address, "reader")
+	output, _ := openTerminal(test, session, commonTerminal())
+	readUntil(test, output, "contact")
+	nextLine(test, lines)
+	if err := session.Close(); err != nil {
+		test.Fatalf("Close of the session = %v, want it closed", err)
+	}
+	if closed := nextLine(test, lines); !strings.Contains(closed, "the session closed") {
+		test.Errorf("the log after the session closed = %q, want the session closed with its connection open", closed)
+	}
+}
+
 // allocated is how many bytes the process has allocated since it started, freed or not.
 func allocated() uint64 {
 	var memory runtime.MemStats

@@ -62,6 +62,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## Upstream
 
+- `sessionContext` (`internal/hosting/ssh`) works round two faults: charm.land/ssh's `Session.Context()` is the connection's, not the session's, and wish's window loop (`bubbletea/tea.go:66-87`) reads its window changes without checking the channel is open, so it spins once a session closes. The type goes when either is mended.
+
 - charm.land/ssh writes a session's window on each window-change (`session.go:412`) with no lock, while `Pty()` reads it: our `open` and wish's `MakeOptions` both read it as the session opens, and `go test -race` reports it. Reading the size from our own bounded pty-req would take away our read but not wish's, so the fix is upstream. Nothing here runs `-race`.
 
 

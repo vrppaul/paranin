@@ -121,55 +121,92 @@ Every connection is potentially hostile and automated. The guiding principle is
 
 ### 5.3 Threats → controls
 
-| ID | Threat (STRIDE) | Control / requirement | Priority |
-| --- | --- | --- | --- |
-| **SEC-1** | *Elevation* — escape TUI to a shell / run commands | Only `bubbletea` middleware; **no** shell/exec/SFTP/subsystem handlers; no PTY-shell fallthrough | [MVP] |
-| **SEC-2** | *Elevation* — tunnel via the SSH connection | Disable TCP/IP (local & remote) forwarding, X11, agent forwarding | [v1] |
-| **SEC-3** | *DoS* — automated probes without a terminal | Require an active PTY (`activeterm`); reject otherwise | [MVP] |
-| **SEC-4** | *DoS* — crash via malformed input/edge case | Per-session `recover` middleware; one session cannot crash the server | [MVP] |
-| **SEC-5** | *DoS* — idle/slowloris connections hold resources | Idle timeout + absolute max session duration | [MVP] |
-| **SEC-6** | *DoS* — connection floods | Per-IP concurrent-connection cap + global max sessions; connection rate limiting | [v1] |
-| **SEC-7** | *DoS* — resource exhaustion (memory/goroutines) | Bounded per-session resources; verified no goroutine leak on disconnect | [v1] |
-| **SEC-8** | *Tampering/EoP* — host compromise blast radius | Run as **non-root**, least privilege; dedicated user; container/systemd sandboxing (`NoNewPrivileges`, read-only FS, etc.); host firewall | [v1] |
-| **SEC-9** | *Info disclosure* — leak host FS / env / secrets via UI | UI renders only `content`; never reflects server FS/env; no secrets in process env beyond what's needed | [v1] |
-| **SEC-10** | *Spoofing* — host-key churn erodes client trust (TOFU) | Persist a stable ed25519 host key on a fixed path; back it up; never commit it | [v1] |
-| **SEC-11** | *DoS at network edge* — volumetric attacks on SSH port | Hetzner Cloud Firewall; `fail2ban`/throttling; note Cloudflare proxy does **not** cover plain SSH (see ARCHITECTURE) | [v1] |
-| **SEC-12** | *Tampering* — supply-chain / vulnerable deps | Pin versions (`go.sum`); run `govulncheck` and dependency updates in CI | [v1] |
-| **SEC-13** | *Repudiation* — no audit trail for abuse | Structured logs of connects/disconnects/errors with timestamps (privacy-limited per NFR-13) | [v1] |
-| **SEC-14** | *Tampering* — secrets leak via repo | No secrets in git; `.gitignore` covers keys/.env; config via env | [MVP] |
+*Holds* says whether the code meets a requirement and where to read how. A
+bound's value and its reason are its constant's, named there.
+
+| ID | Threat (STRIDE) | Requirement | Holds | Priority |
+| --- | --- | --- | --- | --- |
+| **SEC-1** | *Elevation* — escape TUI to a shell / run commands | Serve the TUI alone: no shell, exec, SFTP or subsystem; a command a client sends is never run | Yes: `internal/hosting/ssh` | [MVP] |
+| **SEC-2** | *Elevation* — tunnel via the SSH connection | No TCP/IP forwarding, local or remote, no X11, no agent forwarding | Yes: the server opens `session` channels alone and none to the client, and refuses a request for remote forwarding. The session refuses `x11-req`; `charm.land/ssh` accepts the agent's request, which opens nothing | [v1] |
+| **SEC-3** | *DoS* — automated probes without a terminal | Require an active PTY; reject otherwise | Yes: `activeterm` (`internal/hosting/ssh/ssh.go`) | [MVP] |
+| **SEC-4** | *DoS* — crash via malformed input/edge case | A panic ends its own session, never the server | Yes: `recovering` and `watchedModel` (`internal/hosting/ssh/ssh.go`); ARCHITECTURE, Phase 1 | [MVP] |
+| **SEC-5** | *DoS* — idle/slowloris connections hold resources | Close a connection that starts no session in time, its handshake counted, and a session idle too long or open too long | Yes: `openingTimeout`, `sessionIdleTimeout`, `sessionMaxTimeout` (`cmd/paranin/main.go`); ARCHITECTURE, Phase 1 | [MVP] |
+| **SEC-6** | *DoS* — connection floods | Per-IP concurrent-connection cap + global max sessions; connection rate limiting | No: at hosting (`TODO.md`). SEC-7 bounds what one connection costs, not how many connect | [v1] |
+| **SEC-7** | *DoS* — resource exhaustion (memory/goroutines) | Bound what each session takes: its terminal's size, one session a connection, its input's pace, the line typed, its environment; leave no goroutine once it closes | Yes: `widestTerminal`, `tallestTerminal`, `inputRate`, `inputBurst`, `colourVariables`, `longestColourValue` (`internal/hosting/ssh/channels.go`), `typedLimit` (`internal/face/tui/keys.go`), the goroutines in `internal/hosting/ssh/ssh_test.go`; ARCHITECTURE, Phase 1 | [v1] |
+| **SEC-8** | *Tampering/EoP* — host compromise blast radius | Run as **non-root**, least privilege; dedicated user; container/systemd sandboxing (`NoNewPrivileges`, read-only FS, etc.); host firewall | No: at deploy (`TODO.md`, hosting) | [v1] |
+| **SEC-9** | *Info disclosure* — leak host FS / env / secrets via UI | UI renders only `content`; never reflects server FS/env; no secrets in process env beyond what's needed | Yes: the server reads only its addresses and the host key's path from its environment (ARCHITECTURE, Configuration) | [v1] |
+| **SEC-10** | *Spoofing* — host-key churn erodes client trust (TOFU) | Persist a stable ed25519 host key on a fixed path; back it up; never commit it | Yes but the backup, which is deploy's (`TODO.md`): `PARANIN_SSH_HOST_KEY` (ARCHITECTURE, Configuration) | [v1] |
+| **SEC-11** | *DoS at network edge* — volumetric attacks on SSH port | Hetzner Cloud Firewall; `fail2ban`/throttling; note Cloudflare proxy does **not** cover plain SSH (see ARCHITECTURE) | No: at deploy (`TODO.md`, hosting) | [v1] |
+| **SEC-12** | *Tampering* — supply-chain / vulnerable deps | Pin versions; run `govulncheck` and dependency updates in CI | Yes but the updates, which come with the repository's remote (`TODO.md`): `go.mod`, `web/pnpm-lock.yaml`, `.github/workflows/gates.yml`, `.pre-commit-config.yaml` | [v1] |
+| **SEC-13** | *Repudiation* — no audit trail for abuse | Structured logs of connects/disconnects/errors with timestamps (privacy-limited per NFR-13) | In part: each session as it opens and closes, and its refused requests (`internal/hosting/ssh`); the server's other refusals not yet (`TODO.md`) | [v1] |
+| **SEC-14** | *Tampering* — secrets leak via repo | No secrets in git; `.gitignore` covers keys/.env; config via env | Yes: `.gitignore`, and the `detect-private-key` hook (`.pre-commit-config.yaml`) | [MVP] |
+| **SEC-15** | *Tampering* — a client's text forges lines of the log | A client's text reaches the log quoted and cut short | Yes: `longestLoggedText` (`internal/hosting/ssh/ssh.go`), and slog's text handler (`cmd/paranin/main.go`) | [v1] |
+| **SEC-16** | *Tampering* — a value of the content acts on a reader's terminal or browser | No value of the content holds a character a terminal or a browser acts on rather than shows | Yes: every load of the content, `paranin check` among them (`internal/content/characters.go`) | [v1] |
 
 ### 5.4 Explicitly out of scope (Phase 1)
 - User authentication / authorization (the service is intentionally anonymous).
 - Encryption of stored data (no user data is stored).
 - The LLM-specific threats (prompt injection, cost-abuse) — addressed in Phase 3.
 
-### 5.5 Security review outcomes (2026-06-02)
-A self-review (independent source audit of the Wish / charmbracelet-ssh modules
-plus empirical probes against a running server) confirmed the core posture and
-surfaced a few tracked items:
+### 5.5 What the parts still to come must meet
+Each part meets these when it is built ([FOUNDATION](FOUNDATION.md) §8).
 
-- **Confirmed — "kiosk, not a shell" holds (SEC-1/SEC-2).** With only the
-  bubbletea/activeterm/recover/logging middleware, the stack denies *by default*:
-  interactive shell, command exec, SFTP/subsystems, local/remote/dynamic port
-  forwarding, direct-tcpip/ProxyJump, X11 and agent forwarding. Client-supplied
-  commands are logged but never executed (no `os/exec` in the tree). Verified in
-  source and empirically (`ssh host whoami` → "Requires an active PTY";
-  `ssh -t host id` → TUI, `id` not run; `sftp` → "subsystem request failed").
-- **SEC-6 [v1] — gate for public exposure.** No per-IP / global connection caps
-  or rate limiting yet; a connection flood can exhaust the VPS. Add before
-  opening `paran.in` (e.g. `charm.land/wish/v2/ratelimiter` + a session cap).
-  MVP is local, so this does not block it.
-- **SEC-15 [v1] — log injection (low).** The logging middleware records the
-  client-supplied command/term strings unsanitized; a hostile client can embed
-  newlines/control bytes to forge log lines. Sanitize before public launch.
-- **SEC-12 — supply-chain scan run & fixed.** `govulncheck` initially flagged 7
-  vulnerabilities reachable via the SSH accept path (all in `golang.org/x/crypto`
-  ≤ v0.50.0, incl. a client-triggerable transport-layer panic that sits below
-  the recover middleware); upgraded to v0.52.0 → scan clean. Wire `govulncheck`
-  into CI for [v1].
-- **Deploy note (SEC-8).** `docker-compose.yml` builds the `dev` stage, which
-  runs as root with the source bind-mounted — dev only. Production must deploy
-  the distroless, non-root `runtime` image target.
+**Posts and their parser.**
+- No raw HTML in a post: its markup reaches a face only through the
+  document model.
+- A link's scheme is one of a list: `https`, `mailto` and the site's own
+  paths, checked once, as the content loads.
+- A post holds no character a terminal acts on (SEC-16).
+- A post's size and depth are bounded; its front matter is a typed struct,
+  read with `KnownFields`.
+
+**Statuses and preview links.**
+- The repository is public: a preview hides a post's address, not its text.
+  An embargo needs a store outside the repository.
+- A preview's token is HMAC-SHA256 over the slug, the status and the
+  expiry, compared with `hmac.Equal`. Its secret is at least 32 bytes, read
+  from a file or the environment and never logged; a new secret ends every
+  link.
+- A preview answers with `noindex`, `Cache-Control: private, no-store` and
+  `Referrer-Policy: no-referrer`, so its token reaches neither Cloudflare
+  nor a site it links to.
+- A post before its date answers 404, not 403, and a status worked out for
+  one request never reaches a cached feed.
+
+**Widgets' props.**
+- Props are checked against their JSON Schema on every load of a snapshot,
+  not in CI alone; a fault refuses the whole snapshot.
+- Props reach the page as data, in an `application/json` block read with
+  `JSON.parse`; never through `{@html}`.
+- An island is a file the page's policy allows as it stands: no
+  `unsafe-inline`, no `eval`; the build's size is bounded.
+
+**`inbox` and the form.**
+- POST alone, its `Origin` checked; the body read through
+  `http.MaxBytesReader`, each field bounded, parsed into a typed struct.
+- A rate for each client and one for all. Behind Cloudflare the client is
+  `CF-Connecting-IP`, trusted only from Cloudflare's addresses, and the
+  origin's HTTP open to them alone, since anyone can write
+  `X-Forwarded-For`.
+- The Telegram token comes from the environment or a file and never
+  reaches a log or an error; a message goes to Telegram with no
+  `parse_mode`.
+- The messages' file is 0600, outside the content folder and bounded in
+  size; the log says a message came, never what it says.
+
+**Hosting**, beside SEC-8, SEC-10, SEC-11 and SEC-6, which holds before
+port 22 is opened.
+- One process holds both faces, so what stops one stops both: systemd's
+  `MemoryMax`, `TasksMax` and `LimitNOFILE` bound it, and it restarts on
+  failure.
+- `ProtectSystem=strict`; `CAP_NET_BIND_SERVICE` for port 22, the host's own
+  `sshd` on another port behind the firewall.
+- The host key on a lasting volume, never in the image; the
+  `.dockerignore` leaves out `.paranin/`, `.ssh/`, `_old/` and `build/`.
+- Cloudflare ignores `Vary: Accept`: no "Cache Everything" on an address
+  whose format the `Accept` header chooses, or a browser gets the manual
+  cached for `curl`. HSTS at the edge.
+- The log is rotated.
 
 ## 6. Constraints & assumptions
 - **C-1** Implementation language is Go (also a learning goal).

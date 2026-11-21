@@ -848,3 +848,18 @@ None. Pavel answered the last five on 2026-11-01: D9 to D13.
   own as Neovim's, says which of how many or E486. A number before a key
   counts it; one typed alone chooses its tab after a pause. The keys of
   normal mode are a table of actions, and the tokens gained `error`.
+- **2026-11-21, the security audit (§8, step 7).** Two passes, the author's
+  and an independent auditor's, each probing a server under a memory cap.
+  Fourteen findings: one critical, four high, two medium, five low and two
+  to note. Seven were bounds an SSH session lacked: a terminal's size, a
+  paste never closed, the environment, the sessions of one connection and
+  the line typed, each a way for one client to stop or hold the whole
+  process, the web with it, and a silent connection and a long user name,
+  each held or logged without end. The rest: control characters in the
+  content, the host key's default in the folder the server starts in, a
+  request's head read up to Go's 1 MB, `golang.org/x/net` flagged by
+  `govulncheck`, CI's actions pinned by tag, the release's watch misled when
+  the server runs out of files, and the security documents behind the code.
+  Each was mended, the watch with the SSH bounds that keep files free; what
+  stays open, SEC-6 first, is in `TODO.md`, and what the parts to come must
+  meet is REQUIREMENTS §5.5.

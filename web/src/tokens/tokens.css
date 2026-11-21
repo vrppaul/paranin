@@ -139,6 +139,8 @@
   --control: 3rem;
   /* the widest the page's content runs */
   --content: 80rem;
+  /* the widest a window over the page runs, a dialog's or a hint's */
+  --dialog: 35rem;
   /* the room either side of the content */
   --gutter: 3rem;
   /* the room either side of the content on a phone */

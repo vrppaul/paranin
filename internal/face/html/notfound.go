@@ -23,7 +23,7 @@ type NotFound struct {
 	// the reader chose
 	included assets.Included
 	// foot is the foot line every page ends with, whose site's name and start the page's own link to where the site
-	// begins reads; it has no windows, as the page has no tabs, and offers the résumé's markdown, as it has none
+	// begins reads; it has no windows, as the page has no tabs, and offers the résumé to read, as it has nothing to
 	foot footLine
 	// heading is the status in the titles' block letters, the page's h1, drawn once for every path asked for
 	heading templ.Component
@@ -36,7 +36,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		status:   status,
 		language: language,
 		included: build.Includes(assets.Site),
-		foot:     footLineOf(frameOf(site, composed), nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
+		foot:     footLineOf(frameOf(site, composed), site, nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
 		heading:  titleHeading(status, text(status)),
 	}
 }

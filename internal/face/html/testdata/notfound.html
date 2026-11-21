@@ -198,13 +198,31 @@
 <nav class="foot-row content-width">
 <a class="session" href="/">
 <span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span>
-</a> <span class="ways">
-<button type="button" class="way-chip">
+</a> <div class="ways">
+<button type="button" class="way-chip" popovertarget="hint-ssh">
 <span class="way-mark" aria-hidden="true">❯</span>ssh</button>
-<button type="button" class="way-chip">
+<div id="hint-ssh" class="hint" popover role="dialog" aria-labelledby="hint-ssh-title" data-part="hint">
+<p id="hint-ssh-title" class="hint-title">ssh</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy ssh example.test" data-copied="copied" data-toast="Copied ssh example.test" hidden>copy</button>
+</div>
+<p class="hint-gives">The résumé as an app in a terminal.</p>
+<button type="button" class="hint-close" popovertarget="hint-ssh" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+<button type="button" class="way-chip" popovertarget="hint-curl">
 <span class="way-mark" aria-hidden="true">❯</span>curl</button>
+<div id="hint-curl" class="hint" popover role="dialog" aria-labelledby="hint-curl-title" data-part="hint">
+<p id="hint-curl-title" class="hint-title">curl</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">curl https://example.test/</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy curl https://example.test/" data-copied="copied" data-toast="Copied curl https://example.test/" hidden>copy</button>
+</div>
+<p class="hint-gives">The page as a manual in a terminal.</p>
+<button type="button" class="hint-close" popovertarget="hint-curl" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
 <a class="way-chip" href="/index.md">index.md</a>
-</span>
+</div>
 <label class="vim-keys" data-part="vim-keys" hidden>
 <input type="checkbox" class="vim-keys-box">
 <span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick">

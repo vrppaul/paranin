@@ -10,8 +10,9 @@ import (
 // résumé or of the index, the greeting before the author's name, the label of a way to reach the author or of a
 // detail of a project, the end of what still goes on, how long a skill was used where it was used on the side or is
 // still being learnt, the title of the TUI's health report, or a word of the page's frame: the name of its theme
-// button, a command's button that copies it: the word on it and the word it turns to once it has, and the first
-// screen's button that writes to the author.
+// button, a command's button that copies it: the word on it and the word it turns to once it has, the first
+// screen's button that writes to the author, and what each way a terminal reaches the site gives, which its hint
+// says.
 type Word int
 
 const (
@@ -39,6 +40,8 @@ const (
 	WordCopy
 	WordCopied
 	WordWriteTo
+	WordSSHGives
+	WordReadingGives
 )
 
 // Phrase is one of the site's own phrases, words with a place for one value the site fills in: a command's button's
@@ -68,28 +71,30 @@ func phraseKeys() map[Phrase]string {
 // every Word, so a word added to the constants has its key here too.
 func wordKeys() map[Word]string {
 	return map[Word]string{
-		WordAbout:      "about",
-		WordGreeting:   "greeting",
-		WordExperience: "experience",
-		WordProjects:   "projects",
-		WordSkills:     "skills",
-		WordEducation:  "education",
-		WordLanguages:  "languages",
-		WordContact:    "contact",
-		WordMail:       "mail",
-		WordSSH:        "ssh",
-		WordRepository: "repository",
-		WordInstall:    "install",
-		WordPresent:    "present",
-		WordSide:       "side",
-		WordLearning:   "learning",
-		WordAuthor:     "author",
-		WordResume:     "resume",
-		WordHealth:     "health",
-		WordDarkTheme:  "dark_theme",
-		WordCopy:       "copy",
-		WordCopied:     "copied",
-		WordWriteTo:    "write_to",
+		WordAbout:        "about",
+		WordGreeting:     "greeting",
+		WordExperience:   "experience",
+		WordProjects:     "projects",
+		WordSkills:       "skills",
+		WordEducation:    "education",
+		WordLanguages:    "languages",
+		WordContact:      "contact",
+		WordMail:         "mail",
+		WordSSH:          "ssh",
+		WordRepository:   "repository",
+		WordInstall:      "install",
+		WordPresent:      "present",
+		WordSide:         "side",
+		WordLearning:     "learning",
+		WordAuthor:       "author",
+		WordResume:       "resume",
+		WordHealth:       "health",
+		WordDarkTheme:    "dark_theme",
+		WordCopy:         "copy",
+		WordCopied:       "copied",
+		WordWriteTo:      "write_to",
+		WordSSHGives:     "ssh_gives",
+		WordReadingGives: "reading_gives",
 	}
 }
 

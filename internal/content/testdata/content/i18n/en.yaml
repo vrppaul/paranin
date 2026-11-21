@@ -24,3 +24,5 @@ copied: copied
 copy_command: "copy {}"
 copied_command: "Copied {}"
 write_to: Write to me
+ssh_gives: The résumé as an app in a terminal.
+reading_gives: The page as a manual in a terminal.

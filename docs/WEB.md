@@ -351,20 +351,10 @@ since its first click cannot tell it from a press.
 with salary range) · footer (links to `index.md`, `llms.txt`, `cv.pdf`,
 `ssh paran.in`).
 
-### Hint pop-up
+### Hint
 
-A small floating terminal window in the bottom-right corner of every HTML page
-offers the other ways to read it. It always uses the Macchiato palette. Its title
-and a `[q] close` button sit in the top border; a tmux status line at the bottom
-switches between windows:
-
-- `0:ssh` — `ssh paran.in` typed out at a prompt, with copy;
-- `1:vim` (normies mode only) — a Vim intro screen whose command line
-  `:set mode=vim` switches the page to vim mode.
-
-Closing is remembered in `localStorage["on-hint-closed"]`. Typing animations
-are CSS only and static under `prefers-reduced-motion`. Without JavaScript and
-in print the window stays hidden, and `ssh paran.in` remains in the footer.
+The foot line's `❯ ssh` and `❯ curl` each open a hint, a popover the server
+draws, which holds the command to copy: `DESIGN.md`, Hint.
 
 ### Modes
 

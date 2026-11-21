@@ -1,7 +1,7 @@
 // The command chips, run over the résumé the server draws: the HTML face's golden page (internal/face/html/testdata),
 // which that face's own tests hold to what it writes. A fake clipboard stands for the browser's, and the clock is
 // the test's own, so the toast's time passes when a test says.
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi, type Mock } from "vitest";
 import { startCommands, type CommandClipboard } from "../../src/controllers/command";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
 import projectPage from "../../../internal/face/html/testdata/p/tidy-tool.html?raw";
@@ -24,6 +24,8 @@ const TOAST_SAYS = "Copied ssh example.test";
 // The fixture's project's install line, a chip of its own on the project's page, and what its toast says
 const INSTALL = "go install example.test/tidy@latest";
 const INSTALL_TOAST_SAYS = "Copied go install example.test/tidy@latest";
+// A hint's window, which a way of the foot line opens: the first is ssh's, holding the command the first screen does
+const HINT = '[data-part="hint"]';
 
 /** The browser's clipboard as the chip uses it: what it was handed, and whether it refuses. */
 class FakeClipboard implements CommandClipboard {
@@ -69,6 +71,16 @@ function shown(): { button: string; toast: string | null } {
   return { button: found(COPY).textContent, toast: found(TOAST).hidden ? null : found(TOAST_WORDS).textContent };
 }
 
+/**
+ * Lends every element the hidePopover jsdom lacks, as a mock: the windows a script hid are its calls' contexts, in
+ * order.
+ */
+function lentHidePopover(): Mock<() => void> {
+  const hidePopover = vi.fn<() => void>();
+  HTMLElement.prototype.hidePopover = hidePopover;
+  return hidePopover;
+}
+
 /** Presses the chip, as a reader clicks it, and lets the clipboard answer. */
 async function press(): Promise<void> {
   found(CHIP).click();
@@ -83,6 +95,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.getSelection()?.removeAllRanges();
+  Reflect.deleteProperty(HTMLElement.prototype, "hidePopover");
   vi.useRealTimers();
 });
 
@@ -147,6 +160,36 @@ test("a press that leaves the caret in the chip, selecting nothing, copies", asy
   document.getSelection()?.collapse(found(COMMAND_WORDS), 0);
   await press();
   expect(clipboard.written).toEqual([COMMAND]);
+});
+
+test("a copy from a hint's window closes the window, and the toast says what was copied", async () => {
+  const hidePopover = lentHidePopover();
+  started();
+  found(`${HINT} ${CHIP}`).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect({ hidden: hidePopover.mock.contexts, toast: found(TOAST_WORDS).textContent }).toEqual({
+    hidden: [found(HINT)],
+    toast: TOAST_SAYS,
+  });
+});
+
+test("a copy from a chip on the page closes no window", async () => {
+  const hidePopover = lentHidePopover();
+  started();
+  await press();
+  expect(hidePopover.mock.contexts).toEqual([]);
+});
+
+test("a copy refused in a hint's window leaves it open, the command selected to copy by hand", async () => {
+  const hidePopover = lentHidePopover();
+  const clipboard = started();
+  clipboard.refuses = true;
+  found(`${HINT} ${CHIP}`).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect({ hidden: hidePopover.mock.contexts, selected: document.getSelection()?.toString() }).toEqual({
+    hidden: [],
+    selected: COMMAND,
+  });
 });
 
 test("a copy the browser refuses selects the command for the reader to copy, and says nothing was copied", async () => {

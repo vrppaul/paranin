@@ -65,9 +65,9 @@ templ headOpening(title string, included assets.Included) {
 // footLineMarkup is the line at the foot of every page (DESIGN.md, FootLine), after its main part, as tmux's status
 // line: the session, the site's name leading to where it begins; the document's tabs as windows, each by its number
 // and name leading to its page, the one shown the current page; the ways the site is served as chips, the programs
-// that reach it and read it in a terminal, which do nothing yet (TODO, the islands), and the page's markdown; then the
-// switch that turns the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands
-// the command line the vim keys open; what it is handed, the toast, stands with it, over it.
+// that reach it and read it in a terminal, each opening its hint, and the page's markdown; then the switch that turns
+// the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands the command line
+// the vim keys open; what it is handed, the toast, stands with it, over it.
 templ footLineMarkup(foot footLine) {
 	<div class="foot">
 		@commandLineMarkup(foot.places)
@@ -82,11 +82,12 @@ templ footLineMarkup(foot footLine) {
 					}
 				</ul>
 			}
-			<span class="ways">
-				@wayChip(foot.frame.sshProgram)
-				@wayChip(foot.frame.readingProgram)
+			<div class="ways">
+				for _, offered := range foot.hints {
+					@wayWithHint(offered)
+				}
 				<a class="way-chip" href={ foot.markdown }>{ foot.markdownName }</a>
-			</span>
+			</div>
 			@vimKeysSwitch()
 			@themeButton(foot.frame.darkTheme)
 		</nav>
@@ -139,10 +140,16 @@ templ windowLink(window window) {
 	><span class="window-number">{ window.number + windowColon }</span>{ window.name }</a>
 }
 
-// wayChip is a way the site is served, by the program it runs, as a command's chip at the compact size: the prompt's
-// mark, then the program's name.
-templ wayChip(program string) {
-	<button type="button" class="way-chip"><span class="way-mark" aria-hidden="true">{ promptMark }</span>{ program }</button>
+// wayWithHint is a way the site is served, as a chip by the program it runs, and the hint it opens (DESIGN.md, Hint):
+// a popover, so it works with no script, its close button last, so the keyboard reaches the copy first.
+templ wayWithHint(offered hint) {
+	<button type="button" class="way-chip" popovertarget={ offered.id }><span class="way-mark" aria-hidden="true">{ promptMark }</span>{ offered.way.Program }</button>
+	<div id={ offered.id } class="hint" popover role="dialog" aria-labelledby={ offered.titleID } data-part={ hintPart }>
+		<p id={ offered.titleID } class="hint-title">{ offered.way.Program }</p>
+		@command(offered.way.Command)
+		<p class="hint-gives">{ offered.way.Gives }</p>
+		<button type="button" class="hint-close" popovertarget={ offered.id } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
+	</div>
 }
 
 // themeButton is the reader's theme: one button that turns the page to the theme it is not in, pressed while the
@@ -274,7 +281,7 @@ templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
 		@writer.facts(parts.brief)
 		<div class="actions">
 			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
-			@command(writer.frame.ssh)
+			@command(writer.frame.ssh.Command)
 		</div>
 		if len(parts.profiles) > 0 {
 			<p class="profiles">

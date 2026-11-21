@@ -58,7 +58,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `lead` | `design/tokens.yaml` | the longest line of the headline |
 | `when` | `design/tokens.yaml` | an entry's dates column |
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
-| `dialog` | 35rem | the widest a dialog runs |
+| `dialog` | `design/tokens.yaml` | the widest a window over the page runs, a Dialog's or a Hint's |
 | `textarea` | 7.5rem | a message field's least height |
 
 ## Sizes
@@ -242,13 +242,29 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
 - Under the pointer the session and a window turn `deep`; nothing in the line has a pressed shade, `deep` being the
   lowest ground.
 - At the line's end the ways the site is served, as the line's chips (Sizes): `❯ ssh` and `❯ curl`, ❯ in `prompt`,
-  which open the hint's window (TODO, the islands) and until then do nothing; then the markdown of the page whole by
-  its file's name, a link, the résumé's on a page that has none. `deep` ground, a `quiet` hairline turning `text`
+  each opening its Hint, reversed and bold while it is open, as the window shown; then the markdown of the page whole
+  by its file's name, a link, the résumé's on a page that has none. `deep` ground, a `quiet` hairline turning `text`
   under the pointer, `caption` words.
 - Then the VimKeys switch and the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line, and the
   CommandLine, open, on the row over it.
 - On a phone the session and the theme button share the first row, the windows take the rows `row_half` below by their
   names alone, a `nudge` either side, wrapping, and the ways and the VimKeys switch give way to them.
+
+### Hint
+
+A window of tmux's over the foot line, which a way's chip opens: the way's command whole to copy and what it gives.
+`ssh` gives the résumé as an app, `curl` the page shown, whole, as a manual. It stands a `nudge` over the foot line's
+hairline, whatever its panel holds, the open command line too, its right edge at the content's, on `sunk` with an
+`edge` hairline, as all that lies over the page; it pads as a Dialog does. Its title, the program, bold, and `esc
+close` in `muted`, turning `text` under the pointer, are set into its top edge, half above it. Inside, the Command,
+then what it gives, `small` in `muted`.
+
+- The browser's own popover: it opens with no script; Esc, a press outside and the other way's chip close it, Esc
+  handing the focus back to the chip. No scrim: nothing is interrupted.
+- The keyboard goes from the chip to the copy, then to close.
+- A copy closes it, and the Toast says what was copied, as for every copy. A copy the browser refuses leaves it open,
+  the command selected.
+- On a phone the ways give way to the tabs, and with them the hints.
 
 ### VimKeys
 

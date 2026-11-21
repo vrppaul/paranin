@@ -4,7 +4,6 @@ import (
 	"path"
 	"slices"
 	"strconv"
-	"strings"
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
@@ -14,8 +13,12 @@ import (
 // The number of the foot line's first window, as the TUI's keys choose its tabs from one
 const firstWindowNumber = 1
 
-// What parts a command's program from the words after it
-const programEnd = " "
+// How a hint is known: its window's id, the way's program after the opening, and its title's, the window's id before
+// the ending
+const (
+	hintIDOpening   = "hint-"
+	hintTitleEnding = "-title"
+)
 
 // placeKind is what a place of the command line is, which its menu names it by, as the TUI's names it, and which the
 // page's script reads: a tab of the page shown, or a project's page, which :e opens too.
@@ -28,30 +31,38 @@ const (
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
 // the site's name and where it begins, which the foot line's session leads to; the theme button's name; the words of
-// the chip that copies a command; the command that reaches the site over ssh, which the first screen offers as a chip;
-// the programs that reach the site and read a page in a terminal, which the foot line names; the words of the first
-// screen's button that writes to the author; and the projects' pages, places of every page's command line.
+// the chip that copies a command; the way a terminal reaches the site over ssh, whose command the first screen offers
+// as a chip too; what reading a page in a terminal gives; the words of the first screen's button that writes to the
+// author; and the projects' pages, places of every page's command line.
 type frame struct {
-	siteName       string
-	start          string
-	darkTheme      string
-	commandWords   compose.CommandWords
-	ssh            compose.Command
-	sshProgram     string
-	readingProgram string
-	writeTo        string
-	projects       []place
+	siteName     string
+	start        string
+	darkTheme    string
+	commandWords compose.CommandWords
+	ssh          compose.Way
+	readingGives string
+	writeTo      string
+	projects     []place
 }
 
-// footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the frame's session and programs, the
-// document's tabs as windows, the path of the page's markdown and its file's name; and the places the command line
-// over it goes to.
+// footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the frame's session, the document's
+// tabs as windows, the hints of the ways a terminal reaches the page, the path of the page's markdown and its file's
+// name; and the places the command line over it goes to.
 type footLine struct {
 	frame        frame
 	windows      []window
+	hints        []hint
 	markdown     string
 	markdownName string
 	places       []place
+}
+
+// hint is a way a terminal reaches the page, as the foot line offers it (DESIGN.md, Hint): its chip opens a window that
+// holds its command, which the chip and the window's close button name by its id, and whose title names it.
+type hint struct {
+	way     compose.Way
+	id      string
+	titleID string
 }
 
 // place is somewhere the command line goes by its name, as the TUI's does: its name, what it is, the address it is
@@ -76,15 +87,14 @@ type window struct {
 func frameOf(site routes.Site, composed compose.Frame) frame {
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	return frame{
-		siteName:       site.Host(),
-		start:          routes.Reference(resume, routes.FormatChosen),
-		darkTheme:      composed.DarkTheme,
-		commandWords:   composed.CommandWords,
-		ssh:            composed.SSH,
-		sshProgram:     programOf(composed.SSH.Text),
-		readingProgram: programOf(site.ReadCommand(resume)),
-		writeTo:        composed.WriteTo,
-		projects:       projectPlaces(composed.Projects),
+		siteName:     site.Host(),
+		start:        routes.Reference(resume, routes.FormatChosen),
+		darkTheme:    composed.DarkTheme,
+		commandWords: composed.CommandWords,
+		ssh:          composed.SSH,
+		readingGives: composed.ReadingGives,
+		writeTo:      composed.WriteTo,
+		projects:     projectPlaces(composed.Projects),
 	}
 }
 
@@ -97,14 +107,8 @@ func projectPlaces(pages []document.Page) []place {
 	return places
 }
 
-// programOf is the program a command runs: its first word.
-func programOf(command string) string {
-	program, _, _ := strings.Cut(command, programEnd)
-	return program
-}
-
 // footOf is the foot line of a page showing one of its document's tabs: every tab a window, the opening at the page's
-// own address, and the markdown of the page whole.
+// own address, and the page whole to read in a terminal and as markdown.
 func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs) footLine {
 	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: ""}
 	windows := []window{windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
@@ -112,13 +116,28 @@ func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs) footLin
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
 		windows = append(windows, windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(writer.frame, windows, whole)
+	return footLineOf(writer.frame, writer.site, windows, whole)
 }
 
-// footLineOf is a frame's foot line with windows, offering the markdown of a page.
-func footLineOf(around frame, windows []window, page document.Page) footLine {
+// footLineOf is a frame's foot line with windows, offering a page of the site to read: over ssh, by curl at its
+// address, and as markdown.
+func footLineOf(around frame, site routes.Site, windows []window, page document.Page) footLine {
 	markdown := routes.Reference(page, routes.FormatMarkdown)
-	return footLine{frame: around, windows: windows, markdown: markdown, markdownName: path.Base(markdown), places: placesOf(windows, around.projects)}
+	reading := around.commandWords.Way(site.ReadCommand(page), around.readingGives)
+	return footLine{
+		frame:        around,
+		windows:      windows,
+		hints:        []hint{hintOf(around.ssh), hintOf(reading)},
+		markdown:     markdown,
+		markdownName: path.Base(markdown),
+		places:       placesOf(windows, around.projects),
+	}
+}
+
+// hintOf is a way's hint, known by the program it runs.
+func hintOf(way compose.Way) hint {
+	id := hintIDOpening + way.Program
+	return hint{way: way, id: id, titleID: id + hintTitleEnding}
 }
 
 // placesOf are the places of a page's command line: each window, then each project's page, the page shown where a

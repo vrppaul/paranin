@@ -2,16 +2,18 @@
 // reader can run, its words code they may select, and a button the server draws hidden, which this script shows. A
 // press anywhere on the chip copies the command, unless the reader selected words in it, which they mean to copy
 // themselves; the button then says it copied, and the toast at the foot of the screen says what, both for the
-// toast's time from the last press. A copy the browser refuses selects the command instead, for the reader to copy
-// by hand: an error is never a toast, and the selection shows what to copy.
+// toast's time from the last press. A copy from a hint's window (DESIGN.md, Hint) closes the window, its work done,
+// and the toast says it where every copy is said. A copy the browser refuses selects the command instead, for the
+// reader to copy by hand, its window left open: an error is never a toast, and the selection shows what to copy.
 
 // The chip as the server draws it: the chip, the words it copies, and its button, which carries the word it turns to
-// and what the toast says; the toast and the place its words go
+// and what the toast says; the toast and the place its words go; the hint's window a chip may stand in
 const CHIP = '[data-part="command"]';
 const COMMAND_WORDS = '[data-part="command-words"]';
 const COPY = '[data-part="copy"]';
 const TOAST = '[data-part="toast"]';
 const TOAST_WORDS = '[data-part="toast-words"]';
+const HINT = '[data-part="hint"]';
 // The attribute that says a button has just copied, which the stylesheet colours, and its value
 const STATE = "data-state";
 const COPIED_STATE = "copied";
@@ -70,8 +72,8 @@ class CommandChip {
   }
 
   /**
-   * Copies the command, unless the reader selected words in the chip: the button says it copied and the toast says
-   * what. Where the browser refuses, the command is selected instead.
+   * Copies the command, unless the reader selected words in the chip: the button says it copied, the window it stands
+   * in closes, and the toast says what. Where the browser refuses, the command is selected instead.
    */
   private async copy(): Promise<void> {
     const selection = this.chip.ownerDocument.getSelection();
@@ -87,6 +89,7 @@ class CommandChip {
     clearTimeout(this.turningBack);
     this.button.textContent = this.words.copied;
     this.button.setAttribute(STATE, COPIED_STATE);
+    this.chip.closest<HTMLElement>(HINT)?.hidePopover();
     this.toast.show(this.words.toastSays);
     this.turningBack = setTimeout(() => this.turnBack(), this.toastTime);
   }

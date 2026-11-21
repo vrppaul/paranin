@@ -112,8 +112,10 @@ mark .gap {
 
 /* the foot line every page ends with (DESIGN.md, FootLine), as tmux's status line: after the main part, it sticks to
  * the screen's foot as the page scrolls under it, on its own layer, holding its own height however many rows it takes;
- * on the ground a shade below the page, a quiet hairline over it. The toast it holds keeps its own text style */
+ * on the ground a shade below the page, a quiet hairline over it. The toast it holds keeps its own text style; a
+ * hint's window stands over it */
 .foot {
+  anchor-name: --foot;
   position: sticky;
   bottom: 0;
   z-index: var(--layer-foot);
@@ -122,8 +124,10 @@ mark .gap {
 }
 
 /* the line's parts in its small words, two cells apart, with room under them for a focus ring the screen's foot would
- * cut; a part whose words never break wraps whole to a row more where the screen is too narrow for the line */
+ * cut; a part whose words never break wraps whole to a row more where the screen is too narrow for the line. A hint's
+ * window takes its right edge from it */
 .foot-row {
+  anchor-name: --foot-row;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -184,19 +188,6 @@ main * {
   color: var(--faint);
 }
 
-/* the window shown, and the place chosen on the command line's menu, reversed and bold as the TUI's tab: a mark of
- * form, not of colour alone */
-.window[aria-current],
-.places-item[aria-selected="true"] {
-  background: var(--text);
-  color: var(--background);
-  font-weight: var(--type-strong-weight);
-}
-
-.window[aria-current] .window-number {
-  color: var(--background);
-}
-
 /* the mark tmux writes after the window shown; a screen reader takes the current page from the link instead */
 .window[aria-current]::after {
   content: "*" / "";
@@ -237,6 +228,99 @@ main * {
 
 .way-mark {
   color: var(--prompt);
+}
+
+/* the window shown, the place chosen on the command line's menu and the way whose hint is open, reversed and bold as
+ * the TUI's tab: a mark of form, not of colour alone; the way's hairline with it */
+.window[aria-current],
+.places-item[aria-selected="true"],
+.way-chip:has(+ .hint:popover-open) {
+  background: var(--text);
+  color: var(--background);
+  font-weight: var(--type-strong-weight);
+}
+
+.window[aria-current] .window-number,
+.way-chip:has(+ .hint:popover-open) .way-mark {
+  color: var(--background);
+}
+
+.way-chip:has(+ .hint:popover-open) {
+  border-color: var(--text);
+}
+
+/* a way's hint (DESIGN.md, Hint), on the panel's ground with an edge hairline as all that lies over the page, in the
+ * text's own style, not the line's */
+.hint {
+  box-sizing: border-box;
+  max-width: var(--dialog);
+  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
+  overflow: visible;
+  border: var(--hairline) solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  color: var(--text);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line);
+  white-space: normal;
+}
+
+/* it stands a nudge over the foot line, whatever the line's panel holds, its right edge at the content's. The foot is
+ * its own anchor, the one whose scroll and sticking a window in the top layer follows; a browser that places nothing by
+ * an anchor leaves it where it puts a popover, mid-screen */
+@supports (anchor-name: --foot) {
+  .hint {
+    position-anchor: --foot;
+    inset: auto;
+    margin: 0;
+    right: calc(anchor(--foot-row right) + var(--gutter));
+    bottom: calc(anchor(top) + var(--nudge));
+  }
+}
+
+/* its title, the program, and the button that closes it, set into its top edge, half above it, on its ground */
+.hint-title,
+.hint-close {
+  position: absolute;
+  top: calc(-0.5 * var(--row));
+  margin: 0;
+  padding: 0 var(--cell);
+  background: var(--sunk);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--row);
+}
+
+.hint-title {
+  left: var(--cell-2);
+  font-weight: var(--type-strong-weight);
+}
+
+/* the close button: Esc's cap, then the word, muted, turning the text's colour under the pointer */
+.hint-close {
+  right: var(--cell-2);
+  display: inline-flex;
+  gap: var(--cell);
+  align-items: center;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--quick);
+}
+
+.hint-close:hover {
+  color: var(--text);
+}
+
+/* what the way gives, under the command, as small words beside it */
+.hint-gives {
+  margin: var(--row-half) 0 0;
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--row);
 }
 
 /* the switch that turns the vim keys on (DESIGN.md, VimKeys): a checkbox as a terminal writes one, its box in muted
@@ -331,6 +415,7 @@ main * {
   .session,
   .window,
   .way-chip,
+  .hint-close,
   .vim-keys {
     transition: none;
   }

@@ -206,10 +206,11 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 
 // Every page ends with the foot line, the page of no page among them: the session, the site's name leading to where
 // it begins; the document's tabs as windows by their numbers and names, each leading to its page, the one shown the
-// current page; the programs that reach the site and read it in a terminal; the markdown of the page whole,
-// the résumé's where a page has none; the switch that turns the vim keys on, and the theme button. Over it stands
-// the command line those keys open, with the places it goes to by name: the document's tabs, the one shown among
-// them, then the page of each project that has one, by its slug, shown where its opening is.
+// current page; the programs that reach the site and read it in a terminal, each opening its hint, a window that holds
+// its command whole to copy and says what it gives, curl's reading the page whole, the résumé where there is none; the
+// markdown of the page whole, the résumé's where a page has none; the switch that turns the vim keys on, and the theme
+// button. Over it stands the command line those keys open, with the places it goes to by name: the document's tabs,
+// the one shown among them, then the page of each project that has one, by its slug, shown where its opening is.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -218,9 +219,19 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot))
 	every := []string{
 		`<a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`,
-		`<span class="way-mark" aria-hidden="true">❯</span>ssh</button>`, `<span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
+		`popovertarget="hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
+		`popovertarget="hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
+		`<div id="hint-ssh" class="hint" popover role="dialog" aria-labelledby="hint-ssh-title" data-part="hint"><p id="hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code>`,
+		`<p class="hint-gives">The résumé as an app in a terminal.</p>`,
+		`<p class="hint-gives">The page as a manual in a terminal.</p>`,
+		`popovertarget="hint-ssh" popovertargetaction="hide"`, `popovertarget="hint-curl" popovertargetaction="hide"`,
 		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
 	}
+	// the commands that read the résumé whole, which the page of no page offers too, and the project's page whole
+	const (
+		resumeReading  = `<code data-part="command-words">curl https://example.test/</code>`
+		projectReading = `<code data-part="command-words">curl https://example.test/p/tidy-tool</code>`
+	)
 	// the place of the fixture's one project with a page; another project has none, so no place
 	const (
 		projectPlace = `data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool"`
@@ -237,7 +248,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
 			holds: slices.Concat(every, []string{
-				resumeMarkdown, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
+				resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
@@ -248,7 +259,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
 			holds: slices.Concat(every, []string{
-				resumeMarkdown, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
+				resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience" aria-current="page"><span class="window-number">2:</span>experience</a>`,
 			}),
 			lacks: nil,
@@ -256,7 +267,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a project's page", page: writer.Page(project.Document, project.Record, ""),
 			holds: slices.Concat(every, []string{
-				`<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`,
+				`<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
 				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
 				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
@@ -266,11 +277,11 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		},
 		{
 			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: slices.Concat(every, []string{projectPlace + ` hidden`}), lacks: []string{projectPlace + ` data-current`},
+			holds: slices.Concat(every, []string{projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
 		},
 		{
 			name: "the page of no page", page: missing.For("/nothing"),
-			holds: slices.Concat(every, []string{resumeMarkdown, projectPlace}), lacks: []string{`class="window"`, `data-place="tab"`},
+			holds: slices.Concat(every, []string{resumeMarkdown, resumeReading, projectPlace}), lacks: []string{`class="window"`, `data-place="tab"`},
 		},
 	}
 	for _, testCase := range cases {

@@ -228,6 +228,9 @@ lengths:
   - name: content
     about: the widest the page's content runs
     rem: 80
+  - name: dialog
+    about: the widest a window over the page runs, a dialog's or a hint's
+    rem: 35
   - name: gutter
     about: the room either side of the content
     rem: 3

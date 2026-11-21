@@ -494,16 +494,11 @@ sessions on a stop.
 ```
    browser, curl, agent ──HTTP──▶ ┌──────────────────────────────────────┐
                                   │ internal/hosting/web (net/http)      │
-                                  │  GET, HEAD                           │
-                                  │  /, /p/{slug}, /{tab},               │
-                                  │    /p/{slug}/{tab}: Accept ranks →   │
+                                  │  GET, HEAD at the addresses of WEB   │
+                                  │  own address: Accept ranks →         │
                                   │    HTML | markdown | manual          │
-                                  │  /index.md, .txt; /p/{slug}.md, .txt;│
-                                  │    each tab's .md, .txt;             │
-                                  │    /llms.txt: one format each        │
-                                  │  each built file at its path         │
-                                  │  any other path: 404, text | HTML    │
-                                  │  any other method: 405 (net/http)    │
+                                  │  its .md, .txt; llms.txt, each built │
+                                  │    file, the icon: one format each   │
                                   └──────────────────┬───────────────────┘
                                                      │ for each snapshot of
                                                      ▼   internal/release's store
@@ -541,9 +536,9 @@ sessions on a stop.
   The islands come with step 6, the CV and the cards with Typst (ADR-0005).
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
-- The contract between the server and its readers is [WEB](WEB.md), whose
-  negotiation, security headers and theme sections hold today; the rest of
-  it is the first version's.
+- The contract between the server and its readers is [WEB](WEB.md): each
+  address and what it answers, the headers, and what the page does in a
+  browser.
 
 ## Project layout
 

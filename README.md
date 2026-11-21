@@ -20,7 +20,8 @@ a PDF, and a blog drawn the same way in each of them.
 - [ROADMAP](docs/ROADMAP.md): the phases
 - [REQUIREMENTS](docs/REQUIREMENTS.md): requirements and the threat model of
   the SSH face
-- [WEB](docs/WEB.md): the web face of the first version
+- [WEB](docs/WEB.md): what each address of the site answers, and what the
+  page does in a browser
 - [AGENTS](AGENTS.md): how we work, and the rules every change is held to
 
 ## License

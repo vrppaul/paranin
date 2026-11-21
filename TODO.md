@@ -6,7 +6,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
-  - The first island, the form's salary range, waits for `inbox` (step 10). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles; its script loads by a dynamic import, not with the site's entry, which holds the first paint.
+  - The first island, the form's salary range, waits for `inbox` (step 10). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles, which the build writes to files, never into the page, since the page's policy refuses an inline style (`docs/WEB.md`, "Security headers"); its script loads by a dynamic import, not with the site's entry, which holds the first paint.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - The sitemap, when it is served, lists every tab's address beside its page's.
 - A tab's name keeps every letter of its title, so a site in another script serves its tabs at addresses in that script.
@@ -24,8 +24,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 ## Documents
 
 - `docs/ARCHITECTURE.md`'s configuration lists `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet: rewrite them with `inbox` and SEC-6 (§8, step 10).
-
-- `docs/WEB.md` copies facts of the résumé (the email, the employer) as examples: rewrite it with `face/html` against the fixture profile. Its skill groups still carry a `Key` and are grouped from a flat list by `skillGroups` (both gone by D16), and its client data the salary slider's `step` and `bigStep` (gone by D17, the form works them out of the range).
 
 ## Content
 

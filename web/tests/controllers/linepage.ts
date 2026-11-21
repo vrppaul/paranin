@@ -52,9 +52,9 @@ class FakeMarks implements Marks {
 
   constructor(private readonly layout: FakeLayout) {}
 
-  mark(current: Range, others: readonly Range[]): void {
-    this.current = this.layout.topOf(current);
-    this.currentWords = current.toString();
+  mark(current: Range | undefined, others: readonly Range[]): void {
+    this.current = current === undefined ? undefined : this.layout.topOf(current);
+    this.currentWords = current?.toString() ?? "";
     this.others = others.map((match) => this.layout.topOf(match));
   }
 
@@ -95,13 +95,19 @@ export function started(ticked = true, changed: (page: Document) => void = () =>
   const parsed = new DOMParser().parseFromString(experiencePage, "text/html");
   changed(parsed);
   document.body.replaceWith(document.adoptNode(parsed.body));
+  // the switch's own script shows it on the page, ticked or not, before the line starts
+  found(SWITCH).hidden = false;
+  input(BOX).checked = ticked;
   const went: string[] = [];
   const layout = new FakeLayout(found("main"));
   const marks = new FakeMarks(layout);
-  startCommandLine(document, (address) => went.push(address), marks, layout);
-  // the switch's own script shows it on the page
-  found(SWITCH).hidden = false;
-  input(BOX).checked = ticked;
+  startCommandLine(
+    document,
+    (address) => went.push(address),
+    marks,
+    layout,
+    () => sessionStorage,
+  );
   return { went, layout, marks };
 }
 

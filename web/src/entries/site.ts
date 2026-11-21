@@ -19,6 +19,7 @@ void Promise.all([import("../controllers/commandline"), import("../controllers/s
       (address) => location.assign(address),
       new HighlightMarks(CSS.highlights),
       new PageLayout(window),
+      () => sessionStorage,
     ),
 );
 void import("../controllers/tooltip").then(({ startTooltips }) => startTooltips(document));

@@ -1,6 +1,6 @@
 // The vim keys' search, run over the page the server draws (./linepage.ts), laid out and marked by the tests' own
 // layout and marks.
-import { expect, test } from "vitest";
+import { beforeEach, expect, test } from "vitest";
 import { found, input, press, started, type } from "./linepage";
 
 // The parts as the server draws them: the line, its field, the colon's mark and the slash's, what the line says, the
@@ -13,6 +13,9 @@ const SAID = '[data-part="command-said"]';
 const COMMAND_KEYS = '[data-part="command-keys"]';
 const SEARCH_KEYS = '[data-part="search-keys"]';
 const COUNT = '[data-part="search-count"]';
+
+// The box of the switch that turns the vim keys on
+const BOX = '[data-part="vim-keys"] input';
 
 // The attribute that marks what the line says of a match shown, which is no refusal
 const STATE = "data-state";
@@ -30,6 +33,17 @@ const PARTED = "the queue";
 const ACROSS_BLOCKS = "engineerbrno";
 const ROLE_HEADING = "main h3";
 const ROLE_PLACE = "main .entry-place";
+
+// Each test opens its first page in a session of its own, which the pages it opens after share
+beforeEach(() => sessionStorage.clear());
+
+// Where the session keeps the search for the pages after, as a page opened since would leave it
+const SESSION_SEARCH = "search";
+
+/** The browser shows the page again from its cache, after a page opened since. */
+function shownAgain(): void {
+  window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+}
 
 /** A search typed after a slash and kept with Enter. */
 function searched(query: string): void {
@@ -248,6 +262,79 @@ test("Esc on the page puts the search away, its marks with it, and n then finds 
   press("Escape");
   press("n");
   expect({ marked: marks.current, said: said() }).toEqual({ marked: undefined, said: null });
+});
+
+test("a search kept marks the page opened next, none of its matches named until n goes to the first", () => {
+  started();
+  searched(KEPT);
+  const { marks } = started();
+  const opened = { named: marks.current, others: marks.others.length, said: said() };
+  press("n");
+  expect({ opened, after: said() }).toEqual({
+    opened: { named: undefined, others: 2, said: null },
+    after: "/kept [1/2]",
+  });
+});
+
+test("Esc on the page puts the search away on the pages opened after it too", () => {
+  started();
+  searched(KEPT);
+  press("Escape");
+  const { marks } = started();
+  press("n");
+  expect({ others: marks.others, said: said() }).toEqual({ others: [], said: null });
+});
+
+test("Esc while a search is typed on a page a kept search marks puts its marks back, none named", () => {
+  started();
+  searched(KEPT);
+  const { marks } = started();
+  press("/");
+  type(WIND);
+  press("Escape");
+  expect({ named: marks.current, others: marks.others.length }).toEqual({ named: undefined, others: 2 });
+});
+
+test("unticking the vim keys takes a kept search's marks away, and ticking them again marks it, none named", () => {
+  const { marks } = started();
+  searched(KEPT);
+  input(BOX).click();
+  const unticked = { named: marks.current, others: marks.others.length };
+  input(BOX).click();
+  expect({ unticked, ticked: { named: marks.current, others: marks.others.length } }).toEqual({
+    unticked: { named: undefined, others: 0 },
+    ticked: { named: undefined, others: 2 },
+  });
+});
+
+test("a page the browser shows again from its cache marks none once a page opened since put the search away", () => {
+  const { marks } = started();
+  searched(KEPT);
+  sessionStorage.removeItem(SESSION_SEARCH);
+  shownAgain();
+  press("n");
+  expect({ others: marks.others, said: said() }).toEqual({ others: [], said: null });
+});
+
+test("a page the browser shows again from its cache says nothing on its line of the match it named before", () => {
+  started();
+  searched(KEPT);
+  shownAgain();
+  expect(said()).toBe(null);
+});
+
+test("a page the browser shows again from its cache marks the search a page opened since kept, none named", () => {
+  const { marks } = started();
+  sessionStorage.setItem(SESSION_SEARCH, KEPT);
+  shownAgain();
+  expect({ named: marks.current, others: marks.others.length }).toEqual({ named: undefined, others: 2 });
+});
+
+test("a page opened with the vim keys off marks no search kept before", () => {
+  started();
+  searched(KEPT);
+  const { marks } = started(false);
+  expect(marks.others).toEqual([]);
 });
 
 test("the colon after a search opens the line for a place, its own mark, keys and field back", () => {

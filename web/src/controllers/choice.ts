@@ -1,6 +1,6 @@
-// A reader's choice that holds on every page after, the theme or the vim keys, where the browser keeps it under a key
-// of its storage. storage is asked for the browser's storage each time it is needed, since a browser may refuse to
-// hand it over, or to read or keep what it holds: a choice then holds for its page alone.
+// A reader's choice that holds on every page after, the theme, the vim keys or the search kept, where the browser
+// keeps it under a key of its storage. storage is asked for the browser's storage each time it is needed, since a
+// browser may refuse to hand it over, or to read or keep what it holds: a choice then holds for its page alone.
 
 /** Where a choice is kept: the browser's storage, of which a choice reads, writes and forgets one key. */
 export type ChoiceStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;

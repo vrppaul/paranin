@@ -2,8 +2,9 @@
 // switch ticked and in sight, a colon typed on the page opens the line over the foot line for a place or a command, a
 // slash for a search (./search.ts); its field takes the keys. A colon's menu shows the places that fit what is typed,
 // and Tab and Shift+Tab go round them, as the TUI's do (src/domain/commandline.ts). Enter goes where the line says,
-// keeps the search, or says why it will not, until the next key; n and N go round the search kept, Esc on the page
-// puts it away; Esc, Backspace on an empty line and the focus leaving close the line.
+// keeps the search, or says why it will not, until the next key; n and N go round the search kept, which marks the
+// pages opened after it too, Esc on the page puts it away; Esc, Backspace on an empty line and the focus leaving
+// close the line.
 import {
   completionsOf,
   lineOf,
@@ -15,6 +16,7 @@ import {
   type Place,
   type Places,
 } from "../domain/commandline";
+import type { ChoiceStore } from "./choice";
 import { BACK, ONWARD, Search, type Layout, type Marks, type MatchWay, type Said } from "./search";
 
 // The parts as the server draws them: the switch and its box; the line, the part a reader types in, its field and the
@@ -130,16 +132,24 @@ interface Item {
 
 /**
  * Runs a page's command line, where the page draws one, going where it says through visit, its search's matches
- * marked by marks on the page as layout lays it out.
+ * marked by marks on the page as layout lays it out, the search kept for the pages after in storage.
  */
-export function startCommandLine(page: Document, visit: Visit, marks: Marks, layout: Layout): void {
+export function startCommandLine(
+  page: Document,
+  visit: Visit,
+  marks: Marks,
+  layout: Layout,
+  storage: () => ChoiceStore,
+): void {
   const parts = partsOf(page);
   const main = page.querySelector<HTMLElement>(MAIN);
   if (parts === undefined || main === null) {
     return;
   }
   const items = [...parts.menu.querySelectorAll<HTMLElement>(PLACE)].flatMap((element) => itemOf(element) ?? []);
-  new CommandLine(page, parts, items, visit, new Search(main, marks, layout)).listen();
+  const line = new CommandLine(page, parts, items, visit, new Search(main, marks, layout, storage));
+  line.listen();
+  line.markKept();
 }
 
 /** The line's parts, or nothing where the page lacks one. */
@@ -266,6 +276,32 @@ class CommandLine {
     for (const item of this.items) {
       item.element.addEventListener("click", () => this.pressed(item.place));
     }
+    // the marks follow the keys turned on or off, and the session's search as a page opened since left it
+    this.parts.box.addEventListener("change", () => this.markKept());
+    this.page.defaultView?.addEventListener("pageshow", (event) => this.shownAgain(event));
+  }
+
+  /** Marks the page with the search the session keeps, where the keys are on to put it away; with none where not. */
+  markKept(): void {
+    if (this.keysOn()) {
+      this.search.resume();
+    } else {
+      this.search.hide();
+    }
+  }
+
+  /**
+   * The browser shows the page again from its cache, as it was before a page opened since: what the line said of a
+   * match it named is put away with the name, as a key would put it away.
+   */
+  private shownAgain(event: PageTransitionEvent): void {
+    if (!event.persisted) {
+      return;
+    }
+    if (this.saying) {
+      this.close();
+    }
+    this.markKept();
   }
 
   /** A press on a place goes where the line would with the place written on it. */

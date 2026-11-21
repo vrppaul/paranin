@@ -14,6 +14,10 @@ import {
   type Match,
   type Passage,
 } from "../domain/search";
+import { forgetChoice, keepChoice, storedChoice, type ChoiceStore } from "./choice";
+
+// Where the browser keeps the search the reader kept, for the pages they open after in the same session
+const KEPT_SEARCH = "search";
 
 // The foot line, which a match brought into sight stands clear of
 const FOOT = '[data-part="foot"]';
@@ -28,7 +32,7 @@ const BACK_STEP = -1;
 
 /** Where a search's matches are marked on the page: the one the count names, and the rest. */
 export interface Marks {
-  mark(current: Range, others: readonly Range[]): void;
+  mark(current: Range | undefined, others: readonly Range[]): void;
   clear(): void;
 }
 
@@ -77,8 +81,12 @@ const NOTHING: Found = { query: "", matches: [], place: 0 };
 export class HighlightMarks implements Marks {
   constructor(private readonly registry: HighlightRegistry) {}
 
-  mark(current: Range, others: readonly Range[]): void {
-    this.registry.set(CURRENT_MATCH, new Highlight(current));
+  mark(current: Range | undefined, others: readonly Range[]): void {
+    if (current === undefined) {
+      this.registry.delete(CURRENT_MATCH);
+    } else {
+      this.registry.set(CURRENT_MATCH, new Highlight(current));
+    }
     this.registry.set(OTHER_MATCHES, new Highlight(...others));
   }
 
@@ -195,12 +203,31 @@ export class Search {
     private readonly main: HTMLElement,
     private readonly marks: Marks,
     private readonly layout: Layout,
+    private readonly storage: () => ChoiceStore,
   ) {}
+
+  /** The search the session keeps marks the page, none of its matches named, as the TUI marks a tab; or none does. */
+  resume(): void {
+    const query = storedChoice(this.storage, KEPT_SEARCH);
+    this.shown = undefined;
+    this.kept =
+      query === null
+        ? NOTHING
+        : { query, matches: matchesOf(this.passagesShown(), query, this.main.ownerDocument), place: 0 };
+    this.mark(this.kept.matches, undefined);
+  }
+
+  /** The page marks no search and n has none to go round, while the session keeps its own for the pages after. */
+  hide(): void {
+    this.kept = NOTHING;
+    this.shown = undefined;
+    this.marks.clear();
+  }
 
   /** The slash is typed: what is typed seeks from where the page stands, among the words it shows. */
   begin(): void {
     this.begunAt = this.layout.scrolled();
-    this.passages = textsByBlock(this.main, this.layout).map((texts) => passageOf(texts));
+    this.passages = this.passagesShown();
   }
 
   /** What is typed changed: its matches marked and the first at or after the start shown; the count, or none. */
@@ -218,14 +245,13 @@ export class Search {
   /** Enter keeps what is typed, the match it shows: what the line says of it. */
   keep(): Said {
     this.kept = this.typing;
+    keepChoice(this.storage, KEPT_SEARCH, this.kept.query);
     return this.shownSaid(this.kept.place);
   }
 
   /** The reader leaves what is typed unkept: the kept search marked again, the page back where it stood. */
   leave(): void {
-    if (!this.mark(this.kept.matches, this.shown)) {
-      this.marks.clear();
-    }
+    this.mark(this.kept.matches, this.shown);
     this.layout.scrollTo(this.begunAt);
   }
 
@@ -244,11 +270,10 @@ export class Search {
     return this.shownSaid(place);
   }
 
-  /** Esc on the page: the search put away, its marks with it. */
+  /** Esc on the page: the search put away, its marks with it, on the pages after too. */
   end(): void {
-    this.kept = NOTHING;
-    this.shown = undefined;
-    this.marks.clear();
+    this.hide();
+    forgetChoice(this.storage, KEPT_SEARCH);
   }
 
   /** Shows the kept search's match at a place: which of how many, or that the search found none. */
@@ -266,24 +291,26 @@ export class Search {
   /** Marks matches and brings the one at a place into sight; false where none stands there. */
   private show(matches: readonly Range[], place: number): boolean {
     const current = matches[place];
-    if (current === undefined || !this.mark(matches, place)) {
+    if (current === undefined) {
       return false;
     }
+    this.mark(matches, place);
     this.layout.bringIntoSight(current);
     return true;
   }
 
-  /** Marks matches, the one at a place apart; false where none stands there. */
-  private mark(matches: readonly Range[], place: number | undefined): boolean {
+  /** Marks matches, the one at a place named apart; none named where no place is given. */
+  private mark(matches: readonly Range[], place: number | undefined): void {
     const current = place === undefined ? undefined : matches[place];
-    if (current === undefined) {
-      return false;
-    }
     this.marks.mark(
       current,
       matches.filter((match) => match !== current),
     );
-    return true;
+  }
+
+  /** The words the page shows now, a passage for each block that sets them. */
+  private passagesShown(): Passage<Text>[] {
+    return textsByBlock(this.main, this.layout).map((texts) => passageOf(texts));
   }
 
   private topsOf(matches: readonly Range[]): number[] {

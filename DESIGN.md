@@ -299,7 +299,9 @@ in a `quiet` hairline, `radius`, what it does `muted`.
   keeps the search, and the line says `/Python [1/4]` in `text` until the next key; n and N go round the matches,
   from where the page stands once it is scrolled away, saying each; a search that finds nothing says `E486: Pattern
   not found: x` in `error`. Esc while typing puts back the search kept before and the page where it stood; Esc on the
-  page puts the search away.
+  page puts the search away. A search kept marks every page the reader opens after it in the browser's tab, as the
+  TUI marks every tab, none of its matches reversed before n or N names one, until Esc on a page puts it away; with
+  the vim keys off a page marks none.
 
 ### ThemeSwitch
 

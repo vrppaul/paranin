@@ -46,18 +46,43 @@ type sizedPayload interface {
 	bound()
 }
 
-// boundingSessions has the server open each session with the size of its terminal bounded before charm.land/ssh,
-// Bubble Tea or the TUI reads it, so none of them draws more; no channel of another kind is opened, as by default.
-// Refusing a larger terminal would turn its reader away, and a bound in Bubble Tea's options or in the TUI would come
-// after charm.land/ssh and wish hand the size on.
-func boundingSessions(server *charmssh.Server) error {
-	server.ChannelHandlers = map[string]charmssh.ChannelHandler{sessionChannel: openBounded}
+// Why a second session on a connection is refused, as the client is told
+const secondSessionRefusal = "one session a connection"
+
+// sessionOpened is the key under which a connection's context says it has opened its session.
+type sessionOpened struct{}
+
+// limitingSessions has the server open one session a connection, with the size of its terminal bounded before
+// charm.land/ssh, Bubble Tea or the TUI reads it, so none of them draws more; no channel of another kind is opened,
+// as by default. Refusing a larger terminal would turn its reader away, and a bound in Bubble Tea's options or in the
+// TUI would come after charm.land/ssh and wish hand the size on.
+func limitingSessions(server *charmssh.Server) error {
+	server.ChannelHandlers = map[string]charmssh.ChannelHandler{sessionChannel: openLimited}
 	return nil
 }
 
-// openBounded opens a session as charm.land/ssh does, its client's requests bounded on their way.
-func openBounded(server *charmssh.Server, connection *gossh.ServerConn, channel gossh.NewChannel, ctx charmssh.Context) {
+// openLimited opens a connection's first session as charm.land/ssh does, its client's requests bounded on their
+// way, and refuses every session after it: a reader needs one, and each costs the TUI's memory again. A client that
+// shares one connection among its sessions (OpenSSH's ControlMaster) sees the second refused and opens a connection.
+func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel gossh.NewChannel, ctx charmssh.Context) {
+	if !isFirstSession(ctx) {
+		_ = channel.Reject(gossh.ResourceShortage, secondSessionRefusal)
+		return
+	}
 	charmssh.DefaultSessionHandler(server, connection, boundedChannel{NewChannel: channel}, ctx)
+}
+
+// isFirstSession tells whether a connection opens its first session, and marks its context as having opened it. The
+// lock is the connection's own, which charm.land/ssh holds for limits per connection: its channels open at once. A
+// session closed leaves its place taken, since its TUI goes on until the connection ends.
+func isFirstSession(ctx charmssh.Context) bool {
+	ctx.Lock()
+	defer ctx.Unlock()
+	if ctx.Value(sessionOpened{}) != nil {
+		return false
+	}
+	ctx.SetValue(sessionOpened{}, true)
+	return true
 }
 
 // boundedChannel is a session's channel whose requests reach charm.land/ssh with the size of the terminal bounded.

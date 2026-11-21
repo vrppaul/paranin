@@ -128,6 +128,19 @@ func TestATerminalOfAnUnreadableSizeIsRefused(test *testing.T) {
 	}
 }
 
+// A connection opens one session: a second is refused while the first is open, so one connection cannot hold the
+// TUI's memory many times over.
+func TestASecondSessionOnAConnectionIsRefused(test *testing.T) {
+	address := serving(test, slog.New(slog.DiscardHandler))
+	client, first := sessionOver(test, dialed(test, address), address, "reader")
+	output, _ := openTerminal(test, first, commonTerminal())
+	readUntil(test, output, "contact")
+	var refusal *gossh.OpenChannelError
+	if _, err := client.NewSession(); !errors.As(err, &refusal) || refusal.Reason != gossh.ResourceShortage {
+		test.Errorf("a second session on the connection = %v, want it refused for want of resources", err)
+	}
+}
+
 // A session its reader closes leaves no goroutine behind once the server has stopped: the bubble fails on one still
 // blocked as it ends.
 func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
@@ -360,6 +373,12 @@ func openTerminal(test *testing.T, session *gossh.Session, size terminalSize) (i
 
 // clientSession is a session of a reader of a name, who offers no key or password, as anyone may.
 func clientSession(test *testing.T, address, user string) *gossh.Session {
+	_, session := sessionOver(test, dialed(test, address), address, user)
+	return session
+}
+
+// dialed is a connection to an address, which the client gives up before go test would.
+func dialed(test *testing.T, address string) net.Conn {
 	connection, err := (&net.Dialer{}).DialContext(test.Context(), "tcp", address)
 	if err != nil {
 		test.Fatalf("Dial = %v, want a connection", err)
@@ -367,8 +386,7 @@ func clientSession(test *testing.T, address, user string) *gossh.Session {
 	if err := connection.SetDeadline(time.Now().Add(testDeadline)); err != nil {
 		test.Fatalf("SetDeadline = %v", err)
 	}
-	_, session := sessionOver(test, connection, address, user)
-	return session
+	return connection
 }
 
 // sessionOver is a client over a connection to an address, of a reader of a name who offers no key or password,

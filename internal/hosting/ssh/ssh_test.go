@@ -36,6 +36,8 @@ const (
 	// how long a test waits for the server to log, well within the connection's deadline, so what closes a
 	// session the test waits on is the server
 	logWait = 3 * time.Second
+	// how long a test's handshake may take, ample on a busy machine and well within the connection's deadline
+	handshakeTimeout = 5 * time.Second
 )
 
 // commonTerminal is the size of a reader's terminal, well within the bound.
@@ -154,6 +156,23 @@ func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
 		closeClient(client, session)
 		if err := server.Shutdown(test.Context()); err != nil {
 			test.Errorf("Shutdown after the session closed = %v, want the server stopped", err)
+		}
+	})
+}
+
+// A connection that sends nothing is closed once its handshake's time is up, so a client that only connects holds a
+// file of the server's for that time at most.
+func TestAConnectionSilentThroughItsHandshakeIsClosed(test *testing.T) {
+	synctest.Test(test, func(test *testing.T) {
+		server := newServer(test, slog.New(slog.DiscardHandler))
+		clientEnd, serverEnd := memoryConnections()
+		go server.server.HandleConn(serverEnd)
+		opened := time.Now()
+		if _, err := io.ReadAll(clientEnd); err != nil {
+			test.Fatalf("read a silent connection to its end = %v, want the server to close it", err)
+		}
+		if held := time.Since(opened); held > handshakeTimeout {
+			test.Errorf("a silent connection was held %s, want it closed within %s", held, handshakeTimeout)
 		}
 	})
 }
@@ -356,7 +375,10 @@ func newServer(test *testing.T, logger *slog.Logger) *Server {
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
-	settings := Settings{HostKeyPath: filepath.Join(test.TempDir(), "host_key"), IdleTimeout: longTimeout, MaxTimeout: longTimeout}
+	settings := Settings{
+		HostKeyPath: filepath.Join(test.TempDir(), "host_key"), HandshakeTimeout: handshakeTimeout, IdleTimeout: longTimeout,
+		MaxTimeout: longTimeout,
+	}
 	server, err := New(store, logger, settings)
 	if err != nil {
 		test.Fatalf("New = %v, want a server", err)

@@ -3,6 +3,7 @@ package ssh
 import (
 	"io"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
@@ -22,8 +23,14 @@ const (
 func memoryConnections() (*memoryConnection, *memoryConnection) {
 	toServer, toClient := make(chan []byte, chunksHeld), make(chan []byte, chunksHeld)
 	clientEnd, serverEnd := newConnectionEnd(), newConnectionEnd()
-	client := &memoryConnection{incoming: toClient, outgoing: toServer, own: clientEnd, peer: serverEnd, unread: nil}
-	server := &memoryConnection{incoming: toServer, outgoing: toClient, own: serverEnd, peer: clientEnd, unread: nil}
+	client := &memoryConnection{
+		incoming: toClient, outgoing: toServer, own: clientEnd, peer: serverEnd, unread: nil,
+		reading: newConnectionDeadline(), writing: newConnectionDeadline(),
+	}
+	server := &memoryConnection{
+		incoming: toServer, outgoing: toClient, own: serverEnd, peer: clientEnd, unread: nil,
+		reading: newConnectionDeadline(), writing: newConnectionDeadline(),
+	}
 	return client, server
 }
 
@@ -49,7 +56,9 @@ type memoryConnection struct {
 	own      connectionEnd
 	peer     connectionEnd
 	// unread is what is left of the chunk read last
-	unread []byte
+	unread  []byte
+	reading *connectionDeadline
+	writing *connectionDeadline
 }
 
 func (connection *memoryConnection) Read(buffer []byte) (int, error) {
@@ -74,6 +83,8 @@ func (connection *memoryConnection) nextChunk() ([]byte, error) {
 		return nil, net.ErrClosed
 	case <-connection.peer.closed:
 		return connection.lastChunk()
+	case <-connection.reading.reached():
+		return nil, os.ErrDeadlineExceeded
 	}
 }
 
@@ -95,6 +106,8 @@ func (connection *memoryConnection) Write(data []byte) (int, error) {
 		return 0, net.ErrClosed
 	case <-connection.peer.closed:
 		return 0, net.ErrClosed
+	case <-connection.writing.reached():
+		return 0, os.ErrDeadlineExceeded
 	}
 }
 
@@ -111,12 +124,74 @@ func (connection *memoryConnection) RemoteAddr() net.Addr {
 	return memoryEndpoint{}
 }
 
-// A connection in memory keeps no deadline: the bubble's clock and the test's end stand for it.
-func (connection *memoryConnection) SetDeadline(time.Time) error { return nil }
+func (connection *memoryConnection) SetDeadline(moment time.Time) error {
+	connection.reading.set(moment)
+	connection.writing.set(moment)
+	return nil
+}
 
-func (connection *memoryConnection) SetReadDeadline(time.Time) error { return nil }
+func (connection *memoryConnection) SetReadDeadline(moment time.Time) error {
+	connection.reading.set(moment)
+	return nil
+}
 
-func (connection *memoryConnection) SetWriteDeadline(time.Time) error { return nil }
+func (connection *memoryConnection) SetWriteDeadline(moment time.Time) error {
+	connection.writing.set(moment)
+	return nil
+}
+
+// connectionDeadline is when a connection in memory gives up reading or writing, on the bubble's clock, as
+// charm.land/ssh sets it for its timeouts; built as net.Pipe's, so a read or a write already waiting sees the
+// deadline moved.
+type connectionDeadline struct {
+	mutex sync.Mutex
+	timer *time.Timer
+	// passed closes as the deadline passes, and is kept until it has: a fresh one stands only for one closed
+	passed chan struct{}
+}
+
+func newConnectionDeadline() *connectionDeadline {
+	return &connectionDeadline{mutex: sync.Mutex{}, timer: nil, passed: make(chan struct{})}
+}
+
+// set moves the deadline to a moment, or takes it away with the zero time.
+func (deadline *connectionDeadline) set(moment time.Time) {
+	deadline.mutex.Lock()
+	defer deadline.mutex.Unlock()
+	if deadline.timer != nil && !deadline.timer.Stop() {
+		// the timer has fired: wait for it to close the channel
+		<-deadline.passed
+	}
+	deadline.timer = nil
+	if isClosed(deadline.passed) {
+		deadline.passed = make(chan struct{})
+	}
+	if moment.IsZero() {
+		return
+	}
+	if wait := time.Until(moment); wait > 0 {
+		deadline.timer = time.AfterFunc(wait, func() { close(deadline.passed) })
+		return
+	}
+	close(deadline.passed)
+}
+
+// reached closes as the deadline set now passes.
+func (deadline *connectionDeadline) reached() <-chan struct{} {
+	deadline.mutex.Lock()
+	defer deadline.mutex.Unlock()
+	return deadline.passed
+}
+
+// isClosed tells whether a channel is closed.
+func isClosed(channel <-chan struct{}) bool {
+	select {
+	case <-channel:
+		return true
+	default:
+		return false
+	}
+}
 
 // memoryEndpoint is the address of either end of a connection in memory.
 type memoryEndpoint struct{}

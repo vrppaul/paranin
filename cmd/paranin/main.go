@@ -96,9 +96,12 @@ const (
 // 100 ms to rank.
 const maxHeaderBytes = 16 << 10
 
-// How long an SSH session may stay idle and stay open (SEC-5): a reader who is only reading sends nothing, so
-// the wait for a key is long
+// How long an SSH connection may take over its handshake, and a session may stay idle and stay open (SEC-5): a
+// handshake takes about three and a half round trips, so twenty seconds give up on a link whose round trip passes
+// about five and a half, and are all a connection that sends nothing holds a file for; a reader who is only reading
+// sends nothing, so the wait for a key is long
 const (
+	handshakeTimeout   = 20 * time.Second
 	sessionIdleTimeout = 15 * time.Minute
 	sessionMaxTimeout  = time.Hour
 )
@@ -173,7 +176,10 @@ func serve(contentFolder, buildFolder string) int {
 		return refused(err, contentFolder, buildFolder)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	settings := ssh.Settings{HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout}
+	settings := ssh.Settings{
+		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), HandshakeTimeout: handshakeTimeout,
+		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout,
+	}
 	sshServer, err := ssh.New(store, logger, settings)
 	if err != nil {
 		logger.Error("the SSH server cannot be made", errorKey, err)

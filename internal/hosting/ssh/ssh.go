@@ -6,8 +6,8 @@
 // long or open too long are closed (SEC-5), a connection opens one session, a terminal larger than a bound is drawn
 // at the bound, a session's input reaches the TUI at a reader's pace and its environment holds only what the colour
 // profile reads, so no connection takes memory or time without end (SEC-7), and each session is logged as it opens
-// and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value with a
-// control character in it (SEC-15).
+// and closes, and its refused requests once (SEC-13), what its reader sent cut short and quoted by the logger's
+// handler, as slog's handlers quote a value with a control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
@@ -26,6 +26,7 @@ import (
 	"net"
 	"runtime/debug"
 	"time"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	charmssh "charm.land/ssh"
@@ -47,6 +48,19 @@ const (
 	lastedKey = "lasted"
 	panicKey  = "panic"
 	stackKey  = "stack"
+	// how many requests the session refused for each reason: a payload it could not read, a variable of the
+	// environment the colour profile never reads, one set again, and one too long
+	unreadableKey     = "unreadable"
+	unreadVariableKey = "unread_variable"
+	setAlreadyKey     = "set_already"
+	tooLongKey        = "too_long"
+)
+
+// The most of a client's text the log holds, in bytes, and the mark where it is cut: twice the longest user name a
+// system takes, so a name is whole and a long one costs the log no more
+const (
+	longestLoggedText = 64
+	textCut           = "…"
 )
 
 // Settings are what the server is run with: where its host key lives, how long a connection may take to start its
@@ -93,7 +107,7 @@ func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server,
 		wish.WithIdleTimeout(settings.IdleTimeout),
 		wish.WithMaxTimeout(settings.MaxTimeout),
 		openingLimit(settings.OpeningTimeout).apply,
-		limitingSessions,
+		sessionLimits{logger: logger}.apply,
 		wish.WithMiddleware(
 			bubbletea.Middleware(opening.open),
 			activeterm.Middleware(),
@@ -208,10 +222,25 @@ type loggedSession struct {
 
 func (logged loggedSession) serve(session charmssh.Session) {
 	opened := time.Now()
-	remote, user := session.RemoteAddr().String(), session.User()
+	remote, user := session.RemoteAddr().String(), clientText(session.User())
 	logged.logger.Info("the session opened", remoteKey, remote, userKey, user)
 	logged.next(session)
 	logged.logger.Info("the session closed", remoteKey, remote, userKey, user, lastedKey, time.Since(opened))
+}
+
+// clientText is a text a client sent, which reaches the log cut to the most of it the log holds, and quoted there
+// by the logger's handler.
+type clientText string
+
+func (text clientText) LogValue() slog.Value {
+	if len(text) <= longestLoggedText {
+		return slog.StringValue(string(text))
+	}
+	cut := longestLoggedText
+	for cut > 0 && !utf8.RuneStart(text[cut]) {
+		cut--
+	}
+	return slog.StringValue(string(text[:cut]) + textCut)
 }
 
 // recoveredSession is a session handler whose panics end its own session alone.

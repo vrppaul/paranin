@@ -18,6 +18,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - Phase 3 (§8, step 11).
 - A review of every test against `.claude/rules/tests.md`: which named behaviour each holds, and whether another test already holds it; a list to delete, merge or keep, for the owner, before any is changed. Its place in the order is the owner's.
 - The name rule of `scripts/coderules` lets `conn` and `conn2` pass: "conn" is not among the abbreviations it refuses.
+- SEC-13's trail lacks the SSH server's other refusals: a second session on a connection, a subsystem, a connection closed for starting no session in time, a handshake that failed. The log records only a session's refused requests.
+- `internal/hosting/ssh`'s tests of a stop and of a panic read the log's words (its messages, `remote=`), which `.claude/rules/tests.md` refuses: the recording handler the other log tests use would read their values.
 - `scripts/tokens`' table of faulty files of tokens tells each fault by its words, which `.claude/rules/tests.md` refuses: each fault a kind of its own, as the least contrast's are, would let the table read which fault came.
 - The command line's tests open each page of a test in jsdom's one document, so the line of a page opened before it still listens there and answers the keys too; a test of the page opened next passes while both answer.
 - A window narrowed to a phone's width hides the vim keys' switch, and with it the keys, while a search kept stays marked there with no key to put it away; nothing watches the width, which lives in the stylesheet's media query alone.

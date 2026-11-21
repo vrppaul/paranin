@@ -185,6 +185,70 @@ func TestOnlyTheColourVariablesOfTheEnvironmentAreTaken(test *testing.T) {
 	}
 }
 
+// The requests a session refuses reach the log once, as the session's requests end, with how many there were and the
+// first, so a client sending a flood of them writes one line.
+func TestASessionsRefusedRequestsAreLoggedOnce(test *testing.T) {
+	language := gossh.Marshal(&variable{Name: "LANG", Value: "C.UTF-8"})
+	noColour := gossh.Marshal(&variable{Name: "NO_COLOR", Value: "1"})
+	tooLong := gossh.Marshal(&variable{Name: "COLORTERM", Value: strings.Repeat(floodKey, longestColourValue+1)})
+	cases := []struct {
+		name     string
+		payloads [][]byte
+		counted  refusalsCounted
+	}{
+		{
+			name: "one", payloads: [][]byte{language},
+			counted: refusalsCounted{unreadable: 0, unread: 1, setAlready: 0, tooLong: 0},
+		},
+		{
+			name: "several, each for its reason", payloads: [][]byte{language, language, noColour, noColour, tooLong, {strayByte}},
+			counted: refusalsCounted{unreadable: 1, unread: 2, setAlready: 1, tooLong: 1},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			records := make(chan slog.Record, logLines)
+			session := clientSession(test, serving(test, slog.New(recordedLog{records: records})), "reader")
+			for _, payload := range testCase.payloads {
+				if _, err := session.SendRequest(environmentType, true, payload); err != nil {
+					test.Fatalf("an env request of %q = %v, want it answered", payload, err)
+				}
+			}
+			if err := session.Close(); err != nil {
+				test.Fatalf("Close of the session = %v, want it closed", err)
+			}
+			record := nextRecord(test, records)
+			if counted := countedIn(record); record.Level != slog.LevelWarn || counted != testCase.counted {
+				test.Errorf("the log after the requests %q = %v, counting %+v; want one warning counting %+v", testCase.payloads,
+					record, counted, testCase.counted)
+			}
+		})
+	}
+}
+
+// refusalsCounted are how many requests the log says a session refused, by why.
+type refusalsCounted struct {
+	unreadable int64
+	unread     int64
+	setAlready int64
+	tooLong    int64
+}
+
+// countedIn is how many refused requests a record counts, by why, none where it counts nothing.
+func countedIn(record slog.Record) refusalsCounted {
+	return refusalsCounted{
+		unreadable: countOf(record, unreadableKey), unread: countOf(record, unreadVariableKey),
+		setAlready: countOf(record, setAlreadyKey), tooLong: countOf(record, tooLongKey),
+	}
+}
+
+// countOf is the count a record holds under a key, or none.
+func countOf(record slog.Record, key string) int64 {
+	value, _ := valueOf(record, key)
+	count, _ := value.Any().(int64)
+	return count
+}
+
 // A connection opens one session: a second is refused while the first is open, so one connection cannot hold the
 // TUI's memory many times over.
 func TestASecondSessionOnAConnectionIsRefused(test *testing.T) {
@@ -400,17 +464,17 @@ func TestAnOrdinaryPasteReachesTheTUIAtOnce(test *testing.T) {
 // running once its session is closed keeps wish reading the session's closed window changes, which no synctest
 // bubble sees blocked.
 func TestASessionClosedOnAnOpenConnectionEnds(test *testing.T) {
-	lines := make(chan string, logLines)
-	address := serving(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
+	records := make(chan slog.Record, logLines)
+	address := serving(test, slog.New(recordedLog{records: records}))
 	session := clientSession(test, address, "reader")
 	output, _ := openTerminal(test, session, commonTerminal())
 	readUntil(test, output, "contact")
-	nextLine(test, lines)
+	nextRecord(test, records)
 	if err := session.Close(); err != nil {
 		test.Fatalf("Close of the session = %v, want it closed", err)
 	}
-	if closed := nextLine(test, lines); !strings.Contains(closed, "the session closed") {
-		test.Errorf("the log after the session closed = %q, want the session closed with its connection open", closed)
+	if _, lasted := valueOf(nextRecord(test, records), lastedKey); !lasted {
+		test.Errorf("the log after the session closed holds no session's close, want it closed with its connection open")
 	}
 }
 
@@ -482,13 +546,33 @@ func TestASessionWithoutATerminalIsRefused(test *testing.T) {
 
 // A session is logged as it opens and closes, with whose it was.
 func TestASessionIsLoggedOpeningAndClosing(test *testing.T) {
-	lines := make(chan string, logLines)
-	address := serving(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
-	_, _ = clientSession(test, address, "mira").CombinedOutput("")
-	opened, closed := nextLine(test, lines), nextLine(test, lines)
-	if !strings.Contains(opened, "the session opened") || !strings.Contains(closed, "the session closed") ||
-		!strings.Contains(opened+closed, "user=mira") {
-		test.Errorf("the log = %q then %q, want the session of mira opened and closed", opened, closed)
+	cases := []struct {
+		name   string
+		user   string
+		logged string
+	}{
+		{name: "a name", user: "mira", logged: "mira"},
+		{name: "a name too long", user: strings.Repeat("m", longestLoggedText+1), logged: strings.Repeat("m", longestLoggedText) + textCut},
+		{
+			name: "a name too long cut before a letter of two bytes", user: strings.Repeat("m", longestLoggedText-1) + "üü",
+			logged: strings.Repeat("m", longestLoggedText-1) + textCut,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			records := make(chan slog.Record, logLines)
+			address := serving(test, slog.New(recordedLog{records: records}))
+			_, _ = clientSession(test, address, testCase.user).CombinedOutput("")
+			opened, closed := nextRecord(test, records), nextRecord(test, records)
+			_, openedLasted := valueOf(opened, lastedKey)
+			_, closedLasted := valueOf(closed, lastedKey)
+			openedUser, _ := valueOf(opened, userKey)
+			closedUser, _ := valueOf(closed, userKey)
+			if openedLasted || !closedLasted || openedUser.String() != testCase.logged || closedUser.String() != testCase.logged {
+				test.Errorf("the log = %v then %v, want the session of %q opened, then closed with how long it lasted", opened,
+					closed, testCase.logged)
+			}
+		})
 	}
 }
 
@@ -700,6 +784,56 @@ func nextLine(test *testing.T, lines <-chan string) string {
 		test.Fatalf("the server logged nothing for %s", logWait)
 		return ""
 	}
+}
+
+// recordedLog hands each record a logger writes to a channel, so a test reads what the server logs by its values,
+// not by its words. The server's loggers add no attribute or group of their own, so neither is kept.
+type recordedLog struct {
+	records chan<- slog.Record
+}
+
+func (recordedLog) Enabled(context.Context, slog.Level) bool { return true }
+
+func (recorded recordedLog) Handle(_ context.Context, record slog.Record) error {
+	recorded.records <- record.Clone()
+	return nil
+}
+
+func (recorded recordedLog) WithAttrs([]slog.Attr) slog.Handler { return recorded }
+
+func (recorded recordedLog) WithGroup(string) slog.Handler { return recorded }
+
+// nextRecord is the next record the server logs, or the test's end once the server has logged nothing for too long.
+func nextRecord(test *testing.T, records <-chan slog.Record) slog.Record {
+	select {
+	case record := <-records:
+		return record
+	case <-time.After(logWait):
+		test.Fatalf("the server logged nothing for %s", logWait)
+		return slog.Record{}
+	}
+}
+
+// valueOf is the value a record holds under a key, resolved as a handler resolves it, and whether it holds one.
+func valueOf(record slog.Record, key string) (slog.Value, bool) {
+	search := attributeSearch{key: key, found: slog.Value{}, held: false}
+	record.Attrs(search.look)
+	return search.found, search.held
+}
+
+// attributeSearch is a search of a record's attributes for the one of a key, and what it found.
+type attributeSearch struct {
+	key   string
+	found slog.Value
+	held  bool
+}
+
+// look takes an attribute if it is the one sought, and goes on while it has not found it.
+func (search *attributeSearch) look(attribute slog.Attr) bool {
+	if attribute.Key == search.key {
+		search.found, search.held = attribute.Value.Resolve(), true
+	}
+	return !search.held
 }
 
 // lineWriter hands each line a logger writes to a channel, so a test reads the log as the server writes it.

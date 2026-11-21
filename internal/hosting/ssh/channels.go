@@ -3,6 +3,7 @@ package ssh
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"slices"
 	"time"
@@ -74,27 +75,33 @@ type (
 	sessionStarted struct{}
 )
 
-// limitingSessions has the server open one session a connection, with the size of its terminal bounded before
+// sessionLimits are the limits of a connection's sessions, and the log their refusals reach.
+type sessionLimits struct {
+	logger *slog.Logger
+}
+
+// apply has the server open one session a connection, with the size of its terminal bounded before
 // charm.land/ssh, Bubble Tea or the TUI reads it, so none of them draws more; no channel of another kind is opened,
 // as by default. Refusing a larger terminal would turn its reader away, and a bound in Bubble Tea's options or in the
 // TUI would come after charm.land/ssh and wish hand the size on.
-func limitingSessions(server *charmssh.Server) error {
-	server.ChannelHandlers = map[string]charmssh.ChannelHandler{sessionChannel: openLimited}
+func (limits sessionLimits) apply(server *charmssh.Server) error {
+	server.ChannelHandlers = map[string]charmssh.ChannelHandler{sessionChannel: limits.open}
 	return nil
 }
 
-// openLimited opens a connection's first session as charm.land/ssh does, its client's requests bounded on their
-// way, refuses every session after it, and closes the connection once its session ends: a reader needs one, and
-// each costs the TUI's memory again. A client that shares one connection among its sessions (OpenSSH's ControlMaster)
+// open opens a connection's first session as charm.land/ssh does, its client's requests checked on their way,
+// refuses every session after it, and closes the connection once its session ends: a reader needs one, and each
+// costs the TUI's memory again. A client that shares one connection among its sessions (OpenSSH's ControlMaster)
 // sees the second refused and opens a connection.
-func openLimited(server *charmssh.Server, connection *gossh.ServerConn, channel gossh.NewChannel, ctx charmssh.Context) {
+func (limits sessionLimits) open(server *charmssh.Server, connection *gossh.ServerConn, channel gossh.NewChannel, ctx charmssh.Context) {
 	if !isFirstSession(ctx) {
 		_ = channel.Reject(gossh.ResourceShortage, secondSessionRefusal)
 		return
 	}
 	session, end := context.WithCancel(ctx)
 	defer end()
-	checked := checkedChannel{NewChannel: channel, session: session}
+	refusals := refusalLog{logger: limits.logger, remote: connection.RemoteAddr().String(), user: clientText(connection.User())}
+	checked := checkedChannel{NewChannel: channel, session: session, refusals: refusals}
 	charmssh.DefaultSessionHandler(server, connection, checked, sessionContext{Context: ctx, session: session})
 	_ = connection.Close()
 }
@@ -180,7 +187,8 @@ func markStarted(session charmssh.Session, requestType string) bool {
 // the session lasts.
 type checkedChannel struct {
 	gossh.NewChannel
-	session context.Context
+	session  context.Context
+	refusals refusalLog
 }
 
 func (channel checkedChannel) Accept() (gossh.Channel, <-chan *gossh.Request, error) {
@@ -189,7 +197,7 @@ func (channel checkedChannel) Accept() (gossh.Channel, <-chan *gossh.Request, er
 		return nil, nil, fmt.Errorf("accept a session's channel: %w", err)
 	}
 	checked := make(chan *gossh.Request)
-	go passChecked(requests, checked)
+	go passChecked(requests, checked, channel.refusals)
 	paced := pacedChannel{Channel: accepted, pace: rate.NewLimiter(inputRate, inputBurst), session: channel.session}
 	return paced, checked, nil
 }
@@ -197,26 +205,86 @@ func (channel checkedChannel) Accept() (gossh.Channel, <-chan *gossh.Request, er
 // passChecked passes each request of a session on, the size of its terminal bounded, and closes the requests passed
 // on once the client's requests end. One refused is answered so here and never passed on: charm.land/ssh would read
 // a size it cannot read whole as far as it could, unbounded, and keep every variable of the environment it was sent.
-func passChecked(requests <-chan *gossh.Request, checked chan<- *gossh.Request) {
+// The refusals reach the log once, as the requests end, so a flood of them writes one line.
+func passChecked(requests <-chan *gossh.Request, checked chan<- *gossh.Request, refusals refusalLog) {
 	defer close(checked)
-	check := requestCheck{variablesTaken: map[string]bool{}}
+	check := requestCheck{variablesTaken: map[string]bool{}, refused: refusalCounts{unreadable: 0, unread: 0, setAlready: 0, tooLong: 0}}
 	for request := range requests {
-		if err := check.checked(request); err != nil {
+		if refused := check.checked(request); refused != notRefused {
+			check.refused.add(refused)
 			_ = request.Reply(false, nil)
 			continue
 		}
 		checked <- request
 	}
+	refusals.write(check.refused)
 }
 
-// requestCheck is what a session's requests are checked against: the variables of its environment taken so far.
+// refusal is whether a session refuses a request, and why.
+type refusal int
+
+const (
+	// notRefused is a request passed on
+	notRefused refusal = iota
+	// unreadablePayload is a request whose payload cannot be read whole
+	unreadablePayload
+	// unreadVariable sets a variable of the environment the colour profile never reads
+	unreadVariable
+	// variableSetAlready sets a variable of the environment taken before
+	variableSetAlready
+	// valueTooLong sets a variable to a value longer than any the colour profile reads
+	valueTooLong
+)
+
+// requestCheck is what a session's requests are checked against, the variables of its environment taken so far,
+// and how many it has refused.
 type requestCheck struct {
 	variablesTaken map[string]bool
+	refused        refusalCounts
+}
+
+// refusalCounts are how many requests a session refused, by why.
+type refusalCounts struct {
+	unreadable int
+	unread     int
+	setAlready int
+	tooLong    int
+}
+
+// add counts a refusal.
+func (counts *refusalCounts) add(refused refusal) {
+	switch refused {
+	case notRefused:
+	case unreadablePayload:
+		counts.unreadable++
+	case unreadVariable:
+		counts.unread++
+	case variableSetAlready:
+		counts.setAlready++
+	case valueTooLong:
+		counts.tooLong++
+	}
+}
+
+// refusalLog is the log a session's refused requests reach, and whose session they were.
+type refusalLog struct {
+	logger *slog.Logger
+	remote string
+	user   clientText
+}
+
+// write logs how many requests a session refused, by why, if it refused any.
+func (refusals refusalLog) write(counts refusalCounts) {
+	if counts != (refusalCounts{unreadable: 0, unread: 0, setAlready: 0, tooLong: 0}) {
+		refusals.logger.Warn("the session refused requests", remoteKey, refusals.remote, userKey, refusals.user,
+			unreadableKey, counts.unreadable, unreadVariableKey, counts.unread, setAlreadyKey, counts.setAlready,
+			tooLongKey, counts.tooLong)
+	}
 }
 
 // checked bounds the size of the terminal a request says, if it says one, and refuses a variable of the environment
 // the session does not take.
-func (check requestCheck) checked(request *gossh.Request) error {
+func (check *requestCheck) checked(request *gossh.Request) refusal {
 	switch request.Type {
 	case terminalRequestType:
 		return boundPayload(request, new(terminalAsked))
@@ -225,27 +293,27 @@ func (check requestCheck) checked(request *gossh.Request) error {
 	case environmentType:
 		return check.takenVariable(request)
 	}
-	return nil
+	return notRefused
 }
 
 // takenVariable takes a variable of the environment the colour profile reads, once and of a value no longer than it
 // reads, and refuses any other: wish hands the colour profile the session's environment, and nothing else of the
 // site reads it.
-func (check requestCheck) takenVariable(request *gossh.Request) error {
+func (check *requestCheck) takenVariable(request *gossh.Request) refusal {
 	var asked environmentVariable
-	if err := gossh.Unmarshal(request.Payload, &asked); err != nil {
-		return fmt.Errorf("read the variable a %q request sets: %w", request.Type, err)
+	if gossh.Unmarshal(request.Payload, &asked) != nil {
+		return unreadablePayload
 	}
 	switch {
 	case !slices.Contains(colourVariables(), asked.Name):
-		return refusedRequest{requestType: request.Type, reason: unreadVariable}
+		return unreadVariable
 	case check.variablesTaken[asked.Name]:
-		return refusedRequest{requestType: request.Type, reason: variableSetAlready}
+		return variableSetAlready
 	case len(asked.Value) > longestColourValue:
-		return refusedRequest{requestType: request.Type, reason: valueTooLong}
+		return valueTooLong
 	}
 	check.variablesTaken[asked.Name] = true
-	return nil
+	return notRefused
 }
 
 // environmentVariable is a variable a client sets in its session's environment, as RFC 4254 lays it out.
@@ -264,23 +332,6 @@ func colourVariables() []string {
 // Terminal's session, is a GUID of 36 letters
 const longestColourValue = 64
 
-// Why a request is refused
-const (
-	unreadVariable     = "the colour profile reads no such variable"
-	variableSetAlready = "the variable is set already"
-	valueTooLong       = "the value is longer than any the colour profile reads"
-)
-
-// refusedRequest is a request a session refuses, and why.
-type refusedRequest struct {
-	requestType string
-	reason      string
-}
-
-func (refused refusedRequest) Error() string {
-	return fmt.Sprintf("a %q request is refused: %s", refused.requestType, refused.reason)
-}
-
 // pacedChannel is a session's channel whose input reaches charm.land/ssh at a reader's pace, so a flood of it, keys
 // or a paste left open, waits in the channel's window, which x/crypto bounds, and never in the TUI.
 type pacedChannel struct {
@@ -297,14 +348,15 @@ func (channel pacedChannel) Read(buffer []byte) (int, error) {
 	return count, err //nolint:wrapcheck // a reader's io.EOF stays io.EOF, as its readers compare it
 }
 
-// boundPayload reads a request's payload into its layout, bounds the size in it and writes it back.
-func boundPayload(request *gossh.Request, payload sizedPayload) error {
-	if err := gossh.Unmarshal(request.Payload, payload); err != nil {
-		return fmt.Errorf("read the terminal's size a %q request says: %w", request.Type, err)
+// boundPayload reads a request's payload into its layout, bounds the size in it and writes it back, and refuses one
+// it cannot read whole.
+func boundPayload(request *gossh.Request, payload sizedPayload) refusal {
+	if gossh.Unmarshal(request.Payload, payload) != nil {
+		return unreadablePayload
 	}
 	payload.bound()
 	request.Payload = gossh.Marshal(payload)
-	return nil
+	return notRefused
 }
 
 func (asked *terminalAsked) bound() {

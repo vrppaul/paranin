@@ -716,18 +716,21 @@ moves it out first.
    `design/tokens.yaml`: it is the first face that needs a colour (D18).
    Then `face/html` on templ, served by the same `hosting/web`.
 6. `web/`: `domain`, `ui`, then the islands one at a time.
-7. Hosting: SEC-6 and SEC-15; `inbox` with delivery to Telegram;
-   `face/print` on Typst; the `Dockerfile` with both ports and
-   `PARANIN_HTTP_ADDR`; CI; deploy.
-8. The blog: posts in the one format, their status and preview links,
-   publishing on a date, `kit`, the first widget from study, the feed,
-   the cards, posts in the TUI. The site's word catalogue arrives with
-   `compose` in step 4; a second language is an addition, not a step.
-9. Phase 3: the brain's threat model, SQLite, `brain`, the chat island,
-   then the chat in the TUI.
+7. A security audit of the whole site, before anything is served.
+8. The blog, agreed with Pavel first, how it works and what it holds, then
+   built before hosting: posts in the one format, their status and preview
+   links, publishing on a date, `kit`, the first widget from study, the
+   feed, the cards, posts in the TUI. The site's word catalogue arrives
+   with `compose` in step 4; a second language is an addition, not a step.
+9. The content, changed together with Pavel, the profile's placeholders
+   filled among it: they block any promotion.
+10. Hosting, last: SEC-6 and SEC-15; `inbox` with delivery to Telegram;
+    `face/print` on Typst; the `Dockerfile` with both ports and
+    `PARANIN_HTTP_ADDR`; CI; deploy.
+11. Phase 3: the brain's threat model, SQLite, `brain`, the chat island,
+    then the chat in the TUI.
 
-Filling the profile's placeholders needs no code and blocks any promotion;
-it can happen at any time.
+Steps 7 to 10 stand in Pavel's order of 2026-11-21: hosting last.
 
 ## 9. Open questions
 

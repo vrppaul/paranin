@@ -8,19 +8,23 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
   - The TUI's search marks the match its count names reversed, as the page's does (owner, 11-21), where today every match stands on the accent alike.
   - The page's search finds a match within one text of the page, so a phrase a mark or a link parts (`[N] requests`) is not found, where the TUI finds it across a line's runs; and it is the page's own, forgotten on the next page, where the TUI marks every tab with it.
-  - The first island, the form's salary range, waits for `inbox` (step 7). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles; its script loads by a dynamic import, not with the site's entry, which holds the first paint.
+  - The first island, the form's salary range, waits for `inbox` (step 10). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles; its script loads by a dynamic import, not with the site's entry, which holds the first paint.
 - A tab is served at the name its title makes, and nothing refuses a title that takes another's address: a résumé's tab named `index` or `llms` takes `/index.md` or `/llms.txt`, two sections of a project with one name share one, a title of no letter takes its page's own. No title does today; the owner left it unchecked.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - The sitemap, when it is served, lists every tab's address beside its page's.
 - A tab's name keeps every letter of its title, so a site in another script serves its tabs at addresses in that script.
 - `scripts/tokens` refuses a colour below the least contrast DESIGN.md's "Colour" gives it over the grounds it names (`muted`, `faint`, `label`), today worked out by hand; waits for the owner's word.
-- Hosting (§8, step 7): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; the files of the snapshot before kept served beside the current ones, so a page fetched before a reload finds its stylesheet and chunks after it (ADR-0003), and with it whether a release switched in by the link and SIGHUP is watched too, since the watch would load the same release a second time and push out the snapshot before; `inbox` with delivery to Telegram, and the form the first screen's primary button opens, which does nothing until then; `face/print` on Typst, the CV listed in `llms.txt` with it, as the first version listed it, among the foot line's ways, its look the owner's to pick then, and before the profiles that end the first screen's brief (DESIGN.md, FootLine and Pages), which leave it out until it is served; the Dockerfile with both ports; deploy.
-- The blog (§8, step 8) and phase 3 (§8, step 9).
+- A security audit of the whole site (§8, step 7), before anything is served.
+- The blog (§8, step 8): first agreed with the owner, how it works and what it holds; then built, before hosting.
+- The content, changed together with the owner (§8, step 9).
+- Hosting, last (§8, step 10): SEC-6 and SEC-15 of `docs/REQUIREMENTS.md`; the files of the snapshot before kept served beside the current ones, so a page fetched before a reload finds its stylesheet and chunks after it (ADR-0003), and with it whether a release switched in by the link and SIGHUP is watched too, since the watch would load the same release a second time and push out the snapshot before; `inbox` with delivery to Telegram, and the form the first screen's primary button opens, which does nothing until then; `face/print` on Typst, the CV listed in `llms.txt` with it, as the first version listed it, among the foot line's ways, its look the owner's to pick then, and before the profiles that end the first screen's brief (DESIGN.md, FootLine and Pages), which leave it out until it is served; the Dockerfile with both ports; deploy.
+- Phase 3 (§8, step 11).
+- A review of every test against `.claude/rules/tests.md`: which named behaviour each holds, and whether another test already holds it; a list to delete, merge or keep, for the owner, before any is changed. Its place in the order is the owner's.
 
 ## Documents
 
 - `docs/ARCHITECTURE.md`'s overview still draws the first version, every face reading `internal/content`: rewrite it from FOUNDATION §5.2's layers; it waits for no package.
-- `docs/ARCHITECTURE.md`'s configuration lists `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet: rewrite them with `inbox` and SEC-6 (§8, step 7).
+- `docs/ARCHITECTURE.md`'s configuration lists `PARANIN_MESSAGES_PATH` and `PARANIN_TRUST_PROXY`, which nothing reads yet: rewrite them with `inbox` and SEC-6 (§8, step 10).
 
 - `docs/WEB.md` copies facts of the résumé (the email, the employer) as examples: rewrite it with `face/html` against the fixture profile. Its skill groups still carry a `Key` and are grouped from a flat list by `skillGroups` (both gone by D16), and its client data the salary slider's `step` and `bigStep` (gone by D17, the form works them out of the range).
 

@@ -277,7 +277,7 @@ and web routes.
   the person's and a project's, with `face/html`, and the sitemap's dates
   with `face/feed`, the `dateModified` of the résumé's `ProfilePage` with
   them; a widget with the first island that draws one, the form's salary
-  range (step 7), since `face/html` came without one; the posts' blocks and spans with the blog (D18).
+  range (step 10), since `face/html` came without one; the posts' blocks and spans with the blog (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
@@ -335,7 +335,7 @@ and web routes.
 
 **Status:** accepted in part: publishing without a new binary, posts in this repository, the four statuses, one
 format and translations later (D5–D8, D12) on 2026-11-01; the one front-end build on 2026-11-03 (D22). The
-pipeline is proposed, to be settled with hosting (§8, step 7). [FOUNDATION](FOUNDATION.md) §5.3 and §5.4.
+pipeline is proposed, to be settled with hosting (§8, step 10). [FOUNDATION](FOUNDATION.md) §5.3 and §5.4.
 
 ### Context
 

@@ -98,6 +98,8 @@ linters:
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return
         - ^charm\.land/bubbletea/v2\.Model$
+        # x/crypto's interface, which its NewChannel's Accept is typed to return
+        - ^golang\.org/x/crypto/ssh\.Channel$
         # templ's own interface, which every component is and every component it calls is typed as
         - ^github\.com/a-h/templ\.Component$
     nolintlint:

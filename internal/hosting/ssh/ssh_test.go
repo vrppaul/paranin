@@ -9,9 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -36,13 +38,118 @@ const (
 	logWait = 3 * time.Second
 )
 
+// commonTerminal is the size of a reader's terminal, well within the bound.
+func commonTerminal() terminalSize {
+	return terminalSize{width: terminalWidth, height: terminalHeight}
+}
+
 // A session with a terminal reads the résumé: the places of its tabs reach the reader's screen.
 func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
-	output, _ := openTerminal(test, clientSession(test, address, "reader"))
+	output, _ := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
 	if read := readUntil(test, output, "contact"); !strings.Contains(read, "experience") {
 		test.Errorf("the screen = %q, want the places of the résumé's tabs", read)
 	}
+}
+
+// Terminals larger than the bound one way, within the most Bubble Tea takes a change of size to (4096 a side, about
+// a million cells); and a terminal too narrow for the footer to name the last tab
+const (
+	widestChange  = 4096
+	tallestChange = 2048
+	narrowWidth   = 30
+)
+
+// What a session may allocate, in bytes, from its opening to its first screen: one drawn at the bound takes about
+// 20 MB, one drawn a size larger than the bound one way more than 140 MB.
+const sessionAllocation = 64 << 20
+
+// A terminal larger than the bound, as it opens or as it grows, takes a session no more memory than the bound's,
+// and its reader still reads the résumé. A narrow terminal opened first names the last tab only once it has grown.
+func TestATerminalLargerThanTheBoundTakesTheBoundsMemory(test *testing.T) {
+	narrow := terminalSize{width: narrowWidth, height: terminalHeight}
+	wider := terminalSize{width: widestChange, height: tallestTerminal}
+	taller := terminalSize{width: widestTerminal, height: tallestChange}
+	cases := []struct {
+		name    string
+		opening terminalSize
+		changes []terminalSize
+	}{
+		{name: "opening wider", opening: wider, changes: nil},
+		{name: "opening taller", opening: taller, changes: nil},
+		{name: "growing wider", opening: narrow, changes: []terminalSize{wider}},
+		{name: "growing taller", opening: narrow, changes: []terminalSize{taller}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			address := serving(test, slog.New(slog.DiscardHandler))
+			before := allocated()
+			session := clientSession(test, address, "reader")
+			output, _ := openTerminal(test, session, testCase.opening)
+			for _, size := range testCase.changes {
+				if err := session.WindowChange(size.height, size.width); err != nil {
+					test.Fatalf("WindowChange(%+v) = %v, want the terminal grown", size, err)
+				}
+			}
+			readUntil(test, output, "contact")
+			if taken := allocated() - before; taken > sessionAllocation {
+				test.Errorf("a terminal opening at %+v and changing to %+v took %d bytes to draw, want %d at most", testCase.opening,
+					testCase.changes, taken, sessionAllocation)
+			}
+		})
+	}
+}
+
+// strayTerminalRequest is a request for a terminal as RFC 4254 lays it out, with a byte after its end.
+type strayTerminalRequest struct {
+	Term         string
+	Columns      uint32
+	Rows         uint32
+	WidthPixels  uint32
+	HeightPixels uint32
+	Modes        string
+	Stray        uint8
+}
+
+// A request for a terminal whose size cannot be read is refused, and the session has no terminal, however much of
+// the request charm.land/ssh would read: what it read would be the size unbounded.
+func TestATerminalOfAnUnreadableSizeIsRefused(test *testing.T) {
+	address := serving(test, slog.New(slog.DiscardHandler))
+	session := clientSession(test, address, "reader")
+	asked := strayTerminalRequest{
+		Term: "xterm-256color", Columns: widestChange, Rows: tallestChange, WidthPixels: 0, HeightPixels: 0,
+		Modes: "", Stray: 0,
+	}
+	if accepted, err := session.SendRequest(terminalRequestType, true, gossh.Marshal(&asked)); accepted || err != nil {
+		test.Fatalf("a terminal request with a stray byte = %t, %v; want it refused", accepted, err)
+	}
+	if output, _ := session.CombinedOutput(""); !strings.Contains(string(output), "Requires an active PTY") {
+		test.Errorf("the session after its terminal was refused = %q, want it refused for want of a terminal", output)
+	}
+}
+
+// A session its reader closes leaves no goroutine behind once the server has stopped: the bubble fails on one still
+// blocked as it ends.
+func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
+	synctest.Test(test, func(test *testing.T) {
+		server := newServer(test, slog.New(slog.DiscardHandler))
+		clientEnd, serverEnd := memoryConnections()
+		go server.server.HandleConn(serverEnd)
+		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+		output, _ := openTerminal(test, session, commonTerminal())
+		readUntil(test, output, "contact")
+		closeClient(client, session)
+		if err := server.Shutdown(test.Context()); err != nil {
+			test.Errorf("Shutdown after the session closed = %v, want the server stopped", err)
+		}
+	})
+}
+
+// allocated is how many bytes the process has allocated since it started, freed or not.
+func allocated() uint64 {
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	return memory.TotalAlloc
 }
 
 // A stop whose wait runs out closes the sessions still open, and stops cleanly: a reader may keep a session open
@@ -51,7 +158,7 @@ func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 	lines := make(chan string, logLines)
 	server, address := servingServer(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
-	output, _ := openTerminal(test, clientSession(test, address, "reader"))
+	output, _ := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
 	readUntil(test, output, "contact")
 	ended, end := context.WithCancel(context.Background())
 	end()
@@ -68,7 +175,7 @@ func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 // them, so no session's program may take the signal for its own.
 func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
-	output, input := openTerminal(test, clientSession(test, address, "reader"))
+	output, input := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
 	readUntil(test, output, "contact")
 	stops := make(chan os.Signal, 1)
 	signal.Notify(stops, syscall.SIGTERM)
@@ -86,7 +193,7 @@ func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 // A session opens the health report with :checkhealth: the server hands the TUI the extras beside the site's pages.
 func TestASessionOpensTheHealthReport(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
-	output, input := openTerminal(test, clientSession(test, address, "reader"))
+	output, input := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
 	readUntil(test, output, "contact")
 	if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
 		test.Fatalf("type :checkhealth = %v, want the session open", err)
@@ -201,15 +308,7 @@ func serving(test *testing.T, logger *slog.Logger) string {
 
 // servingServer is a server of the fixture, which serves until the test ends, and its address.
 func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
-	store, err := release.Open(release.FoldersAt(fixtures.ContentFolder(test), fixtures.BuildFolder(test)))
-	if err != nil {
-		test.Fatalf("Open(fixtures) = %v, want no error", err)
-	}
-	settings := Settings{HostKeyPath: filepath.Join(test.TempDir(), "host_key"), IdleTimeout: longTimeout, MaxTimeout: longTimeout}
-	server, err := New(store, logger, settings)
-	if err != nil {
-		test.Fatalf("New = %v, want a server", err)
-	}
+	server := newServer(test, logger)
 	listener, err := (&net.ListenConfig{}).Listen(test.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		test.Fatalf("listen: %v", err)
@@ -219,10 +318,31 @@ func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
 	return server, listener.Addr().String()
 }
 
-// openTerminal asks for a terminal and the TUI in it: what the server writes to it, and what the reader types.
-func openTerminal(test *testing.T, session *gossh.Session) (io.Reader, io.Writer) {
-	if err := session.RequestPty("xterm-256color", terminalHeight, terminalWidth, gossh.TerminalModes{}); err != nil {
-		test.Fatalf("RequestPty = %v, want a terminal", err)
+// newServer is a server of the fixture, not yet serving.
+func newServer(test *testing.T, logger *slog.Logger) *Server {
+	store, err := release.Open(release.FoldersAt(fixtures.ContentFolder(test), fixtures.BuildFolder(test)))
+	if err != nil {
+		test.Fatalf("Open(fixtures) = %v, want no error", err)
+	}
+	settings := Settings{HostKeyPath: filepath.Join(test.TempDir(), "host_key"), IdleTimeout: longTimeout, MaxTimeout: longTimeout}
+	server, err := New(store, logger, settings)
+	if err != nil {
+		test.Fatalf("New = %v, want a server", err)
+	}
+	return server
+}
+
+// terminalSize is the size a client says its terminal is.
+type terminalSize struct {
+	width  int
+	height int
+}
+
+// openTerminal asks for a terminal of a size and the TUI in it: what the server writes to it, and what the reader
+// types.
+func openTerminal(test *testing.T, session *gossh.Session, size terminalSize) (io.Reader, io.Writer) {
+	if err := session.RequestPty("xterm-256color", size.height, size.width, gossh.TerminalModes{}); err != nil {
+		test.Fatalf("RequestPty(%+v) = %v, want a terminal", size, err)
 	}
 	output, err := session.StdoutPipe()
 	if err != nil {
@@ -240,7 +360,6 @@ func openTerminal(test *testing.T, session *gossh.Session) (io.Reader, io.Writer
 
 // clientSession is a session of a reader of a name, who offers no key or password, as anyone may.
 func clientSession(test *testing.T, address, user string) *gossh.Session {
-	config := &gossh.ClientConfig{User: user, Auth: nil, HostKeyCallback: gossh.InsecureIgnoreHostKey()} //nolint:gosec // a test's own server
 	connection, err := (&net.Dialer{}).DialContext(test.Context(), "tcp", address)
 	if err != nil {
 		test.Fatalf("Dial = %v, want a connection", err)
@@ -248,6 +367,14 @@ func clientSession(test *testing.T, address, user string) *gossh.Session {
 	if err := connection.SetDeadline(time.Now().Add(testDeadline)); err != nil {
 		test.Fatalf("SetDeadline = %v", err)
 	}
+	_, session := sessionOver(test, connection, address, user)
+	return session
+}
+
+// sessionOver is a client over a connection to an address, of a reader of a name who offers no key or password,
+// and a session of it; both close as the test ends.
+func sessionOver(test *testing.T, connection net.Conn, address, user string) (*gossh.Client, *gossh.Session) {
+	config := &gossh.ClientConfig{User: user, Auth: nil, HostKeyCallback: gossh.InsecureIgnoreHostKey()} //nolint:gosec // a test's own server
 	clientConnection, channels, requests, err := gossh.NewClientConn(connection, address, config)
 	if err != nil {
 		test.Fatalf("NewClientConn = %v, want an SSH connection", err)
@@ -258,7 +385,7 @@ func clientSession(test *testing.T, address, user string) *gossh.Session {
 		test.Fatalf("NewSession = %v, want a session", err)
 	}
 	test.Cleanup(func() { closeClient(client, session) })
-	return session
+	return client, session
 }
 
 // closeClient closes a session and its client; a test that ends has no use for a fault in closing them.

@@ -2,7 +2,8 @@
 // and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
 // the projects' pages and the TUI's extras, and nothing else is served: no shell, no command, no file transfer, no
 // forwarding (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never
-// the server (SEC-4), a session idle too long or open too long is closed (SEC-5), and each session is logged as it
+// the server (SEC-4), a session idle too long or open too long is closed (SEC-5), a terminal larger than a bound is
+// drawn at the bound, so no session's screen takes memory without end (SEC-7), and each session is logged as it
 // opens and closes (SEC-13), what its reader sent quoted by the logger's handler, as slog's handlers quote a value
 // with a control character in it (SEC-15).
 //
@@ -88,6 +89,7 @@ func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server,
 		wish.WithHostKeyPath(settings.HostKeyPath),
 		wish.WithIdleTimeout(settings.IdleTimeout),
 		wish.WithMaxTimeout(settings.MaxTimeout),
+		boundingSessions,
 		wish.WithMiddleware(
 			bubbletea.Middleware(opening.open),
 			activeterm.Middleware(),

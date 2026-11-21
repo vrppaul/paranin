@@ -62,6 +62,8 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## Upstream
 
+- charm.land/ssh writes a session's window on each window-change (`session.go:412`) with no lock, while `Pty()` reads it: our `open` and wish's `MakeOptions` both read it as the session opens, and `go test -race` reports it. Reading the size from our own bounded pty-req would take away our read but not wish's, so the fix is upstream. Nothing here runs `-race`.
+
 
 - Bubble Tea writes a panic it catches and its stack straight to standard error, and wish's middleware logs the error `Run` ended with through charm's own logger: neither takes ours. Our log holds a panic of the TUI's model (`internal/hosting/ssh`), but a panic in a command Bubble Tea runs reaches theirs alone. A way to hand Bubble Tea a logger, or a hook for the panic it catches, would make slog the one log ADR-0001 asks for.
 - claude-review's `scripts/check_instruction_files.py` takes a word for a path by `/` or by a suffix it knows, and `.go` is not among them: a bare `main.go` in a rule is never checked. Proposed there; copied back here whole.

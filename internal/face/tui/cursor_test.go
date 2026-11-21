@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -46,18 +47,19 @@ func TestTheCursorStandsAfterWhatIsTyped(test *testing.T) {
 
 // On a screen too narrow for what is typed, or for the command line's mark, the cursor stands in the last column the
 // command line holds, on its row, the one over the footer: a column in from the screen's edge, as the footer stands,
-// where the screen has the columns for that.
+// where the screen has the columns for that; or right after what shows, where a letter two columns wide would not fit.
 func TestTheCursorStaysOnTheScreen(test *testing.T) {
 	// the command line stands on the row over the footer, the screen's last
 	const commandLineRow = commonHeight - 2
 	cases := []struct {
-		name       string
-		width      int
-		text       string
-		lastColumn int
+		name   string
+		width  int
+		text   string
+		column int
 	}{
-		{name: "a line too narrow", width: smallestWidth, text: "parser parser", lastColumn: smallestWidth - 2},
-		{name: "a line narrower than the mark", width: narrowerThanTheMark, text: "pa", lastColumn: 0},
+		{name: "a line too narrow", width: smallestWidth, text: "parser parser", column: smallestWidth - 2},
+		{name: "a line narrower than the mark", width: narrowerThanTheMark, text: "pa", column: 0},
+		{name: "letters two columns wide cut a column short", width: smallestWidth, text: "あいうえa", column: smallestWidth - 3},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -66,18 +68,63 @@ func TestTheCursorStaysOnTheScreen(test *testing.T) {
 			if cursor == nil {
 				test.Fatalf("at %d columns after /%s no cursor shows, want one", testCase.width, testCase.text)
 			}
-			if want := (tea.Position{X: testCase.lastColumn, Y: commandLineRow}); cursor.Position != want {
+			if want := (tea.Position{X: testCase.column, Y: commandLineRow}); cursor.Position != want {
 				test.Errorf("at %d columns after /%s the cursor stands at %+v, want %+v", testCase.width, testCase.text, cursor.Position, want)
 			}
 		})
 	}
 }
 
-// A line typed wider than the command line shows its end, where the cursor stands and the next letter goes.
+// A line typed wider than the command line shows its end, where the cursor stands and the next letter goes, from a
+// whole letter: one a terminal draws from more than one code point is cut whole, never half of it shown.
 func TestALineTooLongShowsItsEnd(test *testing.T) {
-	model := typed(test, pressed(test, fixtureModel(test, smallestWidth, commonHeight), "/"), "abcdefghij")
-	if line := commandLineOf(screenOf(test, model)); line != "/efghij" {
-		test.Errorf("at %d columns after /abcdefghij the command line = %q, want %q", smallestWidth, line, "/efghij")
+	cases := []struct {
+		name  string
+		text  string
+		shown string
+	}{
+		{name: "letters of one code point", text: "abcdefghij", shown: "/efghij"},
+		{name: "a letter of two code points cut", text: accentedLetter + "fghijk", shown: "/fghijk"},
+		{name: "letters two columns wide", text: "あいうえお", shown: "/うえお"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := typed(test, pressed(test, fixtureModel(test, smallestWidth, commonHeight), "/"), testCase.text)
+			if line := commandLineOf(screenOf(test, model)); line != testCase.shown {
+				test.Errorf("at %d columns after /%s the command line = %q, want %q", smallestWidth, testCase.text, line, testCase.shown)
+			}
+		})
+	}
+}
+
+// The line typed after a slash or a colon holds as many code points as its limit, of however many bytes, and a key
+// past them is passed over whole: a letter of two code points with room for one of them is not cut in half.
+func TestAKeyPastTheLimitIsPassedOver(test *testing.T) {
+	// the letters typed before the key end in this one, so the line's end tells it from those the key would add
+	const lastKept = "b"
+	cases := []struct {
+		name    string
+		opening string
+		filler  string
+		typed   int
+		key     string
+	}{
+		{name: "a search, a letter past", opening: "/", filler: "a", typed: typedLimit, key: "c"},
+		{name: "a place or a command, a letter past", opening: ":", filler: "a", typed: typedLimit, key: "c"},
+		{name: "letters of two bytes, a letter past", opening: ":", filler: "ж", typed: typedLimit, key: "c"},
+		{name: "a letter of two code points, room for one", opening: ":", filler: "a", typed: typedLimit - 1, key: accentedLetter},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			filled := typed(test, pressed(test, fixtureModel(test, smallestWidth, commonHeight), testCase.opening),
+				strings.Repeat(testCase.filler, testCase.typed-utf8.RuneCountInString(lastKept))+lastKept)
+			key, _ := utf8.DecodeRuneInString(testCase.key)
+			next, _ := filled.Update(tea.KeyPressMsg{Code: key, Text: testCase.key})
+			if line := commandLineOf(screenOf(test, as[Model](test, next))); !strings.HasSuffix(line, lastKept) {
+				test.Errorf("after %s, %d code points ending in %q and then %q, the command line = %q, want it to end in %q",
+					testCase.opening, testCase.typed, lastKept, testCase.key, line, lastKept)
+			}
+		})
 	}
 }
 

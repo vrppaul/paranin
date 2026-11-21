@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -44,6 +45,10 @@ const countPause = 500 * time.Millisecond
 
 // What a digit is worth in the number typed before it
 const decimalBase = 10
+
+// The most code points the line typed after a slash or a colon holds: far past any place, command or search here,
+// and few enough that the work each key does on the line stays small however long a session types.
+const typedLimit = 256
 
 // mode is what the keys do: move through the page, type a search, type a command, or close the window of keys.
 type mode int
@@ -144,9 +149,9 @@ func (model Model) pressed(key tea.KeyPressMsg) (Model, tea.Cmd) {
 }
 
 // edited is the line the reader types after a key, and what the key did to it: a letter a terminal shows as it is
-// adds itself, a backspace takes the last letter back, whole as the terminal shows it, and Esc, Ctrl+C, as in
-// Neovim, or a backspace on nothing leaves the line. Anything else, a control character among it, is passed over, so
-// it never reaches the screen.
+// adds itself, up to the line's limit, a backspace takes the last letter back, whole as the terminal shows it, and
+// Esc, Ctrl+C, as in Neovim, or a backspace on nothing leaves the line. Anything else, a control character among it,
+// is passed over, so it never reaches the screen.
 func edited(typing string, key tea.KeyPressMsg) (string, lineEdit) {
 	switch key.String() {
 	case escapeKey, interruptKey:
@@ -157,7 +162,7 @@ func edited(typing string, key tea.KeyPressMsg) (string, lineEdit) {
 		}
 		return withoutLastLetter(typing), lineChanged
 	}
-	if !printable(key.Text) {
+	if !printable(key.Text) || utf8.RuneCountInString(typing)+utf8.RuneCountInString(key.Text) > typedLimit {
 		return typing, lineKept
 	}
 	return typing + key.Text, lineChanged

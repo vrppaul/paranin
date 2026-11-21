@@ -2,9 +2,9 @@ package tui
 
 import (
 	"strings"
-	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // The command line's words for the keys it names: what Enter does on a place or a command, and on a search; what Tab
@@ -85,27 +85,28 @@ func (model Model) typedLine(mark string, hints []piece) commandLine {
 	margin := model.drawn.footer.place.margin
 	opening := []piece{{text: mark, part: partCommandMark}}
 	room := model.frame.width - sides*margin - piecesWidth(opening) - cursorWidth
-	if textWidth(model.keys.typing)+hintGap+piecesWidth(hints) > room {
+	shown, shownWidth := shownTyping(model.keys.typing, room)
+	if shownWidth+hintGap+piecesWidth(hints) > room {
 		hints = nil
 	}
-	typed := shownTyping(model.keys.typing, room)
-	row := model.paint.panelLine(append(opening, piece{text: typed, part: partTyped}), hints, margin, model.frame.width)
-	end := margin + piecesWidth(opening) + textWidth(typed)
-	line, shown := model.frame.commandRow()
-	if !shown {
+	row := model.paint.panelLine(append(opening, piece{text: shown, part: partTyped}), hints, margin, model.frame.width)
+	end := margin + piecesWidth(opening) + shownWidth
+	line, lineShown := model.frame.commandRow()
+	if !lineShown {
 		return commandLine{row: row, typedEnd: end, cursor: nil}
 	}
 	position := tea.Position{X: max(min(end, model.frame.width-cursorWidth), 0), Y: line}
 	return commandLine{row: row, typedEnd: end, cursor: &tea.Cursor{Position: position, Color: model.paint.cursorColour, Shape: tea.CursorBar, Blink: true}}
 }
 
-// shownTyping is what the command line shows of what is typed: its end, where the room is too narrow for all of it.
-func shownTyping(typed string, room int) string {
-	for textWidth(typed) > max(room, 0) {
-		_, first := utf8.DecodeRuneInString(typed)
-		typed = typed[first:]
+// shownTyping is the end of what is typed that fits in the room, from a whole letter, and how wide it is.
+func shownTyping(typed string, room int) (shown string, shownWidth int) {
+	shown, shownWidth = typed, textWidth(typed)
+	for shown != "" && shownWidth > room {
+		letter, _ := ansi.FirstGraphemeCluster(shown, ansi.GraphemeWidth)
+		shown, shownWidth = shown[len(letter):], shownWidth-textWidth(letter)
 	}
-	return typed
+	return shown, shownWidth
 }
 
 // hintPieces are keys and what each does, a gap between each two.

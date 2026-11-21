@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // The keys a reader presses, as Bubble Tea names them
@@ -144,8 +144,9 @@ func (model Model) pressed(key tea.KeyPressMsg) (Model, tea.Cmd) {
 }
 
 // edited is the line the reader types after a key, and what the key did to it: a letter a terminal shows as it is
-// adds itself, a backspace takes the last letter back, and Esc, Ctrl+C, as in Neovim, or a backspace on nothing
-// leaves the line. Anything else, a control character among it, is passed over, so it never reaches the screen.
+// adds itself, a backspace takes the last letter back, whole as the terminal shows it, and Esc, Ctrl+C, as in
+// Neovim, or a backspace on nothing leaves the line. Anything else, a control character among it, is passed over, so
+// it never reaches the screen.
 func edited(typing string, key tea.KeyPressMsg) (string, lineEdit) {
 	switch key.String() {
 	case escapeKey, interruptKey:
@@ -154,13 +155,22 @@ func edited(typing string, key tea.KeyPressMsg) (string, lineEdit) {
 		if typing == "" {
 			return typing, lineLeft
 		}
-		_, last := utf8.DecodeLastRuneInString(typing)
-		return typing[:len(typing)-last], lineChanged
+		return withoutLastLetter(typing), lineChanged
 	}
 	if !printable(key.Text) {
 		return typing, lineKept
 	}
 	return typing + key.Text, lineChanged
+}
+
+// withoutLastLetter is a text with its last letter, a grapheme cluster of one code point or more, taken off.
+func withoutLastLetter(text string) string {
+	lastStart := 0
+	for rest := text; rest != ""; {
+		letter, _ := ansi.FirstGraphemeCluster(rest, ansi.GraphemeWidth)
+		lastStart, rest = len(text)-len(rest), rest[len(letter):]
+	}
+	return text[:lastStart]
 }
 
 // normalKey is the model after a key in normal mode: a digit of a number, a first g, or a key's action, counted

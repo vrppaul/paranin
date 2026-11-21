@@ -10,6 +10,9 @@ import (
 // A terminal narrower than the command line's mark and its margins
 const narrowerThanTheMark = 1
 
+// An e and a combining acute accent: one letter on the screen, two code points
+const accentedLetter = "e\U00000301"
+
 // While the reader types on the command line, the terminal's own cursor stands on the row of what they typed, right
 // after it, on a screen too short to spare rows for nothing too.
 func TestTheCursorStandsAfterWhatIsTyped(test *testing.T) {

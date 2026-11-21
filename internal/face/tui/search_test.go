@@ -142,6 +142,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "/pars", lacks: "tab next"},
 		{name: "the matches are counted as the reader types", text: "the", keys: nil, holds: "[1/4]", lacks: "E486"},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
+		{name: "a backspace takes a letter of two code points back whole", text: "parser" + accentedLetter, keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "E486"},
 		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "Northwind", lacks: "esc cancel"},
 		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
 	}

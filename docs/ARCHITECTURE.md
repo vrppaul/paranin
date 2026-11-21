@@ -576,7 +576,7 @@ MVP reads from env with sane defaults (12-factor):
 | Var | Default | Meaning |
 | --- | --- | --- |
 | `PARANIN_SSH_ADDR` | `localhost:23234` | SSH listen address |
-| `PARANIN_SSH_HOST_KEY` | `.ssh/id_ed25519` | host key path (persisted, gitignored; made when missing) |
+| `PARANIN_SSH_HOST_KEY` | `.paranin/ssh_host_ed25519_key` | host key path (persisted, gitignored; made when missing) |
 | `PARANIN_HTTP_ADDR` | `localhost:8080` | HTTP listen address |
 | `PARANIN_MESSAGES_PATH` | `data/messages.jsonl` | where contact messages are appended |
 | `PARANIN_TRUST_PROXY` | off | `1` counts the rate limit by `X-Forwarded-For` |

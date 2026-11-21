@@ -6,12 +6,12 @@
 //
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
-// (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.ssh/id_ed25519, made there when
-// missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds still, as
-// `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops on SIGINT
-// or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for them runs
-// out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults or the
-// server failed, and 2 when the command itself is written wrong.
+// (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
+// made there when missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds
+// still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
+// on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
+// them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults or
+// the server failed, and 2 when the command itself is written wrong.
 package main
 
 import (
@@ -53,14 +53,16 @@ const (
 	releaseArguments = 4
 )
 
-// Where the site is served, and the SSH server's host key, unless the environment says otherwise; and over what
+// Where the site is served, and the SSH server's host key, unless the environment says otherwise; and over what.
+// The host key's file has sshd's name for one, in a folder only this program uses: wherever the server starts, no
+// personal key is found there, and no folder of anyone else's is closed to 0700 when the key is made.
 const (
 	webAddressVariable = "PARANIN_HTTP_ADDR"
 	defaultWebAddress  = "localhost:8080"
 	sshAddressVariable = "PARANIN_SSH_ADDR"
 	defaultSSHAddress  = "localhost:23234"
 	hostKeyVariable    = "PARANIN_SSH_HOST_KEY"
-	defaultHostKey     = ".ssh/id_ed25519"
+	defaultHostKey     = ".paranin/ssh_host_ed25519_key"
 	network            = "tcp"
 )
 

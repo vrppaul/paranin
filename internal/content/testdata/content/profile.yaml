@@ -6,7 +6,6 @@ site:
 
 person:
   name: Mira Example
-  given_name: Mira
   alternate_names: [M. Example]
   title: Software Engineer
   headline: Builds small tools that last.

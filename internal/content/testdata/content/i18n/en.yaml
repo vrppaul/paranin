@@ -23,4 +23,4 @@ copy: copy
 copied: copied
 copy_command: "copy {}"
 copied_command: "Copied {}"
-write_to: "Write to {}"
+write_to: Write to me

@@ -21,7 +21,6 @@ site:
 
 person:
   name: Pavel Paranin
-  given_name: Pavel
   alternate_names: [Paul Paranin, Павел Паранин, vrppaul]
   title: Senior Software Engineer
   headline: Builds backend services, and tools for people who live in the terminal.

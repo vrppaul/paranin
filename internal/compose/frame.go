@@ -43,7 +43,7 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		DarkTheme:    words.Text(content.WordDarkTheme),
 		CommandWords: commandWords,
 		SSH:          commandWords.Of(snapshot.Profile.Site.SSH),
-		WriteTo:      words.Phrase(content.PhraseWriteTo, snapshot.Profile.Person.GivenName),
+		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projectPages(snapshot.Profile.Projects),
 	}
 }

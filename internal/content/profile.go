@@ -34,7 +34,6 @@ type Site struct {
 // Person is who the résumé is about.
 type Person struct {
 	Name           string       `yaml:"name"`
-	GivenName      string       `yaml:"given_name"`
 	AlternateNames []string     `yaml:"alternate_names"`
 	Title          string       `yaml:"title"`
 	Headline       string       `yaml:"headline"`

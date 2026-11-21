@@ -10,7 +10,8 @@ import (
 // résumé or of the index, the greeting before the author's name, the label of a way to reach the author or of a
 // detail of a project, the end of what still goes on, how long a skill was used where it was used on the side or is
 // still being learnt, the title of the TUI's health report, or a word of the page's frame: the name of its theme
-// button, and a command's button that copies it: the word on it and the word it turns to once it has.
+// button, a command's button that copies it: the word on it and the word it turns to once it has, and the first
+// screen's button that writes to the author.
 type Word int
 
 const (
@@ -37,12 +38,12 @@ const (
 	WordDarkTheme
 	WordCopy
 	WordCopied
+	WordWriteTo
 )
 
 // Phrase is one of the site's own phrases, words with a place for one value the site fills in: a command's button's
-// name and what the toast says once it has copied, each with the command; and the first screen's button that writes
-// to the author, with their given name. A catalogue writes the place as phrasePlace, once, where its language puts
-// the value.
+// name and what the toast says once it has copied, each with the command. A catalogue writes the place as
+// phrasePlace, once, where its language puts the value.
 type Phrase int
 
 const (
@@ -50,7 +51,6 @@ const (
 	_ Phrase = iota
 	PhraseCopyCommand
 	PhraseCopiedCommand
-	PhraseWriteTo
 )
 
 // How a phrase writes the place of its value
@@ -61,7 +61,6 @@ func phraseKeys() map[Phrase]string {
 	return map[Phrase]string{
 		PhraseCopyCommand:   "copy_command",
 		PhraseCopiedCommand: "copied_command",
-		PhraseWriteTo:       "write_to",
 	}
 }
 
@@ -90,6 +89,7 @@ func wordKeys() map[Word]string {
 		WordDarkTheme:  "dark_theme",
 		WordCopy:       "copy",
 		WordCopied:     "copied",
+		WordWriteTo:    "write_to",
 	}
 }
 

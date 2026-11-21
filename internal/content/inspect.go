@@ -96,7 +96,6 @@ func inspectSite(inspection *inspection, site Site) {
 
 func inspectPerson(inspection *inspection, person Person) {
 	inspection.require("person.name", person.Name)
-	inspection.require("person.given_name", person.GivenName)
 	inspection.require("person.title", person.Title)
 	if parsed, err := mail.ParseAddress(person.Email); err != nil || parsed.Address != person.Email {
 		inspection.add("person.email", mailProblem, person.Email)

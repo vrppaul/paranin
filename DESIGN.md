@@ -18,11 +18,12 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 
 ## Content
 
-- Write as the profile writes: plain English, short sentences, numbers as figures. The page says "I" only in About;
-  elsewhere it states facts.
+- Write as the profile writes: plain English, short sentences, numbers as figures.
+- The site is its author's: where it speaks, it speaks in the first person, "Write to me", as About does; a fact
+  states itself.
 - Sentence case everywhere. Section names, tabs, fact labels and chips are lower case, as the TUI writes them:
   `experience`, `looking for`. The block-letter titles are capitals because the font has no others.
-- A button's words start with a verb and say what happens: "Write to Pavel", "Copy", "Send". A toast says what was
+- A button's words start with a verb and say what happens: "Write to me", "Copy", "Send". A toast says what was
   done, in the past: "Copied ssh paran.in".
 - An error says what to fix: "Write the whole address, as name@company.com." Never "Invalid input".
 - No small line over a heading, no numbered markers, no emoji, no "→" after a link.

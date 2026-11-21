@@ -401,7 +401,7 @@ Unknown command → `E492: Not an editor command: {text}` in the command line.
 A textarea. On input, match the text (case-insensitive, whole words) against
 each skill's name and aliases; list matches with their sources. Also look for a
 fixed vocabulary of common technology words in the text; those that match no
-skill are listed as "not in the résumé — ask Pavel". The text never leaves the
+skill are listed as "not in the résumé — ask me". The text never leaves the
 browser.
 
 ### Contact form

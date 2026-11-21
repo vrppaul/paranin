@@ -142,7 +142,8 @@ mark .gap {
 
 /* a part of the main part the keyboard reaches scrolls clear of the foot line, which stands over the page's end, its
  * ring too: two rows on a wide screen, where the line takes one, four and the ring on a phone, where today's tabs take
- * it to three. The foot line's own parts stand at the screen's foot always, so nothing scrolls them clear of it */
+ * it to three. The foot line's own parts stand at the screen's foot always, so nothing scrolls them clear of it. A
+ * search's match brought into sight stands as far clear of the foot line's top (src/controllers/search.ts) */
 main * {
   scroll-margin-bottom: var(--row-2);
 }
@@ -467,6 +468,29 @@ main * {
 .command-said {
   margin: 0;
   color: var(--error);
+}
+
+/* what the line says of a search's match shown, which is no refusal */
+.command-said[data-state="found"] {
+  color: var(--text);
+}
+
+/* the count of a search's matches at the line's right, before its keys, as the TUI writes it */
+.command-count {
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+/* a search's matches on the page (DESIGN.md, CommandLine), as the TUI paints them: on the accent, in the words that
+ * stand on it; the one the count names reversed, not bold, which a highlight cannot set */
+::highlight(match) {
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+::highlight(match-current) {
+  background-color: var(--text);
+  color: var(--background);
 }
 
 .command-keys {

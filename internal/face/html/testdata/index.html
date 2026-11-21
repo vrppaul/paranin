@@ -359,7 +359,7 @@
 </div>
 </section>
 </main>
-<div class="foot">
+<div class="foot" data-part="foot">
 <div class="command-line content-width" data-part="command-line" hidden>
 <div class="command-entry" data-part="command-entry">
 <ul id="places" class="places-menu" role="listbox" aria-label="places" data-part="places" hidden>
@@ -406,15 +406,25 @@
 </span> <span class="places-kind">project</span>
 </li>
 </ul>
-<span class="command-mark" aria-hidden="true">:</span>
-<input id="command-field" class="command-field" type="text" role="combobox" aria-label="command" aria-controls="places" aria-expanded="false" aria-autocomplete="list" aria-describedby="command-keys" autocomplete="off" autocapitalize="off" spellcheck="false" data-part="command-field">
+<span class="command-mark" aria-hidden="true" data-part="command-mark">:</span>
+<span class="command-mark" aria-hidden="true" data-part="search-mark" hidden>/</span>
+<input id="command-field" class="command-field" type="text" role="combobox" aria-label="command" aria-controls="places" aria-expanded="false" aria-autocomplete="list" aria-describedby="command-keys" autocomplete="off" autocapitalize="off" spellcheck="false" data-part="command-field" data-search-name="search">
 </div>
 <p class="command-said" role="alert" data-part="command-said" hidden>
 </p>
 <span id="command-keys" class="command-keys" data-part="command-keys">
 <span class="command-hint" data-part="command-next">
-<kbd class="command-key">tab</kbd> next</span> <span class="command-hint">
-<kbd class="command-key">↵</kbd> go</span> <span class="command-hint">
+<kbd class="command-key">tab</kbd> next</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> go</span>
+<span class="command-hint">
+<kbd class="command-key">esc</kbd> cancel</span>
+</span> <span id="search-keys" class="command-keys" data-part="search-keys" hidden>
+<span class="command-count" data-part="search-count">
+</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> find</span>
+<span class="command-hint">
 <kbd class="command-key">esc</kbd> cancel</span>
 </span>
 </div>

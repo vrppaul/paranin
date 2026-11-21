@@ -28,7 +28,7 @@ One source of facts, drawn in every form a technical reader uses: an SSH TUI (`s
 ## Capabilities and Constraints
 
 - The TUI moves between tabs and scrolls, and offers `/` search, `:` commands (`:e <project>`, `:checkhealth`, `:Lazy`) and a window of keys; `y` copies a value over OSC 52.
-- The web page has a theme choice, and a hint with the command for each way a terminal reads it. The vim keys' `/` and the contact form come later, the form's salary range the first island.
+- The web page has a theme choice, a hint with the command for each way a terminal reads it, and vim keys: `:` to go to a place, `/` to find on the page. The contact form comes later, its salary range the first island.
 - Planned: a blog, an LLM grounded in the content, and a CV tailored to a job description. Neither of the last two ever invents experience.
 - The theme choice on the web is one button: the page starts in the system's theme, and a choice that lands back on it is forgotten (owner, 2026-11-17; `DESIGN.md`, ThemeSwitch).
 

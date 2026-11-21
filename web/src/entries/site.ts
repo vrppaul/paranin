@@ -12,8 +12,14 @@ const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 
 startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
 startVimSwitch(document, () => localStorage);
-void import("../controllers/commandline").then(({ startCommandLine }) =>
-  startCommandLine(document, (address) => location.assign(address)),
+void Promise.all([import("../controllers/commandline"), import("../controllers/search")]).then(
+  ([{ startCommandLine }, { HighlightMarks, PageLayout }]) =>
+    startCommandLine(
+      document,
+      (address) => location.assign(address),
+      new HighlightMarks(CSS.highlights),
+      new PageLayout(window),
+    ),
 );
 void import("../controllers/tooltip").then(({ startTooltips }) => startTooltips(document));
 void import("../controllers/command").then(({ startCommands }) =>

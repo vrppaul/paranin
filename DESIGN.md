@@ -292,6 +292,13 @@ in a `quiet` hairline, `radius`, what it does `muted`.
   its hairline, and scrolls in the browser's own thin bar, keeping the one chosen in sight; the page does not move.
 - Enter goes where the line says; a command it refuses it names on the line in `error`, as Neovim words it (`E492: Not
   an editor command: x`), until the next key. Esc, Backspace on an empty line and the focus leaving close it.
+- `/` opens the same line for a search, as the TUI's: what is typed marks the page's words at once, whatever their
+  case, on `accent` in `on_accent` words, the one the count names reversed, not bold, and brings the page to
+  the first match at or after where it stood, `row_2` clear of the panel; the count, `[1/4]`, bold in `text`, stands
+  before `↵ find` and `esc cancel`. Enter keeps the search, and the line says `/Python [1/4]` in `text` until the next
+  key; n and N go round the matches, from where the page stands once it is scrolled away, saying each; a search that
+  finds nothing says `E486: Pattern not found: x` in `error`. Esc while typing puts back the search kept before and
+  the page where it stood; Esc on the page puts the search away.
 
 ### ThemeSwitch
 

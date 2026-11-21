@@ -1,9 +1,7 @@
-// The command line the vim keys open, run over the page the server draws: the HTML face's golden page of the
-// résumé's experience tab (internal/face/html/testdata), which that face's own tests hold to what it writes. The
-// addresses the line goes to are handed to the test, in place of the browser.
+// The command line the vim keys open, run over the page the server draws (./linepage.ts): a place or a command after
+// the colon.
 import { expect, test } from "vitest";
-import { startCommandLine } from "../../src/controllers/commandline";
-import experiencePage from "../../../internal/face/html/testdata/experience.html?raw";
+import { found, input, press, started, type } from "./linepage";
 
 // The parts as the server draws them: the switch and its box, the line, its field, each place on its menu with the
 // letters typed of its name, what the line says of a command that failed, and the key that goes round the places
@@ -16,51 +14,6 @@ const PLACE = '[data-part="place"]';
 const TYPED = '[data-part="place-typed"]';
 const SAID = '[data-part="command-said"]';
 const NEXT = '[data-part="command-next"]';
-
-/** The document's element a selector finds, which the golden page draws. */
-function found(selector: string): HTMLElement {
-  const element = document.querySelector<HTMLElement>(selector);
-  if (element === null) {
-    throw new Error(`the page has no ${selector}`);
-  }
-  return element;
-}
-
-/** An input of the golden page a selector finds: the switch's box or the line's field. */
-function input(selector: string): HTMLInputElement {
-  const element = document.querySelector<HTMLInputElement>(selector);
-  if (element === null) {
-    throw new Error(`the page has no ${selector}`);
-  }
-  return element;
-}
-
-/** The golden page with its command line run, the vim keys ticked or not, once a change of the test's is made to it;
- * the addresses the line goes to land in the list returned. */
-function started(ticked = true, changed: (page: Document) => void = () => undefined): string[] {
-  const parsed = new DOMParser().parseFromString(experiencePage, "text/html");
-  changed(parsed);
-  document.body.replaceWith(document.adoptNode(parsed.body));
-  const went: string[] = [];
-  startCommandLine(document, (address) => went.push(address));
-  // the switch's own script shows it on the page
-  found(SWITCH).hidden = false;
-  input(BOX).checked = ticked;
-  return went;
-}
-
-/** A key pressed where the focus is, or on the page where nothing holds it. */
-function press(key: string, held: KeyboardEventInit = {}): void {
-  const target = document.activeElement ?? document.body;
-  target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...held }));
-}
-
-/** Letters typed on the line, after what is there. */
-function type(letters: string): void {
-  const field = input(FIELD);
-  field.value += letters;
-  field.dispatchEvent(new Event("input", { bubbles: true }));
-}
 
 /** The places the menu shows. */
 function shownPlaces(): HTMLElement[] {
@@ -215,7 +168,7 @@ test.each([
   { name: "the project's page :e names", typed: "e tidy-tool", want: ["/p/tidy-tool"] },
   { name: "nowhere on the tab shown", typed: "experience", want: [] },
 ])("Enter goes to $name and closes the line", ({ typed, want }) => {
-  const went = started();
+  const { went } = started();
   press(":");
   type(typed);
   press("Enter");
@@ -223,7 +176,7 @@ test.each([
 });
 
 test("Enter says why it refuses a command until the next key, the focus handed back, and goes nowhere", () => {
-  const went = started();
+  const { went } = started();
   const link = found('[aria-current="page"]');
   link.focus();
   press(":");
@@ -243,7 +196,7 @@ test.each([
   { name: "on Backspace with nothing typed", close: () => press("Backspace") },
   { name: "when the focus leaves it", close: () => found(FIELD).blur() },
 ])("the line closes $name, going nowhere", ({ close }) => {
-  const went = started();
+  const { went } = started();
   press(":");
   close();
   expect({ went, open: seen().open }).toEqual({ went: [], open: false });
@@ -275,7 +228,7 @@ function projectNamedAsTab(page: Document): void {
 }
 
 test("a press on a project's page :e lists goes to the project, though a tab takes its name", () => {
-  const went = started(true, projectNamedAsTab);
+  const { went } = started(true, projectNamedAsTab);
   press(":");
   type("e ");
   found(`${PLACE}[data-place="project"]`).click();
@@ -283,7 +236,7 @@ test("a press on a project's page :e lists goes to the project, though a tab tak
 });
 
 test("a press on a place goes there", () => {
-  const went = started();
+  const { went } = started();
   press(":");
   found(`${PLACE}[data-name="skills"]`).click();
   expect(went).toEqual(["/skills"]);

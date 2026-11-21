@@ -69,7 +69,7 @@ templ headOpening(title string, included assets.Included) {
 // the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands the command line
 // the vim keys open; what it is handed, the toast, stands with it, over it.
 templ footLineMarkup(foot footLine) {
-	<div class="foot">
+	<div class="foot" data-part={ footPart }>
 		@commandLineMarkup(foot.places)
 		<nav class="foot-row content-width">
 			<a class="session" href={ foot.frame.start }><span aria-hidden="true">{ sessionOpening }</span>{ foot.frame.siteName }<span aria-hidden="true">{ sessionClosing }</span></a>
@@ -103,9 +103,10 @@ templ vimKeysSwitch() {
 }
 
 // commandLineMarkup is the command line the vim keys open over the foot line (DESIGN.md, CommandLine), as Neovim's
-// stands with no row of its own: a field the reader types a place's name or a command in, after the colon, the menu
-// of the places that fit what is typed over it, what the line says of a command that failed, and the keys that
-// finish it. The site's script opens it, shows each place that fits with the letters typed, and goes where it says.
+// stands with no row of its own: a field the reader types a place's name or a command in, after the colon, or a
+// search after the slash, the menu of the places that fit what is typed over it, what the line says of a command or a
+// search, and the keys that finish it, a search's with the count of its matches. The site's script opens it, shows
+// the mark and the keys of the key that opened it, and goes where it says or marks what it finds.
 templ commandLineMarkup(places []place) {
 	<div class="command-line content-width" data-part={ commandLinePart } hidden>
 		<div class="command-entry" data-part={ commandEntryPart }>
@@ -114,11 +115,31 @@ templ commandLineMarkup(places []place) {
 					@placeItem(index, shown)
 				}
 			</ul>
-			<span class="command-mark" aria-hidden="true">{ commandMark }</span><input id={ commandFieldPart } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ placesPart } aria-expanded="false" aria-autocomplete="list" aria-describedby={ commandKeysPart } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart }/>
+			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><input id={ commandFieldPart } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ placesPart } aria-expanded="false" aria-autocomplete="list" aria-describedby={ commandKeysPart } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-name={ searchName }/>
 		</div>
 		<p class="command-said" role="alert" data-part={ commandSaidPart } hidden></p>
-		<span id={ commandKeysPart } class="command-keys" data-part={ commandKeysPart }><span class="command-hint" data-part={ nextKeyPart }><kbd class="command-key">{ tabKey }</kbd> { nextHint }</span> <span class="command-hint"><kbd class="command-key">{ enterMark }</kbd> { goHint }</span> <span class="command-hint"><kbd class="command-key">{ escapeKey }</kbd> { cancelHint }</span></span>
+		<span id={ commandKeysPart } class="command-keys" data-part={ commandKeysPart }>
+			@keyHint(tabKey, nextHint, nextKeyPart)
+			@keyHint(enterMark, goHint, "")
+			@keyHint(escapeKey, cancelHint, "")
+		</span>
+		<span id={ searchKeysPart } class="command-keys" data-part={ searchKeysPart } hidden>
+			<span class="command-count" data-part={ searchCountPart }></span>
+			@keyHint(enterMark, findHint, "")
+			@keyHint(escapeKey, cancelHint, "")
+		</span>
 	</div>
+}
+
+// keyHint is a key the command line names and what it does, the key a cap; a part names it where the site's script
+// shows and hides it.
+templ keyHint(key, does, part string) {
+	<span
+		class="command-hint"
+		if part != "" {
+			data-part={ part }
+		}
+	><kbd class="command-key">{ key }</kbd> { does }</span>
 }
 
 // placeItem is a place on the command line's menu, hidden until what is typed fits it: its name, the letters typed of

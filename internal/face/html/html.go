@@ -120,6 +120,20 @@ const (
 	nextKeyPart      = "command-next"
 )
 
+// The search the vim keys' slash opens on the same line (web/src/controllers/commandline.ts): the colon's mark and the
+// slash's, which the script shows by the key that opened the line, the field's name while a search is typed, and the
+// keys a search names, the count of its matches first; and the foot line, which a match brought into sight stands
+// clear of (web/src/controllers/search.ts)
+const (
+	footPart        = "foot"
+	commandMarkPart = "command-mark"
+	searchMarkPart  = "search-mark"
+	searchMark      = "/"
+	searchName      = "search"
+	searchKeysPart  = "search-keys"
+	searchCountPart = "search-count"
+)
+
 // The id of a place on the command line's menu, its number after this, which the field names as the one chosen
 const placeIDOpening = "place-"
 
@@ -129,6 +143,7 @@ const (
 	nextHint   = "next"
 	enterMark  = "↵"
 	goHint     = "go"
+	findHint   = "find"
 	escapeKey  = "esc"
 	cancelHint = "cancel"
 	closeHint  = "close"

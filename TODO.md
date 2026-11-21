@@ -17,6 +17,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - Nothing moves the pins forward: the actions' commits in `.github/workflows/gates.yml`, the hooks' revs and Python packages in `.pre-commit-config.yaml`, the hashes of `.github/pre-commit-requirements.txt`. Dependabot for actions, pip, npm and gomod comes with the repository's remote, at hosting, since SEC-12 of `docs/REQUIREMENTS.md` asks for dependency updates in CI.
 - Phase 3 (§8, step 11).
 - A review of every test against `.claude/rules/tests.md`: which named behaviour each holds, and whether another test already holds it; a list to delete, merge or keep, for the owner, before any is changed. Its place in the order is the owner's.
+- The name rule of `scripts/coderules` lets `conn` and `conn2` pass: "conn" is not among the abbreviations it refuses.
 - `scripts/tokens`' table of faulty files of tokens tells each fault by its words, which `.claude/rules/tests.md` refuses: each fault a kind of its own, as the least contrast's are, would let the table read which fault came.
 - The command line's tests open each page of a test in jsdom's one document, so the line of a page opened before it still listens there and answers the keys too; a test of the page opened next passes while both answer.
 - A window narrowed to a phone's width hides the vim keys' switch, and with it the keys, while a search kept stays marked there with no key to put it away; nothing watches the width, which lives in the stylesheet's media query alone.
@@ -60,6 +61,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
 
 ## Upstream
+
 
 - Bubble Tea writes a panic it catches and its stack straight to standard error, and wish's middleware logs the error `Run` ended with through charm's own logger: neither takes ours. Our log holds a panic of the TUI's model (`internal/hosting/ssh`), but a panic in a command Bubble Tea runs reaches theirs alone. A way to hand Bubble Tea a logger, or a hook for the panic it catches, would make slog the one log ADR-0001 asks for.
 - claude-review's `scripts/check_instruction_files.py` takes a word for a path by `/` or by a suffix it knows, and `.go` is not among them: a bare `main.go` in a rule is never checked. Proposed there; copied back here whole.

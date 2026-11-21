@@ -2,7 +2,9 @@ package names
 
 import (
 	"errors"
+	"net"
 	text "strings" // a name given to an import is a name too
+	"time"
 
 	s "strconv"   // want `"s" is not a whole word \(in "s"\)`
 	str "unicode" // want `"str" is not a whole word \(in "str"\)`
@@ -123,4 +125,41 @@ func kind(value any) string {
 func oneOfAKind() int {
 	a := 1 // want `"a" is not a whole word \(in "a"\)`
 	return a
+}
+
+// A method of a type that implements an interface asking for it keeps the name the interface gives it, the type's
+// pointer the one that implements it here.
+type pipeEnd struct{}
+
+func (*pipeEnd) Read([]byte) (int, error) { return 0, nil }
+
+func (*pipeEnd) Write([]byte) (int, error) { return 0, nil }
+
+func (*pipeEnd) Close() error { return nil }
+
+func (*pipeEnd) LocalAddr() net.Addr { return nil }
+
+func (*pipeEnd) RemoteAddr() net.Addr { return nil }
+
+func (*pipeEnd) SetDeadline(time.Time) error { return nil }
+
+func (*pipeEnd) SetReadDeadline(time.Time) error { return nil }
+
+func (*pipeEnd) SetWriteDeadline(time.Time) error { return nil }
+
+// A short name no interface asks for is refused.
+func (*pipeEnd) Seg() int { return 0 } // want `"Seg" is not a whole word \(in "Seg"\)`
+
+// A type whose method of an interface's name has another shape implements none, and its name is refused.
+type stringListener struct{}
+
+func (stringListener) Accept() (net.Conn, error) { return nil, nil }
+
+func (stringListener) Close() error { return nil }
+
+func (stringListener) Addr() string { return "" } // want `"Addr" is not a whole word \(in "Addr"\)`
+
+// An interface's own method is a name it gives, read as any other.
+type addressed interface {
+	PeerAddr() net.Addr // want `"Addr" is not a whole word \(in "PeerAddr"\)`
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/ast"
+	"go/types"
 	"slices"
 	"strings"
 	"unicode"
@@ -34,7 +35,9 @@ counted, and not be an abbreviation, in the singular or the plural (seg, segs, c
 kept: alone, those of D11; inside a longer name, also the small words of English. An initialism is a word,
 written as Go writes it: in capitals, or in small letters where a name or a part of it starts (ID, userID,
 idList, Example_url; URLs; ETag; HTTP2Server), and refused in mixed case (userId, Urls, Http2Server). One of
-two letters stands alone only as "id" (D14).`
+two letters stands alone only as "id" (D14). A method of a type that implements an interface asking for it
+keeps the name the interface gives it (RemoteAddr of a net.Conn): the interface's own name is read where it
+is declared.`
 
 // nameRule is what the rule reads a word against, each table keyed in lower case.
 type nameRule struct {
@@ -152,18 +155,19 @@ func spellingsByLowerCase(spellings []string) map[string]string {
 }
 
 func runWholeNames(pass *analysis.Pass, rule nameRule) (any, error) {
+	interfaces := interfacesInScope(pass.Pkg)
 	for _, file := range writtenFiles(pass) {
-		ast.Inspect(file, func(node ast.Node) bool { return visitForNames(pass, rule, node) })
+		ast.Inspect(file, func(node ast.Node) bool { return visitForNames(pass, rule, interfaces, node) })
 	}
 	return nil, nil
 }
 
-func visitForNames(pass *analysis.Pass, rule nameRule, node ast.Node) bool {
+func visitForNames(pass *analysis.Pass, rule nameRule, interfaces []*types.Interface, node ast.Node) bool {
 	switch typed := node.(type) {
 	case *ast.File:
 		reportName(pass, rule, typed.Name)
 	case *ast.Ident:
-		if pass.TypesInfo.Defs[typed] != nil {
+		if declared := pass.TypesInfo.Defs[typed]; declared != nil && !isAskedFor(declared, interfaces) {
 			reportName(pass, rule, typed)
 		}
 	case *ast.TypeSwitchStmt:

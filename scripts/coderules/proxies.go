@@ -96,26 +96,7 @@ func isFoundByName(pass *analysis.Pass, file *ast.File, function *ast.FuncDecl, 
 	if function.Recv == nil {
 		return isTestFile(pass, file) && startsAsTest(function.Name.Name)
 	}
-	method, isMethod := pass.TypesInfo.Defs[function.Name].(*types.Func)
-	if !isMethod {
-		return false
-	}
-	receiver := method.Signature().Recv().Type()
-	for _, asking := range interfaces {
-		if asksFor(asking, method.Name()) && (types.Implements(receiver, asking) || types.Implements(types.NewPointer(receiver), asking)) {
-			return true
-		}
-	}
-	return false
-}
-
-func asksFor(asking *types.Interface, name string) bool {
-	for method := range asking.Methods() {
-		if method.Name() == name {
-			return true
-		}
-	}
-	return false
+	return isAskedFor(pass.TypesInfo.Defs[function.Name], interfaces)
 }
 
 func startsAsTest(name string) bool {
@@ -125,30 +106,6 @@ func startsAsTest(name string) bool {
 		}
 	}
 	return false
-}
-
-// interfacesInScope are the interfaces the package and the packages it imports declare, and error.
-func interfacesInScope(checked *types.Package) []*types.Interface {
-	interfaces := slices.Concat(interfacesIn(types.Universe), interfacesIn(checked.Scope()))
-	for _, imported := range checked.Imports() {
-		interfaces = append(interfaces, interfacesIn(imported.Scope())...)
-	}
-	return interfaces
-}
-
-// interfacesIn are the interfaces a scope declares.
-func interfacesIn(scope *types.Scope) []*types.Interface {
-	interfaces := []*types.Interface{}
-	for _, name := range scope.Names() {
-		typeName, isTypeName := scope.Lookup(name).(*types.TypeName)
-		if !isTypeName {
-			continue
-		}
-		if declared, isInterface := typeName.Type().Underlying().(*types.Interface); isInterface {
-			interfaces = append(interfaces, declared)
-		}
-	}
-	return interfaces
 }
 
 // passedOnCall is the call a body only passes on: one call, alone or held and returned, on what stands unchanged;

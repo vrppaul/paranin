@@ -13,6 +13,7 @@ The rules for code in any language here; Go's own are in `.claude/rules/go.md`, 
 
 - A name says what it holds, in whole words: `writer`, `request`, `rowIndex`, never `w`, `r`, `i`, `seg`, `cfg`. Coordinates are no exception: `nodeX`, `offsetY`, never `x`, `y`.
 - A few short words are kept, listed once, in `scripts/coderules/names.go`.
+- A name an interface fixes, a method a type implements it by, is kept as the interface writes it: `RemoteAddr`.
 - A name the gate lets pass still says what it holds: `data`, `info`, `handle`, `process` and `value2` say nothing.
 
 ## Values

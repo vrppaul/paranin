@@ -231,8 +231,8 @@ Never coloured: the underline says it is a link. Nothing is marked with an arrow
 One line of tmux's at the foot of every page, after its main part: it sticks to the screen's foot as the page scrolls
 under it, and on a page shorter than the screen stands at the screen's foot. `sunk` ground, a `quiet` hairline over
 it, one `row` tall and twice `focus_width` under it, so a ring is never cut, `small`, on the content's grid. A part
-wraps whole to a row more where the screen is too narrow for the line; a part the keyboard reaches scrolls `row_2`
-clear of it, `row_4` on a phone.
+wraps whole to a row more where the screen is too narrow for the line; a part of the main part the keyboard reaches
+scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, always in sight, scroll nothing.
 
 - The session: `[paran.in]` in `host`, leading to where the site begins.
 - The document's tabs as windows, as the TUI numbers its tabs: `1:about`, the number `faint`, the name lower case, a
@@ -244,9 +244,37 @@ clear of it, `row_4` on a phone.
   which open the hint's window (TODO, the islands) and until then do nothing; then the markdown of the page whole by
   its file's name, a link, the résumé's on a page that has none. `deep` ground, a `quiet` hairline turning `text`
   under the pointer, `caption` words.
-- Then the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line.
+- Then the VimKeys switch and the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line, and the
+  CommandLine, open, on the row over it.
 - On a phone the session and the theme button share the first row, the windows take the rows `row_half` below by their
-  names alone, a `nudge` either side, wrapping, and the ways give way to them.
+  names alone, a `nudge` either side, wrapping, and the ways and the VimKeys switch give way to them.
+
+### VimKeys
+
+`[ ] vim keys` at the foot line's end, before the ThemeSwitch: a checkbox as a terminal writes one, the brackets
+`muted`, the tick `x` bold in `text`, then its words; the whole label is the target. Under the pointer it turns `deep`
+as a window does; the keyboard's focus rings the label. Ticked, the keys of the CommandLine answer, on every page after
+too; unticked, a page has no keys of its own. The script shows it; without it, and on a phone, which has no keys, it
+is gone, and with it the keys, so none answers where the reader cannot untick them.
+
+### CommandLine
+
+Neovim's command line with no row of its own, as the TUI's: hidden until `:` is typed with the vim keys on, then a row
+of the foot line's panel over the line's own, the two one panel, `small`. After the colon what is typed in `text`, the
+cursor an underscore in `accent`, as the cursor after the name, which is the field's focus, so no ring; at the right
+the keys it names, `tab next` (while a place fits), `↵ go`, `esc cancel`, each key a cap of `caption` words on `deep`
+in a `quiet` hairline, `radius`, what it does `muted`.
+
+- The menu of the places that fit what is typed stands over it as soon as the colon is typed and narrows with each
+  letter: before a letter the page's tabs but the one shown, then every tab and project's page the letters start, after
+  `:e ` the projects' pages. A hairline box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name
+  under where the line writes it, a cell of air either side, its kind `muted` four cells after it, `tab` or `project`.
+  The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as small text.
+- Tab and Shift+Tab go round them, writing the one chosen on the line, reversed and bold as the window shown. The menu
+  holds as many whole rows as the screen has over the foot line's two, a row of air above, stands a `nudge` clear of
+  its hairline, and scrolls in the browser's own thin bar, keeping the one chosen in sight; the page does not move.
+- Enter goes where the line says; a command it refuses it names on the line in `error`, as Neovim words it (`E492: Not
+  an editor command: x`), until the next key. Esc, Backspace on an empty line and the focus leaving close it.
 
 ### ThemeSwitch
 

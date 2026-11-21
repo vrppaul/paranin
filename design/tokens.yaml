@@ -250,7 +250,7 @@ lengths:
     about: how wide every line is, a border's or a rule's
     rem: 0.0625
   - name: underline_hover
-    about: how thick a link's underline is under the pointer, two hairlines
+    about: how thick a link's underline is under the pointer, two hairlines, and the line under the letters typed on the command line's menu
     rem: 0.125
 
 times:

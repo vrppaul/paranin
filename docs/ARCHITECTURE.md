@@ -73,9 +73,10 @@ but our own (`script-src 'self'`).
 - Go draws every page, with **templ**: typed components the compiler checks.
 - What a reader works on in the browser is an **island of Svelte 5**,
   TypeScript in strict mode, mounted into server markup at a `data-island`:
-  the vim chrome, the salary range, the job matcher, the chat, an article's
-  widgets. Behaviour over server markup that draws nothing of its own is a
-  TypeScript controller.
+  the salary range, the job matcher, the chat, an article's widgets.
+  Behaviour over server markup that draws nothing of its own is a
+  TypeScript controller, as the vim keys' command line is: the server draws
+  its places, the controller shows those that fit.
 - One CSS library, `ui.css`, gives templ and Svelte components the same
   classes; stylelint refuses those classes in any other stylesheet.
 - The page's code lives in `web/`, a pnpm package built by Vite.

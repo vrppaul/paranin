@@ -2,7 +2,8 @@
 // (internal/face/html/testdata), which that face's own tests hold to what it writes, so a change to the markup the
 // controller runs over fails here too.
 import { beforeEach, expect, test } from "vitest";
-import { startTheme, type ChoiceStore, type SystemScheme } from "../../src/controllers/theme";
+import type { ChoiceStore } from "../../src/controllers/choice";
+import { startTheme, type SystemScheme } from "../../src/controllers/theme";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
 import missingPage from "../../../internal/face/html/testdata/notfound.html?raw";
 

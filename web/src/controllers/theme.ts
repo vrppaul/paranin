@@ -7,6 +7,7 @@
 // (Firefox) may show it in the system's theme for a moment first. The colour scheme is never set as a style: the
 // build writes each token's light-dark() pair as variables the stylesheet's rules switch, and a style set by script
 // would pass them by.
+import { forgetChoice, keepChoice, storedChoice, type ChoiceStore } from "./choice";
 
 /** The themes a page is shown in, each as the stylesheet names it. */
 const THEMES = ["light", "dark"] as const;
@@ -26,9 +27,6 @@ const BUTTON = "button";
 const PRESSED = "aria-pressed";
 const PRESSED_THEME: Theme = "dark";
 
-/** Where a choice is kept: the browser's storage, of which the choice reads, writes and forgets one key. */
-export type ChoiceStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-
 /** The system's theme as a page asks it: whether it is dark, and a word whenever that changes. */
 export type SystemScheme = Pick<MediaQueryList, "matches" | "addEventListener">;
 
@@ -40,7 +38,7 @@ export type SystemScheme = Pick<MediaQueryList, "matches" | "addEventListener">;
  */
 export function startTheme(page: Document, storage: () => ChoiceStore, system: SystemScheme): void {
   const root = page.documentElement;
-  const chosen = storedTheme(storage);
+  const chosen = themeNamed(storedChoice(storage, STORAGE_KEY));
   if (chosen !== undefined) {
     root.setAttribute(THEME_ATTRIBUTE, chosen);
   }
@@ -66,10 +64,10 @@ function turn(root: HTMLElement, button: HTMLButtonElement, storage: () => Choic
   const turned = OTHER_THEME[shownTheme(root, system)];
   if (turned === systemTheme(system)) {
     root.removeAttribute(THEME_ATTRIBUTE);
-    forgetTheme(storage);
+    forgetChoice(storage, STORAGE_KEY);
   } else {
     root.setAttribute(THEME_ATTRIBUTE, turned);
-    keepTheme(storage, turned);
+    keepChoice(storage, STORAGE_KEY, turned);
   }
   pressShown(root, button, system);
 }
@@ -91,32 +89,4 @@ function systemTheme(system: SystemScheme): Theme {
 /** The theme a word names, if it names one. */
 function themeNamed(word: string | null): Theme | undefined {
   return THEMES.find((theme) => theme === word);
-}
-
-/** The theme the reader chose on an earlier page, where the browser kept it. */
-function storedTheme(storage: () => ChoiceStore): Theme | undefined {
-  try {
-    return themeNamed(storage().getItem(STORAGE_KEY));
-  } catch {
-    // The browser hands over no storage, or will not read it: the reader has chosen nothing it can tell
-    return undefined;
-  }
-}
-
-/** Keeps a theme chosen for the pages after, where the browser will keep it. */
-function keepTheme(storage: () => ChoiceStore, theme: Theme): void {
-  try {
-    storage().setItem(STORAGE_KEY, theme);
-  } catch {
-    // The browser keeps nothing: the choice holds for this page alone
-  }
-}
-
-/** Forgets a choice, so every page after follows the system's theme. */
-function forgetTheme(storage: () => ChoiceStore): void {
-  try {
-    storage().removeItem(STORAGE_KEY);
-  } catch {
-    // The browser keeps nothing, so it holds no choice to forget
-  }
 }

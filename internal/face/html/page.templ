@@ -66,9 +66,11 @@ templ headOpening(title string, included assets.Included) {
 // line: the session, the site's name leading to where it begins; the document's tabs as windows, each by its number
 // and name leading to its page, the one shown the current page; the ways the site is served as chips, the programs
 // that reach it and read it in a terminal, which do nothing yet (TODO, the islands), and the page's markdown; then the
-// theme button. A screen reader skips the session's brackets. What it is handed, the toast, stands with it, over it.
+// switch that turns the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands
+// the command line the vim keys open; what it is handed, the toast, stands with it, over it.
 templ footLineMarkup(foot footLine) {
 	<div class="foot">
+		@commandLineMarkup(foot.places)
 		<nav class="foot-row content-width">
 			<a class="session" href={ foot.frame.start }><span aria-hidden="true">{ sessionOpening }</span>{ foot.frame.siteName }<span aria-hidden="true">{ sessionClosing }</span></a>
 			if len(foot.windows) > 0 {
@@ -85,10 +87,44 @@ templ footLineMarkup(foot footLine) {
 				@wayChip(foot.frame.readingProgram)
 				<a class="way-chip" href={ foot.markdown }>{ foot.markdownName }</a>
 			</span>
+			@vimKeysSwitch()
 			@themeButton(foot.frame.darkTheme)
 		</nav>
 		{ children... }
 	</div>
+}
+
+// vimKeysSwitch is the switch that turns the vim keys on (DESIGN.md, VimKeys), a checkbox as a terminal writes one,
+// its box drawn in brackets, the stylesheet ticking it, and the whole label its target. The site's script shows it and
+// keeps the reader's choice; a page read without the script has no keys to turn on, and hides it.
+templ vimKeysSwitch() {
+	<label class="vim-keys" data-part={ vimKeysPart } hidden><input type="checkbox" class="vim-keys-box"/><span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick"></span>]</span>{ vimKeysWords }</label>
+}
+
+// commandLineMarkup is the command line the vim keys open over the foot line (DESIGN.md, CommandLine), as Neovim's
+// stands with no row of its own: a field the reader types a place's name or a command in, after the colon, the menu
+// of the places that fit what is typed over it, what the line says of a command that failed, and the keys that
+// finish it. The site's script opens it, shows each place that fits with the letters typed, and goes where it says.
+templ commandLineMarkup(places []place) {
+	<div class="command-line content-width" data-part={ commandLinePart } hidden>
+		<div class="command-entry" data-part={ commandEntryPart }>
+			<ul id={ placesPart } class="places-menu" role="listbox" aria-label={ placesName } data-part={ placesPart } hidden>
+				for index, shown := range places {
+					@placeItem(index, shown)
+				}
+			</ul>
+			<span class="command-mark" aria-hidden="true">{ commandMark }</span><input id={ commandFieldPart } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ placesPart } aria-expanded="false" aria-autocomplete="list" aria-describedby={ commandKeysPart } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart }/>
+		</div>
+		<p class="command-said" role="alert" data-part={ commandSaidPart } hidden></p>
+		<span id={ commandKeysPart } class="command-keys" data-part={ commandKeysPart }><span class="command-hint" data-part={ nextKeyPart }><kbd class="command-key">{ tabKey }</kbd> { nextHint }</span> <span class="command-hint"><kbd class="command-key">{ enterMark }</kbd> { goHint }</span> <span class="command-hint"><kbd class="command-key">{ escapeKey }</kbd> { cancelHint }</span></span>
+	</div>
+}
+
+// placeItem is a place on the command line's menu, hidden until what is typed fits it: its name, the letters typed of
+// it apart from the rest, and what it is; it carries what the site's script reads of it, its name and address, its
+// kind, and whether it is the page shown.
+templ placeItem(index int, shown place) {
+	<li id={ placeIDOpening + strconv.Itoa(index+1) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
 }
 
 // windowLink is a tab as tmux writes a window, its number, a colon and its name, leading to its page; the current one

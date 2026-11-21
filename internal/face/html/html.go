@@ -97,6 +97,42 @@ const (
 	tooltipPart = "tooltip"
 )
 
+// The vim keys as the site's script finds and runs them (web/src/controllers/vimswitch.ts and commandline.ts): the
+// switch that turns them on and its words; the command line they open, the part a reader types in and its field, the
+// field's name to a screen reader and the mark before it; the menu of its places, each place and the letters of its
+// name typed and not; what the line says of a command that failed; and the keys it names, Tab's among them, which
+// shows while a place fits. A part and an id share a name where the field names the part by its id
+const (
+	vimKeysPart      = "vim-keys"
+	vimKeysWords     = "vim keys"
+	commandLinePart  = "command-line"
+	commandEntryPart = "command-entry"
+	commandFieldPart = "command-field"
+	commandName      = "command"
+	commandMark      = ":"
+	placesPart       = "places"
+	placesName       = "places"
+	placePart        = "place"
+	placeTypedPart   = "place-typed"
+	placeRestPart    = "place-rest"
+	commandSaidPart  = "command-said"
+	commandKeysPart  = "command-keys"
+	nextKeyPart      = "command-next"
+)
+
+// The id of a place on the command line's menu, its number after this, which the field names as the one chosen
+const placeIDOpening = "place-"
+
+// The keys the command line names, each with what it does, as the TUI's names them
+const (
+	tabKey     = "tab"
+	nextHint   = "next"
+	enterMark  = "↵"
+	goHint     = "go"
+	escapeKey  = "esc"
+	cancelHint = "cancel"
+)
+
 // How the foot line writes tmux's parts: the session between its brackets, and the colon between a window's number
 // and its name
 const (

@@ -12,8 +12,10 @@ const LAYERS = {
   // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, and the design's
   // times they wait
   entries: ["controllers", "ui", "tokens"],
-  // Behaviour over the markup the server draws, each over one part of it
-  controllers: [],
+  // Behaviour over the markup the server draws, each over one part of it, on the logic of the page
+  controllers: ["domain"],
+  // The page's logic, with no page to touch: the command line's
+  domain: [],
 };
 // Every part of src/, those that hold no script among them: a stylesheet is reached by an import as a module is
 const PARTS = [...Object.keys(LAYERS), "ui", "tokens"];

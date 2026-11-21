@@ -61,6 +61,8 @@ export default {
       // its foot (DESIGN.md, FootLine)
       "/^width$/": ["%"],
       "/^min-height$/": ["dvh"],
+      // the command line's menu holds as many whole rows as the screen has over the foot line (DESIGN.md, CommandLine)
+      "/^max-height$/": ["dvh"],
       // the toast stands over the foot line it hangs from, however tall the line is
       "/^bottom$/": ["%"],
       // a grid's column takes the room the others leave: a section's title beside its blocks, a fact's value beside

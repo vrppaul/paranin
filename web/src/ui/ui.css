@@ -136,10 +136,11 @@ mark .gap {
   white-space: nowrap;
 }
 
-/* a part the keyboard reaches scrolls clear of the foot line, which stands over the page's end, its ring too: two rows
- * on a wide screen, where the line takes one, four and the ring on a phone, where today's tabs take it to three */
-html {
-  scroll-padding-bottom: var(--row-2);
+/* a part of the main part the keyboard reaches scrolls clear of the foot line, which stands over the page's end, its
+ * ring too: two rows on a wide screen, where the line takes one, four and the ring on a phone, where today's tabs take
+ * it to three. The foot line's own parts stand at the screen's foot always, so nothing scrolls them clear of it */
+main * {
+  scroll-margin-bottom: var(--row-2);
 }
 
 /* the session: the site's name between tmux's brackets, in the host's colour, as the TUI's footer writes it; under the
@@ -183,8 +184,10 @@ html {
   color: var(--faint);
 }
 
-/* the window shown, reversed and bold as the TUI's tab: a mark of form, not of colour alone */
-.window[aria-current] {
+/* the window shown, and the place chosen on the command line's menu, reversed and bold as the TUI's tab: a mark of
+ * form, not of colour alone */
+.window[aria-current],
+.places-item[aria-selected="true"] {
   background: var(--text);
   color: var(--background);
   font-weight: var(--type-strong-weight);
@@ -236,16 +239,62 @@ html {
   color: var(--prompt);
 }
 
+/* the switch that turns the vim keys on (DESIGN.md, VimKeys): a checkbox as a terminal writes one, its box in muted
+ * brackets, its tick bold, then its words, the whole label the target; under the pointer on the ground a shade down, as
+ * a window, which reaches a cell past its words. The box itself is drawn as nothing, laid over the whole label, so a
+ * press lands on it, not on the label, which would focus it as a script does, and its focus ring rings the label */
+.vim-keys {
+  position: relative;
+  display: inline-flex;
+  gap: var(--cell);
+  margin-inline: calc(-1 * var(--cell));
+  padding-inline: var(--cell);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--quick);
+}
+
+.vim-keys[hidden] {
+  display: none;
+}
+
+.vim-keys:hover {
+  background: var(--deep);
+}
+
+.vim-keys-box {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+.vim-keys-mark {
+  color: var(--muted);
+}
+
+.vim-keys-tick {
+  display: inline-block;
+  width: var(--cell);
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+.vim-keys:has(:checked) .vim-keys-tick::before {
+  content: "x" / "";
+}
+
 /* on a phone the gutters narrow; the foot line's session and theme button share its first row, the windows take the
  * rows below, half a row under it, wrapping, by their names alone, each a nudge past its words, and the ways give way
- * to them */
+ * to them, as the vim keys' switch does, since a phone has no keys */
 @media (width < 53.75rem) {
   .content-width {
     padding-inline: var(--gutter-phone);
   }
 
-  html {
-    scroll-padding-bottom: calc(var(--row-4) + 2 * var(--focus-width));
+  main * {
+    scroll-margin-bottom: calc(var(--row-4) + 2 * var(--focus-width));
   }
 
   .foot-row {
@@ -270,6 +319,7 @@ html {
   }
 
   .ways,
+  .vim-keys,
   .window-number,
   .window[aria-current]::after {
     display: none;
@@ -280,9 +330,132 @@ html {
   a,
   .session,
   .window,
-  .way-chip {
+  .way-chip,
+  .vim-keys {
     transition: none;
   }
+}
+
+/* the command line the vim keys open (DESIGN.md, CommandLine), as Neovim's with no row of its own: a row of the foot
+ * line's panel over the line's own, the two one panel, in its small words; what is typed after the colon in the
+ * text's colour, the cursor in the accent, which is the field's focus, so no ring; what a refused command says in the
+ * error's colour; the keys it names at its right, each a key cap, what it does muted */
+.command-line {
+  display: flex;
+  align-items: center;
+  gap: 0 var(--cell-2);
+  min-height: var(--row);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--row);
+  white-space: nowrap;
+}
+
+.command-line[hidden],
+.command-entry[hidden],
+.command-keys[hidden] {
+  display: none;
+}
+
+.command-entry {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-field {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  caret-color: var(--accent);
+  caret-shape: underscore;
+}
+
+.command-field:focus-visible {
+  outline: none;
+}
+
+.command-said {
+  margin: 0;
+  color: var(--error);
+}
+
+.command-keys {
+  display: inline-flex;
+  gap: var(--cell-2);
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.command-key {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(var(--row) - 2 * var(--nudge));
+  padding: 0 var(--nudge);
+  border: var(--hairline) solid var(--quiet);
+  border-radius: var(--radius);
+  background: var(--deep);
+  color: var(--text);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+}
+
+/* the menu of the places that fit what is typed: over the page, a nudge clear of the foot line's hairline, a hairline
+ * box on the panel's ground as a tooltip, its names standing under where the line writes them, past the colon and what
+ * comes before the name; its rows whole and as many as the screen holds over the foot line's two rows with a row of air
+ * above, the rest scrolled to in the browser's own thin bar */
+.places-menu {
+  position: absolute;
+  bottom: calc(100% + var(--hairline) + var(--nudge));
+  left: calc(var(--typed-cells, 0) * var(--cell));
+  max-height: round(down, 100dvh - var(--row-3), var(--row));
+  margin: 0;
+  padding: 0;
+  overflow: hidden auto;
+  border: var(--hairline) solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  list-style: none;
+  scrollbar-color: var(--muted) var(--sunk);
+  scrollbar-width: thin;
+}
+
+/* a place, its name then its kind four cells after it, a cell of air either side; the letters typed bold, underlined
+ * in the accent, which Latte allows a fill, never small text; the one chosen reversed whole, its kind with it */
+.places-item {
+  display: flex;
+  gap: calc(2 * var(--cell-2));
+  justify-content: space-between;
+  padding: 0 var(--cell);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.places-item[hidden] {
+  display: none;
+}
+
+.places-typed {
+  font-weight: var(--type-strong-weight);
+  text-decoration: underline var(--accent) var(--underline-hover);
+  text-underline-offset: var(--nudge);
+}
+
+.places-kind {
+  color: var(--muted);
+}
+
+.places-item[aria-selected="true"] .places-kind {
+  color: var(--background);
+}
+
+.places-item[aria-selected="true"] .places-typed {
+  text-decoration: none;
 }
 
 /* the theme: one quiet square button, a drawn mark and no words, compact in size, no border and no ground (DESIGN.md,

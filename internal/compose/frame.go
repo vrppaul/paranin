@@ -2,17 +2,20 @@ package compose
 
 import (
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
 )
 
 // Frame is what a face lays round the documents it draws, on every page alike, in the site's words: the name of the
 // theme button, which is pressed while the page is dark, the words of the button that copies a command, the command
-// that reaches the site over ssh, one of the ways it is served, with those words, and the words of the button that
-// writes to the author.
+// that reaches the site over ssh, one of the ways it is served, with those words, the words of the button that
+// writes to the author, and the page of each project that has one, in the profile's order, which a face's command
+// line goes to by slug as the TUI's :e does.
 type Frame struct {
 	DarkTheme    string
 	CommandWords CommandWords
 	SSH          Command
 	WriteTo      string
+	Projects     []document.Page
 }
 
 // CommandWords are the site's words for the button that copies a command, which a face lays beside each command it
@@ -41,7 +44,17 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		CommandWords: commandWords,
 		SSH:          commandWords.Of(snapshot.Profile.Site.SSH),
 		WriteTo:      words.Phrase(content.PhraseWriteTo, snapshot.Profile.Person.GivenName),
+		Projects:     projectPages(snapshot.Profile.Projects),
 	}
+}
+
+// projectPages are the pages of the projects that have one.
+func projectPages(projects []content.Project) []document.Page {
+	pages := []document.Page{}
+	for _, project := range projectsWithPages(projects) {
+		pages = append(pages, projectPage(project))
+	}
+	return pages
 }
 
 // Of is a command with the words of the button that copies it: the word on it and the word it turns to, then its name

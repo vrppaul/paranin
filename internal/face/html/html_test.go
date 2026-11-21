@@ -207,7 +207,9 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 // Every page ends with the foot line, the page of no page among them: the session, the site's name leading to where
 // it begins; the document's tabs as windows by their numbers and names, each leading to its page, the one shown the
 // current page; the programs that reach the site and read it in a terminal; the markdown of the page whole,
-// the résumé's where a page has none; and the theme button.
+// the résumé's where a page has none; the switch that turns the vim keys on, and the theme button. Over it stands
+// the command line those keys open, with the places it goes to by name: the document's tabs, the one shown among
+// them, then the page of each project that has one, by its slug, shown where its opening is.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -217,8 +219,13 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	every := []string{
 		`<a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`,
 		`<span class="way-mark" aria-hidden="true">❯</span>ssh</button>`, `<span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
-		`data-part="theme"`,
+		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
 	}
+	// the place of the fixture's one project with a page; another project has none, so no place
+	const (
+		projectPlace = `data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool"`
+		noPagePlace  = `data-name="other-tool"`
+	)
 	// the résumé's markdown, which the page of no page offers too
 	const resumeMarkdown = `<a class="way-chip" href="/index.md">index.md</a>`
 	cases := []struct {
@@ -233,8 +240,10 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				resumeMarkdown, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
+				`data-place="tab" data-name="about" data-address="/" data-current`,
+				`data-place="tab" data-name="contact" data-address="/contact"`, projectPlace,
 			}),
-			lacks: nil,
+			lacks: []string{noPagePlace},
 		},
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
@@ -250,10 +259,19 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				`<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
 				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
+				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
+				`data-place="tab" data-name="why" data-address="/p/tidy-tool/why"`, projectPlace + ` data-current`,
 			}),
 			lacks: nil,
 		},
-		{name: "the page of no page", page: missing.For("/nothing"), holds: slices.Concat(every, []string{resumeMarkdown}), lacks: []string{`class="window"`}},
+		{
+			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
+			holds: slices.Concat(every, []string{projectPlace + ` hidden`}), lacks: []string{projectPlace + ` data-current`},
+		},
+		{
+			name: "the page of no page", page: missing.For("/nothing"),
+			holds: slices.Concat(every, []string{resumeMarkdown, projectPlace}), lacks: []string{`class="window"`, `data-place="tab"`},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

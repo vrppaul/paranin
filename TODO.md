@@ -6,7 +6,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
-  - The TUI's search marks the match its count names reversed, as the page's does (owner, 11-21), where today every match stands on the accent alike.
   - The first island, the form's salary range, waits for `inbox` (step 10). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles; its script loads by a dynamic import, not with the site's entry, which holds the first paint.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - The sitemap, when it is served, lists every tab's address beside its page's.

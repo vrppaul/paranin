@@ -89,7 +89,7 @@ func New(documents []document.Document, site routes.Site, width, height int, tod
 		today:    today,
 		frame:    frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, under: 0, crosses: false},
 		laid:     nil,
-		paint:    paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, cursorColour: nil, fewColours: false, noColours: false},
+		paint:    paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, matchGround: nil, matchText: nil, matchUnderline: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn: drawnScreen{
 			tabs: nil, crossRow: "", blankRow: "", track: "", thumb: "",
 			footer:    paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: paintedBar{text: "", width: 0}},

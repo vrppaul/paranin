@@ -11,6 +11,7 @@ The rules for Go are in `.claude/rules/go.md`.
 - A key press chooses which painted lines show, fades the page's last two, and writes where the page stands (ruler, scrollbar) and the command line as typed, with the menu of what Tab goes round for it.
 - Nothing else is laid out or painted for a key, but for the search and a buffer shown.
 - A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away paints every tab again, once.
+- n and N, naming another match, paint again only the lines of the match named before and of the one named now.
 - Showing another buffer, by `:e`, `:checkhealth` or `:Lazy`, or by the key `q` or `:q` on any page but the résumé, lays out and paints the buffer shown, once.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.
 - The layout says what a piece of text is, a kind; the paint says how each kind looks. No colour, weight or style is written in the layout.

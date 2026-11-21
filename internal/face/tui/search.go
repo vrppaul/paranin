@@ -103,11 +103,10 @@ func (model Model) typedInSearch(key tea.KeyPressMsg) Model {
 // that line where nothing matches.
 func (model Model) retyped() Model {
 	model = model.repaintedChosen()
-	shown := model.search.begunAt
-	if matches := model.drawn.tabs[model.chosen].matches; len(matches) > 0 {
-		shown = matches[matchAtOrAfter(matches, shown)]
+	if named := model.drawn.tabs[model.chosen].named; named.occurrence != noMatch {
+		return model.scrolledTo(named.line)
 	}
-	return model.scrolledTo(shown)
+	return model.scrolledTo(model.search.begunAt)
 }
 
 // searchLeft is the model after the reader leaves the search line unconfirmed: the chosen tab marks the search
@@ -179,6 +178,24 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 	model = model.scrolledTo(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
 	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.scrolls[model.chosen], shown: true}
+	return model.renamed()
+}
+
+// renamed is the model with the chosen tab's match its count names named anew: the line of the match named before
+// and the line of the one named now painted again, and no other.
+func (model Model) renamed() Model {
+	drawn := model.drawn.tabs[model.chosen]
+	named := model.namedMatchOf(model.chosen, drawn.matches)
+	lines := slices.Clone(drawn.lines)
+	painted := []int{}
+	for _, changed := range []namedMatch{drawn.named, named} {
+		if changed.occurrence != noMatch && !slices.Contains(painted, changed.line) {
+			lines[changed.line] = model.paint.pageLine(drawn.marked[changed.line], model.frame, named.occurrenceOn(changed.line))
+			painted = append(painted, changed.line)
+		}
+	}
+	model.drawn.tabs = slices.Clone(model.drawn.tabs)
+	model.drawn.tabs[model.chosen].lines, model.drawn.tabs[model.chosen].named = lines, named
 	return model
 }
 
@@ -211,10 +228,57 @@ func matchBefore(matches []int, line int) int {
 	return len(matches) - 1
 }
 
-// matchedRun is a run of a line, and whether it is a match of the search.
+// matchedRun is a run of a line, and which match of the search on its line it is part of, counted from the line's
+// first, noMatch where it is none.
 type matchedRun struct {
 	run
-	matched bool
+	occurrence int
+}
+
+// noMatch is the occurrence of a run that is no match, and of a line's named match where its line names none.
+const noMatch = -1
+
+// namedMatch is the match a tab's count names: its place among the tab's matches, its line, and which match of the
+// line it is, noMatch where the tab names none.
+type namedMatch struct {
+	place      int
+	line       int
+	occurrence int
+}
+
+// noneNamed is a tab's named match where it names none.
+func noneNamed() namedMatch {
+	return namedMatch{place: noMatch, line: noMatch, occurrence: noMatch}
+}
+
+// occurrenceOn is which match of a line the count names, noMatch where it names none there.
+func (named namedMatch) occurrenceOn(line int) int {
+	if named.occurrence == noMatch || named.line != line {
+		return noMatch
+	}
+	return named.occurrence
+}
+
+// namedMatchOf is the match a tab's count names among its matches: on the chosen tab while the reader types, the
+// first at or after the line the search began at, as the line counts it; else the one the tab showed last.
+func (model Model) namedMatchOf(place int, matches []int) namedMatch {
+	if model.keys.mode == modeSearch && place == model.chosen {
+		return namedAt(matches, matchAtOrAfter(matches, model.search.begunAt))
+	}
+	if place < len(model.search.shown) && model.search.shown[place].shown {
+		return namedAt(matches, model.search.shown[place].place)
+	}
+	return noneNamed()
+}
+
+// namedAt is the match at a place among a tab's matches, in order, named; none where no match stands there. A line's
+// matches stand side by side among them, so which of its line a match is counts from the line's first.
+func namedAt(matches []int, place int) namedMatch {
+	if place < 0 || place >= len(matches) {
+		return noneNamed()
+	}
+	line := matches[place]
+	return namedMatch{place: place, line: line, occurrence: place - slices.Index(matches, line)}
 }
 
 // markedLine is a line with each match of the search parted into a run of its own, and how many matches it holds.
@@ -252,13 +316,13 @@ func matchStarts(letters, query []rune) []int {
 	return starts
 }
 
-// matchMarks are whether each of a count of letters lies in a match, the matches starting at places and each as
-// long as the query.
-func matchMarks(starts []int, letterCount, queryLength int) []bool {
-	marks := make([]bool, letterCount)
-	for _, start := range starts {
+// matchMarks are which match each of a count of letters lies in, noMatch where none, the matches starting at places
+// and each as long as the query.
+func matchMarks(starts []int, letterCount, queryLength int) []int {
+	marks := slices.Repeat([]int{noMatch}, letterCount)
+	for occurrence, start := range starts {
 		for index := range queryLength {
-			marks[start+index] = true
+			marks[start+index] = occurrence
 		}
 	}
 	return marks
@@ -266,7 +330,7 @@ func matchMarks(starts []int, letterCount, queryLength int) []bool {
 
 // partedRuns are a line's runs parted where a letter's mark differs from the one before it, each part marked as
 // its letters are.
-func partedRuns(shown line, marks []bool) []matchedRun {
+func partedRuns(shown line, marks []int) []matchedRun {
 	matched := []matchedRun{}
 	place := 0
 	for _, piece := range shown {
@@ -286,7 +350,7 @@ func partedRuns(shown line, marks []bool) []matchedRun {
 	return matched
 }
 
-func partOf(piece run, letters []rune, matched bool) matchedRun {
+func partOf(piece run, letters []rune, occurrence int) matchedRun {
 	piece.text = string(letters)
-	return matchedRun{run: piece, matched: matched}
+	return matchedRun{run: piece, occurrence: occurrence}
 }

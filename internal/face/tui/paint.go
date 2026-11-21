@@ -74,9 +74,11 @@ type paint struct {
 	// with none underlined
 	highlightGround color.Color
 	highlightText   color.Color
-	// a match of the search stands on the accent, its text laid on it, and with few colours or none reversed
-	matchGround color.Color
-	matchText   color.Color
+	// the match of the search the count names stands on the accent, its text laid on it, and with few colours or none
+	// reversed; the others are underlined in the accent, or in the terminal's own colour where it shows few or none
+	matchGround    color.Color
+	matchText      color.Color
+	matchUnderline color.Color
 	// the terminal's cursor is the accent, or the terminal's own colour where it shows few colours or none
 	cursorColour color.Color
 	fewColours   bool
@@ -161,7 +163,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 		highlightText:   colour(look.ColourOnAccent),
 		matchGround:     colour(look.ColourAccent),
 		matchText:       colour(look.ColourOnAccent),
-		cursorColour:    cursorColourOf(colour(look.ColourAccent), fewColours),
+		matchUnderline:  accentWhereColourful(colour(look.ColourAccent), fewColours),
+		cursorColour:    accentWhereColourful(colour(look.ColourAccent), fewColours),
 		fewColours:      fewColours,
 		noColours:       noColours,
 	}
@@ -210,10 +213,11 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 	return nil
 }
 
-// cursorColourOf is the colour the terminal's cursor takes: the accent, or none where the terminal shows few
-// colours. A terminal takes the cursor's colour as red, green and blue: with sixteen colours those would be the
-// standard ones, not the reader's theme's, and with none lipgloss's absent colour would read as black.
-func cursorColourOf(accent color.Color, fewColours bool) color.Color {
+// accentWhereColourful is the accent, or none, the terminal's own colour, where the terminal shows few colours: the
+// colour of its cursor and of an underline. A terminal takes the cursor's colour as red, green and blue, with sixteen
+// colours the standard ones, not the reader's theme's, and with none lipgloss's absent colour would read as black;
+// and a coloured underline is one more thing a terminal of few colours may not draw.
+func accentWhereColourful(accent color.Color, fewColours bool) color.Color {
 	if fewColours {
 		return nil
 	}
@@ -247,28 +251,32 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 	return lipgloss.NoColor{}
 }
 
-// tab paints a tab's lines in the frame, each match of the search marked: each at the page's left edge, cut at its
-// right one.
-func (paint paint) tab(lines []markedLine, frame frame) []paintedLine {
+// tab paints a tab's lines in the frame, each match of the search marked, the one its count names apart.
+func (paint paint) tab(lines []markedLine, frame frame, named namedMatch) []paintedLine {
 	drawn := make([]paintedLine, 0, len(lines))
-	gutter := strings.Repeat(space, frame.left)
-	for _, shown := range lines {
-		painted, width := paint.line(shown.runs, frame.inner, nil)
-		drawn = append(drawn, paintedLine{text: gutter + painted, width: frame.left + width})
+	for place, shown := range lines {
+		drawn = append(drawn, paint.pageLine(shown, frame, named.occurrenceOn(place)))
 	}
 	return drawn
 }
 
+// pageLine paints a line of a tab at the page's left edge, cut at its right one, its matches marked, the one of them
+// the count names apart, where the count names one of this line.
+func (paint paint) pageLine(shown markedLine, frame frame, named int) paintedLine {
+	painted, width := paint.line(shown.runs, frame.inner, nil, named)
+	return paintedLine{text: strings.Repeat(space, frame.left) + painted, width: frame.left + width}
+}
+
 // faded paints a line of the page as a row at its foot fades, its text in a faded colour, its highlight, its marks
 // and its link kept.
-func (paint paint) faded(shown markedLine, frame frame, colour color.Color) string {
-	painted, _ := paint.line(shown.runs, frame.inner, colour)
+func (paint paint) faded(shown markedLine, frame frame, colour color.Color, named int) string {
+	painted, _ := paint.line(shown.runs, frame.inner, colour, named)
 	return strings.Repeat(space, frame.left) + painted
 }
 
-// line paints a line cut at a width, its text in a faded colour where one is given, and says how many columns it
-// took.
-func (paint paint) line(shown []matchedRun, width int, faded color.Color) (string, int) {
+// line paints a line cut at a width, its text in a faded colour where one is given, its match the count names
+// apart, and says how many columns it took.
+func (paint paint) line(shown []matchedRun, width int, faded color.Color, named int) (string, int) {
 	var builder strings.Builder
 	used := 0
 	for _, piece := range shown {
@@ -276,15 +284,16 @@ func (paint paint) line(shown []matchedRun, width int, faded color.Color) (strin
 		if text == "" {
 			continue
 		}
-		builder.WriteString(paint.style(piece, faded).Render(text))
+		builder.WriteString(paint.style(piece, faded, piece.occurrence != noMatch && piece.occurrence == named).Render(text))
 		used += textWidth(text)
 	}
 	return builder.String(), used
 }
 
 // style is the look of a run: its kind's, its text in a faded colour where one is given, highlighted where it is a
-// result, marked where it matches the search, carrying its address where it links.
-func (paint paint) style(piece matchedRun, faded color.Color) lipgloss.Style {
+// result, marked where it matches the search, apart where it is the match the count names, carrying its address
+// where it links.
+func (paint paint) style(piece matchedRun, faded color.Color, named bool) lipgloss.Style {
 	style := paint.kinds[piece.kind]
 	if tones := paint.tonesOf(piece.kind); len(tones) > 0 {
 		style = style.Foreground(tones[piece.tone%len(tones)])
@@ -298,9 +307,14 @@ func (paint paint) style(piece matchedRun, faded color.Color) lipgloss.Style {
 			style = style.Foreground(paint.highlightText)
 		}
 	}
-	// a match stands out over a highlight too, and with few colours or none it is reversed, as a highlight is not
-	if piece.matched {
+	// the match the count names stands out over a highlight too, and with few colours or none it is reversed, as a
+	// highlight is not; the others are underlined, and with no colours bold as well, since a highlight is underlined
+	// there
+	switch {
+	case named:
 		style = style.Background(paint.matchGround).Foreground(paint.matchText).Reverse(paint.fewColours)
+	case piece.occurrence != noMatch:
+		style = style.Underline(true).UnderlineColor(paint.matchUnderline).Bold(paint.noColours)
 	}
 	if piece.address != "" {
 		style = style.Hyperlink(piece.address)

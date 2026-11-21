@@ -141,11 +141,12 @@ type drawnTab struct {
 }
 
 // paintedPage is a tab's lines painted with the search it marks, and marked, unpainted, for the two rows a key fades;
-// and the line of each match, in order: a line holding two matches is there twice.
+// the line of each match, in order: a line holding two matches is there twice; and the match its count names.
 type paintedPage struct {
 	lines   []paintedLine
 	marked  []markedLine
 	matches []int
+	named   namedMatch
 }
 
 // paintedLine is a line of a page painted from the screen's left edge to its own end, and the columns it takes.
@@ -183,10 +184,12 @@ func (model Model) drawnScreen() drawnScreen {
 	}
 }
 
-// paintedPage paints a tab's lines, each match of the search it marks marked.
+// paintedPage paints a tab's lines, each match of the search it marks marked, the one its count names apart.
 func (model Model) paintedPage(place int) paintedPage {
 	marked := markedLines(model.laid[place], model.markedQuery(place))
-	return paintedPage{lines: model.paint.tab(marked, model.frame), marked: marked, matches: matchLines(marked)}
+	matches := matchLines(marked)
+	named := model.namedMatchOf(place, matches)
+	return paintedPage{lines: model.paint.tab(marked, model.frame, named), marked: marked, matches: matches, named: named}
 }
 
 // screen draws the whole screen: the page between its crosses, the footer under it, the command line over the footer
@@ -235,9 +238,9 @@ func (model Model) pageRows(drawn drawnTab) []string {
 		text := shown.text
 		switch {
 		case fading && frame.rows-row == fadedMostFromBottom:
-			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedMost)
+			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedMost, drawn.named.occurrenceOn(scroll+row))
 		case fading && frame.rows-row == fadedLessFromBottom:
-			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedLess)
+			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedLess, drawn.named.occurrenceOn(scroll+row))
 		}
 		rows = append(rows, text+bar.rest(shown.width, row))
 	}

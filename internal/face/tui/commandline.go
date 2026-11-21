@@ -59,11 +59,11 @@ func (model Model) commandLine() commandLine {
 // matches the page shows, where what is typed matches, as the chosen tab marks it, then what Enter and Esc do.
 func (model Model) searchHints() []piece {
 	hints := hintPieces([]hint{{key: enterMark, does: findHint}, {key: escapeKey, does: cancelHint}})
-	matches := model.drawn.tabs[model.chosen].matches
-	if len(matches) == 0 {
+	drawn := model.drawn.tabs[model.chosen]
+	if drawn.named.occurrence == noMatch {
 		return hints
 	}
-	count := matchCount(matchAtOrAfter(matches, model.search.begunAt), len(matches))
+	count := matchCount(drawn.named.place, len(drawn.matches))
 	return append([]piece{{text: count, part: partCount}, {text: strings.Repeat(space, countGap), part: partPanel}}, hints...)
 }
 

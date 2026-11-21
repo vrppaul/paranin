@@ -20,8 +20,8 @@
 // the lead beside the brief, the mail heading it, then the title, the place and the first facts, read off the
 // sections as the TUI reads its brief (document.BriefOf), the ssh command as a chip the script lets copy (frame.go),
 // and the ways to the author's profiles; the facts the brief leaves stay in their section, where the brief stood. A
-// fact whose value is a command alone, as a project's install line, stands as such a chip too, and every document's
-// page holds the toast that says what a chip copied; a fact whose value is one link to a mailbox stands as the mail,
+// fact whose value is a command alone, as a project's install line, stands as such a chip too, and every page's foot
+// line holds the toast that says what a chip copied; a fact whose value is one link to a mailbox stands as the mail,
 // in the size of the text round it.
 // A page shows a document as a reader of the finished work sees it (document.WrittenBlocks), a fact or a point that is
 // only a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.

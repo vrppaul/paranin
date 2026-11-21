@@ -13,8 +13,8 @@ import (
 )
 
 // page is a page of a document in its language: what it says of itself, its title, its description, the address it is
-// known by with Open Graph and its record as linked data, and its markdown, each where it has one; then its main part,
-// the foot line, and the toast that says what a command's chip on it copied.
+// known by with Open Graph and its record as linked data, and its markdown, each where it has one; then its main part
+// and the foot line.
 templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
 	<html lang={ language }>
@@ -36,9 +36,7 @@ templ (writer PageWriter) page(language string, metadata pageMetadata, record co
 			<main class="content-width">
 				@main
 			</main>
-			@footLineMarkup(foot) {
-				@toast()
-			}
+			@footLineMarkup(foot)
 		</body>
 	</html>
 }
@@ -67,7 +65,7 @@ templ headOpening(title string, included assets.Included) {
 // and name leading to its page, the one shown the current page; the ways the site is served as chips, the programs
 // that reach it and read it in a terminal, each opening its hint, and the page's markdown; then the switch that turns
 // the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands the command line
-// the vim keys open; what it is handed, the toast, stands with it, over it.
+// the vim keys open, and the toast that says what a command's chip on the page, or in a hint, copied.
 templ footLineMarkup(foot footLine) {
 	<div class="foot" data-part={ footPart }>
 		@commandLineMarkup(foot.places)
@@ -91,7 +89,7 @@ templ footLineMarkup(foot footLine) {
 			@vimKeysSwitch()
 			@themeButton(foot.frame.darkTheme)
 		</nav>
-		{ children... }
+		@toast()
 	</div>
 }
 

@@ -1,10 +1,11 @@
-// The command chips, run over the résumé the server draws: the HTML face's golden page (internal/face/html/testdata),
+// The command chips, run over the pages the server draws: the HTML face's golden pages (internal/face/html/testdata),
 // which that face's own tests hold to what it writes. A fake clipboard stands for the browser's, and the clock is
 // the test's own, so the toast's time passes when a test says.
 import { afterEach, beforeEach, expect, test, vi, type Mock } from "vitest";
 import { startCommands, type CommandClipboard } from "../../src/controllers/command";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
 import projectPage from "../../../internal/face/html/testdata/p/tidy-tool.html?raw";
+import notFoundPage from "../../../internal/face/html/testdata/notfound.html?raw";
 
 // The chip, the words it copies and its button as the server draws them; the toast and its words
 const CHIP = '[data-part="command"]';
@@ -87,10 +88,14 @@ async function press(): Promise<void> {
   await vi.advanceTimersByTimeAsync(0);
 }
 
+/** Makes the document a golden page, as the browser would show it. */
+function showPage(page: string): void {
+  document.documentElement.innerHTML = new DOMParser().parseFromString(page, "text/html").documentElement.innerHTML;
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
-  const parsed = new DOMParser().parseFromString(resumePage, "text/html");
-  document.documentElement.innerHTML = parsed.documentElement.innerHTML;
+  showPage(resumePage);
 });
 
 afterEach(() => {
@@ -162,7 +167,11 @@ test("a press that leaves the caret in the chip, selecting nothing, copies", asy
   expect(clipboard.written).toEqual([COMMAND]);
 });
 
-test("a copy from a hint's window closes the window, and the toast says what was copied", async () => {
+test.each([
+  { name: "the résumé", page: resumePage },
+  { name: "the page of no page", page: notFoundPage },
+])("on $name a copy from a hint's window closes the window, and the toast says what was copied", async ({ page }) => {
+  showPage(page);
   const hidePopover = lentHidePopover();
   started();
   found(`${HINT} ${CHIP}`).click();

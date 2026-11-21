@@ -19,6 +19,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - `scripts/tokens`' table of faulty files of tokens tells each fault by its words, which `.claude/rules/tests.md` refuses: each fault a kind of its own, as the least contrast's are, would let the table read which fault came.
 - The command line's tests open each page of a test in jsdom's one document, so the line of a page opened before it still listens there and answers the keys too; a test of the page opened next passes while both answer.
 - A window narrowed to a phone's width hides the vim keys' switch, and with it the keys, while a search kept stays marked there with no key to put it away; nothing watches the width, which lives in the stylesheet's media query alone.
+- `page.templ`'s page and `notfound.templ`'s each write the whole frame round a page by hand, the doctype, the language, the head's opening, the main part and the foot line, so a part of the frame added to one can be left out of the other, as the toast was: one frame template taking the head's extras and the main part, as templ's own docs build a layout, would hold it once.
 - The theme and the vim keys' switch read the reader's choice once, as a page opens: a page the browser shows again from its cache keeps the choice it opened with, though a page opened after it changed it.
 
 ## Documents

@@ -1,29 +1,77 @@
-// Finding words on the page, as the TUI's search finds them: where a search matches a text, which match a step goes
-// to, and what the line says.
+// Finding words on the page, as the TUI's search finds them: where a search matches a passage, which match a step
+// goes to, and what the line says.
 import { expect, test } from "vitest";
-import { foundSaid, matchStarts, placeAtOrAfter, placeBefore, steppedPlace } from "../../src/domain/search";
+import { foundSaid, matchesIn, passageOf, placeAtOrAfter, placeBefore, steppedPlace } from "../../src/domain/search";
 
 // n's step on to the next match, and N's back
 const ONWARD = 1;
 const BACK = -1;
 
+// A project's line as the page writes it, a no-break space before the dot, and as a reader reads it; and the same
+// search typed with a plain space and with a no-break one
+const DOTTED_AS_WRITTEN = "Python\u00a0· tools";
+const DOTTED_AS_READ = "Python · tools";
+const DOTTED_TYPED = "python ·";
+const DOTTED_TYPED_UNBROKEN = "python\u00a0·";
+
+/** A place in a passage, by the words of the piece it stands in. */
+function placed(words: string, offset: number): { piece: { data: string }; offset: number } {
+  return { piece: { data: words }, offset };
+}
+
 test.each([
   {
-    name: "each place a search starts, whatever its case",
-    text: "Python 2 to python 3",
+    name: "each match, whatever its case",
+    pieces: ["Python 2 to python 3"],
     query: "PYTHON",
-    want: [0, "Python 2 to ".length],
+    want: [
+      { start: placed("Python 2 to python 3", 0), end: placed("Python 2 to python 3", "Python".length) },
+      {
+        start: placed("Python 2 to python 3", "Python 2 to ".length),
+        end: placed("Python 2 to python 3", "Python 2 to python".length),
+      },
+    ],
   },
   {
     name: "matches never overlapping, the next sought after the one before",
-    text: "aaaa",
+    pieces: ["aaa"],
     query: "aa",
-    want: [0, "aa".length],
+    want: [{ start: placed("aaa", 0), end: placed("aaa", "aa".length) }],
   },
-  { name: "nothing for an empty search", text: "Python", query: "", want: [] },
-  { name: "nothing where the search is longer than the text", text: "Py", query: "Python", want: [] },
-])("a search matches $name", ({ text, query, want }) => {
-  expect(matchStarts(text, query)).toEqual(want);
+  { name: "nothing for an empty search", pieces: ["Python"], query: "", want: [] },
+  { name: "nothing where the search is longer than the words", pieces: ["Py"], query: "Python", want: [] },
+  {
+    name: "a phrase a mark parts, from inside the first piece to inside the second",
+    pieces: ["Kept the ", "queue", " moving"],
+    query: "the queue",
+    want: [{ start: placed("Kept the ", "Kept ".length), end: placed("queue", "queue".length) }],
+  },
+  {
+    name: "a match ending where its piece ends, ending in that piece",
+    pieces: ["the ", "queue", " moving"],
+    query: "queue",
+    want: [{ start: placed("queue", 0), end: placed("queue", "queue".length) }],
+  },
+  {
+    name: "a match across an empty piece",
+    pieces: ["Pyt", "", "hon"],
+    query: "python",
+    want: [{ start: placed("Pyt", 0), end: placed("hon", "hon".length) }],
+  },
+  {
+    name: "a no-break space the page writes, as the space a reader types",
+    pieces: [DOTTED_AS_WRITTEN],
+    query: DOTTED_TYPED,
+    want: [{ start: placed(DOTTED_AS_WRITTEN, 0), end: placed(DOTTED_AS_WRITTEN, DOTTED_TYPED.length) }],
+  },
+  {
+    name: "a no-break space typed, as a space",
+    pieces: [DOTTED_AS_READ],
+    query: DOTTED_TYPED_UNBROKEN,
+    want: [{ start: placed(DOTTED_AS_READ, 0), end: placed(DOTTED_AS_READ, DOTTED_TYPED.length) }],
+  },
+])("a search matches in a passage: $name", ({ pieces, query, want }) => {
+  expect(matchesIn(passageOf(pieces.map((data) => ({ data }))), query)).toEqual(want);
 });
 
 // Where four matches stand down the page, top to bottom: the first a little way down, each a screen below the one

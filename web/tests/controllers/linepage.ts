@@ -44,20 +44,23 @@ class FakeLayout implements Layout {
   }
 }
 
-/** The page's marks as a reader sees them: where the match the count names stands, and the others. */
+/** The page's marks as a reader sees them: where the match the count names stands and its words, and the others. */
 class FakeMarks implements Marks {
   current: number | undefined = undefined;
+  currentWords = "";
   others: number[] = [];
 
   constructor(private readonly layout: FakeLayout) {}
 
   mark(current: Range, others: readonly Range[]): void {
     this.current = this.layout.topOf(current);
+    this.currentWords = current.toString();
     this.others = others.map((match) => this.layout.topOf(match));
   }
 
   clear(): void {
     this.current = undefined;
+    this.currentWords = "";
     this.others = [];
   }
 }
@@ -69,9 +72,9 @@ export interface StartedLine {
   marks: FakeMarks;
 }
 
-/** The document's element a selector finds, which the golden page draws. */
-export function found(selector: string): HTMLElement {
-  const element = document.querySelector<HTMLElement>(selector);
+/** The element a selector finds in the document, or in a page a test changes, which the golden page draws. */
+export function found(selector: string, page: ParentNode = document): HTMLElement {
+  const element = page.querySelector<HTMLElement>(selector);
   if (element === null) {
     throw new Error(`the page has no ${selector}`);
   }

@@ -1,14 +1,18 @@
 // The vim keys' search on a page (DESIGN.md, CommandLine), as the TUI's (internal/face/tui/search.go): the words of
 // the page's main part a search matches, marked on the page, the page brought to the one shown, and n and N going
-// round them. The browser's highlights and layout stand behind interfaces the tests stand in for: jsdom has neither.
+// round them. The browser's highlights and layout stand behind interfaces the tests stand in for: jsdom has neither;
+// which element sets a text's words apart is read off its computed display, which jsdom gives by its default sheet.
 import {
   foundSaid,
   matchCount,
-  matchStarts,
+  matchesIn,
   notFoundSaid,
+  passageOf,
   placeAtOrAfter,
   placeBefore,
   steppedPlace,
+  type Match,
+  type Passage,
 } from "../domain/search";
 
 // The foot line, which a match brought into sight stands clear of
@@ -123,29 +127,64 @@ export class PageLayout implements Layout {
   }
 }
 
-/** The matches of a search among the words a part of the page shows, in the page's order, each within one text. */
-function matchesOf(part: HTMLElement, query: string, layout: Layout): Range[] {
-  const page = part.ownerDocument;
-  const walker = page.createTreeWalker(part, NodeFilter.SHOW_TEXT);
-  const matches: Range[] = [];
+/** The matches of a search in a page's passages, in their order. */
+function matchesOf(passages: readonly Passage<Text>[], query: string, page: Document): Range[] {
+  return passages.flatMap((passage) => matchesIn(passage, query)).map((match) => rangeOf(match, page));
+}
+
+/** A match as a range of the page, from its first letter's text to its last's. */
+function rangeOf(match: Match<Text>, page: Document): Range {
+  const range = page.createRange();
+  range.setStart(match.start.piece, match.start.offset);
+  range.setEnd(match.end.piece, match.end.offset);
+  return range;
+}
+
+/** The texts a part of the page shows, in the page's order, in groups of those one block sets one after another. */
+function textsByBlock(part: HTMLElement, layout: Layout): Text[][] {
+  const view = part.ownerDocument.defaultView;
+  // a page with no window lays nothing out, so it shows no words
+  if (view === null) {
+    return [];
+  }
+  const walker = part.ownerDocument.createTreeWalker(part, NodeFilter.SHOW_TEXT);
+  const groups: Text[][] = [];
+  let groupBlock: Element | null = null;
   for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
-    if (!layout.shows(text)) {
+    if (!(text instanceof Text) || !layout.shows(text)) {
       continue;
     }
-    for (const start of matchStarts(text.textContent ?? "", query)) {
-      const match = page.createRange();
-      match.setStart(text, start);
-      match.setEnd(text, start + query.length);
-      matches.push(match);
+    const block = blockOf(text, view);
+    const group = groups.at(-1);
+    if (group !== undefined && block === groupBlock) {
+      group.push(text);
+    } else {
+      groups.push([text]);
     }
+    groupBlock = block;
   }
-  return matches;
+  return groups;
+}
+
+// How an element is laid out when it sets its words among those around it, as a mark or a link: any other display,
+// a block, a flex item, a cell, an inline-block, sets its words apart
+const AMONG_WORDS = "inline";
+
+/** The block that sets a text's words: the nearest element holding it that is not set among words. */
+function blockOf(text: Text, view: Window): Element | null {
+  let holder = text.parentElement;
+  while (holder !== null && view.getComputedStyle(holder).display === AMONG_WORDS) {
+    holder = holder.parentElement;
+  }
+  return holder;
 }
 
 /** A page's search, as the TUI's: what is typed, the search kept, their matches, and the match shown. */
 export class Search {
   // where the page stood when the slash was typed: what is typed seeks from it, and leaving goes back to it
   private begunAt = 0;
+  // the passages the page showed then, which every letter typed seeks in
+  private passages: Passage<Text>[] = [];
   private typing = NOTHING;
   private kept = NOTHING;
   // the match the kept search shows, and where the page stood then: n goes on from it while the page stays there
@@ -158,14 +197,15 @@ export class Search {
     private readonly layout: Layout,
   ) {}
 
-  /** The slash is typed: what is typed seeks from where the page stands. */
+  /** The slash is typed: what is typed seeks from where the page stands, among the words it shows. */
   begin(): void {
     this.begunAt = this.layout.scrolled();
+    this.passages = textsByBlock(this.main, this.layout).map((texts) => passageOf(texts));
   }
 
   /** What is typed changed: its matches marked and the first at or after the start shown; the count, or none. */
   typed(query: string): string {
-    const matches = matchesOf(this.main, query, this.layout);
+    const matches = matchesOf(this.passages, query, this.main.ownerDocument);
     this.typing = { query, matches, place: placeAtOrAfter(this.topsOf(matches), this.begunAt) };
     if (!this.show(this.typing.matches, this.typing.place)) {
       this.marks.clear();

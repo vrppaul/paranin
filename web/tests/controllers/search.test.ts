@@ -23,6 +23,14 @@ const KEPT = "kept";
 const WIND = "wind";
 const NOWHERE = "rust";
 
+// A phrase the fixture's first point parts with a mark, "Kept the <mark>queue</mark> moving"; and the end of the
+// first role's heading run on into its place, "Northwind — Senior Engineer" and "Brno", which the served page sets
+// side by side with nothing between, as the golden page, set out a tag a line, does not
+const PARTED = "the queue";
+const ACROSS_BLOCKS = "engineerbrno";
+const ROLE_HEADING = "main h3";
+const ROLE_PLACE = "main .entry-place";
+
 /** A search typed after a slash and kept with Enter. */
 function searched(query: string): void {
   press("/");
@@ -112,6 +120,18 @@ test("a search never matches what the page does not show", () => {
   started(true, (page) => page.querySelector("main li")?.setAttribute("hidden", ""));
   searched(KEPT);
   expect(said()).toBe("/kept [1/1]");
+});
+
+test("a search finds a phrase a mark parts, and marks it whole", () => {
+  const { marks } = started();
+  searched(PARTED);
+  expect({ said: said(), marked: marks.currentWords }).toEqual({ said: `/${PARTED} [1/1]`, marked: PARTED });
+});
+
+test("a search never joins the words of two blocks, however close the markup sets them", () => {
+  started(true, (page) => found(ROLE_HEADING, page).append(found(ROLE_PLACE, page)));
+  searched(ACROSS_BLOCKS);
+  expect(said()).toBe(`E486: Pattern not found: ${ACROSS_BLOCKS}`);
 });
 
 test("Enter keeps the search, the line saying which match the page shows until the next key, the marks staying", () => {

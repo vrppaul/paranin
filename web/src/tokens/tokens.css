@@ -155,7 +155,7 @@
   --radius: 0.125rem;
   /* how wide every line is, a border's or a rule's */
   --hairline: 0.0625rem;
-  /* how thick a link's underline is under the pointer, two hairlines, and the line under the letters typed on the command line's menu */
+  /* how thick a link's underline is under the pointer, two hairlines, and the line under the letters typed on the command line's menu and under a search's matches */
   --underline-hover: 0.125rem;
   /* one blink of the cursor after the name, shown for half of it, as a terminal's cursor blinks */
   --blink: 1060ms;

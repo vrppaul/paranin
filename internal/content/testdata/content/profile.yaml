@@ -63,12 +63,12 @@ projects:
 skill_groups:
   - title: Languages
     skills:
-      - {name: Rust, duration: learning, aliases: [rust], sources: [a hobby], learning: true}
-      - {name: Go, duration: 3y, aliases: [go, golang], sources: [tidy-tool, a hobby]}
-      - {name: Shell scripts for the build machines, duration: 2y, aliases: [shell], sources: [Northwind, Southwind]}
+      - {name: Rust, duration: learning, sources: [a hobby], learning: true}
+      - {name: Go, duration: 3y, sources: [tidy-tool, a hobby]}
+      - {name: Shell scripts for the build machines, duration: 2y, sources: [Northwind, Southwind]}
   - title: Tools
     skills:
-      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}
+      - {name: Docker, duration: side, sources: [Northwind], learning: true}
 
 education:
   - name: A University

@@ -73,7 +73,7 @@ but our own (`script-src 'self'`).
 - Go draws every page, with **templ**: typed components the compiler checks.
 - What a reader works on in the browser is an **island of Svelte 5**,
   TypeScript in strict mode, mounted into server markup at a `data-island`:
-  the salary range, the job matcher, the chat, an article's widgets.
+  the salary range, the chat, an article's widgets.
   Behaviour over server markup that draws nothing of its own is a
   TypeScript controller, as the vim keys' command line is: the server draws
   its places, the controller shows those that fit.
@@ -227,9 +227,8 @@ and web routes.
     cannot read, and `learning` on a skill whose `learning` is not true;
     `compose` writes a span and a gap as the profile does, and `side` and
     `learning` in the site's words, as it writes `current`);
-  - a widget (a name, its props, a caption and an alt text), the form, the
-    salary range and the job matcher among them, so `compose` places them
-    too;
+  - a widget (a name, its props, a caption and an alt text), the form and
+    the salary range among them, so `compose` places them too;
   - the posts' (step 8): a list, ordered or not, whose items hold blocks; a
     quote; code with its language; a figure. A table gains a header row, and
     a post's headings nest into sections.
@@ -260,7 +259,7 @@ and web routes.
   vim mode (`:checkhealth`, `:Lazy`, `:hire`) are documents, which the page
   draws on the server for the island to show. What no person reads comes
   typed: a widget's props, each widget's own type (the salary range's
-  numbers, the matcher's aliases), and a record `compose` makes for JSON-LD
+  numbers), and a record `compose` makes for JSON-LD
   and the sitemap's dates. No face imports `content`; depguard refuses it,
   from the first face on.
 - **What lands when.** The head, the résumé's blocks and its spans (text,
@@ -277,8 +276,8 @@ and web routes.
   sections with the owner's word (2026-11-15); the records for JSON-LD,
   the person's and a project's, with `face/html`, and the sitemap's dates
   with `face/feed`, the `dateModified` of the résumé's `ProfilePage` with
-  them; a widget with the first island (step 6), since `face/html` came
-  without one; the posts' blocks and spans with the blog (D18).
+  them; a widget with the first island that draws one, the form's salary
+  range (step 7), since `face/html` came without one; the posts' blocks and spans with the blog (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the

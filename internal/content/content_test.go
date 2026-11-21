@@ -50,7 +50,7 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a stack naming the language", original: "stack: [Penlight, LPeg]", replacement: "stack: [Lua, LPeg]", want: `profile.yaml: projects[1].stack[0] "Lua" is the project's language already`},
 		{name: "a group with no title", original: "title: Tools", replacement: `title: ""`, want: "profile.yaml: skill_groups[1].title is empty"},
 		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},
-		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, aliases: [docker], sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},
+		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},
 		{name: "a skill with no name", original: "name: Docker", replacement: `name: ""`, want: "profile.yaml: skill_groups[1].skills[0].name is empty"},
 		{name: "a duration of no span", original: "duration: 3y", replacement: "duration: three years", want: `profile.yaml: skill_groups[0].skills[1].duration "three years" is no span, as 1y 7m, nor side, learning or a [gap]`},
 		{name: "a span of months before years", original: "duration: 3y", replacement: "duration: 7m 1y", want: `profile.yaml: skill_groups[0].skills[1].duration "7m 1y" is no span, as 1y 7m, nor side, learning or a [gap]`},
@@ -131,7 +131,7 @@ func skillNamed(test *testing.T, snapshot *Snapshot, name string) Skill {
 		}
 	}
 	test.Fatalf("the profile lists no skill %q", name)
-	return Skill{Name: name, Duration: Duration{}, Aliases: nil, Sources: nil, Learning: false}
+	return Skill{Name: name, Duration: Duration{}, Sources: nil, Learning: false}
 }
 
 // The site's base address is read once, as the content writes it, and keeps its host, which names the site.

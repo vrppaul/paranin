@@ -66,7 +66,7 @@ func TestARecordReadsTheMarksAway(test *testing.T) {
 	for index := range profile.Education {
 		profile.Education[index].Name = "==" + profile.Education[index].Name + "=="
 	}
-	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Aliases: nil, Sources: nil, Learning: false}}}}
+	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Sources: nil, Learning: false}}}}
 	record := as[PersonRecord](test, recordOf(test, &marked, resumePage()))
 	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Schools: record.Schools, Skills: record.Skills}
 	want := markedFacts{Name: "Mira Example", Title: "Software Engineer", Employer: "Northwind", Schools: []string{"A University"}, Skills: []string{"Go"}}

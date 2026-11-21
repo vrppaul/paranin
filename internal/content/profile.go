@@ -95,12 +95,10 @@ type SkillGroup struct {
 	Skills []Skill `yaml:"skills"`
 }
 
-// Skill is something the author can do: how long, the words a job description may use for it, and where it was
-// proven.
+// Skill is something the author can do: how long, and where it was proven.
 type Skill struct {
 	Name     string   `yaml:"name"`
 	Duration Duration `yaml:"duration"`
-	Aliases  []string `yaml:"aliases"`
 	Sources  []string `yaml:"sources"`
 	Learning bool     `yaml:"learning"`
 }

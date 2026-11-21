@@ -173,25 +173,25 @@ projects:
 skill_groups:
   - title: Languages
     skills:
-      - {name: Python, duration: 7y, aliases: [python], sources: [Blindspot Solutions, Seznam.cz, claude-review, semantic-code-mcp]}
-      - {name: Kotlin, duration: 1y 7m, aliases: [kotlin], sources: [Blindspot Solutions]}
-      - {name: Rust, duration: side, aliases: [rust], sources: [graph-rs]}
-      - {name: SQL, duration: side, aliases: [sql], sources: [water-tracker]}
-      - {name: Go, duration: learning, aliases: [go, golang], sources: [paranin, study lab], learning: true}
+      - {name: Python, duration: 7y, sources: [Blindspot Solutions, Seznam.cz, claude-review, semantic-code-mcp]}
+      - {name: Kotlin, duration: 1y 7m, sources: [Blindspot Solutions]}
+      - {name: Rust, duration: side, sources: [graph-rs]}
+      - {name: SQL, duration: side, sources: [water-tracker]}
+      - {name: Go, duration: learning, sources: [paranin, study lab], learning: true}
   - title: Backend
     skills:
-      - {name: Kubernetes, duration: 1y 6m, aliases: [kubernetes, k8s], sources: [Seznam.cz]}
-      - {name: PostgreSQL, duration: side, aliases: [postgresql, postgres], sources: [water-tracker]}
-      - {name: Docker, duration: side, aliases: [docker, docker compose], sources: [padel-bot]}
+      - {name: Kubernetes, duration: 1y 6m, sources: [Seznam.cz]}
+      - {name: PostgreSQL, duration: side, sources: [water-tracker]}
+      - {name: Docker, duration: side, sources: [padel-bot]}
   - title: AI and ML
     skills:
-      - {name: MCP, duration: 1y, aliases: [mcp, model context protocol], sources: [semantic-code-mcp]}
-      - {name: LLM agents, duration: 1y, aliases: [llm, llms, ai agents, coding agents, ai coding tools, agentic, claude code, cursor, codex], sources: [claude-review, semantic-code-mcp]}
-      - {name: Embeddings and vector search, duration: 1y, aliases: [embeddings, vector search, semantic search, lancedb, rag], sources: [semantic-code-mcp]}
-      - {name: scikit-learn, duration: 1y 7m, aliases: [scikit-learn, sklearn, machine learning, nlp], sources: [Blindspot Solutions]}
+      - {name: MCP, duration: 1y, sources: [semantic-code-mcp]}
+      - {name: LLM agents, duration: 1y, sources: [claude-review, semantic-code-mcp]}
+      - {name: Embeddings and vector search, duration: 1y, sources: [semantic-code-mcp]}
+      - {name: scikit-learn, duration: 1y 7m, sources: [Blindspot Solutions]}
   - title: Design
     skills:
-      - {name: UX design, duration: 11m, aliases: [ux, user research, usability testing, prototyping], sources: [Česká spořitelna]}
+      - {name: UX design, duration: 11m, sources: [Česká spořitelna]}
 
 education:
   - name: Czech Technical University in Prague

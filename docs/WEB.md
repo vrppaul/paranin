@@ -146,7 +146,7 @@ The browser code reads everything it needs from this JSON block and from the DOM
   "cvUrl": "/cv.pdf",
   "markdownUrl": "/index.md",
   "pages": [{"title": "index", "url": "/"}, {"title": "claude-review", "url": "/p/claude-review"}],
-  "skills": [{"name": "Python", "duration": "7y", "aliases": ["python"], "sources": ["Seznam.cz"], "learning": false}],
+  "skills": [{"name": "Python", "duration": "7y", "sources": ["Seznam.cz"], "learning": false}],
   "health": [{"name": "experience", "checks": [{"level": "ok", "text": "…", "advice": ""}]}],
   "about": ["A role", "A contract", "A project", "Something else"],
   "salary": {"min": 100000, "softMax": 300000, "step": 10000, "bigStep": 50000, "currencies": ["USD", "EUR"], "period": "year"}
@@ -347,7 +347,7 @@ since its first click cannot tell it from a press.
 
 `#top` (top line with the mode switch, name, title, actions) · `#facts` ·
 `#summary` · `#experience` · `#projects` · `#skills` · `#education` ·
-`#languages` · `#match` (check against a job description) · `#contact` (form
+`#languages` · `#contact` (form
 with salary range) · footer (links to `index.md`, `llms.txt`, `cv.pdf`,
 `ssh paran.in`).
 
@@ -395,14 +395,6 @@ not in the key menu): `:checkhealth` / `:checkhealth paranin` (report from
 `health`), `:Lazy` (skills as a plugin list), `:hire` (scroll to the form,
 choose "A role", prefill the message with `Hiring: [role] at [company]`).
 Unknown command → `E492: Not an editor command: {text}` in the command line.
-
-### Job description check
-
-A textarea. On input, match the text (case-insensitive, whole words) against
-each skill's name and aliases; list matches with their sources. Also look for a
-fixed vocabulary of common technology words in the text; those that match no
-skill are listed as "not in the résumé — ask me". The text never leaves the
-browser.
 
 ### Contact form
 

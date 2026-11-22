@@ -1,10 +1,10 @@
 // Package assets reads the page's front-end build (docs/ARCHITECTURE.md, ADR-0004, D22): the files one Vite build
 // writes, each with a hash in its name, and the manifest naming them, from a folder on disk. A load reads every
-// file the manifest names, each chunk's script and the stylesheets it imports, and checks that the manifest holds
-// every entry the site names and every chunk one imports, so a release's files are held whole beside its content
-// and a page drawn from it names only files it holds. What an entry includes in a page is worked out once, at the
-// load, as Vite's guide to backend integration walks a manifest. It knows no face: a face asks it what an entry
-// includes in a page.
+// file the manifest names, each chunk's script, the stylesheets it imports and the files a stylesheet loads, as the
+// font, and checks that the manifest holds every entry the site names and every chunk one imports, so a release's
+// files are held whole beside its content and a page drawn from it names only files it holds. What an entry
+// includes in a page is worked out once, at the load, as Vite's guide to backend integration walks a manifest. It
+// knows no face: a face asks it what an entry includes in a page.
 package assets
 
 import (
@@ -43,8 +43,9 @@ const (
 // whatever its own tables say. Each comes with the first file of its kind the build writes.
 func contentTypes() map[string]string {
 	return map[string]string{
-		".css": "text/css; charset=utf-8",
-		".js":  "text/javascript; charset=utf-8",
+		".css":   "text/css; charset=utf-8",
+		".js":    "text/javascript; charset=utf-8",
+		".woff2": "font/woff2",
 	}
 }
 
@@ -73,8 +74,9 @@ type Build struct {
 	included map[Entry]Included
 }
 
-// chunk is one chunk of the manifest, as Vite writes it: the file it was built into and the stylesheets it
-// imports, each from the build's root, and the chunks it imports, by their keys in the manifest.
+// chunk is one key of the manifest, as Vite writes it: the file it was built into and the stylesheets it imports,
+// each from the build's root, and the chunks it imports, by their keys in the manifest. A file a stylesheet loads has
+// a key of its own, its file alone.
 type chunk struct {
 	File    string   `json:"file"`
 	CSS     []string `json:"css"`
@@ -134,8 +136,8 @@ func readFiles(folder fs.FS, manifest map[string]chunk) (map[string]File, error)
 	return files, errors.Join(faults...)
 }
 
-// builtFiles are the files a manifest names, each once and in order: every chunk's own, and the stylesheets it
-// imports, which the manifest names under no key of their own.
+// builtFiles are the files a manifest names, each once and in order: every key's own, a chunk's or a file a
+// stylesheet loads, and the stylesheets a chunk imports, which the manifest names under no key of their own.
 func builtFiles(manifest map[string]chunk) []string {
 	names := make(map[string]struct{}, len(manifest))
 	for _, built := range manifest {

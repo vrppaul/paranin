@@ -12,12 +12,13 @@
 # The face, the text styles, the lengths, the times and the layers after the colours are the page's alone, since a
 # terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of
 # internal/look.
-# The face is its families by name, in the order a browser tries them. Every size is in rem, the text size the reader
-# set, so the whole page grows with it; none is in pixels. A text style is its size and its line's height, and its
-# weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is in rem, or in whole
-# cells of the face, ch, for a space inside a line; a time is in whole milliseconds; a layer is a height over the page
-# that a part standing over it as it scrolls lies on, the layers listed lowest first, each over those before it. Each
-# comes with the first part of the page that draws by it.
+# The face is its families by name, in the order a browser tries them, and the files of the first, which the site
+# serves: one for each weight a text style is drawn in, each a woff2 under design/, by its path from here. Every size
+# is in rem, the text size the reader set, so the whole page grows with it; none is in pixels. A text style is its
+# size and its line's height, and its weight; a line is in rem, not rows, since a style's line need not be a whole
+# row. A length is in rem, or in whole cells of the face, ch, for a space inside a line; a time is in whole
+# milliseconds; a layer is a height over the page that a part standing over it as it scrolls lies on, the layers
+# listed lowest first, each over those before it. Each comes with the first part of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -125,6 +126,14 @@ blends:
 face:
   about: the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
   families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
+  # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them
+  files:
+    - weight: 400
+      path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2
+    - weight: 700
+      path: fonts/jetbrains-mono/JetBrainsMono-Bold.woff2
+    - weight: 800
+      path: fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2
 
 type:
   - name: body

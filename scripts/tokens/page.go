@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
-	"slices"
 	"strconv"
-	"strings"
-	"unicode"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -18,13 +15,6 @@ const (
 	remUnit          = "rem"
 	shortestDecimals = -1
 	sizeFloatBits    = 64
-)
-
-// The weights a face is drawn in: a hundred to nine hundred, in steps of a hundred
-const (
-	lightestWeight = 100
-	heaviestWeight = 900
-	weightStep     = 100
 )
 
 // The keys a text style's, a length's and a time's numbers are written under, as their tags say
@@ -47,22 +37,12 @@ const (
 	millisecondValue = "%d" + millisecondUnit
 )
 
-// The face's own name, the property every rule of the page's text inherits it from
-const faceName = "face"
-
 // What a text style's properties are named: the word type, the style's name, then what each sets
 const (
 	typePrefix   = "type_"
 	sizeSuffix   = "_size"
 	lineSuffix   = "_line"
 	weightSuffix = "_weight"
-)
-
-// How a family is written in the stylesheet: its name quoted, unless it is one of CSS's generic families, a word
-// CSS knows, which quoted would name a face of that name; the names parted by commas
-const (
-	familyQuote     = `"`
-	familySeparator = ", "
 )
 
 // How a weight and a layer are written in the stylesheet: a number, with no unit
@@ -90,21 +70,6 @@ const (
 	numberFault = "line %d: %q is no whole number written in digits alone, unquoted"
 	sizeFault   = "line %d: %q is no number of rem written in digits, unquoted and with no unit"
 )
-
-// genericFamilies are CSS's generic families, which the stylesheet writes unquoted.
-func genericFamilies() []string {
-	return []string{
-		"serif", "sans-serif", "monospace", "cursive", "fantasy", "math", "emoji", "fangsong",
-		"system-ui", "ui-serif", "ui-sans-serif", "ui-monospace", "ui-rounded",
-	}
-}
-
-// faceToken is the page's one face as the file writes it: what it is for, and the families a browser tries in turn,
-// each by its name alone.
-type faceToken struct {
-	About    string   `yaml:"about"`
-	Families []string `yaml:"families"`
-}
 
 // typeToken is a text style as the file writes it: its name, what it is for, its size and the height of its line in
 // rem, and its weight. A number the file may leave out unseen is a pointer, so its absence is a fault.
@@ -204,12 +169,6 @@ type pageTokens struct {
 	layers  []readLayer
 }
 
-// readFace is the face read: what it is for, and its families, each a name of letters, digits, hyphens and spaces.
-type readFace struct {
-	about    string
-	families []string
-}
-
 // readType is a text style read, its numbers each there and each one a face can be drawn at.
 type readType struct {
 	name   string
@@ -267,6 +226,9 @@ func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, erro
 	if err != nil {
 		return pageTokens{}, err
 	}
+	if err := checkFaceWeights(face.files, types); err != nil {
+		return pageTokens{}, err
+	}
 	lengths, err := readEach(written.Lengths, named, readLengthToken)
 	if err != nil {
 		return pageTokens{}, err
@@ -299,28 +261,6 @@ func readLayerTokens(written []layerToken, named map[string]bool) ([]readLayer, 
 	return layers, nil
 }
 
-// readFaceToken refuses a face that says nothing of what it is for, names no family, or names one in anything but
-// letters, digits, hyphens and spaces, so no name can close the quotes the stylesheet writes it in.
-func readFaceToken(token faceToken, named map[string]bool) (readFace, error) {
-	if err := checkToken(faceName, token.About, named); err != nil {
-		return readFace{}, err
-	}
-	if len(token.Families) == 0 {
-		return readFace{}, fmt.Errorf("%w: the face has no family", errTokens)
-	}
-	for _, family := range token.Families {
-		if family == "" || strings.ContainsFunc(family, isNoFamilyLetter) {
-			return readFace{}, fmt.Errorf("%w: the face's family %q is no name of letters, digits, hyphens and spaces", errTokens, family)
-		}
-	}
-	return readFace{about: token.About, families: token.Families}, nil
-}
-
-// isNoFamilyLetter is whether a letter has no place in a family's name.
-func isNoFamilyLetter(letter rune) bool {
-	return !unicode.IsLetter(letter) && !unicode.IsDigit(letter) && letter != '-' && letter != ' '
-}
-
 // readTypeToken reads a text style, each of its three properties a name of its own.
 func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	if err := checkName(token.Name, token.About); err != nil {
@@ -338,9 +278,8 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	if err != nil {
 		return readType{}, err
 	}
-	if weight < lightestWeight || weight > heaviestWeight || weight%weightStep != 0 {
-		return readType{}, fmt.Errorf("%w: %q has the weight %d, no weight of %d to %d in steps of %d",
-			errTokens, token.Name, weight, lightestWeight, heaviestWeight, weightStep)
+	if err := checkWeight(weight, token.Name); err != nil {
+		return readType{}, err
 	}
 	style := readType{name: token.Name, about: token.About, size: size, line: line, weight: weight}
 	for _, property := range style.properties() {
@@ -399,17 +338,4 @@ func counted[Number remSize | wholeNumber](written *Number, token, key string) (
 		return 0, fmt.Errorf("%w: %q has the %s %v, which is not more than nothing", errTokens, token, key, value)
 	}
 	return value, nil
-}
-
-// familyList is the face's families as CSS writes them: each name quoted, so the browser reads it as a face's name
-// whatever it is made of, but a generic family, which CSS knows by its bare word in any case.
-func familyList(families []string) string {
-	written := make([]string, 0, len(families))
-	for _, family := range families {
-		if !slices.Contains(genericFamilies(), strings.ToLower(family)) {
-			family = familyQuote + family + familyQuote
-		}
-		written = append(written, family)
-	}
-	return strings.Join(written, familySeparator)
 }

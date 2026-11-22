@@ -87,8 +87,9 @@ an inline script or handler, an inline style (a `style` attribute, a `<style>` e
 which are data, not scripts; module scripts of the site and their preloads; a style a script sets through
 `element.style`, and `element.animate()`.
 
-How the page's build keeps to it is `.claude/rules/page.md`. The page loads no font: its face is a list of families
-(`design/tokens.yaml`, `face`), each the reader's own where they have it. No `Referrer-Policy` is sent:
+How the page's build keeps to it is `.claude/rules/page.md`. The page's face, JetBrains Mono, is a built file of the
+site like any other, from `design/fonts` (`design/tokens.yaml`, `face`), so every reader sees the copy the cells are
+counted in; a mono face of the reader's own shows the text until it has come. No `Referrer-Policy` is sent:
 `strict-origin-when-cross-origin` is every browser's own default.
 
 ## The page in a browser

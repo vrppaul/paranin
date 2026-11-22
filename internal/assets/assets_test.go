@@ -22,10 +22,12 @@ const (
 const (
 	styleType  = "text/css; charset=utf-8"
 	scriptType = "text/javascript; charset=utf-8"
+	fontType   = "font/woff2"
 )
 
-// Every file the manifest names, a chunk's script and the stylesheets it imports, is served at its path from the
-// site's root, as the type its name says; the manifest itself is no file of the site.
+// Every file the manifest names, a chunk's script, the stylesheets it imports and a file a stylesheet loads, as the
+// font, is served at its path from the site's root, as the type its name says; the manifest itself is no file of the
+// site.
 func TestABuildServesEveryFileItsManifestNames(test *testing.T) {
 	build := fixtures.LoadedBuild(test)
 	want := map[string]assets.File{
@@ -35,6 +37,7 @@ func TestABuildServesEveryFileItsManifestNames(test *testing.T) {
 		"/" + stylesheetPath:         {ContentType: styleType, Body: []byte("body{margin:0}\n")},
 		"/assets/shared-fixture.css": {ContentType: styleType, Body: []byte("p{margin:0}\n")},
 		"/assets/base-fixture.css":   {ContentType: styleType, Body: []byte("h1{margin:0}\n")},
+		"/assets/font-fixture.woff2": {ContentType: fontType, Body: []byte("wOF2\n")},
 	}
 	if got := maps.Collect(build.Files()); !maps.EqualFunc(got, want, sameFile) {
 		test.Errorf("Files() = %q, want %q", got, want)

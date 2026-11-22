@@ -38,6 +38,9 @@ blends:
 face:
   about: the one face
   families: [Mono Face, 3270, Monospace]
+  files:
+    - weight: 400
+      path: fonts/mono-face.woff2
 type:
   - name: body
     about: the text read
@@ -206,6 +209,25 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 	}
 }
 
+// Each file of the face is a face of its first family that the page loads from the repository, at its weight, its path
+// from the tokens' folder as the stylesheet reaches it, its text shown in a stand-in until the file has come.
+func TestEachFileOfTheFaceIsAFontFaceOfItsFirstFamily(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	const want = `@font-face {
+  font-family: "Mono Face";
+  src: url("../../../design/fonts/mono-face.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+`
+	if got := string(stylesheet(read)); !strings.Contains(got, want) {
+		test.Errorf("the stylesheet = %q, want it to hold %q", got, want)
+	}
+}
+
 // Each time reaches the page's script as a number of milliseconds, under what it is for, named as a script names a
 // property: a name of two words in camel case.
 func TestEachTimeReachesThePagesScriptInMilliseconds(test *testing.T) {
@@ -323,6 +345,15 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a layer that says nothing of what it is for", original: "    about: what sticks to the top\n", replacement: "", want: `"row" says nothing`},
 		{name: "a layer named twice", original: "name: sheet", replacement: "name: row", want: `"layer_row" is named twice`},
 		{name: "a layer whose name is no word", original: "name: sheet", replacement: "name: Sheet-2", want: `"Sheet-2"`},
+		{name: "a text style's weight the face has no file of", original: "    weight: 400\n", replacement: "    weight: 700\n", want: "no file of the weight 700"},
+		{name: "a file of a weight no text style is drawn in", original: faceFileLines, replacement: faceFileLines + "    - weight: 700\n      path: fonts/mono-face-bold.woff2\n", want: "no text style is drawn in the weight 700"},
+		{name: "two files of one weight", original: faceFileLines, replacement: faceFileLines + "    - weight: 400\n      path: fonts/other.woff2\n", want: "two files of the weight 400"},
+		{name: "a file's weight between a face's", original: "    - weight: 400\n", replacement: "    - weight: 450\n", want: "450"},
+		{name: "a file's weight left out", original: "    - weight: 400\n      path:", replacement: "    - path:", want: "has no weight"},
+		{name: "a file of the face that is no woff2", original: "mono-face.woff2", replacement: "mono-face.ttf", want: `"fonts/mono-face.ttf" is no woff2`},
+		{name: "a file's path that would close its quotes", original: "fonts/mono-face.woff2", replacement: `'fonts/mono"); } body {.woff2'`, want: `"fonts/mono\"); } body {.woff2"`},
+		{name: "a file out of the tokens' folder", original: "fonts/mono-face.woff2", replacement: "../mono-face.woff2", want: `"../mono-face.woff2"`},
+		{name: "files of a generic family", original: "[Mono Face, 3270, Monospace]", replacement: "[Monospace, Mono Face]", want: `"Monospace" is a generic family`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -337,6 +368,12 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		})
 	}
 }
+
+// The fixture's file of its face, at its weight, after which a test writes another
+const faceFileLines = "    - weight: 400\n      path: fonts/mono-face.woff2\n"
+
+// The fixture's file of its face, from the repository's root
+const faceFilePath = "design/fonts/mono-face.woff2"
 
 // The fixture's last lines of its colours text and accent, after which a test writes the least contrast each needs
 const (
@@ -474,13 +511,8 @@ func TestContrastIsWCAGs(test *testing.T) {
 // The check finds a generated file out of step with its tokens, the palette or the stylesheet, and passes the
 // files the tokens make.
 func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
-	root := test.TempDir()
-	writeFixture(test, filepath.Join(root, tokensPath), fixtureTokens)
-	for _, folder := range []string{filepath.Dir(palettePath), filepath.Dir(stylesheetPath)} {
-		if err := os.MkdirAll(filepath.Join(root, folder), 0o750); err != nil {
-			test.Fatalf("make the folder %s: %v", folder, err)
-		}
-	}
+	root := fixtureRoot(test)
+	writeFixture(test, filepath.Join(root, faceFilePath), "")
 	if code := run([]string{writeFlag}, root); code != succeeded {
 		test.Fatalf("writing = exit %d, want %d", code, succeeded)
 	}
@@ -508,6 +540,32 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 			writeFixture(test, generatedPath, string(generated))
 		})
 	}
+}
+
+// A file of the face the tokens name and the repository lacks is refused, and nothing is written: the page would
+// ask for a file the build never holds, and show a stand-in face.
+func TestAFileOfTheFaceMissingIsRefused(test *testing.T) {
+	root := fixtureRoot(test)
+	if code := run([]string{writeFlag}, root); code != failed {
+		test.Errorf("writing with no %s = exit %d, want %d", faceFilePath, code, failed)
+	}
+	if _, err := os.Stat(filepath.Join(root, stylesheetPath)); !errors.Is(err, os.ErrNotExist) {
+		test.Errorf("stat %s = %v, want it not written", stylesheetPath, err)
+	}
+}
+
+// fixtureRoot is a repository holding the fixture's tokens and the folders the generated files go to, and no file of
+// the face.
+func fixtureRoot(test *testing.T) string {
+	test.Helper()
+	root := test.TempDir()
+	writeFixture(test, filepath.Join(root, tokensPath), fixtureTokens)
+	for _, folder := range []string{filepath.Dir(palettePath), filepath.Dir(stylesheetPath)} {
+		if err := os.MkdirAll(filepath.Join(root, folder), 0o750); err != nil {
+			test.Fatalf("make the folder %s: %v", folder, err)
+		}
+	}
+	return root
 }
 
 // shadesOf are the shades of a file's colours and blends, by name.

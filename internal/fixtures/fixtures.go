@@ -31,7 +31,8 @@ func ContentFolder(test *testing.T) string {
 }
 
 // BuildFolder is the folder of the build's fixture: a manifest naming the site's entry, the chunks it imports, two
-// deep and one of them twice, and the file each was built into, with the stylesheets each imports.
+// deep and one of them twice, and the file each was built into, with the stylesheets each imports and a font the
+// entry's stylesheet loads.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
 }

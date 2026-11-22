@@ -26,4 +26,5 @@ a PDF, and a blog drawn the same way in each of them.
 
 ## License
 
-[MIT](LICENSE) © 2026 Pavel Paranin
+[MIT](LICENSE) © 2026 Pavel Paranin. JetBrains Mono, in `design/fonts/jetbrains-mono`, is © 2020 The JetBrains Mono
+Project Authors, under the [SIL Open Font License 1.1](design/fonts/jetbrains-mono/OFL.txt).

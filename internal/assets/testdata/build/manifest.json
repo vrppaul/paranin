@@ -5,7 +5,12 @@
     "src": "src/entries/site.ts",
     "isEntry": true,
     "imports": ["_shared-fixture.js", "_base-fixture.js"],
-    "css": ["assets/site-fixture.css"]
+    "css": ["assets/site-fixture.css"],
+    "assets": ["assets/font-fixture.woff2"]
+  },
+  "../design/fonts/font-fixture.woff2": {
+    "file": "assets/font-fixture.woff2",
+    "src": "../design/fonts/font-fixture.woff2"
   },
   "_shared-fixture.js": {
     "file": "assets/shared-fixture.js",

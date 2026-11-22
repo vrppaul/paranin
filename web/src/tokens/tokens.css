@@ -166,3 +166,23 @@
   /* the foot line, which the page scrolls under */
   --layer-foot: 1;
 }
+
+/* The face's files, which the site serves itself, so every reader sees the copy its cells are counted in */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}

@@ -41,9 +41,10 @@ const (
 
 // stylesheet is the CSS of the tokens: a custom property for the page, each colour and each blend, in the order
 // the file names them, each its value in both themes; then one for the face, three for each text style, its size,
-// its line's height and its weight, and one for each length, each time and each layer. A blend is its colour at its
-// strength, which the browser lays over whatever is under it. A text style is never one value of `font`: that
-// shorthand sets every longhand of the face again, and would turn back on the ligatures the page turns off once.
+// its line's height and its weight, and one for each length, each time and each layer; last, each file of the face
+// as a font face, which the page loads it from. A blend is its colour at its strength, which the browser lays over
+// whatever is under it. A text style is never one value of `font`: that shorthand sets every longhand of the face
+// again, and would turn back on the ligatures the page turns off once.
 func stylesheet(read tokens) []byte {
 	var builder strings.Builder
 	builder.WriteString(stylesheetOpening)
@@ -74,6 +75,7 @@ func stylesheet(read tokens) []byte {
 		writeProperty(&builder, layer.name, layer.about, fmt.Sprintf(numberValue, layer.place))
 	}
 	builder.WriteString(ruleClosing)
+	writeFaceFiles(&builder, read.page.face)
 	return []byte(builder.String())
 }
 

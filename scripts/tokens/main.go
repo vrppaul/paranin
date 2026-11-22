@@ -8,7 +8,8 @@
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
 //     reads: the face, each text style as its size, its line's height and its weight, each length, each time, and
-//     each layer as its place among the layers, the z-index of what stands on it;
+//     each layer as its place among the layers, the z-index of what stands on it; and each of the face's files, under
+//     design/, as a font face the page loads;
 //   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
 //     since the build writes the stylesheet's times the shortest way.
 //
@@ -17,7 +18,8 @@
 //	go run ./scripts/tokens           checks every file against the tokens: the pre-commit hook
 //	go run ./scripts/tokens -write    writes them, as `go generate ./internal/look` does
 //
-// It refuses, as a fault of the tokens, a colour that reads under the least contrast it needs over a ground it names.
+// It refuses, as a fault of the tokens, a colour that reads under the least contrast it needs over a ground it names,
+// and a file of the face the repository lacks.
 //
 // Run it in the repository's root. It prints a fault of the tokens, or which generated file is out of step, and
 // exits 0 when the files are the ones the tokens make or have just been written, 1 when one is not or the tokens
@@ -109,6 +111,9 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 	read, err := readTokens(data)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", tokensPath, err)
+	}
+	if err := checkFaceFiles(folder, read.page.face); err != nil {
+		return nil, err
 	}
 	palette, err := source(read)
 	if err != nil {

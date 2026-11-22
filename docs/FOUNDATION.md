@@ -608,8 +608,10 @@ pixels (`DESIGN.md`).
 2026-11-22: the owner approved the blog's design, on the page and in the
 TUI, with the two faces made one style, now `DESIGN.md` too: the reading
 layout, its second face iA Writer Duo, and the blog as a session of its own
-beside the résumé's, which settle the third and fourth items. Serving the
-face waits for its own chunk.
+beside the résumé's, which settle the third and fourth items. Since
+2026-11-22 the page serves JetBrains Mono from `design/fonts`, the last
+item for the web; Typst and the stills take the face from there when they
+come.
 
 Each goes through a sheet of states in both themes before code:
 

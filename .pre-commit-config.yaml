@@ -146,6 +146,8 @@ repos:
       # share one environment
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        # a face's licence is kept as its authors released it, a space at a line's end among it
+        exclude: ^design/fonts/.+/OFL\.txt$
         additional_dependencies: &pre-commit-hooks-dependencies [ruamel.yaml==0.19.1]
       - id: end-of-file-fixer
         additional_dependencies: *pre-commit-hooks-dependencies

@@ -122,7 +122,7 @@ gains a greeting and the title of its opening, for the TUI Pavel chose to redo. 
 choice for a project's page in the TUI: the head gains what a project is made of and where its code lives.
 Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its months beside how long.
 Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in the TUI: a page of the site may
-name one of its tabs, shown alone.
+name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
 
 ### Context
 
@@ -135,7 +135,7 @@ and web routes.
 ### Decision
 
 - **Content lives on disk.** `content` loads a folder (the profile, the
-  posts, the word catalogues), checks it whole and makes an immutable
+  posts and their series, the word catalogues), checks it whole and makes an immutable
   snapshot. `release.Store` holds it beside the page's build (ADR-0004),
   the two loaded as one snapshot, so the pages of a snapshot name only files
   that snapshot serves; it swaps snapshots whole, in an `atomic.Pointer`,
@@ -146,6 +146,22 @@ and web routes.
   current ones (TODO). The composition root calls `Reload` on SIGHUP and on
   a change in the folders once the changes settle, and logs a refusal.
   Nothing of the content is embedded; tests read fixtures.
+- **A post is read once, by `content`** (amended 2026-11-22), which owns
+  the posts' format as it owns the profile's. It decodes a post's front
+  matter strictly, parses its body once with goldmark set up as the format
+  of FOUNDATION §5.4 says, CommonMark with GFM's tables and footnotes
+  alone, and refuses what falls outside it, each fault at its file and
+  line. The snapshot keeps the body's source and goldmark's tree, which
+  `compose` walks into blocks. The tree is read and never changed after
+  the load, by no transformer, attribute or id set later, since two
+  goroutines may compose one snapshot (`release.Derived`), and `compose`'s
+  tests run under `-race` once it walks the tree. Ways weighed: `content`
+  keeping the text alone for `compose` to parse, two parses of one text
+  and the format set up in two layers; `content` turning the tree into one
+  of its own, the document model written twice. goldmark keeps to the
+  CommonMark spec and is built to be extended; blackfriday and gomarkdown
+  keep to none. The posts stand in their slugs' order and the series in
+  their names', as their folders list them.
 - **`paranin check`** runs the same loader, of the content or of a whole
   release, so CI refuses what the server would refuse.
 - **One document, every face.** `compose` turns content into documents: the
@@ -561,7 +577,7 @@ internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
 internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch
 internal/document/       # the face-neutral model
-internal/content/        # the content folder: load, check
+internal/content/        # the content folder: load, check; a post's markdown parsed once
 internal/look/           # the design's colours, generated from design/tokens.yaml, and its block fonts
 internal/assets/         # the page's build: its manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone

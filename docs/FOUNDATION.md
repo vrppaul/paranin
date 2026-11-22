@@ -356,9 +356,14 @@ web/src/
 A post is written once, in one format, and every face draws that same text:
 the web page, `.md`, the man page for `curl`, the feed and the SSH TUI.
 
-The format is CommonMark with GFM tables, YAML front matter and widget
-blocks, and nothing else. `paranin check` refuses what falls outside it, raw
-HTML first of all: a terminal cannot draw it and the CSP would not run it.
+The format is CommonMark with GFM's tables and footnotes, YAML front matter
+and widget blocks, and nothing else. `paranin check` refuses what falls
+outside it, raw HTML first of all: a terminal cannot draw it and the CSP
+would not run it. It refuses as well a heading of level 1, which the title
+is, a heading that skips a level, a footnote no reference cites and a
+reference to no footnote, and the characters the content refuses
+everywhere but a tab inside code, which a face expands as it draws the
+code; each fault at its file and line.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and
 quotes as text; code with its syntax colours from the tokens; tables laid
@@ -392,6 +397,34 @@ content/posts/2026-11-page-cache/
    server refuse the same typo.
 4. Playwright takes every still image in CI, canvas and DOM widgets alike:
    one way to make them. For LinkedIn and X, livereel films the widget.
+
+#### Front matter (Proposed)
+
+```yaml
+---
+id: 12
+title: The page cache
+description: Why a page read twice is read once.
+status: published
+published: 2026-11-10T09:00+01:00
+updated: 2026-11-12
+tags: [kernel, caching]
+discussions:
+  - {site: Lobsters, address: "https://lobste.rs/s/…"}
+---
+```
+
+- `id`, `title`, `description` and `status` are required, and `published`
+  of every post but a draft; the rest may be left out. A field no post has
+  is a fault, as in the profile.
+- `title` and `description` are a line each; the description is the post's
+  lead and its page's description.
+- `published` is to the minute, with its zone; `updated` is a day, no
+  earlier than the day the post was published, in that zone.
+- `tags` are slugs, none twice; each discussion is a site's name and the
+  thread's `https` address (D13).
+- Until their steps land, a post's folder holds `post.en.md` alone: a
+  translation, `revisions/` and `widgets/` are faults that say so.
 
 #### Where posts live (Decided, D6)
 
@@ -464,11 +497,13 @@ and SSH to the host: "without a new binary" does not mean without a build.
 
 #### Series, tags and lists (Decided, D25; the model Proposed)
 
-- **A series is one file**, `content/series/<name>.yaml`: its title, a line
-  about it and its posts' slugs in order. The order is written once, so a
-  post put in the middle renumbers nothing. A post of a series shows "part 3
-  of 11" with the parts before and after; a part planned and not yet
-  written may stand in the list grouped by series as to come.
+- **A series is one file**, `content/series/<name>.yaml`, its name a slug
+  as a post's is: its `title`, a `line` about it, its `posts`' slugs in
+  order, one at least, and under `to_come` the titles of parts planned and
+  not yet written. The order is written once, so a post put in the middle
+  renumbers nothing. A post is in one series at most. A post of a series
+  shows "part 3 of 11" with the parts before and after; a part to come may
+  stand in the list grouped by series.
 - **Tags** stand in a post's front matter: `tags: [payments, agents]`.
 - **One list, no pages of its own for a tag or a series** (owner,
   2026-11-22): `/blog`, every post by year, newest first, with its date,

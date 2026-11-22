@@ -11,10 +11,18 @@ import (
 // How a slug is written: small letters and digits, words joined by hyphens
 const slugPattern = `^[a-z0-9]+(-[a-z0-9]+)*$`
 
+// How a number alone is written, which a post's or a series' name may not be: blog/12 reads as a post's number
+const numberPattern = `^[0-9]+$`
+
+// How a fault says what a slug is, a slug's and a tag's alike
+const slugForm = "small letters and digits, joined by hyphens"
+
 // What is said of each kind of fault, as a format for the values it names; a fault of a value written quotes it
 const (
 	emptyProblem         = "is empty"
+	lineProblem          = "holds more than one line"
 	addressProblem       = "%q is no absolute web address"
+	insecureProblem      = "%q is no https address"
 	slashProblem         = "%q ends in a slash, which every address adds itself"
 	mailProblem          = "%q is no bare mail address"
 	unknownMonth         = "%q is no month, YYYY-MM"
@@ -23,21 +31,46 @@ const (
 	unknownDuration      = "%q is no span, as 1y 7m, nor " + sideWord + ", " + learningWord + " or a " + GapOpening + "gap" + GapClosing
 	unflaggedLearning    = "%q says the skill is still being learnt, but learning is not true"
 	orderProblem         = "%q comes before the start, %q"
-	slugProblem          = "%q is no slug: small letters and digits, joined by hyphens"
+	slugProblem          = "%q is no slug: " + slugForm
+	numberNameProblem    = "%q is digits alone, which an address would read as a number"
 	sharedSlugProblem    = "%q names another project too"
 	sharedGroupProblem   = "%q names another group too"
 	stackLanguageProblem = "%q is the project's language already"
 	emptyGroupProblem    = "holds no skill"
-	levelProblem         = "%q is none of %s"
+	noneOfProblem        = "%q is none of %s"
 	positiveProblem      = "%d is not above 0"
 	rangeProblem         = "%d is not above min, %d"
 	unknownWordProblem   = "is no word of the site"
 	placeProblem         = "%q holds no place for its value, %s, or more than one"
 	characterProblem     = "%q holds a control character, a mark of direction or bytes of no character, which every face would pass on"
+	sharedNumberProblem  = "%d is another post's number too"
+	unknownMoment        = "%q is no date and time with its zone, as 2026-11-10T09:00+01:00"
+	unknownDay           = "%q is no date, YYYY-MM-DD"
+	updatedProblem       = "%q comes before the day the post was published, %q"
+	tagProblem           = "%q is no tag: " + slugForm
+	sharedTagProblem     = "%q is a tag of the post already"
+	strayPostProblem     = "is no post's folder: the posts' folder holds a folder for each post"
+	translationProblem   = "is a translation, and translations come later"
+	revisionsProblem     = "holds revisions, which come with their own step"
+	widgetsProblem       = "holds widgets, which come with the first island"
+	strayPartProblem     = "is no part of a post: a post's folder holds its " + englishPostFile
+	frontMatterProblem   = "opens with no front matter: a line " + frontMatterFence + ", the post's fields, and another"
+	unclosedProblem      = "opens front matter that no line " + frontMatterFence + " closes"
+	rawHTMLProblem       = "%q is raw HTML, which a terminal cannot draw and the page's policy would not run"
+	titleLevelProblem    = "is a heading of level 1, the post's title's alone"
+	skippedLevelProblem  = "is a heading of level %d after one of %d, which skips a level"
+	widgetProblem        = "is a widget, and widgets come with the first island"
+	uncitedProblem       = "%q is a footnote no reference cites"
+	unansweredProblem    = "%q cites no footnote"
+	straySeriesProblem   = "is no series: the series' folder holds a file <name>" + yamlEnding + " for each"
+	emptySeriesProblem   = "holds no post"
+	unknownPostProblem   = "%q names no post"
+	sharedPartProblem    = "%q is a part of the series already"
+	otherSeriesProblem   = "%q is a part of another series, %q"
 )
 
-// What separates the levels a level fault lists
-const levelSeparator = ", "
+// What separates the kinds a fault lists where a value is none of them
+const kindSeparator = ", "
 
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
@@ -52,7 +85,13 @@ type inspection struct {
 // does, so vet refuses a format whose values are missing.
 func (inspection *inspection) add(field, format string, values ...any) {
 	problem := fmt.Sprintf(format, values...)
-	inspection.faults = append(inspection.faults, Fault{File: inspection.file, Field: field, Problem: problem})
+	inspection.faults = append(inspection.faults, Fault{File: inspection.file, Field: field, Line: 0, Problem: problem})
+}
+
+// addAtLine writes a fault at a line of the file, as add writes one at a field.
+func (inspection *inspection) addAtLine(line int, format string, values ...any) {
+	problem := fmt.Sprintf(format, values...)
+	inspection.faults = append(inspection.faults, Fault{File: inspection.file, Field: "", Line: line, Problem: problem})
 }
 
 func (inspection *inspection) require(field, value string) {
@@ -61,7 +100,28 @@ func (inspection *inspection) require(field, value string) {
 	}
 }
 
-// blank is whether a value of the profile says nothing: it holds no text but spaces.
+// requireLine holds a value to some text on one line: a title, a line about a post or a series, a site's name.
+func (inspection *inspection) requireLine(field, value string) {
+	switch {
+	case blank(value):
+		inspection.add(field, emptyProblem)
+	case strings.ContainsRune(value, lineFeed):
+		inspection.add(field, lineProblem)
+	}
+}
+
+// requireName holds the name a post's folder or a series' file gives it, which an address carries, to a slug that is
+// not a number alone; the fault stands at the folder or the file it names.
+func (inspection *inspection) requireName(name string) {
+	switch {
+	case !regexp.MustCompile(slugPattern).MatchString(name):
+		inspection.add("", slugProblem, name)
+	case regexp.MustCompile(numberPattern).MatchString(name):
+		inspection.add("", numberNameProblem, name)
+	}
+}
+
+// blank is whether a value of the content says nothing: it holds no text but spaces.
 func blank(value string) bool {
 	return strings.TrimSpace(value) == ""
 }
@@ -69,6 +129,16 @@ func blank(value string) bool {
 func (inspection *inspection) requireWebAddress(field string, address WebAddress) {
 	if !address.absolute() {
 		inspection.add(field, addressProblem, address.Written())
+	}
+}
+
+// requireSecureWebAddress holds an address to an absolute one of https.
+func (inspection *inspection) requireSecureWebAddress(field string, address WebAddress) {
+	switch {
+	case !address.absolute():
+		inspection.add(field, addressProblem, address.Written())
+	case !address.secure:
+		inspection.add(field, insecureProblem, address.Written())
 	}
 }
 
@@ -221,21 +291,22 @@ func inspectHealth(inspection *inspection, sections []HealthSection) {
 		for checkIndex, check := range section.Checks {
 			if !check.Level.IsKnown() {
 				field := fmt.Sprintf("health[%d].checks[%d].level", sectionIndex, checkIndex)
-				inspection.add(field, levelProblem, check.Level, levelList())
+				inspection.add(field, noneOfProblem, check.Level, kindList(levels()))
 			}
 			inspection.require(fmt.Sprintf("health[%d].checks[%d].text", sectionIndex, checkIndex), check.Text)
 		}
 	}
 }
 
-// levelList writes out every level a check may read as, in the order of the alphabet, the same on every run.
-func levelList() string {
+// kindList writes out every kind of an enumeration, a check's levels or a post's statuses, in the order of the
+// alphabet, the same on every run.
+func kindList[Kind ~string](kinds map[Kind]bool) string {
 	words := []string{}
-	for level := range levels() {
-		words = append(words, string(level))
+	for kind := range kinds {
+		words = append(words, string(kind))
 	}
 	slices.Sort(words)
-	return strings.Join(words, levelSeparator)
+	return strings.Join(words, kindSeparator)
 }
 
 func inspectSalary(inspection *inspection, salary Salary) {

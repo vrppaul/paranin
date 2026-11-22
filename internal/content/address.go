@@ -17,6 +17,8 @@ const (
 type WebAddress struct {
 	written string
 	host    string
+	// secure is whether its scheme is https, which a check of an address that must be one names
+	secure bool
 }
 
 // UnmarshalYAML reads a web address, and never fails on its text: what is no address is a fault for the check to
@@ -29,9 +31,9 @@ func (address *WebAddress) UnmarshalYAML(node *yaml.Node) error {
 func readWebAddress(written string) WebAddress {
 	parsed, err := url.Parse(written)
 	if err != nil || (parsed.Scheme != secureScheme && parsed.Scheme != plainScheme) {
-		return WebAddress{written: written, host: ""}
+		return WebAddress{written: written, host: "", secure: false}
 	}
-	return WebAddress{written: written, host: parsed.Host}
+	return WebAddress{written: written, host: parsed.Host, secure: parsed.Scheme == secureScheme}
 }
 
 // Written is the address as the content writes it.

@@ -25,7 +25,8 @@ const (
 	fileMode        = 0o600
 )
 
-// ContentFolder is the folder of the fixture content: a profile and the site's words.
+// ContentFolder is the folder of the fixture content: a profile, the site's words, a post published and a draft, and
+// a series.
 func ContentFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), contentFromRoot)
 }

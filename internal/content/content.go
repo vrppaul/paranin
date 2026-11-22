@@ -15,23 +15,28 @@ import (
 )
 
 // The files of the folder: the profile, and the site's words in English, its one language so far (D12), in the
-// folder of the catalogues, in a file named by the language's tag (wordsFile)
+// folder of the catalogues, in a file named by the language's tag (wordsFile); a file of YAML ends as yamlEnding
+// says, a catalogue and a series alike
 const (
 	profileFile = "profile.yaml"
 	english     = "en"
 	wordsFolder = "i18n/"
-	wordsEnding = ".yaml"
+	yamlEnding  = ".yaml"
 )
 
 // wordsFile is the file of the site's words in a language, by its tag.
 func wordsFile(language string) string {
-	return wordsFolder + language + wordsEnding
+	return wordsFolder + language + yamlEnding
 }
 
 // Snapshot is the content as one load read it.
 type Snapshot struct {
 	Profile Profile
 	Words   Words
+	// Posts stand in the order of their slugs and the series in that of their names, as their folders list them: an
+	// order no edit of a post's fields changes. A list of posts orders them its own way
+	Posts  []Post
+	Series []Series
 }
 
 // Load reads the content folder and checks it whole: a snapshot, or Faults naming everything wrong in it.
@@ -39,7 +44,11 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	wordsPath := wordsFile(english)
 	profile, profileDocument, faults := readFile[Profile](folder, profileFile)
 	written, wordsDocument, wordFaults := readFile[map[string]string](folder, wordsPath)
+	posts, unreadPosts, misplacedPosts := readPosts(folder)
+	series, unreadSeries, misplacedSeries := readSeries(folder)
 	faults = append(faults, wordFaults...)
+	faults = append(faults, unreadPosts...)
+	faults = append(faults, unreadSeries...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
@@ -48,26 +57,36 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	faults = append(faults, inspectCharacters(profileFile, profileDocument)...)
 	faults = append(faults, wordFaults...)
 	faults = append(faults, inspectCharacters(wordsPath, wordsDocument)...)
+	faults = append(faults, misplacedPosts...)
+	faults = append(faults, inspectPosts(posts)...)
+	faults = append(faults, misplacedSeries...)
+	faults = append(faults, inspectSeries(series, posts)...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	return &Snapshot{Profile: profile, Words: words}, nil
+	return &Snapshot{Profile: profile, Words: words, Posts: postsOf(posts), Series: seriesOf(series)}, nil
 }
 
-// readFile decodes a file of the folder strictly: a key a struct lacks is a fault, so a typo is never dropped
-// unsaid. A map takes any key, for its reader to check. It hands back the file's document too, every value as the
-// file writes it, for the checks no type knows of. A node cannot be decoded strictly, so the file is decoded twice.
+// readFile reads a file of the folder and decodes it strictly, as decodeStrictly does.
 func readFile[Target any](folder fs.FS, file string) (Target, *yaml.Node, Faults) {
-	var target Target
 	data, err := fs.ReadFile(folder, file)
 	if err != nil {
+		var target Target
 		return target, nil, Faults{unreadFault(file, err)}
 	}
+	return decodeStrictly[Target](file, data)
+}
+
+// decodeStrictly decodes a file's YAML strictly: a key a struct lacks is a fault, so a typo is never dropped
+// unsaid. A map takes any key, for its reader to check. It hands back the file's document too, every value as the
+// file writes it, for the checks no type knows of. A node cannot be decoded strictly, so the YAML is decoded twice.
+func decodeStrictly[Target any](file string, data []byte) (Target, *yaml.Node, Faults) {
+	var target Target
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
-	err = decoder.Decode(&target)
+	err := decoder.Decode(&target)
 	if errors.Is(err, io.EOF) {
-		return target, nil, Faults{{File: file, Field: "", Problem: emptyProblem}}
+		return target, nil, Faults{fileFault(file, emptyProblem)}
 	}
 	if err != nil {
 		return target, nil, decodingFaults(file, err)
@@ -75,7 +94,7 @@ func readFile[Target any](folder fs.FS, file string) (Target, *yaml.Node, Faults
 	var document yaml.Node
 	err = yaml.Unmarshal(data, &document)
 	if err != nil {
-		return target, nil, Faults{fileFault(file, err)}
+		return target, nil, Faults{fileFault(file, err.Error())}
 	}
 	return target, &document, nil
 }
@@ -84,24 +103,43 @@ func readFile[Target any](folder fs.FS, file string) (Target, *yaml.Node, Faults
 func decodingFaults(file string, err error) Faults {
 	typeError, isTypeError := errors.AsType[*yaml.TypeError](err)
 	if !isTypeError {
-		return Faults{fileFault(file, err)}
+		return Faults{fileFault(file, err.Error())}
 	}
 	faults := make(Faults, 0, len(typeError.Errors))
 	for _, problem := range typeError.Errors {
-		faults = append(faults, Fault{File: file, Field: "", Problem: problem})
+		faults = append(faults, fileFault(file, problem))
 	}
 	return faults
 }
 
-func fileFault(file string, err error) Fault {
-	return Fault{File: file, Field: "", Problem: err.Error()}
+// fileFault is a fault of a file, or a folder, as a whole: at no field and no line.
+func fileFault(file, problem string) Fault {
+	return Fault{File: file, Field: "", Line: 0, Problem: problem}
+}
+
+// lineFault is a fault at a line of a file, outside any inspection: where the front matter does not open or close.
+func lineFault(file string, line int, problem string) Fault {
+	return Fault{File: file, Field: "", Line: line, Problem: problem}
 }
 
 // unreadFault is the fault of a file that could not be read. The fault names the file already, so where the error
 // names its path as well, only the cause is kept.
 func unreadFault(file string, err error) Fault {
 	if pathError, isPathError := errors.AsType[*fs.PathError](err); isPathError {
-		return fileFault(file, pathError.Err)
+		return fileFault(file, pathError.Err.Error())
 	}
-	return fileFault(file, err)
+	return fileFault(file, err.Error())
+}
+
+// readFolder lists a folder of the content that may be left out, as the posts' and the series' are: none listed
+// where it is.
+func readFolder(folder fs.FS, name string) ([]fs.DirEntry, Faults) {
+	entries, err := fs.ReadDir(folder, name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, Faults{unreadFault(name, err)}
+	}
+	return entries, nil
 }

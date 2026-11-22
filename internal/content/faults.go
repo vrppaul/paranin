@@ -7,10 +7,12 @@ import (
 	"unicode/utf8"
 )
 
-// Fault is one thing wrong with the content: in a file, at a field of it where the fault has one.
+// Fault is one thing wrong with the content: in a file, at a field of it or a line of a post's body where the fault
+// has one. A line counts from the file's first, as an editor does; nought is none.
 type Fault struct {
 	File    string
 	Field   string
+	Line    int
 	Problem string
 }
 
@@ -24,12 +26,17 @@ const (
 // replacement character itself takes three
 const byteOfNoCharacter = 1
 
-// String writes a fault as a person reads it, on a line of its own: the file, the field, what is wrong.
+// String writes a fault as a person reads it, on a line of its own: the file, the field or the line as a compiler
+// writes one, so an editor opens the file there, and what is wrong.
 func (fault Fault) String() string {
-	if fault.Field == "" {
+	switch {
+	case fault.Line > 0:
+		return escaped(fmt.Sprintf("%s:%d: %s", fault.File, fault.Line, fault.Problem))
+	case fault.Field == "":
 		return escaped(fmt.Sprintf("%s: %s", fault.File, fault.Problem))
+	default:
+		return escaped(fmt.Sprintf("%s: %s %s", fault.File, fault.Field, fault.Problem))
 	}
-	return escaped(fmt.Sprintf("%s: %s %s", fault.File, fault.Field, fault.Problem))
 }
 
 // escaped writes a fault's line with every character a reader acts on, and every byte of no character, as %q writes

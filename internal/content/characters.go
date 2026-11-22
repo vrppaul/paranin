@@ -70,10 +70,15 @@ func inspectScalar(inspection *inspection, place string, node *yaml.Node) {
 		texts = append(texts, decoded)
 	}
 	for _, text := range texts {
-		if !utf8.ValidString(text) || strings.ContainsFunc(text, refusedCharacter) {
+		if refusedText(text) {
 			inspection.add(place, characterProblem, text)
 		}
 	}
+}
+
+// refusedText is whether a text holds a character no value may hold, or bytes that are no text.
+func refusedText(text string) bool {
+	return !utf8.ValidString(text) || strings.ContainsFunc(text, refusedCharacter)
 }
 
 // keyPlace is the place of a key in a mapping at a place; a key of the file's top mapping is its own place.

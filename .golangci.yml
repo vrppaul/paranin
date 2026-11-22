@@ -186,6 +186,16 @@ linters:
           deny:
             - pkg: github.com/vrppaul/paranin/internal/compose
               desc: compose will read a post's links back into targets by routes, so routes never build on compose
+        # content parses a post once and compose walks the tree it keeps (goldmark/ast, extension/ast): a parser in
+        # compose would read the text a second time, by a format of its own. The anchor keeps extension/ast open
+        compose-walks-never-parses:
+          files:
+            - "**/internal/compose/**"
+          deny:
+            - pkg: github.com/yuin/goldmark/parser$
+              desc: &walks-never-parses content parses a post once; compose walks the tree the snapshot keeps
+            - pkg: github.com/yuin/goldmark/extension$
+              desc: *walks-never-parses
         # The inbox stands on the foundation beside compose and routes: it delivers a message, and neither it nor
         # they need the other
         inbox-alone:
@@ -378,11 +388,12 @@ linters:
               desc: *no-template
             - pkg: github.com/a-h/templ
               desc: *no-template
-            # goldmark's parser and its tree are compose's; its renderer, and Convert, which renders, a face's.
-            # goldmark/extension holds parsers and renderers both, and no path parts them: compose builds its
-            # parser by hand from the extensions' parsers, and a reviewer holds the rest
+            # goldmark's parser is content's, which reads a post once, and its tree (goldmark/ast, extension/ast) is
+            # compose's to walk into a document, with no parser of its own; its renderer, and Convert, which renders,
+            # a face's. goldmark/extension holds parsers and renderers both, and no path parts them: content builds
+            # its parser by hand from the extensions' parts, and a reviewer holds the rest
             - pkg: github.com/yuin/goldmark/renderer
-              desc: &no-drawing compose reads markdown into a document; drawing it is a face's
+              desc: &no-drawing content reads markdown and compose walks it into a document; drawing it is a face's
             - pkg: github.com/yuin/goldmark$
               desc: *no-drawing
             - pkg: charm.land

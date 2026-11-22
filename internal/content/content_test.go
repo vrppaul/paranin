@@ -3,8 +3,8 @@ package content
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -313,15 +313,26 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 
 // fixtureFolder is the fixture content in a folder in memory, which a test may change.
 func fixtureFolder(test *testing.T) fstest.MapFS {
-	folder := fstest.MapFS{}
-	for _, file := range []string{profileFile, wordsFile(english)} {
-		data, err := os.ReadFile(filepath.Join(fixturePath, file))
-		if err != nil {
-			test.Fatalf("read the fixture's %s: %v", file, err)
-		}
-		folder[file] = &fstest.MapFile{Data: data}
+	copied := fixtureCopy{source: os.DirFS(fixturePath), folder: fstest.MapFS{}}
+	if err := fs.WalkDir(copied.source, ".", copied.visit); err != nil {
+		test.Fatalf("read the fixture: %v", err)
 	}
-	return folder
+	return copied.folder
+}
+
+// fixtureCopy gathers the files of a fixture's folder into a folder in memory.
+type fixtureCopy struct {
+	source fs.FS
+	folder fstest.MapFS
+}
+
+func (copied fixtureCopy) visit(file string, entry fs.DirEntry, err error) error {
+	if err != nil || entry.IsDir() {
+		return err
+	}
+	data, err := fs.ReadFile(copied.source, file)
+	copied.folder[file] = &fstest.MapFile{Data: data}
+	return err
 }
 
 // changedFile writes one piece of a file of the folder otherwise; the piece must be there once.

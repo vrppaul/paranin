@@ -38,5 +38,9 @@ fmt.Println("slowly")
 
 See [the reader's notes](https://notes.example.test/slow), or write to <mira@example.test>.[^source]
 
+## Afterwards
+
+A page kept is a page read again.
+
 [^pencil]: A soft one, which rubs out.
 [^source]: Mira Example, on her own reading.

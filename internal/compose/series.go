@@ -1,0 +1,180 @@
+package compose
+
+import (
+	"cmp"
+	"slices"
+	"time"
+
+	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
+)
+
+// The number of a series' first part, as a reader counts them
+const firstPart = 1
+
+// blog is what each post's place in the blog is read from, read once from a snapshot: every post by its slug, the
+// posts the lists name, those published, in the order they came out, and each series by the slug of every post it
+// names.
+type blog struct {
+	posts    map[string]content.Post
+	listed   []content.Post
+	seriesOf map[string]content.Series
+}
+
+// listedPart is a part of a series as its list holds it, whoever reads it: its title, and its post where it is out.
+type listedPart struct {
+	title string
+	post  *content.Post
+}
+
+// blogOf is the blog of a snapshot's posts and series.
+func blogOf(snapshot *content.Snapshot) blog {
+	read := blog{posts: map[string]content.Post{}, listed: []content.Post{}, seriesOf: map[string]content.Series{}}
+	for _, post := range snapshot.Posts {
+		read.posts[post.Slug] = post
+		if post.Status == content.StatusPublished {
+			read.listed = append(read.listed, post)
+		}
+	}
+	// the snapshot holds the posts in their slugs' order, which a stable sort keeps among posts out at one moment
+	slices.SortStableFunc(read.listed, func(first, second content.Post) int { return first.Published.At().Compare(second.Published.At()) })
+	for _, series := range snapshot.Series {
+		for _, slug := range series.Posts {
+			read.seriesOf[slug] = series
+		}
+	}
+	return read
+}
+
+// placeOf is where a post stands in the blog: its series and the posts beside it, and where it is discussed.
+func (read blog) placeOf(post content.Post) *document.PostPlace {
+	series, neighbours := read.seriesAndNeighbours(post)
+	return &document.PostPlace{Series: series, Neighbours: neighbours, Discussions: discussionLinks(post.Discussions)}
+}
+
+// seriesAndNeighbours are the series a post is a part of, with every part where it stands for the post's reader, and
+// the posts beside it, the parts before and after it; outside a series, or as a part the series leaves out, no
+// series, and the posts the lists name before and after it by the time they came out.
+func (read blog) seriesAndNeighbours(post content.Post) (*document.Series, document.Neighbours) {
+	series, inSeries := read.seriesOf[post.Slug]
+	parts := read.partsOf(series)
+	reading := slices.IndexFunc(parts, func(part listedPart) bool { return part.post != nil && part.post.Slug == post.Slug })
+	if !inSeries || reading < 0 {
+		return nil, read.byDate(post)
+	}
+	documentParts := make([]document.Part, 0, len(parts))
+	for index, part := range parts {
+		documentParts = append(documentParts, document.Part{
+			Number: partNumber(index),
+			Title:  textSpans(part.title),
+			State:  partState(parts, index, reading),
+			Page:   part.page(),
+		})
+	}
+	neighbours := document.Neighbours{Before: partNeighbour(parts, reading-1), After: partNeighbour(parts, reading+1)}
+	return &document.Series{Title: textSpans(series.Title), Parts: documentParts}, neighbours
+}
+
+// partsOf are a series' parts in their order, as its list holds them: each post it names that is out, and as a part
+// to come each not published yet, a draft or a preview, then each title it names to come. A part unlisted is listed
+// nowhere, so the series leaves it out. exhaustive holds the switch to every status.
+func (read blog) partsOf(series content.Series) []listedPart {
+	parts := []listedPart{}
+	for _, slug := range series.Posts {
+		post := read.posts[slug]
+		switch post.Status {
+		case content.StatusPublished:
+			parts = append(parts, listedPart{title: post.Title, post: &post})
+		case content.StatusDraft, content.StatusPreview:
+			parts = append(parts, listedPart{title: post.Title, post: nil})
+		case content.StatusUnlisted:
+		}
+	}
+	for _, title := range series.ToCome {
+		parts = append(parts, listedPart{title: title, post: nil})
+	}
+	return parts
+}
+
+// byDate are the posts the lists name before and after a post by the time they came out; a post unlisted, which no
+// list names, stands among them where the time it came out puts it.
+func (read blog) byDate(post content.Post) document.Neighbours {
+	others := slices.DeleteFunc(slices.Clone(read.listed), func(other content.Post) bool { return other.Slug == post.Slug })
+	after := slices.IndexFunc(others, func(other content.Post) bool { return cameOutAfter(other, post) })
+	if after < 0 {
+		after = len(others)
+	}
+	return document.Neighbours{Before: datedNeighbour(others, after-1), After: datedNeighbour(others, after)}
+}
+
+// cameOutAfter is whether a post came out after another, or at the same moment and after it by slug, as the lists
+// order them.
+func cameOutAfter(post, other content.Post) bool {
+	return cmp.Or(post.Published.At().Compare(other.Published.At()), cmp.Compare(post.Slug, other.Slug)) > 0
+}
+
+// partState is where a part stands for the reader of the part read: the part read, the part out after it, which is
+// read next, any other part out, or a part to come.
+func partState(parts []listedPart, index, reading int) document.PartState {
+	switch {
+	case index == reading:
+		return document.PartReading
+	case parts[index].post == nil:
+		return document.PartToCome
+	case index == reading+1:
+		return document.PartNext
+	}
+	return document.PartOut
+}
+
+// partNeighbour is the part at an index as the post beside the part read: its number, its title, and, once it is out,
+// its lead and its page; none where the series has no part there. Inside a series the parts are read in order, so
+// when one came out is none of the reader's.
+func partNeighbour(parts []listedPart, index int) *document.Neighbour {
+	if index < 0 || index >= len(parts) {
+		return nil
+	}
+	part := parts[index]
+	var lead []document.Span
+	if part.post != nil {
+		lead = textSpans(part.post.Description)
+	}
+	return &document.Neighbour{Part: partNumber(index), Title: textSpans(part.title), Lead: lead, Page: part.page(), Published: time.Time{}}
+}
+
+// datedNeighbour is the post at an index of those the lists name as the post beside another: its title, its lead, its
+// page and when it came out, which the blog orders them by; none where no post stands there.
+func datedNeighbour(posts []content.Post, index int) *document.Neighbour {
+	if index < 0 || index >= len(posts) {
+		return nil
+	}
+	post := posts[index]
+	return &document.Neighbour{Part: 0, Title: textSpans(post.Title), Lead: textSpans(post.Description), Page: postPage(post), Published: post.Published.At()}
+}
+
+// page is a part's page, none for a part to come.
+func (part listedPart) page() document.Page {
+	if part.post == nil {
+		return document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
+	}
+	return postPage(*part.post)
+}
+
+// partNumber is the number of a part at an index of its series, counted from one.
+func partNumber(index int) int {
+	return index + firstPart
+}
+
+// postPage is a post's page, by its slug.
+func postPage(post content.Post) document.Page {
+	return document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: ""}
+}
+
+// discussionLinks are where a post is discussed, each a link to the thread by its site's name.
+func discussionLinks(discussions []content.Discussion) []document.Link {
+	links := make([]document.Link, 0, len(discussions))
+	for _, discussion := range discussions {
+		links = append(links, document.Link{Target: document.Address{URL: discussion.Address.Written()}, Spans: textSpans(discussion.Site)})
+	}
+	return links
+}

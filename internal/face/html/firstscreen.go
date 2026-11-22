@@ -70,15 +70,16 @@ func partsOf(briefed *document.Briefed, others []document.Block, today time.Time
 	}
 }
 
-// profileLine is the brief's ways to the author's profiles in one line, each drawn as any link is, the line's dot
-// between two. It is joined here, not in a template's loop, where templ writes a space before each part.
-func (writer PageWriter) profileLine(profiles []document.Link) templ.Component {
-	parts := make([]templ.Component, 0, len(profiles))
-	for index, profile := range profiles {
+// linkLine is links in one line, the brief's ways to the author's profiles or where a post is discussed, each drawn as
+// any link is, the line's dot between two. It is joined here, not in a template's loop, where templ writes a space
+// before each part.
+func (writer PageWriter) linkLine(links []document.Link) templ.Component {
+	parts := make([]templ.Component, 0, len(links))
+	for index, link := range links {
 		if index > 0 {
 			parts = append(parts, text(dot))
 		}
-		parts = append(parts, writer.span(profile))
+		parts = append(parts, writer.span(link))
 	}
 	return templ.Join(parts...)
 }

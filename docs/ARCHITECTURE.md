@@ -185,7 +185,13 @@ and web routes.
   metadata; and on a project's page where its code lives, a repository
   typed as its address and the site's word for it, since every face shows
   it first; on a post's page its number, its tags, its description as its
-  lead, and when it came out, which each face writes its own way. The ways
+  lead, and when it came out, which each face writes its own way; and,
+  in one field only a post fills, none on every other page, where it
+  stands in the blog: its series, every part with where it stands for
+  the post's reader; the posts beside it, which its foot leads to; and
+  where it is discussed. `compose` reads them once from every post and
+  series of a snapshot, so no face picks a post's neighbours again
+  (FOUNDATION §5.4). The ways
   to reach the author (mail, the profiles, `ssh`, the CV) left the head
   (amended 2026-11-15, the owner's word): they are facts of their own kind,
   in the résumé's last section under the site's word for contact, which a

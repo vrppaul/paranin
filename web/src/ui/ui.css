@@ -241,40 +241,46 @@ a.session:hover {
   color: var(--prompt);
 }
 
-/* the window shown, the place chosen on the command line's menu and the way whose hint is open, reversed and bold as
- * the TUI's tab: a mark of form, not of colour alone; the way's hairline with it */
+/* the window shown, the place chosen on the command line's menu, and the chip whose window is open, a way's hint or a
+ * series' pick, reversed and bold as the TUI's tab: a mark of form, not of colour alone; the chip's hairline and its
+ * marks with it */
 .window[aria-current],
 .places-item[aria-selected="true"],
-.way-chip:has(+ .hint:popover-open) {
+.way-chip:has(+ :is(.hint, .pick):popover-open) {
   background: var(--text);
   color: var(--background);
   font-weight: var(--type-strong-weight);
 }
 
 .window[aria-current] .window-number,
-.way-chip:has(+ .hint:popover-open) .way-mark {
+.way-chip:has(+ :is(.hint, .pick):popover-open) :is(.way-mark, .series-count, .series-mark) {
   color: var(--background);
 }
 
-.way-chip:has(+ .hint:popover-open) {
+.way-chip:has(+ :is(.hint, .pick):popover-open) {
   border-color: var(--text);
 }
 
-/* a way's hint (DESIGN.md, Hint), on the panel's ground with an edge hairline as all that lies over the page, in the
- * text's own style, not the line's */
-.hint {
+/* a window a chip opens over the page, a way's hint (DESIGN.md, Hint) or a series' pick (Pick): on the panel's ground
+ * with an edge hairline as all that lies over the page */
+.hint,
+.pick {
   box-sizing: border-box;
   max-width: var(--dialog);
-  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
   overflow: visible;
   border: var(--hairline) solid var(--edge);
   border-radius: var(--radius);
   background: var(--sunk);
   color: var(--text);
+  white-space: normal;
+}
+
+/* a hint pads as a dialog does, in the text's own style, not the line's */
+.hint {
+  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
   font-size: var(--type-body-size);
   font-weight: var(--type-body-weight);
   line-height: var(--type-body-line);
-  white-space: normal;
 }
 
 /* it stands a nudge over the foot line, whatever the line's panel holds, its right edge at the content's. The foot is
@@ -290,8 +296,10 @@ a.session:hover {
   }
 }
 
-/* its title, the program, and the button that closes it, set into its top edge, half above it, on its ground */
+/* its title, the program, and the button that closes it, set into its top edge, half above it, on its ground; a
+ * pick's window titles itself and closes so too (DESIGN.md, Pick) */
 .hint-title,
+.pick-title,
 .hint-close {
   position: absolute;
   top: calc(-0.5 * var(--row));
@@ -303,7 +311,8 @@ a.session:hover {
   line-height: var(--row);
 }
 
-.hint-title {
+.hint-title,
+.pick-title {
   left: var(--cell-2);
   font-weight: var(--type-strong-weight);
 }
@@ -1421,8 +1430,9 @@ a.session:hover {
 
 /* a post's page (DESIGN.md, Layout): one grid from its head to its foot, so its parts stand in the same columns from
  * the first screen down: the Outline's rail and the room after it, the paragraphs' numbers, two cells clear of the
- * text, the text held to its column, then the room left and the sources beside it. Its last line stands four rows
- * clear of the foot line */
+ * text, the text held to its column, then the room left and the sources beside it. Its rows are its head, its body,
+ * where the Outline stands beside the article, and the panes at its foot. Its last line stands four rows clear of
+ * the foot line */
 .post {
   display: grid;
   grid-template-columns:
@@ -1433,6 +1443,7 @@ a.session:hover {
     [text-start] minmax(0, var(--column))
     [text-end] minmax(calc(2 * var(--cell-2)), 1fr)
     [aside-start] var(--aside) [aside-end];
+  grid-template-rows: [head] auto [body] auto [foot] auto;
   padding-bottom: var(--row-4);
 }
 
@@ -1446,6 +1457,10 @@ a.session:hover {
       [text-end] minmax(calc(2 * var(--cell-2)), 1fr)
       [aside-start] var(--aside) [aside-end];
   }
+
+  .outline {
+    display: none;
+  }
 }
 
 /* its head, its first screen as the résumé's (DESIGN.md, PostHead): the title and the lead over the rail, the numbers
@@ -1454,6 +1469,7 @@ a.session:hover {
   position: relative;
   display: grid;
   grid-column: 1 / -1;
+  grid-row: head;
   grid-template-columns: subgrid;
   align-items: start;
   padding-block: var(--row-4) var(--row-3);
@@ -1512,6 +1528,7 @@ a.session:hover {
 .article {
   display: grid;
   grid-column: 1 / -1;
+  grid-row: body;
   grid-template-columns: subgrid;
   align-items: start;
 }
@@ -1698,8 +1715,316 @@ a.session:hover {
   color: var(--passed);
 }
 
+/* the outline (DESIGN.md, Outline): the post's headings in the rail beside the article, in the small style, in sight
+ * from the head on as the article scrolls; each a muted link with no underline, the text's colour under the pointer;
+ * the heading read bold in the text's colour, a bar in the accent hanging before it */
+.outline {
+  position: sticky;
+  top: var(--row);
+  grid-column: rail;
+  grid-row: body;
+  align-self: start;
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.outline-headings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color var(--quick);
+}
+
+.outline a:hover {
+  color: var(--text);
+}
+
+.outline a[aria-current] {
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+.outline a[aria-current]::before {
+  content: "▌" / "";
+  display: inline-block;
+  width: var(--cell-2);
+  margin-left: calc(-1 * var(--cell-2));
+  color: var(--accent);
+}
+
+/* the series' pick (DESIGN.md, Pick): the foot line's chip at a line's size in the small style, the count muted and
+ * the mark that it opens a window faint; reversed and bold while its window is open, as a way's chip (above) */
+.series-pick {
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-caption-line);
+}
+
+.series-count {
+  color: var(--muted);
+}
+
+.series-mark {
+  color: var(--faint);
+}
+
+/* its window, the box a hint's is (above), in the small style, its title and its close set into its top edge; a part
+ * a row, its number and its state faint at either side of its title. It opens under its chip, from the chip's right
+ * edge in the head, from its left in the panes' heading; a browser that places nothing by an anchor leaves it where
+ * it puts a popover, mid-screen */
+.pick {
+  min-width: var(--pick);
+  padding: var(--row) 0 var(--row-half);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+@supports (position-area: bottom span-left) {
+  .pick {
+    inset: auto;
+    margin: var(--row-half) 0 0;
+    position-area: bottom span-left;
+  }
+
+  .panes-heading .pick {
+    position-area: bottom span-right;
+  }
+}
+
+.pick-parts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pick-row {
+  display: grid;
+  grid-template-columns: var(--cell-3) minmax(0, 1fr) max-content;
+  gap: 0 var(--cell-2);
+  padding: 0 var(--cell-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* a part out, a place to go, as the command line's menu lists them: a shade down under the pointer */
+a.pick-row {
+  transition: background var(--quick);
+}
+
+a.pick-row:hover {
+  background: var(--deep);
+}
+
+.part-number,
+.part-state {
+  color: var(--faint);
+}
+
+/* the part read, reversed and bold as the window shown; the next bold, its state in the text's colour; a part to come
+ * muted */
+.part-reading {
+  background: var(--text);
+  color: var(--background);
+  font-weight: var(--type-strong-weight);
+}
+
+.part-reading :is(.part-number, .part-state) {
+  color: var(--background);
+}
+
+.part-next {
+  font-weight: var(--type-strong-weight);
+}
+
+.part-next .part-state {
+  color: var(--text);
+}
+
+.part-to-come {
+  color: var(--muted);
+}
+
+/* the article's foot (DESIGN.md, Panes): under a quiet hairline across the post, in the text's and the sources'
+ * columns, its heading in the strong style with the way to the posts it names beside it, the panes, and where the
+ * post is discussed */
+.panes-foot {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: foot;
+  grid-template-columns: subgrid;
+  row-gap: var(--row);
+  margin-top: var(--row-2);
+  padding-top: var(--row-2);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.panes-heading,
+.panes,
+.discussions {
+  grid-column: text-start / aside-end;
+}
+
+.panes-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--row-half) var(--cell-2);
+}
+
+.panes-title {
+  margin: 0;
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+}
+
+/* two panes side by side, as tmux splits a window */
+.panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* a pane, padded as a dialog, in a muted hairline; the whole of it the link, a shade down under the pointer, its
+ * title's underline turning the accent, twice as thick */
+.pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nudge);
+  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
+  border: var(--hairline) solid var(--muted);
+  color: var(--text);
+  text-decoration: none;
+  transition: background var(--quick);
+}
+
+/* the two share the line between them: the side after drawn over the one before, but where it leads nowhere, when the
+ * one before draws it, muted where that leads somewhere */
+.pane-after {
+  margin-left: calc(-1 * var(--hairline));
+}
+
+.pane-none.pane-after {
+  border-left-color: transparent;
+}
+
+/* its name set into its top edge, bold, small, on the page's ground */
+.pane-name {
+  position: absolute;
+  top: calc(-0.5 * var(--row));
+  left: var(--cell-2);
+  padding: 0 var(--cell);
+  background: var(--background);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--row);
+}
+
+/* its title bold, underlined in the muted colour; the side after's, the next part's, in the heading's style */
+.pane-title {
+  font-weight: var(--type-strong-weight);
+  text-decoration: underline var(--muted);
+  text-underline-offset: var(--nudge);
+}
+
+.pane-after .pane-title {
+  font-size: var(--type-heading-size);
+  line-height: var(--type-heading-line);
+}
+
+/* a part to come: its title muted and no link, the word saying it comes after it */
+.pane-to-come {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.pane-soon,
+.pane-lead {
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+/* a post outside a series dated at the pane's foot, since the blog orders its posts by date, so the two dates stand on
+ * one line however long the titles above them run */
+.pane-date {
+  margin-top: auto;
+  padding-top: var(--row-half);
+  color: var(--faint);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+/* a side that leads nowhere is off: framed in the quiet rule at half its strength, no ground, since a shade down is the
+ * live panes' hover; its name and its words faint, its name no longer bold */
+.pane-none {
+  border-color: var(--quiet-half);
+}
+
+.pane-none .pane-name {
+  color: var(--faint);
+  font-weight: var(--type-small-weight);
+}
+
+.pane-words {
+  color: var(--faint);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+/* a pane that leads somewhere under the pointer: its ground a shade down, its name on both grounds, the page's above
+ * the edge and the pane's below it */
+a.pane:hover {
+  background: var(--sunk);
+}
+
+a.pane:hover .pane-name {
+  background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--sunk) 0);
+}
+
+a.pane:hover .pane-title {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: var(--underline-hover);
+}
+
+/* pressed, one shade further, as a quiet control (DESIGN.md, States) */
+a.pane:active {
+  background: var(--deep);
+}
+
+a.pane:active .pane-name {
+  background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--deep) 0);
+}
+
+/* where the post is discussed, under the panes: the word muted, the places links, the dots between them faint */
+.discussions {
+  margin: 0;
+  color: var(--faint);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.discuss {
+  color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .code-copy {
+  .code-copy,
+  .outline a,
+  a.pick-row,
+  .pane {
     transition: none;
   }
 }
@@ -1756,5 +2081,60 @@ a.session:hover {
     font-size: var(--type-small-size);
     font-weight: var(--type-small-weight);
     line-height: var(--type-small-line);
+  }
+
+  /* the foot across the whole width, its panes one under the other, sharing the line between them: the side after
+   * first where it leads somewhere, the side that leads nowhere always last, the line drawn by the pane that leads
+   * somewhere */
+  .panes-heading,
+  .panes,
+  .discussions {
+    grid-column: 1 / -1;
+  }
+
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pane {
+    padding-inline: var(--cell-2);
+  }
+
+  .pane-after {
+    margin-left: 0;
+  }
+
+  .pane-after:not(.pane-none) {
+    order: -1;
+  }
+
+  .pane-none.pane-after,
+  .panes:has(> .pane-after:not(.pane-none)) > .pane:first-child {
+    margin-top: calc(-1 * var(--hairline));
+  }
+
+  .pane-none.pane-after,
+  .panes:has(> .pane-after:not(.pane-none)) > .pane-none:first-child {
+    border-top-color: transparent;
+  }
+
+  .pane-none.pane-after {
+    border-left-color: var(--quiet-half);
+  }
+
+  /* a pick's window across the screen, as wide as the gutters leave it, a nudge over the foot line, whichever pick
+   * opened it, as a hint stands over it */
+  @supports (anchor-name: --foot) {
+    .pick,
+    .panes-heading .pick {
+      position-anchor: --foot;
+      position-area: none;
+      inset: auto var(--gutter-phone) auto var(--gutter-phone);
+      bottom: calc(anchor(top) + var(--nudge));
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      margin: 0;
+    }
   }
 }

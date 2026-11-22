@@ -40,7 +40,7 @@ const (
 	positiveProblem      = "%d is not above 0"
 	rangeProblem         = "%d is not above min, %d"
 	unknownWordProblem   = "is no word of the site"
-	placeProblem         = "%q holds no place for its value, %s, or more than one"
+	placeProblem         = "%q writes its place, %s, %d times, where its values ask for %d"
 	characterProblem     = "%q holds a control character, a mark of direction or bytes of no character, which every face would pass on"
 	sharedNumberProblem  = "%d is another post's number too"
 	unknownMoment        = "%q is no date and time with its zone, as 2026-11-10T09:00+01:00"

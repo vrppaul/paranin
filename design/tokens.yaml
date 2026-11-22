@@ -126,6 +126,14 @@ blends:
     basic: 3
     # a terminal of 256 colours would round so faint a blend to a grey, so it leans this far to its colour first
     indexed_lean: 0.25
+  - name: quiet_half
+    about: the frame of a pane that leads nowhere, the quiet rule at half its strength, so it reads as off
+    over: quiet
+    light: 0.5
+    dark: 0.5
+    basic: 8
+    # a grey between two greys, which 256 colours keep as it is
+    indexed_lean: 0
 
 mixes:
   - name: title_soft_start
@@ -315,6 +323,9 @@ lengths:
   - name: dialog
     about: the widest a window over the page runs, a dialog's or a hint's
     rem: 35
+  - name: pick
+    about: the least width of a pick's window, a part's number, a title of a few words and its state on one line
+    cells: 48
   - name: gutter
     about: the room either side of the content
     rem: 3

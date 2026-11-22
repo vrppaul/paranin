@@ -40,6 +40,8 @@ const (
 	ColourTimeBar
 	// ColourTint is a result worth seeing first, the accent laid over the page
 	ColourTint
+	// ColourQuietHalf is the frame of a pane that leads nowhere, the quiet rule at half its strength, so it reads as off
+	ColourQuietHalf
 )
 
 // Palette is each of the design's colours as each kind of terminal shows it, in a theme.
@@ -47,43 +49,45 @@ func Palette(theme Theme) map[Colour]Shade {
 	switch theme {
 	case ThemeLight:
 		return map[Colour]Shade{
-			ColourSunk:     {TrueColour: color.RGBA{R: 230, G: 233, B: 239, A: 255}, Indexed: 255, Basic: BasicOwn},
-			ColourDeep:     {TrueColour: color.RGBA{R: 220, G: 224, B: 232, A: 255}, Indexed: 254, Basic: BasicOwn},
-			ColourText:     {TrueColour: color.RGBA{R: 76, G: 79, B: 105, A: 255}, Indexed: 240, Basic: BasicOwn},
-			ColourMuted:    {TrueColour: color.RGBA{R: 92, G: 95, B: 119, A: 255}, Indexed: 60, Basic: BasicOwn},
-			ColourFaint:    {TrueColour: color.RGBA{R: 108, G: 111, B: 133, A: 255}, Indexed: 243, Basic: 8},
-			ColourQuiet:    {TrueColour: color.RGBA{R: 204, G: 208, B: 218, A: 255}, Indexed: 252, Basic: 8},
-			ColourEdge:     {TrueColour: color.RGBA{R: 156, G: 160, B: 176, A: 255}, Indexed: 248, Basic: 8},
-			ColourAccent:   {TrueColour: color.RGBA{R: 254, G: 100, B: 11, A: 255}, Indexed: 202, Basic: 3},
-			ColourHost:     {TrueColour: color.RGBA{R: 136, G: 57, B: 239, A: 255}, Indexed: 99, Basic: 5},
-			ColourLabel:    {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
-			ColourPrompt:   {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
-			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
-			ColourError:    {TrueColour: color.RGBA{R: 210, G: 15, B: 57, A: 255}, Indexed: 161, Basic: 1},
-			ColourPassed:   {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
-			ColourWarned:   {TrueColour: color.RGBA{R: 223, G: 142, B: 29, A: 255}, Indexed: 172, Basic: 3},
-			ColourTimeBar:  {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
-			ColourTint:     {TrueColour: color.RGBA{R: 241, G: 218, B: 208, A: 255}, Indexed: 217, Basic: 3},
+			ColourSunk:      {TrueColour: color.RGBA{R: 230, G: 233, B: 239, A: 255}, Indexed: 255, Basic: BasicOwn},
+			ColourDeep:      {TrueColour: color.RGBA{R: 220, G: 224, B: 232, A: 255}, Indexed: 254, Basic: BasicOwn},
+			ColourText:      {TrueColour: color.RGBA{R: 76, G: 79, B: 105, A: 255}, Indexed: 240, Basic: BasicOwn},
+			ColourMuted:     {TrueColour: color.RGBA{R: 92, G: 95, B: 119, A: 255}, Indexed: 60, Basic: BasicOwn},
+			ColourFaint:     {TrueColour: color.RGBA{R: 108, G: 111, B: 133, A: 255}, Indexed: 243, Basic: 8},
+			ColourQuiet:     {TrueColour: color.RGBA{R: 204, G: 208, B: 218, A: 255}, Indexed: 252, Basic: 8},
+			ColourEdge:      {TrueColour: color.RGBA{R: 156, G: 160, B: 176, A: 255}, Indexed: 248, Basic: 8},
+			ColourAccent:    {TrueColour: color.RGBA{R: 254, G: 100, B: 11, A: 255}, Indexed: 202, Basic: 3},
+			ColourHost:      {TrueColour: color.RGBA{R: 136, G: 57, B: 239, A: 255}, Indexed: 99, Basic: 5},
+			ColourLabel:     {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
+			ColourPrompt:    {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
+			ColourOnAccent:  {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
+			ColourError:     {TrueColour: color.RGBA{R: 210, G: 15, B: 57, A: 255}, Indexed: 161, Basic: 1},
+			ColourPassed:    {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
+			ColourWarned:    {TrueColour: color.RGBA{R: 223, G: 142, B: 29, A: 255}, Indexed: 172, Basic: 3},
+			ColourTimeBar:   {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
+			ColourTint:      {TrueColour: color.RGBA{R: 241, G: 218, B: 208, A: 255}, Indexed: 217, Basic: 3},
+			ColourQuietHalf: {TrueColour: color.RGBA{R: 222, G: 225, B: 232, A: 255}, Indexed: 254, Basic: 8},
 		}
 	case ThemeDark:
 		return map[Colour]Shade{
-			ColourSunk:     {TrueColour: color.RGBA{R: 30, G: 32, B: 48, A: 255}, Indexed: 235, Basic: BasicOwn},
-			ColourDeep:     {TrueColour: color.RGBA{R: 24, G: 25, B: 38, A: 255}, Indexed: 234, Basic: BasicOwn},
-			ColourText:     {TrueColour: color.RGBA{R: 202, G: 211, B: 245, A: 255}, Indexed: 189, Basic: BasicOwn},
-			ColourMuted:    {TrueColour: color.RGBA{R: 165, G: 173, B: 203, A: 255}, Indexed: 146, Basic: BasicOwn},
-			ColourFaint:    {TrueColour: color.RGBA{R: 128, G: 135, B: 162, A: 255}, Indexed: 103, Basic: 8},
-			ColourQuiet:    {TrueColour: color.RGBA{R: 54, G: 58, B: 79, A: 255}, Indexed: 238, Basic: 8},
-			ColourEdge:     {TrueColour: color.RGBA{R: 91, G: 96, B: 120, A: 255}, Indexed: 60, Basic: 8},
-			ColourAccent:   {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
-			ColourHost:     {TrueColour: color.RGBA{R: 198, G: 160, B: 246, A: 255}, Indexed: 183, Basic: 5},
-			ColourLabel:    {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
-			ColourPrompt:   {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},
-			ColourOnAccent: {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
-			ColourError:    {TrueColour: color.RGBA{R: 237, G: 135, B: 150, A: 255}, Indexed: 210, Basic: 1},
-			ColourPassed:   {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},
-			ColourWarned:   {TrueColour: color.RGBA{R: 238, G: 212, B: 159, A: 255}, Indexed: 223, Basic: 3},
-			ColourTimeBar:  {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
-			ColourTint:     {TrueColour: color.RGBA{R: 82, G: 68, B: 73, A: 255}, Indexed: 95, Basic: 3},
+			ColourSunk:      {TrueColour: color.RGBA{R: 30, G: 32, B: 48, A: 255}, Indexed: 235, Basic: BasicOwn},
+			ColourDeep:      {TrueColour: color.RGBA{R: 24, G: 25, B: 38, A: 255}, Indexed: 234, Basic: BasicOwn},
+			ColourText:      {TrueColour: color.RGBA{R: 202, G: 211, B: 245, A: 255}, Indexed: 189, Basic: BasicOwn},
+			ColourMuted:     {TrueColour: color.RGBA{R: 165, G: 173, B: 203, A: 255}, Indexed: 146, Basic: BasicOwn},
+			ColourFaint:     {TrueColour: color.RGBA{R: 128, G: 135, B: 162, A: 255}, Indexed: 103, Basic: 8},
+			ColourQuiet:     {TrueColour: color.RGBA{R: 54, G: 58, B: 79, A: 255}, Indexed: 238, Basic: 8},
+			ColourEdge:      {TrueColour: color.RGBA{R: 91, G: 96, B: 120, A: 255}, Indexed: 60, Basic: 8},
+			ColourAccent:    {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
+			ColourHost:      {TrueColour: color.RGBA{R: 198, G: 160, B: 246, A: 255}, Indexed: 183, Basic: 5},
+			ColourLabel:     {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
+			ColourPrompt:    {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},
+			ColourOnAccent:  {TrueColour: color.RGBA{R: 36, G: 39, B: 58, A: 255}, Indexed: 236, Basic: 0},
+			ColourError:     {TrueColour: color.RGBA{R: 237, G: 135, B: 150, A: 255}, Indexed: 210, Basic: 1},
+			ColourPassed:    {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},
+			ColourWarned:    {TrueColour: color.RGBA{R: 238, G: 212, B: 159, A: 255}, Indexed: 223, Basic: 3},
+			ColourTimeBar:   {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
+			ColourTint:      {TrueColour: color.RGBA{R: 82, G: 68, B: 73, A: 255}, Indexed: 95, Basic: 3},
+			ColourQuietHalf: {TrueColour: color.RGBA{R: 45, G: 49, B: 69, A: 255}, Indexed: 237, Basic: 8},
 		}
 	}
 	return nil

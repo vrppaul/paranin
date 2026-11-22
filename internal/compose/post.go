@@ -29,10 +29,11 @@ const (
 // Posts are the posts a snapshot serves, each a document, in the snapshot's order: those published, and those
 // unlisted, whose address serves them though no list names them; never a draft or a preview.
 func Posts(snapshot *content.Snapshot) []document.Document {
+	read := blogOf(snapshot)
 	documents := []document.Document{}
 	for _, post := range snapshot.Posts {
 		if served(post.Status) {
-			documents = append(documents, postDocument(post, snapshot.Words))
+			documents = append(documents, postDocument(post, read, snapshot.Words))
 		}
 	}
 	return documents
@@ -48,21 +49,21 @@ func served(status content.Status) bool {
 	return false
 }
 
-// postDocument is a post as every face draws it: its head, then its body walked from the tree the load parsed, which
-// nothing here writes to.
-func postDocument(post content.Post, words content.Words) document.Document {
+// postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
+// tree the load parsed, which nothing here writes to.
+func postDocument(post content.Post, read blog, words content.Words) document.Document {
 	body := bodyReader{body: post.Body, notes: map[int][]document.Span{}}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(post.Body.Tree, body.readNote)
-	return document.Document{Head: postHead(post, words), Blocks: body.containedBlocks(post.Body.Tree)}
+	return document.Document{Head: postHead(post, read, words), Blocks: body.containedBlocks(post.Body.Tree)}
 }
 
 // postHead is a post's head: its page by its slug, its number, the language of the site's words, its title, its
-// description as its lead and its page's description, its tags, and when it came out.
-func postHead(post content.Post, words content.Words) document.Head {
+// description as its lead and its page's description, its tags, when it came out, and where it stands in the blog.
+func postHead(post content.Post, read blog, words content.Words) document.Head {
 	description := textSpans(post.Description)
 	return document.Head{
-		Page:        document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: ""},
+		Page:        postPage(post),
 		Number:      post.ID,
 		Language:    words.Language(),
 		Greeting:    "",
@@ -73,6 +74,7 @@ func postHead(post content.Post, words content.Words) document.Head {
 		Lead:        description,
 		Published:   post.Published.At(),
 		Repository:  nil,
+		Post:        read.placeOf(post),
 		Description: description,
 	}
 }

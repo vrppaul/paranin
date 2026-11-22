@@ -7,33 +7,61 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/look"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// The mark before a post's tag, as readers know a tag that gathers posts (DESIGN.md, Content)
-const tagMark = "#"
+// The mark before a post's tag, as readers know a tag that gathers posts (DESIGN.md, Content), and after a pick that
+// opens a window (DESIGN.md, Iconography)
+const (
+	tagMark  = "#"
+	pickMark = "▾"
+)
 
-// postMain is a post's main part (DESIGN.md, Pages): its head, then its article, both on one grid, so the numbers, the
-// words and the sources beside them stand in the same columns from the head to the foot; at the article's end its
-// sources, every note once, which the stylesheet shows where the screen has no room for them beside the text.
-templ (writer PageWriter) postMain(head document.Head, article templ.Component, notes []document.Note) {
+// postMain is a post's main part (DESIGN.md, Pages): its head, its outline beside its article, then the panes at its
+// foot, all on one grid, so the numbers, the words and the sources beside them stand in the same columns from the head
+// to the foot; at the article's end its sources, every note once, which the stylesheet shows where the screen has no
+// room for them beside the text.
+templ (writer PageWriter) postMain(parts postParts) {
 	<article class="post">
-		@writer.postHead(head)
+		@writer.postHead(parts.head)
+		if len(parts.outline) > 0 {
+			@writer.outline(parts.outline)
+		}
 		<div class="article">
-			@article
-			if len(notes) > 0 {
+			@parts.article
+			if len(parts.notes) > 0 {
 				<div class="sources-end">
-					for _, note := range notes {
+					for _, note := range parts.notes {
 						@writer.note(note)
 					}
 				</div>
 			}
 		</div>
+		if parts.panes != nil {
+			@writer.panes(*parts.panes)
+		}
 	</article>
 }
 
+// outline is a post's headings of its top level (DESIGN.md, Outline), each a link to its heading, which the site's
+// script marks as the heading read while the article scrolls; without the script none is marked.
+templ (writer PageWriter) outline(headings []outlined) {
+	<nav class="outline" aria-label={ writer.frame.contents } data-part={ outlinePart }>
+		<ol class="outline-headings">
+			for _, heading := range headings {
+				<li>
+					<a href={ fragmentMark + heading.id } data-part={ outlineLinkPart }>
+						@writer.spans(heading.title)
+					</a>
+				</li>
+			}
+		</ol>
+	</nav>
+}
+
 // postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
-// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, and its tags;
-// the corners' crosses round it, as round the résumé's first screen.
+// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, its series'
+// pick, and its tags; the corners' crosses round it, as round the résumé's first screen.
 templ (writer PageWriter) postHead(head document.Head) {
 	<header class="post-head">
 		<div class="post-intro">
@@ -51,6 +79,12 @@ templ (writer PageWriter) postHead(head document.Head) {
 				<dt>{ writer.frame.postLabels.Version }</dt>
 				<dd>
 					@day(head.Published)
+				</dd>
+			}
+			if head.Post != nil && head.Post.Series != nil {
+				<dt>{ writer.frame.postLabels.Series }</dt>
+				<dd>
+					@writer.seriesPick(writer.headPick(*head.Post.Series))
 				</dd>
 			}
 			if len(head.Tags) > 0 {
@@ -79,11 +113,125 @@ templ tags(tags []string) {
 	</ul>
 }
 
-// articleSection is a section of a post's article: its heading at its depth, named for a reader to link to, then its
-// parts, which stand on the article's grid as if the section held none.
-templ (writer PageWriter) articleSection(id string, depth int, title []document.Span, parts []templ.Component) {
+// seriesPick is the series' Pick (DESIGN.md, Pick): the chip, its words, the count after them and a mark saying it
+// opens a window, which it does as the browser's popover, with no script, Esc closing it; the window, titled by the
+// series, lists every part, its close button last, so the keyboard reaches the parts first.
+templ (writer PageWriter) seriesPick(shown pick) {
+	<button type="button" class="way-chip series-pick" popovertarget={ shown.id }>
+		{ shown.words }
+		if shown.count != "" {
+			<span class="series-count">{ shown.count }</span>
+		}
+		<span class="series-mark" aria-hidden="true">{ pickMark }</span>
+	</button>
+	<div id={ shown.id } class="pick" popover role="dialog" aria-labelledby={ shown.titleID }>
+		<p id={ shown.titleID } class="pick-title">
+			@writer.spans(shown.series.Title)
+		</p>
+		<ol class="pick-parts">
+			for _, part := range shown.series.Parts {
+				@writer.pickPart(part)
+			}
+		</ol>
+		<button type="button" class="hint-close" popovertarget={ shown.id } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
+	</div>
+}
+
+// pickPart is a part of a series in its pick's window: its number, its title and where it stands for the reader; the
+// part read the current page, a part out a link to it, a part to come no link.
+templ (writer PageWriter) pickPart(part document.Part) {
+	<li
+		class={ "pick-part", templ.KV("part-reading", part.State == document.PartReading), templ.KV("part-next", part.State == document.PartNext), templ.KV("part-to-come", part.State == document.PartToCome) }
+		if part.State == document.PartReading {
+			aria-current="page"
+		}
+	>
+		if part.State == document.PartNext || part.State == document.PartOut {
+			<a class="pick-row" href={ routes.Reference(part.Page, routes.FormatChosen) }>
+				@writer.partRow(part)
+			</a>
+		} else {
+			<span class="pick-row">
+				@writer.partRow(part)
+			</span>
+		}
+	</li>
+}
+
+// partRow is a part's row in its pick's window: its number, its title, and where it stands, empty for a part out.
+templ (writer PageWriter) partRow(part document.Part) {
+	<span class="part-number">{ strconv.Itoa(part.Number) }</span>
+	<span class="part-title">
+		@writer.spans(part.Title)
+	</span>
+	<span class="part-state">{ writer.frame.seriesWords.State(part.State) }</span>
+}
+
+// panes are the foot of a post's article (DESIGN.md, Panes): a heading saying where they lead, the series' pick beside
+// it where the post is a part of one; the two sides, the posts before and after it; and where the post is discussed.
+templ (writer PageWriter) panes(foot panesFoot) {
+	<footer class="panes-foot">
+		<div class="panes-heading">
+			<h2 id={ panesHeadingID } class="panes-title">{ foot.heading }</h2>
+			if foot.pick != nil {
+				@writer.seriesPick(*foot.pick)
+			}
+		</div>
+		<nav class="panes" aria-labelledby={ panesHeadingID }>
+			@writer.pane(foot.before)
+			@writer.pane(foot.after)
+		</nav>
+		if len(foot.discussions) > 0 {
+			<p class="discussions">
+				<span class="discuss">{ writer.frame.paneWords.Discuss }</span>
+				@text(wordSpace)
+				@writer.linkLine(foot.discussions)
+			</p>
+		}
+	</footer>
+}
+
+// pane is a side of a post's foot, as tmux splits a window: its name set into its top edge, then the post there, the
+// whole pane a link to it, its title, its lead and, outside a series, the day it came out; a part to come by its title
+// and the word saying it comes, no link; a side with nothing there saying so.
+templ (writer PageWriter) pane(side paneSide) {
+	if side.neighbour == nil {
+		<div class={ "pane", "pane-none", templ.KV("pane-after", side.after) }>
+			<span class="pane-name">{ side.name }</span>
+			<span class="pane-words">{ side.none }</span>
+		</div>
+	} else if side.neighbour.Page.Kind == document.PageNone {
+		<div class={ "pane", templ.KV("pane-after", side.after) }>
+			<span class="pane-name">{ side.name }</span>
+			<span class="pane-title pane-to-come">
+				@writer.spans(side.neighbour.Title)
+				@text(wordSpace)
+				<span class="pane-soon">{ writer.frame.seriesWords.State(document.PartToCome) }</span>
+			</span>
+		</div>
+	} else {
+		<a class={ "pane", templ.KV("pane-after", side.after) } href={ routes.Reference(side.neighbour.Page, routes.FormatChosen) }>
+			<span class="pane-name">{ side.name }</span>
+			<span class="pane-title">
+				@writer.spans(side.neighbour.Title)
+			</span>
+			<span class="pane-lead">
+				@writer.spans(side.neighbour.Lead)
+			</span>
+			if !side.neighbour.Published.IsZero() {
+				<span class="pane-date">
+					@day(side.neighbour.Published)
+				</span>
+			}
+		</a>
+	}
+}
+
+// articleSection is a section of a post's article: its heading at its depth, named and found as the article names it,
+// then its parts, which stand on the article's grid as if the section held none.
+templ (writer PageWriter) articleSection(named templ.Attributes, depth int, title []document.Span, parts []templ.Component) {
 	<section class="article-section">
-		@heading(depth, id, writer.spans(title))
+		@headingWith(depth, named, writer.spans(title))
 		for _, part := range parts {
 			@part
 		}
@@ -113,7 +261,7 @@ templ (writer PageWriter) notesBeside(notes []document.Note) {
 templ (writer PageWriter) note(note document.Note) {
 	<p class="note">
 		<span class="note-number">{ strconv.Itoa(note.Number) }</span>
-		@text(noteSpace)
+		@text(wordSpace)
 		@writer.spans(note.Spans)
 	</p>
 }

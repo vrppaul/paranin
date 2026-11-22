@@ -33,6 +33,9 @@ WHAT A READER KEEPS
 
               See the reader's notes, or write to mira@example.test.[1]
 
+AFTERWARDS
+       A page kept is a page read again.
+
 NOTES
        [1] Mira Example, on her own reading.
        [2] A soft one, which rubs out.

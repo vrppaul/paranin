@@ -38,7 +38,8 @@ const (
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command
 // the first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's
 // button that writes to the author; the projects' pages, places of every page's command line; the name of the blog's
-// session; and the labels of a post's facts.
+// session; the labels of a post's facts, the words of its series and of the panes at its foot, and the name of its
+// outline.
 type frame struct {
 	siteName     string
 	start        string
@@ -50,6 +51,9 @@ type frame struct {
 	projects     []place
 	blog         string
 	postLabels   compose.PostLabels
+	seriesWords  compose.SeriesWords
+	paneWords    compose.PaneWords
+	contents     string
 }
 
 // footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the sessions, the document's tabs as
@@ -113,6 +117,9 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		projects:     projectPlaces(composed.Projects),
 		blog:         composed.Blog,
 		postLabels:   composed.PostLabels,
+		seriesWords:  composed.SeriesWords,
+		paneWords:    composed.PaneWords,
+		contents:     composed.Contents,
 	}
 }
 

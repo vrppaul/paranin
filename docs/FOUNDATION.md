@@ -514,6 +514,14 @@ and SSH to the host: "without a new binary" does not mean without a build.
   renumbers nothing. A post is in one series at most. A post of a series
   shows "part 3 of 11" with the parts before and after; a part to come may
   stand in the list grouped by series.
+- **What a series and a post's foot list.** A part published is out; a
+  part not yet published, a draft or a preview, stands with the titles to
+  come, by its title alone. An unlisted part is listed nowhere, so its
+  series leaves it out and counts on without it, and its own page shows
+  no series. Outside a series a post's foot leads to the posts published
+  before and after it, by the time they came out, so never to a draft, a
+  preview or an unlisted post; an unlisted post's own foot leads to those
+  published either side of its time.
 - **Tags** stand in a post's front matter: `tags: [payments, agents]`.
 - **One list, no pages of its own for a tag or a series** (owner,
   2026-11-22): `/blog`, every post by year, newest first, with its date,

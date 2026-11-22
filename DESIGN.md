@@ -65,6 +65,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `when` | `design/tokens.yaml` | an entry's dates column |
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `dialog` | `design/tokens.yaml` | the widest a window over the page runs, a Dialog's or a Hint's |
+| `pick` | `design/tokens.yaml` | the least width of a Pick's window |
 | `textarea` | 7.5rem | a message field's least height |
 | `rail`, `column`, `aside` | `design/tokens.yaml` | a post's Outline, its text and its sources beside it |
 | `title_text_measure` | `design/tokens.yaml` | the longest line of a title set in text |
@@ -107,7 +108,7 @@ other size: a control that seems to need one is the wrong control.
   older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words.
 - Borders: `quiet` for rules between parts, `muted` for a control's border and for a pane's or a tile's frame, `edge`
   for the corner crosses and for what lies over the page, a tooltip, a toast and a pick's window. A pane or a tile
-  that leads nowhere is framed in `quiet` at half its strength (`quiet_half`, to add).
+  that leads nowhere is framed in `quiet` at half its strength (`quiet_half`).
 - `scrim` fades the page behind a dialog towards its own ground: Latte's and Macchiato's background at 85%.
 
 ## Type
@@ -458,7 +459,8 @@ A word that opens a window over the page, as the Hint's chip does: a post's vers
 
 - The version: its date bold in `muted`, underlined in `edge`; under the pointer `text`, underlined in `accent`.
 - The series: the FootLine's chip, its name, then `1 of 11` in `muted` and `▾` in `faint`; reversed while its window
-  is open, as a way's chip.
+  is open, as a way's chip. In the Panes' heading, which names the series already, it says what it opens, `all 11
+  parts`.
 - The window stands as the Hint does, on `sunk` in an `edge` hairline, `radius`, `small`, its title bold and `esc
   close` set into its top edge. A row a line: a part's number `faint` and its title, or a version's date; its state
   at the right (`reading`, `current`, `next`, `soon`). The row read is reversed and bold; a part out is a
@@ -475,9 +477,9 @@ stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, 
 
 ### Outline
 
-A post's headings in `rail`, `small`, standing in sight as the article scrolls, from its head on: each `muted`, a
-link with no underline, `text` under the pointer; the heading read bold in `text`, `▌` in `accent` hanging before it.
-Gone below `wide`; the `:` menu holds the headings too.
+A post's headings of its top level in `rail`, `small`, standing in sight as the article scrolls, from its head on:
+each `muted`, a link with no underline, `text` under the pointer; the heading read bold in `text`, `▌` in `accent`
+hanging before it. Gone below `wide`; the `:` menu holds the headings too.
 
 ### Article
 
@@ -510,9 +512,9 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 
 - Each pane square, framed in a `muted` hairline, the two sharing the line between them; the whole pane is the link,
   `sunk` under the pointer, its title's underline then `accent` and `underline_hover` thick.
-- Its name set into its top edge, bold, `small`: `part 4`, `older`. Its title bold, underlined in `muted`; the next
-  part's in `heading`. Its lead `small` in `muted`; beside other posts, a post's date `caption` in `faint` at the
-  pane's foot, since the blog orders them by date.
+- Its name set into its top edge, bold, `small`: `part 4`, `older`. Its title bold, underlined in `muted`; the side
+  after's title, the next part's or the newer post's, in `heading`. Its lead `small` in `muted`; beside other posts, a
+  post's date `caption` in `faint` at the pane's foot, since the blog orders them by date.
 - A part not out yet: its title `muted`, `soon` after it, no link. A side with none: framed in `quiet_half`, its name
   and its words `faint`, `none: this is the first part`.
 - Under them where the post is discussed: `discuss` in `muted`, then the links.

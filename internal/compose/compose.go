@@ -64,6 +64,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Lead:        nil,
 		Published:   time.Time{},
 		Repository:  nil,
+		Post:        nil,
 		Description: head.Description,
 	}
 }
@@ -142,6 +143,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 			Lead:        resume.Lead,
 			Published:   time.Time{},
 			Repository:  nil,
+			Post:        nil,
 			Description: nil,
 		},
 		Blocks: blocks,
@@ -170,6 +172,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Lead:        headline,
 		Published:   time.Time{},
 		Repository:  nil,
+		Post:        nil,
 		Description: headline,
 	}
 }
@@ -265,6 +268,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Lead:        description,
 		Published:   time.Time{},
 		Repository:  projectRepository(project, words),
+		Post:        nil,
 		Description: description,
 	}
 }

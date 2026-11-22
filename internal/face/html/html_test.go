@@ -677,10 +677,11 @@ func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
 	}{
 		{name: "one h1", want: "<h1", count: 1},
 		{name: "the h1, the post's title", want: "<h1 class=\"post-title\">Reading slowly</h1>", count: 1},
-		{name: "a heading a link names", want: `<h2 id="what-a-reader-keeps">What a reader keeps</h2>`, count: 1},
+		{name: "a heading a link names", want: `id="what-a-reader-keeps">What a reader keeps</h2>`, count: 1},
 		{name: "a heading under it", want: `<h3 id="in-a-terminal">In a terminal</h3>`, count: 1},
 		{name: "the first paragraph's number, leading to it", want: `<a class="paragraph-number" href="#p1">1</a><p id="p1">`, count: 1},
-		{name: "the last paragraph's number, after the lists", want: `<a class="paragraph-number" href="#p2">2</a><p id="p2">`, count: 1},
+		{name: "a paragraph's number after the lists", want: `<a class="paragraph-number" href="#p2">2</a><p id="p2">`, count: 1},
+		{name: "a paragraph's number in the next section, counting on", want: `<a class="paragraph-number" href="#p3">3</a><p id="p3">`, count: 1},
 		{name: "each citation of the note cited twice, its number raised", want: `<sup class="citation">1</sup>`, count: 2},
 		{name: "the note cited twice, beside the line first citing it", want: `</sup></p><aside class="notes">` + firstNote, count: 1},
 		{name: "a note cited inside a list, beside the list", want: `</ul><aside class="notes">` + secondNote, count: 1},
@@ -696,27 +697,32 @@ func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
 }
 
 // Every place of a post a link names takes a name no other part of its page holds: a heading of a paragraph's name, a
-// second heading of the same words, a heading of the name of a part of the foot line, and a paragraph after a heading
-// of its name each take their count after the name.
+// second heading of the same words, a heading of the name of a part of the foot line, of the series' pick or of the
+// panes' heading, and a paragraph after a heading of its name each take their count after the name.
 func TestEveryPlaceOfAPostTakesANameOfItsOwn(test *testing.T) {
 	post := document.Document{
 		Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "names", Tab: ""}, nil),
 		Blocks: []document.Block{
 			emptySection("P1"), emptySection("Why"), emptySection("Why"), emptySection("Places"), emptySection("Hint ssh"),
+			emptySection("Parts"), emptySection("More"),
 			document.Paragraph{Spans: []document.Span{document.Text{Text: "First."}}},
 		},
 	}
 	page := fixtureWriter(test).Post(post)
+	// what stands before the name of each heading the outline lists
+	const outlineHeading = `<h2 data-part="outline-heading" `
 	cases := []struct {
 		name string
 		want string
 	}{
-		{name: "a heading of a paragraph's name, before the paragraph", want: `<h2 id="p1">`},
+		{name: "a heading of a paragraph's name, before the paragraph", want: outlineHeading + `id="p1">`},
 		{name: "the paragraph after it", want: `<p id="p1-2">`},
-		{name: "a first heading of its words", want: `<h2 id="why">`},
-		{name: "a second heading of the same words", want: `<h2 id="why-2">`},
-		{name: "a heading of the command line's menu's name", want: `<h2 id="places-2">`},
-		{name: "a heading of a hint's name", want: `<h2 id="hint-ssh-2">`},
+		{name: "a first heading of its words", want: outlineHeading + `id="why">`},
+		{name: "a second heading of the same words", want: outlineHeading + `id="why-2">`},
+		{name: "a heading of the command line's menu's name", want: outlineHeading + `id="places-2">`},
+		{name: "a heading of a hint's name", want: outlineHeading + `id="hint-ssh-2">`},
+		{name: "a heading of the series' pick's name", want: outlineHeading + `id="parts-2">`},
+		{name: "a heading of the panes' heading's name", want: outlineHeading + `id="more-2">`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -725,6 +731,176 @@ func TestEveryPlaceOfAPostTakesANameOfItsOwn(test *testing.T) {
 			}
 		})
 	}
+}
+
+// A post of a series picks any part of it, from its head and from its foot: the head's chip names the series and the
+// post's place in it, the foot's the count of parts, and each opens a window listing every part by its number and
+// title, where it stands for the reader beside it: the part read the current page and no link, a part out a link to
+// it, the next named so, a part to come no link and named so.
+func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
+	head := fixtures.HeadOf(postPage("two"), textOf("Two"))
+	series := &document.Series{Title: textOf("Stint"), Parts: []document.Part{
+		{Number: 1, Title: textOf("One"), State: document.PartOut, Page: postPage("one")},
+		{Number: 2, Title: textOf("Two"), State: document.PartReading, Page: postPage("two")},
+		{Number: 3, Title: textOf("Three"), State: document.PartNext, Page: postPage("three")},
+		{Number: 4, Title: textOf("Four"), State: document.PartToCome, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
+	}}
+	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil}
+	page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
+	cases := []struct {
+		name  string
+		want  string
+		count int
+	}{
+		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="parts">Stint <span class="series-count">2 of 4</span>`, count: 1},
+		{name: "the foot's chip, the count of parts", want: `popovertarget="parts-foot">all 4 parts <span class="series-mark"`, count: 1},
+		{name: "each window titled by the series", want: `class="pick-title">Stint</p>`, count: 2},
+		{
+			name:  "a part out, a link",
+			want:  `<li class="pick-part"><a class="pick-row" href="/blog/one"><span class="part-number">1</span> <span class="part-title">One</span> <span class="part-state"></span></a></li>`,
+			count: 2,
+		},
+		{
+			name:  "the part read, the current page and no link",
+			want:  `<li class="pick-part part-reading" aria-current="page"><span class="pick-row"><span class="part-number">2</span> <span class="part-title">Two</span> <span class="part-state">reading</span></span></li>`,
+			count: 2,
+		},
+		{
+			name:  "the part out after it, the next",
+			want:  `<li class="pick-part part-next"><a class="pick-row" href="/blog/three"><span class="part-number">3</span> <span class="part-title">Three</span> <span class="part-state">next</span></a></li>`,
+			count: 2,
+		},
+		{
+			name:  "a part to come, no link",
+			want:  `<li class="pick-part part-to-come"><span class="pick-row"><span class="part-number">4</span> <span class="part-title">Four</span> <span class="part-state">soon</span></span></li>`,
+			count: 2,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := strings.Count(page, testCase.want); got != testCase.count {
+				test.Errorf("the page %q holds %q %d times, want %d", page, testCase.want, got, testCase.count)
+			}
+		})
+	}
+}
+
+// A post's outline lists the headings of its top level, each a link to its heading, which the site's script finds to
+// mark the one read; a heading under them is no place of the outline, and a post of no headings has no outline.
+func TestTheOutlineListsThePostsHeadings(test *testing.T) {
+	headed := document.Document{
+		Head: fixtures.HeadOf(postPage("headed"), nil),
+		Blocks: []document.Block{
+			document.Section{Title: textOf("One"), Blocks: []document.Block{emptySection("Inner")}},
+			emptySection("Two"),
+		},
+	}
+	unheaded := document.Document{Head: fixtures.HeadOf(postPage("unheaded"), nil), Blocks: []document.Block{document.Paragraph{Spans: textOf("Words.")}}}
+	headedPage, unheadedPage := fixtureWriter(test).Post(headed), fixtureWriter(test).Post(unheaded)
+	cases := []struct {
+		name  string
+		page  string
+		want  string
+		count int
+	}{
+		{name: "a heading of the top level, linked", page: headedPage, want: `<li><a href="#one" data-part="outline-link">One</a></li>`, count: 1},
+		{name: "the next, linked", page: headedPage, want: `<li><a href="#two" data-part="outline-link">Two</a></li>`, count: 1},
+		{name: "a heading the script finds", page: headedPage, want: `<h2 data-part="outline-heading" id="one">One</h2>`, count: 1},
+		{name: "a heading under them, no place of the outline", page: headedPage, want: `href="#inner" data-part="outline-link"`, count: 0},
+		{name: "no outline where there are no headings", page: unheadedPage, want: `data-part="outline"`, count: 0},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := strings.Count(testCase.page, testCase.want); got != testCase.count {
+				test.Errorf("the page %q holds %q %d times, want %d", testCase.page, testCase.want, got, testCase.count)
+			}
+		})
+	}
+}
+
+// A post's foot leads to the posts beside it, under a heading saying where: in a series its other parts, each side
+// named by its part, a part out a link to it with its lead, a part to come its title and the word saying it comes, no
+// link; outside a series the blog's other posts, older and newer, each with the day it came out; a side with nothing
+// there named by its side and saying why; and under them where the post is discussed, each place a link.
+func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
+	series := &document.Series{Title: textOf("Stint"), Parts: nil}
+	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
+	newer := time.Date(2026, time.November, 20, 9, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name        string
+		series      *document.Series
+		neighbours  document.Neighbours
+		discussions []document.Link
+		want        []string
+	}{
+		{
+			name:   "a part of a series between a part out and a part to come",
+			series: series,
+			neighbours: document.Neighbours{
+				Before: &document.Neighbour{Part: 1, Title: textOf("One"), Lead: textOf("About one."), Page: postPage("one"), Published: time.Time{}},
+				After:  &document.Neighbour{Part: 3, Title: textOf("Three"), Lead: nil, Page: toCome, Published: time.Time{}},
+			},
+			want: []string{
+				`<h2 id="more" class="panes-title">Other parts of Stint</h2>`,
+				`<a class="pane" href="/blog/one"><span class="pane-name">part 1</span> <span class="pane-title">One</span> <span class="pane-lead">About one.</span> </a>`,
+				`<div class="pane pane-after"><span class="pane-name">part 3</span> <span class="pane-title pane-to-come">Three <span class="pane-soon">soon</span></span></div>`,
+			},
+		},
+		{
+			name: "the last part of a series", series: series,
+			neighbours: document.Neighbours{Before: nil, After: nil},
+			want: []string{
+				`<div class="pane pane-none"><span class="pane-name">previous</span> <span class="pane-words">none: this is the first part</span></div>`,
+				`<div class="pane pane-none pane-after"><span class="pane-name">next</span> <span class="pane-words">none: this is the last part</span></div>`,
+			},
+		},
+		{
+			name: "the first post outside a series, a newer one beside it", series: nil,
+			neighbours: document.Neighbours{
+				Before: nil,
+				After:  &document.Neighbour{Part: 0, Title: textOf("Newer"), Lead: textOf("About newer."), Page: postPage("newer"), Published: newer},
+			},
+			want: []string{
+				`<h2 id="more" class="panes-title">Other posts</h2></div>`,
+				`<div class="pane pane-none"><span class="pane-name">older</span> <span class="pane-words">none: this is the first post</span></div>`,
+				`<a class="pane pane-after" href="/blog/newer"><span class="pane-name">newer</span> <span class="pane-title">Newer</span> <span class="pane-lead">About newer.</span> <span class="pane-date"><time datetime="2026-11-20">20 Nov 2026</time></span></a>`,
+			},
+		},
+		{
+			name: "the newest post, discussed in two places", series: nil,
+			neighbours: document.Neighbours{Before: nil, After: nil},
+			discussions: []document.Link{
+				{Target: document.Address{URL: "https://news.example.test/1"}, Spans: textOf("Hacker News")},
+				{Target: document.Address{URL: "https://lobsters.example.test/1"}, Spans: textOf("Lobsters")},
+			},
+			want: []string{
+				`<div class="pane pane-none pane-after"><span class="pane-name">newer</span> <span class="pane-words">none: this is the newest post</span></div>`,
+				`<p class="discussions"><span class="discuss">discuss</span> <a href="https://news.example.test/1">Hacker News</a>` + dot + `<a href="https://lobsters.example.test/1">Lobsters</a></p>`,
+			},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			head := fixtures.HeadOf(postPage("two"), textOf("Two"))
+			head.Post = &document.PostPlace{Series: testCase.series, Neighbours: testCase.neighbours, Discussions: testCase.discussions}
+			page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
+			for _, want := range testCase.want {
+				if !strings.Contains(page, want) {
+					test.Errorf("the page %q holds no %q", page, want)
+				}
+			}
+		})
+	}
+}
+
+// postPage is the page of a post a test builds by hand, by its slug.
+func postPage(slug string) document.Page {
+	return document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}
+}
+
+// textOf is words a test builds by hand, with no marks.
+func textOf(words string) []document.Span {
+	return []document.Span{document.Text{Text: words}}
 }
 
 // emptySection is a section a test builds by hand: its title and no blocks.

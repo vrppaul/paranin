@@ -17,9 +17,9 @@ type Document struct {
 
 // Head is what a face shows first: the page the document is, a post's number, the language it is written in, its
 // title, a subtitle and the place beside it, what a project is made of or a post's tags, a lead, the day a post came
-// out and where a project's code lives, which every face shows; the page's description; and, for a face that has a
-// use for it, a greeting before the title. The ways to reach the author are facts of their own kind, which a face
-// places where it chooses.
+// out and where a project's code lives, which every face shows; where a post stands in the blog; the page's
+// description; and, for a face that has a use for it, a greeting before the title. The ways to reach the author are
+// facts of their own kind, which a face places where it chooses.
 type Head struct {
 	Page Page
 	// Number is a post's number, which blog/<number> reaches as its slug does (D26); 0 on any other page
@@ -40,6 +40,8 @@ type Head struct {
 	Published time.Time
 	// Repository is where the code of a project's page lives; none on another page or for a project that names none
 	Repository *Repository
+	// Post is where a post stands in the blog and where it is discussed; none on any other page
+	Post *PostPlace
 	// Description is what the page is about, for its metadata: a search engine's snippet, a link's preview where
 	// it is shared. A face writes it as plain text; none where no browser reads the page (the index, the hidden
 	// pages) or the content gives none

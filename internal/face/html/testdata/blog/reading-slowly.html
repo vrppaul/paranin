@@ -36,6 +36,28 @@
 <dd>
 <time datetime="2026-11-10">10 Nov 2026</time>
 </dd>
+<dt>series</dt>
+<dd>
+<button type="button" class="way-chip series-pick" popovertarget="parts">Reading <span class="series-count">1 of 2</span> <span class="series-mark" aria-hidden="true">▾</span>
+</button>
+<div id="parts" class="pick" popover role="dialog" aria-labelledby="parts-title">
+<p id="parts-title" class="pick-title">Reading</p>
+<ol class="pick-parts">
+<li class="pick-part part-reading" aria-current="page">
+<span class="pick-row">
+<span class="part-number">1</span> <span class="part-title">Reading slowly</span> <span class="part-state">reading</span>
+</span>
+</li>
+<li class="pick-part part-to-come">
+<span class="pick-row">
+<span class="part-number">2</span> <span class="part-title">Reading aloud</span> <span class="part-state">soon</span>
+</span>
+</li>
+</ol>
+<button type="button" class="hint-close" popovertarget="parts" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+</dd>
 <dt>tags</dt>
 <dd>
 <ul class="tags">
@@ -63,6 +85,16 @@
 </path>
 </svg>
 </header>
+<nav class="outline" aria-label="contents" data-part="outline">
+<ol class="outline-headings">
+<li>
+<a href="#what-a-reader-keeps" data-part="outline-link">What a reader keeps</a>
+</li>
+<li>
+<a href="#afterwards" data-part="outline-link">Afterwards</a>
+</li>
+</ol>
+</nav>
 <div class="article">
 <a class="paragraph-number" href="#p1">1</a>
 <p id="p1">A page read twice is read once, if the first reading was <em>slow</em>.<sup class="citation">1</sup>
@@ -72,7 +104,7 @@
 <span class="note-number">1</span> Mira Example, on her own reading.</p>
 </aside>
 <section class="article-section">
-<h2 id="what-a-reader-keeps">What a reader keeps</h2>
+<h2 data-part="outline-heading" id="what-a-reader-keeps">What a reader keeps</h2>
 <div class="table-scroll">
 <table class="table">
 <thead>
@@ -135,6 +167,11 @@
 </p>
 </section>
 </section>
+<section class="article-section">
+<h2 data-part="outline-heading" id="afterwards">Afterwards</h2>
+<a class="paragraph-number" href="#p3">3</a>
+<p id="p3">A page kept is a page read again.</p>
+</section>
 <div class="sources-end">
 <p class="note">
 <span class="note-number">1</span> Mira Example, on her own reading.</p>
@@ -142,6 +179,42 @@
 <span class="note-number">2</span> A soft one, which rubs out.</p>
 </div>
 </div>
+<footer class="panes-foot">
+<div class="panes-heading">
+<h2 id="more" class="panes-title">Other parts of Reading</h2>
+<button type="button" class="way-chip series-pick" popovertarget="parts-foot">all 2 parts <span class="series-mark" aria-hidden="true">▾</span>
+</button>
+<div id="parts-foot" class="pick" popover role="dialog" aria-labelledby="parts-foot-title">
+<p id="parts-foot-title" class="pick-title">Reading</p>
+<ol class="pick-parts">
+<li class="pick-part part-reading" aria-current="page">
+<span class="pick-row">
+<span class="part-number">1</span> <span class="part-title">Reading slowly</span> <span class="part-state">reading</span>
+</span>
+</li>
+<li class="pick-part part-to-come">
+<span class="pick-row">
+<span class="part-number">2</span> <span class="part-title">Reading aloud</span> <span class="part-state">soon</span>
+</span>
+</li>
+</ol>
+<button type="button" class="hint-close" popovertarget="parts-foot" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+</div>
+<nav class="panes" aria-labelledby="more">
+<div class="pane pane-none">
+<span class="pane-name">previous</span> <span class="pane-words">none: this is the first part</span>
+</div>
+<div class="pane pane-after">
+<span class="pane-name">part 2</span> <span class="pane-title pane-to-come">Reading aloud <span class="pane-soon">soon</span>
+</span>
+</div>
+</nav>
+<p class="discussions">
+<span class="discuss">discuss</span> <a href="https://lobsters.example.test/s/slow">Lobsters</a>
+</p>
+</footer>
 </article>
 </main>
 <div class="foot" data-part="foot">

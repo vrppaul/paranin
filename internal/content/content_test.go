@@ -294,11 +294,15 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 		{name: "a word the site has not", original: "about: About", replacement: "about: About\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
 		{
 			name: "a phrase with no place for its value", original: `copied_command: "Copied {}"`, replacement: "copied_command: Copied",
-			want: `i18n/en.yaml: copied_command "Copied" holds no place for its value, {}, or more than one`,
+			want: `i18n/en.yaml: copied_command "Copied" writes its place, {}, 0 times, where its values ask for 1`,
 		},
 		{
 			name: "a phrase with two places", original: `copied_command: "Copied {}"`, replacement: `copied_command: "Copied {} {}"`,
-			want: `i18n/en.yaml: copied_command "Copied {} {}" holds no place for its value, {}, or more than one`,
+			want: `i18n/en.yaml: copied_command "Copied {} {}" writes its place, {}, 2 times, where its values ask for 1`,
+		},
+		{
+			name: "a phrase of two values with one place", original: `part_of: "{} of {}"`, replacement: `part_of: "{} of"`,
+			want: `i18n/en.yaml: part_of "{} of" writes its place, {}, 1 times, where its values ask for 2`,
 		},
 	}
 	for _, testCase := range cases {

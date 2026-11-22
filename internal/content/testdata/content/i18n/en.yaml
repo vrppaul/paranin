@@ -31,3 +31,21 @@ version: version
 tags: tags
 copy_code: "copy code block {}"
 copied_code: Copied the code
+series: series
+part_of: "{} of {}"
+reading: reading
+next: next
+soon: soon
+other_parts: "Other parts of {}"
+all_parts: "all {} parts"
+part: "part {}"
+previous: previous
+older: older
+newer: newer
+first_part: "none: this is the first part"
+last_part: "none: this is the last part"
+first_post: "none: this is the first post"
+newest_post: "none: this is the newest post"
+other_posts: Other posts
+discuss: discuss
+contents: contents

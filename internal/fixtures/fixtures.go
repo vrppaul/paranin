@@ -17,12 +17,13 @@ import (
 )
 
 // Where the fixtures live, from the module's root, the file the root is known by, and who may write a changed file
-// of a copy
+// of a copy and a folder made in it
 const (
 	contentFromRoot = "internal/content/testdata/content"
 	buildFromRoot   = "internal/assets/testdata/build"
 	moduleFile      = "go.mod"
 	fileMode        = 0o600
+	folderMode      = 0o700
 )
 
 // ContentFolder is the folder of the fixture content: a profile, the site's words, a post published and a draft, and
@@ -64,7 +65,7 @@ func Site(snapshot *content.Snapshot) routes.Site {
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
 		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil,
-		Published: time.Time{}, Repository: nil, Description: nil,
+		Published: time.Time{}, Repository: nil, Post: nil, Description: nil,
 	}
 }
 
@@ -148,10 +149,14 @@ func ReplaceIn(test *testing.T, folder, file, original, replacement string) {
 }
 
 // WriteIn writes a file of a folder whole, as ReplaceIn writes it: inside the folder, at the time the test's clock
-// says.
+// says; the folders it stands in are made where they are missing.
 func WriteIn(test *testing.T, folder, file, text string) {
 	test.Helper()
-	writeAt(test, openFolder(test, folder), file, text)
+	root := openFolder(test, folder)
+	if err := root.MkdirAll(filepath.Dir(file), folderMode); err != nil {
+		test.Fatalf("make the folders of %s: %v", file, err)
+	}
+	writeAt(test, root, file, text)
 }
 
 // openFolder is a folder opened as a root, closed when the test ends.

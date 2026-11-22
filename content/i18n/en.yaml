@@ -6,8 +6,11 @@
 # once it has, its name and what the toast says then; the first screen's button that writes to the author, in the
 # author's own voice, as the site speaks; what ssh and curl give, which their hints say; the blog's session in the
 # foot line, the labels of a post's facts, and a code block's button that copies it: its name and what the toast says
-# then. A phrase holds one place, {}, for the value it takes: the command, or the code block's number on its page.
-# `paranin check content` requires every one of them.
+# then; and a post's series and the panes at its foot: a part's place in its series and where it stands for the
+# reader, the panes' headings, each side's name and what a side with none says, the word before where the post is
+# discussed, and the name of its outline. A phrase holds a place, {}, for each value it takes, in the order the site
+# hands them: the command, the code block's number on its page, a part's number and the count of parts, the series'
+# title. `paranin check content` requires every one of them.
 
 about: About
 greeting: Hi, my name is
@@ -40,3 +43,21 @@ version: version
 tags: tags
 copy_code: "copy code block {}"
 copied_code: Copied the code
+series: series
+part_of: "{} of {}"
+reading: reading
+next: next
+soon: soon
+other_parts: "Other parts of {}"
+all_parts: "all {} parts"
+part: "part {}"
+previous: previous
+older: older
+newer: newer
+first_part: "none: this is the first part"
+last_part: "none: this is the last part"
+first_post: "none: this is the first post"
+newest_post: "none: this is the newest post"
+other_posts: Other posts
+discuss: discuss
+contents: contents

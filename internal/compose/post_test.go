@@ -255,17 +255,32 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 }
 
 // A post's head holds what its front matter says a face shows first: its page by its slug, its number, the
-// language of the site's words, its title, its description as its lead and its page's description, its tags, and
-// when it came out, in the zone it was written in.
+// language of the site's words, its title, its description as its lead and its page's description, its tags, when
+// it came out, in the zone it was written in, and where it is discussed, each a link by its site's name; and its
+// series and the posts beside it.
 func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	head := postNamed(test, Posts(fixtures.LoadedContent(test)), fixturePostSlug).Head
 	published := head.Published
 	head.Published = time.Time{}
 	description := textSpans("Why a page read twice is read once.")
+	page := document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}
+	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
 	want := document.Head{
-		Page: document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}, Number: 1, Language: "en",
+		Page: page, Number: 1, Language: "en",
 		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "", Tags: []string{"reading", "terminals"},
-		Lead: description, Published: time.Time{}, Repository: nil, Description: description,
+		Lead: description, Published: time.Time{}, Repository: nil,
+		Post: &document.PostPlace{
+			Series: &document.Series{Title: textSpans("Reading"), Parts: []document.Part{
+				{Number: 1, Title: textSpans("Reading slowly"), State: document.PartReading, Page: page},
+				{Number: 2, Title: textSpans("Reading aloud"), State: document.PartToCome, Page: toCome},
+			}},
+			Neighbours: document.Neighbours{
+				Before: nil,
+				After:  &document.Neighbour{Part: 2, Title: textSpans("Reading aloud"), Lead: nil, Page: toCome, Published: time.Time{}},
+			},
+			Discussions: []document.Link{{Target: document.Address{URL: "https://lobsters.example.test/s/slow"}, Spans: textSpans("Lobsters")}},
+		},
+		Description: description,
 	}
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)

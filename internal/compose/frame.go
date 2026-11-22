@@ -16,8 +16,8 @@ const programEnd = " "
 // code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
 // has one, in the profile's order, which a face's command line goes to by slug as the TUI's :e does, the name of the
-// blog's session, which a post belongs to as the résumé's pages belong to the site's, and the labels of a post's
-// facts.
+// blog's session, which a post belongs to as the résumé's pages belong to the site's, the labels of a post's facts,
+// the words of its series and of the panes at its foot, and the name of its outline.
 type Frame struct {
 	DarkTheme    string
 	CopyWords    CopyWords
@@ -27,12 +27,44 @@ type Frame struct {
 	Projects     []document.Page
 	Blog         string
 	PostLabels   PostLabels
+	SeriesWords  SeriesWords
+	PaneWords    PaneWords
+	Contents     string
 }
 
-// PostLabels are the site's words a face labels a post's facts with: the version a reader reads, and its tags.
+// PostLabels are the site's words a face labels a post's facts with: the version a reader reads, its series, and its
+// tags.
 type PostLabels struct {
 	Version string
+	Series  string
 	Tags    string
+}
+
+// SeriesWords are the site's words a face writes a post's series in, each with the values the series gives it.
+type SeriesWords struct {
+	words content.Words
+}
+
+// PaneWords are the site's words of the panes at a post's foot: each side's in a series and outside one, the panes'
+// heading outside a series, and the word before where the post is discussed.
+type PaneWords struct {
+	Parts      PaneSides
+	Posts      PaneSides
+	OtherPosts string
+	Discuss    string
+}
+
+// PaneSides are the words of the two sides of a post's foot, the posts before it and after it.
+type PaneSides struct {
+	Before SideWords
+	After  SideWords
+}
+
+// SideWords are the words of one side of a post's foot: its name, where no part's number names it, and what it says
+// where it holds no post.
+type SideWords struct {
+	Name string
+	None string
 }
 
 // CopyWords are the site's words for the button that copies a command or a block of code, which a face lays beside
@@ -72,8 +104,63 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projectPages(snapshot.Profile.Projects),
 		Blog:         words.Text(content.WordBlog),
-		PostLabels:   PostLabels{Version: words.Text(content.WordVersion), Tags: words.Text(content.WordTags)},
+		PostLabels:   PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
+		SeriesWords:  SeriesWords{words: words},
+		PaneWords:    paneWords(words),
+		Contents:     words.Text(content.WordContents),
 	}
+}
+
+// paneWords are the words of the panes at a post's foot, in a language.
+func paneWords(words content.Words) PaneWords {
+	return PaneWords{
+		Parts: PaneSides{
+			Before: SideWords{Name: words.Text(content.WordPrevious), None: words.Text(content.WordFirstPart)},
+			After:  SideWords{Name: words.Text(content.WordNext), None: words.Text(content.WordLastPart)},
+		},
+		Posts: PaneSides{
+			Before: SideWords{Name: words.Text(content.WordOlder), None: words.Text(content.WordFirstPost)},
+			After:  SideWords{Name: words.Text(content.WordNewer), None: words.Text(content.WordNewestPost)},
+		},
+		OtherPosts: words.Text(content.WordOtherPosts),
+		Discuss:    words.Text(content.WordDiscuss),
+	}
+}
+
+// PartOf is a part's place in its series, by its number and the count of the series' parts: "1 of 11".
+func (seriesWords SeriesWords) PartOf(number, parts int) string {
+	return seriesWords.words.Phrase(content.PhrasePartOf, strconv.Itoa(number), strconv.Itoa(parts))
+}
+
+// OtherParts is the heading of the panes at the foot of a part of a series, by the series' title.
+func (seriesWords SeriesWords) OtherParts(title string) string {
+	return seriesWords.words.Phrase(content.PhraseOtherParts, title)
+}
+
+// AllParts is the pick that lists every part of a series, by their count.
+func (seriesWords SeriesWords) AllParts(parts int) string {
+	return seriesWords.words.Phrase(content.PhraseAllParts, strconv.Itoa(parts))
+}
+
+// Part is a part of a series by its number: "part 4".
+func (seriesWords SeriesWords) Part(number int) string {
+	return seriesWords.words.Phrase(content.PhrasePart, strconv.Itoa(number))
+}
+
+// State is where a part stands for the reader of the part read, as a face writes it beside the part's title: the part
+// read, the part to read next, a part to come, and nothing for any other part out. exhaustive holds the switch to
+// every state.
+func (seriesWords SeriesWords) State(state document.PartState) string {
+	switch state {
+	case document.PartReading:
+		return seriesWords.words.Text(content.WordReading)
+	case document.PartNext:
+		return seriesWords.words.Text(content.WordNext)
+	case document.PartToCome:
+		return seriesWords.words.Text(content.WordSoon)
+	case document.PartOut:
+	}
+	return ""
 }
 
 // projectPages are the pages of the projects that have one.

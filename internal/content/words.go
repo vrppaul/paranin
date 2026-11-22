@@ -12,7 +12,10 @@ import (
 // still being learnt, the title of the TUI's health report, or a word of the page's frame: the name of its theme
 // button, a command's button that copies it: the word on it and the word it turns to once it has, the first
 // screen's button that writes to the author, what each way a terminal reaches the site gives, which its hint says,
-// the blog's session, the labels of a post's facts, and what the toast says once a code block is copied.
+// the blog's session, the labels of a post's facts, what the toast says once a code block is copied, and the words
+// of a post's series and the panes at its foot: where a part stands for the reader, each side's name, what a side
+// with none says, the panes' heading outside a series, the word before where the post is discussed, and the name of
+// its outline.
 type Word int
 
 const (
@@ -46,11 +49,28 @@ const (
 	WordVersion
 	WordTags
 	WordCopiedCode
+	WordSeries
+	WordReading
+	WordNext
+	WordSoon
+	WordPrevious
+	WordOlder
+	WordNewer
+	WordFirstPart
+	WordLastPart
+	WordFirstPost
+	WordNewestPost
+	WordOtherPosts
+	WordDiscuss
+	WordContents
 )
 
-// Phrase is one of the site's own phrases, words with a place for one value the site fills in: a command's button's
-// name and what the toast says once it has copied, each with the command, and a code block's button's name, with the
-// block's number. A catalogue writes the place as phrasePlace, once, where its language puts the value.
+// Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
+// name and what the toast says once it has copied, each with the command; a code block's button's name, with the
+// block's number; and of a series, a part's place in it, with its number and the count of parts, the panes' heading,
+// with the series' title, the pick that lists every part, with their count, and a part's name, with its number. A
+// catalogue writes each place as phrasePlace, where its language puts the value, the values in the order the site
+// hands them.
 type Phrase int
 
 const (
@@ -59,17 +79,37 @@ const (
 	PhraseCopyCommand
 	PhraseCopiedCommand
 	PhraseCopyCode
+	PhrasePartOf
+	PhraseOtherParts
+	PhraseAllParts
+	PhrasePart
 )
 
-// How a phrase writes the place of its value
+// How a phrase writes the place of a value
 const phrasePlace = "{}"
 
-// phraseKeys are the keys a catalogue writes each phrase under, each named once, as wordKeys names the words.
-func phraseKeys() map[Phrase]string {
-	return map[Phrase]string{
-		PhraseCopyCommand:   "copy_command",
-		PhraseCopyCode:      "copy_code",
-		PhraseCopiedCommand: "copied_command",
+// The count of values a phrase takes, most take one
+const (
+	oneValue  = 1
+	twoValues = 2
+)
+
+// phraseForm is how a catalogue writes a phrase: under its key, with a place for each of its values.
+type phraseForm struct {
+	key    string
+	values int
+}
+
+// phraseForms are the forms a catalogue writes each phrase in, each named once, as wordKeys names the words.
+func phraseForms() map[Phrase]phraseForm {
+	return map[Phrase]phraseForm{
+		PhraseCopyCommand:   {key: "copy_command", values: oneValue},
+		PhraseCopyCode:      {key: "copy_code", values: oneValue},
+		PhraseCopiedCommand: {key: "copied_command", values: oneValue},
+		PhrasePartOf:        {key: "part_of", values: twoValues},
+		PhraseOtherParts:    {key: "other_parts", values: oneValue},
+		PhraseAllParts:      {key: "all_parts", values: oneValue},
+		PhrasePart:          {key: "part", values: oneValue},
 	}
 }
 
@@ -105,6 +145,20 @@ func wordKeys() map[Word]string {
 		WordVersion:      "version",
 		WordTags:         "tags",
 		WordCopiedCode:   "copied_code",
+		WordSeries:       "series",
+		WordReading:      "reading",
+		WordNext:         "next",
+		WordSoon:         "soon",
+		WordPrevious:     "previous",
+		WordOlder:        "older",
+		WordNewer:        "newer",
+		WordFirstPart:    "first_part",
+		WordLastPart:     "last_part",
+		WordFirstPost:    "first_post",
+		WordNewestPost:   "newest_post",
+		WordOtherPosts:   "other_posts",
+		WordDiscuss:      "discuss",
+		WordContents:     "contents",
 	}
 }
 
@@ -120,9 +174,18 @@ func (words Words) Text(word Word) string {
 	return words.texts[word]
 }
 
-// Phrase is a phrase as this language writes it, a value in its place.
-func (words Words) Phrase(phrase Phrase, value string) string {
-	return strings.Replace(words.phrases[phrase], phrasePlace, value, 1)
+// Phrase is a phrase as this language writes it, each value in its place, in their order; a place written in a value
+// stays the value's.
+func (words Words) Phrase(phrase Phrase, values ...string) string {
+	pieces := strings.Split(words.phrases[phrase], phrasePlace)
+	var builder strings.Builder
+	for index, piece := range pieces {
+		builder.WriteString(piece)
+		if index < len(values) && index < len(pieces)-1 {
+			builder.WriteString(values[index])
+		}
+	}
+	return builder.String()
 }
 
 // Language is the tag of the language the words are written in, as BCP 47 writes it: "en".
@@ -131,8 +194,8 @@ func (words Words) Language() string {
 }
 
 // readWords takes a catalogue in a language as the file writes it: every word and phrase under its key and none
-// empty, each phrase with one place for its value, and no key the site has no word or phrase for. The faults come in
-// the order of the words, then of the phrases, then of the keys.
+// empty, each phrase with a place for each of its values, and no key the site has no word or phrase for. The faults
+// come in the order of the words, then of the phrases, then of the keys.
 func readWords(language string, written map[string]string) (Words, Faults) {
 	inspection := &inspection{file: wordsFile(language), faults: nil}
 	keys := wordKeys()
@@ -141,13 +204,15 @@ func readWords(language string, written map[string]string) (Words, Faults) {
 		texts[word] = written[keys[word]]
 		inspection.require(keys[word], texts[word])
 	}
-	phraseKeyOf := phraseKeys()
-	phrases := make(map[Phrase]string, len(phraseKeyOf))
-	for _, phrase := range slices.Sorted(maps.Keys(phraseKeyOf)) {
-		phrases[phrase] = written[phraseKeyOf[phrase]]
-		inspection.requirePhrase(phraseKeyOf[phrase], phrases[phrase])
+	forms := phraseForms()
+	phrases := make(map[Phrase]string, len(forms))
+	known := slices.Collect(maps.Values(keys))
+	for _, phrase := range slices.Sorted(maps.Keys(forms)) {
+		form := forms[phrase]
+		phrases[phrase] = written[form.key]
+		inspection.requirePhrase(form, phrases[phrase])
+		known = append(known, form.key)
 	}
-	known := slices.Concat(slices.Collect(maps.Values(keys)), slices.Collect(maps.Values(phraseKeyOf)))
 	for _, key := range slices.Sorted(maps.Keys(written)) {
 		if !slices.Contains(known, key) {
 			inspection.add(key, unknownWordProblem)
@@ -156,13 +221,13 @@ func readWords(language string, written map[string]string) (Words, Faults) {
 	return Words{language: language, texts: texts, phrases: phrases}, inspection.faults
 }
 
-// requirePhrase finds a phrase empty, or holding no place for its value or more than one.
-func (inspection *inspection) requirePhrase(field, phrase string) {
+// requirePhrase finds a phrase empty, or holding a count of places other than the count of values its form takes.
+func (inspection *inspection) requirePhrase(form phraseForm, phrase string) {
 	if blank(phrase) {
-		inspection.add(field, emptyProblem)
+		inspection.add(form.key, emptyProblem)
 		return
 	}
-	if strings.Count(phrase, phrasePlace) != 1 {
-		inspection.add(field, placeProblem, phrase, phrasePlace)
+	if places := strings.Count(phrase, phrasePlace); places != form.values {
+		inspection.add(form.key, placeProblem, phrase, phrasePlace, places, form.values)
 	}
 }

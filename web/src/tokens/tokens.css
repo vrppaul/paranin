@@ -39,6 +39,8 @@
   --time-bar: light-dark(#1e66f5, #8aadf4);
   /* a result worth seeing first, the accent laid over the page */
   --tint: light-dark(#fe640b29, #f5a97f38);
+  /* the frame of a pane that leads nowhere, the quiet rule at half its strength, so it reads as off */
+  --quiet-half: light-dark(#ccd0da80, #363a4f80);
 }
 
 /* What the page alone reads: the colours it mixes, its faces, its text styles, the lengths it lays out by, its times and
@@ -182,6 +184,8 @@
   --content: 80rem;
   /* the widest a window over the page runs, a dialog's or a hint's */
   --dialog: 35rem;
+  /* the least width of a pick's window, a part's number, a title of a few words and its state on one line */
+  --pick: 48ch;
   /* the room either side of the content */
   --gutter: 3rem;
   /* the room either side of the content on a phone */

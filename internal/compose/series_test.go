@@ -1,0 +1,251 @@
+package compose
+
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
+)
+
+// The fixture's series' file, which a case writes over with a series of its own, and how a case writes a post of its
+// own and the series
+const (
+	fixtureSeriesFile = "series/reading.yaml"
+	postFileLayout    = "posts/%s/post.en.md"
+	postTextLayout    = "---\nid: %d\ntitle: %s\ndescription: About %s.\nstatus: %s\npublished: %s\n---\nIts text.\n"
+	seriesTextLayout  = "title: Reading\nline: How a reader keeps what they read.\nposts: [%s]\nto_come: [%s]\n"
+)
+
+// The fixture's post's title, and the day it came out, between the days a case's posts come out on
+const (
+	fixturePostTitle  = "Reading slowly"
+	fixturePostMoment = "2026-11-10T09:00+01:00"
+	earlier           = "2026-11-02T09:00+01:00"
+	earliest          = "2026-11-01T09:00+01:00"
+	later             = "2026-11-20T09:00+01:00"
+	latest            = "2026-11-21T09:00+01:00"
+	// the zero time, as RFC 3339 writes it: when a neighbour inside a series came out, which it does not say
+	noTime = "0001-01-01T00:00:00Z"
+)
+
+// writtenPost is a post a case writes into the fixture: its slug, its number, its status and when it came out; its
+// title is its slug, its lead says what it is about.
+type writtenPost struct {
+	slug      string
+	id        int
+	status    content.Status
+	published string
+}
+
+// seenPart is a part of a series as a test reads it: its number, its title, where it stands, and the slug of its
+// page, none for a part to come.
+type seenPart struct {
+	number int
+	title  string
+	state  document.PartState
+	page   string
+}
+
+// seenNeighbour is a post beside another as a test reads it: its part, its title, its lead, the slug of its page and
+// when it came out, as RFC 3339 writes it, none inside a series.
+type seenNeighbour struct {
+	part      int
+	title     string
+	lead      string
+	page      string
+	published string
+}
+
+// A post of a series shows every part of it in order, numbered from one: itself as the part read, the part out after
+// it as the next, any other part out as out, and as to come a part not published yet, a draft or a preview, and each
+// title the series names to come; a part unlisted is listed nowhere, so the series leaves it out, and the parts after
+// it count on without it. A post the series leaves out, unlisted, shows no series.
+func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
+	cases := []struct {
+		name   string
+		posts  []writtenPost
+		series string
+		toCome string
+		read   string
+		want   []seenPart
+	}{
+		{
+			name: "the first part, the rest to come", series: fixturePostSlug, toCome: "Reading aloud", read: fixturePostSlug,
+			want: []seenPart{
+				{number: 1, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug},
+				{number: 2, title: "Reading aloud", state: document.PartToCome, page: ""},
+			},
+		},
+		{
+			name:   "a middle part, between parts out",
+			posts:  []writtenPost{{slug: "first", id: 3, status: content.StatusPublished, published: earlier}, {slug: "third", id: 4, status: content.StatusPublished, published: later}, {slug: "fourth", id: 5, status: content.StatusPublished, published: latest}},
+			series: "first, reading-slowly, third, fourth", read: fixturePostSlug,
+			want: []seenPart{
+				{number: 1, title: "first", state: document.PartOut, page: "first"},
+				{number: 2, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug},
+				{number: 3, title: "third", state: document.PartNext, page: "third"},
+				{number: 4, title: "fourth", state: document.PartOut, page: "fourth"},
+			},
+		},
+		{
+			name:   "a part not published yet, to come though written",
+			posts:  []writtenPost{{slug: "drafted", id: 3, status: content.StatusDraft, published: later}, {slug: "previewed", id: 4, status: content.StatusPreview, published: later}},
+			series: "reading-slowly, drafted, previewed", read: fixturePostSlug,
+			want: []seenPart{
+				{number: 1, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug},
+				{number: 2, title: "drafted", state: document.PartToCome, page: ""},
+				{number: 3, title: "previewed", state: document.PartToCome, page: ""},
+			},
+		},
+		{
+			name:   "a part unlisted, left out",
+			posts:  []writtenPost{{slug: "hidden", id: 3, status: content.StatusUnlisted, published: earlier}},
+			series: "hidden, reading-slowly", read: fixturePostSlug,
+			want: []seenPart{{number: 1, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug}},
+		},
+		{
+			name:   "the unlisted part itself, in no series",
+			posts:  []writtenPost{{slug: "hidden", id: 3, status: content.StatusUnlisted, published: earlier}},
+			series: "hidden, reading-slowly", read: "hidden",
+			want: nil,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withPostsAndSeries(test, testCase.posts, testCase.series, testCase.toCome)
+			series := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Series
+			if got := seenParts(series); !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the series of %q = %+v, want %+v", testCase.read, got, testCase.want)
+			}
+		})
+	}
+}
+
+// A post leads at its foot to the posts beside it: in a series the parts before and after it, a part to come by its
+// title alone, with no page; outside one the posts the blog lists before and after it by the time they came out,
+// each with its lead and that time, posts out at one moment by their slugs, so never a draft, a preview or a post
+// unlisted; none on a side with nothing there.
+// An unlisted post, in no list itself, leads to the posts listed before and after the time it came out.
+func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
+	cases := []struct {
+		name   string
+		posts  []writtenPost
+		series string
+		toCome string
+		read   string
+		before *seenNeighbour
+		after  *seenNeighbour
+	}{
+		{
+			name: "the first part, the next to come", series: fixturePostSlug, toCome: "Reading aloud", read: fixturePostSlug,
+			before: nil, after: &seenNeighbour{part: 2, title: "Reading aloud", lead: "", page: "", published: noTime},
+		},
+		{
+			name:   "a middle part, between parts out",
+			posts:  []writtenPost{{slug: "first", id: 3, status: content.StatusPublished, published: later}, {slug: "third", id: 4, status: content.StatusPublished, published: earliest}},
+			series: "first, reading-slowly, third", read: fixturePostSlug,
+			before: &seenNeighbour{part: 1, title: "first", lead: "About first.", page: "first", published: noTime},
+			after:  &seenNeighbour{part: 3, title: "third", lead: "About third.", page: "third", published: noTime},
+		},
+		{
+			name:   "the last part",
+			posts:  []writtenPost{{slug: "first", id: 3, status: content.StatusPublished, published: earlier}},
+			series: "first, reading-slowly", read: fixturePostSlug,
+			before: &seenNeighbour{part: 1, title: "first", lead: "About first.", page: "first", published: noTime},
+			after:  nil,
+		},
+		{
+			name: "outside a series, between the posts listed by date",
+			posts: []writtenPost{
+				{slug: "oldest", id: 3, status: content.StatusPublished, published: earliest},
+				{slug: "older", id: 4, status: content.StatusPublished, published: earlier},
+				{slug: "newer", id: 5, status: content.StatusPublished, published: later},
+				{slug: "newest", id: 6, status: content.StatusPublished, published: latest},
+				{slug: "hidden", id: 7, status: content.StatusUnlisted, published: earlier},
+				{slug: "drafted", id: 8, status: content.StatusDraft, published: later},
+			},
+			series: "oldest", read: fixturePostSlug,
+			before: &seenNeighbour{part: 0, title: "older", lead: "About older.", page: "older", published: "2026-11-02T09:00:00+01:00"},
+			after:  &seenNeighbour{part: 0, title: "newer", lead: "About newer.", page: "newer", published: "2026-11-20T09:00:00+01:00"},
+		},
+		{
+			name:   "posts out at the same moment, in their slugs' order",
+			posts:  []writtenPost{{slug: "another", id: 3, status: content.StatusPublished, published: fixturePostMoment}, {slug: "zeta", id: 4, status: content.StatusPublished, published: fixturePostMoment}},
+			series: "zeta", read: fixturePostSlug,
+			before: &seenNeighbour{part: 0, title: "another", lead: "About another.", page: "another", published: "2026-11-10T09:00:00+01:00"},
+			after:  &seenNeighbour{part: 0, title: "zeta", lead: "About zeta.", page: "zeta", published: "2026-11-10T09:00:00+01:00"},
+		},
+		{
+			name:   "the newest post, outside a series",
+			posts:  []writtenPost{{slug: "older", id: 3, status: content.StatusPublished, published: earlier}, {slug: "preview", id: 4, status: content.StatusPreview, published: later}},
+			series: "older", read: fixturePostSlug,
+			before: &seenNeighbour{part: 0, title: "older", lead: "About older.", page: "older", published: "2026-11-02T09:00:00+01:00"},
+			after:  nil,
+		},
+		{
+			name:   "an unlisted post, between the posts listed before and after it",
+			posts:  []writtenPost{{slug: "hidden", id: 3, status: content.StatusUnlisted, published: later}, {slug: "newest", id: 4, status: content.StatusPublished, published: latest}},
+			series: "newest", read: "hidden",
+			before: &seenNeighbour{part: 0, title: fixturePostTitle, lead: "Why a page read twice is read once.", page: fixturePostSlug, published: "2026-11-10T09:00:00+01:00"},
+			after:  &seenNeighbour{part: 0, title: "newest", lead: "About newest.", page: "newest", published: "2026-11-21T09:00:00+01:00"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withPostsAndSeries(test, testCase.posts, testCase.series, testCase.toCome)
+			neighbours := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Neighbours
+			before, after := seenNeighbourOf(neighbours.Before), seenNeighbourOf(neighbours.After)
+			if !reflect.DeepEqual(before, testCase.before) || !reflect.DeepEqual(after, testCase.after) {
+				test.Errorf("the neighbours of %q = %+v and %+v, want %+v and %+v", testCase.read, before, after, testCase.before, testCase.after)
+			}
+		})
+	}
+}
+
+// withPostsAndSeries is the fixture content with posts of a case's own beside its post, and the fixture's series
+// written over to hold the parts a case names, then the titles it names to come, loaded.
+func withPostsAndSeries(test *testing.T, posts []writtenPost, parts, toCome string) *content.Snapshot {
+	test.Helper()
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	for _, post := range posts {
+		text := fmt.Sprintf(postTextLayout, post.id, post.slug, post.slug, post.status, post.published)
+		fixtures.WriteIn(test, folder, fmt.Sprintf(postFileLayout, post.slug), text)
+	}
+	fixtures.WriteIn(test, folder, fixtureSeriesFile, fmt.Sprintf(seriesTextLayout, parts, toCome))
+	snapshot, err := content.Load(os.DirFS(folder))
+	if err != nil {
+		test.Fatalf("load the fixture with the posts %+v and the series of %q: %v", posts, parts, err)
+	}
+	return snapshot
+}
+
+// seenParts are a series' parts as a test reads them, none where there is no series.
+func seenParts(series *document.Series) []seenPart {
+	if series == nil {
+		return nil
+	}
+	parts := []seenPart{}
+	for _, part := range series.Parts {
+		parts = append(parts, seenPart{number: part.Number, title: document.PlainText(part.Title), state: part.State, page: part.Page.Slug})
+	}
+	return parts
+}
+
+// seenNeighbourOf is a neighbour as a test reads it, none where there is none.
+func seenNeighbourOf(neighbour *document.Neighbour) *seenNeighbour {
+	if neighbour == nil {
+		return nil
+	}
+	return &seenNeighbour{
+		part:      neighbour.Part,
+		title:     document.PlainText(neighbour.Title),
+		lead:      document.PlainText(neighbour.Lead),
+		page:      neighbour.Page.Slug,
+		published: neighbour.Published.Format(time.RFC3339),
+	}
+}

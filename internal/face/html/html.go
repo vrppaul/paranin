@@ -26,8 +26,9 @@
 // A page shows a document as a reader of the finished work sees it (document.WrittenBlocks), a fact or a point that is
 // only a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
 // A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it. A post
-// is drawn whole, with no tabs (post.go): its head as a first screen, then its article, its paragraphs numbered and
-// each note beside the line that first cites it, in the blog's session of the foot line.
+// is drawn whole, with no tabs (post.go): its head as a first screen, its series' pick among its facts, its outline
+// beside its article, its paragraphs numbered and each note beside the line that first cites it, then the panes at its
+// foot leading to the posts beside it, in the blog's session of the foot line.
 // Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
 // author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
 package html
@@ -63,12 +64,14 @@ const markdownType = "text/markdown"
 const openGraphType = "website"
 
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6; the name of a heading no
-// reader links to, which carries none, and the attribute a named one carries its name in
+// reader links to, which carries none, the attribute a named one carries its name in, and the one a heading the site's
+// script finds carries its part in
 const (
 	firstHeadingDepth   = 2
 	deepestHeadingDepth = 6
 	unnamed             = ""
 	idAttribute         = "id"
+	partAttribute       = "data-part"
 )
 
 // A space a line never breaks at, U+00A0, written as its bytes in UTF-8 so the code shows it
@@ -340,6 +343,11 @@ func heading(depth int, id string, title templ.Component) templ.Component {
 	if id != unnamed {
 		named[idAttribute] = id
 	}
+	return headingWith(depth, named, title)
+}
+
+// headingWith is a title at a depth, as heading is, with the attributes it is named and found by.
+func headingWith(depth int, named templ.Attributes, title templ.Component) templ.Component {
 	levels := headingLevels()
 	return levels[min(depth, deepestHeadingDepth)-firstHeadingDepth](named, title)
 }

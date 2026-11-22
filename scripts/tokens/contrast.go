@@ -69,9 +69,12 @@ func (fault underContrast) Unwrap() error {
 	return errTokens
 }
 
-// readLeastContrast reads the least contrast a colour needs: a ratio no two colours have, none or beyond black on
-// white, and no ground are each a fault.
-func readLeastContrast(colour string, written contrastToken) (*leastContrast, error) {
+// readLeastContrast reads the least contrast a colour needs, none where the file writes none: a ratio no two colours
+// have, none or beyond black on white, and no ground are each a fault.
+func readLeastContrast(colour string, written *contrastToken) (*leastContrast, error) {
+	if written == nil {
+		return nil, nil
+	}
 	ratio, err := required(written.Ratio, colour, ratioKey)
 	if err != nil {
 		return nil, err
@@ -86,10 +89,18 @@ func readLeastContrast(colour string, written contrastToken) (*leastContrast, er
 	return &leastContrast{ratio: ratio, over: written.Over}, nil
 }
 
+// contrasted is a colour as its least contrast is checked, a colour of the file's or a mix of two: its name, its value
+// in each theme, and the least contrast it needs, none where it need not read. Each is a ground another may name.
+type contrasted struct {
+	name          string
+	values        themedValue[color.RGBA]
+	leastContrast *leastContrast
+}
+
 // checkContrasts refuses a colour that reads under its least contrast over a ground it names, in either theme, and
 // a ground that is neither the page's own colour nor a colour of the file. Only the page's colours are checked: the
 // TUI's ground is the terminal's own, which nothing here can measure.
-func checkContrasts(colours []readColour, background themedValue[color.RGBA]) error {
+func checkContrasts(colours []contrasted, background themedValue[color.RGBA]) error {
 	grounds := map[string]themedValue[color.RGBA]{backgroundName: background}
 	for _, colour := range colours {
 		grounds[colour.name] = colour.values

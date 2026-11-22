@@ -24,12 +24,20 @@ const (
 	weightKey       = "weight"
 	remKey          = "rem"
 	cellsKey        = "cells"
+	textShareKey    = "em"
 	millisecondsKey = "milliseconds"
 )
 
 // How a length in cells is written in the stylesheet: in ch, a cell of the page's mono face, so a space inside a line
 // stands on the face's own grid
 const cellsValue = "%dch"
+
+// How a length that is a share of its text's size is written in the stylesheet: in em, the size of the text it stands
+// in, as code inside words set larger than its own
+const textShareUnit = "em"
+
+// How many units a length is written in: one, so the stylesheet never guesses which the file means
+const oneUnit = 1
 
 // How a time is written in the stylesheet: its milliseconds
 const (
@@ -71,23 +79,26 @@ const (
 	sizeFault   = "line %d: %q is no number of rem written in digits, unquoted and with no unit"
 )
 
-// typeToken is a text style as the file writes it: its name, what it is for, its size and the height of its line in
-// rem, and its weight. A number the file may leave out unseen is a pointer, so its absence is a fault.
+// typeToken is a text style as the file writes it: its name, what it is for, the face it is drawn in where that is not
+// the page's first, its size and the height of its line in rem, and its weight. A number the file may leave out unseen
+// is a pointer, so its absence is a fault.
 type typeToken struct {
 	Name   string       `yaml:"name"`
 	About  string       `yaml:"about"`
+	Face   string       `yaml:"face"`
 	Size   *remSize     `yaml:"size"`
 	Line   *remSize     `yaml:"line"`
 	Weight *wholeNumber `yaml:"weight"`
 }
 
 // lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how long it is,
-// in rem or in the face's cells, never both.
+// in rem, in the face's cells or as a share of its text's size, in one of them alone.
 type lengthToken struct {
-	Name  string       `yaml:"name"`
-	About string       `yaml:"about"`
-	Rem   *remSize     `yaml:"rem"`
-	Cells *wholeNumber `yaml:"cells"`
+	Name      string       `yaml:"name"`
+	About     string       `yaml:"about"`
+	Rem       *remSize     `yaml:"rem"`
+	Cells     *wholeNumber `yaml:"cells"`
+	TextShare *remSize     `yaml:"em"`
 }
 
 // layerToken is a layer of what stands over the page, as the file writes it: its name and what stands on it. Its place
@@ -159,20 +170,23 @@ func (style readType) properties() []styleProperty {
 	}
 }
 
-// pageTokens are the tokens the page alone reads, read: its face, its text styles, its lengths, its times and its
-// layers.
+// pageTokens are the tokens the page alone reads, read: the colours it mixes, its faces, its text styles, its lengths,
+// its times and its layers.
 type pageTokens struct {
-	face    readFace
+	mixes   []readMix
+	faces   []readFace
 	types   []readType
 	lengths []readLength
 	times   []readTime
 	layers  []readLayer
 }
 
-// readType is a text style read, its numbers each there and each one a face can be drawn at.
+// readType is a text style read, the name of the face it is drawn in, its numbers each there and each one a face can
+// be drawn at.
 type readType struct {
 	name   string
 	about  string
+	face   string
 	size   remSize
 	line   remSize
 	weight wholeNumber
@@ -200,6 +214,15 @@ func (cells cellCount) stylesheetValue() string {
 	return fmt.Sprintf(cellsValue, cells)
 }
 
+// textShare is a length that is a share of the size of the text it stands in.
+type textShare float64
+
+// stylesheetValue is a share of a text's size as the stylesheet writes it: in em, in the fewest decimals that write it
+// exactly.
+func (share textShare) stylesheetValue() string {
+	return strconv.FormatFloat(float64(share), 'f', shortestDecimals, sizeFloatBits) + textShareUnit
+}
+
 // readTime is a time read, in milliseconds.
 type readTime struct {
 	name         string
@@ -215,18 +238,20 @@ type readLayer struct {
 	place int
 }
 
-// readPageTokens reads the face, the text styles, the lengths, the times and the layers of the file, each property a
-// name of its own beside every property named already.
-func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, error) {
-	face, err := readFaceToken(written.Face, named)
+// readPageTokens reads the faces, the text styles, the lengths, the times and the layers of the file beside the mixes
+// of its colours, read with the colours, each property a name of its own beside every property named already.
+func readPageTokens(written tokensFile, mixes []readMix, named map[string]bool) (pageTokens, error) {
+	faces, err := readFaces(written.Faces, named)
 	if err != nil {
 		return pageTokens{}, err
 	}
-	types, err := readEach(written.Type, named, readTypeToken)
+	types, err := readEach(written.Type, named, func(token typeToken, named map[string]bool) (readType, error) {
+		return readTypeToken(token, faces, named)
+	})
 	if err != nil {
 		return pageTokens{}, err
 	}
-	if err := checkFaceWeights(face.files, types); err != nil {
+	if err := checkFaceCuts(faces, types); err != nil {
 		return pageTokens{}, err
 	}
 	lengths, err := readEach(written.Lengths, named, readLengthToken)
@@ -241,7 +266,7 @@ func readPageTokens(written tokensFile, named map[string]bool) (pageTokens, erro
 	if err != nil {
 		return pageTokens{}, err
 	}
-	return pageTokens{face: face, types: types, lengths: lengths, times: times, layers: layers}, nil
+	return pageTokens{mixes: mixes, faces: faces, types: types, lengths: lengths, times: times, layers: layers}, nil
 }
 
 // readLayerTokens reads the layers, each in its place, the lowest first; a layer's property is named by the word layer
@@ -261,9 +286,13 @@ func readLayerTokens(written []layerToken, named map[string]bool) ([]readLayer, 
 	return layers, nil
 }
 
-// readTypeToken reads a text style, each of its three properties a name of its own.
-func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
+// readTypeToken reads a text style, drawn in one of the faces, each of its three properties a name of its own.
+func readTypeToken(token typeToken, faces []readFace, named map[string]bool) (readType, error) {
 	if err := checkName(token.Name, token.About); err != nil {
+		return readType{}, err
+	}
+	face, err := faceOf(faces, token.Face, token.Name)
+	if err != nil {
 		return readType{}, err
 	}
 	size, err := counted(token.Size, token.Name, sizeKey)
@@ -281,7 +310,7 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	if err := checkWeight(weight, token.Name); err != nil {
 		return readType{}, err
 	}
-	style := readType{name: token.Name, about: token.About, size: size, line: line, weight: weight}
+	style := readType{name: token.Name, about: token.About, face: face.name, size: size, line: line, weight: weight}
 	for _, property := range style.properties() {
 		if err := claim(property.name, named); err != nil {
 			return readType{}, err
@@ -290,30 +319,37 @@ func readTypeToken(token typeToken, named map[string]bool) (readType, error) {
 	return style, nil
 }
 
-// readLengthToken reads a length, more than nothing long, in rem or in cells: one of the two, since a length written
-// in both would leave the stylesheet to guess which the file means.
+// readLengthToken reads a length, more than nothing long, in rem, in cells or in em: one of them, since a length
+// written in two would leave the stylesheet to guess which the file means.
 func readLengthToken(token lengthToken, named map[string]bool) (readLength, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
 	}
-	switch {
-	case token.Rem != nil && token.Cells != nil:
-		return readLength{}, fmt.Errorf("%w: %q has both %s and %s", errTokens, token.Name, remKey, cellsKey)
-	case token.Rem != nil:
-		rem, err := counted(token.Rem, token.Name, remKey)
-		if err != nil {
-			return readLength{}, err
+	written := 0
+	for _, unit := range []bool{token.Rem != nil, token.Cells != nil, token.TextShare != nil} {
+		if unit {
+			written++
 		}
-		return readLength{name: token.Name, about: token.About, value: rem}, nil
-	case token.Cells != nil:
-		cells, err := counted(token.Cells, token.Name, cellsKey)
-		if err != nil {
-			return readLength{}, err
-		}
-		return readLength{name: token.Name, about: token.About, value: cellCount(cells)}, nil
-	default:
-		return readLength{}, fmt.Errorf("%w: %q has neither %s nor %s", errTokens, token.Name, remKey, cellsKey)
 	}
+	if written != oneUnit {
+		return readLength{}, fmt.Errorf("%w: %q has %d of %s, %s and %s, where it takes one",
+			errTokens, token.Name, written, remKey, cellsKey, textShareKey)
+	}
+	read := readLength{name: token.Name, about: token.About, value: nil}
+	var err error
+	switch {
+	case token.Rem != nil:
+		read.value, err = counted(token.Rem, token.Name, remKey)
+	case token.Cells != nil:
+		var cells wholeNumber
+		cells, err = counted(token.Cells, token.Name, cellsKey)
+		read.value = cellCount(cells)
+	default:
+		var share remSize
+		share, err = counted(token.TextShare, token.Name, textShareKey)
+		read.value = textShare(share)
+	}
+	return read, err
 }
 
 // readTimeToken reads a time, more than no milliseconds long.

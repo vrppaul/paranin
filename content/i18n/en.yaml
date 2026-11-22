@@ -4,8 +4,9 @@
 # `side` or `learning`, the title of the TUI's health report, and the page's frame: the name of its theme button,
 # which is pressed while the page is dark, a command's button that copies it: the word on it, the word it turns to
 # once it has, its name and what the toast says then; the first screen's button that writes to the author, in the
-# author's own voice, as the site speaks; and what ssh and curl give, which their hints say. A phrase holds one place,
-# {}, for the value it takes: the command.
+# author's own voice, as the site speaks; what ssh and curl give, which their hints say; the blog's session in the
+# foot line, the labels of a post's facts, and a code block's button that copies it: its name and what the toast says
+# then. A phrase holds one place, {}, for the value it takes: the command, or the code block's number on its page.
 # `paranin check content` requires every one of them.
 
 about: About
@@ -34,3 +35,8 @@ copied_command: "Copied {}"
 write_to: Write to me
 ssh_gives: My résumé as an app in your terminal.
 reading_gives: This page as a manual, in your terminal.
+blog: blog
+version: version
+tags: tags
+copy_code: "copy code block {}"
+copied_code: Copied the code

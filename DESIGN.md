@@ -66,7 +66,9 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `dialog` | `design/tokens.yaml` | the widest a window over the page runs, a Dialog's or a Hint's |
 | `textarea` | 7.5rem | a message field's least height |
-| `rail`, `column`, `aside` | to add | a post's Outline, its text and its sources beside it |
+| `rail`, `column`, `aside` | `design/tokens.yaml` | a post's Outline, its text and its sources beside it |
+| `title_text_measure` | `design/tokens.yaml` | the longest line of a title set in text |
+| `code_in_words` | `design/tokens.yaml` | code among an article's words, a share of their size |
 | `group_name`, `group_name_mid`, `tile` | to add | the blog's list: the groups' names, and below `wide`; the least width of a tile |
 
 ## Sizes
@@ -112,7 +114,7 @@ other size: a control that seems to need one is the wrong control.
 
 - One face (`face`), monospace, ligatures off, set once on the body for every element to inherit, served from the
   site itself (FOUNDATION §5.6), so every reader sees the face the cells are counted in. A second face, iA Writer Duo
-  (`reading_face`, to add), sets an article's words alone, its paragraphs, lists and quotes; everything else on a post's page,
+  (`reading_face`), sets an article's words alone, its paragraphs, lists and quotes; everything else on a post's page,
   its title, headings, code and notes, stays in `face`.
 - A text style is its size, its line and its weight, set as three properties (`web/stylelint.config.js`).
 
@@ -124,9 +126,11 @@ other size: a control that seems to need one is the wrong control.
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
-| `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip, a source beside an article's text; never prose |
-| `title_text`, `title_text_mid`, `title_text_phone` | to add | 700 | a title set in text: a post's, and a group's on the blog's list, the group's at the mid size below `wide`; each on a phone |
-| `reading` | to add | 400 | an article's words, in `reading_face`, on a line of its own taller than a row |
+| `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip, a source's number where a line cites it; never prose |
+| `title_text`, `title_text_phone` | `design/tokens.yaml` | `design/tokens.yaml` | a title set in text: a post's, and a group's on the blog's list; on a phone |
+| `title_text_mid` | to add | 700 | a group's title on the blog's list below `wide` |
+| `reading` | `design/tokens.yaml` | `design/tokens.yaml` | an article's words, in `reading_face`, on a line of its own taller than a row |
+| `source` | `design/tokens.yaml` | `design/tokens.yaml` | a source beside an article's text, `caption`'s size on a line short enough to read as one note |
 
 - The page's one `h1`, a tab's title among them, and the `h2` of the résumé's first section under its first screen are
   block letters; a post's title is its page's `h1` in `title_text`, since a sentence in block letters would not fit;
@@ -142,7 +146,8 @@ other size: a control that seems to need one is the wrong control.
 - Natural size: `name_cell` a cell for the name, `title_cell` for a title.
 - One gradient, `accent` to `host`, left to right. `shape-rendering: crispEdges`, so no seam shows between two
   rectangles. A title set in text, a post's and a group's on the blog's list, takes the same gradient softened, each
-  end mixed a fifth towards `text` (`title_soft`, to add), so a title of letters reads apart from one of blocks.
+  end mixed a fifth towards `text` (`title_soft_start`, `title_soft_end`), so a title of letters reads apart from one
+  of blocks.
 - The title font's X is drawn on three cells (▀▄▀ over ▄▀▄), in the TUI too: on five it read as )(.
 - The cursor after the name is an underscore a letter wide on the letters' foot, in `accent`, and it blinks, as a
   terminal's does: the one thing on the page that moves on its own, and it stops for a reader who asks for less motion.
@@ -371,8 +376,10 @@ summary, its facts. An install line is a fact whose value is Code alone; the pag
 ### Table
 
 Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a length `muted`; cells
-`cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself. Whatever
-scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
+`cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A
+post's table may name its columns: the page draws that row as the table's first, in `strong`, which waits on the
+owner's pick (`TODO.md`). A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
+Whatever scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
 
 ### Code
 
@@ -477,16 +484,18 @@ Gone below `wide`; the `:` menu holds the headings too.
 A post's body, in the text's column.
 
 - Its words in `reading`; each paragraph numbered in the margin, `caption` in `faint`, the number a link to the
-  paragraph, underlined in `accent` under the pointer. Headings: `h2` in `heading` a row below the block before it,
-  `h3` in `strong` half a row below, since an article's blocks already stand a row apart.
-- A source: its number raised after the word, `caption` in `label`; beside the text, at the line that cites it, under
-  a `quiet` hairline, its number in `label` and its words `caption` in `muted`. On a phone the sources stand at the
-  text's end under a `quiet` hairline, `small`.
+  paragraph, under the pointer `text`, underlined in `accent`. Headings: `h2` in `heading` a row below the block
+  before it, `h3` in `strong` half a row below, since an article's blocks already stand a row apart. Code among the
+  words stands at `code_in_words` of their size.
+- A source: its number raised after the word, `caption` in `label`, no link; beside the text, at the line that first
+  cites it, under a `quiet` hairline, its number in `label` and its words `source` in `muted`. On a phone none stands
+  beside the text: the sources stand at its end, each once, under a `quiet` hairline, `small`.
 - A quote: a bar of `edge`, `underline_hover` wide, at its left; who said it under it, `small` in `muted`.
 - Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
 - Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
-  at its top right, copying as a Command does. Its colours come from the tokens, chosen with the code blocks; never
-  `accent` as small text.
+  at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by
+  the button alone, so a reader selects the lines, which waits on the owner's pick (`TODO.md`). Its colours come from
+  the tokens, chosen with the code blocks; never `accent` as small text.
 - A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
   hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.
 - A widget: a window as tmux draws a popup, a `muted` hairline on the page's ground, `radius`; its name bold, `small`,

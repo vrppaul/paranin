@@ -61,16 +61,20 @@ templ headOpening(title string, included assets.Included) {
 }
 
 // footLineMarkup is the line at the foot of every page (DESIGN.md, FootLine), after its main part, as tmux's status
-// line: the session, the site's name leading to where it begins; the document's tabs as windows, each by its number
+// line: the sessions, the site's name leading to where it begins; the document's tabs as windows, each by its number
 // and name leading to its page, the one shown the current page; the ways the site is served as chips, the programs
 // that reach it and read it in a terminal, each opening its hint, and the page's markdown; then the switch that turns
-// the vim keys on, and the theme button. A screen reader skips the session's brackets. Over it stands the command line
-// the vim keys open, and the toast that says what a command's chip on the page, or in a hint, copied.
+// the vim keys on, and the theme button. Over it stands the command line the vim keys open, and the toast that says
+// what a command's chip on the page, or in a hint, copied.
 templ footLineMarkup(foot footLine) {
 	<div class="foot" data-part={ footPart }>
 		@commandLineMarkup(foot.places)
 		<nav class="foot-row content-width">
-			<a class="session" href={ foot.frame.start }><span aria-hidden="true">{ sessionOpening }</span>{ foot.frame.siteName }<span aria-hidden="true">{ sessionClosing }</span></a>
+			<span class="sessions">
+				for _, shown := range foot.sessions {
+					@sessionMark(shown)
+				}
+			</span>
 			if len(foot.windows) > 0 {
 				<ul class="windows">
 					for _, window := range foot.windows {
@@ -91,6 +95,25 @@ templ footLineMarkup(foot footLine) {
 		</nav>
 		@toast()
 	</div>
+}
+
+// sessionMark is a session as tmux writes one, its name between brackets a screen reader skips, leading to where it
+// begins; the one the page belongs to marked, which the stylesheet colours; its name alone where its page is still to
+// come.
+templ sessionMark(shown session) {
+	if shown.address != "" {
+		<a class={ "session", templ.KV("session-other", !shown.current) } href={ shown.address }>
+			@sessionName(shown.name)
+		</a>
+	} else {
+		<span class={ "session", templ.KV("session-other", !shown.current) }>
+			@sessionName(shown.name)
+		</span>
+	}
+}
+
+templ sessionName(name string) {
+	<span aria-hidden="true">{ sessionOpening }</span>{ name }<span aria-hidden="true">{ sessionClosing }</span>
 }
 
 // vimKeysSwitch is the switch that turns the vim keys on (DESIGN.md, VimKeys), a checkbox as a terminal writes one,
@@ -144,7 +167,7 @@ templ keyHint(key, does, part string) {
 // it apart from the rest, and what it is; it carries what the site's script reads of it, its name and address, its
 // kind, and whether it is the page shown.
 templ placeItem(index int, shown place) {
-	<li id={ placeIDOpening + strconv.Itoa(index+1) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
+	<li id={ placeID(index) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
 }
 
 // windowLink is a tab as tmux writes a window, its number, a colon and its name, leading to its page; the current one
@@ -344,7 +367,7 @@ templ careerLine(career careerDrawing) {
 
 // command is a command the reader can run (DESIGN.md, Command): the prompt's mark, the command as code a reader may
 // select, and the button that copies it, hidden until the site's script shows it and lets the whole chip copy.
-templ command(command compose.Command) {
+templ command(command compose.Copyable) {
 	<div class="command" data-part={ commandPart }>
 		<span class="command-prompt" aria-hidden="true">{ look.PromptMark }</span>
 		<code data-part={ commandWordsPart }>{ command.Text }</code>
@@ -417,7 +440,7 @@ templ (writer PageWriter) head(head document.Head) {
 
 templ (writer PageWriter) section(section document.Section, depth int) {
 	<section>
-		@heading(depth, writer.spans(section.Title))
+		@heading(depth, unnamed, writer.spans(section.Title))
 		for _, block := range section.Blocks {
 			@writer.block(block, depth+1)
 		}
@@ -430,11 +453,22 @@ templ (writer PageWriter) paragraph(paragraph document.Paragraph) {
 	</p>
 }
 
-// table is rows of cells (DESIGN.md, Table), in a part that scrolls sideways where the screen is narrower than the
-// table, so the page never does.
+// table is rows of cells (DESIGN.md, Table), under the row that names its columns where it has one, as a post's may,
+// in a part that scrolls sideways where the screen is narrower than the table, so the page never does.
 templ (writer PageWriter) table(table document.Table) {
 	<div class="table-scroll">
 		<table class="table">
+			if len(table.Header.Cells) > 0 {
+				<thead>
+					<tr>
+						for _, cell := range table.Header.Cells {
+							<th scope="col">
+								@writer.spans(cell.Spans)
+							</th>
+						}
+					</tr>
+				</thead>
+			}
 			<tbody>
 				for _, row := range table.Rows {
 					<tr>
@@ -477,7 +511,7 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 			@month(entry.Period.End)
 		</p>
 		<div class="entry-body">
-			@heading(depth, writer.titled(entry.Title, entry.Subtitle))
+			@heading(depth, unnamed, writer.titled(entry.Title, entry.Subtitle))
 			if entry.Place != "" {
 				<p class="entry-place">{ entry.Place }</p>
 			}
@@ -500,7 +534,7 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 // a line, its summary, then its facts.
 templ (writer PageWriter) card(card document.Card, depth int) {
 	<article class="card">
-		@heading(depth, writer.spans(linked(card.Page, card.Title)))
+		@heading(depth, unnamed, writer.spans(linked(card.Page, card.Title)))
 		if card.Tag != "" || len(card.Subtitle) > 0 {
 			<p class="card-line">
 				@text(card.Tag)
@@ -653,32 +687,32 @@ templ headingOne(title templ.Component) {
 	</h1>
 }
 
-templ headingTwo(title templ.Component) {
-	<h2>
+templ headingTwo(named templ.Attributes, title templ.Component) {
+	<h2 { named... }>
 		@title
 	</h2>
 }
 
-templ headingThree(title templ.Component) {
-	<h3>
+templ headingThree(named templ.Attributes, title templ.Component) {
+	<h3 { named... }>
 		@title
 	</h3>
 }
 
-templ headingFour(title templ.Component) {
-	<h4>
+templ headingFour(named templ.Attributes, title templ.Component) {
+	<h4 { named... }>
 		@title
 	</h4>
 }
 
-templ headingFive(title templ.Component) {
-	<h5>
+templ headingFive(named templ.Attributes, title templ.Component) {
+	<h5 { named... }>
 		@title
 	</h5>
 }
 
-templ headingSix(title templ.Component) {
-	<h6>
+templ headingSix(named templ.Attributes, title templ.Component) {
+	<h6 { named... }>
 		@title
 	</h6>
 }

@@ -27,4 +27,6 @@ a PDF, and a blog drawn the same way in each of them.
 ## License
 
 [MIT](LICENSE) © 2026 Pavel Paranin. JetBrains Mono, in `design/fonts/jetbrains-mono`, is © 2020 The JetBrains Mono
-Project Authors, under the [SIL Open Font License 1.1](design/fonts/jetbrains-mono/OFL.txt).
+Project Authors, under the [SIL Open Font License 1.1](design/fonts/jetbrains-mono/OFL.txt). iA Writer Duo, in
+`design/fonts/ia-writer-duo`, is © 2018 Information Architects Inc., based on IBM Plex © 2017 IBM Corp., under the
+same licence ([its text](design/fonts/ia-writer-duo/LICENSE.md)).

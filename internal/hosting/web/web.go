@@ -5,8 +5,8 @@
 // draws with them, which a cache asks for again. Each page, and each of its tabs alone, is served at the path routes
 // writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
 // browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
-// llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn in the text formats alone
-// until the HTML face draws one, and its number sends the reader on to its address. Each format of a page names in
+// llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn whole in every format, and
+// its number sends the reader on to its address. Each format of a page names in
 // a Link header the address the page is known by, the one where the reader chooses, so a search engine counts its
 // markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
 // whichever the reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the
@@ -123,8 +123,7 @@ type drawing struct {
 }
 
 // choice is one page in each format a reader may choose, never none, in the order a tie between two goes: the
-// manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual. A post offers no
-// HTML yet, so a browser gets the text format it ranks first, the manual where it ranks both alike.
+// manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual.
 type choice []answer
 
 // textAnswers are a page in the text formats, each naming the address the page is known by.
@@ -334,7 +333,8 @@ func draw(snapshot *release.Snapshot) *drawing {
 	for _, post := range compose.Posts(facts) {
 		texts := drawAndServeText(post, fixed, site)
 		page := post.Head.Page
-		chosen[routes.Path(page, routes.FormatChosen)] = choice{texts.manual, texts.markdown}
+		browsed := drawnAs(htmlMediaType, pageWriter.Post(post)).knownAt(site.Address(page, routes.FormatChosen))
+		chosen[routes.Path(page, routes.FormatChosen)] = choice{texts.manual, texts.markdown, browsed}
 		moved[routes.NumberPath(post.Head.Number)] = routes.Path(page, routes.FormatChosen)
 	}
 	status := statusLine(missingStatus)

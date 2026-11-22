@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -35,17 +36,39 @@ blends:
     dark: 0.25
     basic: 3
     indexed_lean: 0.5
-face:
-  about: the one face
-  families: [Mono Face, 3270, Monospace]
-  files:
-    - weight: 400
-      path: fonts/mono-face.woff2
+mixes:
+  - name: soft
+    about: the accent softened
+    of: accent
+    toward: text
+    share: 0.2
+faces:
+  - name: face
+    about: the one face
+    families: [Mono Face, 3270, Monospace]
+    files:
+      - weight: 400
+        path: fonts/mono-face.woff2
+  - name: reading_face
+    about: the face words are read in
+    families: [Reading Face, serif]
+    files:
+      - weight: 400
+        path: fonts/reading.woff2
+      - weight: 400
+        italic: true
+        path: fonts/reading-italic.woff2
 type:
   - name: body
     about: the text read
     size: 1
     line: 1.5
+    weight: 400
+  - name: reading
+    about: words read at length
+    face: reading_face
+    size: 1.0625
+    line: 1.75
     weight: 400
 lengths:
   - name: row
@@ -54,6 +77,9 @@ lengths:
   - name: cell
     about: the grid's one cell
     cells: 1
+  - name: code_in_words
+    about: code among words, a share of their size
+    em: 0.9375
 times:
   - name: blink
     about: a cursor's blink
@@ -188,12 +214,16 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		want string
 	}{
 		{name: "the face, each name quoted but a generic family in any case", want: `--face: "Mono Face", "3270", Monospace;`},
+		{name: "another face, under its own name", want: `--reading-face: "Reading Face", serif;`},
+		{name: "a mix, its colour moved its share toward the other in each theme", want: "--soft: light-dark(#e4e4e4, #cc6c00);"},
+		{name: "what each mix is for", want: "/* the accent softened */"},
 		{name: "a text style's size", want: "--type-body-size: 1rem;"},
 		{name: "a text style's line, a fraction of a rem written in full", want: "--type-body-line: 1.5rem;"},
 		{name: "a text style's weight", want: "--type-body-weight: 400;"},
 		{name: "what each of a text style's properties is for", want: "/* the text read: its size */"},
 		{name: "a length", want: "--row: 1.5rem;"},
 		{name: "a length in cells, a mono face's ch", want: "--cell: 1ch;"},
+		{name: "a length that is a share of its text's size, in em", want: "--code-in-words: 0.9375em;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
 		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
 		{name: "a layer, its place among the layers counted from one, named apart from a length", want: "--layer-row: 1;"},
@@ -209,22 +239,47 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 	}
 }
 
-// Each file of the face is a face of its first family that the page loads from the repository, at its weight, its path
-// from the tokens' folder as the stylesheet reaches it, its text shown in a stand-in until the file has come.
-func TestEachFileOfTheFaceIsAFontFaceOfItsFirstFamily(test *testing.T) {
+// Each file of a face is a face of its first family that the page loads from the repository, at its weight and slant,
+// its path from the tokens' folder as the stylesheet reaches it, its text shown in a stand-in until the file has come.
+func TestEachFileOfAFaceIsAFontFaceOfItsFirstFamily(test *testing.T) {
 	read, err := readTokens([]byte(fixtureTokens))
 	if err != nil {
 		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
 	}
-	const want = `@font-face {
+	written := string(stylesheet(read))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{
+			name: "an upright file of the first face",
+			want: `@font-face {
   font-family: "Mono Face";
   src: url("../../../design/fonts/mono-face.woff2") format("woff2");
   font-weight: 400;
+  font-style: normal;
   font-display: swap;
 }
-`
-	if got := string(stylesheet(read)); !strings.Contains(got, want) {
-		test.Errorf("the stylesheet = %q, want it to hold %q", got, want)
+`,
+		},
+		{
+			name: "an italic file of another face",
+			want: `@font-face {
+  font-family: "Reading Face";
+  src: url("../../../design/fonts/reading-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+`,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(written, testCase.want) {
+				test.Errorf("the stylesheet = %q, want it to hold %q", written, testCase.want)
+			}
+		})
 	}
 }
 
@@ -291,6 +346,8 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 	// the fixture's lines of the length's rem and of the time's milliseconds, which a fault in them names
 	remLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "rem: 1.5")], "\n") + 1
 	millisecondsLine := strings.Count(fixtureTokens[:strings.Index(fixtureTokens, "milliseconds: 1060")], "\n") + 1
+	// the fixture's faces, every line of them, which a test takes away whole
+	faces := fixtureTokens[strings.Index(fixtureTokens, "faces:\n"):strings.Index(fixtureTokens, "type:\n")]
 	cases := []struct {
 		name        string
 		original    string
@@ -310,10 +367,25 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a colour with no name", original: "name: text", replacement: `name: ""`, want: "no name of small words"},
 		{name: "a name that is no word", original: "name: text", replacement: "name: Text-2", want: `"Text-2"`},
 		{name: "a strength beyond the whole", original: "    dark: 0.25\n    basic: 3\n", replacement: "    dark: 1.5\n    basic: 3\n", want: "1.5"},
-		{name: "a face with no family", original: "  families: [Mono Face, 3270, Monospace]\n", replacement: "", want: "face has no family"},
+		{name: "a face with no family", original: "    families: [Mono Face, 3270, Monospace]\n", replacement: "", want: `face "face" has no family`},
+		{name: "a page with no face", original: faces, replacement: "faces: []\n", want: "the page has no face"},
+		{name: "a face named as a colour is", original: "name: reading_face", replacement: "name: accent", want: `"accent" is named twice`},
+		{name: "a text style drawn in no face of the file", original: "face: reading_face\n", replacement: "face: other_face\n", want: `"other_face", which is no face`},
+		{
+			name: "a text style drawn in a face with no upright file of its weight", original: readingFileLines, replacement: "",
+			want: `face "reading_face" has no file of the weight 400`,
+		},
+		{
+			name: "two files of one weight and slant", original: readingFileLines, replacement: readingFileLines + "      - weight: 400\n        italic: true\n        path: fonts/other.woff2\n",
+			want: `face "reading_face" has two files of the weight 400, italic true`,
+		},
+		{name: "a mix of a colour the file does not name", original: "toward: text", replacement: "toward: border", want: `"soft" takes "border", which is no colour`},
+		{name: "a mix beyond the whole", original: "share: 0.2", replacement: "share: 1.5", want: `"soft" has the share 1.5`},
+		{name: "a mix's share left out", original: "    share: 0.2\n", replacement: "", want: `"soft" has no share`},
+		{name: "a mix named as a colour is", original: "name: soft", replacement: "name: text", want: `"text" is named twice`},
 		{name: "a family of no name", original: "[Mono Face, 3270, Monospace]", replacement: `["", monospace]`, want: `family "" is no name`},
 		{name: "a family that would close its quotes", original: "[Mono Face, 3270, Monospace]", replacement: `["Mono\"; } body {", monospace]`, want: `"Mono\"; } body {"`},
-		{name: "a face that says nothing of what it is for", original: "  about: the one face\n", replacement: "", want: `"face" says nothing`},
+		{name: "a face that says nothing of what it is for", original: "    about: the one face\n", replacement: "", want: `"face" says nothing`},
 		{name: "a text style's size left out", original: "    size: 1\n", replacement: "", want: "has no size"},
 		{name: "a text style of no size", original: "    size: 1\n", replacement: "    size: 0\n", want: `"body" has the size 0`},
 		{name: "a weight between a face's", original: "    weight: 400\n", replacement: "    weight: 450\n", want: "450"},
@@ -327,8 +399,11 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a length named as a text style's weight is", original: "name: row", replacement: "name: type_body_weight", want: `"type_body_weight" is named twice`},
 		{name: "a length of no rem", original: "rem: 1.5", replacement: "rem: 0", want: `"row" has the rem 0`},
 		{name: "a length less than none", original: "rem: 1.5", replacement: "rem: -1.5", want: `"row" has the rem -1.5`},
-		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has neither rem nor cells`},
-		{name: "a length in rem and in cells", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    cells: 2\n", want: `"row" has both rem and cells`},
+		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has 0 of rem, cells and em`},
+		{name: "a length in rem and in cells", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    cells: 2\n", want: `"row" has 2 of rem, cells and em`},
+		{name: "a length in cells and in em", original: "    cells: 1\n", replacement: "    cells: 1\n    em: 1\n", want: `"cell" has 2 of rem, cells and em`},
+		{name: "a length of no share of its text", original: "em: 0.9375", replacement: "em: 0", want: `"code_in_words" has the em 0`},
+		{name: "a mix under its least contrast", original: "    share: 0.2\n", replacement: "    share: 0.2\n    least_contrast: {ratio: 21, over: [background]}\n", want: `"soft" reads`},
 		{name: "a length of no cells", original: "cells: 1", replacement: "cells: 0", want: `"cell" has the cells 0`},
 		{name: "a length of part of a cell", original: "cells: 1", replacement: "cells: 1.5", want: `"1.5" is no whole number`},
 		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
@@ -346,10 +421,10 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a layer named twice", original: "name: sheet", replacement: "name: row", want: `"layer_row" is named twice`},
 		{name: "a layer whose name is no word", original: "name: sheet", replacement: "name: Sheet-2", want: `"Sheet-2"`},
 		{name: "a text style's weight the face has no file of", original: "    weight: 400\n", replacement: "    weight: 700\n", want: "no file of the weight 700"},
-		{name: "a file of a weight no text style is drawn in", original: faceFileLines, replacement: faceFileLines + "    - weight: 700\n      path: fonts/mono-face-bold.woff2\n", want: "no text style is drawn in the weight 700"},
-		{name: "two files of one weight", original: faceFileLines, replacement: faceFileLines + "    - weight: 400\n      path: fonts/other.woff2\n", want: "two files of the weight 400"},
+		{name: "a file of a weight no text style is drawn in", original: faceFileLines, replacement: faceFileLines + "      - weight: 700\n        path: fonts/mono-face-bold.woff2\n", want: "no text style is drawn in the weight 700"},
+		{name: "two files of one weight", original: faceFileLines, replacement: faceFileLines + "      - weight: 400\n        path: fonts/other.woff2\n", want: "two files of the weight 400"},
 		{name: "a file's weight between a face's", original: "    - weight: 400\n", replacement: "    - weight: 450\n", want: "450"},
-		{name: "a file's weight left out", original: "    - weight: 400\n      path:", replacement: "    - path:", want: "has no weight"},
+		{name: "a file's weight left out", original: "      - weight: 400\n        path:", replacement: "      - path:", want: "has no weight"},
 		{name: "a file of the face that is no woff2", original: "mono-face.woff2", replacement: "mono-face.ttf", want: `"fonts/mono-face.ttf" is no woff2`},
 		{name: "a file's path that would close its quotes", original: "fonts/mono-face.woff2", replacement: `'fonts/mono"); } body {.woff2'`, want: `"fonts/mono\"); } body {.woff2"`},
 		{name: "a file out of the tokens' folder", original: "fonts/mono-face.woff2", replacement: "../mono-face.woff2", want: `"../mono-face.woff2"`},
@@ -369,11 +444,17 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 	}
 }
 
-// The fixture's file of its face, at its weight, after which a test writes another
-const faceFileLines = "    - weight: 400\n      path: fonts/mono-face.woff2\n"
+// The fixture's file of its first face, at its weight, after which a test writes another; and the upright file of its
+// face for reading
+const (
+	faceFileLines    = "      - weight: 400\n        path: fonts/mono-face.woff2\n"
+	readingFileLines = "      - weight: 400\n        path: fonts/reading.woff2\n"
+)
 
-// The fixture's file of its face, from the repository's root
-const faceFilePath = "design/fonts/mono-face.woff2"
+// The fixture's files of its faces, from the repository's root
+func faceFilePaths() []string {
+	return []string{"design/fonts/mono-face.woff2", "design/fonts/reading.woff2", "design/fonts/reading-italic.woff2"}
+}
 
 // The fixture's last lines of its colours text and accent, after which a test writes the least contrast each needs
 const (
@@ -512,7 +593,9 @@ func TestContrastIsWCAGs(test *testing.T) {
 // files the tokens make.
 func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 	root := fixtureRoot(test)
-	writeFixture(test, filepath.Join(root, faceFilePath), "")
+	for _, path := range faceFilePaths() {
+		writeFixture(test, filepath.Join(root, path), "")
+	}
 	if code := run([]string{writeFlag}, root); code != succeeded {
 		test.Fatalf("writing = exit %d, want %d", code, succeeded)
 	}
@@ -542,20 +625,27 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 	}
 }
 
-// A file of the face the tokens name and the repository lacks is refused, and nothing is written: the page would
-// ask for a file the build never holds, and show a stand-in face.
-func TestAFileOfTheFaceMissingIsRefused(test *testing.T) {
-	root := fixtureRoot(test)
-	if code := run([]string{writeFlag}, root); code != failed {
-		test.Errorf("writing with no %s = exit %d, want %d", faceFilePath, code, failed)
-	}
-	if _, err := os.Stat(filepath.Join(root, stylesheetPath)); !errors.Is(err, os.ErrNotExist) {
-		test.Errorf("stat %s = %v, want it not written", stylesheetPath, err)
+// A file of a face the tokens name and the repository lacks is refused, any face's, and nothing is written: the page
+// would ask for a file the build never holds, and show a stand-in face.
+func TestAFileOfAFaceMissingIsRefused(test *testing.T) {
+	for _, missing := range faceFilePaths() {
+		test.Run(missing, func(test *testing.T) {
+			root := fixtureRoot(test)
+			for _, path := range slices.DeleteFunc(faceFilePaths(), func(path string) bool { return path == missing }) {
+				writeFixture(test, filepath.Join(root, path), "")
+			}
+			if code := run([]string{writeFlag}, root); code != failed {
+				test.Errorf("writing with no %s = exit %d, want %d", missing, code, failed)
+			}
+			if _, err := os.Stat(filepath.Join(root, stylesheetPath)); !errors.Is(err, os.ErrNotExist) {
+				test.Errorf("stat %s = %v, want it not written", stylesheetPath, err)
+			}
+		})
 	}
 }
 
 // fixtureRoot is a repository holding the fixture's tokens and the folders the generated files go to, and no file of
-// the face.
+// a face.
 func fixtureRoot(test *testing.T) string {
 	test.Helper()
 	root := test.TempDir()

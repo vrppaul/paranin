@@ -148,8 +148,14 @@ main * {
   scroll-margin-bottom: var(--row-2);
 }
 
-/* the session: the site's name between tmux's brackets, in the host's colour, as the TUI's footer writes it; under the
+/* the sessions, two cells apart, their grounds under the pointer meeting: each a part of the site between tmux's
+ * brackets, the one the page belongs to in the host's colour, as the TUI's footer writes it, another muted; under the
  * pointer on the ground a shade down, as a window, which reaches a cell past its words */
+.sessions {
+  display: inline-flex;
+  gap: var(--cell-2);
+}
+
 .session {
   margin-inline: calc(-1 * var(--cell));
   padding-inline: var(--cell);
@@ -158,7 +164,11 @@ main * {
   transition: background var(--quick);
 }
 
-.session:hover {
+.session-other {
+  color: var(--muted);
+}
+
+a.session:hover {
   background: var(--deep);
 }
 
@@ -389,7 +399,7 @@ main * {
     padding-block: var(--nudge);
   }
 
-  .session {
+  .sessions {
     justify-self: start;
   }
 
@@ -1272,25 +1282,30 @@ main * {
   font-variant-numeric: tabular-nums;
 }
 
-.table td {
+.table :is(td, th) {
   padding: calc(var(--row-half) / 2) var(--cell-3) calc(var(--row-half) / 2) 0;
   vertical-align: top;
 }
 
-.table tr + tr td {
+.table tr + tr td,
+.table thead + tbody td {
   border-top: var(--hairline) solid var(--quiet);
 }
 
-.table td:not(:last-child) {
+.table :is(td, th):not(:last-child) {
   white-space: nowrap;
 }
 
-.table td:last-child {
+.table :is(td, th):last-child {
   padding-right: 0;
 }
 
-.table td:first-child {
+/* the row that names the columns, where a post's table has one, is the table's first row in the strong style, as the
+ * first cell names a row */
+.table td:first-child,
+.table th {
   font-weight: var(--type-strong-weight);
+  text-align: start;
 }
 
 /* text on lines of its own (DESIGN.md, Code): on the ground a shade below the page, scrolling sideways inside itself,
@@ -1401,5 +1416,345 @@ main * {
   /* a page's head with less air */
   .page-head {
     padding-block: var(--row-2) var(--row);
+  }
+}
+
+/* a post's page (DESIGN.md, Layout): one grid from its head to its foot, so its parts stand in the same columns from
+ * the first screen down: the Outline's rail and the room after it, the paragraphs' numbers, two cells clear of the
+ * text, the text held to its column, then the room left and the sources beside it. Its last line stands four rows
+ * clear of the foot line */
+.post {
+  display: grid;
+  grid-template-columns:
+    [rail-start] var(--rail)
+    [rail-end] calc(2 * var(--cell-2))
+    [number-start] calc(2 * var(--cell-2))
+    [number-end] var(--cell-2)
+    [text-start] minmax(0, var(--column))
+    [text-end] minmax(calc(2 * var(--cell-2)), 1fr)
+    [aside-start] var(--aside) [aside-end];
+  padding-bottom: var(--row-4);
+}
+
+/* below the wide screen the Outline gives way, its rail and the room after it with it */
+@media (width < 80rem) {
+  .post {
+    grid-template-columns:
+      [rail-start rail-end number-start] calc(2 * var(--cell-2))
+      [number-end] var(--cell-2)
+      [text-start] minmax(0, var(--column))
+      [text-end] minmax(calc(2 * var(--cell-2)), 1fr)
+      [aside-start] var(--aside) [aside-end];
+  }
+}
+
+/* its head, its first screen as the résumé's (DESIGN.md, PostHead): the title and the lead over the rail, the numbers
+ * and the text, the facts in the sources' column, the corners' crosses round it */
+.post-head {
+  position: relative;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: start;
+  padding-block: var(--row-4) var(--row-3);
+}
+
+.post-intro {
+  grid-column: rail-start / text-end;
+}
+
+/* the title set in text, the page's h1, a few words a line, balanced, in the gradient of the block letters softened
+ * toward the text, so it reads apart from a title of blocks; as wide as its words, which the gradient spans */
+.post-title {
+  width: fit-content;
+  max-width: var(--title-text-measure);
+  margin: 0;
+  background: linear-gradient(to right, var(--title-soft-start), var(--title-soft-end));
+  background-clip: text;
+  color: transparent;
+  font-size: var(--type-title-text-size);
+  font-weight: var(--type-title-text-weight);
+  line-height: var(--type-title-text-line);
+  text-wrap: balance;
+}
+
+/* the lead, the headline's style, a row under the title */
+.post-intro .lead {
+  margin-top: var(--row);
+}
+
+.post-facts {
+  grid-column: aside;
+  row-gap: var(--row-half);
+  padding-top: var(--row-half);
+}
+
+/* a post's tags (DESIGN.md, Tag): each its hash faint and its word muted, in the small style, two cells apart,
+ * wrapping whole */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--cell-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+}
+
+.tag-mark {
+  color: var(--faint);
+}
+
+/* the article (DESIGN.md, Article): its blocks on the post's grid, a row apart, each in the text's column; a section
+ * holds its blocks as if it held none, so they stand on the same grid */
+.article {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: start;
+}
+
+.article-section {
+  display: contents;
+}
+
+/* a post's article's own blocks, which no part of another page's is: a paragraph's number and the notes beside the
+ * text take columns of their own below */
+.post .article > *,
+.post .article-section > * {
+  grid-column: text;
+  margin: 0 0 var(--row);
+}
+
+/* the words read, in the reading face, on lines taller than a row: the paragraphs, the lists and the quotes; code among
+ * them stays in the page's own face, which counts its cells */
+.post .article > p,
+.post .article-section > p,
+.article .post-list,
+.article blockquote {
+  font-family: var(--reading-face);
+  font-size: var(--type-reading-size);
+  font-weight: var(--type-reading-weight);
+  line-height: var(--type-reading-line);
+}
+
+.article code,
+.article sup,
+.post-list .point-mark,
+.post-list li::marker {
+  font-family: var(--face);
+}
+
+/* code among the words, a share of their size, so it stands no larger than they do */
+.article :not(pre) > code {
+  font-size: var(--code-in-words);
+}
+
+/* a heading of the article: an h2 in the heading's style, the row before it on top of the row its block before keeps;
+ * a heading under it in the strong style, half a row before it */
+.post .article h2 {
+  margin: var(--row) 0 var(--row-half);
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  line-height: var(--type-heading-line);
+}
+
+.post .article :is(h3, h4, h5, h6) {
+  margin: var(--row-half) 0;
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line);
+}
+
+/* a paragraph's number in the margin, faint, on its paragraph's first line, a link to it that turns the text's colour
+ * under the pointer, underlined in the accent */
+.article .paragraph-number {
+  grid-column: number;
+  justify-self: end;
+  color: var(--faint);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-reading-line);
+  text-decoration: none;
+}
+
+.article .paragraph-number:hover {
+  color: var(--text);
+  text-decoration: underline var(--accent) var(--underline-hover);
+}
+
+/* a citation of a note, its number raised after its word, and the note's number, in the label's blue, which numbers
+ * the sources */
+.citation {
+  color: var(--label);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-caption-line);
+}
+
+.note-number {
+  color: var(--label);
+}
+
+/* the notes a block is first to cite, beside it in the sources' column, each under a quiet hairline, in the source's
+ * style, muted; every note at the text's end stands where the screen has no room for them beside it (below) */
+.article .notes {
+  display: grid;
+  grid-column: aside;
+  gap: var(--row-half);
+}
+
+.article .sources-end {
+  display: none;
+}
+
+.note {
+  margin: 0;
+  padding-top: var(--nudge);
+  border-top: var(--hairline) solid var(--quiet);
+  color: var(--muted);
+  font-size: var(--type-source-size);
+  font-weight: var(--type-source-weight);
+  line-height: var(--type-source-line);
+}
+
+/* a post's list: points as the résumé's, a faint dash hanging in the margin (.points); a list in order, its numbers
+ * faint; a list inside an item, and an item's blocks after its first words, close under them, none of them hanging */
+.article ol.post-list {
+  padding-left: var(--cell-3);
+}
+
+.post-list li::marker {
+  color: var(--faint);
+}
+
+.post-list li > :not(.point-mark) {
+  margin: var(--row-half) 0 0;
+  text-indent: 0;
+}
+
+/* a quote: a bar in the edge's colour at its left, its paragraphs half a row apart */
+.article blockquote {
+  padding-left: var(--cell-2);
+  border-left: var(--underline-hover) solid var(--edge);
+}
+
+.post .article blockquote > * {
+  margin: 0;
+}
+
+.post .article blockquote > * + * {
+  margin-top: var(--row-half);
+}
+
+/* a block of code (DESIGN.md, Article and Code): the block, in the small style, a row clear at its top for its bar,
+ * which stands at its top right: its language, faint, and its button, muted, turning the text's colour under the
+ * pointer, underlined in the accent */
+.code {
+  position: relative;
+}
+
+.code .code-block {
+  margin: 0;
+  padding-top: var(--row);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.code-bar {
+  position: absolute;
+  top: 0;
+  right: var(--cell-2);
+  display: flex;
+  gap: var(--cell-2);
+  margin: 0;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--row);
+}
+
+.code-language {
+  color: var(--faint);
+}
+
+.code-copy {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--quick);
+}
+
+.code-copy:hover {
+  color: var(--text);
+  text-decoration: underline var(--accent) var(--underline-hover);
+}
+
+.code-copy[data-state="copied"] {
+  color: var(--passed);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-copy {
+    transition: none;
+  }
+}
+
+/* on a phone the post is one column, the numbers in a narrow margin: the head's facts under its lead, a quiet hairline
+ * under the head, the title smaller; no note stands beside the text, and the sources stand at its end, under a quiet
+ * hairline, in the small style */
+@media (width < 53.75rem) {
+  .post {
+    grid-template-columns:
+      [rail-start rail-end number-start] var(--cell-3) [number-end] var(--cell) [text-start aside-start] minmax(0, 1fr)
+      [text-end aside-end];
+  }
+
+  .post-head {
+    row-gap: var(--row);
+    padding-block: var(--row-2);
+    margin-bottom: var(--row);
+    border-bottom: var(--hairline) solid var(--quiet);
+  }
+
+  .post-intro,
+  .post-facts {
+    grid-column: 1 / -1;
+  }
+
+  .post-facts {
+    padding-top: 0;
+  }
+
+  .post-title {
+    font-size: var(--type-title-text-phone-size);
+    font-weight: var(--type-title-text-phone-weight);
+    line-height: var(--type-title-text-phone-line);
+  }
+
+  .post-intro .lead {
+    margin-top: var(--row-half);
+  }
+
+  .article .notes {
+    display: none;
+  }
+
+  .article .sources-end {
+    display: block;
+    padding-top: var(--row-half);
+    border-top: var(--hairline) solid var(--quiet);
+  }
+
+  .sources-end .note {
+    padding-top: 0;
+    border-top: 0;
+    font-size: var(--type-small-size);
+    font-weight: var(--type-small-weight);
+    line-height: var(--type-small-line);
   }
 }

@@ -1,11 +1,12 @@
-// The command chips, run over the pages the server draws: the HTML face's golden pages (internal/face/html/testdata),
-// which that face's own tests hold to what it writes. A fake clipboard stands for the browser's, and the clock is
-// the test's own, so the toast's time passes when a test says.
+// The command chips and a post's blocks of code, run over the pages the server draws: the HTML face's golden pages
+// (internal/face/html/testdata), which that face's own tests hold to what it writes. A fake clipboard stands for the
+// browser's, and the clock is the test's own, so the toast's time passes when a test says.
 import { afterEach, beforeEach, expect, test, vi, type Mock } from "vitest";
-import { startCommands, type CommandClipboard } from "../../src/controllers/command";
+import { startCopying, type TextClipboard } from "../../src/controllers/copy";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
 import projectPage from "../../../internal/face/html/testdata/p/tidy-tool.html?raw";
 import notFoundPage from "../../../internal/face/html/testdata/notfound.html?raw";
+import postPage from "../../../internal/face/html/testdata/blog/reading-slowly.html?raw";
 
 // The chip, the words it copies and its button as the server draws them; the toast and its words
 const CHIP = '[data-part="command"]';
@@ -27,9 +28,15 @@ const INSTALL = "go install example.test/tidy@latest";
 const INSTALL_TOAST_SAYS = "Copied go install example.test/tidy@latest";
 // A hint's window, which a way of the foot line opens: the first is ssh's, holding the command the first screen does
 const HINT = '[data-part="hint"]';
+// The fixture's post's block of code, the code it copies and its button, and what the toast says once it has
+const CODE = '[data-part="code"]';
+const CODE_WORDS = '[data-part="code-words"]';
+const CODE_COPY = `${CODE} ${COPY}`;
+const CODE_TEXT = 'fmt.Println("slowly")';
+const CODE_TOAST_SAYS = "Copied the code";
 
 /** The browser's clipboard as the chip uses it: what it was handed, and whether it refuses. */
-class FakeClipboard implements CommandClipboard {
+class FakeClipboard implements TextClipboard {
   written: string[] = [];
   refuses = false;
 
@@ -63,7 +70,7 @@ function withMainOf(page: string): void {
 /** The chips of the golden page, run over a fake clipboard, which the test reads. */
 function started(): FakeClipboard {
   const clipboard = new FakeClipboard();
-  startCommands(document, clipboard, TOAST_TIME);
+  startCopying(document, clipboard, TOAST_TIME);
   return clipboard;
 }
 
@@ -210,4 +217,37 @@ test("a copy the browser refuses selects the command for the reader to copy, and
     button: COPY_WORD,
     toast: null,
   });
+});
+
+test("a block of code copies its code from its button, which says so, and the toast says the code was copied", async () => {
+  showPage(postPage);
+  const clipboard = started();
+  found(CODE_COPY).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect({
+    written: clipboard.written,
+    button: found(CODE_COPY).textContent,
+    toast: found(TOAST_WORDS).textContent,
+  }).toEqual({
+    written: [CODE_TEXT],
+    button: COPIED_WORD,
+    toast: CODE_TOAST_SAYS,
+  });
+});
+
+test("a press on a block's code itself copies nothing, so a reader selects its lines", async () => {
+  showPage(postPage);
+  const clipboard = started();
+  found(CODE_WORDS).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(clipboard.written).toEqual([]);
+});
+
+test("a block's button copies the whole code while the reader has selected some of it", async () => {
+  showPage(postPage);
+  const clipboard = started();
+  document.getSelection()?.selectAllChildren(found(CODE_WORDS));
+  found(CODE_COPY).click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(clipboard.written).toEqual([CODE_TEXT]);
 });

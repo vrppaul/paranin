@@ -22,7 +22,7 @@ preview.
 | --- | --- |
 | `GET /`, `GET /p/{slug}` | The page, in the format the reader's request chooses: the text formats write it whole, the HTML shows its opening tab. |
 | `GET /{tab}`, `GET /p/{slug}/{tab}` | One tab, chosen the same way: the text formats write it alone, the HTML shows it inside its page. |
-| `GET /blog/{slug}` | A post, whole, in the text format the reader's request chooses: no HTML until the page draws a post. |
+| `GET /blog/{slug}` | A post, whole, in the format the reader's request chooses. |
 | `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md` | The same in markdown, `text/markdown`. |
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt` | The same as the manual, `text/plain`. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
@@ -48,8 +48,7 @@ How long a cache keeps an answer:
 The format the `Accept` header ranks highest, by the closest range that names it (RFC 9110, 12.5.1): HTML
 (`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each with `; charset=utf-8`. Where it ranks
 two alike the manual goes first, then markdown, then HTML, so `curl`, which sends `*/*`, and a request with no
-`Accept` get the manual (D21). A post's address offers the manual and markdown alone, so a browser, whose `Accept`
-ranks both alike under `*/*`, gets the manual, and so does a request naming `text/html` alone.
+`Accept` get the manual (D21).
 
 Every negotiated response sets `Vary: Accept` alone, the page of no page among them. Every format of a page, at its
 own path and where the reader chooses, sets `Link: <canonical URL>; rel="canonical"`, the URL where the reader
@@ -76,7 +75,11 @@ left out, and a gap among written words stands marked as one.
   and what runs the site's script. A page with an address adds its canonical link; Open Graph's `og:type`
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as
   JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
-  its tabs. Every page ends with the foot line (`DESIGN.md`, FootLine).
+  its tabs; a post's comes with the site's SEO (`TODO.md`). A post's page is the post whole: its title the one `h1`,
+  its day in a `<time datetime>`, each paragraph a place `#p1` names and its number a link to it, each heading a place
+  named by its words, no two places of the page by one name; a note's number raised where a line cites it, the note
+  beside the line that first cites it, and every note once at the text's end, which a phone shows in their place.
+  Every page ends with the foot line (`DESIGN.md`, FootLine), a post's in the blog's session.
 
 ## Security headers
 
@@ -98,13 +101,15 @@ which are data, not scripts; module scripts of the site and their preloads; a st
 
 How the page's build keeps to it is `.claude/rules/page.md`. The page's face, JetBrains Mono, is a built file of the
 site like any other, from `design/fonts` (`design/tokens.yaml`, `face`), so every reader sees the copy the cells are
-counted in; a mono face of the reader's own shows the text until it has come. No `Referrer-Policy` is sent:
+counted in; a mono face of the reader's own shows the text until it has come. An article's words are set in iA
+Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent:
 `strict-origin-when-cross-origin` is every browser's own default.
 
 ## The page in a browser
 
 Every page runs one script, `web/src/entries/site.ts`. It runs the parts whose look and behaviour `DESIGN.md` gives:
-ThemeSwitch, Command, Hint, Tooltip and Toast, VimKeys and CommandLine. With no script the page reads whole, and the
+ThemeSwitch, Command and a post's code that copies as it does, Hint, Tooltip and Toast, VimKeys and CommandLine. With
+no script the page reads whole, and the
 controls the script runs stay hidden.
 
 What the script keeps in the browser; where the browser keeps nothing, a choice holds for its page alone:

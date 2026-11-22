@@ -612,7 +612,7 @@ scripts/coderules/       # the code rules no linter here holds
 scripts/check_instruction_files.py  # claude-review's gate of the instruction files
 content/                 # the site's content: the profile, the site's words
 design/fonts/            # the faces the site serves, each under its own licence, for the page and, to come, Typst and the stills
-design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from, and the page's face, text styles, lengths, times and layers, which only the page takes
+design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from, and the page's mixes of them, faces, text styles, lengths, times and layers, which only the page takes
 web/                     # the page: Vite, its stylesheet, the tokens' CSS; built into build/web
 ```
 

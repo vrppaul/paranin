@@ -9,16 +9,20 @@
 # blend is a colour the page lays at a strength over its background; a terminal has no opacity, so the blend is
 # worked out into a colour of its own.
 #
-# The face, the text styles, the lengths, the times and the layers after the colours are the page's alone, since a
-# terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing of
-# internal/look.
-# The face is its families by name, in the order a browser tries them, and the files of the first, which the site
-# serves: one for each weight a text style is drawn in, each a woff2 under design/, by its path from here. Every size
-# is in rem, the text size the reader set, so the whole page grows with it; none is in pixels. A text style is its
-# size and its line's height, and its weight; a line is in rem, not rows, since a style's line need not be a whole
-# row. A length is in rem, or in whole cells of the face, ch, for a space inside a line; a time is in whole
-# milliseconds; a layer is a height over the page that a part standing over it as it scrolls lies on, the layers
-# listed lowest first, each over those before it. Each comes with the first part of the page that draws by it.
+# The mixes, the faces, the text styles, the lengths, the times and the layers after the colours are the page's alone,
+# since a terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing
+# of internal/look.
+# A mix is a colour of the file moved a share toward another in each theme, worked out as a blend is, and where it
+# must read, its least contrast is held as a colour's. A face is its
+# families by name, in the order a browser tries them, and the files of the first, which the site serves: an upright
+# one for each weight a text style drawn in it is drawn in, and one for each weight and slant its words are made
+# strong or italic in, each a woff2 under design/, by its path from here; the first face is the page's, every text
+# style's unless it names another. Every size is in rem, the text size the reader set, so the whole page grows with
+# it; none is in pixels. A text style is its size and its line's height, and its weight; a line is in rem, not rows,
+# since a style's line need not be a whole row. A length is in rem, or in whole cells of the first face, ch, for a
+# space inside a line, or a share of the size of the text it stands in, em; a time is in whole milliseconds; a layer is a height over the page that a part standing over
+# it as it scrolls lies on, the layers listed lowest first, each over those before it. Each comes with the first part
+# of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -123,17 +127,46 @@ blends:
     # a terminal of 256 colours would round so faint a blend to a grey, so it leans this far to its colour first
     indexed_lean: 0.25
 
-face:
-  about: the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
-  families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
-  # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them
-  files:
-    - weight: 400
-      path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2
-    - weight: 700
-      path: fonts/jetbrains-mono/JetBrainsMono-Bold.woff2
-    - weight: 800
-      path: fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2
+mixes:
+  - name: title_soft_start
+    about: the start of a title set in text, the accent a fifth toward the text, so it reads apart from block letters
+    of: accent
+    toward: text
+    share: 0.2
+    # large text, which WCAG asks to read at 3:1
+    least_contrast: {ratio: 3, over: [background]}
+  - name: title_soft_end
+    about: the end of a title set in text, the host's colour a fifth toward the text
+    of: host
+    toward: text
+    share: 0.2
+    least_contrast: {ratio: 3, over: [background]}
+
+faces:
+  - name: face
+    about: the face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
+    families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
+    # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them
+    files:
+      - weight: 400
+        path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2
+      - weight: 700
+        path: fonts/jetbrains-mono/JetBrainsMono-Bold.woff2
+      - weight: 800
+        path: fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2
+  - name: reading_face
+    about: the face an article's words are read in, proportional where it may be, then the page's own face
+    families: [iA Writer Duo S, JetBrains Mono, ui-monospace, monospace]
+    # iA Writer Duo S, its webfonts as iA released them (iaolo/iA-Fonts at c6588670), under the OFL beside them: upright,
+    # bold for words made strong, italic for words stressed
+    files:
+      - weight: 400
+        path: fonts/ia-writer-duo/iAWriterDuoS-Regular.woff2
+      - weight: 700
+        path: fonts/ia-writer-duo/iAWriterDuoS-Bold.woff2
+      - weight: 400
+        italic: true
+        path: fonts/ia-writer-duo/iAWriterDuoS-Italic.woff2
 
 type:
   - name: body
@@ -181,6 +214,27 @@ type:
     size: 1.25
     line: 2
     weight: 700
+  - name: title_text
+    about: a title set in text, a post's, a few words a line
+    size: 2.5
+    line: 3
+    weight: 700
+  - name: title_text_phone
+    about: a title set in text on a phone
+    size: 1.75
+    line: 2.25
+    weight: 700
+  - name: reading
+    about: an article's words, on a line of its own taller than a row, as a proportional face reads best
+    face: reading_face
+    size: 1.0625
+    line: 1.75
+    weight: 400
+  - name: source
+    about: a source beside an article's text, small, on a line short enough to read as one note
+    size: 0.8125
+    line: 1.25
+    weight: 400
 
 lengths:
   - name: focus_width
@@ -231,6 +285,21 @@ lengths:
   - name: when
     about: an entry's column of dates, wide enough for a range of two months
     cells: 20
+  - name: column
+    about: the longest line of an article's words, in the reading face
+    rem: 43
+  - name: aside
+    about: how wide the sources beside an article's text stand
+    cells: 30
+  - name: rail
+    about: how wide a post's Outline stands beside its text, from the wide screen on
+    cells: 22
+  - name: title_text_measure
+    about: the longest line of a title set in text, a few words, in cells of its own size
+    cells: 22
+  - name: code_in_words
+    about: code among an article's words, a share of their size, since a mono face looks larger than theirs at one size
+    em: 0.9375
   - name: cross
     about: how big the square of the cross at each corner of the first screen is
     rem: 0.8125

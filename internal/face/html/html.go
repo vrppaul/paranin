@@ -25,7 +25,9 @@
 // in the size of the text round it.
 // A page shows a document as a reader of the finished work sees it (document.WrittenBlocks), a fact or a point that is
 // only a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
-// A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it.
+// A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it. A post
+// is drawn whole, with no tabs (post.go): its head as a first screen, then its article, its paragraphs numbered and
+// each note beside the line that first cites it, in the blog's session of the foot line.
 // Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
 // author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
 package html
@@ -60,10 +62,13 @@ const markdownType = "text/markdown"
 // which asks for the person's names in fields of its own; until a page needs that, one kind serves every page
 const openGraphType = "website"
 
-// The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6
+// The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6; the name of a heading no
+// reader links to, which carries none, and the attribute a named one carries its name in
 const (
 	firstHeadingDepth   = 2
 	deepestHeadingDepth = 6
+	unnamed             = ""
+	idAttribute         = "id"
 )
 
 // A space a line never breaks at, U+00A0, written as its bytes in UTF-8 so the code shows it
@@ -158,7 +163,7 @@ const (
 // crosses
 const markViewBox = "0 0 16 16"
 
-// A command's chip as the site's script finds and runs it (web/src/controllers/command.ts): the chip, the words it
+// A command's chip as the site's script finds and runs it (web/src/controllers/copy.ts): the chip, the words it
 // copies, and its button, hidden until the script shows it; the toast that says what was copied, with the place its
 // words go; and the hint's window a chip may stand in, which a copy closes
 const (
@@ -168,6 +173,13 @@ const (
 	toastPart        = "toast"
 	toastWordsPart   = "toast-words"
 	hintPart         = "hint"
+)
+
+// A post's block of code as the site's script finds and runs it (web/src/controllers/copy.ts), copied by its button
+// alone, as a command's chip is by a press anywhere on it: the block, and the code it copies
+const (
+	codePart      = "code"
+	codeWordsPart = "code-words"
 )
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which
@@ -264,7 +276,7 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		// only the hidden pages hold checks and the list of skills, and no host hands them to a page: one served
 		// with them would fail TestEveryPhraseReachesThePage
 	case document.List, document.Quote:
-		// a post's alone, which no page shows yet: the page's post draws them as DESIGN.md has it
+		// a post's alone, which its article draws (post.go)
 	}
 	return templ.NopComponent
 }
@@ -285,14 +297,13 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 			return writer.link(reference, typed.Spans)
 		}
 		return writer.spans(typed.Spans)
-	// a post's alone, which no page shows yet: emphasis, strong text and a note read as their words until the page's
-	// post draws them as DESIGN.md has it
 	case document.Emphasis:
-		return writer.spans(typed.Spans)
+		return writer.emphasis(typed.Spans)
 	case document.Strong:
-		return writer.spans(typed.Spans)
+		return writer.strong(typed.Spans)
 	case document.Note:
-		return writer.spans(typed.Spans)
+		// a note's words stand beside the line or at the article's end (notesBeside); where a line cites it, its number
+		return citation(typed.Number)
 	}
 	return templ.NopComponent
 }
@@ -301,7 +312,7 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 // Command), one link to a mailbox as the Mail in the size of the text round it, anything else as its spans.
 func (writer PageWriter) factValue(fact document.Fact) templ.Component {
 	if text, isCommand := fact.Command(); isCommand {
-		return command(writer.frame.commandWords.Of(text))
+		return command(writer.frame.copyWords.Of(text))
 	}
 	if mail, isMail := document.MailOf(fact.Value); isMail {
 		return mailLink(mail, false)
@@ -322,16 +333,21 @@ func month(month document.Month) templ.Component {
 	return templ.NopComponent
 }
 
-// heading is a title at a depth, from a section's under the page's title; the depths past HTML's deepest heading
-// are written at it.
-func heading(depth int, title templ.Component) templ.Component {
+// heading is a title at a depth, from a section's under the page's title, under the name a reader links to it by,
+// none where it is empty; the depths past HTML's deepest heading are written at it.
+func heading(depth int, id string, title templ.Component) templ.Component {
+	named := templ.Attributes{}
+	if id != unnamed {
+		named[idAttribute] = id
+	}
 	levels := headingLevels()
-	return levels[min(depth, deepestHeadingDepth)-firstHeadingDepth](title)
+	return levels[min(depth, deepestHeadingDepth)-firstHeadingDepth](named, title)
 }
 
-// headingLevels are HTML's headings below the page's title, from the shallowest.
-func headingLevels() []func(templ.Component) templ.Component {
-	return []func(templ.Component) templ.Component{headingTwo, headingThree, headingFour, headingFive, headingSix}
+// headingLevels are HTML's headings below the page's title, from the shallowest, each with the attributes it is
+// named by.
+func headingLevels() []func(templ.Attributes, templ.Component) templ.Component {
+	return []func(templ.Attributes, templ.Component) templ.Component{headingTwo, headingThree, headingFour, headingFive, headingSix}
 }
 
 // linked are spans as a link to a page, where the page has an address: a card's title, a listing's.

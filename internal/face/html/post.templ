@@ -1,0 +1,185 @@
+package html
+
+import (
+	"strconv"
+	"time"
+
+	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
+)
+
+// The mark before a post's tag, as readers know a tag that gathers posts (DESIGN.md, Content)
+const tagMark = "#"
+
+// postMain is a post's main part (DESIGN.md, Pages): its head, then its article, both on one grid, so the numbers, the
+// words and the sources beside them stand in the same columns from the head to the foot; at the article's end its
+// sources, every note once, which the stylesheet shows where the screen has no room for them beside the text.
+templ (writer PageWriter) postMain(head document.Head, article templ.Component, notes []document.Note) {
+	<article class="post">
+		@writer.postHead(head)
+		<div class="article">
+			@article
+			if len(notes) > 0 {
+				<div class="sources-end">
+					for _, note := range notes {
+						@writer.note(note)
+					}
+				</div>
+			}
+		</div>
+	</article>
+}
+
+// postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
+// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, and its tags;
+// the corners' crosses round it, as round the résumé's first screen.
+templ (writer PageWriter) postHead(head document.Head) {
+	<header class="post-head">
+		<div class="post-intro">
+			<h1 class="post-title">
+				@writer.spans(head.Title)
+			</h1>
+			if len(head.Lead) > 0 {
+				<p class="lead">
+					@writer.spans(head.Lead)
+				</p>
+			}
+		</div>
+		<dl class="facts post-facts">
+			if !head.Published.IsZero() {
+				<dt>{ writer.frame.postLabels.Version }</dt>
+				<dd>
+					@day(head.Published)
+				</dd>
+			}
+			if len(head.Tags) > 0 {
+				<dt>{ writer.frame.postLabels.Tags }</dt>
+				<dd>
+					@tags(head.Tags)
+				</dd>
+			}
+		</dl>
+		@corners()
+	</header>
+}
+
+// day is a post's day as a time: as a reader reads it, and as a machine does.
+templ day(published time.Time) {
+	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(dayLayout) }</time>
+}
+
+// tags are a post's tags (DESIGN.md, Tag), each its word after a hash a screen reader skips; words for now, which lead
+// to the list they filter once there is one.
+templ tags(tags []string) {
+	<ul class="tags">
+		for _, tag := range tags {
+			<li><span class="tag-mark" aria-hidden="true">{ tagMark }</span>{ tag }</li>
+		}
+	</ul>
+}
+
+// articleSection is a section of a post's article: its heading at its depth, named for a reader to link to, then its
+// parts, which stand on the article's grid as if the section held none.
+templ (writer PageWriter) articleSection(id string, depth int, title []document.Span, parts []templ.Component) {
+	<section class="article-section">
+		@heading(depth, id, writer.spans(title))
+		for _, part := range parts {
+			@part
+		}
+	</section>
+}
+
+// numberedParagraph is a paragraph of a post's article (DESIGN.md, Article): its number in the margin, a link to it,
+// then its words, named for the link.
+templ (writer PageWriter) numberedParagraph(number, id string, spans []document.Span) {
+	<a class="paragraph-number" href={ fragmentMark + id }>{ number }</a>
+	<p id={ id }>
+		@writer.spans(spans)
+	</p>
+}
+
+// notesBeside are the notes a block is the first to cite, beside it, each under its number; the stylesheet shows them
+// where the screen has room for them beside the text, and the sources at the article's end where it has not.
+templ (writer PageWriter) notesBeside(notes []document.Note) {
+	<aside class="notes">
+		for _, note := range notes {
+			@writer.note(note)
+		}
+	</aside>
+}
+
+// note is a note's number, then its words.
+templ (writer PageWriter) note(note document.Note) {
+	<p class="note">
+		<span class="note-number">{ strconv.Itoa(note.Number) }</span>
+		@text(noteSpace)
+		@writer.spans(note.Spans)
+	</p>
+}
+
+// citation is a note's number where a line cites it, raised, as the note beside the line is numbered.
+templ citation(number int) {
+	<sup class="citation">{ strconv.Itoa(number) }</sup>
+}
+
+templ (writer PageWriter) emphasis(spans []document.Span) {
+	<em>
+		@writer.spans(spans)
+	</em>
+}
+
+templ (writer PageWriter) strong(spans []document.Span) {
+	<strong>
+		@writer.spans(spans)
+	</strong>
+}
+
+// postList is a post's list (DESIGN.md, Article), its items drawn: each after a dash hanging in the margin, as the
+// résumé's points, or numbered from its start.
+templ postList(ordered bool, start int, items []templ.Component) {
+	if ordered {
+		<ol class="post-list" start={ strconv.Itoa(start) }>
+			for _, item := range items {
+				<li>
+					@item
+				</li>
+			}
+		</ol>
+	} else {
+		<ul class="post-list points">
+			for _, item := range items {
+				<li>
+					<span class="point-mark" aria-hidden="true">{ look.PointMark }</span>
+					@text(pointSpace)
+					@item
+				</li>
+			}
+		</ul>
+	}
+}
+
+// postQuote is words a post quotes (DESIGN.md, Article), its blocks drawn, behind a bar.
+templ postQuote(blocks []templ.Component) {
+	<blockquote>
+		for _, block := range blocks {
+			@block
+		}
+	</blockquote>
+}
+
+// copyableCode is a post's code on lines of its own (DESIGN.md, Article and Code): first its bar, which the stylesheet
+// sets at its top right, the language it is written in, where its author names one, and the button that copies it,
+// hidden until the site's script shows it; then the code as it is, line for line, scrolling sideways rather than
+// wrapping. The toast says what was copied.
+templ copyableCode(language string, copied compose.Copyable) {
+	<div class="code" data-part={ codePart }>
+		<p class="code-bar">
+			if language != "" {
+				<span class="code-language">{ language }</span>
+			}
+			<button type="button" class="code-copy" data-part={ copyPart } aria-label={ copied.CopyName } data-copied={ copied.Copied } data-toast={ copied.Toast } hidden>{ copied.Copy }</button>
+		</p>
+		<pre class="code-block"><code data-part={ codeWordsPart }>{ copied.Text }</code></pre>
+	</div>
+}

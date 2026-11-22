@@ -113,7 +113,7 @@ func (writer PageWriter) openingSection(section document.Section) templ.Componen
 	if drawing, drawn := titleDrawing(words); drawn {
 		return writer.resumeSection(section.Blocks, letteredHeadingTwo(drawing))
 	}
-	return writer.resumeSection(section.Blocks, heading(firstHeadingDepth, writer.spans(section.Title)))
+	return writer.resumeSection(section.Blocks, heading(firstHeadingDepth, unnamed, writer.spans(section.Title)))
 }
 
 // drawLetters is texts in a font as a drawing of the words they show, of the font's class, a row of nothing between

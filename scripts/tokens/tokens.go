@@ -54,7 +54,8 @@ type tokensFile struct {
 	Background backgroundToken `yaml:"background"`
 	Colours    []colourToken   `yaml:"colours"`
 	Blends     []blendToken    `yaml:"blends"`
-	Face       faceToken       `yaml:"face"`
+	Mixes      []mixToken      `yaml:"mixes"`
+	Faces      []faceToken     `yaml:"faces"`
 	Type       []typeToken     `yaml:"type"`
 	Lengths    []lengthToken   `yaml:"lengths"`
 	Times      []timeToken     `yaml:"times"`
@@ -147,7 +148,7 @@ type readBlend struct {
 
 // readTokens reads the file strictly: a key it has no place for or one it leaves out, a value that is no colour,
 // a strength beyond the whole, a weight no face has, a size that is no number of rem, a name that is no word or written
-// twice, and a blend over a colour the file does not name are each a fault.
+// twice, and a blend or a mix of a colour the file does not name are each a fault.
 func readTokens(data []byte) (tokens, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
@@ -164,7 +165,13 @@ func readTokens(data []byte) (tokens, error) {
 	if err != nil {
 		return tokens{}, err
 	}
-	if err := checkContrasts(colours, background); err != nil {
+	mixes, err := readEach(written.Mixes, named, func(token mixToken, named map[string]bool) (readMix, error) {
+		return readMixToken(token, colours, named)
+	})
+	if err != nil {
+		return tokens{}, err
+	}
+	if err := checkContrasts(contrastedOf(colours, mixes), background); err != nil {
 		return tokens{}, err
 	}
 	blends := make([]readBlend, 0, len(written.Blends))
@@ -175,7 +182,7 @@ func readTokens(data []byte) (tokens, error) {
 		}
 		blends = append(blends, blend)
 	}
-	page, err := readPageTokens(written, named)
+	page, err := readPageTokens(written, mixes, named)
 	if err != nil {
 		return tokens{}, err
 	}
@@ -220,11 +227,9 @@ func readColourToken(token colourToken, named map[string]bool) (readColour, erro
 	if err != nil {
 		return readColour{}, err
 	}
-	var least *leastContrast
-	if token.LeastContrast != nil {
-		if least, err = readLeastContrast(token.Name, *token.LeastContrast); err != nil {
-			return readColour{}, err
-		}
+	least, err := readLeastContrast(token.Name, token.LeastContrast)
+	if err != nil {
+		return readColour{}, err
 	}
 	return readColour{name: token.Name, about: token.About, values: values, basic: basic, leastContrast: least}, nil
 }
@@ -251,12 +256,12 @@ func readBlendToken(token blendToken, colours []readColour, named map[string]boo
 	}, nil
 }
 
-// namedColour is the values of the colour of a name a blend lays, or a fault where the file has no colour of that
-// name.
-func namedColour(colours []readColour, name, blend string) (themedValue[color.RGBA], error) {
+// namedColour is the values of the colour of a name a blend lays or a mix takes, or a fault where the file has no
+// colour of that name.
+func namedColour(colours []readColour, name, taker string) (themedValue[color.RGBA], error) {
 	found := slices.IndexFunc(colours, func(known readColour) bool { return known.name == name })
 	if found < 0 {
-		return themedValue[color.RGBA]{}, fmt.Errorf("%w: the blend %q lays %q, which is no colour of the file", errTokens, blend, name)
+		return themedValue[color.RGBA]{}, fmt.Errorf("%w: %q takes %q, which is no colour of the file", errTokens, taker, name)
 	}
 	return colours[found].values, nil
 }

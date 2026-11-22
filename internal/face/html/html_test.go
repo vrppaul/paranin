@@ -205,12 +205,14 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 }
 
 // Every page ends with the foot line, the page of no page among them: the session, the site's name leading to where
-// it begins; the document's tabs as windows by their numbers and names, each leading to its page, the one shown the
-// current page; the programs that reach the site and read it in a terminal, each opening its hint, a window that holds
-// its command whole to copy and says what it gives, curl's reading the page whole, the résumé where there is none; the
-// markdown of the page whole, the résumé's where a page has none; the switch that turns the vim keys on, and the theme
-// button. Over it stands the command line those keys open, with the places it goes to by name: the document's tabs,
-// the one shown among them, then the page of each project that has one, by its slug, shown where its opening is.
+// it begins, and on a post's page the blog's after it, the post's own, the site's quiet; the document's tabs as
+// windows by their numbers and names, a post numbered as the blog's second window, after its list's, each leading to
+// its page, the one shown the current page; the programs that reach the site and read it in a terminal, each opening
+// its hint, a window that holds its command whole to copy and says what it gives, curl's reading the page whole, the
+// résumé where there is none; the markdown of the page whole, the résumé's where a page has none; the switch that
+// turns the vim keys on, and the theme button. Over it stands the command line those keys open, with the places it
+// goes to by name: the document's tabs, the one shown among them, then the page of each project that has one, by its
+// slug, shown where its opening is.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -218,7 +220,6 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot))
 	every := []string{
-		`<a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`,
 		`popovertarget="hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
 		`<div id="hint-ssh" class="hint" popover role="dialog" aria-labelledby="hint-ssh-title" data-part="hint"><p id="hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code>`,
@@ -239,6 +240,13 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	)
 	// the résumé's markdown, which the page of no page offers too
 	const resumeMarkdown = `<a class="way-chip" href="/index.md">index.md</a>`
+	// the site's session, alone on every page but a post's, which the blog's session holds, the site's quiet before it;
+	// and the blog's
+	const (
+		siteSession      = `<span class="sessions"><a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a></span>`
+		siteSessionQuiet = `<a class="session session-other" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`
+		blogSession      = `<span class="session"><span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span></span>`
+	)
 	cases := []struct {
 		name  string
 		page  string
@@ -248,7 +256,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
 			holds: slices.Concat(every, []string{
-				resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
+				siteSession, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
@@ -259,7 +267,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
 			holds: slices.Concat(every, []string{
-				resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
+				siteSession, resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience" aria-current="page"><span class="window-number">2:</span>experience</a>`,
 			}),
 			lacks: nil,
@@ -267,7 +275,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a project's page", page: writer.Page(project.Document, project.Record, ""),
 			holds: slices.Concat(every, []string{
-				`<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
+				siteSession, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
 				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
 				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
@@ -277,11 +285,22 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		},
 		{
 			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: slices.Concat(every, []string{projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
+			holds: slices.Concat(every, []string{siteSession, projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
 		},
 		{
 			name: "the page of no page", page: missing.For("/nothing"),
-			holds: slices.Concat(every, []string{resumeMarkdown, resumeReading, projectPlace}), lacks: []string{`class="window"`, `data-place="tab"`},
+			holds: slices.Concat(every, []string{siteSession, resumeMarkdown, resumeReading, projectPlace}),
+			lacks: []string{`class="window"`, `data-place="tab"`},
+		},
+		{
+			name: "a post's page", page: writer.Post(fixturePost(test)),
+			holds: slices.Concat(every, []string{
+				siteSessionQuiet + blogSession, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
+				`<code data-part="command-words">curl https://example.test/blog/reading-slowly</code>`,
+				`<a class="window" href="/blog/reading-slowly" aria-current="page"><span class="window-number">2:</span>reading-slowly</a>`,
+				`data-place="tab" data-name="reading-slowly" data-address="/blog/reading-slowly" data-current`, projectPlace,
+			}),
+			lacks: nil,
 		},
 	}
 	for _, testCase := range cases {
@@ -620,6 +639,103 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 	if page := fixtureWriter(test).Page(composedOf(test, snapshot, resume).Document, record, ""); strings.Contains(page, "worksFor") {
 		test.Errorf("the page %q names an employer", page)
 	}
+}
+
+// A post's page is the post whole, as a browser, a screen reader and a search engine read it: its title the page's
+// one h1, its lead and facts beside it, its paragraphs numbered, its headings, lists, quote, table and code, each note
+// beside the line that first cites it, then the foot line of the blog's session. It is held to its golden file,
+// named after the post's own address.
+func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
+	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(fixturePost(test))))
+}
+
+// Every phrase of a post reaches its page, as HTML writes text: the facts a browser shows are the post's whole.
+func TestEveryPhraseOfAPostReachesItsPage(test *testing.T) {
+	post := fixturePost(test)
+	page := fixtureWriter(test).Post(post)
+	for _, phrase := range document.Phrases(post) {
+		if !strings.Contains(page, html.EscapeString(phrase)) {
+			test.Errorf("the page of %+v holds no %q", post.Head.Page, phrase)
+		}
+	}
+}
+
+// A post's page is read as a reader moves through it: its title the one h1; a heading and a paragraph each a place a
+// link names, every paragraph at the top of the body or a section numbered by a link to it; a note's number raised
+// where a line cites it, the note beside the line that first cites it, and every note once at the text's end.
+func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
+	page := fixtureWriter(test).Post(fixturePost(test))
+	// the fixture's two notes as the page writes each
+	const (
+		firstNote  = `<p class="note"><span class="note-number">1</span> Mira Example, on her own reading.</p>`
+		secondNote = `<p class="note"><span class="note-number">2</span> A soft one, which rubs out.</p>`
+	)
+	cases := []struct {
+		name  string
+		want  string
+		count int
+	}{
+		{name: "one h1", want: "<h1", count: 1},
+		{name: "the h1, the post's title", want: "<h1 class=\"post-title\">Reading slowly</h1>", count: 1},
+		{name: "a heading a link names", want: `<h2 id="what-a-reader-keeps">What a reader keeps</h2>`, count: 1},
+		{name: "a heading under it", want: `<h3 id="in-a-terminal">In a terminal</h3>`, count: 1},
+		{name: "the first paragraph's number, leading to it", want: `<a class="paragraph-number" href="#p1">1</a><p id="p1">`, count: 1},
+		{name: "the last paragraph's number, after the lists", want: `<a class="paragraph-number" href="#p2">2</a><p id="p2">`, count: 1},
+		{name: "each citation of the note cited twice, its number raised", want: `<sup class="citation">1</sup>`, count: 2},
+		{name: "the note cited twice, beside the line first citing it", want: `</sup></p><aside class="notes">` + firstNote, count: 1},
+		{name: "a note cited inside a list, beside the list", want: `</ul><aside class="notes">` + secondNote, count: 1},
+		{name: "every note once at the text's end", want: `<div class="sources-end">` + firstNote + secondNote + `</div>`, count: 1},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := strings.Count(page, testCase.want); got != testCase.count {
+				test.Errorf("the page %q holds %q %d times, want %d", page, testCase.want, got, testCase.count)
+			}
+		})
+	}
+}
+
+// Every place of a post a link names takes a name no other part of its page holds: a heading of a paragraph's name, a
+// second heading of the same words, a heading of the name of a part of the foot line, and a paragraph after a heading
+// of its name each take their count after the name.
+func TestEveryPlaceOfAPostTakesANameOfItsOwn(test *testing.T) {
+	post := document.Document{
+		Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "names", Tab: ""}, nil),
+		Blocks: []document.Block{
+			emptySection("P1"), emptySection("Why"), emptySection("Why"), emptySection("Places"), emptySection("Hint ssh"),
+			document.Paragraph{Spans: []document.Span{document.Text{Text: "First."}}},
+		},
+	}
+	page := fixtureWriter(test).Post(post)
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "a heading of a paragraph's name, before the paragraph", want: `<h2 id="p1">`},
+		{name: "the paragraph after it", want: `<p id="p1-2">`},
+		{name: "a first heading of its words", want: `<h2 id="why">`},
+		{name: "a second heading of the same words", want: `<h2 id="why-2">`},
+		{name: "a heading of the command line's menu's name", want: `<h2 id="places-2">`},
+		{name: "a heading of a hint's name", want: `<h2 id="hint-ssh-2">`},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(page, testCase.want) {
+				test.Errorf("the page %q holds no %q", page, testCase.want)
+			}
+		})
+	}
+}
+
+// emptySection is a section a test builds by hand: its title and no blocks.
+func emptySection(title string) document.Block {
+	return document.Section{Title: []document.Span{document.Text{Text: title}}, Blocks: nil}
+}
+
+// fixturePost is the fixture's post as compose makes it.
+func fixturePost(test *testing.T) document.Document {
+	posts := compose.Posts(fixtures.LoadedContent(test))
+	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
 }
 
 // lined is a page with a line break between each two tags that meet, so its golden file reads in a diff; a space

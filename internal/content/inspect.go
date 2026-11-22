@@ -63,6 +63,7 @@ const (
 	unansweredProblem    = "%q cites no footnote"
 	noteFormProblem      = "%q is no one paragraph, which a note set beside the line it is cited on holds"
 	noteCitingProblem    = "cites a footnote from inside a footnote, whose words stand beside the line alone"
+	noteHeadingProblem   = "cites a footnote from a heading, which names a part and is no line a source stands beside"
 	kindProblem          = "is a node of goldmark's kind %s, which no post holds: no face draws it"
 	pictureProblem       = "is a picture, and pictures come with the step that serves them from the post's folder"
 	breakProblem         = "is a thematic break, which no face draws: a heading parts a post"

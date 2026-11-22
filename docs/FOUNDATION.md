@@ -369,9 +369,10 @@ pictures are served from its folder; a thematic break, a heading parting a
 post; a line broken hard; a link's title; a link to anything but an
 absolute web address or `mailto:` a bare mail address, until a link inside
 the site is read back into a page of it; a table's row of more cells than
-its header, whose cells past it GFM drops; and a footnote that is more than
+its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
-cites it (ADR-0003). Any kind of node outside the one list `content` keeps
+cites it (ADR-0003); and a footnote cited in a heading, which is no such
+line. Any kind of node outside the one list `content` keeps
 is refused, so a part of the format no face draws never passes unseen.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and

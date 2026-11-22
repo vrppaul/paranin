@@ -127,10 +127,9 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: `<h1 aria-label="tidy-tool">`},
 		{name: "a post in markdown", path: "/blog/reading-slowly", accept: "text/markdown", contentType: markdown, holds: "# Reading slowly"},
 		{name: "a post as a manual", path: "/blog/reading-slowly", accept: "*/*", contentType: manual, holds: "READING-SLOWLY(1)"},
-		// a post's address offers no HTML until the page's post lands, so a browser gets the text it ranks first
 		{
 			name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-			contentType: manual, holds: "READING-SLOWLY(1)",
+			contentType: browsed, holds: `<h1 class="post-title">`,
 		},
 	}
 	for _, testCase := range cases {
@@ -189,6 +188,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a tab of a project's page, chosen", path: "/p/tidy-tool/why", accept: "text/html", want: `<https://example.test/p/tidy-tool/why>; rel="canonical"`},
 		{name: "a post in markdown", path: "/blog/reading-slowly.md", accept: "", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post, chosen", path: "/blog/reading-slowly", accept: "*/*", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
+		{name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
 	}

@@ -41,10 +41,17 @@
   --tint: light-dark(#fe640b29, #f5a97f38);
 }
 
-/* What the page alone reads: its face, its text styles, the lengths it lays out by, its times and its layers */
+/* What the page alone reads: the colours it mixes, its faces, its text styles, the lengths it lays out by, its times and
+ * its layers */
 :root {
-  /* the one face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
+  /* the start of a title set in text, the accent a fifth toward the text, so it reads apart from block letters */
+  --title-soft-start: light-dark(#da601e, #ecb197);
+  /* the end of a title set in text, the host's colour a fifth toward the text */
+  --title-soft-end: light-dark(#7c3dd4, #c7aaf6);
+  /* the face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
   --face: "JetBrains Mono", ui-monospace, "SFMono-Regular", "menlo", monospace;
+  /* the face an article's words are read in, proportional where it may be, then the page's own face */
+  --reading-face: "iA Writer Duo S", "JetBrains Mono", ui-monospace, monospace;
   /* the text read, every page's own: its size */
   --type-body-size: 1rem;
   /* the text read, every page's own: its line's height */
@@ -99,6 +106,30 @@
   --type-heading-line: 2rem;
   /* a section's title on a page that is not the résumé: its weight */
   --type-heading-weight: 700;
+  /* a title set in text, a post's, a few words a line: its size */
+  --type-title-text-size: 2.5rem;
+  /* a title set in text, a post's, a few words a line: its line's height */
+  --type-title-text-line: 3rem;
+  /* a title set in text, a post's, a few words a line: its weight */
+  --type-title-text-weight: 700;
+  /* a title set in text on a phone: its size */
+  --type-title-text-phone-size: 1.75rem;
+  /* a title set in text on a phone: its line's height */
+  --type-title-text-phone-line: 2.25rem;
+  /* a title set in text on a phone: its weight */
+  --type-title-text-phone-weight: 700;
+  /* an article's words, on a line of its own taller than a row, as a proportional face reads best: its size */
+  --type-reading-size: 1.0625rem;
+  /* an article's words, on a line of its own taller than a row, as a proportional face reads best: its line's height */
+  --type-reading-line: 1.75rem;
+  /* an article's words, on a line of its own taller than a row, as a proportional face reads best: its weight */
+  --type-reading-weight: 400;
+  /* a source beside an article's text, small, on a line short enough to read as one note: its size */
+  --type-source-size: 0.8125rem;
+  /* a source beside an article's text, small, on a line short enough to read as one note: its line's height */
+  --type-source-line: 1.25rem;
+  /* a source beside an article's text, small, on a line short enough to read as one note: its weight */
+  --type-source-weight: 400;
   /* how wide a focus ring is, and how far it stands from what it rings; twice it, the room under the foot line */
   --focus-width: 0.125rem;
   /* a cell of the author's name in block letters at its natural size, which shrinks to its column */
@@ -131,6 +162,16 @@
   --measure: 64ch;
   /* an entry's column of dates, wide enough for a range of two months */
   --when: 20ch;
+  /* the longest line of an article's words, in the reading face */
+  --column: 43rem;
+  /* how wide the sources beside an article's text stand */
+  --aside: 30ch;
+  /* how wide a post's Outline stands beside its text, from the wide screen on */
+  --rail: 22ch;
+  /* the longest line of a title set in text, a few words, in cells of its own size */
+  --title-text-measure: 22ch;
+  /* code among an article's words, a share of their size, since a mono face looks larger than theirs at one size */
+  --code-in-words: 0.9375em;
   /* how big the square of the cross at each corner of the first screen is */
   --cross: 0.8125rem;
   /* how thick a role's bar is in the phone's career list */
@@ -167,22 +208,46 @@
   --layer-foot: 1;
 }
 
-/* The face's files, which the site serves itself, so every reader sees the copy its cells are counted in */
+/* The faces' files, which the site serves itself, so every reader sees the faces the page is drawn and counted in */
 @font-face {
   font-family: "JetBrains Mono";
   src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2") format("woff2");
   font-weight: 400;
+  font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "JetBrains Mono";
   src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2") format("woff2");
   font-weight: 700;
+  font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "JetBrains Mono";
   src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2") format("woff2");
   font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "iA Writer Duo S";
+  src: url("../../../design/fonts/ia-writer-duo/iAWriterDuoS-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "iA Writer Duo S";
+  src: url("../../../design/fonts/ia-writer-duo/iAWriterDuoS-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "iA Writer Duo S";
+  src: url("../../../design/fonts/ia-writer-duo/iAWriterDuoS-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
   font-display: swap;
 }

@@ -75,7 +75,8 @@ func (writer PageWriter) linkedData(record compose.Record, address string) templ
 	case compose.WorkRecord:
 		return linkedScript(writer.sourceCodeOf(typed))
 	}
-	// compose makes every page a person reads with its record, so a record of no kind reaches no page
+	// compose makes every page of the résumé and the projects with its record; a post's page is drawn with none until
+	// its BlogPosting comes with the site's SEO (TODO.md)
 	return templ.NopComponent
 }
 

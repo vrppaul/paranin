@@ -23,6 +23,4 @@ void Promise.all([import("../controllers/commandline"), import("../controllers/s
     ),
 );
 void import("../controllers/tooltip").then(({ startTooltips }) => startTooltips(document));
-void import("../controllers/command").then(({ startCommands }) =>
-  startCommands(document, navigator.clipboard, TIMES.toast),
-);
+void import("../controllers/copy").then(({ startCopying }) => startCopying(document, navigator.clipboard, TIMES.toast));

@@ -11,8 +11,8 @@ import (
 // detail of a project, the end of what still goes on, how long a skill was used where it was used on the side or is
 // still being learnt, the title of the TUI's health report, or a word of the page's frame: the name of its theme
 // button, a command's button that copies it: the word on it and the word it turns to once it has, the first
-// screen's button that writes to the author, and what each way a terminal reaches the site gives, which its hint
-// says.
+// screen's button that writes to the author, what each way a terminal reaches the site gives, which its hint says,
+// the blog's session, the labels of a post's facts, and what the toast says once a code block is copied.
 type Word int
 
 const (
@@ -42,11 +42,15 @@ const (
 	WordWriteTo
 	WordSSHGives
 	WordReadingGives
+	WordBlog
+	WordVersion
+	WordTags
+	WordCopiedCode
 )
 
 // Phrase is one of the site's own phrases, words with a place for one value the site fills in: a command's button's
-// name and what the toast says once it has copied, each with the command. A catalogue writes the place as
-// phrasePlace, once, where its language puts the value.
+// name and what the toast says once it has copied, each with the command, and a code block's button's name, with the
+// block's number. A catalogue writes the place as phrasePlace, once, where its language puts the value.
 type Phrase int
 
 const (
@@ -54,6 +58,7 @@ const (
 	_ Phrase = iota
 	PhraseCopyCommand
 	PhraseCopiedCommand
+	PhraseCopyCode
 )
 
 // How a phrase writes the place of its value
@@ -63,6 +68,7 @@ const phrasePlace = "{}"
 func phraseKeys() map[Phrase]string {
 	return map[Phrase]string{
 		PhraseCopyCommand:   "copy_command",
+		PhraseCopyCode:      "copy_code",
 		PhraseCopiedCommand: "copied_command",
 	}
 }
@@ -95,6 +101,10 @@ func wordKeys() map[Word]string {
 		WordWriteTo:      "write_to",
 		WordSSHGives:     "ssh_gives",
 		WordReadingGives: "reading_gives",
+		WordBlog:         "blog",
+		WordVersion:      "version",
+		WordTags:         "tags",
+		WordCopiedCode:   "copied_code",
 	}
 }
 

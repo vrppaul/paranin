@@ -57,7 +57,7 @@ repos:
         language: system
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
-      # The design's colours in Go and in CSS, and the page's face, text styles and lengths in CSS, are the ones
+      # The design's colours in Go and in CSS, and the page's faces, text styles and lengths in CSS, are the ones
       # design/tokens.yaml makes (scripts/tokens/main.go)
       - id: design-tokens
         name: design tokens (internal/look and the page's tokens.css and times.ts as design/tokens.yaml makes them)
@@ -155,10 +155,11 @@ repos:
       # share one environment
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-        # a face's licence is kept as its authors released it, a space at a line's end among it
-        exclude: ^design/fonts/.+/OFL\.txt$
+        # a face's licence is kept as its authors released it, a space at a line's end and no end to its last among it
+        exclude: &face-licences ^design/fonts/.+/(OFL\.txt|LICENSE\.md)$
         additional_dependencies: &pre-commit-hooks-dependencies [ruamel.yaml==0.19.1]
       - id: end-of-file-fixer
+        exclude: *face-licences
         additional_dependencies: *pre-commit-hooks-dependencies
       - id: check-merge-conflict
         additional_dependencies: *pre-commit-hooks-dependencies

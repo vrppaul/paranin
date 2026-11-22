@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading slowly</title>
+<link rel="icon" href="/favicon.ico" type="image/vnd.microsoft.icon" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" type="image/png">
+<link rel="stylesheet" href="/assets/site-fixture.css">
+<link rel="stylesheet" href="/assets/base-fixture.css">
+<link rel="stylesheet" href="/assets/shared-fixture.css">
+<script type="module" src="/assets/site-fixture.js" blocking="render">
+</script>
+<link rel="modulepreload" href="/assets/base-fixture.js">
+<link rel="modulepreload" href="/assets/shared-fixture.js">
+<meta name="description" content="Why a page read twice is read once.">
+<link rel="canonical" href="https://example.test/blog/reading-slowly">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="example.test">
+<meta property="og:title" content="Reading slowly">
+<meta property="og:description" content="Why a page read twice is read once.">
+<meta property="og:url" content="https://example.test/blog/reading-slowly">
+<link rel="alternate" type="text/markdown" href="/blog/reading-slowly.md">
+</head>
+<body>
+<main class="content-width">
+<article class="post">
+<header class="post-head">
+<div class="post-intro">
+<h1 class="post-title">Reading slowly</h1>
+<p class="lead">Why a page read twice is read once.</p>
+</div>
+<dl class="facts post-facts">
+<dt>version</dt>
+<dd>
+<time datetime="2026-11-10">10 Nov 2026</time>
+</dd>
+<dt>tags</dt>
+<dd>
+<ul class="tags">
+<li>
+<span class="tag-mark" aria-hidden="true">#</span>reading</li>
+<li>
+<span class="tag-mark" aria-hidden="true">#</span>terminals</li>
+</ul>
+</dd>
+</dl>
+<svg class="cross cross-top cross-left" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-top cross-right" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-bottom cross-left" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-bottom cross-right" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+</header>
+<div class="article">
+<a class="paragraph-number" href="#p1">1</a>
+<p id="p1">A page read twice is read once, if the first reading was <em>slow</em>.<sup class="citation">1</sup>
+</p>
+<aside class="notes">
+<p class="note">
+<span class="note-number">1</span> Mira Example, on her own reading.</p>
+</aside>
+<section class="article-section">
+<h2 id="what-a-reader-keeps">What a reader keeps</h2>
+<div class="table-scroll">
+<table class="table">
+<thead>
+<tr>
+<th scope="col">Reading</th>
+<th scope="col">Kept</th>
+</tr>
+</thead> <tbody>
+<tr>
+<td>Fast</td>
+<td>Little</td>
+</tr>
+<tr>
+<td>Slow</td>
+<td>
+<strong>Most</strong>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul class="post-list points">
+<li>
+<span class="point-mark" aria-hidden="true">-</span> the margins</li>
+<li>
+<span class="point-mark" aria-hidden="true">-</span> the notes<ul class="post-list points">
+<li>
+<span class="point-mark" aria-hidden="true">-</span> in pencil<sup class="citation">2</sup>
+</li>
+<li>
+<span class="point-mark" aria-hidden="true">-</span> in ink</li>
+</ul>
+</li>
+</ul>
+<aside class="notes">
+<p class="note">
+<span class="note-number">2</span> A soft one, which rubs out.</p>
+</aside>
+<blockquote>
+<p>A book is read with a pencil.</p>
+<p>Twice, with a pen.</p>
+</blockquote>
+<section class="article-section">
+<h3 id="in-a-terminal">In a terminal</h3>
+<ol class="post-list" start="3">
+<li>open the file</li>
+<li>read it with <code>less</code>
+</li>
+</ol>
+<div class="code" data-part="code">
+<p class="code-bar">
+<span class="code-language">go</span> <button type="button" class="code-copy" data-part="copy" aria-label="copy code block 1" data-copied="copied" data-toast="Copied the code" hidden>copy</button>
+</p>
+<pre class="code-block">
+<code data-part="code-words">fmt.Println(&#34;slowly&#34;)</code>
+</pre>
+</div>
+<a class="paragraph-number" href="#p2">2</a>
+<p id="p2">See <a href="https://notes.example.test/slow">the reader&#39;s notes</a>, or write to <a href="mailto:mira@example.test">mira@example.test</a>.<sup class="citation">1</sup>
+</p>
+</section>
+</section>
+<div class="sources-end">
+<p class="note">
+<span class="note-number">1</span> Mira Example, on her own reading.</p>
+<p class="note">
+<span class="note-number">2</span> A soft one, which rubs out.</p>
+</div>
+</div>
+</article>
+</main>
+<div class="foot" data-part="foot">
+<div class="command-line content-width" data-part="command-line" hidden>
+<div class="command-entry" data-part="command-entry">
+<ul id="places" class="places-menu" role="listbox" aria-label="places" data-part="places" hidden>
+<li id="place-1" class="places-item" role="option" aria-selected="false" data-part="place" data-place="tab" data-name="reading-slowly" data-address="/blog/reading-slowly" data-current hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">reading-slowly</span>
+</span> <span class="places-kind">tab</span>
+</li>
+<li id="place-2" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">tidy-tool</span>
+</span> <span class="places-kind">project</span>
+</li>
+</ul>
+<span class="command-mark" aria-hidden="true" data-part="command-mark">:</span>
+<span class="command-mark" aria-hidden="true" data-part="search-mark" hidden>/</span>
+<input id="command-field" class="command-field" type="text" role="combobox" aria-label="command" aria-controls="places" aria-expanded="false" aria-autocomplete="list" aria-describedby="command-keys" autocomplete="off" autocapitalize="off" spellcheck="false" data-part="command-field" data-search-name="search">
+</div>
+<p class="command-said" role="alert" data-part="command-said" hidden>
+</p>
+<span id="command-keys" class="command-keys" data-part="command-keys">
+<span class="command-hint" data-part="command-next">
+<kbd class="command-key">tab</kbd> next</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> go</span>
+<span class="command-hint">
+<kbd class="command-key">esc</kbd> cancel</span>
+</span> <span id="search-keys" class="command-keys" data-part="search-keys" hidden>
+<span class="command-count" data-part="search-count">
+</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> find</span>
+<span class="command-hint">
+<kbd class="command-key">esc</kbd> cancel</span>
+</span>
+</div>
+<nav class="foot-row content-width">
+<span class="sessions">
+<a class="session session-other" href="/">
+<span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span>
+</a>
+<span class="session">
+<span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span>
+</span>
+</span> <ul class="windows">
+<li>
+<a class="window" href="/blog/reading-slowly" aria-current="page">
+<span class="window-number">2:</span>reading-slowly</a>
+</li>
+</ul>
+<div class="ways">
+<button type="button" class="way-chip" popovertarget="hint-ssh">
+<span class="way-mark" aria-hidden="true">❯</span>ssh</button>
+<div id="hint-ssh" class="hint" popover role="dialog" aria-labelledby="hint-ssh-title" data-part="hint">
+<p id="hint-ssh-title" class="hint-title">ssh</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy ssh example.test" data-copied="copied" data-toast="Copied ssh example.test" hidden>copy</button>
+</div>
+<p class="hint-gives">The résumé as an app in a terminal.</p>
+<button type="button" class="hint-close" popovertarget="hint-ssh" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+<button type="button" class="way-chip" popovertarget="hint-curl">
+<span class="way-mark" aria-hidden="true">❯</span>curl</button>
+<div id="hint-curl" class="hint" popover role="dialog" aria-labelledby="hint-curl-title" data-part="hint">
+<p id="hint-curl-title" class="hint-title">curl</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">curl https://example.test/blog/reading-slowly</code> <button type="button" class="command-copy" data-part="copy" aria-label="copy curl https://example.test/blog/reading-slowly" data-copied="copied" data-toast="Copied curl https://example.test/blog/reading-slowly" hidden>copy</button>
+</div>
+<p class="hint-gives">The page as a manual in a terminal.</p>
+<button type="button" class="hint-close" popovertarget="hint-curl" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>
+</div>
+<label class="vim-keys" data-part="vim-keys" hidden>
+<input type="checkbox" class="vim-keys-box">
+<span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick">
+</span>]</span>vim keys</label>
+<span class="theme" data-part="theme" hidden>
+<button type="button" class="theme-button" aria-pressed="false" aria-labelledby="theme-name">
+<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5">
+</circle> <path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z">
+</path>
+</svg>
+</button> <span id="theme-name" class="tooltip" data-part="tooltip">Dark theme</span>
+</span>
+</nav>
+<div role="status">
+<p class="toast" data-part="toast" hidden>
+<span class="toast-mark" aria-hidden="true">✓</span>
+<span data-part="toast-words">
+</span>
+</p>
+</div>
+</div>
+</body>
+</html>

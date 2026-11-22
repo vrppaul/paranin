@@ -52,8 +52,8 @@ type bodyInspection struct {
 // inspectBody finds in a post's body, which starts at a line of its file, what the format refuses: a node of a kind
 // no post holds (PostKinds), raw HTML among them, a heading of the title's level or one that skips a level, a widget,
 // a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph or cites
-// another, and a reference to no footnote; what no face draws, a line broken hard and a link's title; a link to
-// neither the web nor a mailbox; and characters no value may hold, written or referenced.
+// another, a reference to no footnote and one in a heading; what no face draws, a line broken hard and a link's
+// title; a link to neither the web nor a mailbox; and characters no value may hold, written or referenced.
 func inspectBody(inspection *inspection, body Markdown, firstLine int) {
 	checked := &bodyInspection{
 		inspection: inspection, body: body, firstLine: firstLine, headingLevel: titleLevel,
@@ -126,8 +126,11 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 	case *extensionast.Footnote:
 		checked.inspectFootnote(typed)
 	case *extensionast.FootnoteLink:
-		if insideFootnote(typed) {
+		if inside(typed, extensionast.KindFootnote) {
 			checked.inspection.addAtLine(checked.lineOf(node), noteCitingProblem)
+		}
+		if inside(typed, ast.KindHeading) {
+			checked.inspection.addAtLine(checked.lineOf(node), noteHeadingProblem)
 		}
 	}
 	return ast.WalkContinue
@@ -197,10 +200,10 @@ func (checked *bodyInspection) inspectFootnote(footnote *extensionast.Footnote) 
 	}
 }
 
-// insideFootnote is whether a node stands inside a footnote's words.
-func insideFootnote(node ast.Node) bool {
+// inside is whether a node stands inside one of a kind: a footnote's words, a heading.
+func inside(node ast.Node, kind ast.NodeKind) bool {
 	for parent := node.Parent(); parent != nil; parent = parent.Parent() {
-		if parent.Kind() == extensionast.KindFootnote {
+		if parent.Kind() == kind {
 			return true
 		}
 	}

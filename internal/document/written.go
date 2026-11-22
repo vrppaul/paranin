@@ -35,7 +35,7 @@ func writtenBlock(block Block) (Block, bool) {
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)
 		return typed, true
-	case Paragraph, Table, CodeBlock, Contents, Checks, Skills:
+	case Paragraph, Table, CodeBlock, List, Quote, Contents, Checks, Skills:
 	}
 	return block, true
 }
@@ -62,7 +62,13 @@ func spanWritten(span Span) bool {
 		return true
 	case Highlight:
 		return written(typed.Spans)
+	case Emphasis:
+		return written(typed.Spans)
+	case Strong:
+		return written(typed.Spans)
 	case Link:
+		return written(typed.Spans)
+	case Note:
 		return written(typed.Spans)
 	case Gap:
 	}

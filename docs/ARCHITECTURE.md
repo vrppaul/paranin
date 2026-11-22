@@ -123,6 +123,8 @@ choice for a project's page in the TUI: the head gains what a project is made of
 Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its months beside how long.
 Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in the TUI: a page of the site may
 name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
+Amended 2026-11-22, with the first post served: the posts' blocks and spans, a footnote as a note where a line cites
+it, and the post's head.
 
 ### Context
 
@@ -155,7 +157,11 @@ and web routes.
   `compose` walks into blocks. The tree is read and never changed after
   the load, by no transformer, attribute or id set later, since two
   goroutines may compose one snapshot (`release.Derived`), and `compose`'s
-  tests run under `-race` once it walks the tree. Ways weighed: `content`
+  tests run under `-race` in a hook of their own. One table in `content`
+  (`PostKinds`) names the kinds of node a post may hold: the load refuses
+  any other (FOUNDATION §5.4), a picture among them, and `compose`'s walk
+  has a case for each, a test holding the two to one list, so a kind an
+  extension brings is refused, never dropped. Ways weighed: `content`
   keeping the text alone for `compose` to parse, two parses of one text
   and the format set up in two layers; `content` turning the tree into one
   of its own, the document model written twice. goldmark keeps to the
@@ -178,10 +184,12 @@ and web routes.
   stack, as the profile lists them; a description for the page's
   metadata; and on a project's page where its code lives, a repository
   typed as its address and the site's word for it, since every face shows
-  it first. The ways to reach the author (mail, the profiles, `ssh`, the
-  CV) left the head (amended 2026-11-15, the owner's word): they are facts
-  of their own kind, in the résumé's last section under the site's word
-  for contact, which a face finds by that kind and shows where it chooses.
+  it first; on a post's page its number, its tags, its description as its
+  lead, and when it came out, which each face writes its own way. The ways
+  to reach the author (mail, the profiles, `ssh`, the CV) left the head
+  (amended 2026-11-15, the owner's word): they are facts of their own kind,
+  in the résumé's last section under the site's word for contact, which a
+  face finds by that kind and shows where it chooses.
   One more is the site's word, which a face shows only where it has a use
   for it, so `Phrases` leaves it out: a greeting before the title. The
   résumé carries it; the TUI and the page show it.
@@ -245,14 +253,27 @@ and web routes.
     `learning` in the site's words, as it writes `current`);
   - a widget (a name, its props, a caption and an alt text), the form and
     the salary range among them, so `compose` places them too;
-  - the posts' (step 8): a list, ordered or not, whose items hold blocks; a
-    quote; code with its language; a figure. A table gains a header row, and
-    a post's headings nest into sections.
+  - the posts' (step 8): a list, in order from its first number or not,
+    whose items hold blocks; a quote, holding blocks; code with its
+    language; and a figure, which comes with the post's pictures (TODO). A
+    table gains a header row, and a post's headings nest into sections, each
+    holding what follows it up to the next heading of its level or above.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
-  strong, a link and a highlight (`==result==`) hold spans; text, code and a
-  gap (`[text]`, still to fill) are leaves. A gap may sit inside a highlight,
-  as the profile has it. The profile's marks and a post's markdown become the
-  same spans.
+  strong, a link, a highlight (`==result==`) and a note hold spans; text,
+  code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a
+  highlight, as the profile has it. The profile's marks and a post's markdown
+  become the same spans.
+- **A footnote is a note where a line cites it** (amended 2026-11-22): a
+  span holding its number, the order of the first citations, and its words,
+  alike at each citation. A face sets it beside the line, as the page and a
+  wide TUI will, or gathers the notes at the end (`document.NotesOf`), as
+  markdown and the manual do and a narrow TUI will, so no list of notes is
+  kept in step with the blocks. A note is one paragraph and cites no other,
+  which the load holds a footnote to: a source set beside a line reads as a
+  line, and a span holds no blocks. Ways weighed: a block of notes at the
+  document's end, each citation a span naming its number, which keeps two
+  lists in step and leaves a face that sets notes beside the line to find
+  each one; a note holding blocks, which puts blocks inside a span.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still
@@ -293,7 +314,10 @@ and web routes.
   the person's and a project's, with `face/html`, and the sitemap's dates
   with `face/feed`, the `dateModified` of the résumé's `ProfilePage` with
   them; a widget with the first island that draws one, the form's salary
-  range (step 10), since `face/html` came without one; the posts' blocks and spans with the blog (D18).
+  range (step 10), since `face/html` came without one; the posts' blocks
+  and spans, but the figure, and a post's head with the first post served,
+  in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
+  them with each face's post, a figure with the post's pictures (D18).
 - **`routes`** writes every address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the

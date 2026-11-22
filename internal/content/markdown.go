@@ -6,6 +6,7 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	extensionast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/util"
 )
@@ -46,6 +47,64 @@ func postFormat() []parser.Option {
 		parser.WithParagraphTransformers(util.Prioritized(extension.NewTableParagraphTransformer(), tableParagraphPriority)),
 		parser.WithASTTransformers(util.Prioritized(extension.NewTableASTTransformer(), tableTreePriority)),
 	}
+}
+
+// PostKinds are the kinds of node a post's tree may hold, as postFormat parses it, and each has its case in compose's
+// walk: the load refuses a node of any other kind, so a kind an extension brings later is refused, never dropped
+// unseen. Raw HTML, a picture and a thematic break stand outside it.
+func PostKinds() []ast.NodeKind {
+	return []ast.NodeKind{
+		ast.KindDocument, ast.KindParagraph, ast.KindTextBlock, ast.KindHeading, ast.KindFencedCodeBlock,
+		ast.KindCodeBlock, ast.KindBlockquote, ast.KindList, ast.KindListItem, ast.KindLinkReferenceDefinition,
+		ast.KindText, ast.KindCodeSpan, ast.KindEmphasis, ast.KindLink, ast.KindAutoLink,
+		extensionast.KindTable, extensionast.KindTableHeader, extensionast.KindTableRow, extensionast.KindTableCell,
+		extensionast.KindFootnoteList, extensionast.KindFootnote, extensionast.KindFootnoteLink,
+	}
+}
+
+// What escapes the mark after it in a post's text
+const escapeMark = '\\'
+
+// Resolved is a run of a post's text as CommonMark reads it, in one pass: a mark escaped by a backslash the mark
+// alone, which opens no reference (`\&amp;` reads as written), and a reference to a character, by its number or its
+// name, the character. The tree keeps the text as written, which a renderer resolves as it writes.
+func Resolved(written []byte) string {
+	var builder strings.Builder
+	start := 0
+	for index := 0; index < len(written)-1; index++ {
+		if written[index] == escapeMark && util.IsPunct(written[index+1]) {
+			builder.Write(resolvedReferences(written[start:index]))
+			builder.WriteByte(written[index+1])
+			index++
+			start = index + 1
+		}
+	}
+	builder.Write(resolvedReferences(written[start:]))
+	return builder.String()
+}
+
+// ResolvedAddress is a link's address as goldmark reads it before it writes the address: its escapes, then its
+// references to characters.
+func ResolvedAddress(written []byte) string {
+	return string(resolvedReferences(util.UnescapePunctuations(written)))
+}
+
+// resolvedReferences is text with each reference to a character, by its number or its name, the character.
+func resolvedReferences(written []byte) []byte {
+	return util.ResolveEntityNames(util.ResolveNumericReferences(written))
+}
+
+// What ends the language of a fenced block's line of information, and what may stand after it
+const languageEnd = " "
+
+// Language is what a fenced block of code is written in, the first word of its line of information; none where it
+// has none. goldmark's own Language keeps what it read in the node, a write to a tree two goroutines may read.
+func (markdown Markdown) Language(block *ast.FencedCodeBlock) string {
+	if block.Info == nil {
+		return ""
+	}
+	language, _, _ := strings.Cut(string(block.Info.Segment.Value(markdown.Source)), languageEnd)
+	return language
 }
 
 // The line that opens a post's front matter and closes it, the file's line it opens on, and the carriage return a

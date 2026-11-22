@@ -39,6 +39,8 @@ const (
 	PageHealth
 	// PageSkills is the hidden list of every skill, after lazy.nvim's :Lazy; it has no slug
 	PageSkills
+	// PagePost is a post of the blog, by its slug; it has no tabs
+	PagePost
 )
 
 // Mail is a mailbox a link writes to, by its address as the content writes it.

@@ -1,6 +1,8 @@
 package compose
 
 import (
+	"time"
+
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 )
@@ -19,6 +21,7 @@ func Skills(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:        document.Page{Kind: document.PageSkills, Slug: "", Tab: ""},
+			Number:      0,
 			Language:    snapshot.Words.Language(),
 			Greeting:    "",
 			Title:       textSpans(snapshot.Words.Text(content.WordSkills)),
@@ -26,6 +29,7 @@ func Skills(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        nil,
+			Published:   time.Time{},
 			Repository:  nil,
 			Description: nil,
 		},
@@ -54,6 +58,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:        document.Page{Kind: document.PageHealth, Slug: "", Tab: ""},
+			Number:      0,
 			Language:    snapshot.Words.Language(),
 			Greeting:    "",
 			Title:       textSpans(snapshot.Words.Text(content.WordHealth)),
@@ -61,6 +66,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        nil,
+			Published:   time.Time{},
 			Repository:  nil,
 			Description: nil,
 		},

@@ -7,18 +7,23 @@
 // mailbox, its mailbox and its host (target.go).
 package document
 
+import "time"
+
 // Document is one page as every face draws it.
 type Document struct {
 	Head   Head
 	Blocks []Block
 }
 
-// Head is what a face shows first: the page the document is, the language it is written in, its title, a subtitle
-// and the place beside it, what a project is made of, a lead and where a project's code lives, which every face
-// shows; the page's description; and, for a face that has a use for it, a greeting before the title. The ways to
-// reach the author are facts of their own kind, which a face places where it chooses.
+// Head is what a face shows first: the page the document is, a post's number, the language it is written in, its
+// title, a subtitle and the place beside it, what a project is made of or a post's tags, a lead, the day a post came
+// out and where a project's code lives, which every face shows; the page's description; and, for a face that has a
+// use for it, a greeting before the title. The ways to reach the author are facts of their own kind, which a face
+// places where it chooses.
 type Head struct {
 	Page Page
+	// Number is a post's number, which blog/<number> reaches as its slug does (D26); 0 on any other page
+	Number int
 	// Language is a tag of BCP 47, as HTML's lang and Typst's text take it: "en"
 	Language string
 	// Greeting is what a face may say to the reader before the author's name, in the site's words; none on a page
@@ -28,9 +33,11 @@ type Head struct {
 	Subtitle []Span
 	Place    string
 	// Tags are what a project's page says the project is made of, by name: the language it is written in, then what
-	// it is built on; none on another page
+	// it is built on; on a post's page its tags; none on another page
 	Tags []string
 	Lead []Span
+	// Published is when a post came out, in the zone it was written in; the zero time on any other page
+	Published time.Time
 	// Repository is where the code of a project's page lives; none on another page or for a project that names none
 	Repository *Repository
 	// Description is what the page is about, for its metadata: a search engine's snippet, a link's preview where

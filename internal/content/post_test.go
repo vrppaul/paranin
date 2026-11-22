@@ -174,6 +174,12 @@ func TestAPostTheFormatAllowsLoads(test *testing.T) {
 		{name: "a reference escaped", original: "Its text.", replacement: `Its \[^note] text.`},
 		{name: "an opening fence with a carriage return", original: "---\nid: 3", replacement: "---\r\nid: 3"},
 		{name: "a closing fence with a carriage return", original: "---\nA paragraph.", replacement: "---\r\nA paragraph."},
+		{name: "a link to a mailbox", original: "Its text.", replacement: "Its [mail](mailto:mira@example.test)."},
+		{name: "a mailbox in angle brackets", original: "Its text.", replacement: "Its <mira@example.test>."},
+		{name: "a link over plain HTTP", original: "Its text.", replacement: "Its [text](http://example.test)."},
+		{name: "a reference to a letter", original: "Its text.", replacement: "Its &amp; &#233; text."},
+		{name: "a reference to a control character as code", original: "Its text.", replacement: "Its `&#27;` text."},
+		{name: "a reference to a control character escaped", original: "Its text.", replacement: `Its \&#27; text.`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -250,6 +256,20 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a footnote no reference cites", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.\n\n[^note]: A note.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
 		{name: "a reference to no footnote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text[^note].", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "a reference to no footnote on a later line", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text,\nand [^note].", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a table's row of more cells than its header", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "| A |\n| --- |\n| 1 | 2 |", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a footnote of two paragraphs", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^note]\n\n[^note]: A note.\n\n    More of it.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a footnote of a list", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^note]\n\n[^note]: - a point", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a footnote citing a footnote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^one]\n\n[^one]: See [^two].\n[^two]: A source.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a picture", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its ![a cache](cache.svg) text.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a thematic break", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.\n\n***\n\nMore.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a hard line break by a backslash", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text,\\\nand more.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a hard line break by two spaces", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text,  \nand more.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a link inside the site", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its [text](/p/tidy-tool).", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "an address of another scheme in angle brackets", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its <ftp://example.test/a>.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a link to a mailbox of no bare address", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its [mail](mailto:Mira).", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a link with a title", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: `Its [text](https://example.test "a title").`, want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a reference to a control character", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its &#27;[2J text.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a reference to a control character in a link's address", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its [text](https://example.test/&#27;).", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "an escape in a field", sample: samplePost, file: samplePostFile, original: "title: A sample post", replacement: `title: "A \e[2J post"`, want: faultPlace{file: samplePostFile, field: "title", line: 0}},
 		{name: "no front matter", sample: samplePost, file: samplePostFile, original: "---\nid: 3\n", replacement: "id: 3\n", want: faultPlace{file: samplePostFile, field: "", line: 1}},
 		{name: "front matter never closed", sample: samplePost, file: samplePostFile, original: "---\nA paragraph.", replacement: "A paragraph.", want: faultPlace{file: samplePostFile, field: "", line: 1}},
@@ -299,6 +319,16 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 				test.Errorf("faults with %s at %s = %q, want one at %+v", testCase.replacement, testCase.file, faults, testCase.want)
 			}
 		})
+	}
+}
+
+// A character no value may hold, written in a post's text, is one fault at its line: the check of the source's
+// lines names it, and the check of the text's references does not name it again.
+func TestACharacterWrittenInAPostIsOneFault(test *testing.T) {
+	written := sampleWith(test, samplePost, "Its text.", "Its \x1b[2J text.")
+	faults := faultsOf(test, writtenFile(fixtureFolder(test), samplePostFile, written))
+	if count := len(faults); count != 1 {
+		test.Errorf("faults with an escape written in the text = %q, want one", faults)
 	}
 }
 

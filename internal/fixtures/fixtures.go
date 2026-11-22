@@ -63,8 +63,8 @@ func Site(snapshot *content.Snapshot) routes.Site {
 // reaches no test that has no use for it.
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
-		Page: page, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil,
-		Repository: nil, Description: nil,
+		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil,
+		Published: time.Time{}, Repository: nil, Description: nil,
 	}
 }
 

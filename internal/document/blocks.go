@@ -18,9 +18,12 @@ type Paragraph struct {
 	Spans []Span
 }
 
-// Table is rows of cells, each column one kind of value.
+// Table is rows of cells, each column one kind of value, under a header that names each column where the table has
+// one: a post's table may, a skill group's has none.
 type Table struct {
-	Rows []Row
+	// Header is the row naming the columns; a row of no cells where the table has none
+	Header Row
+	Rows   []Row
 }
 
 // Row is one row of a table.
@@ -33,9 +36,29 @@ type Cell struct {
 	Spans []Span
 }
 
-// CodeBlock is text shown as it is, line for line: a terminal's recording.
+// CodeBlock is text shown as it is, line for line: a terminal's recording, a post's code.
 type CodeBlock struct {
 	Text string
+	// Language is what the code is written in, as its author names it: "go"; none where the author names none
+	Language string
+}
+
+// List is items one after another, numbered from its start where it is in order: a post's list.
+type List struct {
+	Ordered bool
+	// Start is the first item's number in a list in order; 0 in one that is not
+	Start int
+	Items []Item
+}
+
+// Item is one item of a list, holding blocks as a section does: a paragraph, or more, a list nested in it among them.
+type Item struct {
+	Blocks []Block
+}
+
+// Quote is blocks a post quotes from someone else.
+type Quote struct {
+	Blocks []Block
 }
 
 // Facts is a list of labels and their values, of a kind a face finds them by, not by their place.
@@ -159,6 +182,8 @@ func (Section) block()   {}
 func (Paragraph) block() {}
 func (Table) block()     {}
 func (CodeBlock) block() {}
+func (List) block()      {}
+func (Quote) block()     {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}

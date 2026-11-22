@@ -5,12 +5,13 @@
 // draws with them, which a cache asks for again. Each page, and each of its tabs alone, is served at the path routes
 // writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
 // browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
-// llms.txt, sent as plain text, as a name ending in .txt promises. Each format of a page names in a Link header the
-// address the page is known by, the one where the reader chooses, so a search engine counts its markdown and its
-// manual as the page. Any other path is answered with the page of no page, in text or in HTML, whichever the
-// reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the chosen format
-// alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and to load
-// nothing but the site's own files, so markup slipped into a page runs no script but the site's own.
+// llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn in the text formats alone
+// until the HTML face draws one, and its number sends the reader on to its address. Each format of a page names in
+// a Link header the address the page is known by, the one where the reader chooses, so a search engine counts its
+// markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
+// whichever the reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the
+// chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and
+// to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own.
 package web
 
 import (
@@ -112,16 +113,25 @@ type Server struct {
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, and every file of its build: in
 // each format at its own path, and each file, the same whatever the request asks; in every format at the address
-// where the reader chooses; and the page of an address of no page.
+// where the reader chooses; the path a post's number sends the reader on to, by the number's path; and the page of
+// an address of no page.
 type drawing struct {
 	fixed    map[string]answer
 	chosen   map[string]choice
+	moved    map[string]string
 	notFound missingChoice
 }
 
 // choice is one page in each format a reader may choose, never none, in the order a tie between two goes: the
-// manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual.
+// manual, then markdown, then HTML, so `curl` and a header naming none of them get the manual. A post offers no
+// HTML yet, so a browser gets the text format it ranks first, the manual where it ranks both alike.
 type choice []answer
+
+// textAnswers are a page in the text formats, each naming the address the page is known by.
+type textAnswers struct {
+	markdown answer
+	manual   answer
+}
 
 // missingChoice is the page of no page in each format a reader may choose, never none, in the order a tie between
 // them goes: text, then HTML.
@@ -202,6 +212,12 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 	drawn := server.drawn.Current()
 	if found, isFixed := drawn.fixed[request.URL.Path]; isFixed {
 		send(writer, http.StatusOK, found)
+		return
+	}
+	if location, isMoved := drawn.moved[request.URL.Path]; isMoved {
+		// a post's folder, its slug, may be renamed, so a cache asks again where its number leads
+		writer.Header().Set(cacheControl, askEveryTime)
+		http.Redirect(writer, request, location, http.StatusMovedPermanently)
 		return
 	}
 	writer.Header().Set(varyHeader, acceptHeader)
@@ -309,19 +325,36 @@ func draw(snapshot *release.Snapshot) *drawing {
 		// tab an address shows inside its page
 		for _, shown := range slices.Concat([]document.Document{composed.Document}, compose.TabDocuments(composed.Document)) {
 			page := shown.Head.Page
-			known := site.Address(page, routes.FormatChosen)
-			markdown := drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAt(known)
-			manual := drawnAs(plainMediaType, text.Manual(shown, site)).knownAt(known)
-			browsed := drawnAs(htmlMediaType, pageWriter.Page(composed.Document, composed.Record, page.Tab)).knownAt(known)
-			fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
-			fixed[routes.Path(page, routes.FormatManual)] = manual
-			chosen[routes.Path(page, routes.FormatChosen)] = choice{manual, markdown, browsed}
+			texts := drawAndServeText(shown, fixed, site)
+			browsed := drawnAs(htmlMediaType, pageWriter.Page(composed.Document, composed.Record, page.Tab)).knownAt(site.Address(page, routes.FormatChosen))
+			chosen[routes.Path(page, routes.FormatChosen)] = choice{texts.manual, texts.markdown, browsed}
 		}
+	}
+	moved := map[string]string{}
+	for _, post := range compose.Posts(facts) {
+		texts := drawAndServeText(post, fixed, site)
+		page := post.Head.Page
+		chosen[routes.Path(page, routes.FormatChosen)] = choice{texts.manual, texts.markdown}
+		moved[routes.NumberPath(post.Head.Number)] = routes.Path(page, routes.FormatChosen)
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
 		{mediaType: plainMediaType, draw: text.NewNotFound(site, status).For},
 		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, facts.Words.Language(), build, frame).For},
 	}
-	return &drawing{fixed: fixed, chosen: chosen, notFound: notFound}
+	return &drawing{fixed: fixed, chosen: chosen, moved: moved, notFound: notFound}
+}
+
+// drawAndServeText draws a page in the text formats, each naming the address the page is known by, and serves each at
+// its own path among the fixed answers.
+func drawAndServeText(shown document.Document, fixed map[string]answer, site routes.Site) textAnswers {
+	page := shown.Head.Page
+	known := site.Address(page, routes.FormatChosen)
+	texts := textAnswers{
+		markdown: drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAt(known),
+		manual:   drawnAs(plainMediaType, text.Manual(shown, site)).knownAt(known),
+	}
+	fixed[routes.Path(page, routes.FormatMarkdown)] = texts.markdown
+	fixed[routes.Path(page, routes.FormatManual)] = texts.manual
+	return texts
 }

@@ -31,9 +31,16 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 	case Paragraph:
 		return spanPhrases(phrases, typed.Spans)
 	case Table:
-		return rowPhrases(phrases, typed.Rows)
+		return rowPhrases(phrases, append([]Row{typed.Header}, typed.Rows...))
 	case CodeBlock:
 		return textPhrase(phrases, typed.Text)
+	case List:
+		for _, item := range typed.Items {
+			phrases = blockPhrases(phrases, item.Blocks)
+		}
+		return phrases
+	case Quote:
+		return blockPhrases(phrases, typed.Blocks)
 	case Facts:
 		return factPhrases(phrases, typed.List)
 	case Entry:
@@ -127,7 +134,13 @@ func spanPhrases(phrases []string, spans []Span) []string {
 			phrases = textPhrase(phrases, typed.Text)
 		case Highlight:
 			phrases = spanPhrases(phrases, typed.Spans)
+		case Emphasis:
+			phrases = spanPhrases(phrases, typed.Spans)
+		case Strong:
+			phrases = spanPhrases(phrases, typed.Spans)
 		case Link:
+			phrases = spanPhrases(phrases, typed.Spans)
+		case Note:
 			phrases = spanPhrases(phrases, typed.Spans)
 		}
 	}

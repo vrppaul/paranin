@@ -31,6 +31,9 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the résumé as a manual", path: "/index.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "EXAMPLE.TEST(1)"},
 		{name: "a project's page as a manual", path: "/p/tidy-tool.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "TIDY-TOOL(1)"},
 		{name: "the index", path: "/llms.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files."},
+		{name: "a post", path: "/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Reading slowly"},
+		{name: "a post as a manual", path: "/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "READING-SLOWLY(1)"},
+		{name: "a draft", path: "/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: "404"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -122,6 +125,13 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", contentType: markdown, holds: "# tidy-tool"},
 		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", contentType: manual, holds: "TIDY-TOOL(1)"},
 		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: `<h1 aria-label="tidy-tool">`},
+		{name: "a post in markdown", path: "/blog/reading-slowly", accept: "text/markdown", contentType: markdown, holds: "# Reading slowly"},
+		{name: "a post as a manual", path: "/blog/reading-slowly", accept: "*/*", contentType: manual, holds: "READING-SLOWLY(1)"},
+		// a post's address offers no HTML until the page's post lands, so a browser gets the text it ranks first
+		{
+			name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			contentType: manual, holds: "READING-SLOWLY(1)",
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -177,6 +187,8 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a project's page, chosen", path: "/p/tidy-tool", accept: "*/*", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
 		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", want: `<https://example.test/experience>; rel="canonical"`},
 		{name: "a tab of a project's page, chosen", path: "/p/tidy-tool/why", accept: "text/html", want: `<https://example.test/p/tidy-tool/why>; rel="canonical"`},
+		{name: "a post in markdown", path: "/blog/reading-slowly.md", accept: "", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
+		{name: "a post, chosen", path: "/blog/reading-slowly", accept: "*/*", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
 	}
@@ -185,6 +197,31 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
 			if got := response.Header().Get("Link"); got != testCase.want {
 				test.Errorf("GET %s, Accept %q: Link = %q, want %q", testCase.path, testCase.accept, got, testCase.want)
+			}
+		})
+	}
+}
+
+// A post's number sends the reader on for good to the post's own address, by its path from the root, and a cache asks
+// again, since the post's slug is its folder's name, which may change; the number of a post not served is no page.
+func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	cases := []struct {
+		name     string
+		path     string
+		status   int
+		location string
+	}{
+		{name: "a post published", path: "/blog/1", status: http.StatusMovedPermanently, location: "/blog/reading-slowly"},
+		{name: "a draft", path: "/blog/2", status: http.StatusNotFound, location: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := serve(server, http.MethodGet, testCase.path, "*/*")
+			header := response.Header()
+			if response.Code != testCase.status || header.Get("Location") != testCase.location || header.Get("Cache-Control") != "no-cache" {
+				test.Errorf("GET %s = %d, Location %q, Cache-Control %q; want %d, Location %q, Cache-Control %q", testCase.path,
+					response.Code, header.Get("Location"), header.Get("Cache-Control"), testCase.status, testCase.location, "no-cache")
 			}
 		})
 	}

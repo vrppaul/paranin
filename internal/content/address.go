@@ -1,7 +1,9 @@
 package content
 
 import (
+	"net/mail"
 	"net/url"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -49,4 +51,20 @@ func (address WebAddress) Host() string {
 // absolute is whether the address reads as an absolute web address: one of the web's schemes, and a host.
 func (address WebAddress) absolute() bool {
 	return address.host != ""
+}
+
+// The scheme of a post's link that writes to a mailbox
+const mailScheme = "mailto:"
+
+// Mailbox is the mail address a post's link writes to, where its address is written under the scheme that writes to
+// one and holds a bare mail address.
+func Mailbox(address string) (string, bool) {
+	box, isMail := strings.CutPrefix(address, mailScheme)
+	return box, isMail && bareMail(box)
+}
+
+// bareMail is whether a text is a mail address alone, with no name and no brackets round it.
+func bareMail(address string) bool {
+	parsed, err := mail.ParseAddress(address)
+	return err == nil && parsed.Address == address
 }

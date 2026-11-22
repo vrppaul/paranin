@@ -31,6 +31,11 @@ func readMoment(written string) Moment {
 	return Moment{written: written, at: at, known: err == nil}
 }
 
+// At is the moment, in the zone it was written in; the zero time where none was written or it did not read.
+func (moment Moment) At() time.Time {
+	return moment.at
+}
+
 // day is the day the moment falls on in its own zone, as a Day's start holds one: its first moment in UTC.
 func (moment Moment) day() time.Time {
 	year, month, day := moment.at.Date()

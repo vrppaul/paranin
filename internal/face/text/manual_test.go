@@ -66,6 +66,40 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 	}
 }
 
+// A tab in code reaches no terminal: it stands as the spaces to its next stop, eight columns apart from the code's
+// own start, so the code lines up as its author's editor showed it, whatever the page's indent.
+func TestATabInCodeStandsAsTheSpacesToItsStop(test *testing.T) {
+	composed := document.Document{
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil),
+		Blocks: []document.Block{document.CodeBlock{Text: "if x {\n\treturn\n}\nab\tc", Language: "go"}},
+	}
+	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+	indent := strings.Repeat(" ", sectionIndent)
+	for _, want := range []string{indent + "        return\n", indent + "ab      c\n"} {
+		if !strings.Contains(got, want) || strings.Contains(got, "\t") {
+			test.Errorf("Manual = %q, want %q and no tab", got, want)
+		}
+	}
+}
+
+// A table under a header too wide for the page in columns stands a row a bullet, its header's first, each cell's
+// words whole, so no column runs past the page's edge.
+func TestATableTooWideForColumnsStandsARowABullet(test *testing.T) {
+	wide := strings.Repeat("word ", pageWidth/len("word "))
+	table := document.Table{
+		Header: document.Row{Cells: []document.Cell{cellOf("Name"), cellOf("Note")}},
+		Rows:   []document.Row{{Cells: []document.Cell{cellOf("Slow"), cellOf(wide)}}},
+	}
+	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil), Blocks: []document.Block{table}}
+	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+	indent := strings.Repeat(" ", sectionIndent)
+	for _, want := range []string{indent + "- Name — Note\n", indent + "- Slow — word"} {
+		if !strings.Contains(got, want) {
+			test.Errorf("Manual = %q, want %q", got, want)
+		}
+	}
+}
+
 // Text that touches a command stays with it, as it is written: a full stop after a command is no word of its own.
 func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 	composed := document.Document{

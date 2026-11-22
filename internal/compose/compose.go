@@ -10,6 +10,7 @@ package compose
 import (
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -53,6 +54,7 @@ func TabDocuments(composed document.Document) []document.Document {
 func tabHead(head document.Head, tab document.Tab) document.Head {
 	return document.Head{
 		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug},
+		Number:      0,
 		Language:    head.Language,
 		Greeting:    "",
 		Title:       tab.Title,
@@ -60,6 +62,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Place:       "",
 		Tags:        nil,
 		Lead:        nil,
+		Published:   time.Time{},
 		Repository:  nil,
 		Description: head.Description,
 	}
@@ -129,6 +132,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
 			Page:        document.Page{Kind: document.PageIndex, Slug: "", Tab: ""},
+			Number:      0,
 			Language:    words.Language(),
 			Greeting:    "",
 			Title:       resume.Title,
@@ -136,6 +140,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        resume.Lead,
+			Published:   time.Time{},
 			Repository:  nil,
 			Description: nil,
 		},
@@ -155,6 +160,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 	headline := markedSpans(person.Headline)
 	return document.Head{
 		Page:        resumePage(),
+		Number:      0,
 		Language:    words.Language(),
 		Greeting:    words.Text(content.WordGreeting),
 		Title:       markedSpans(person.Name),
@@ -162,6 +168,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Place:       person.Location,
 		Tags:        nil,
 		Lead:        headline,
+		Published:   time.Time{},
 		Repository:  nil,
 		Description: headline,
 	}
@@ -230,7 +237,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 	details = append(details, factList(project.Facts)...)
 	blocks := []document.Block{document.Facts{Kind: document.FactsDetails, List: append(details, installFacts(project, words)...)}}
 	if project.Recording != "" {
-		blocks = append(blocks, document.CodeBlock{Text: project.Recording})
+		blocks = append(blocks, document.CodeBlock{Text: project.Recording, Language: ""})
 	}
 	for _, section := range project.Sections {
 		paragraphs := make([]document.Block, 0, len(section.Paragraphs))
@@ -248,6 +255,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
 		Page:        projectPage(project),
+		Number:      0,
 		Language:    words.Language(),
 		Greeting:    "",
 		Title:       markedSpans(project.Name),
@@ -255,6 +263,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Place:       "",
 		Tags:        projectTags(project),
 		Lead:        description,
+		Published:   time.Time{},
 		Repository:  projectRepository(project, words),
 		Description: description,
 	}
@@ -304,7 +313,8 @@ func skillsSection(groups []content.SkillGroup, words content.Words, after ...do
 			listed := listedSkill(skill, words)
 			rows = append(rows, document.Row{Cells: []document.Cell{{Spans: listed.Name}, {Spans: listed.Duration}, {Spans: listed.Sources}}})
 		}
-		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{document.Table{Rows: rows}}})
+		table := document.Table{Header: document.Row{Cells: nil}, Rows: rows}
+		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{table}})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Blocks: append(sections, after...)}
 }

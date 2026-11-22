@@ -2,7 +2,6 @@ package content
 
 import (
 	"fmt"
-	"net/mail"
 	"regexp"
 	"slices"
 	"strings"
@@ -62,6 +61,15 @@ const (
 	widgetProblem        = "is a widget, and widgets come with the first island"
 	uncitedProblem       = "%q is a footnote no reference cites"
 	unansweredProblem    = "%q cites no footnote"
+	noteFormProblem      = "%q is no one paragraph, which a note set beside the line it is cited on holds"
+	noteCitingProblem    = "cites a footnote from inside a footnote, whose words stand beside the line alone"
+	kindProblem          = "is a node of goldmark's kind %s, which no post holds: no face draws it"
+	pictureProblem       = "is a picture, and pictures come with the step that serves them from the post's folder"
+	breakProblem         = "is a thematic break, which no face draws: a heading parts a post"
+	extraCellsProblem    = "is a table's row of more cells than its header, whose cells past the header's GFM drops"
+	lineBreakProblem     = "breaks its line hard, which no face draws: a paragraph's lines join, and a list parts them"
+	linkProblem          = "%q is no absolute web address and no mailto: of a bare mail address"
+	linkTitleProblem     = "%q is a link's title, which no face shows"
 	straySeriesProblem   = "is no series: the series' folder holds a file <name>" + yamlEnding + " for each"
 	emptySeriesProblem   = "holds no post"
 	unknownPostProblem   = "%q names no post"
@@ -168,7 +176,7 @@ func inspectSite(inspection *inspection, site Site) {
 func inspectPerson(inspection *inspection, person Person) {
 	inspection.require("person.name", person.Name)
 	inspection.require("person.title", person.Title)
-	if parsed, err := mail.ParseAddress(person.Email); err != nil || parsed.Address != person.Email {
+	if !bareMail(person.Email) {
 		inspection.add("person.email", mailProblem, person.Email)
 	}
 	for index, link := range person.Links {

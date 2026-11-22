@@ -151,6 +151,14 @@ func (reader *wordReader) read(spans []document.Span, form run) {
 			linked := form
 			linked.address = reader.site.Address(typed.Target, routes.FormatChosen)
 			reader.read(typed.Spans, linked)
+		// a post's alone, which no buffer shows yet: emphasis, strong text and a note read as their words until the
+		// TUI's post draws them as DESIGN.md has it
+		case document.Emphasis:
+			reader.read(typed.Spans, form)
+		case document.Strong:
+			reader.read(typed.Spans, form)
+		case document.Note:
+			reader.read(typed.Spans, form)
 		}
 	}
 }

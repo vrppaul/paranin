@@ -3,6 +3,8 @@
 package routes
 
 import (
+	"strconv"
+
 	"github.com/vrppaul/paranin/internal/document"
 )
 
@@ -41,14 +43,15 @@ const (
 	askedByNameFile = "/favicon.ico"
 )
 
-// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the slash
-// before a tab's name in its page's folder, the index where agents look for it (llmstxt.org), and the endings of the
-// formats
+// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the blog's,
+// where a post stands by its slug and by its number, the slash before a tab's name in its page's folder, the index
+// where agents look for it (llmstxt.org), and the endings of the formats
 const (
 	resumeRoot     = "/"
 	resumeFile     = "/index"
 	indexFile      = "/llms.txt"
 	projectFolder  = "/p/"
+	blogFolder     = "/blog/"
 	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
@@ -132,8 +135,23 @@ func Path(page document.Page, format Format) string {
 		return projectPaths(page.Slug, page.Tab).inFormat(format)
 	case document.PageIndex:
 		return indexPath(format)
+	case document.PagePost:
+		return postPaths(page.Slug).inFormat(format)
 	}
 	return ""
+}
+
+// NumberPath is where a post's number reaches it (D26), which answers by sending the reader on to the post's own
+// address: in the blog's folder, as its slug is, since a slug is never digits alone.
+func NumberPath(number int) string {
+	return blogFolder + strconv.Itoa(number)
+}
+
+// postPaths are where a post is served: in the blog's folder by its slug, its files under the same name. A post has
+// no tabs.
+func postPaths(slug string) paths {
+	path := blogFolder + slug
+	return paths{chosen: path, files: path}
 }
 
 // paths are where a page is served: its own address, where the reader's request chooses the format, and the name

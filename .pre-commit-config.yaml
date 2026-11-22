@@ -86,6 +86,15 @@ repos:
         language: system
         types: [go]
         pass_filenames: false
+      # compose walks a post's parsed tree, which two goroutines may compose at once (release.Derived, ADR-0003), so
+      # its tests run under the race detector too. The rest of the suite does not: charm.land/ssh's window, written
+      # with no lock, races wish's read of it (TODO.md, Upstream)
+      - id: go-test-race
+        name: go test -race (compose)
+        entry: go test -race ./internal/compose/...
+        language: system
+        types: [go]
+        pass_filenames: false
 
   # The page's gates, run by pnpm in web/ with the tools its lockfile pins, once `pnpm --dir web install` has put
   # them there. Without pnpm or the install they fail and say so: leave them out on purpose with SKIP

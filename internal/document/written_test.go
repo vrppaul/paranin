@@ -15,6 +15,10 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	amongWords := Point{Spans: []Span{Text{Text: "Owned "}, Gap{Text: "[service]"}}}
 	onlyAGap := Point{Spans: []Span{Gap{Text: "[What was built]"}}}
 	gapParagraph := Paragraph{Spans: []Span{Gap{Text: "[summary]"}}}
+	stressedGap := Point{Spans: []Span{Emphasis{Spans: []Span{Gap{Text: "[N]"}}}}}
+	strongGap := Point{Spans: []Span{Strong{Spans: []Span{Gap{Text: "[N]"}}}}}
+	strongWords := Point{Spans: []Span{Strong{Spans: []Span{Text{Text: "Shipped"}}}}}
+	stressedWords := Point{Spans: []Span{Emphasis{Spans: []Span{Text{Text: "Twice"}}}}}
 	cases := []struct {
 		name  string
 		block Block
@@ -44,6 +48,11 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 			name:  "a fact in a section inside a section",
 			block: Section{Title: nil, Blocks: []Block{Section{Title: nil, Blocks: []Block{Facts{Kind: FactsDetails, List: []Fact{where, later}}}}}},
 			want:  []Block{Section{Title: nil, Blocks: []Block{Section{Title: nil, Blocks: []Block{Facts{Kind: FactsDetails, List: []Fact{where}}}}}}},
+		},
+		{
+			name:  "a point only stressed or strong gaps, and points of words so",
+			block: Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedGap, strongGap, stressedWords, strongWords}},
+			want:  []Block{Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedWords, strongWords}}},
 		},
 		{name: "a paragraph, which is no fact and no point", block: gapParagraph, want: []Block{gapParagraph}},
 	}

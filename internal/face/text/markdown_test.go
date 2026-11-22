@@ -1,10 +1,12 @@
 package text
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
@@ -36,11 +38,17 @@ func manualHolds(text, phrase string) bool {
 	return strings.Contains(words, wanted) || strings.Contains(words, strings.ToUpper(wanted))
 }
 
+// textPages are the pages a text face writes of a snapshot: the pages of the résumé and its projects, and the posts.
+func textPages(snapshot *content.Snapshot) []document.Document {
+	return slices.Concat(compose.Documents(snapshot), compose.Posts(snapshot))
+}
+
 // The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the
-// fixture, in each format, is held to its golden file, named by the page's own path in that format.
+// fixture, a post's among them, in each format, is held to its golden file, named by the page's own path in that
+// format.
 func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents, site := compose.Documents(snapshot), fixtures.Site(snapshot)
+	documents, site := textPages(snapshot), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
 			path := routes.Path(composed.Head.Page, written.format)
@@ -64,7 +72,7 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 // document holds, found as each format writes them.
 func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents, site := compose.Documents(snapshot), fixtures.Site(snapshot)
+	documents, site := textPages(snapshot), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
 			text := written.write(composed, site)
@@ -88,4 +96,22 @@ func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
 			test.Errorf("the index's markdown %q holds no %q", text, phrase)
 		}
 	}
+}
+
+// A bar in a cell of a table under a header stays in its cell in markdown, escaped, since GFM would end the cell at
+// it.
+func TestABarInATablesCellStaysInItsCell(test *testing.T) {
+	table := document.Table{
+		Header: document.Row{Cells: []document.Cell{cellOf("Pipe"), cellOf("Reads")}},
+		Rows:   []document.Row{{Cells: []document.Cell{cellOf("a | b"), cellOf("both")}}},
+	}
+	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil), Blocks: []document.Block{table}}
+	if got, want := Markdown(composed, fixtures.Site(fixtures.LoadedContent(test))), `| a \| b | both |`; !strings.Contains(got, want) {
+		test.Errorf("Markdown = %q, want %q", got, want)
+	}
+}
+
+// cellOf is a cell of a table a test builds by hand: a text.
+func cellOf(text string) document.Cell {
+	return document.Cell{Spans: []document.Span{document.Text{Text: text}}}
 }

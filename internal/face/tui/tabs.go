@@ -135,7 +135,7 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 		return reportOpening{head: head, blocks: blocks}
 	case document.PageSkills:
 		return skillsOpening{head: head, blocks: blocks}
-	case document.PageNone, document.PageResume, document.PageIndex:
+	case document.PageNone, document.PageResume, document.PageIndex, document.PagePost:
 	}
 	return plainOpening{head: head, blocks: blocks}
 }
@@ -146,7 +146,7 @@ func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	switch kind {
 	case document.PageResume, document.PageProject:
 		return titledSection{blocks: blocks}
-	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
+	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost:
 	}
 	return plainSection{blocks: blocks}
 }
@@ -231,7 +231,7 @@ func carriesCursor(kind document.PageKind) bool {
 	switch kind {
 	case document.PageResume:
 		return true
-	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost:
 	}
 	return false
 }
@@ -316,6 +316,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.checks(typed, indent)
 	case document.Skills:
 		return layout.skills(typed, indent)
+	case document.List, document.Quote:
+		// a post's alone, which no buffer shows yet: the TUI's post draws them as DESIGN.md has it
 	}
 	return nil
 }

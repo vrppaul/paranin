@@ -363,7 +363,16 @@ would not run it. It refuses as well a heading of level 1, which the title
 is, a heading that skips a level, a footnote no reference cites and a
 reference to no footnote, and the characters the content refuses
 everywhere but a tab inside code, which a face expands as it draws the
-code; each fault at its file and line.
+code, written or as a reference (`&#27;`); each fault at its file and line.
+It refuses as well what no face draws yet: a picture, until the post's
+pictures are served from its folder; a thematic break, a heading parting a
+post; a line broken hard; a link's title; a link to anything but an
+absolute web address or `mailto:` a bare mail address, until a link inside
+the site is read back into a page of it; a table's row of more cells than
+its header, whose cells past it GFM drops; and a footnote that is more than
+one paragraph or cites another, since a note stands beside the line that
+cites it (ADR-0003). Any kind of node outside the one list `content` keeps
+is refused, so a part of the format no face draws never passes unseen.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and
 quotes as text; code with its syntax colours from the tokens; tables laid
@@ -533,7 +542,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
   matter, `id: 12`, given once and never changed. `paranin check` refuses a
   number two posts share and a slug of digits alone, which `blog/12` would
   read as a number.
-- **On the web** `/blog/12` answers `301` to `/blog/<slug>`.
+- **On the web** `/blog/12` answers `301` to `/blog/<slug>`, and
+  `/blog/<slug>` the post as the project pages answer, its markdown and its
+  manual at `.md` and `.txt` beside it (`docs/WEB.md`).
 - **In the TUI** `:e blog` opens the list, `:e blog/12` and
   `:e blog/<slug>` the post.
 - **Over SSH** the user name is the address: `ssh blog@paran.in` opens the

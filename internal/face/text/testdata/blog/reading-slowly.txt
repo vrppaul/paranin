@@ -1,0 +1,40 @@
+READING-SLOWLY(1)               User Commands                READING-SLOWLY(1)
+
+NAME
+       Reading slowly
+
+DESCRIPTION
+       Why a page read twice is read once.
+
+       reading · terminals
+
+       A page read twice is read once, if the first reading was slow.[1]
+
+WHAT A READER KEEPS
+       Reading  Kept
+       ───────  ──────
+       Fast     Little
+       Slow     Most
+
+       - the margins
+       - the notes
+         - in pencil[2]
+         - in ink
+
+       │ A book is read with a pencil.
+       │
+       │ Twice, with a pen.
+
+       In a terminal
+              3. open the file
+              4. read it with less
+
+              fmt.Println("slowly")
+
+              See the reader's notes, or write to mira@example.test.[1]
+
+NOTES
+       [1] Mira Example, on her own reading.
+       [2] A soft one, which rubs out.
+
+example.test                      2026-11-10                 READING-SLOWLY(1)

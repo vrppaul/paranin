@@ -92,8 +92,10 @@ linters:
         - generic
         # compose's monthOf
         - ^github\.com/vrppaul/paranin/internal/document\.Month$
-        # document's writtenBlock
+        # document's writtenBlock, compose's block of a post
         - ^github\.com/vrppaul/paranin/internal/document\.Block$
+        # compose's addressTarget and autoLinkTarget
+        - ^github\.com/vrppaul/paranin/internal/document\.Target$
         # the TUI's openingBody and sectionBody
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return

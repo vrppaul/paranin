@@ -1,6 +1,7 @@
 package text
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -24,14 +25,33 @@ const (
 	sides = 2
 )
 
-// The words of the format itself: the section of the manual a page belongs to, its name, and the sections every
-// page opens with
+// The words of the format itself: the section of the manual a page belongs to, its name, the sections every page
+// opens with and the one of notes it ends with where it cites any, as man-pages(7) names it
 const (
 	manualSection      = "(1)"
 	manualSectionTitle = "User Commands"
 	nameSection        = "NAME"
 	descriptionSection = "DESCRIPTION"
+	notesSection       = "NOTES"
 	bulletMark         = "-"
+)
+
+// The marks of a post's blocks: what follows an item's number in a list in order; the bar a quote's lines stand
+// behind, and how far its text stands in from where the bar does; a note's number, between brackets, where a line
+// cites it and before its words; and the rule under a table's header
+const (
+	orderedEnd  = "."
+	quoteBar    = "│"
+	quoteIndent = 2
+	noteOpens   = "["
+	noteCloses  = "]"
+	headerRule  = "─"
+)
+
+// A tab in a line of code, and how far apart a terminal sets its stops
+const (
+	tabLetter    = '\t'
+	tabStopWidth = 8
 )
 
 // How a link to a page of the site is written: its text, then its address as a manual between brackets
@@ -53,7 +73,8 @@ type manualWriter struct {
 }
 
 // Manual writes a document as a manual page laid out as text: a title line, NAME from its head, DESCRIPTION from its
-// head and the blocks that are no section, then a section for each of its sections, and a closing line.
+// head and the blocks that are no section, then a section for each of its sections, NOTES where its blocks cite any,
+// and a closing line, the day a post came out in its middle, where man(1) writes a page's date.
 func Manual(composed document.Document, site routes.Site) string {
 	writer := manualWriter{site: site}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
@@ -64,17 +85,18 @@ func Manual(composed document.Document, site routes.Site) string {
 	for _, section := range sections {
 		lines = append(lines, writer.pageSection(section)...)
 	}
-	lines = append(lines, "", columns(site.Host(), "", title))
+	lines = append(lines, writer.notes(document.NotesOf(composed.Blocks))...)
+	lines = append(lines, "", columns(site.Host(), dayText(composed.Head.Published), title))
 	return strings.Join(lines, lineEnd) + lineEnd
 }
 
-// pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page;
-// the index, served in markdown alone, and the hidden pages, served in neither, have no manual to name.
+// pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page and
+// a post; the index, served in markdown alone, and the hidden pages, served in neither, have no manual to name.
 func (writer manualWriter) pageName(page document.Page) string {
 	switch page.Kind {
 	case document.PageResume:
 		return writer.site.Host()
-	case document.PageProject:
+	case document.PageProject, document.PagePost:
 		return page.Slug
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
@@ -134,6 +156,10 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.table(indent, typed)
 	case document.CodeBlock:
 		return codeLines(indent, typed.Text)
+	case document.List:
+		return writer.list(indent, typed)
+	case document.Quote:
+		return writer.quote(indent, typed)
 	case document.Facts:
 		return writer.pairs(indent, typed.List)
 	case document.Entry:
@@ -183,17 +209,162 @@ func (writer manualWriter) entry(indent int, entry document.Entry) []string {
 	return lines
 }
 
-// table writes each row as a bullet, its cells in a line.
+// table writes a table under a header in columns, as tbl(1) sets one, where its cells fit the page each on a line;
+// a table with no header, or one too wide, as a bullet a row, its cells in a line, the header's first.
 func (writer manualWriter) table(indent int, table document.Table) []string {
-	lines := []string{}
-	for _, row := range table.Rows {
-		cells := [][]string{}
+	rows := table.Rows
+	if len(table.Header.Cells) > 0 {
+		rows = append([]document.Row{table.Header}, rows...)
+	}
+	cellWords := make([][][]string, 0, len(rows))
+	cellTexts := make([][]string, 0, len(rows))
+	for _, row := range rows {
+		words, texts := [][]string{}, []string{}
 		for _, cell := range row.Cells {
-			cells = append(cells, writer.words(cell.Spans))
+			words = append(words, writer.words(cell.Spans))
+			texts = append(texts, strings.Join(words[len(words)-1], space))
 		}
-		lines = append(lines, bullet(indent, joinedWords(dashWord, cells...))...)
+		cellWords, cellTexts = append(cellWords, words), append(cellTexts, texts)
+	}
+	widths := cellWidths(cellTexts)
+	if len(table.Header.Cells) > 0 && indent+widthOfColumns(widths) <= pageWidth {
+		return columnedRows(indent, cellTexts, widths)
+	}
+	lines := []string{}
+	for _, words := range cellWords {
+		lines = append(lines, bullet(indent, joinedWords(dashWord, words...))...)
 	}
 	return lines
+}
+
+// columnedRows lays rows of cells out in columns of widths at an indent, a rule under the first row, the header.
+func columnedRows(indent int, cells [][]string, widths []int) []string {
+	rule := make([]string, 0, len(widths))
+	for _, width := range widths {
+		rule = append(rule, strings.Repeat(headerRule, width))
+	}
+	lines := []string{}
+	for index, row := range cells {
+		lines = append(lines, columnedLine(indent, row, widths))
+		if index == 0 {
+			lines = append(lines, columnedLine(indent, rule, widths))
+		}
+	}
+	return lines
+}
+
+// columnedLine is one row of cells, each but the last padded to its column's width, a gap between each two.
+func columnedLine(indent int, row []string, widths []int) string {
+	var line strings.Builder
+	line.WriteString(strings.Repeat(space, indent))
+	for place, text := range row {
+		line.WriteString(text)
+		if place < len(row)-1 {
+			line.WriteString(strings.Repeat(space, widths[place]-textWidth(text)+columnGap))
+		}
+	}
+	return line.String()
+}
+
+// cellWidths are the widths of the rows' columns, each its widest cell's.
+func cellWidths(cells [][]string) []int {
+	widths := []int{}
+	for _, row := range cells {
+		for place, text := range row {
+			if place == len(widths) {
+				widths = append(widths, 0)
+			}
+			widths[place] = max(widths[place], textWidth(text))
+		}
+	}
+	return widths
+}
+
+// widthOfColumns is how wide columns of widths stand together, a gap between each two.
+func widthOfColumns(widths []int) int {
+	total := 0
+	for _, width := range widths {
+		total += width
+	}
+	return total + max(len(widths)-1, 0)*columnGap
+}
+
+// list writes a list's items, each its blocks after its mark, a dash or its number, the lines after the first
+// standing in under the item's text, as far as the widest mark takes: a list nested in an item right under the block
+// before it, as markdown writes it, any other block a blank line below.
+func (writer manualWriter) list(indent int, list document.List) []string {
+	marks := listMarks(list)
+	hang := bulletHang
+	for _, mark := range marks {
+		hang = max(hang, textWidth(mark)+1)
+	}
+	lines := []string{}
+	for index, item := range list.Items {
+		inner := writer.itemBlocks(item.Blocks, indent+hang)
+		first := strings.Repeat(space, indent) + marks[index]
+		if len(inner) > 0 {
+			first += strings.Repeat(space, hang-textWidth(marks[index])) + strings.TrimPrefix(inner[0], strings.Repeat(space, indent+hang))
+			inner = inner[1:]
+		}
+		lines = append(append(lines, first), inner...)
+	}
+	return lines
+}
+
+// listMarks are the marks a list's items open with, in their order: a dash each, or each its number.
+func listMarks(list document.List) []string {
+	marks := make([]string, 0, len(list.Items))
+	for index := range list.Items {
+		mark := bulletMark
+		if list.Ordered {
+			mark = strconv.Itoa(list.Start+index) + orderedEnd
+		}
+		marks = append(marks, mark)
+	}
+	return marks
+}
+
+// itemBlocks writes an item's blocks at an indent: a list nested in it right under the block before, any other block
+// a blank line below.
+func (writer manualWriter) itemBlocks(blocks []document.Block, indent int) []string {
+	lines := []string{}
+	for place, block := range blocks {
+		if _, isList := block.(document.List); place > 0 && !isList {
+			lines = append(lines, "")
+		}
+		lines = append(lines, writer.block(block, indent)...)
+	}
+	return lines
+}
+
+// quote writes a quote's blocks behind a bar, its text standing in from it.
+func (writer manualWriter) quote(indent int, quote document.Quote) []string {
+	inner := trimBlank(writer.blocks(quote.Blocks, indent+quoteIndent))
+	bar := strings.Repeat(space, indent) + quoteBar
+	lines := make([]string, 0, len(inner))
+	for _, line := range inner {
+		lines = append(lines, bar+strings.TrimPrefix(line, strings.Repeat(space, indent+1)))
+	}
+	return lines
+}
+
+// notes writes the notes the page's blocks cite, in a section of their own at its end, each its number and then
+// its words, the lines after the first standing in under them; none where the page cites none.
+func (writer manualWriter) notes(notes []document.Note) []string {
+	if len(notes) == 0 {
+		return nil
+	}
+	lines := []string{"", notesSection}
+	for _, note := range notes {
+		mark := noteMark(note.Number)
+		lines = append(lines, paragraph(sectionIndent, textWidth(mark)+1, append([]string{mark}, writer.words(note.Spans)...))...)
+	}
+	return lines
+}
+
+// noteMark is a note's number as a line cites it and as its words open.
+func noteMark(number int) string {
+	return noteOpens + strconv.Itoa(number) + noteCloses
 }
 
 // pairs writes labels and their values, each value in a column after the widest label.
@@ -246,13 +417,31 @@ func paragraph(indent, hang int, words []string) []string {
 	return lines
 }
 
-// codeLines writes text line for line at an indent, never wrapped.
+// codeLines writes text line for line at an indent, never wrapped, a tab as the spaces to its next stop.
 func codeLines(indent int, code string) []string {
 	lines := []string{}
 	for line := range strings.SplitSeq(code, lineEnd) {
-		lines = append(lines, strings.Repeat(space, indent)+line)
+		lines = append(lines, strings.Repeat(space, indent)+expandedTabs(line))
 	}
 	return lines
+}
+
+// expandedTabs is a line of code with each tab the spaces to the next tab stop, counted from the line's start, as a
+// terminal sets a tab every eight columns: a tab reaches no terminal, whose stops the page's indent would move.
+func expandedTabs(line string) string {
+	var builder strings.Builder
+	column := 0
+	for _, letter := range line {
+		if letter != tabLetter {
+			builder.WriteRune(letter)
+			column++
+			continue
+		}
+		stop := tabStopWidth - column%tabStopWidth
+		builder.WriteString(strings.Repeat(space, stop))
+		column += stop
+	}
+	return builder.String()
 }
 
 // columns writes text at the left, the centre and the right of a line of the page's width.
@@ -304,6 +493,12 @@ func (writer manualWriter) readSpans(reader *wordReader, spans []document.Span) 
 			reader.read(typed.Text)
 		case document.Highlight:
 			writer.readSpans(reader, typed.Spans)
+		case document.Emphasis:
+			writer.readSpans(reader, typed.Spans)
+		case document.Strong:
+			writer.readSpans(reader, typed.Spans)
+		case document.Note:
+			reader.keep(noteMark(typed.Number))
 		case document.Link:
 			writer.readSpans(reader, typed.Spans)
 			if page, isPage := typed.Target.(document.Page); isPage {

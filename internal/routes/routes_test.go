@@ -16,6 +16,7 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
 	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
 	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
+	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
 	cases := []struct {
 		name   string
 		target document.Target
@@ -37,6 +38,9 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "the index in markdown", target: index, format: FormatMarkdown, want: "https://example.test/llms.txt"},
 		{name: "the index has no manual", target: index, format: FormatManual, want: ""},
 		{name: "the index has no address to choose at", target: index, format: FormatChosen, want: ""},
+		{name: "a post in markdown", target: post, format: FormatMarkdown, want: "https://example.test/blog/reading-slowly.md"},
+		{name: "a post as a manual", target: post, format: FormatManual, want: "https://example.test/blog/reading-slowly.txt"},
+		{name: "a post as the reader asks", target: post, format: FormatChosen, want: "https://example.test/blog/reading-slowly"},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},

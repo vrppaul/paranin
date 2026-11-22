@@ -12,6 +12,7 @@ package text
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/document"
@@ -22,8 +23,11 @@ import (
 const (
 	headingMark   = "#"
 	listMark      = "- "
+	orderedMark   = ". "
 	quoteMark     = ">"
 	highlightMark = "**"
+	strongMark    = "**"
+	emphasisMark  = "*"
 	codeMark      = "`"
 	escapeMark    = `\`
 	blankLine     = "\n\n"
@@ -34,6 +38,19 @@ const (
 	sectionDepth = 2
 	// the fewest backticks a block of code is fenced with
 	shortestFence = 3
+)
+
+// How a table with a header is written, as GFM writes one: its cells between bars, the header's under a rule
+const (
+	cellBar  = "|"
+	cellRule = "---"
+)
+
+// How a note is written, as GFM writes a footnote: [^1] where a line cites it, [^1]: and its words at the end
+const (
+	noteOpening    = "[^"
+	noteClosing    = "]"
+	definitionMark = ":"
 )
 
 // How a link is written: [text](address), the address between brackets where it holds a space or a parenthesis
@@ -86,11 +103,13 @@ type markdownWriter struct {
 	gapEscape  *strings.Replacer
 }
 
-// Markdown writes a document as CommonMark: its head, then each block, a blank line between them.
+// Markdown writes a document as CommonMark: its head, then each block, a blank line between them, and the notes its
+// blocks cite at the end.
 func Markdown(composed document.Document, site routes.Site) string {
 	writer := markdownWriter{site: site, textEscape: escaperOf(inlineMarkup), gapEscape: escaperOf(gapMarkup)}
 	chunks := writer.head(composed.Head)
 	chunks = writer.blocks(chunks, composed.Blocks, sectionDepth)
+	chunks = appendChunk(chunks, writer.notes(document.NotesOf(composed.Blocks)))
 	return strings.Join(chunks, blankLine) + lineEnd
 }
 
@@ -103,18 +122,19 @@ func escaperOf(letters string) *strings.Replacer {
 	return strings.NewReplacer(pairs...)
 }
 
-// head writes the title as a heading, then the subtitle and the place on a line, what a project is made of on the
-// next, and the lead as a quote. Where a project's code lives stands as a line of its own, not an item, since the
-// list of the project's details comes next and markdown would read two lists in a row as one.
+// head writes the title as a heading, then the subtitle, the place and the day a post came out on a line, what a
+// project is made of or a post's tags on the next, and the lead as a quote. Where a project's code lives stands as a
+// line of its own, not an item, since the list of the project's details comes next and markdown would read two lists
+// in a row as one.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
-	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place)))
+	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place), dayText(head.Published)))
 	tags := make([]string, 0, len(head.Tags))
 	for _, tag := range head.Tags {
 		tags = append(tags, writer.text(tag))
 	}
 	chunks = appendLine(chunks, joined(dot, tags...))
-	chunks = appendChunk(chunks, quote(writer.spans(head.Lead)))
+	chunks = appendChunk(chunks, quote(lineStart(writer.spans(head.Lead))))
 	for _, fact := range head.Repository.Facts() {
 		chunks = appendLine(chunks, writer.fact(fact))
 	}
@@ -138,7 +158,11 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Table:
 		return appendChunk(chunks, writer.table(typed))
 	case document.CodeBlock:
-		return appendChunk(chunks, codeBlock(typed.Text))
+		return appendChunk(chunks, codeBlock(typed.Text, typed.Language))
+	case document.List:
+		return appendChunk(chunks, writer.list(typed, depth))
+	case document.Quote:
+		return appendChunk(chunks, quote(strings.Join(writer.blocks(nil, typed.Blocks, depth), blankLine)))
 	case document.Facts:
 		return appendChunk(chunks, writer.facts(typed.List))
 	case document.Entry:
@@ -154,8 +178,12 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	return chunks
 }
 
-// table writes each row as an item, its cells in a line.
+// table writes a table under a header as GFM writes one, the posts' own format; one with no header, as a skill
+// group's, each row an item, its cells in a line.
 func (writer markdownWriter) table(table document.Table) string {
+	if len(table.Header.Cells) > 0 {
+		return writer.headedTable(table)
+	}
 	items := make([]string, 0, len(table.Rows))
 	for _, row := range table.Rows {
 		cells := make([]string, 0, len(row.Cells))
@@ -165,6 +193,95 @@ func (writer markdownWriter) table(table document.Table) string {
 		items = append(items, joined(dash, cells...))
 	}
 	return list(items)
+}
+
+// headedTable writes a table as GFM writes one: its header's row, a rule under it, then its rows.
+func (writer markdownWriter) headedTable(table document.Table) string {
+	rule := make([]string, 0, len(table.Header.Cells))
+	for range table.Header.Cells {
+		rule = append(rule, cellRule)
+	}
+	lines := []string{writer.tableRow(table.Header), barred(rule)}
+	for _, row := range table.Rows {
+		lines = append(lines, writer.tableRow(row))
+	}
+	return strings.Join(lines, lineEnd)
+}
+
+// tableRow writes a row of a table's cells, a bar in a cell escaped, since GFM would end the cell at it.
+func (writer markdownWriter) tableRow(row document.Row) string {
+	cells := make([]string, 0, len(row.Cells))
+	for _, cell := range row.Cells {
+		cells = append(cells, strings.ReplaceAll(writer.spans(cell.Spans), cellBar, escapeMark+cellBar))
+	}
+	return barred(cells)
+}
+
+// barred writes cells as a row of a table, a bar before, between and after them.
+func barred(cells []string) string {
+	return cellBar + space + strings.Join(cells, space+cellBar+space) + space + cellBar
+}
+
+// list writes a list's items, each its blocks after its mark, the lines after the first standing in under the mark's
+// text. A list nested in an item follows the block before it on the next line, and the list stays tight, its items
+// one a line; any other block after another stands a blank line below it, and the list is loose, a blank line
+// between each two items, as CommonMark reads them.
+func (writer markdownWriter) list(list document.List, depth int) string {
+	items := make([]string, 0, len(list.Items))
+	separator := lineEnd
+	for index, item := range list.Items {
+		written := ""
+		for place, block := range item.Blocks {
+			chunk := strings.Join(writer.block(nil, block, depth), blankLine)
+			_, isList := block.(document.List)
+			switch {
+			case place == 0:
+				written = chunk
+			case isList:
+				written += lineEnd + chunk
+			default:
+				written += blankLine + chunk
+				separator = blankLine
+			}
+		}
+		items = append(items, hung(itemMark(list, index), written))
+	}
+	return strings.Join(items, separator)
+}
+
+// itemMark is the mark an item of a list opens with: a dash, or in a list in order its number.
+func itemMark(list document.List, index int) string {
+	if !list.Ordered {
+		return listMark
+	}
+	return strconv.Itoa(list.Start+index) + orderedMark
+}
+
+// hung writes text after a mark, its lines after the first standing in as far as the mark, so markdown reads them as
+// the item's; a blank line stays blank.
+func hung(mark, text string) string {
+	lines := strings.Split(text, lineEnd)
+	indent := strings.Repeat(space, len(mark))
+	for index, line := range lines[1:] {
+		if line != "" {
+			lines[index+1] = indent + line
+		}
+	}
+	return mark + strings.Join(lines, lineEnd)
+}
+
+// notes writes the notes a document's blocks cite, as GFM writes footnotes at the end: each a line, by its number.
+func (writer markdownWriter) notes(notes []document.Note) string {
+	lines := make([]string, 0, len(notes))
+	for _, note := range notes {
+		lines = append(lines, noteReference(note.Number)+definitionMark+space+writer.spans(note.Spans))
+	}
+	return strings.Join(lines, lineEnd)
+}
+
+// noteReference is how a line cites a note by its number, and how the note's words open at the end.
+func noteReference(number int) string {
+	return noteOpening + strconv.Itoa(number) + noteClosing
 }
 
 func (writer markdownWriter) facts(facts []document.Fact) string {
@@ -231,8 +348,14 @@ func (writer markdownWriter) spans(spans []document.Span) string {
 			builder.WriteString(writer.gapEscape.Replace(typed.Text))
 		case document.Highlight:
 			builder.WriteString(highlightMark + writer.spans(typed.Spans) + highlightMark)
+		case document.Emphasis:
+			builder.WriteString(emphasisMark + writer.spans(typed.Spans) + emphasisMark)
+		case document.Strong:
+			builder.WriteString(strongMark + writer.spans(typed.Spans) + strongMark)
 		case document.Link:
 			builder.WriteString(link(writer.spans(typed.Spans), writer.site.Address(typed.Target, routes.FormatMarkdown)))
+		case document.Note:
+			builder.WriteString(noteReference(typed.Number))
 		}
 	}
 	return builder.String()
@@ -276,10 +399,11 @@ func codeSpan(code string) string {
 	return fence + code + fence
 }
 
-// codeBlock fences text with more backticks than any run inside it, and three at least.
-func codeBlock(code string) string {
+// codeBlock fences text with more backticks than any run inside it, and three at least, its language after the
+// opening fence.
+func codeBlock(code, language string) string {
 	fence := strings.Repeat(codeMark, max(shortestFence, longestRun(code, codeMark)+1))
-	return fence + lineEnd + code + lineEnd + fence
+	return fence + language + lineEnd + code + lineEnd + fence
 }
 
 // longestRun is the length of the longest run of a mark in a text.
@@ -309,8 +433,9 @@ func lineStart(line string) string {
 	return line
 }
 
-// quote writes text as a quote, where there is one: every line of it marked, a blank one included, so a quote
-// of two paragraphs stays one quote; the text after each mark opens no block of its own.
+// quote writes markdown as a quote, where there is any: every line of it marked, a blank one included, so a quote
+// of two paragraphs stays one quote. Each line reads after its mark as it read before it, so a list or code inside
+// the quote stays one, and a text that opens no block opens none there.
 func quote(text string) string {
 	if text == "" {
 		return ""
@@ -327,7 +452,7 @@ func quoteLine(line string) string {
 	if line == "" {
 		return quoteMark
 	}
-	return quoteMark + space + lineStart(line)
+	return quoteMark + space + line
 }
 
 // list writes items as a markdown list, one a line; an item reads as text, never as a block of its own.

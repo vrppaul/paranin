@@ -13,15 +13,19 @@ Three readers, three formats, from one document per page:
 
 ## Addresses
 
-A page is the résumé or a project's page. Each section past a page's opening is a tab, named by its title's
-letters and digits in small letters, a hyphen between each run of them (`Experience` is `experience`).
+A page is the résumé, a project's page or a post. Each section past the opening of the résumé or a project's page
+is a tab, named by its title's letters and digits in small letters, a hyphen between each run of them (`Experience`
+is `experience`); a post has no tabs. A post is served while it is published or unlisted, never as a draft or a
+preview.
 
 | Method, path | Answer |
 | --- | --- |
 | `GET /`, `GET /p/{slug}` | The page, in the format the reader's request chooses: the text formats write it whole, the HTML shows its opening tab. |
 | `GET /{tab}`, `GET /p/{slug}/{tab}` | One tab, chosen the same way: the text formats write it alone, the HTML shows it inside its page. |
-| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md` | The same in markdown, `text/markdown`. |
-| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt` | The same as the manual, `text/plain`. |
+| `GET /blog/{slug}` | A post, whole, in the text format the reader's request chooses: no HTML until the page draws a post. |
+| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md` | The same in markdown, `text/markdown`. |
+| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt` | The same as the manual, `text/plain`. |
+| `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon: a drawing in the reader's theme, a PNG of 180px and an icon file of 32px, both in the dark theme. |
@@ -36,15 +40,16 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, the icon, the page of no page | `no-cache`: a reload can change any of them, and the icon keeps its path when the author's name changes |
+| A page in any format, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them, the icon keeps its path when the author's name changes, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 
-### Negotiation for `/`, `/p/{slug}` and their tabs
+### Negotiation for `/`, `/p/{slug}`, their tabs and `/blog/{slug}`
 
 The format the `Accept` header ranks highest, by the closest range that names it (RFC 9110, 12.5.1): HTML
 (`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each with `; charset=utf-8`. Where it ranks
 two alike the manual goes first, then markdown, then HTML, so `curl`, which sends `*/*`, and a request with no
-`Accept` get the manual (D21).
+`Accept` get the manual (D21). A post's address offers the manual and markdown alone, so a browser, whose `Accept`
+ranks both alike under `*/*`, gets the manual, and so does a request naming `text/html` alone.
 
 Every negotiated response sets `Vary: Accept` alone, the page of no page among them. Every format of a page, at its
 own path and where the reader chooses, sets `Link: <canonical URL>; rel="canonical"`, the URL where the reader
@@ -58,9 +63,13 @@ period]`). The HTML shows a page as a reader of the finished work sees it: a fac
 left out, and a gap among written words stands marked as one.
 
 - **The manual** opens with `NAME` and `DESCRIPTION`, then a section for each of the page's, as `man(1)` lays a page
-  out. A link to a page of the site is its text and its address between `<` and `>`; a card's page, its address on a
-  line of its own.
-- **Markdown** is CommonMark, the page's sections as headings.
+  out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds a post's day in the
+  middle, as `2026-11-10`, where `man(1)` writes a page's date. A link to a page of the site is its text and its
+  address between `<` and `>`; a card's page, its address on a line of its own. A post's table stands in columns
+  under its header where it fits the 78 columns, a bullet a row where not; a quote behind `│`; a tab in code as the
+  spaces to its stop, every eight columns.
+- **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, its
+  tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé` and `## Projects`, a link to each page's
   markdown.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon

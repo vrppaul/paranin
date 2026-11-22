@@ -2,7 +2,8 @@ package document
 
 import "strings"
 
-// Span is one kind of text inside a block. A highlight and a link hold spans; text, code and a gap are leaves.
+// Span is one kind of text inside a block. A highlight, emphasis, strong text, a link and a note hold spans; text,
+// code and a gap are leaves.
 //
 //sumtype:decl
 type Span interface {
@@ -29,9 +30,27 @@ type Highlight struct {
 	Spans []Span
 }
 
+// Emphasis is text a post stresses, as a voice would.
+type Emphasis struct {
+	Spans []Span
+}
+
+// Strong is text a post holds up as weightier than the words round it.
+type Strong struct {
+	Spans []Span
+}
+
 // Link is text that leads to its target.
 type Link struct {
 	Target Target
+	Spans  []Span
+}
+
+// Note is a post's footnote where a line cites it: its number, the order its first citation gives it, and its
+// words, so a face sets it beside the line or gathers the notes at the end (NotesOf), with no list to keep in step.
+// A note cited twice stands twice, alike.
+type Note struct {
+	Number int
 	Spans  []Span
 }
 
@@ -39,10 +58,13 @@ func (Text) span()      {}
 func (Code) span()      {}
 func (Gap) span()       {}
 func (Highlight) span() {}
+func (Emphasis) span()  {}
+func (Strong) span()    {}
 func (Link) span()      {}
+func (Note) span()      {}
 
 // PlainText is the text of spans, marks gone: a title where a face takes text alone, as a terminal's tab and a
-// browser's title bar do.
+// browser's title bar do. A note's words stand apart from the line that cites them, so they are none of its text.
 func PlainText(spans []Span) string {
 	var builder strings.Builder
 	for _, span := range spans {
@@ -55,8 +77,13 @@ func PlainText(spans []Span) string {
 			builder.WriteString(typed.Text)
 		case Highlight:
 			builder.WriteString(PlainText(typed.Spans))
+		case Emphasis:
+			builder.WriteString(PlainText(typed.Spans))
+		case Strong:
+			builder.WriteString(PlainText(typed.Spans))
 		case Link:
 			builder.WriteString(PlainText(typed.Spans))
+		case Note:
 		}
 	}
 	return builder.String()

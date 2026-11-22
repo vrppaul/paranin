@@ -263,6 +263,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	case document.Checks, document.Skills:
 		// only the hidden pages hold checks and the list of skills, and no host hands them to a page: one served
 		// with them would fail TestEveryPhraseReachesThePage
+	case document.List, document.Quote:
+		// a post's alone, which no page shows yet: the page's post draws them as DESIGN.md has it
 	}
 	return templ.NopComponent
 }
@@ -282,6 +284,14 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 		if reference := routes.Reference(typed.Target, routes.FormatChosen); reference != "" {
 			return writer.link(reference, typed.Spans)
 		}
+		return writer.spans(typed.Spans)
+	// a post's alone, which no page shows yet: emphasis, strong text and a note read as their words until the page's
+	// post draws them as DESIGN.md has it
+	case document.Emphasis:
+		return writer.spans(typed.Spans)
+	case document.Strong:
+		return writer.spans(typed.Spans)
+	case document.Note:
 		return writer.spans(typed.Spans)
 	}
 	return templ.NopComponent

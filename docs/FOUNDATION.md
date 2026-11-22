@@ -44,7 +44,7 @@ Each decision carries one of three marks:
 | D22 | The one front-end build of ADR-0004 is accepted as its bullet is written: one Vite build writing hashed files, one manifest and each widget's props as JSON Schema, files served from a folder and none embedded, the manifest and the props checked when a snapshot loads, `vite build --watch` in development. Embedding would ship a post's widgets only with a new binary (D5), Vite's dev server breaks the CSP (§2), and two builds would ship Svelte twice. | 2026-11-03 |
 | D23 | The blog holds the author's own thoughts and what he learned, each written up as an article; the original in English, translations beside it (D12). Interactive parts at least on the web, a reduced post over SSH (§5.4). | 2026-11-22 |
 | D24 | A post has revisions: the reader sees which date's version they read and can open an older one (§5.4, Revisions). | 2026-11-22 |
-| D25 | Posts group into series, and carry tags; the blog lists its posts, its tags and its series (§5.4, Series, tags and lists). | 2026-11-22 |
+| D25 | Posts group into series, and carry tags; the blog lists its posts by year or by series, and a tag or a series filters the list (§5.4, Series, tags and lists). | 2026-11-22 |
 | D26 | A post has a slug and a short number, both reached as `blog/…` in every face: `paran.in/blog/12`, `:e blog/12`, `ssh blog/12@paran.in` (§5.4, Addresses). | 2026-11-22 |
 | D27 | The whole site, the blog among it, has good SEO and Open Graph (§5.4, SEO and Open Graph). | 2026-11-22 |
 
@@ -468,18 +468,24 @@ and SSH to the host: "without a new binary" does not mean without a build.
   about it and its posts' slugs in order. The order is written once, so a
   post put in the middle renumbers nothing. A post of a series shows "part 3
   of 11" with the parts before and after; a part planned and not yet
-  written may stand on the series' page as to come.
+  written may stand in the list grouped by series as to come.
 - **Tags** stand in a post's front matter: `tags: [payments, agents]`.
-- **Lists:** `/blog`, every post newest first, with its date, tags and
-  series; `/blog/tags` and `/blog/tags/<tag>`; `/blog/series` and
-  `/blog/series/<name>`. Each list is a document every face draws: the TUI
-  gives the blog a buffer of its own, and its tags and series stand in the
-  `:` menu beside the posts.
+- **One list, no pages of its own for a tag or a series** (owner,
+  2026-11-22): `/blog`, every post by year, newest first, with its date,
+  series and tags; `/blog/series`, the same posts by series. A tag or a
+  series filters the list, the filter reversed in the list's head; a
+  filtered list is sent with `noindex` and names `/blog` as canonical. Its
+  address is proposed, the site's first with a query, `/blog?tag=payments`
+  and `/blog?series=stint`, and settled with the lists. The list is a
+  document every face draws: the TUI gives the blog a session of its own
+  (DESIGN.md, The TUI), and its posts, tags and series stand in the `:`
+  menu.
 - **Feeds:** Atom for the blog in each language, and one for each series.
-- **For the first post:** footnotes as a list of sources at the post's end,
-  numbered links in a terminal; anchors on headings and a table of
-  contents for a long post; code coloured from the tokens, with the copy
-  chip; pictures from the post's folder, their alt text in a terminal.
+- **For the first post:** footnotes as sources beside the line that cites
+  them, at the post's end where the screen is narrow, numbered links in a
+  terminal; anchors on headings and a table of contents for a long post;
+  code coloured from the tokens, with the copy chip; pictures from the
+  post's folder, their alt text in a terminal.
 - **Later, when the posts are many:** a search across them, reading time,
   related posts by shared tags.
 - **Not built:** comments (accounts, moderation, spam), with a post's front
@@ -493,12 +499,14 @@ and SSH to the host: "without a new binary" does not mean without a build.
   number two posts share and a slug of digits alone, which `blog/12` would
   read as a number.
 - **On the web** `/blog/12` answers `301` to `/blog/<slug>`.
-- **In the TUI** `:e blog/12` and `:e blog/<slug>` open the post.
-- **Over SSH** the user name is the address: `ssh blog/12@paran.in` and
-  `ssh blog/<slug>@paran.in` open the TUI on the post. SSH has no path, and
-  sends no host name a server could route by, but anyone may connect under
-  any name (FR-1), and OpenSSH passes `blog/12` as it is written. A name
-  that names no post opens the résumé, as a login name does.
+- **In the TUI** `:e blog` opens the list, `:e blog/12` and
+  `:e blog/<slug>` the post.
+- **Over SSH** the user name is the address: `ssh blog@paran.in` opens the
+  TUI on the list, `ssh blog/12@paran.in` and `ssh blog/<slug>@paran.in`
+  on the post. SSH has no path, and sends no host name a server could
+  route by, but anyone may connect under any name (FR-1), and OpenSSH
+  passes `blog/12` as it is written. A name that names no post opens the
+  résumé, as a login name does.
 
 #### SEO and Open Graph (Decided, D27; the model Proposed)
 
@@ -515,7 +523,7 @@ For every page of the site, the blog's among them:
   translations.
 - **Crawling:** `robots.txt` naming `sitemap.xml`, the sitemap with every
   page, tab and post and their `lastmod`, per language; `noindex` on
-  previews, unlisted posts, older versions and tag pages; `301` from
+  previews, unlisted posts, older versions and the filtered list; `301` from
   `/blog/12` and from a path with a trailing slash.
 - **The markup:** one `h1`, `<article>`, `<time datetime>`, alt text
   required of every picture.
@@ -597,8 +605,11 @@ says (a role's dates stand in their own column, the page one column under
 the width `phone`), and the fourth for the résumé, whose top bar holds its
 five sections. Since 2026-11-18 every size of the page is in rem, none in
 pixels (`DESIGN.md`).
-The reading layout and the blog's place in the navigation wait for the blog
-(§8, step 8); serving the face waits for its own chunk.
+2026-11-22: the owner approved the blog's design, on the page and in the
+TUI, with the two faces made one style, now `DESIGN.md` too: the reading
+layout, its second face iA Writer Duo, and the blog as a session of its own
+beside the résumé's, which settle the third and fourth items. Serving the
+face waits for its own chunk.
 
 Each goes through a sheet of states in both themes before code:
 

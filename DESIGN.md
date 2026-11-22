@@ -5,7 +5,8 @@ paran.in is Pavel Paranin's résumé: one profile served as an SSH app, a web pa
 cells, block letters, the Catppuccin palettes, one accent. Its readers are hirers; the page has done its job when they
 write to him.
 
-The owner approved this design on 2026-11-17. Everything here is the target. What holds today is
+The owner approved this design on 2026-11-17, and on 2026-11-22 the blog's, on the page and in the TUI, with the two
+faces made one style. Everything here is the target. What holds today is
 `design/tokens.yaml`, `web/stylelint.config.js` and the page itself; the page grew into this design part by part,
 each part with the tokens and the rules it draws by; `TODO.md` lists the parts still to come.
 
@@ -26,11 +27,15 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 - A button's words start with a verb and say what happens: "Write to me", "Copy", "Send". A toast says what was
   done, in the past: "Copied ssh paran.in".
 - An error says what to fix: "Write the whole address, as name@company.com." Never "Invalid input".
-- No small line over a heading, no numbered markers, no emoji, no "→" after a link.
+- No small line over a heading, no numbered markers, no emoji, no "→" after a link. An article's paragraphs are
+  numbered, as places a reader links to, not as markers.
 - Every fact comes from `content/profile.yaml`. A fact or a point that is only a gap still to fill (`[later]`) is left
   out of the web until the author fills it; a gap inside a sentence shows `faint`.
 - Dates are months, `MM/YYYY` (`08/2020`), with the machine's `YYYY-MM` in `<time datetime>`. A range joins two with an
-  en dash and spaces, `08/2020 – 01/2022`; a role still held ends in `present`.
+  en dash and spaces, `08/2020 – 01/2022`; a role still held ends in `present`. A post and its versions are dated by
+  the day, `21 Nov 2026`, with `YYYY-MM-DD` in `<time datetime>`.
+- A post's tag is its word after a `#`, `#payments`, as readers know a tag that gathers posts. What a project is made
+  of is no tag: its words as the profile writes them, the parts of a line.
 - A heading joins a title and its subtitle with an em dash, `Seznam.cz — Backend Developer`; a line joins its parts
   with a middle dot, `Python · Browser-based code review`; a label ends in a colon where text follows it.
 - Lengths of time as the profile writes them: `7y`, `1y 7m`, `11m`, or the words `side` and `learning`.
@@ -38,9 +43,10 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 ## The grid
 
 - Space is counted in rows of 1.5rem (`row`) and cells of 1ch (`cell`): vertical space in rows, horizontal space inside
-  a line in cells. The text read sits on the rows; every other style's line is its own (Type).
+  a line in cells. The text read sits on the rows, but for an article's words, whose lines are taller, as a
+  proportional face reads best (`reading`); every other style's line is its own (Type).
 - The page fills the screen up to `content` with `gutter` either side, `gutter_phone` on a phone. Only running prose is
-  held to `measure`; the layout itself uses the width.
+  held to `measure`, an article's to `column`; the layout itself uses the width.
 
 | token | value | for |
 | --- | --- | --- |
@@ -60,6 +66,8 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `dialog` | `design/tokens.yaml` | the widest a window over the page runs, a Dialog's or a Hint's |
 | `textarea` | 7.5rem | a message field's least height |
+| `rail`, `column`, `aside` | to add | a post's Outline, its text and its sources beside it |
+| `group_name`, `group_name_mid`, `tile` | to add | the blog's list: the groups' names, and below `wide`; the least width of a tile |
 
 ## Sizes
 
@@ -70,7 +78,7 @@ other size: a control that seems to need one is the wrong control.
 | --- | --- | --- | --- | --- | --- |
 | regular | `control`, two rows | `cell_2` | `cell` | `strong` for an action, `body` for a value | Button, Choice, Command, Field, Toast |
 | compact | `control_compact`, one row | `cell` | `nudge` | `caption` | ThemeSwitch, Tooltip |
-| line | a row less two `nudge`, inside the foot line's row | `cell` | `cell` | `caption` | the FootLine's chips |
+| line | a row less two `nudge`, inside the foot line's row | `cell` | `cell` | `caption`; `small` in a post's head and the blog's | the FootLine's chips, the Switch, the series' Pick |
 | tick | three cells, `[x]` or `(*)`, on a row | label `cell` away | | `body` | Checkbox, Radio |
 
 - Corners `radius` on buttons, chips, fields and dialogs; bars, rules and the current tab are square.
@@ -89,19 +97,23 @@ other size: a control that seems to need one is the wrong control.
   `design/tokens.yaml` gives it over the grounds it names there, which `scripts/tokens` holds; `faint`, the lower, is
   never the only ink of something a reader needs. Neither stands on `tint`.
 - A fact's label is `muted`. `label` blue rings the focus: blue, at its least contrast over the grounds the tokens
-  name, in both themes.
+  name, in both themes; in an article it numbers the sources too, in the text and beside it.
 - `accent` is spent where the eye should go first: the primary button, the cursor, the current role, the near end of
-  the name. In Latte it is a fill and a display colour, never small text (2.64:1).
-- `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first. `error`, `passed`
-  and `warned` only for states, always with words.
-- Borders: `quiet` for rules between parts, `muted` for a control's border, `edge` for the corner crosses and for
-  what lies over the page, a tooltip and a toast.
+  the name, and a mark beside words that says where to look (the arrow to a newer version, the Outline's heading
+  read). In Latte it is a fill, a display colour and such a mark, never small text (2.64:1).
+- `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first, and the way from an
+  older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words.
+- Borders: `quiet` for rules between parts, `muted` for a control's border and for a pane's or a tile's frame, `edge`
+  for the corner crosses and for what lies over the page, a tooltip, a toast and a pick's window. A pane or a tile
+  that leads nowhere is framed in `quiet` at half its strength (`quiet_half`, to add).
 - `scrim` fades the page behind a dialog towards its own ground: Latte's and Macchiato's background at 85%.
 
 ## Type
 
-- One face (`face`), monospace, ligatures off, set once on the body for every element to inherit. No second face on
-  the résumé and its pages; an article's reading face is chosen with the blog (FOUNDATION §5.6).
+- One face (`face`), monospace, ligatures off, set once on the body for every element to inherit, served from the
+  site itself (FOUNDATION §5.6), so every reader sees the face the cells are counted in. A second face, iA Writer Duo
+  (`reading_face`, to add), sets an article's words alone, its paragraphs, lists and quotes; everything else on a post's page,
+  its title, headings, code and notes, stays in `face`.
 - A text style is its size, its line and its weight, set as three properties (`web/stylelint.config.js`).
 
 | style | size / line, rem | weight | for |
@@ -112,11 +124,14 @@ other size: a control that seems to need one is the wrong control.
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
-| `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip; never prose |
+| `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip, a source beside an article's text; never prose |
+| `title_text`, `title_text_mid`, `title_text_phone` | to add | 700 | a title set in text: a post's, and a group's on the blog's list, the group's at the mid size below `wide`; each on a phone |
+| `reading` | to add | 400 | an article's words, in `reading_face`, on a line of its own taller than a row |
 
 - The page's one `h1`, a tab's title among them, and the `h2` of the résumé's first section under its first screen are
-  block letters; another page's `h2` is `heading`; every heading below is `strong`, its level shown by the space
-  before it (`row_2` before `h3`, `row` before `h4` to `h6`). Levels never skip.
+  block letters; a post's title is its page's `h1` in `title_text`, since a sentence in block letters would not fit;
+  another page's `h2` is `heading`; every heading below is `strong`, its level shown by the space before it (`row_2`
+  before `h3`, `row` before `h4` to `h6`). Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
 - Weights: 400 for text, 700 for what names (a role, a company, a button), 800 only for the mail, its @ left at 400.
 
@@ -125,8 +140,9 @@ other size: a control that seems to need one is the wrong control.
 - The name and the five sections' titles are drawn in the TUI's block fonts, the same glyphs
   (`internal/look/letters.go`), as SVG rectangles: they need no font and shrink to their column, never past it.
 - Natural size: `name_cell` a cell for the name, `title_cell` for a title.
-- One gradient, `accent` to `host`, left to right: the only gradient on the page. `shape-rendering: crispEdges`, so no
-  seam shows between two rectangles.
+- One gradient, `accent` to `host`, left to right. `shape-rendering: crispEdges`, so no seam shows between two
+  rectangles. A title set in text, a post's and a group's on the blog's list, takes the same gradient softened, each
+  end mixed a fifth towards `text` (`title_soft`, to add), so a title of letters reads apart from one of blocks.
 - The title font's X is drawn on three cells (▀▄▀ over ▄▀▄), in the TUI too: on five it read as )(.
 - The cursor after the name is an underscore a letter wide on the letters' foot, in `accent`, and it blinks, as a
   terminal's does: the one thing on the page that moves on its own, and it stops for a reader who asks for less motion.
@@ -149,7 +165,7 @@ other size: a control that seems to need one is the wrong control.
 | pressed | one shade further (`deep`); the primary turns `text` |
 | focus | a `focus_width` ring in `label`, as far from what it rings, on every control, by keyboard |
 | current, chosen | reversed, `text` ground and `background` words, bold, as the TUI's tab: a mark of form, not of colour alone |
-| disabled | `sunk` ground or `quiet` border, `faint` words, `aria-disabled`, and the page says why |
+| disabled | `sunk` ground or `quiet` border, `faint` words, `aria-disabled`, and the page says why; a pane or a tile its frame in `quiet_half` and no ground, a shade down being the live ones' hover |
 | error | an `error` border and words under the control saying what to fix |
 | busy | the words say what is happening ("Sending…") and the control waits |
 
@@ -167,11 +183,19 @@ other size: a control that seems to need one is the wrong control.
   its own. Every page has one `main`, then one `nav`, the foot line; with nothing before the main part, it needs no
   skip link.
 - A position worked out from data (the career line) is an SVG attribute: the site's policy refuses inline styles.
+- A post's page is one grid from its head to its foot: the Outline, `rail` wide, then the paragraphs' numbers, the
+  text at `column`, and the sources, `aside` wide. Below `wide` the Outline gives way; below `phone` one column, the
+  numbers in a narrow margin and the sources at the text's end.
+- The blog's list is a grid of two columns: the groups' names, `group_name` wide, `group_name_mid` below `wide`, and
+  the tiles, as many in a row as hold `tile` each. Below `phone` the name stands over its tiles and the tiles take one
+  column.
 
 ## Iconography
 
 - No icon set. The page uses the terminal's glyphs: `[x]` and `(*)` for a checkbox and a radio, ❯ before a command
-  (`prompt`), the cursor after the name, ✓ in a toast (`passed`), and `-` before a point (`faint`).
+  (`prompt`), the cursor after the name, ✓ in a toast (`passed`), and `-` before a point (`faint`). The blog adds `#`
+  before a tag (`faint`), `↑` before the way to a newer version (`accent`), `▾` after a pick that opens a window
+  (`faint`), `▌` before the Outline's heading read (`accent`) and `●` before `live` (`passed`).
 - Two drawn marks, SVGs in `currentColor`, `box` square, one stroke of 1.5 of its 16 units: the theme button's
   half-filled circle and the dialog's close cross. The first screen's corner crosses are drawn the same way, a `cross`
   square with two hairlines across it, the TUI's + on the page. A mark that needs drawing is drawn as these are, never
@@ -226,7 +250,8 @@ hidden and the command is words to select, and a copy the browser refuses select
 ### Link
 
 The `text` colour, underlined in `muted`; under the pointer the underline turns `accent` and `underline_hover` thick.
-Never coloured: the underline says it is a link. Nothing is marked with an arrow.
+Never coloured: the underline says it is a link. No arrow after a link's words. A link that is a whole box, a tile or
+a pane, is told by its frame, and underlines its title under the pointer.
 
 ### FootLine
 
@@ -236,11 +261,13 @@ it, one `row` tall and twice `focus_width` under it, so a ring is never cut, `sm
 wraps whole to a row more where the screen is too narrow for the line; a part of the main part the keyboard reaches
 scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, always in sight, scroll nothing.
 
-- The session: `[paran.in]` in `host`, leading to where the site begins.
+- The sessions, as tmux's: `[paran.in]`, leading to where the site begins, and `[blog]`, leading to the blog's list,
+  two cells apart; the one the page belongs to in `host`, the other `muted`.
 - The document's tabs as windows, as the TUI numbers its tabs: `1:about`, the number `faint`, the name lower case, a
   cell of air either side. The window shown is reversed and bold, as the TUI's tab, and marked `*`, which a screen
-  reader skips: the link is the current page.
-- Under the pointer the session and a window turn `deep`; nothing in the line has a pressed shade, `deep` being the
+  reader skips: the link is the current page. The blog's windows are `1:posts`, its list, and the post read by its
+  slug, `2:own-way-to-pay`.
+- Under the pointer a session and a window turn `deep`; nothing in the line has a pressed shade, `deep` being the
   lowest ground.
 - At the line's end the ways the site is served, as the line's chips (Sizes): `❯ ssh` and `❯ curl`, ❯ in `prompt`,
   each opening its Hint, reversed and bold while it is open, as the window shown; then the markdown of the page whole
@@ -248,7 +275,7 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
   under the pointer, `caption` words.
 - Then the VimKeys switch and the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line, and the
   CommandLine, open, on the row over it.
-- On a phone the session and the theme button share the first row, the windows take the rows `row_half` below by their
+- On a phone the sessions and the theme button share the first row, the windows take the rows `row_half` below by their
   names alone, a `nudge` either side, wrapping, and the ways and the VimKeys switch give way to them.
 
 ### Hint
@@ -357,8 +384,8 @@ sideways inside itself, never wrapping.
 - Contents: the pages a page leads to, one a line, `row_half` apart, each a link by its title, then a colon and its
   line in `muted`. No bullets.
 - PageHead: a page that is not the résumé opens with its title as the `h1` in the title font, its line in `lead`, what
-  it is made of as `muted` words joined by ` · ` (not chips: they do nothing when pressed), its lead, and where its
-  code lives as Facts.
+  it is made of as `muted` words joined by ` · ` (not chips and not Tags: they do nothing when pressed and gather
+  nothing), its lead, and where its code lives as Facts.
 
 ### Highlight
 
@@ -399,10 +426,104 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 ### Frame and Section
 
 - Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
-  from its top and foot: only there, and not on a phone, whose gutter leaves them no room.
+  from its top and foot: only there and round a post's head, which stands as a first screen, and not on a phone, whose
+  gutter leaves them no room.
 - A section: its block title in the left column, its content in the right, as wide as an Entry: `when`, `cell_3` and
   `measure`, the title taking what is left; `row_2` of air above and below it, `row` on a phone. Its blocks stand a
   row apart, a subsection two. A tab of the résumé stands as a section, its title the page's `h1`.
+
+### Tag
+
+`#` in `faint`, then the word in `muted`, `small`; tags stand `cell_2` apart and wrap whole. On the blog a tag is a
+link that filters the list, told by its hash, not an underline: under the pointer its ground goes `sunk` a `nudge`
+past its word and the word turns `text`; the tag the list is filtered by is reversed and bold. On a tile the tags are
+words of the tile's link, `caption`, all `faint`. Only posts have tags.
+
+### Switch
+
+A few addresses of one thing, a post's language or how the list groups its posts: their words in one row of `quiet`
+hairline, line size, `radius`, a hairline between each two, the one shown reversed and bold as the window shown; under
+the pointer `deep`. They are links, since each leads to an address.
+
+### Pick
+
+A word that opens a window over the page, as the Hint's chip does: a post's versions, its series' parts.
+
+- The version: its date bold in `muted`, underlined in `edge`; under the pointer `text`, underlined in `accent`.
+- The series: the FootLine's chip, its name, then `1 of 11` in `muted` and `▾` in `faint`; reversed while its window
+  is open, as a way's chip.
+- The window stands as the Hint does, on `sunk` in an `edge` hairline, `radius`, `small`, its title bold and `esc
+  close` set into its top edge. A row a line: a part's number `faint` and its title, or a version's date; its state
+  at the right (`reading`, `current`, `next`, `soon`). The row read is reversed and bold; a part out is a
+  link, `deep` under the pointer; the next part bold; a part to come `muted`, no link. On a phone the window stands
+  across the screen over the foot line.
+
+### PostHead
+
+A post's first screen, as the résumé's. Left, over the Outline and the text, its title (`title_text` in `title_soft`,
+a few words a line, balanced) and its lead. Right, in the sources' column, its Facts `row_half` apart: version (the
+Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date that a newer
+stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the whole a link,
+`tint_strong` (to add) under the pointer. On a phone one column, the facts under the lead, a `quiet` hairline under the head.
+
+### Outline
+
+A post's headings in `rail`, `small`, standing in sight as the article scrolls, from its head on: each `muted`, a
+link with no underline, `text` under the pointer; the heading read bold in `text`, `▌` in `accent` hanging before it.
+Gone below `wide`; the `:` menu holds the headings too.
+
+### Article
+
+A post's body, in the text's column.
+
+- Its words in `reading`; each paragraph numbered in the margin, `caption` in `faint`, the number a link to the
+  paragraph, underlined in `accent` under the pointer. Headings: `h2` in `heading` a row below the block before it,
+  `h3` in `strong` half a row below, since an article's blocks already stand a row apart.
+- A source: its number raised after the word, `caption` in `label`; beside the text, at the line that cites it, under
+  a `quiet` hairline, its number in `label` and its words `caption` in `muted`. On a phone the sources stand at the
+  text's end under a `quiet` hairline, `small`.
+- A quote: a bar of `edge`, `underline_hover` wide, at its left; who said it under it, `small` in `muted`.
+- Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
+- Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
+  at its top right, copying as a Command does. Its colours come from the tokens, chosen with the code blocks; never
+  `accent` as small text.
+- A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
+  hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.
+- A widget: a window as tmux draws a popup, a `muted` hairline on the page's ground, `radius`; its name bold, `small`,
+  set into its top edge at the left, `● live` at the right, the dot in `passed`, the word `muted`; live inside. A pick
+  among a few is a Choice; an answer stands on `sunk`, its verdict in a state's colour, always with its words. Where
+  nothing runs, its alt text and a link to it.
+
+### Panes
+
+A post's foot, after a `quiet` hairline: a heading in `strong` saying where the panes lead, `Other parts of stint` with
+the series' Pick, or `Other posts` with a link to the list; then two panes as tmux splits a window.
+
+- Each pane square, framed in a `muted` hairline, the two sharing the line between them; the whole pane is the link,
+  `sunk` under the pointer, its title's underline then `accent` and `underline_hover` thick.
+- Its name set into its top edge, bold, `small`: `part 4`, `older`. Its title bold, underlined in `muted`; the next
+  part's in `heading`. Its lead `small` in `muted`; beside other posts, a post's date `caption` in `faint` at the
+  pane's foot, since the blog orders them by date.
+- A part not out yet: its title `muted`, `soon` after it, no link. A side with none: framed in `quiet_half`, its name
+  and its words `faint`, `none: this is the first part`.
+- Under them where the post is discussed: `discuss` in `muted`, then the links.
+- On a phone one pane under the other, the next first, the empty side last.
+
+### BlogHead, Group and Tile
+
+- BlogHead: BLOG in the title font, the gradient across it, in the names' column; beside it the blog's line in `lead`, and under it `by` in
+  `muted`, the Switch of `years` and `series`, and the Tags, each a filter of the list. On a phone the tags take a row
+  of their own.
+- Group: its name in `title_text_mid` (`title_text` from `wide`), `title_soft`, staying in sight at the top while its
+  own tiles scroll, but on a phone, where it stands over them; under it what it
+  holds, `small` in `muted`: `6 posts`, or a series' line and `6 of 11 parts out`. By year, newest first, at `/blog`;
+  by series at `/blog/series`, the posts in no series last, as `other posts`.
+- Tile: a post as a pane, square, framed in a `muted` hairline, the tiles sharing their lines, no gap. Its date set
+  into its top edge, `small` in `muted`, or in a series' group its part, bold in `text`, then the date. Its title bold,
+  balanced; its lead `small` in `muted`. At its foot, apart from the post, where it stands: its series where the
+  group does not say it, `part 6 · stint`, the part bold in `text`, the dot `faint`, the name `text`, a long name
+  wrapping; then its Tags. The whole tile is the link, `sunk` under the pointer, its title underlined in `accent`. A
+  part to come: framed in `quiet_half`, its date and title `faint`, not bold, no link.
 
 ## Pages
 
@@ -412,3 +533,42 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
   tabs, each a page of its own.
 - The address of no page: its status in block letters, the address quoted as Code, a link to the start; no apology and
   no joke. The foot line stands as on every page, with no windows.
+- The blog's list: the BlogHead, then its Groups of Tiles; a tag or a series filters it, the filter reversed in the
+  head.
+- A post: the PostHead, the Outline beside the Article, the Panes; an older version the same, its head saying a newer
+  stands.
+
+## The TUI
+
+The TUI draws this design in a terminal, as Neovim inside tmux: the same tokens, each kind of text and part of the
+frame painted in one (`internal/face/tui/paint.go`), in full colour, 256 or 16. What a cell cannot hold, a size, a
+second face, a hover, it leaves out; what the page and the TUI both draw, they draw alike.
+
+- Frames are tmux's, square: `┌┬┐├┼┤└┴┘` round a command, the window of keys, panes, tiles and code. A command's
+  label, a pane's and a tile's name stand set into the top edge at the left, a key and what it does at its right.
+- A tab's title, a project's section's too, is in the title font in the gradient, or in text in the gradient where the
+  letters do not fit. A post's title is bold text.
+- A post's tags as the page's: `#` in `faint`, the word in `muted`. What a project is made of as the page's PageHead
+  writes it, `muted` words joined by ` · `, not chips.
+- Code in a line stands in `text` on `sunk`; a block of it in a frame, its language in the edge, coloured as the
+  page's. A command is a box with its label in the top edge and `y copy` at its right, `❯` in `prompt` before the
+  command, as the page's Command.
+- The blog is a session of its own. The footer opens with `[paran.in] [blog]`, the one shown in `host`, then its
+  windows: on the blog `1:posts` and the post read, `2:own-way-to-pay*`. `:e blog` and `ssh blog@paran.in` open the
+  list; `:e blog/12` and `ssh blog/12@paran.in` the post, the list in the first window; h and l go between the two;
+  q on a post goes back to the list, and on the list back to the résumé.
+- The blog's pages run wider than the résumé's column where the screen has room, 132 cells at most, the text still
+  held to its measure.
+- The list: BLOG in the title font, as the page's; the groups' names in a column, 22 cells wide, 18 under 132, the
+  year in the title font in the gradient,
+  staying in sight at the top while its tiles scroll; under 100 cells the name stands over its tiles as one line in the
+  gradient. The tiles as the page's, at least 31 cells each. j and k go from tile to tile in reading order, newest
+  first; the tile chosen stands on `sunk`, its title underlined in `accent`; Enter opens its post.
+- A post: the Outline (20 cells) from 132 cells wide, the paragraphs' numbers (4), the text (66), the sources beside it
+  (32) from 108 cells and at the text's end under a `quiet` rule where narrower. Its head's facts beside the title
+  where the sources' column is, under the lead where not. The Outline stays in sight as the post scrolls, the heading
+  read marked `▌` in `accent`. The panes side by side from 108 cells, one under the other narrower, the next first.
+- A widget is its frame, its name and `● live` in the edge, and inside its alt text and the address of the live one. A
+  diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
+- The `:` menu names each place by its kind: on a post `tab`, `heading`, `part` and `version`; on the list `post`,
+  `tag` and `series`. The page's CommandLine offers the same places on the blog's pages.

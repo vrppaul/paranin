@@ -42,6 +42,11 @@ Each decision carries one of three marks:
 | D20 | The layers of ADR-0003 are accepted. | 2026-11-01 |
 | D21 | A page's own address chooses its format by the Accept header's ranking alone, with `Vary: Accept`, HTML among the formats once it is served: no reader is told apart by its agent (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
 | D22 | The one front-end build of ADR-0004 is accepted as its bullet is written: one Vite build writing hashed files, one manifest and each widget's props as JSON Schema, files served from a folder and none embedded, the manifest and the props checked when a snapshot loads, `vite build --watch` in development. Embedding would ship a post's widgets only with a new binary (D5), Vite's dev server breaks the CSP (§2), and two builds would ship Svelte twice. | 2026-11-03 |
+| D23 | The blog holds the author's own thoughts and what he learned, each written up as an article; the original in English, translations beside it (D12). Interactive parts at least on the web, a reduced post over SSH (§5.4). | 2026-11-22 |
+| D24 | A post has revisions: the reader sees which date's version they read and can open an older one (§5.4, Revisions). | 2026-11-22 |
+| D25 | Posts group into series, and carry tags; the blog lists its posts, its tags and its series (§5.4, Series, tags and lists). | 2026-11-22 |
+| D26 | A post has a slug and a short number, both reached as `blog/…` in every face: `paran.in/blog/12`, `:e blog/12`, `ssh blog/12@paran.in` (§5.4, Addresses). | 2026-11-22 |
+| D27 | The whole site, the blog among it, has good SEO and Open Graph (§5.4, SEO and Open Graph). | 2026-11-22 |
 
 ## 2. What must hold whatever we build
 
@@ -360,7 +365,7 @@ quotes as text; code with its syntax colours from the tokens; tables laid
 out to the terminal's width; links as OSC 8 hyperlinks with the address
 beside them; an image as its alt text and its address; a widget as its
 caption, its alt text and a link to the live version. A post opens with
-`:e <slug>`.
+`:e blog/<slug>` or `:e blog/<number>` (Addresses, below).
 
 #### Layout of a post
 
@@ -368,6 +373,7 @@ caption, its alt text and a link to the live version. A post opens with
 content/posts/2026-11-page-cache/
   post.en.md
   post.ru.md
+  revisions/2026-11-10.en.md
   widgets/PageCache.svelte
   widgets/PageCache.messages.ts
 ```
@@ -440,6 +446,88 @@ laptop or GitHub's web editor on a phone, live in a minute or two.
 The server builds nothing; it reads a finished folder. The binary is
 rebuilt only when Go code changed. The CI job needs Node, a browser, Typst
 and SSH to the host: "without a new binary" does not mean without a build.
+
+#### Revisions (Decided, D24; the model Proposed)
+
+- **A revision is a frozen copy the author takes.** Before he rewrites a
+  post, `paranin revise <slug>` copies its text to
+  `revisions/<date>.<lang>.md` beside it; `post.<lang>.md` stays the current
+  version. A typo fixed is an edit, not a revision. Ways turned down: the
+  versions read from git (a release folder holds no `.git`, and every commit
+  would become a version), and stored patches (every face would have to
+  apply them).
+- **Addresses:** `/blog/<slug>` is the current version, `/blog/<slug>/<date>`
+  an older one. A post shows the date of its version and lists the older
+  ones; an older one says a newer stands and is sent with `noindex`. A post
+  has no tabs, so `/blog/<slug>/…` names a version alone.
+- **Each language has its own revisions**, as it has its own status.
+
+#### Series, tags and lists (Decided, D25; the model Proposed)
+
+- **A series is one file**, `content/series/<name>.yaml`: its title, a line
+  about it and its posts' slugs in order. The order is written once, so a
+  post put in the middle renumbers nothing. A post of a series shows "part 3
+  of 11" with the parts before and after; a part planned and not yet
+  written may stand on the series' page as to come.
+- **Tags** stand in a post's front matter: `tags: [payments, agents]`.
+- **Lists:** `/blog`, every post newest first, with its date, tags and
+  series; `/blog/tags` and `/blog/tags/<tag>`; `/blog/series` and
+  `/blog/series/<name>`. Each list is a document every face draws: the TUI
+  gives the blog a buffer of its own, and its tags and series stand in the
+  `:` menu beside the posts.
+- **Feeds:** Atom for the blog in each language, and one for each series.
+- **For the first post:** footnotes as a list of sources at the post's end,
+  numbered links in a terminal; anchors on headings and a table of
+  contents for a long post; code coloured from the tokens, with the copy
+  chip; pictures from the post's folder, their alt text in a terminal.
+- **Later, when the posts are many:** a search across them, reading time,
+  related posts by shared tags.
+- **Not built:** comments (accounts, moderation, spam), with a post's front
+  matter naming where it is discussed (HN, Lobsters: D13) instead; a mail
+  newsletter, which the feeds stand in for.
+
+#### Addresses (Decided, D26; the model Proposed)
+
+- **A post has a slug, its folder's name, and a number** in its front
+  matter, `id: 12`, given once and never changed. `paranin check` refuses a
+  number two posts share and a slug of digits alone, which `blog/12` would
+  read as a number.
+- **On the web** `/blog/12` answers `301` to `/blog/<slug>`.
+- **In the TUI** `:e blog/12` and `:e blog/<slug>` open the post.
+- **Over SSH** the user name is the address: `ssh blog/12@paran.in` and
+  `ssh blog/<slug>@paran.in` open the TUI on the post. SSH has no path, and
+  sends no host name a server could route by, but anyone may connect under
+  any name (FR-1), and OpenSSH passes `blog/12` as it is written. A name
+  that names no post opens the résumé, as a login name does.
+
+#### SEO and Open Graph (Decided, D27; the model Proposed)
+
+For every page of the site, the blog's among them:
+
+- **The head:** a title and a description for each page, which the check
+  requires of a post; Open Graph and Twitter's card tags; an `og:image`,
+  each page's card (ADR-0005).
+- **JSON-LD:** `BlogPosting` for a post, with `datePublished`,
+  `dateModified` from its revisions, its author linked to the résumé,
+  `inLanguage`, `keywords` from its tags and `isPartOf` its series;
+  `BreadcrumbList`; the résumé's `ProfilePage` as it stands.
+- **Languages:** `hreflang` and `x-default` between a page and its
+  translations.
+- **Crawling:** `robots.txt` naming `sitemap.xml`, the sitemap with every
+  page, tab and post and their `lastmod`, per language; `noindex` on
+  previews, unlisted posts, older versions and tag pages; `301` from
+  `/blog/12` and from a path with a trailing slash.
+- **The markup:** one `h1`, `<article>`, `<time datetime>`, alt text
+  required of every picture.
+- **At hosting:** HTTPS and HSTS, the site verified in Google's and Bing's
+  consoles, IndexNow for a new post, Lighthouse on its pages.
+- **Open: D21 and crawlers.** A page's own address chooses its format by
+  `Accept` alone, the manual winning a tie, so a crawler sending `*/*` gets
+  the manual at the page's canonical address. Bing's crawler is reported to
+  send `*/*`, LinkedIn's possibly too; neither documents it. To settle from
+  the server's logs once it is served, then the owner's call: keep D21, or
+  rank HTML first unless `text/plain` is named, which gives a bare `curl`
+  the HTML.
 
 #### Translations (Decided: later, D12; the model Proposed)
 

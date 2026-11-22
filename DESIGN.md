@@ -544,15 +544,15 @@ The TUI draws this design in a terminal, as Neovim inside tmux: the same tokens,
 frame painted in one (`internal/face/tui/paint.go`), in full colour, 256 or 16. What a cell cannot hold, a size, a
 second face, a hover, it leaves out; what the page and the TUI both draw, they draw alike.
 
-- Frames are tmux's, square: `┌┬┐├┼┤└┴┘` round a command, the window of keys, panes, tiles and code. A command's
-  label, a pane's and a tile's name stand set into the top edge at the left, a key and what it does at its right.
+- Frames are tmux's, square, `┌┬┐├┼┤└┴┘`, each in one colour, round a command, the window of keys, panes, tiles and
+  code. A command's label, a pane's and a tile's name stand set into the top edge at the left.
 - A tab's title, a project's section's too, is in the title font in the gradient, or in text in the gradient where the
   letters do not fit. A post's title is bold text.
 - A post's tags as the page's: `#` in `faint`, the word in `muted`. What a project is made of as the page's PageHead
   writes it, `muted` words joined by ` · `, not chips.
 - Code in a line stands in `text` on `sunk`; a block of it in a frame, its language in the edge, coloured as the
-  page's. A command is a box with its label in the top edge and `y copy` at its right, `❯` in `prompt` before the
-  command, as the page's Command.
+  page's. A command is a box in a `muted` hairline with its label in the top edge, `❯` in `prompt` before the
+  command, as the page's Command; y copies it once a search has found it, as it copies any value.
 - The blog is a session of its own. The footer opens with `[paran.in] [blog]`, the one shown in `host`, then its
   windows: on the blog `1:posts` and the post read, `2:own-way-to-pay*`. `:e blog` and `ssh blog@paran.in` open the
   list; `:e blog/12` and `ssh blog/12@paran.in` the post, the list in the first window; h and l go between the two;

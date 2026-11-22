@@ -60,10 +60,8 @@ const (
 	kindOwner
 	// kindRepository is a repository's name, after its owner
 	kindRepository
-	// kindTag is a tag of what a project is made of, which stands as a chip
-	kindTag
-	// kindPlate is a section's title on a project's page, which stands on a plate as a README's heading does
-	kindPlate
+	// kindPrompt is the mark before a command a reader may run, as a shell's prompt ends in
+	kindPrompt
 	// kindBar is a bar as long as the months a skill was used, on the list of skills
 	kindBar
 )
@@ -119,7 +117,7 @@ func textWords(text string, base kind) []word {
 	return words
 }
 
-// wordOf is a text as one word of a kind, which no line breaks inside, its spaces and all: a chip, a plate, a count.
+// wordOf is a text as one word of a kind, which no line breaks inside, its spaces and all: a check's cell, a count.
 func wordOf(text string, shown kind) word {
 	return word{runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false}
 }

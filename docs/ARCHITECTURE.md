@@ -194,10 +194,10 @@ and web routes.
   owner's word). `document.TabsOf` parts a document into its tabs, the
   opening and a tab for each section left, the TUI's; `SlugOf` names
   each, and the ids of the page's sections (amended 2026-11-20, the
-  owner's word). Each section of the résumé after the opening stands
-  under its title, in a smaller block font where the page has room for
-  it, so a search finds a section's title on its page only where it reads
-  as text.
+  owner's word). Each section of the résumé and of a project's page after
+  the opening stands under its title, in a smaller block font where the
+  page has room for it, so a search finds a section's title on its page
+  only where it reads as text (amended 2026-11-22, the owner's word).
   A project's page opens as glow draws its README (amended 2026-11-07,
   with the look the owner chose): its name in that smaller font where the
   page has room for it, so a search finds the name on its page only where

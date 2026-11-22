@@ -14,7 +14,7 @@ const wideWidth = 160
 // y copies the value of the fact on the line the search found, whole, to the reader's clipboard over OSC 52, and the
 // command line says what it copied, for a terminal that takes no OSC 52; a link gives its text, as its line shows it,
 // and a value wrapped over lines is copied whole from any of them. On a project's page a command in its box is copied
-// without the box's edges, and the repository's owner and name give its address.
+// without the box's edges and the prompt's mark, and the repository's owner and name give its address.
 func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 	resume := fixtureModel(test, wideWidth, commonHeight)
 	contact := commanded(test, fixtureModel(test, wideWidth, commonHeight), "contact")

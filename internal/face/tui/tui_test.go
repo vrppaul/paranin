@@ -13,6 +13,7 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // A terminal of a common size, and one tall enough to show any tab whole
@@ -495,10 +496,9 @@ func TestAPeriodStandsApartFromItsTitle(test *testing.T) {
 	}
 }
 
-// A section stands under its title. On the résumé the title stands in the titles' font where the page has room for
-// it and rows of the tab under it, as text where it has room for that alone, and on a page too short for either the
-// section stands as it is, named in the footer alone; on a project's page, as glow draws a README's heading, the
-// title stands as text on a plate.
+// A section stands under its title. On the résumé and on a project's page the title stands in the titles' font where
+// the page has room for it and rows of the tab under it, as text where it has room for that alone, and on a page too
+// short for either the section stands as it is, named in the footer alone; on another page it stands as it is.
 func TestASectionStandsUnderItsTitle(test *testing.T) {
 	// a screen whose page has the rows for the title as text and the tab under it, not for its banner; and one a row
 	// taller, whose page has them for the banner. A banner is a look, so no case tells it from no title: they read
@@ -518,8 +518,12 @@ func TestASectionStandsUnderItsTitle(test *testing.T) {
 		{name: "a page tall enough for the banner holds no title as text", model: pressed(test, fixtureModel(test, commonWidth, tallEnoughForABanner), toExperience()...), title: "Experience", titleAsText: false},
 		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titleAsText: false},
 		{
-			name: "a project's section", title: "Why", titleAsText: true,
-			model: pressed(test, commanded(test, fixtureModel(test, phoneWidth, tallHeight), "e tidy-tool"), "l"),
+			name: "a project's section on a page too short for the banner", title: "Why", titleAsText: true,
+			model: pressed(test, commanded(test, fixtureModel(test, commonWidth, shorterThanABanner), "e tidy-tool"), "l"),
+		},
+		{
+			name: "a project's section on a page tall enough for the banner", title: "Why", titleAsText: false,
+			model: pressed(test, commanded(test, fixtureModel(test, commonWidth, tallEnoughForABanner), "e tidy-tool"), "l"),
 		},
 		{
 			name: "a section of another page", title: "Growing", titleAsText: false,
@@ -582,8 +586,9 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	}
 }
 
-// A block of facts frames a command in a box, its label in the top edge: each fact round it stands once, and a fact
-// whose value is code and more is no command, standing beside its label.
+// A block of facts frames a command in a box, as the page's Command stands: its label in the top edge, and inside the
+// prompt's mark before the command. Each fact round it stands once, and a fact whose value is code and more is no
+// command, standing beside its label.
 func TestEachFactRoundACommandStandsOnce(test *testing.T) {
 	read := commandFactsRead(test)
 	cases := []struct {
@@ -591,8 +596,8 @@ func TestEachFactRoundACommandStandsOnce(test *testing.T) {
 		text string
 	}{
 		{name: "a fact before the command", text: "status done"},
-		{name: "the command, between the box's sides", text: boxDown + space + "go install example.test/tool" + space + boxDown},
-		{name: "the command's label, in the box's top edge", text: boxTopLeft + boxAcross + space + "setup" + space + boxAcross},
+		{name: "the command after the prompt, between the box's sides", text: frameDown + space + look.PromptMark + space + "go install example.test/tool" + space + frameDown},
+		{name: "the command's label, in the box's top edge", text: frameTopLeft + frameAcross + space + "setup" + space + frameAcross},
 		{name: "a value of code and more", text: "steps make then run"},
 	}
 	for _, testCase := range cases {
@@ -611,6 +616,28 @@ func TestAFactBlockKeepsItsOrderRoundACommand(test *testing.T) {
 	places := []int{strings.Index(read, "status done"), strings.Index(read, "go install example.test/tool"), strings.Index(read, "steps make then run")}
 	if slices.Min(places) < 0 || !slices.IsSorted(places) {
 		test.Errorf("the page =\n%s\nholds its facts at %v, want each, in the document's order", read, places)
+	}
+}
+
+// A command stands under its label, as any fact does, where the page is too narrow for its box: for the top edge round
+// its label, or for the row of the prompt's mark and the command.
+func TestACommandWiderThanItsBoxStandsUnderItsLabel(test *testing.T) {
+	cases := []struct {
+		name    string
+		label   string
+		command string
+	}{
+		{name: "a label too wide for the top edge", label: "set up the tool and run", command: "ls"},
+		{name: "a command too wide for its row", label: "run", command: "go install example.tool"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			facts := document.Facts{List: []document.Fact{{Label: testCase.label, Value: []document.Span{document.Code{Text: testCase.command}}}}}
+			read := readRows(aboveTheFooter(screenOf(test, handResume(test, "Mira", phoneWidth, commonHeight, facts))))
+			if want := testCase.label + space + testCase.command; !strings.Contains(read, want) || strings.Contains(read, look.PromptMark) {
+				test.Errorf("at %d columns the page =\n%s\nwant %q under its label, with no box", phoneWidth, read, want)
+			}
+		})
 	}
 }
 
@@ -681,7 +708,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		{
 			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
-			byForm: []string{"repository", "https://github.test/mira/tidy"},
+			byForm: []string{"repository", "https://github.test/mira/tidy", "Why"},
 		},
 		{
 			name: "the health report", shown: compose.Health(snapshot),

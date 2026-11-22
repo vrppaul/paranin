@@ -3,7 +3,6 @@ package tui
 import (
 	"slices"
 	"strconv"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -87,11 +86,10 @@ func (paint paint) keyWindow(notes []hint) paintedWindow {
 	inner := spaceWidth + keysWidth + itemGap + doesWidth + spaceWidth
 	closing := escapeKey + space + closeHint + space
 	title := []piece{{text: padded(space+keysTitle, inner-textWidth(closing)), part: partWindowNote}, {text: closing, part: partWindowNote}}
-	rule := []piece{{text: strings.Repeat(edgeAcross, inner), part: partWindowRule}}
-	inside := []string{paint.cut(title, inner).text, paint.cut(rule, inner).text}
+	rows := []string{}
 	for _, note := range notes {
 		pieces := []piece{{text: space + padded(note.key, keysWidth+itemGap), part: partWindowName}, {text: padded(note.does, doesWidth+spaceWidth), part: partWindowNote}}
-		inside = append(inside, paint.cut(pieces, inner).text)
+		rows = append(rows, paint.cut(pieces, inner).text)
 	}
-	return paint.framed(inside, inner)
+	return paint.framed(paint.cut(title, inner).text, rows, inner)
 }

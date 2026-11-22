@@ -46,7 +46,7 @@ type tab struct {
 }
 
 // tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
-// of skills or as it is, or a section, under its title, on a plate or as it is.
+// of skills or as it is, or a section, under its title or as it is.
 //
 //sumtype:decl
 type tabBody interface {
@@ -91,14 +91,8 @@ type plainOpening struct {
 	blocks []document.Block
 }
 
-// titledSection is a section of the résumé, which stands under its title.
+// titledSection is a section of the résumé or of a project's page, which stands under its title.
 type titledSection struct {
-	blocks []document.Block
-}
-
-// platedSection is a section of a project's page, which stands under its title on a plate, as a README's heading
-// does.
-type platedSection struct {
 	blocks []document.Block
 }
 
@@ -113,7 +107,6 @@ func (reportOpening) tabBody() {}
 func (skillsOpening) tabBody() {}
 func (plainOpening) tabBody()  {}
 func (titledSection) tabBody() {}
-func (platedSection) tabBody() {}
 func (plainSection) tabBody()  {}
 
 // tabsOf lays a document's tabs (document.TabsOf) out as the TUI shows them.
@@ -147,14 +140,12 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 	return plainOpening{head: head, blocks: blocks}
 }
 
-// sectionBody is what a section's tab shows of its blocks: on the résumé under its title, on a project's page under
-// its title on a plate, on another page as they are.
+// sectionBody is what a section's tab shows of its blocks: on the résumé and on a project's page under its title, on
+// another page as they are.
 func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	switch kind {
-	case document.PageResume:
+	case document.PageResume, document.PageProject:
 		return titledSection{blocks: blocks}
-	case document.PageProject:
-		return platedSection{blocks: blocks}
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return plainSection{blocks: blocks}
@@ -172,7 +163,7 @@ type layout struct {
 }
 
 // tab lays out a tab as its body says: an opening's head, then its blocks; a section under its title, in the titles'
-// font or on a plate; another section as it is.
+// font; another section as it is.
 func (layout layout) tab(shown tab) []line {
 	switch body := shown.body.(type) {
 	case briefOpening:
@@ -187,8 +178,6 @@ func (layout layout) tab(shown tab) []line {
 		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
 	case titledSection:
 		return slices.Concat(layout.heading(shown.title), layout.blocks(body.blocks, 0))
-	case platedSection:
-		return slices.Concat(layout.plate(shown.title), layout.blocks(body.blocks, 0))
 	case plainSection:
 		return layout.blocks(body.blocks, 0)
 	}
@@ -417,17 +406,6 @@ func (layout layout) fact(fact document.Fact, indent, column int, labelKind kind
 	return layout.continued(lead, layout.valueWords(fact.Value), indent+column)
 }
 
-// The marks of the box a command stands in, as a README frames a block of code: its corners, and its edges across and
-// down
-const (
-	boxTopLeft     = "╭"
-	boxTopRight    = "╮"
-	boxBottomLeft  = "╰"
-	boxBottomRight = "╯"
-	boxAcross      = "─"
-	boxDown        = "│"
-)
-
 // factBlock lays out a block of facts at an indent, in their order, the values in one column: each fact under its
 // label, but a command, a fact whose value is code alone, in a box with its label in the top edge, as a README frames
 // a command to type, a row of nothing round the box.
@@ -448,30 +426,35 @@ func (layout layout) factBlock(facts []document.Fact, indent int) []line {
 	return lines
 }
 
-// commandBox is a command in a box as wide as the page, its label in the top edge, the command on one row inside it,
-// so a reader copies it whole; nothing for a fact that is no command, or where the page is too narrow for the box's
-// edges round the label or round the command, the fact then standing under its label.
+// commandBox is a command in a box as wide as the page, as the page's Command stands: its label set into the top edge,
+// and the command on one row inside it after the prompt's mark, so a reader copies it whole; nothing for a fact that
+// is no command, or where the page is too narrow for the box's edges round the label or round the command's row, the
+// fact then standing under its label.
 func (layout layout) commandBox(fact document.Fact, indent int) []line {
 	if _, isCommand := fact.Command(); !isCommand {
 		return nil
 	}
 	width := layout.width - indent
-	topRoom := width - textWidth(boxTopLeft+boxAcross+space+fact.Label+space+boxTopRight)
-	command := wordRuns(layout.valueWords(fact.Value))
-	insideRoom := width - textWidth(boxDown+space+space+boxDown) - runsWidth(command)
+	topRoom := width - textWidth(frameTopLeft+frameAcross+space+fact.Label+space+frameTopRight)
+	prompted := slices.Concat(line{
+		boxRun(frameDown + space),
+		{text: look.PromptMark, kind: kindPrompt, highlighted: false, address: "", copied: "", tone: 0},
+		gapRun(spaceWidth),
+	}, wordRuns(layout.valueWords(fact.Value)))
+	insideRoom := width - runsWidth(prompted) - textWidth(space+frameDown)
 	if topRoom < 1 || insideRoom < 0 {
 		return nil
 	}
 	label := run{text: fact.Label, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
-	top := line{gapRun(indent), boxRun(boxTopLeft + boxAcross + space), label, boxRun(space + strings.Repeat(boxAcross, topRoom) + boxTopRight)}
-	inside := slices.Concat(line{gapRun(indent), boxRun(boxDown + space)}, command, line{gapRun(insideRoom), boxRun(space + boxDown)})
-	bottom := boxBottomLeft + strings.Repeat(boxAcross, width-textWidth(boxBottomLeft+boxBottomRight)) + boxBottomRight
+	top := line{gapRun(indent), boxRun(frameTopLeft + frameAcross + space), label, boxRun(space + strings.Repeat(frameAcross, topRoom) + frameTopRight)}
+	inside := slices.Concat(line{gapRun(indent)}, prompted, line{gapRun(insideRoom), boxRun(space + frameDown)})
+	bottom := frameBottomLeft + strings.Repeat(frameAcross, width-textWidth(frameBottomLeft+frameBottomRight)) + frameBottomRight
 	return []line{top, inside, {gapRun(indent), boxRun(bottom)}}
 }
 
-// boxRun is a piece of a box's edge, a mark a reader may pass over.
+// boxRun is a piece of a box's edge, muted as the page draws the Command's hairline, so the box shows on any ground.
 func boxRun(edge string) run {
-	return run{text: edge, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
+	return run{text: edge, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
 }
 
 // table lays out a table's rows a line each, each cell in a column as wide as the widest cell of its own, the last

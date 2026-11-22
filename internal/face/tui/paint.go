@@ -49,10 +49,9 @@ const (
 	partMenuChosen
 	partMenuTrack
 	partMenuThumb
-	// partEdge is the border of a window over the page, and partWindowRule a rule inside it; partWindowName and
-	// partWindowNote are a row it holds, its keys and what they do
+	// partEdge is the border of a window over the page and the rule inside it, in one colour as tmux draws a border;
+	// partWindowName and partWindowNote are a row it holds, its keys and what they do
 	partEdge
-	partWindowRule
 	partWindowName
 	partWindowNote
 )
@@ -96,11 +95,14 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	menu := plain.Background(colour(look.ColourQuiet)).Reverse(noColours)
 	return paint{
 		kinds: map[kind]lipgloss.Style{
-			kindText:    plain.Foreground(colour(look.ColourText)),
-			kindMuted:   plain.Foreground(colour(look.ColourMuted)),
-			kindFaint:   plain.Foreground(colour(look.ColourFaint)).Faint(noColours),
-			kindStrong:  plain.Foreground(colour(look.ColourText)).Bold(true),
-			kindCode:    plain.Foreground(colour(look.ColourAccent)),
+			kindText:   plain.Foreground(colour(look.ColourText)),
+			kindMuted:  plain.Foreground(colour(look.ColourMuted)),
+			kindFaint:  plain.Foreground(colour(look.ColourFaint)).Faint(noColours),
+			kindStrong: plain.Foreground(colour(look.ColourText)).Bold(true),
+			// code in the text's colour on the panel's ground, as the page sets it, the accent reading too faint as small
+			// text in the light theme; reversed where the terminal shows sixteen colours or none, whose panel is the
+			// terminal's own ground
+			kindCode:    panel.Foreground(colour(look.ColourText)).Reverse(fewColours),
 			kindCursor:  plain.Foreground(colour(look.ColourAccent)),
 			kindPassed:  plain.Foreground(colour(look.ColourPassed)),
 			kindWarned:  plain.Foreground(colour(look.ColourWarned)),
@@ -113,13 +115,10 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindCurrent: plain.Foreground(colour(look.ColourAccent)),
 			kindPast:    plain.Foreground(colour(look.ColourEdge)).Faint(noColours),
 			kindSwatch:  plain,
-			// a repository's owner and name in the colours of the mail's two parts; a tag as a chip on the panel's
-			// ground, reversed where the terminal shows sixteen colours or none, whose panel is the terminal's own ground
+			// a repository's owner and name in the colours of the mail's two parts
 			kindOwner:      plain.Foreground(colour(look.ColourAccent)).Bold(true),
 			kindRepository: plain.Foreground(colour(look.ColourHost)).Bold(true),
-			kindTag:        panel.Foreground(colour(look.ColourText)).Bold(true).Reverse(fewColours),
-			// a section's title of a project's page laid on the accent, reversed where the terminal shows no colours
-			kindPlate: plain.Foreground(colour(look.ColourOnAccent)).Background(colour(look.ColourAccent)).Bold(true).Reverse(noColours),
+			kindPrompt:     plain.Foreground(colour(look.ColourPrompt)).Bold(true),
 			// a bar's cells and the mark of no measured time differ in shape, so they need no colour to tell them apart
 			kindBar: plain.Foreground(colour(look.ColourTimeBar)).Bold(true),
 		},
@@ -153,7 +152,6 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partMenuTrack:  menu.Foreground(colour(look.ColourFaint)),
 			partMenuThumb:  menu.Foreground(colour(look.ColourMuted)),
 			partEdge:       plain.Foreground(colour(look.ColourEdge)),
-			partWindowRule: panel.Foreground(colour(look.ColourQuiet)),
 			partWindowName: panel.Foreground(colour(look.ColourText)).Bold(true),
 			partWindowNote: panel.Foreground(colour(look.ColourMuted)),
 		},
@@ -208,7 +206,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 	case kindSwatch:
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
-		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindTag, kindPlate, kindBar:
+		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar:
 	}
 	return nil
 }

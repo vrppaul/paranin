@@ -7,17 +7,21 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// The marks of a window over the page: the corners and sides of its border, and the room between a row's keys and
-// what they do
+// The marks of every frame the TUI draws, a window over the page and the box a command stands in: square, as tmux
+// draws its panes, its corners, its edges across and down, and where a rule inside it meets the left and right edges
 const (
-	edgeTopLeft     = "╭"
-	edgeTopRight    = "╮"
-	edgeBottomLeft  = "╰"
-	edgeBottomRight = "╯"
-	edgeAcross      = "─"
-	edgeDown        = "│"
-	itemGap         = 2
+	frameTopLeft     = "┌"
+	frameTopRight    = "┐"
+	frameBottomLeft  = "└"
+	frameBottomRight = "┘"
+	frameAcross      = "─"
+	frameDown        = "│"
+	frameRuleLeft    = "├"
+	frameRuleRight   = "┤"
 )
+
+// The room between a row's keys and what they do, in a window over the page
+const itemGap = 2
 
 // The order the window's layer is drawn in, its Z, above the page's, which is none: lipgloss draws a layer of a
 // higher Z over one of a lower
@@ -45,15 +49,20 @@ func (model Model) shows(window paintedWindow) bool {
 	return window.width <= model.frame.width && len(window.rows) <= model.frame.height-model.frame.above-footerRows
 }
 
-// framed is a window of rows, each painted as wide as its inside, with the border round them.
-func (paint paint) framed(inside []string, inner int) paintedWindow {
+// framed is a window of a heading over rows, each painted as wide as its inside, with the border round them and a
+// rule between the heading and the rows that meets the border at both sides.
+func (paint paint) framed(heading string, body []string, inner int) paintedWindow {
 	edge := paint.parts[partEdge]
-	rows := []string{edge.Render(edgeTopLeft + strings.Repeat(edgeAcross, inner) + edgeTopRight)}
-	for _, row := range inside {
-		rows = append(rows, edge.Render(edgeDown)+row+edge.Render(edgeDown))
+	rows := []string{
+		edge.Render(frameTopLeft + strings.Repeat(frameAcross, inner) + frameTopRight),
+		edge.Render(frameDown) + heading + edge.Render(frameDown),
+		edge.Render(frameRuleLeft + strings.Repeat(frameAcross, inner) + frameRuleRight),
 	}
-	rows = append(rows, edge.Render(edgeBottomLeft+strings.Repeat(edgeAcross, inner)+edgeBottomRight))
-	return paintedWindow{rows: rows, width: textWidth(edgeDown) + inner + textWidth(edgeDown)}
+	for _, row := range body {
+		rows = append(rows, edge.Render(frameDown)+row+edge.Render(frameDown))
+	}
+	rows = append(rows, edge.Render(frameBottomLeft+strings.Repeat(frameAcross, inner)+frameBottomRight))
+	return paintedWindow{rows: rows, width: textWidth(frameDown) + inner + textWidth(frameDown)}
 }
 
 // laidOver is rows with a window laid over them from a row and a column, as lipgloss composes layers: only the

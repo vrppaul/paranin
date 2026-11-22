@@ -56,6 +56,16 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 	}
 }
 
+// A project's head says what the project is made of as the page's head writes it: its language, then what it is built
+// with, words joined by the place mark.
+func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
+	const want = "Lua · Penlight · LPeg"
+	page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool")))
+	if !strings.Contains(page, want) {
+		test.Errorf("the project's page =\n%s\nwant %q", page, want)
+	}
+}
+
 // A project's page stands under the project's name, in the titles' font where the page has the room for it, as text
 // on a page too narrow for that. A banner is a look, so the cases read only whether the name stands as text.
 func TestAProjectsPageStandsUnderItsName(test *testing.T) {

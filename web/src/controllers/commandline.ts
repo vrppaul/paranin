@@ -3,8 +3,8 @@
 // slash for a search (./search.ts); its field takes the keys. A colon's menu shows the places that fit what is typed,
 // and Tab and Shift+Tab go round them, as the TUI's do (src/domain/commandline.ts). Enter goes where the line says,
 // keeps the search, or says why it will not, until the next key; n and N go round the search kept, which marks the
-// pages opened after it too, Esc on the page puts it away; Esc, Backspace on an empty line and the focus leaving
-// close the line.
+// pages opened after it too, Esc on the page puts it away once nothing stands over the page (./overlay.ts); Esc,
+// Backspace on an empty line and the focus leaving close the line.
 import {
   completionsOf,
   lineOf,
@@ -17,6 +17,7 @@ import {
   type Places,
 } from "../domain/commandline";
 import type { ChoiceStore } from "./choice";
+import { typedIn, type Overlay } from "./overlay";
 import { BACK, ONWARD, Search, type Layout, type Marks, type MatchWay, type Said } from "./search";
 
 // The parts as the server draws them: the switch and its box; the line, the part a reader types in, its field and the
@@ -40,11 +41,6 @@ const NEXT = '[data-part="command-next"]';
 const SEARCH_KEYS = '[data-part="search-keys"]';
 const COUNT = '[data-part="search-count"]';
 const MAIN = "main";
-
-// The fields of a page a reader types in, which keep the keys typed: never a box or a button, as the switch is, which
-// a press leaves the focus on
-const TYPED_IN =
-  "textarea, select, input:not([type=checkbox], [type=radio], [type=button], [type=submit], [type=reset])";
 
 // How the stylesheet takes a part out of the page, as it takes the switch on a phone
 const GONE = "none";
@@ -132,7 +128,8 @@ interface Item {
 
 /**
  * Runs a page's command line, where the page draws one, going where it says through visit, its search's matches
- * marked by marks on the page as layout lays it out, the search kept for the pages after in storage.
+ * marked by marks on the page as layout lays it out, the search kept for the pages after in storage, and Esc left to
+ * what stands over the page while overlay says anything does.
  */
 export function startCommandLine(
   page: Document,
@@ -140,6 +137,7 @@ export function startCommandLine(
   marks: Marks,
   layout: Layout,
   storage: () => ChoiceStore,
+  overlay: Overlay,
 ): void {
   const parts = partsOf(page);
   const main = page.querySelector<HTMLElement>(MAIN);
@@ -147,7 +145,7 @@ export function startCommandLine(
     return;
   }
   const items = [...parts.menu.querySelectorAll<HTMLElement>(PLACE)].flatMap((element) => itemOf(element) ?? []);
-  const line = new CommandLine(page, parts, items, visit, new Search(main, marks, layout, storage));
+  const line = new CommandLine(page, parts, items, visit, new Search(main, marks, layout, storage), overlay);
   line.listen();
   line.markKept();
 }
@@ -228,11 +226,6 @@ function itemOf(element: HTMLElement): Item | undefined {
   return { place: { name, kind, address, current: CURRENT in element.dataset }, element, typed, rest };
 }
 
-/** Whether a key comes while the reader types in a field of the page, which keeps its keys. */
-function inField(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && (target.isContentEditable || target.matches(TYPED_IN));
-}
-
 /**
  * Scrolls the menu alone the least that brings a place on it into sight. The browser's own scroll into view would
  * scroll the page too.
@@ -261,6 +254,7 @@ class CommandLine {
     private readonly items: readonly Item[],
     private readonly visit: Visit,
     private readonly search: Search,
+    private readonly overlay: Overlay,
   ) {
     this.places = placesOf(items.map((item) => item.place));
     this.completions = completionsOf(this.places, "");
@@ -316,7 +310,7 @@ class CommandLine {
       this.close();
     }
     const modified = event.ctrlKey || event.metaKey || event.altKey;
-    if (modified || !this.keysOn() || !this.parts.line.hidden || inField(event.target)) {
+    if (modified || !this.keysOn() || !this.parts.line.hidden || typedIn(event.target)) {
       return;
     }
     switch (event.key) {
@@ -337,8 +331,10 @@ class CommandLine {
         }
         break;
       case ESCAPE:
-        // Esc's own work, closing a hint, is the browser's
-        this.search.end();
+        // Esc puts away only what stands on top: a tooltip or a window over the page takes it, the search waits
+        if (this.overlay.top(event.target).kind === "page") {
+          this.search.end();
+        }
         return;
       default:
         return;

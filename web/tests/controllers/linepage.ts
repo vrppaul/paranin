@@ -1,8 +1,11 @@
-// The page the command line's tests run it over: the HTML face's golden page of the résumé's experience tab
-// (internal/face/html/testdata), which that face's own tests hold to what it writes. The addresses the line goes to
-// are handed to the test, in place of the browser; and as jsdom lays nothing out, the page's layout and marks are the
-// test's own: a match stands as far down as the letters of the page's main part before it.
+// The page the command line's tests run it over, with its tooltips, which hear Esc before it: the HTML face's golden
+// page of the résumé's experience tab (internal/face/html/testdata), which that face's own tests hold to what it
+// writes. The addresses the line goes to are handed to the test, in place of the browser; and as jsdom lays nothing
+// out, the page's layout and marks are the test's own: a match stands as far down as the letters of the page's main
+// part before it. jsdom opens no window over the page either, so whether one stands open is the test's to say.
 import { startCommandLine } from "../../src/controllers/commandline";
+import { Overlay } from "../../src/controllers/overlay";
+import { hideOnEsc, startTooltips } from "../../src/controllers/tooltip";
 import type { Layout, Marks } from "../../src/controllers/search";
 import experiencePage from "../../../internal/face/html/testdata/experience.html?raw";
 
@@ -65,11 +68,17 @@ class FakeMarks implements Marks {
   }
 }
 
-/** The line run over the golden page: the addresses it went to, and the page's layout and marks. */
+/** Whether a window stands open over the page, as the test says. */
+interface Windows {
+  open: boolean;
+}
+
+/** The line run over the golden page: the addresses it went to, the page's layout and marks, and its windows. */
 export interface StartedLine {
   went: string[];
   layout: FakeLayout;
   marks: FakeMarks;
+  windows: Windows;
 }
 
 /** The element a selector finds in the document, or in a page a test changes, which the golden page draws. */
@@ -101,14 +110,18 @@ export function started(ticked = true, changed: (page: Document) => void = () =>
   const went: string[] = [];
   const layout = new FakeLayout(found("main"));
   const marks = new FakeMarks(layout);
+  const windows: Windows = { open: false };
+  const overlay = new Overlay(startTooltips(document), () => windows.open);
+  hideOnEsc(document, overlay);
   startCommandLine(
     document,
     (address) => went.push(address),
     marks,
     layout,
     () => sessionStorage,
+    overlay,
   );
-  return { went, layout, marks };
+  return { went, layout, marks, windows };
 }
 
 /** A key pressed where the focus is, or on the page where nothing holds it; the event, for what became of it. */

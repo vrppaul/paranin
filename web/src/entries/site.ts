@@ -9,20 +9,31 @@ import { TIMES } from "../tokens/times";
 
 // The system's own theme, which a page follows until its reader chooses one
 const SYSTEM_DARK = "(prefers-color-scheme: dark)";
+// A window the browser opens over the page, a way's hint or a series' pick, which it closes on Esc after the page's
+// listeners have heard the key
+const OPEN_WINDOW = ":popover-open";
 
 startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
 startVimSwitch(document, () => localStorage);
-void Promise.all([import("../controllers/commandline"), import("../controllers/search")]).then(
-  ([{ startCommandLine }, { HighlightMarks, PageLayout }]) =>
+// what stands over the page, which the tooltips and the command line ask before they answer Esc
+const loadedOverlay = Promise.all([import("../controllers/tooltip"), import("../controllers/overlay")]).then(
+  ([{ startTooltips }, { Overlay }]) =>
+    new Overlay(startTooltips(document), () => document.querySelector(OPEN_WINDOW) !== null),
+);
+void Promise.all([import("../controllers/tooltip"), loadedOverlay]).then(([{ hideOnEsc }, overlay]) =>
+  hideOnEsc(document, overlay),
+);
+void Promise.all([import("../controllers/commandline"), import("../controllers/search"), loadedOverlay]).then(
+  ([{ startCommandLine }, { HighlightMarks, PageLayout }, overlay]) =>
     startCommandLine(
       document,
       (address) => location.assign(address),
       new HighlightMarks(CSS.highlights),
       new PageLayout(window),
       () => sessionStorage,
+      overlay,
     ),
 );
-void import("../controllers/tooltip").then(({ startTooltips }) => startTooltips(document));
 void import("../controllers/copy").then(({ startCopying }) => startCopying(document, navigator.clipboard, TIMES.toast));
 void import("../controllers/outline").then(({ startOutline }) =>
   startOutline(document, window, (callback, options) => new IntersectionObserver(callback, options)),

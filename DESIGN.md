@@ -293,13 +293,16 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
 
 A window of tmux's over the foot line, which a way's chip opens: the way's command whole to copy and what it gives.
 `ssh` gives the résumé as an app, `curl` the page shown, whole, as a manual. It stands a `nudge` over the foot line's
-hairline, whatever its panel holds, the open command line too, its right edge at the content's, on `sunk` with an
-`edge` hairline, as all that lies over the page; it pads as a Dialog does. Its title, the program, bold, and `esc
-close` in `muted`, turning `text` under the pointer, are set into its top edge, half above it. Inside, the Command,
-then what it gives, `small` in `muted`.
+hairline, whatever its panel holds, the open command line too, its right edge at the ways' chips', on whatever row
+the line wraps them to, so the ThemeSwitch's Tooltip, past the VimKeys switch, shows beside it, never under it; where
+the screen leaves it no room there, it starts at the content's left edge. On `sunk` with an `edge` hairline, as all
+that lies over the page; it pads as a Dialog does. Its title, the program, bold, and `esc close` in `muted`, turning
+`text` under the pointer, are set into its top edge, half above it. Inside, the Command, then what it gives, `small`
+in `muted`.
 
 - The browser's own popover: it opens with no script; Esc, a press outside and the other way's chip close it, Esc
-  handing the focus back to the chip. No scrim: nothing is interrupted.
+  handing the focus back to the chip, and closing it alone, after a Tooltip shown over the line (CommandLine). No
+  scrim: nothing is interrupted.
 - The keyboard goes from the chip to the copy, then to close.
 - A copy closes it, and the Toast says what was copied, as for every copy. A copy the browser refuses leaves it open,
   the command selected.
@@ -340,9 +343,11 @@ in a `quiet` hairline, `radius`, what it does `muted`.
   keeps the search, and the line says `/Python [1/4]` in `text` until the next key; n and N go round the matches,
   from where the page stands once it is scrolled away, saying each; a search that finds nothing says `E486: Pattern
   not found: x` in `error`. Esc while typing puts back the search kept before and the page where it stood; Esc on the
-  page puts the search away. A search kept marks every page the reader opens after it in the browser's tab, as the
-  TUI marks every tab, each match underlined before n or N names one, until Esc on a page puts it away; with
-  the vim keys off a page marks none.
+  page puts the search away once nothing stands over it. A search kept marks every page the reader opens after it in
+  the browser's tab, as the TUI marks every tab, each match underlined before n or N names one, until Esc on a page
+  puts it away; with the vim keys off a page marks none.
+- Esc puts away one thing a press, from the top: the line being typed in, then a Tooltip shown, then a Hint or a
+  Pick open, then the search kept.
 
 ### ThemeSwitch
 
@@ -432,9 +437,12 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 ### Tooltip and Toast
 
 - Tooltip: a word or two about a control, on hover and on focus, two `nudge` over it; `sunk` ground, an `edge`
-  hairline, `caption`; never the only place something is said.
+  hairline, `caption`; never the only place something is said. Esc hides it, in its turn (CommandLine), until
+  its control is left.
 - Toast: ✓ in `passed`, then what was done, in the past tense, a row over the FootLine for `toast`; regular size,
-  `sunk` ground and an `edge` hairline, as the Tooltip's. Errors are not toasts: they stand where they happened.
+  `sunk` ground and an `edge` hairline, as the Tooltip's. Its words stand `row_half` from its top and foot, a line or
+  several, and wrap at their spaces alone, so a long command breaks between its words, never at a hyphen; the ✓
+  stands by their first line, as a mark beside words does. Errors are not toasts: they stand where they happened.
 
 ### Frame and Section
 

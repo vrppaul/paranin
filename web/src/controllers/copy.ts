@@ -8,8 +8,8 @@
 // window left open: an error is never a toast, and the selection shows what to copy.
 
 // The parts as the server draws them: a command's chip and the words it copies, a block of code and the code it
-// copies, and the button of either, which carries the word it turns to and what the toast says; the toast and the
-// place its words go; the hint's window a chip may stand in
+// copies, and the button of either, which carries the word it turns to and what the toast says; the toast, the place
+// its words go and the template each word is drawn from; the hint's window a chip may stand in
 const CHIP = '[data-part="command"]';
 const COMMAND_WORDS = '[data-part="command-words"]';
 const CODE = '[data-part="code"]';
@@ -17,7 +17,10 @@ const CODE_WORDS = '[data-part="code-words"]';
 const COPY = '[data-part="copy"]';
 const TOAST = '[data-part="toast"]';
 const TOAST_WORDS = '[data-part="toast-words"]';
+const TOAST_WORD = '[data-part="toast-word"]';
 const HINT = '[data-part="hint"]';
+// What parts the toast's words, and the one place its lines break: never at a command's hyphens
+const SPACE = " ";
 // The attribute that says a button has just copied, which the stylesheet colours, and its value
 const STATE = "data-state";
 const COPIED_STATE = "copied";
@@ -41,6 +44,19 @@ const COPIED_KINDS: readonly CopiedKind[] = [
   { part: CODE, words: CODE_WORDS, pressedWhole: false },
 ];
 
+/** A word of the toast's, drawn from the element of its template. */
+function drawnWord(written: string, wordElement: Element): Node {
+  const drawn = wordElement.cloneNode();
+  drawn.textContent = written;
+  return drawn;
+}
+
+/** What the toast says, each word drawn whole and a space as text between two, where alone a line may break. */
+function drawnWords(said: string, wordElement: Element): (Node | string)[] {
+  const [first = "", ...rest] = said.split(SPACE);
+  return [drawnWord(first, wordElement), ...rest.flatMap((written) => [SPACE, drawnWord(written, wordElement)])];
+}
+
 /** The toast a page says what was done in, for a time from when it last began to say it. */
 class Toast {
   private hiding: ReturnType<typeof setTimeout> | undefined;
@@ -48,12 +64,13 @@ class Toast {
   constructor(
     private readonly toast: HTMLElement,
     private readonly words: HTMLElement,
+    private readonly wordElement: Element,
     private readonly time: number,
   ) {}
 
   show(said: string): void {
     clearTimeout(this.hiding);
-    this.words.textContent = said;
+    this.words.replaceChildren(...drawnWords(said, this.wordElement));
     this.toast.hidden = false;
     this.hiding = setTimeout(() => this.hide(), this.time);
   }
@@ -147,10 +164,11 @@ function startKind(page: Document, kind: CopiedKind, clipboard: TextClipboard, t
 export function startCopying(page: Document, clipboard: TextClipboard, toastTime: number): void {
   const toastPart = page.querySelector<HTMLElement>(TOAST);
   const toastWords = toastPart?.querySelector<HTMLElement>(TOAST_WORDS);
-  if (toastPart == null || toastWords == null) {
+  const wordElement = toastPart?.querySelector<HTMLTemplateElement>(TOAST_WORD)?.content.firstElementChild;
+  if (toastPart == null || toastWords == null || wordElement == null) {
     return;
   }
-  const toast = new Toast(toastPart, toastWords, toastTime);
+  const toast = new Toast(toastPart, toastWords, wordElement, toastTime);
   for (const kind of COPIED_KINDS) {
     startKind(page, kind, clipboard, toast, toastTime);
   }

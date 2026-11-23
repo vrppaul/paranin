@@ -170,13 +170,14 @@ const markViewBox = "0 0 16 16"
 
 // A command's chip as the site's script finds and runs it (web/src/controllers/copy.ts): the chip, the words it
 // copies, and its button, hidden until the script shows it; the toast that says what was copied, with the place its
-// words go; and the hint's window a chip may stand in, which a copy closes
+// words go and the template each word is drawn from; and the hint's window a chip may stand in, which a copy closes
 const (
 	commandPart      = "command"
 	commandWordsPart = "command-words"
 	copyPart         = "copy"
 	toastPart        = "toast"
 	toastWordsPart   = "toast-words"
+	toastWordPart    = "toast-word"
 	hintPart         = "hint"
 )
 

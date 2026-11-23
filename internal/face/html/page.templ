@@ -364,12 +364,12 @@ templ command(command compose.Copyable) {
 	</div>
 }
 
-// toast says what was done (DESIGN.md, Tooltip and Toast): the tick, then the words the site's script puts in, over
-// the foot line while it shows. It stands in a region a screen reader reads out as it changes, which holds no box of
-// its own.
+// toast says what was done (DESIGN.md, Tooltip and Toast): the tick, then the words the site's script puts in, each
+// word of them drawn from the template after them, over the foot line while it shows. It stands in a region a screen
+// reader reads out as it changes, which holds no box of its own.
 templ toast() {
 	<div role="status">
-		<p class="toast" data-part={ toastPart } hidden><span class="toast-mark" aria-hidden="true">{ look.DoneMark }</span><span data-part={ toastWordsPart }></span></p>
+		<p class="toast" data-part={ toastPart } hidden><span class="toast-mark" aria-hidden="true">{ look.DoneMark }</span><span data-part={ toastWordsPart }></span><template data-part={ toastWordPart }><span class="toast-word"></span></template></p>
 	</div>
 }
 

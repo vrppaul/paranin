@@ -17,6 +17,12 @@ const COUNT = '[data-part="search-count"]';
 // The box of the switch that turns the vim keys on
 const BOX = '[data-part="vim-keys"] input';
 
+// The theme button's part, which the server draws hidden until the site's script shows it, the button, and its name,
+// its tooltip
+const THEME = '[data-part="theme"]';
+const THEME_BUTTON = `${THEME} button`;
+const THEME_NAME = `${THEME} [data-part="tooltip"]`;
+
 // The attribute that marks what the line says of a match shown, which is no refusal
 const STATE = "data-state";
 
@@ -262,6 +268,26 @@ test("Esc on the page puts the search away, its marks with it, and n then finds 
   press("Escape");
   press("n");
   expect({ marked: marks.current, said: said() }).toEqual({ marked: undefined, said: null });
+});
+
+test("Esc on the page puts away one thing a press: a tooltip shown, then a window open, then the search", () => {
+  const { marks, windows } = started();
+  searched(KEPT);
+  found(THEME).hidden = false;
+  found(THEME_BUTTON).focus();
+  press("Escape");
+  const afterFirstEsc = { tooltipHidden: found(THEME_NAME).hidden, marks: marks.others.length };
+  windows.open = true;
+  press("Escape");
+  const marksAfterSecondEsc = marks.others.length;
+  // the browser closed the window on the second Esc
+  windows.open = false;
+  press("Escape");
+  expect({ afterFirstEsc, marksAfterSecondEsc, marksAfterThirdEsc: marks.others.length }).toEqual({
+    afterFirstEsc: { tooltipHidden: true, marks: 1 },
+    marksAfterSecondEsc: 1,
+    marksAfterThirdEsc: 0,
+  });
 });
 
 test("a search kept marks the page opened next, none of its matches named until n goes to the first", () => {

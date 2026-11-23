@@ -210,8 +210,10 @@ a.session:hover {
   content: "*" / "";
 }
 
-/* the ways the site is served, at the line's end before the theme button, a cell apart */
+/* the ways the site is served, at the line's end before the theme button, a cell apart; the hint a way opens stands
+ * by them */
 .ways {
+  anchor-name: --ways;
   display: inline-flex;
   gap: var(--cell);
   margin-left: auto;
@@ -289,16 +291,24 @@ a.session:hover {
   line-height: var(--type-body-line);
 }
 
-/* it stands a nudge over the foot line, whatever the line's panel holds, its right edge at the content's. The foot is
- * its own anchor, the one whose scroll and sticking a window in the top layer follows; a browser that places nothing by
- * an anchor leaves it where it puts a popover, mid-screen */
+/* it stands a nudge over the foot line, whatever the line's panel holds, its right edge at that of the ways that open
+ * it, on whatever row the line wraps them to, so the theme button's name, past the vim keys' switch, shows beside it
+ * rather than under it; where the screen leaves it no room there, it starts at the content's left edge instead. The
+ * foot is its own anchor, the one whose scroll and sticking a window in the top layer follows; a browser that places
+ * nothing by an anchor leaves it where it puts a popover, mid-screen */
 @supports (anchor-name: --foot) {
   .hint {
     position-anchor: --foot;
     inset: auto;
     margin: 0;
-    right: calc(anchor(--foot-row right) + var(--gutter));
+    right: anchor(--ways right);
     bottom: calc(anchor(top) + var(--nudge));
+    position-try-fallbacks: --hint-in-view;
+  }
+
+  @position-try --hint-in-view {
+    right: auto;
+    left: calc(anchor(--foot-row left) + var(--gutter));
   }
 }
 
@@ -667,10 +677,12 @@ a.session:hover {
   visibility: hidden;
 }
 
-/* it shows while its part is under the pointer, itself among it, or holds the keyboard's focus; the nudges under it
- * are its own, unseen, so the pointer crosses onto it without leaving the part (WCAG 1.4.13) */
-:hover > .tooltip,
-:has(> :focus-visible) > .tooltip {
+/* it shows while its part is under the pointer, itself among it, or holds the keyboard's focus, until Esc puts it
+ * away (src/controllers/tooltip.ts): its class's display outranks the hidden attribute, so the attribute is read
+ * here. The nudges under it are its own, unseen, so the pointer crosses onto it without leaving the part
+ * (WCAG 1.4.13) */
+:hover > .tooltip:not([hidden]),
+:has(> :focus-visible) > .tooltip:not([hidden]) {
   visibility: visible;
 }
 
@@ -681,11 +693,6 @@ a.session:hover {
   left: 0;
   height: calc(2 * var(--nudge) + var(--hairline));
   content: "";
-}
-
-/* Esc put it away (src/controllers/tooltip.ts) until its part is left: the class's display would show it otherwise */
-.tooltip[hidden] {
-  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1005,21 +1012,22 @@ a.session:hover {
 }
 
 /* the toast (DESIGN.md, Tooltip and Toast): a regular chip over the page, a row over the top of the foot line it
- * stands with, however tall the line and the toast's own words are, the tick in the colour of a thing done */
+ * stands with, however tall the line and the toast's own words are, the tick in the colour of a thing done, by the
+ * first line of words as a mark beside them stands. Its words stand half a row, hairline and all, from its top and
+ * its foot, so one line of them makes the regular size's two rows, and lines wrapped keep the same air */
 .toast {
   position: absolute;
   right: 0;
   bottom: calc(100% + var(--row));
   left: 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--cell);
   box-sizing: border-box;
   width: fit-content;
   max-width: calc(100% - 2 * var(--gutter-phone));
-  min-height: var(--control);
   margin: 0 auto;
-  padding: 0 var(--cell-2);
+  padding: calc(var(--row-half) - var(--hairline)) var(--cell-2);
   border: var(--hairline) solid var(--edge);
   border-radius: var(--radius);
   background: var(--sunk);
@@ -1033,6 +1041,13 @@ a.session:hover {
 .toast-mark {
   color: var(--passed);
   font-weight: var(--type-strong-weight);
+}
+
+/* a word of the toast's stands whole, so its lines break at the spaces alone, never at a command's hyphens; a word
+ * wider than the toast still breaks inside itself rather than run past it */
+.toast-word {
+  display: inline-block;
+  overflow-wrap: anywhere;
 }
 
 @media (prefers-reduced-motion: reduce) {

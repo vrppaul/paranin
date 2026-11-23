@@ -79,11 +79,6 @@ func Documents(snapshot *content.Snapshot) []document.Document {
 	return documents
 }
 
-// resumePage is the résumé's page, the site's first.
-func resumePage() document.Page {
-	return document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
-}
-
 // projectsWithPages are the projects that have a page of their own, in their order.
 func projectsWithPages(projects []content.Project) []content.Project {
 	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
@@ -132,7 +127,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	}
 	return document.Document{
 		Head: document.Head{
-			Page:        document.Page{Kind: document.PageIndex, Slug: "", Tab: ""},
+			Page:        document.PageOf(document.PageIndex),
 			Number:      0,
 			Language:    words.Language(),
 			Greeting:    "",
@@ -161,7 +156,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 	person := profile.Person
 	headline := markedSpans(person.Headline)
 	return document.Head{
-		Page:        resumePage(),
+		Page:        document.PageOf(document.PageResume),
 		Number:      0,
 		Language:    words.Language(),
 		Greeting:    words.Text(content.WordGreeting),
@@ -235,7 +230,7 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 // projectDocument is a project's own page: its head; its details, its author first, a link back to the résumé, and
 // how it is installed last; its recording, where it has one; then its sections.
 func projectDocument(project content.Project, author content.Person, words content.Words) document.Document {
-	resume := resumePage()
+	resume := document.PageOf(document.PageResume)
 	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
 	details = append(details, factList(project.Facts)...)
 	blocks := []document.Block{document.Facts{Kind: document.FactsDetails, List: append(details, installFacts(project, words)...)}}
@@ -285,7 +280,7 @@ func projectTags(project content.Project) []string {
 // projectPage is a project's own page, or no page where it has none.
 func projectPage(project content.Project) document.Page {
 	if !project.Page {
-		return document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
+		return document.PageOf(document.PageNone)
 	}
 	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: ""}
 }

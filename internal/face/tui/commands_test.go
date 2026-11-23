@@ -209,7 +209,7 @@ func TestThePlacesFollowThePageShown(test *testing.T) {
 func TestANameGoesToOnePlace(test *testing.T) {
 	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())
+	model := handModel(test, commonWidth, commonHeight, composed)
 	if line := commandLineOf(screenOf(test, pressed(test, model, ":", "tab", "tab"))); line != ":" {
 		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, ":")
 	}
@@ -220,7 +220,7 @@ func TestANameGoesToOnePlace(test *testing.T) {
 func TestATabOfSeveralWordsGoesByThemJoined(test *testing.T) {
 	section := document.Section{Title: textOf("Ways In"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())
+	model := handModel(test, commonWidth, commonHeight, composed)
 	if screen := screenOf(test, commanded(test, model, "ways-in")); !strings.Contains(screen, "the door") {
 		test.Errorf("after :ways-in the screen =\n%s\nwant the tab titled %q", screen, "Ways In")
 	}

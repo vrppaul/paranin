@@ -230,7 +230,7 @@ func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
 	}
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
-	model := commanded(test, New([]document.Document{resume, project}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day()), "e a-tool")
+	model := commanded(test, handModel(test, commonWidth, commonHeight, resume, project), "e a-tool")
 	if footer := footerOf(screenOf(test, model)); !strings.Contains(footer, "2:facts") {
 		test.Errorf("on the project's page the footer = %q, want its tab of the facts", footer)
 	}
@@ -271,10 +271,11 @@ func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
 	}
 }
 
-// The footer names the session by the site's host, as tmux names its own, then each tab by its number and its name,
-// the one shown marked, as tmux marks the window shown; then the key that opens the window of keys, and the ruler.
+// The footer names the sessions, as tmux names its own, the site's by its host and the blog's, then each tab by its
+// number and its name, the one shown marked, as tmux marks the window shown; then the key that opens the window of
+// keys, and the ruler.
 func TestTheFooterNamesTheSiteAndEveryTab(test *testing.T) {
-	want := []string{"[example.test]", "1:about", "2:experience*", "3:projects", "4:skills", "5:contact", "?", "keys", "All"}
+	want := []string{"[example.test]", "[blog]", "1:about", "2:experience*", "3:projects", "4:skills", "5:contact", "?", "keys", "All"}
 	footer := strings.Fields(footerOf(screenOf(test, pressed(test, fixtureModel(test, wideWidth, commonHeight), "l"))))
 	if !slices.Equal(footer, want) {
 		test.Errorf("on the second tab the footer reads %q, want %q", footer, want)
@@ -284,11 +285,12 @@ func TestTheFooterNamesTheSiteAndEveryTab(test *testing.T) {
 // Where the footer does not fit the screen, the key to the window of keys gives way, then the tabs farthest from the
 // one shown, a mark standing for them, then the session, the ruler kept.
 func TestTheFooterGivesWayAroundTheTabShown(test *testing.T) {
-	// a terminal wide enough for every tab of the fixture's résumé in the footer, not for the key beside them; and one
-	// wide enough for the third tab and one tab beside it
+	// a terminal wide enough for the sessions and one tab in the footer; one wide enough for every tab of the
+	// fixture's résumé, not for the key beside them; and one wide enough for the third tab and one tab beside it
 	const (
-		everyTabWidth  = 85
-		oneBesideWidth = 55
+		oneTabWidth    = 47
+		everyTabWidth  = 92
+		oneBesideWidth = 62
 	)
 	cases := []struct {
 		name  string
@@ -297,10 +299,10 @@ func TestTheFooterGivesWayAroundTheTabShown(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "the last tab", width: narrowWidth, keys: []string{"h"}, holds: []string{"[example.test] … 5:contact*"}, lacks: []string{"4:skills", "keys"}},
-		{name: "the first tab at its end", width: narrowWidth, keys: []string{"G"}, holds: []string{"[example.test] 1:about* … Bot"}, lacks: []string{"2:experience", "keys"}},
-		{name: "a tab between", width: narrowWidth, keys: []string{"l", "l"}, holds: []string{"[example.test] … 3:projects* …"}, lacks: []string{"2:experience", "4:skills"}},
-		{name: "a screen too narrow for the session beside the tab shown", width: phoneWidth, keys: []string{"l"}, holds: []string{"2:experience*"}, lacks: []string{"[example.test]"}},
+		{name: "the last tab", width: oneTabWidth, keys: []string{"h"}, holds: []string{"[example.test] [blog] … 5:contact*"}, lacks: []string{"4:skills", "keys"}},
+		{name: "the first tab at its end", width: oneTabWidth, keys: []string{"G"}, holds: []string{"[example.test] [blog] 1:about* … Bot"}, lacks: []string{"2:experience", "keys"}},
+		{name: "a tab between", width: oneTabWidth, keys: []string{"l", "l"}, holds: []string{"[example.test] [blog] … 3:projects* …"}, lacks: []string{"2:experience", "4:skills"}},
+		{name: "a screen too narrow for the sessions beside the tab shown", width: phoneWidth, keys: []string{"l"}, holds: []string{"2:experience*"}, lacks: []string{"[example.test]"}},
 		{name: "the later of two as far gives way first", width: oneBesideWidth, keys: []string{"l", "l"}, holds: []string{"… 2:experience 3:projects* …"}, lacks: []string{"4:skills"}},
 		{name: "a screen roomy enough for all but the key", width: everyTabWidth, keys: nil, holds: []string{"1:about* 2:experience 3:projects 4:skills 5:contact"}, lacks: []string{"keys"}},
 	}
@@ -584,7 +586,7 @@ func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
-	if screen := screenOf(test, New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), commonWidth, commonHeight, fixtures.Day())); !strings.Contains(screen, "available") {
+	if screen := screenOf(test, handModel(test, commonWidth, commonHeight, composed)); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
 	}
 }
@@ -697,7 +699,8 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // (ADR-0003): the address heads the brief without its label, and the facts stand in the brief without their
 // section's title. A tab's title the page draws in the titles' font, or not at all on the opening, reaches the reader
 // by form too, as the footer's name of the tab. A project's opening shows its repository by its form too: its owner
-// and name under the title, a link to the address, without its label.
+// and name under the title, a link to the address, without its label. The blog's list and a post reach it as well,
+// the blog's name in the titles' font, and a post's code of several lines in a frame, an edge between each two.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	cases := []struct {
@@ -728,6 +731,15 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		{
 			name: "the list of skills, narrow", shown: compose.Skills(snapshot),
 			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "Lazy"), byForm: []string{"Skills"},
+		},
+		{
+			name: "the blog's list", shown: fixtures.DocumentOf(test, compose.Lists(snapshot), document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}),
+			model: New(sessionDrawing(snapshot), "blog", commonWidth, tallHeight, fixtures.Day()), byForm: []string{"blog"},
+		},
+		{
+			name: "a post", shown: fixtures.DocumentOf(test, compose.Posts(snapshot), document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
+			model:  New(sessionDrawing(snapshot), "blog/1", commonWidth, tallHeight, fixtures.Day()),
+			byForm: []string{"// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println(\"slowly\", page)\n\treturn len(page) * 2\n}"},
 		},
 	}
 	for _, testCase := range cases {
@@ -809,9 +821,23 @@ func fixtureModel(test *testing.T, width, height int) Model {
 	return sessionModel(fixtures.LoadedContent(test), width, height)
 }
 
-// sessionModel is a session on what a snapshot draws, as the SSH server opens one: its pages and the TUI's extras.
+// sessionModel is a session on what a snapshot draws, as the SSH server opens one, opened on the résumé.
 func sessionModel(snapshot *content.Snapshot, width, height int) Model {
-	return New(append(compose.Documents(snapshot), compose.Extras(snapshot)...), fixtures.Site(snapshot), width, height, fixtures.Day())
+	return New(sessionDrawing(snapshot), "", width, height, fixtures.Day())
+}
+
+// sessionDrawing is what the SSH server hands a session of a snapshot: its pages, the TUI's extras, the blog's lists
+// and its posts, with the site's words and its site.
+func sessionDrawing(snapshot *content.Snapshot) Drawing {
+	documents := slices.Concat(compose.Documents(snapshot), compose.Extras(snapshot), compose.Lists(snapshot), compose.Posts(snapshot))
+	return Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
+}
+
+// handModel is a session on documents a test builds by hand, the résumé among them, with the fixture's words and site,
+// opened on the résumé.
+func handModel(test *testing.T, width, height int, documents ...document.Document) Model {
+	snapshot := fixtures.LoadedContent(test)
+	return New(Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}, "", width, height, fixtures.Day())
 }
 
 // handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a
@@ -820,13 +846,13 @@ func handHealth(test *testing.T, width, height int, title string) Model {
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil), Blocks: nil}
 	section := document.Section{Title: textOf(title), Blocks: []document.Block{document.Paragraph{Spans: textOf("Learning Go")}}}
 	report := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, textOf("health")), Blocks: []document.Block{section}}
-	return New([]document.Document{resume, report}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
+	return handModel(test, width, height, resume, report)
 }
 
 // handResume is a session on a résumé a test builds by hand: a head titled by a name, then blocks.
 func handResume(test *testing.T, name string, width, height int, blocks ...document.Block) Model {
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf(name)), Blocks: blocks}
-	return New([]document.Document{composed}, fixtures.Site(fixtures.LoadedContent(test)), width, height, fixtures.Day())
+	return handModel(test, width, height, composed)
 }
 
 // knownMonth is a month of a year as a period of a document a test builds by hand names it.

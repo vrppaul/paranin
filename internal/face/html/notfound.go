@@ -32,12 +32,12 @@ type NotFound struct {
 // NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
 // answers with, drawn in the build's stylesheet and running its script, in the frame of every page.
 func NewNotFound(site routes.Site, status, language string, build *assets.Build, composed compose.Frame) NotFound {
-	around := frameOf(site, composed)
+	around, resume := frameOf(site, composed), document.PageOf(document.PageResume)
 	return NotFound{
 		status:   status,
 		language: language,
 		included: build.Includes(assets.Site),
-		foot:     footLineOf(around, site, around.sessionsOf(false), nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
+		foot:     footLineOf(around, site, around.sessionsOf(resume), nil, resume),
 		heading:  titleHeading(status, text(status)),
 	}
 }

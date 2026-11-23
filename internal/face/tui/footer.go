@@ -87,9 +87,22 @@ func (model Model) paintedFooter() paintedFooter {
 // A tab whose items the footer's width is worked out from: the tabs take as many columns whichever is shown
 const anyTab = 0
 
-// sessionPieces are the session the footer opens with, named by the site's host as tmux names its session.
+// sessionPieces are the sessions the footer opens with, as tmux names its sessions (compose.Frame.Sessions), a space
+// between each two, the one shown standing out.
 func (model Model) sessionPieces() []piece {
-	return []piece{{text: sessionOpening + model.site.Host() + sessionClosing, part: partHost}}
+	shown := model.tabs[model.chosen].page
+	pieces := []piece{}
+	for _, session := range model.siteWords.Sessions {
+		if len(pieces) > 0 {
+			pieces = append(pieces, piece{text: space, part: partPanel})
+		}
+		named := piece{text: sessionOpening + session.Name + sessionClosing, part: partSession}
+		if session.Holds(shown) {
+			named.part = partHost
+		}
+		pieces = append(pieces, named)
+	}
+	return pieces
 }
 
 // tabItems are each tab as the footer shows it while one is shown, as tmux shows each window: a gap, then its number

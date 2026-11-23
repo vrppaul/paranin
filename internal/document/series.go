@@ -18,6 +18,16 @@ type Series struct {
 	Parts []Part
 }
 
+// Reading is the number of the part read, which compose marks once; 0 where no part is read.
+func (series Series) Reading() int {
+	for _, part := range series.Parts {
+		if part.State == PartReading {
+			return part.Number
+		}
+	}
+	return 0
+}
+
 // Part is a part of a series: its number in it, counted from one, its title, where it stands for the reader of the
 // post that shows it, and its page, none for a part still to come.
 type Part struct {

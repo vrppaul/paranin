@@ -1,13 +1,14 @@
 // Package ssh serves the TUI over SSH (docs/REQUIREMENTS.md): a kiosk, not a shell. Anyone may connect, with no key
 // and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
-// the projects' pages and the TUI's extras, and nothing else is served: no shell, no command, no file transfer, no
-// forwarding (SEC-1, SEC-2). A session with no terminal is refused (SEC-3), a panic ends its own session and never
-// the server (SEC-4), a connection too long in starting its session, its handshake with it, and a session idle too
-// long or open too long are closed (SEC-5), a connection opens one session, a terminal larger than a bound is drawn
-// at the bound, a session's input reaches the TUI at a reader's pace and its environment holds only what the colour
-// profile reads, so no connection takes memory or time without end (SEC-7), and each session is logged as it opens
-// and closes, and its refused requests once (SEC-13), what its reader sent cut short and quoted by the logger's
-// handler, as slog's handlers quote a value with a control character in it (SEC-15).
+// the projects' pages, the TUI's extras and the blog, opening on the blog's page its user's name reaches (D26), and
+// nothing else is served: no shell, no command, no file transfer, no forwarding (SEC-1, SEC-2). A session with no
+// terminal is refused (SEC-3), a panic ends its own session and never the server (SEC-4), a connection too long in
+// starting its session, its handshake with it, and a session idle too long or open too long are closed (SEC-5), a
+// connection opens one session, a terminal larger than a bound is drawn at the bound, a session's input reaches the
+// TUI at a reader's pace and its environment holds only what the colour profile reads, so no connection takes memory
+// or time without end (SEC-7), and each session is logged as it opens and closes, and its refused requests once
+// (SEC-13), what its reader sent cut short and quoted by the logger's handler, as slog's handlers quote a value with a
+// control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
@@ -25,6 +26,7 @@ import (
 	"log/slog"
 	"net"
 	"runtime/debug"
+	"slices"
 	"time"
 	"unicode/utf8"
 
@@ -35,7 +37,6 @@ import (
 	"charm.land/wish/v2/bubbletea"
 
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/face/tui"
 	"github.com/vrppaul/paranin/internal/release"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -78,17 +79,10 @@ type Server struct {
 	server *charmssh.Server
 }
 
-// drawing is what each session of one snapshot draws: the documents a reader reads, the résumé and the hidden pages
-// among them, and the site that writes their addresses.
-type drawing struct {
-	documents []document.Document
-	site      routes.Site
-}
-
 // sessions open each session's TUI on what the current snapshot draws, its panics logged through the logger.
 type sessions struct {
 	logger *slog.Logger
-	drawn  *release.Derived[drawing]
+	drawn  *release.Derived[tui.Drawing]
 }
 
 // guard logs each session and ends one that panics.
@@ -146,20 +140,20 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// draw is what the sessions of a snapshot draw: the pages of its content, and the extras the TUI opens by a command.
-func draw(snapshot *release.Snapshot) drawing {
+// draw is what the sessions of a snapshot draw: the pages of its content, the extras the TUI opens by a command, and
+// the blog's lists and posts, with the site's words of the frame round them.
+func draw(snapshot *release.Snapshot) tui.Drawing {
 	facts := snapshot.Content
-	documents := append(compose.Documents(facts), compose.Extras(facts)...)
-	return drawing{documents: documents, site: routes.New(facts.Profile.Site.BaseURL)}
+	documents := slices.Concat(compose.Documents(facts), compose.Extras(facts), compose.Lists(facts), compose.Posts(facts))
+	return tui.Drawing{Documents: documents, Frame: compose.FrameOf(facts), Site: routes.New(facts.Profile.Site.BaseURL)}
 }
 
-// open is a session's TUI, of the size its terminal said it is.
+// open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).
 func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.ProgramOption) {
 	terminal, _, _ := session.Pty()
-	drawn := opening.drawn.Current()
 	model := watchedModel{
 		logger: opening.logger,
-		model:  tui.New(drawn.documents, drawn.site, terminal.Window.Width, terminal.Window.Height, time.Now()),
+		model:  tui.New(opening.drawn.Current(), session.User(), terminal.Window.Width, terminal.Window.Height, time.Now()),
 		remote: session.RemoteAddr().String(),
 	}
 	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}

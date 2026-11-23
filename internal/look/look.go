@@ -1,9 +1,9 @@
 // Package look is the design's tokens as the faces read them (docs/FOUNDATION.md §5.5). palette.go, which
 // scripts/tokens writes from design/tokens.yaml, names each colour and gives its shade in each theme, and cells.go each
-// length a terminal lays out by, in cells; this file holds the types the palette fills. No colour of the design is
-// written anywhere else in Go. Its generate writes the page's tokens.css and times.ts too, under web/src/tokens, from
-// the same tokens. letters.go holds the design's block fonts, in which the TUI and the page both draw the author's
-// name and the titles, each its own way; glyphs.go the terminal's glyphs both faces draw.
+// length a terminal lays out by, in cells; this file holds the types the palette fills, and how a day reads. No
+// colour of the design is written anywhere else in Go. Its generate writes the page's tokens.css and times.ts too,
+// under web/src/tokens, from the same tokens. letters.go holds the design's block fonts, in which the TUI and the page
+// both draw the author's name and the titles, each its own way; glyphs.go the terminal's glyphs both faces draw.
 package look
 
 import (
@@ -39,3 +39,7 @@ type Basic uint8
 
 // BasicOwn is the terminal's own colour, where no basic colour serves: a number no colour of sixteen has
 const BasicOwn Basic = math.MaxUint8
+
+// DayLayout is how a post's day reads on the page and in the TUI (DESIGN.md, Content): 21 Nov 2026; the manual writes
+// it as a machine does
+const DayLayout = "2 Jan 2006"

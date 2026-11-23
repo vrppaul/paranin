@@ -29,30 +29,40 @@ func windowKeys() []string {
 	return []string{keyWindowKey, spaceKey}
 }
 
-// keyNotes are the rows of the window of keys, the keys of normal mode in the order a reader learns them; the arrows,
-// Home, End, Shift+Tab and Ctrl+C, which only stand in for keys the window names, are left out.
-func (model Model) keyNotes() []hint {
-	lastTab := len(model.tabs) - 1 + firstTabNumber
-	return []hint{
-		{key: downKey + space + upKey, does: "line down / up"},
+// keyNotes are the rows of the window of keys on a tab, the keys of normal mode in the order a reader learns them: on
+// the blog's list j and k go from post to post and Enter reads one; the keys between tabs only where more than one
+// tab shows; and what q does on the tab's page. The arrows, Home, End, Shift+Tab and Ctrl+C, which only stand in for
+// keys the window names, are left out.
+func (model Model) keyNotes(place int) []hint {
+	moving := []hint{{key: downKey + space + upKey, does: "line down / up"}}
+	if len(model.laid[place].tiles) > 0 {
+		moving = []hint{{key: downKey + space + upKey, does: "post after / before"}, {key: enterMark, does: "read the post"}}
+	}
+	notes := slices.Concat(moving, []hint{
 		{key: countExample + downKey, does: "move by a count"},
 		{key: topKey + topKey + space + bottomKey, does: "top / bottom"},
-		{key: previousKey + space + nextKey, does: "tab before / after"},
-		{key: strconv.Itoa(firstTabNumber) + keyRangeMark + strconv.Itoa(lastTab), does: "go to a tab"},
-		{key: commandKey, does: "type a place to go"},
-		{key: tabKey, does: "complete a place"},
-		{key: searchKey, does: "find in the tab"},
-		{key: nextMatchKey + space + previousMatchKey, does: "next / prior match"},
-		{key: copyKey, does: "copy a found value"},
-		{key: escapeKey, does: "end the search"},
-		{key: quitKey, does: closingHint(model.shown)},
+	})
+	if lastTab := len(model.tabs) - 1 + firstTabNumber; lastTab > firstTabNumber {
+		notes = append(notes,
+			hint{key: previousKey + space + nextKey, does: "tab before / after"},
+			hint{key: strconv.Itoa(firstTabNumber) + keyRangeMark + strconv.Itoa(lastTab), does: "go to a tab"},
+		)
 	}
+	return append(notes,
+		hint{key: commandKey, does: "type a place to go"},
+		hint{key: tabKey, does: "complete a place"},
+		hint{key: searchKey, does: "find in the tab"},
+		hint{key: nextMatchKey + space + previousMatchKey, does: "next / prior match"},
+		hint{key: copyKey, does: "copy a found value"},
+		hint{key: escapeKey, does: "end the search"},
+		hint{key: quitKey, does: closingHint(model.tabs[place].page)},
+	)
 }
 
 // openKeys opens the window of keys where it shows whole on the screen; where it does not, the keys stay in normal
 // mode, so no mode opens unseen, and the command line says there is no room, as Neovim does.
 func (model Model) openKeys(int) (Model, tea.Cmd) {
-	if !model.shows(model.drawn.keyWindow) {
+	if !model.shows(model.drawn.tabs[model.chosen].keyWindow) {
 		model.said = commandMessage{text: notEnoughRoom, failed: true}
 		return model, nil
 	}
@@ -72,7 +82,7 @@ func (model Model) keyInWindow(key string) (Model, tea.Cmd) {
 
 // withKeys lays the window of keys over the rows of a screen, its right edge by the page's right crosses.
 func (model Model) withKeys(rows []string) []string {
-	window := model.drawn.keyWindow
+	window := model.drawn.tabs[model.chosen].keyWindow
 	return model.withWindow(rows, window, model.frame.left+model.frame.inner+crossRoom-window.width)
 }
 

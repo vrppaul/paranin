@@ -51,22 +51,22 @@ templ (writer PageWriter) blogHead(head document.Head, groupings []grouping) {
 
 // postGroup is a group of the list (DESIGN.md, Group): its name, a series' line under it and how many posts it holds,
 // then its posts as tiles.
-templ (writer PageWriter) postGroup(group postGroup) {
+templ (writer PageWriter) postGroup(group document.Group) {
 	<section class="group">
 		<div class="group-name">
 			<h2 class="group-title">
-				@writer.spans(group.title)
+				@writer.spans(group.Title)
 			</h2>
-			if len(group.posts.Line) > 0 {
+			if len(group.Posts.Line) > 0 {
 				<p class="group-line">
-					@writer.spans(group.posts.Line)
+					@writer.spans(group.Posts.Line)
 				</p>
 			}
 			<p class="group-count">
-				@writer.spans(group.posts.Count)
+				@writer.spans(group.Posts.Count)
 			</p>
 		</div>
-		@writer.tiles(group.posts)
+		@writer.tiles(group.Posts)
 	</section>
 }
 
@@ -102,7 +102,7 @@ templ (writer PageWriter) tileToCome(post document.ListedPost, toCome document.C
 // series' title where its group is no series' own, and its tags, words of the tile's link.
 templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Component) {
 	<span class="pane-name tile-edge">
-		if partInEdge(post) {
+		if post.InItsSeriesGroup() {
 			<span class="tile-part">
 				@writer.spans(post.Part)
 			</span>

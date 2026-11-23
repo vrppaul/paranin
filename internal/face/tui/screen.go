@@ -10,10 +10,16 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// How the page sits on the screen: no wider than a text is read at, standing in from each side by at least
-// this much; narrower than the least, the page takes the whole width and the crosses go
+// How wide the page stands at most: the site's at a text's measure, the blog's as wide as a post's columns, its
+// outline, its paragraphs' numbers, its text and its sources beside it (DESIGN.md, The TUI)
 const (
-	widestPage    = 100
+	widestPage     = 100
+	widestBlogPage = 132
+)
+
+// How the page sits on the screen: no wider than the session shown has it (widestPageOf), standing in from each
+// side by at least this much; narrower than the least, the page takes the whole width and the crosses go
+const (
 	pageMargins   = 8
 	narrowestPage = 24
 	crossRoom     = 2
@@ -76,8 +82,16 @@ type frame struct {
 	crosses bool
 }
 
-func frameOf(width, height int) frame {
-	inner := min(width-pageMargins, widestPage)
+// widestPageOf is how wide the page stands at most in the session shown: the blog's wider than the site's.
+func widestPageOf(inBlog bool) int {
+	if inBlog {
+		return widestBlogPage
+	}
+	return widestPage
+}
+
+func frameOf(width, height, widest int) frame {
+	inner := min(width-pageMargins, widest)
 	if inner < narrowestPage {
 		inner = width
 	}
@@ -123,36 +137,43 @@ type piece struct {
 }
 
 // drawnScreen is the screen painted for the terminal as it is: each tab; the rows of the page that hold nothing but
-// its crosses, or nothing at all; the scrollbar's two cells; what the footer holds on any tab; and the window of keys.
+// its crosses, or nothing at all, and the blanks of its left margin; the scrollbar's two cells; and what the footer
+// holds on any tab.
 type drawnScreen struct {
-	tabs      []drawnTab
-	crossRow  string
-	blankRow  string
-	track     string
-	thumb     string
-	footer    paintedFooter
-	keyWindow paintedWindow
+	tabs     []drawnTab
+	crossRow string
+	blankRow string
+	margin   string
+	track    string
+	thumb    string
+	footer   paintedFooter
 }
 
-// drawnTab is one tab painted: its page, and the footer's session and tabs while it is shown.
+// drawnTab is one tab painted: its page, and while it is shown the footer's sessions and tabs and the window of keys.
 type drawnTab struct {
 	paintedPage
 	footerTabs paintedBar
+	keyWindow  paintedWindow
 }
 
 // paintedPage is a tab's lines painted with the search it marks, and marked, unpainted, for the two rows a key fades;
-// the line of each match, in order: a line holding two matches is there twice; and the match its count names.
+// the line of each match, in order: a line holding two matches is there twice; what sets runs of its lines apart, the
+// match its count names and the tile the keys stand on; and the names of the blog's list's groups, painted alone.
 type paintedPage struct {
 	lines   []paintedLine
 	marked  []markedLine
 	matches []int
-	named   namedMatch
+	marks   pageMarks
+	groups  []paintedGroup
 }
 
-// paintedLine is a line of a page painted from the screen's left edge to its own end, and the columns it takes.
+// paintedLine is a line of a page painted from the screen's left edge to its own end, and the columns it takes; and
+// its part right of the groups' names on the blog's list, painted alone, which a group's name stuck in sight stands
+// beside.
 type paintedLine struct {
 	text  string
 	width int
+	rest  paintedBar
 }
 
 // paintedBar is pieces of a bar painted, and the columns they take.
@@ -161,35 +182,52 @@ type paintedBar struct {
 	width int
 }
 
-// drawnScreen paints every tab and the frame around it, all but what a key moves: the ruler, the scrollbar's place
-// and the command line.
-func (model Model) drawnScreen() drawnScreen {
+// keysPainted is a window of keys painted, and the keys it names.
+type keysPainted struct {
+	notes  []hint
+	window paintedWindow
+}
+
+// drawnScreen paints the frame around the tabs' pages, painted already, all but what a key moves: the ruler, the
+// scrollbar's place and the command line.
+func (model Model) drawnScreen(pages []paintedPage) drawnScreen {
 	footer := model.paintedFooter()
-	tabs := make([]drawnTab, 0, len(model.tabs))
-	for place := range model.tabs {
-		tabs = append(tabs, drawnTab{paintedPage: model.paintedPage(place), footerTabs: model.footerTabs(place, footer.place)})
+	tabs, windows := make([]drawnTab, 0, len(pages)), []keysPainted{}
+	for place, page := range pages {
+		notes := model.keyNotes(place)
+		// tabs that name the same keys share one window of them, painted once
+		found := slices.IndexFunc(windows, func(painted keysPainted) bool { return slices.Equal(painted.notes, notes) })
+		if found < 0 {
+			found, windows = len(windows), append(windows, keysPainted{notes: notes, window: model.paint.keyWindow(notes)})
+		}
+		tabs = append(tabs, drawnTab{paintedPage: page, footerTabs: model.footerTabs(place, footer.place), keyWindow: windows[found].window})
 	}
 	crossRow := ""
 	if model.frame.crosses {
 		crossRow = model.paint.crossRow(model.frame)
 	}
 	return drawnScreen{
-		tabs:      tabs,
-		crossRow:  crossRow,
-		blankRow:  strings.Repeat(space, model.frame.width),
-		track:     model.paint.parts[partTrack].Render(trackMark),
-		thumb:     model.paint.parts[partThumb].Render(thumbMark),
-		footer:    footer,
-		keyWindow: model.paint.keyWindow(model.keyNotes()),
+		tabs:     tabs,
+		crossRow: crossRow,
+		blankRow: strings.Repeat(space, model.frame.width),
+		margin:   strings.Repeat(space, model.frame.left),
+		track:    model.paint.parts[partTrack].Render(trackMark),
+		thumb:    model.paint.parts[partThumb].Render(thumbMark),
+		footer:   footer,
 	}
 }
 
-// paintedPage paints a tab's lines, each match of the search it marks marked, the one its count names apart.
+// paintedPage paints a tab's lines, each match of the search it marks marked, the one its count names apart, and on the
+// blog's list the tile the keys stand on; and the names of the list's groups, which stay in sight.
 func (model Model) paintedPage(place int) paintedPage {
-	marked := markedLines(model.laid[place], model.markedQuery(place))
+	laid := model.laid[place]
+	marked := markedLines(laid.lines, model.markedQuery(place))
 	matches := matchLines(marked)
-	named := model.namedMatchOf(place, matches)
-	return paintedPage{lines: model.paint.tab(marked, model.frame, named), marked: marked, matches: matches, named: named}
+	marks := pageMarks{named: model.namedMatchOf(place, matches), pointed: model.pointedTile(place), split: laid.split}
+	return paintedPage{
+		lines: model.paint.tab(marked, model.frame, marks), marked: marked, matches: matches, marks: marks,
+		groups: model.paint.groupNames(laid.groups, laid.split),
+	}
 }
 
 // screen draws the whole screen: the page between its crosses, the footer under it, the command line over the footer
@@ -223,11 +261,13 @@ func (model Model) screen() (string, *tea.Cursor) {
 }
 
 // pageRows are the rows of the page the chosen tab shows at its scroll: its lines, the last two faded where more
-// lies below, the page shows a few lines more than those and the terminal shows the colours to fade in, and the
-// scrollbar at the right where the tab is taller than the page and there is room; rows of nothing past its end.
+// lies below, the page shows a few lines more than those and the terminal shows the colours to fade in; on the blog's
+// list each group's name stuck in sight, painted already, beside the rest of its rows; and the scrollbar at the right
+// where the tab is taller than the page and there is room; rows of nothing past its end.
 func (model Model) pageRows(drawn drawnTab) []string {
 	frame, scroll := model.frame, model.scrolls[model.chosen]
 	fading, bar := frame.rows >= roomyPageRows && model.linesBelow() > 0 && !model.paint.fewColours, model.scrollbar()
+	stuck := stuckNames(drawn.groups, scroll, frame.rows)
 	rows := make([]string, 0, frame.rows)
 	for row := range frame.rows {
 		if scroll+row >= len(drawn.lines) {
@@ -235,14 +275,16 @@ func (model Model) pageRows(drawn drawnTab) []string {
 			continue
 		}
 		shown := drawn.lines[scroll+row]
-		text := shown.text
 		switch {
 		case fading && frame.rows-row == fadedMostFromBottom:
-			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedMost, drawn.named.occurrenceOn(scroll+row))
+			shown = model.paint.pageLine(drawn.marked[scroll+row], frame, model.paint.fadedMost, drawn.marks.on(scroll+row))
 		case fading && frame.rows-row == fadedLessFromBottom:
-			text = model.paint.faded(drawn.marked[scroll+row], frame, model.paint.fadedLess, drawn.named.occurrenceOn(scroll+row))
+			shown = model.paint.pageLine(drawn.marked[scroll+row], frame, model.paint.fadedLess, drawn.marks.on(scroll+row))
 		}
-		rows = append(rows, text+bar.rest(shown.width, row))
+		if name := stuck[row]; name != "" {
+			shown = paintedLine{text: model.drawn.margin + name + shown.rest.text, width: frame.left + drawn.marks.split + shown.rest.width, rest: shown.rest}
+		}
+		rows = append(rows, shown.text+bar.rest(shown.width, row))
 	}
 	return rows
 }

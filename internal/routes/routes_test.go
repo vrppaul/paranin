@@ -107,6 +107,49 @@ func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
 	}
 }
 
+// In a terminal a page is reached by its path with no slash before it, as an SSH user name and the TUI's :e write it
+// (D26): the blog's list, a post by its slug and by its number.
+func TestATerminalNamesAPageByItsPath(test *testing.T) {
+	cases := []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "the blog's list", path: Path(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, FormatChosen), want: "blog"},
+		{name: "a post by its slug", path: Path(document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, FormatChosen), want: "blog/reading-slowly"},
+		{name: "a post by its number", path: NumberPath(12), want: "blog/12"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := TerminalName(testCase.path); got != testCase.want {
+				test.Errorf("TerminalName(%q) = %q, want %q", testCase.path, got, testCase.want)
+			}
+		})
+	}
+}
+
+// A name a terminal writes is the blog's where it is the list's or one in the blog's folder, whether or not a page goes
+// by it, and no other's.
+func TestABlogsNameIsItsListsOrInItsFolder(test *testing.T) {
+	cases := []struct {
+		name string
+		want bool
+	}{
+		{name: "blog", want: true},
+		{name: "blog/99", want: true},
+		{name: "blogger", want: false},
+		{name: "reader", want: false},
+		{name: "p/tidy-tool", want: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := IsBlogName(testCase.name); got != testCase.want {
+				test.Errorf("IsBlogName(%q) = %t, want %t", testCase.name, got, testCase.want)
+			}
+		})
+	}
+}
+
 // writtenAddress is a base address as a test writes it, its host beside it, as content reads one from a profile.
 type writtenAddress struct {
 	written string

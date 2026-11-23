@@ -597,20 +597,26 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   letters do not fit. A post's title is bold text.
 - A post's tags as the page's: `#` in `faint`, the word in `muted`. What a project is made of as the page's PageHead
   writes it, `muted` words joined by ` · `, not chips.
-- Code in a line stands in `text` on `sunk`; a block of it in a frame, its language in the edge, coloured as the
-  page's. A command is a box in a `muted` hairline with its label in the top edge, `❯` in `prompt` before the
-  command, as the page's Command; y copies it once a search has found it, as it copies any value.
+- Code in a line stands in `text` on `sunk`; a block of it in a `quiet` frame, its language in the edge, coloured as
+  the page's. A line wider than the frame goes on under itself, never cut: each row it goes on in opens with `↪ ` in
+  `faint`, as Neovim's showbreak marks it. A command is a box in a `muted` hairline with its label in the top edge,
+  `❯` in `prompt` before the command, as the page's Command; y copies it once a search has found it, as it copies any
+  value.
 - The blog is a session of its own. The footer opens with `[paran.in] [blog]`, the one shown in `host`, then its
   windows: on the blog `1:posts` and the post read, `2:own-way-to-pay*`. `:e blog` and `ssh blog@paran.in` open the
   list; `:e blog/12` and `ssh blog/12@paran.in` the post, the list in the first window; h and l go between the two;
-  q on a post goes back to the list, and on the list back to the résumé.
+  q on a post goes back to the list, and on the list back to the résumé. The first window keeps the list's grouping
+  the reader chose, by year or by series, beside a post; the page, which keeps no state, leads it to the list by year.
 - The blog's pages run wider than the résumé's column where the screen has room, 132 cells at most, the text still
   held to its measure.
 - The list: BLOG in the title font, as the page's; the groups' names in a column, 22 cells wide, 18 under 132, the
   year in the title font in the gradient,
   staying in sight at the top while its tiles scroll; under 100 cells the name stands over its tiles as one line in the
   gradient. The tiles as the page's, at least 31 cells each. j and k go from tile to tile in reading order, newest
-  first; the tile chosen stands on `sunk`, its title underlined in `accent`; Enter opens its post.
+  first; the tile chosen stands on `sunk`, its title underlined in `accent`; Enter opens its post. A move that takes
+  the page from the tile chosen chooses one in sight: G the last, gg the first, a search's match its own.
+- A post's lists stand inside the text's column, so their marks never read as the paragraphs' numbers: a point's dash
+  `faint`, an ordered list's numbers `muted`, the words after the widest mark.
 - A post: the Outline (20 cells) from 132 cells wide, the paragraphs' numbers (4), the text (66), the sources beside it
   (32) from 108 cells and at the text's end under a `quiet` rule where narrower. Its head's facts beside the title
   where the sources' column is, under the lead where not. The Outline stays in sight as the post scrolls, the heading

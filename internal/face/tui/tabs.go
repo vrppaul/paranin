@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/look"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -37,16 +38,29 @@ const (
 // (docs/FOUNDATION.md §3.4)
 const cursorBar = "▎"
 
-// tab is one screen of a document a reader moves between: its title, the name it goes by, as the footer names it and
-// the command line goes to it, and its body, which says what the tab shows and so how it is laid out.
+// tab is one screen of a document a reader moves between: the page it is of and its place among the page's tabs, which
+// a reader's place in it is kept by; its title, the name it goes by, as the footer names it and the command line goes
+// to it, and its body, which says what the tab shows and so how it is laid out.
 type tab struct {
+	page  document.Page
+	place int
 	title string
 	slug  string
 	body  tabBody
 }
 
+// laidTab is a tab laid out: its lines; on the blog's list the tiles a key goes to, in reading order, the groups
+// whose names stay in sight while their tiles scroll, and the column the names' column ends at, gap and all, where the
+// list has one; none on any other tab.
+type laidTab struct {
+	lines  []line
+	tiles  []laidTile
+	groups []laidGroup
+	split  int
+}
+
 // tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
-// of skills or as it is, or a section, under its title or as it is.
+// of skills or as it is, or a section, under its title or as it is; or the blog's list or a post, whole.
 //
 //sumtype:decl
 type tabBody interface {
@@ -101,6 +115,17 @@ type plainSection struct {
 	blocks []document.Block
 }
 
+// listBody is the blog's list, its head and its groups, as the page's: one tab, the blog's first window.
+type listBody struct {
+	head   document.Head
+	groups []document.Block
+}
+
+// postBody is a post, as the page draws it: one tab, the blog's window after its list's.
+type postBody struct {
+	post document.Document
+}
+
 func (briefOpening) tabBody()  {}
 func (readmeOpening) tabBody() {}
 func (reportOpening) tabBody() {}
@@ -108,15 +133,27 @@ func (skillsOpening) tabBody() {}
 func (plainOpening) tabBody()  {}
 func (titledSection) tabBody() {}
 func (plainSection) tabBody()  {}
+func (listBody) tabBody()      {}
+func (postBody) tabBody()      {}
 
-// tabsOf lays a document's tabs (document.TabsOf) out as the TUI shows them.
+// tabsOf lays a document's tabs out as the TUI shows them: the blog's list and a post whole, a tab each, which the
+// blog's session names as its windows (Model.windows); any other document's as document.TabsOf parts it.
 func tabsOf(composed document.Document) []tab {
+	head := composed.Head
+	page, title := head.Page, document.PlainText(head.Title)
+	switch page.Kind {
+	case document.PagePost:
+		return []tab{{page: page, place: 0, title: title, slug: "", body: postBody{post: composed}}}
+	case document.PageBlog, document.PageBlogSeries:
+		return []tab{{page: page, place: 0, title: title, slug: "", body: listBody{head: head, groups: composed.Blocks}}}
+	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	}
 	parted := document.TabsOf(composed)
 	opening := parted.Opening
-	tabs := []tab{{title: document.PlainText(opening.Title), slug: opening.Slug, body: openingBody(composed.Head, opening)}}
+	tabs := []tab{{page: page, place: 0, title: document.PlainText(opening.Title), slug: opening.Slug, body: openingBody(head, opening)}}
 	for _, shown := range parted.Rest {
-		body := sectionBody(composed.Head.Page.Kind, shown.Blocks)
-		tabs = append(tabs, tab{title: document.PlainText(shown.Title), slug: shown.Slug, body: body})
+		body := sectionBody(page.Kind, shown.Blocks)
+		tabs = append(tabs, tab{page: page, place: len(tabs), title: document.PlainText(shown.Title), slug: shown.Slug, body: body})
 	}
 	return tabs
 }
@@ -152,10 +189,11 @@ func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 }
 
 // layout lays a tab out in lines of a width, on a page of a number of rows, on a day; the site writes the address
-// each link leads to.
+// each link leads to, and siteWords are the site's words of the frame a post and the blog's list lay out round them.
 type layout struct {
-	site  routes.Site
-	width int
+	site      routes.Site
+	siteWords compose.Frame
+	width     int
 	// pageRows are how many rows the page shows
 	pageRows int
 	// today is the day a role still held runs to on the career's line
@@ -163,25 +201,34 @@ type layout struct {
 }
 
 // tab lays out a tab as its body says: an opening's head, then its blocks; a section under its title, in the titles'
-// font; another section as it is.
-func (layout layout) tab(shown tab) []line {
+// font; another section as it is; the blog's list and a post as list.go and post.go lay them out.
+func (layout layout) tab(shown tab) laidTab {
 	switch body := shown.body.(type) {
 	case briefOpening:
-		return stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0))
+		return linesAlone(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)))
 	case readmeOpening:
-		return stacked(layout.readme(body.head), layout.blocks(body.blocks, 0))
+		return linesAlone(stacked(layout.readme(body.head), layout.blocks(body.blocks, 0)))
 	case reportOpening:
-		return stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0))
+		return linesAlone(stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0)))
 	case skillsOpening:
-		return stacked(layout.titleRows(document.PlainText(body.head.Title)), layout.blocks(body.blocks, 0))
+		return linesAlone(stacked(layout.titleRows(document.PlainText(body.head.Title)), layout.blocks(body.blocks, 0)))
 	case plainOpening:
-		return stacked(layout.head(body.head), layout.blocks(body.blocks, 0))
+		return linesAlone(stacked(layout.head(body.head), layout.blocks(body.blocks, 0)))
 	case titledSection:
-		return slices.Concat(layout.heading(shown.title), layout.blocks(body.blocks, 0))
+		return linesAlone(slices.Concat(layout.heading(shown.title), layout.blocks(body.blocks, 0)))
 	case plainSection:
-		return layout.blocks(body.blocks, 0)
+		return linesAlone(layout.blocks(body.blocks, 0))
+	case listBody:
+		return layout.list(body.head, body.groups)
+	case postBody:
+		return linesAlone(layout.post(body.post))
 	}
-	return nil
+	return linesAlone(nil)
+}
+
+// linesAlone is a tab laid out in lines, with no tile and no group of the blog's list.
+func linesAlone(lines []line) laidTab {
+	return laidTab{lines: lines, tiles: nil, groups: nil, split: 0}
 }
 
 // stacked is lines above others, a row of nothing between where there are lines on both sides.
@@ -317,10 +364,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.checks(typed, indent)
 	case document.Skills:
 		return layout.skills(typed, indent)
-	case document.List, document.Quote, document.Pause:
-		// a post's alone, which no buffer shows yet: the TUI's post draws them as DESIGN.md has it
-	case document.Posts:
-		// the blog's list alone, which no buffer shows yet: the TUI's blog session draws it as DESIGN.md has it
+	case document.List, document.Quote, document.Pause, document.Posts:
+		// a post's and the blog's list's alone, which post.go and list.go lay out
 	}
 	return nil
 }

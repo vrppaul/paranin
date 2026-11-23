@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -15,6 +16,12 @@ const (
 	space      = " "
 	spaceWidth = 1
 	lineEnd    = "\n"
+)
+
+// The digits raised, from nought to nine, and the digit a number's digits count from
+const (
+	raisedDigits = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+	firstDigit   = '0'
 )
 
 // kind is what a piece of text is to its reader; the paint decides how each kind looks.
@@ -64,6 +71,29 @@ const (
 	kindPrompt
 	// kindBar is a bar as long as the months a skill was used, on the list of skills
 	kindBar
+	// kindEmphasis is text a post stresses, as a voice would
+	kindEmphasis
+	// kindChosen is the one chosen of a few ways to show a thing, as the grouping the blog's list is shown in
+	kindChosen
+	// kindTileTitle is a post's title on its tile of the blog's list, which the tile the keys stand on marks
+	kindTileTitle
+	// kindQuietLine is a line that parts or holds a page's parts without drawing the eye: the rule over a post's
+	// sources, the frame round its code
+	kindQuietLine
+	// kindOff is the frame of a pane that leads nowhere
+	kindOff
+	// kindQuoteBar is the bar beside the lines a post quotes
+	kindQuoteBar
+	// kindCodeKeyword to kindCodeVariable are the kinds of word in a post's code that stand in colours of their own
+	// (document.CodeKind); a comment, punctuation and any other word read as muted, faint and text
+	kindCodeKeyword
+	kindCodeString
+	kindCodeNumber
+	kindCodeFunction
+	kindCodeType
+	kindCodeBuiltin
+	kindCodeOperator
+	kindCodeVariable
 )
 
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address
@@ -151,16 +181,32 @@ func (reader *wordReader) read(spans []document.Span, form run) {
 			linked := form
 			linked.address = reader.site.Address(typed.Target, routes.FormatChosen)
 			reader.read(typed.Spans, linked)
-		// a post's alone, which no buffer shows yet: emphasis, strong text and a note read as their words until the
-		// TUI's post draws them as DESIGN.md has it
 		case document.Emphasis:
-			reader.read(typed.Spans, form)
+			stressed := form
+			stressed.kind = kindEmphasis
+			reader.read(typed.Spans, stressed)
 		case document.Strong:
-			reader.read(typed.Spans, form)
+			strong := form
+			strong.kind = kindStrong
+			reader.read(typed.Spans, strong)
 		case document.Note:
-			reader.read(typed.Spans, form)
+			// a note cites its source by its number raised after the word, as the page sets it; its words stand with the
+			// post's sources
+			cited := form
+			cited.kind = kindLabel
+			reader.keep(raised(typed.Number), cited)
 		}
 	}
+}
+
+// raised is a number in raised digits, as a note's number stands after the word that cites it.
+func raised(number int) string {
+	digits := []rune(raisedDigits)
+	var builder strings.Builder
+	for _, digit := range strconv.Itoa(number) {
+		builder.WriteRune(digits[digit-firstDigit])
+	}
+	return builder.String()
 }
 
 // letters takes text letter by letter, ending a word at each space.

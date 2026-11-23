@@ -151,7 +151,7 @@ func datedNeighbour(posts []content.Post, index int) *document.Neighbour {
 // page is a part's page, none for a part to come.
 func (part listedPart) page() document.Page {
 	if part.post == nil {
-		return document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
+		return document.PageOf(document.PageNone)
 	}
 	return postPage(*part.post)
 }

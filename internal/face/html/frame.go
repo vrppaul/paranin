@@ -34,12 +34,12 @@ const (
 )
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
-// the site's name and where it begins, which the foot line's session leads to; the theme button's name; the words of
-// the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command
-// the first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's
-// button that writes to the author; the projects' pages, places of every page's command line; the name of the blog's
-// session and where it begins, its list; the labels of a post's facts, the words of its series and of the panes at
-// its foot, the name of its outline, and the words round the blog's list.
+// the site's name and where it begins, which the page of no address leads to; the theme button's name; the words of
+// the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
+// first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
+// that writes to the author; the projects' pages, places of every page's command line; the site's sessions, which the
+// foot line names; the labels of a post's facts, the words of its series and of the panes at its foot, the name of its
+// outline, and the words round the blog's list.
 type frame struct {
 	siteName     string
 	start        string
@@ -49,8 +49,7 @@ type frame struct {
 	readingGives string
 	writeTo      string
 	projects     []place
-	blog         string
-	blogStart    string
+	sessions     []compose.Session
 	postLabels   compose.PostLabels
 	seriesWords  compose.SeriesWords
 	paneWords    compose.PaneWords
@@ -107,18 +106,16 @@ type window struct {
 
 // frameOf is the frame of a site's pages.
 func frameOf(site routes.Site, composed compose.Frame) frame {
-	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	return frame{
 		siteName:     site.Host(),
-		start:        routes.Reference(resume, routes.FormatChosen),
+		start:        routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
 		darkTheme:    composed.DarkTheme,
 		copyWords:    composed.CopyWords,
 		ssh:          composed.SSH,
 		readingGives: composed.ReadingGives,
 		writeTo:      composed.WriteTo,
 		projects:     projectPlaces(composed.Projects),
-		blog:         composed.Blog,
-		blogStart:    routes.Reference(listPage(document.PageBlog), routes.FormatChosen),
+		sessions:     composed.Sessions,
 		postLabels:   composed.PostLabels,
 		seriesWords:  composed.SeriesWords,
 		paneWords:    composed.PaneWords,
@@ -127,13 +124,14 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 	}
 }
 
-// sessionsOf are the foot line's sessions on a page of the blog or of the rest of the site: the site's, leading to
-// where it begins, then the blog's, leading to its list, the one the page belongs to current.
-func (around frame) sessionsOf(inBlog bool) []session {
-	return []session{
-		{name: around.siteName, address: around.start, current: !inBlog},
-		{name: around.blog, address: around.blogStart, current: inBlog},
+// sessionsOf are the foot line's sessions on a page, each leading to where it begins, the one the page belongs to
+// current.
+func (around frame) sessionsOf(page document.Page) []session {
+	sessions := make([]session, 0, len(around.sessions))
+	for _, held := range around.sessions {
+		sessions = append(sessions, session{name: held.Name, address: routes.Reference(held.Start, routes.FormatChosen), current: held.Holds(page)})
 	}
+	return sessions
 }
 
 // projectPlaces are the projects' pages as places of the command line, each by its slug.
@@ -154,7 +152,17 @@ func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs) footLin
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
 		windows = append(windows, windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(false), windows, whole)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(whole), windows, whole)
+}
+
+// blogWindowsOf are the blog session's windows as the foot line shows them, numbered in their order, the one showing
+// the page shown current.
+func blogWindowsOf(windows []compose.Window, shown document.Page) []window {
+	shownWindows := make([]window, 0, len(windows))
+	for _, held := range windows {
+		shownWindows = append(shownWindows, windowOf(firstWindowNumber+len(shownWindows), held.Name, held.Page, shown))
+	}
+	return shownWindows
 }
 
 // footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl

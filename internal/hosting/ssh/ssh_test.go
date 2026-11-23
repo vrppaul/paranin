@@ -61,6 +61,25 @@ func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 	}
 }
 
+// A session opens on the page of the blog its user's name reaches (D26): the list by blog, and a post by blog and its
+// number, the list in the first window; the server hands the TUI the blog beside the site's pages.
+func TestASessionOpensOnTheBlogsPageItsUserNames(test *testing.T) {
+	cases := []struct {
+		user   string
+		window string
+	}{
+		{user: "blog", window: "1:posts*"},
+		{user: "blog/1", window: "2:reading-slowly*"},
+	}
+	address := serving(test, slog.New(slog.DiscardHandler))
+	for _, testCase := range cases {
+		test.Run(testCase.user, func(test *testing.T) {
+			output, _ := openTerminal(test, clientSession(test, address, testCase.user), commonTerminal())
+			readUntil(test, output, testCase.window)
+		})
+	}
+}
+
 // Terminals larger than the bound one way, within the most Bubble Tea takes a change of size to (4096 a side, about
 // a million cells); and a terminal too narrow for the footer to name the last tab
 const (
@@ -266,8 +285,8 @@ func TestASecondSessionOnAConnectionIsRefused(test *testing.T) {
 // A session its reader closes leaves no goroutine behind once the server has stopped: the bubble fails on one still
 // blocked as it ends.
 func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
+	server := drawnServer(test)
 	synctest.Test(test, func(test *testing.T) {
-		server := newServer(test, slog.New(slog.DiscardHandler))
 		clientEnd, serverEnd := memoryConnections()
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -294,8 +313,8 @@ func TestAConnectionThatStartsNoSessionIsClosed(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			server := drawnServer(test)
 			synctest.Test(test, func(test *testing.T) {
-				server := newServer(test, slog.New(slog.DiscardHandler))
 				clientEnd, serverEnd := memoryConnections()
 				go server.server.HandleConn(serverEnd)
 				opened := time.Now()
@@ -340,8 +359,8 @@ func askingForASubsystem(test *testing.T, connection net.Conn) {
 // A connection ends with its one session, since it may open no other: a client that keeps its connection, as
 // OpenSSH's ControlPersist does, holds no file of the server's for a session it has closed.
 func TestAConnectionEndsWithItsSession(test *testing.T) {
+	server := drawnServer(test)
 	synctest.Test(test, func(test *testing.T) {
-		server := newServer(test, slog.New(slog.DiscardHandler))
 		clientEnd, serverEnd := memoryConnections()
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -362,8 +381,8 @@ func TestAConnectionEndsWithItsSession(test *testing.T) {
 
 // A connection that starts its session in time keeps it past the time to start one: its reader still reads.
 func TestASessionStartedInTimeOutlivesItsTimeToStart(test *testing.T) {
+	server := drawnServer(test)
 	synctest.Test(test, func(test *testing.T) {
-		server := newServer(test, slog.New(slog.DiscardHandler))
 		clientEnd, serverEnd := memoryConnections()
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -407,8 +426,8 @@ func TestAFloodOfInputReachesTheTUIAtAReadersPace(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			server := drawnServer(test)
 			synctest.Test(test, func(test *testing.T) {
-				server := newServer(test, slog.New(slog.DiscardHandler))
 				clientEnd, serverEnd := memoryConnections()
 				go server.server.HandleConn(serverEnd)
 				client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -440,8 +459,8 @@ const (
 // An ordinary paste reaches the TUI at once, never stalled by the pace a flood is held to: a command typed after it
 // is answered within a second.
 func TestAnOrdinaryPasteReachesTheTUIAtOnce(test *testing.T) {
+	server := drawnServer(test)
 	synctest.Test(test, func(test *testing.T) {
-		server := newServer(test, slog.New(slog.DiscardHandler))
 		clientEnd, serverEnd := memoryConnections()
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -670,6 +689,21 @@ func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
 	go func() { _ = server.Serve(listener) }()
 	test.Cleanup(func() { _ = server.Shutdown(context.Background()) })
 	return server, listener.Addr().String()
+}
+
+// drawnServer is a server of the fixture, logging nothing, that has drawn its snapshot outside any synctest bubble, by
+// a session opened and closed before the test's bubble: drawing colours a post's code by chroma, whose regexps start
+// a clock goroutine of their own (regexp2's fastclock) that no bubble outlives, and the server draws a snapshot on the
+// first session that meets it.
+func drawnServer(test *testing.T) *Server {
+	server := newServer(test, slog.New(slog.DiscardHandler))
+	clientEnd, serverEnd := memoryConnections()
+	go server.server.HandleConn(serverEnd)
+	client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
+	output, _ := openTerminal(test, session, commonTerminal())
+	readUntil(test, output, "contact")
+	closeClient(client, session)
+	return server
 }
 
 // newServer is a server of the fixture, not yet serving.

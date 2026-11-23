@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
@@ -55,7 +54,7 @@ func TestCheckhealthShowsTheHealthReport(test *testing.T) {
 // as Neovim says it of a command it does not know, the résumé still shown.
 func TestAHiddenCommandWithNoPageIsNoCommand(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	model := New([]document.Document{compose.Resume(snapshot)}, fixtures.Site(snapshot), commonWidth, commonHeight, fixtures.Day())
+	model := handModel(test, commonWidth, commonHeight, compose.Resume(snapshot))
 	cases := []struct {
 		name    string
 		command string

@@ -26,6 +26,28 @@ type ListedPost struct {
 	Tags   []string
 }
 
+// Group is a group of the blog's list: its name, and the posts it holds.
+type Group struct {
+	Title []Span
+	Posts Posts
+}
+
+// GroupOf is a block of the blog's list as a group, where it is one: a section holding the posts it names alone.
+func GroupOf(block Block) (Group, bool) {
+	section, isSection := block.(Section)
+	if !isSection || len(section.Blocks) != 1 {
+		return Group{Title: nil, Posts: Posts{Line: nil, Count: nil, List: nil}}, false
+	}
+	posts, isPosts := section.Blocks[0].(Posts)
+	return Group{Title: section.Title, Posts: posts}, isPosts
+}
+
+// InItsSeriesGroup is whether a post stands in its own series' group, which names the series, so its part alone says
+// where it stands, set into its tile's top edge.
+func (post ListedPost) InItsSeriesGroup() bool {
+	return len(post.Part) > 0 && len(post.Series) == 0
+}
+
 // Readiness is whether a post the list names is out, to read at its page, or a part of a series still to come.
 //
 //sumtype:decl

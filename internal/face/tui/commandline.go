@@ -45,14 +45,16 @@ func (model Model) commandLine() commandLine {
 		return model.typedLine(commandKey, model.commandHints())
 	case modeNormal, modeKeys:
 	}
-	said := piece{text: model.said.text, part: partSaid}
+	margin := model.drawn.footer.place.margin
+	// what is said longer than the row, a long value copied, is cut at its right margin with the mark that says so
+	said := piece{text: ansi.Truncate(model.said.text, model.frame.width-sides*margin, cutMark), part: partSaid}
 	if model.said.failed {
 		said.part = partFailure
 	}
 	if said.text == "" {
 		return commandLine{row: "", typedEnd: 0, cursor: nil}
 	}
-	return commandLine{row: model.paint.panelLine([]piece{said}, nil, model.drawn.footer.place.margin, model.frame.width), typedEnd: 0, cursor: nil}
+	return commandLine{row: model.paint.panelLine([]piece{said}, nil, margin, model.frame.width), typedEnd: 0, cursor: nil}
 }
 
 // searchHints are what the command line names at its right while the reader types a search: which of how many
@@ -60,10 +62,10 @@ func (model Model) commandLine() commandLine {
 func (model Model) searchHints() []piece {
 	hints := hintPieces([]hint{{key: enterMark, does: findHint}, {key: escapeKey, does: cancelHint}})
 	drawn := model.drawn.tabs[model.chosen]
-	if drawn.named.occurrence == noMatch {
+	if drawn.marks.named.occurrence == noMatch {
 		return hints
 	}
-	count := matchCount(drawn.named.place, len(drawn.matches))
+	count := matchCount(drawn.marks.named.place, len(drawn.matches))
 	return append([]piece{{text: count, part: partCount}, {text: strings.Repeat(space, countGap), part: partPanel}}, hints...)
 }
 

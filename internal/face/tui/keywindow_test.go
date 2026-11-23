@@ -31,6 +31,37 @@ func TestTheWindowOfKeysNamesTheKeys(test *testing.T) {
 	}
 }
 
+// The window of keys names the keys of the tab shown: on the blog's list j and k go from post to post and Enter reads
+// one; where the list shows alone, no key between tabs; beside a post, the keys between the two.
+func TestTheWindowOfKeysNamesTheKeysOfTheTabShown(test *testing.T) {
+	cases := []struct {
+		name  string
+		user  string
+		keys  []string
+		holds []string
+		lacks []string
+	}{
+		{name: "the list alone", user: "blog", keys: []string{"?"}, holds: []string{"post after / before", "read the post", "close"}, lacks: []string{"line down / up", "go to a tab", "tab before / after"}},
+		{name: "the list beside a post", user: "blog/1", keys: []string{"h", "?"}, holds: []string{"post after / before", "1-2", "go to a tab"}, lacks: []string{"line down / up"}},
+		{name: "the post", user: "blog/1", keys: []string{"?"}, holds: []string{"line down / up", "1-2", "go to a tab"}, lacks: []string{"post after / before", "read the post"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			above := aboveTheFooter(screenOf(test, pressed(test, openedModel(test, testCase.user, commonWidth, commonHeight), testCase.keys...)))
+			for _, want := range testCase.holds {
+				if !strings.Contains(above, want) {
+					test.Errorf("on %s after %q the page =\n%s\nwant the window to hold %q", testCase.user, testCase.keys, above, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(above, unwanted) {
+					test.Errorf("on %s after %q the page =\n%s\nwant the window not to hold %q", testCase.user, testCase.keys, above, unwanted)
+				}
+			}
+		})
+	}
+}
+
 // Esc, the question mark and the space close the window and do nothing else; any other key closes it and does what
 // it does in normal mode.
 func TestAKeyClosesTheWindowOfKeys(test *testing.T) {

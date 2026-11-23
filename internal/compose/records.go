@@ -65,7 +65,7 @@ func personRecord(profile content.Profile) PersonRecord {
 		Skills:         skillsInUse(profile.SkillGroups),
 		Languages:      languages,
 		Profiles:       profiles,
-		Page:           resumePage(),
+		Page:           document.PageOf(document.PageResume),
 	}
 }
 
@@ -107,7 +107,7 @@ func workRecord(project content.Project, author content.Person) WorkRecord {
 		Language:    project.Language,
 		Repository:  project.Repo,
 		Author:      plainText(author.Name),
-		AuthorPage:  resumePage(),
+		AuthorPage:  document.PageOf(document.PageResume),
 		Page:        projectPage(project),
 	}
 }

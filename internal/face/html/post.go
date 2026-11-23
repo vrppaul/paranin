@@ -8,16 +8,11 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// How a post's day is written (DESIGN.md, Content): as a reader reads it, and as a time's datetime holds it
-const (
-	dayLayout        = "2 Jan 2006"
-	machineDayLayout = "2006-01-02"
-)
-
-// The window a post is shown in, in the blog's session: the second, after the list of posts, as the TUI numbers them
-const postWindowNumber = 2
+// How a post's day is written for a machine, as a time's datetime holds it; a reader reads it as look.DayLayout has it
+const machineDayLayout = "2006-01-02"
 
 // How the places of an article a reader links to are named: a paragraph by its number after paragraphIDOpening, a
 // heading by its title's words (document.SlugOf), or headingID where its title has none; a name the page holds already
@@ -137,18 +132,8 @@ func pickTitleID(id string) string {
 
 // headPick is the pick of a post's series in its head: the series' title, then the post's place in it.
 func (writer PageWriter) headPick(series document.Series) pick {
-	count := writer.frame.seriesWords.PartOf(readPart(series), len(series.Parts))
+	count := writer.frame.seriesWords.PartOf(series.Reading(), len(series.Parts))
 	return pickOf(headPickID, document.PlainText(series.Title), count, series)
-}
-
-// readPart is the number of the part read in a series, which compose marks once.
-func readPart(series document.Series) int {
-	for _, part := range series.Parts {
-		if part.State == document.PartReading {
-			return part.Number
-		}
-	}
-	return 0
 }
 
 // panesOf are the panes at the foot of a post: in a series, under the heading of the series' other parts, its pick
@@ -159,7 +144,7 @@ func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 		return nil
 	}
 	words, seriesWords := writer.frame.paneWords, writer.frame.seriesWords
-	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.blogStart
+	sides, heading, allPosts := words.Posts, words.OtherPosts, routes.Reference(document.PageOf(document.PageBlog), routes.FormatChosen)
 	var allParts *pick
 	if series := place.Series; series != nil {
 		sides, heading, allPosts = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title)), ""
@@ -176,24 +161,16 @@ func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 	}
 }
 
-// paneSideOf is a side of a post's foot holding a neighbour: named by the neighbour's part where it is one, by the
-// side's own name otherwise.
+// paneSideOf is a side of a post's foot holding a neighbour, named as compose.SeriesWords.PaneName names it.
 func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document.Neighbour, after bool) paneSide {
-	name := words.Name
-	if neighbour != nil && neighbour.Part > 0 {
-		name = writer.frame.seriesWords.Part(neighbour.Part)
-	}
-	return paneSide{name: name, neighbour: neighbour, none: words.None, after: after}
+	return paneSide{name: writer.frame.seriesWords.PaneName(words, neighbour), neighbour: neighbour, none: words.None, after: after}
 }
 
-// postFoot is the foot line of a post's page, in the blog's session: the blog's list its first window and the post
-// its second, by its slug, and the post to read in a terminal and as markdown.
+// postFoot is the foot line of a post's page, in the blog's session: the blog's list by year its first window, since a
+// page keeps no grouping a reader chose, and the post its second, and the post to read in a terminal and as markdown.
 func (writer PageWriter) postFoot(page document.Page) footLine {
-	windows := []window{
-		windowOf(firstWindowNumber, writer.frame.listWords.Window, listPage(document.PageBlog), page),
-		windowOf(postWindowNumber, page.Slug, page, page),
-	}
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(true), windows, page)
+	windows := blogWindowsOf(writer.frame.listWords.BlogWindows(document.PageOf(document.PageBlog), page), page)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from

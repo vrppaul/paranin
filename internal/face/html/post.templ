@@ -100,7 +100,7 @@ templ (writer PageWriter) postHead(head document.Head) {
 
 // day is a post's day as a time: as a reader reads it, and as a machine does.
 templ day(published time.Time) {
-	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(dayLayout) }</time>
+	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(look.DayLayout) }</time>
 }
 
 // tags are a post's tags, or the blog's list's (DESIGN.md, Tag), each its word after a hash a screen reader skips;

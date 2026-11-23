@@ -47,6 +47,23 @@ const (
 	PageBlogSeries
 )
 
+// PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
+// list by year or by series; PageNone's, no page.
+func PageOf(kind PageKind) Page {
+	return Page{Kind: kind, Slug: "", Tab: ""}
+}
+
+// InBlog is whether a page is the blog's, a post or the list by year or by series, which a face shows in the blog's
+// session, as tmux keeps a session apart. exhaustive holds the switch to every kind.
+func (page Page) InBlog() bool {
+	switch page.Kind {
+	case PagePost, PageBlog, PageBlogSeries:
+		return true
+	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
+	}
+	return false
+}
+
 // Mail is a mailbox a link writes to, by its address as the content writes it.
 type Mail struct {
 	Address string

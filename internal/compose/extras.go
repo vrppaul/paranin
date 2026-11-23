@@ -20,7 +20,7 @@ func Extras(snapshot *content.Snapshot) []document.Document {
 func Skills(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
-			Page:        document.Page{Kind: document.PageSkills, Slug: "", Tab: ""},
+			Page:        document.PageOf(document.PageSkills),
 			Number:      0,
 			Language:    snapshot.Words.Language(),
 			Greeting:    "",
@@ -58,7 +58,7 @@ func skillList(groups []content.SkillGroup, words content.Words) []document.Skil
 func Health(snapshot *content.Snapshot) document.Document {
 	return document.Document{
 		Head: document.Head{
-			Page:        document.Page{Kind: document.PageHealth, Slug: "", Tab: ""},
+			Page:        document.PageOf(document.PageHealth),
 			Number:      0,
 			Language:    snapshot.Words.Language(),
 			Greeting:    "",

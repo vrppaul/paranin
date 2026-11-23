@@ -2,6 +2,7 @@ package tui
 
 import (
 	"image/color"
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -22,9 +23,11 @@ const (
 	partThumb
 	// partPanel is the ground of the panel, the footer's and the command line's
 	partPanel
-	// partHost is the session the footer opens with, named by the site's host; partTabNumber a tab's number, and the
-	// mark of tabs given way; partTabName its name; partTabShown the tab shown, reversed
+	// partHost is the session the page shown belongs to, of those the footer opens with, the site's by its host or
+	// the blog's; partSession another session; partTabNumber a tab's number, and the mark of tabs given way;
+	// partTabName its name; partTabShown the tab shown, reversed
 	partHost
+	partSession
 	partTabNumber
 	partTabName
 	partTabShown
@@ -73,6 +76,10 @@ type paint struct {
 	// with none underlined
 	highlightGround color.Color
 	highlightText   color.Color
+	// the tile the keys stand on stands on the panel's ground, its title underlined in the accent, or in the
+	// terminal's own colour where it shows few colours or none, whose panel is the terminal's own ground
+	pointedGround    color.Color
+	pointedUnderline color.Color
 	// the match of the search the count names stands on the accent, its text laid on it, and with few colours or none
 	// reversed; the others are underlined in the accent, or in the terminal's own colour where it shows few or none
 	matchGround    color.Color
@@ -121,7 +128,23 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindRepository: plain.Foreground(colour(look.ColourHost)).Bold(true),
 			kindPrompt:     plain.Foreground(colour(look.ColourPrompt)).Bold(true),
 			// a bar's cells and the mark of no measured time differ in shape, so they need no colour to tell them apart
-			kindBar: plain.Foreground(colour(look.ColourTimeBar)).Bold(true),
+			kindBar:      plain.Foreground(colour(look.ColourTimeBar)).Bold(true),
+			kindEmphasis: plain.Foreground(colour(look.ColourText)).Italic(true),
+			// the way chosen reversed and bold, as the tab shown is
+			kindChosen:    plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(true),
+			kindTileTitle: plain.Foreground(colour(look.ColourText)).Bold(true),
+			kindQuietLine: plain.Foreground(colour(look.ColourQuiet)),
+			kindOff:       plain.Foreground(colour(look.ColourQuietHalf)),
+			kindQuoteBar:  plain.Foreground(colour(look.ColourEdge)),
+			// each kind of word in code in its own hue (DESIGN.md, Article)
+			kindCodeKeyword:  plain.Foreground(colour(look.ColourCodeKeyword)),
+			kindCodeString:   plain.Foreground(colour(look.ColourCodeString)),
+			kindCodeNumber:   plain.Foreground(colour(look.ColourCodeNumber)),
+			kindCodeFunction: plain.Foreground(colour(look.ColourCodeFunction)),
+			kindCodeType:     plain.Foreground(colour(look.ColourCodeType)),
+			kindCodeBuiltin:  plain.Foreground(colour(look.ColourCodeBuiltin)),
+			kindCodeOperator: plain.Foreground(colour(look.ColourCodeOperator)),
+			kindCodeVariable: plain.Foreground(colour(look.ColourCodeVariable)),
 		},
 		gradient: gradientOf(colour(look.ColourAccent), colour(look.ColourHost), fewColours),
 		swatches: swatchesOf(colour),
@@ -131,6 +154,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partThumb:       plain.Foreground(colour(look.ColourFaint)),
 			partPanel:       panel,
 			partHost:        panel.Foreground(colour(look.ColourHost)).Bold(true),
+			partSession:     panel.Foreground(colour(look.ColourMuted)),
 			partTabNumber:   panel.Foreground(colour(look.ColourFaint)),
 			partTabName:     panel.Foreground(colour(look.ColourText)),
 			partTabShown:    plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(true),
@@ -158,16 +182,18 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partWindowName: panel.Foreground(colour(look.ColourText)).Bold(true),
 			partWindowNote: panel.Foreground(colour(look.ColourMuted)),
 		},
-		fadedLess:       colour(look.ColourFaint),
-		fadedMost:       colour(look.ColourEdge),
-		highlightGround: colour(look.ColourTint),
-		highlightText:   colour(look.ColourOnAccent),
-		matchGround:     colour(look.ColourAccent),
-		matchText:       colour(look.ColourOnAccent),
-		matchUnderline:  accentMark,
-		cursorColour:    accentMark,
-		fewColours:      fewColours,
-		noColours:       noColours,
+		fadedLess:        colour(look.ColourFaint),
+		fadedMost:        colour(look.ColourEdge),
+		highlightGround:  colour(look.ColourTint),
+		highlightText:    colour(look.ColourOnAccent),
+		pointedGround:    colour(look.ColourSunk),
+		pointedUnderline: accentMark,
+		matchGround:      colour(look.ColourAccent),
+		matchText:        colour(look.ColourOnAccent),
+		matchUnderline:   accentMark,
+		cursorColour:     accentMark,
+		fewColours:       fewColours,
+		noColours:        noColours,
 	}
 }
 
@@ -209,7 +235,9 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 	case kindSwatch:
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
-		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar:
+		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar, kindEmphasis,
+		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindCodeKeyword, kindCodeString, kindCodeNumber,
+		kindCodeFunction, kindCodeType, kindCodeBuiltin, kindCodeOperator, kindCodeVariable:
 	}
 	return nil
 }
@@ -252,55 +280,117 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 	return lipgloss.NoColor{}
 }
 
-// tab paints a tab's lines in the frame, each match of the search marked, the one its count names apart.
-func (paint paint) tab(lines []markedLine, frame frame, named namedMatch) []paintedLine {
+// lineMarks are what sets runs of a line apart beside their kinds: which match of the line the search's count names,
+// noMatch where none; the columns the tile the keys stand on takes on it, none where the line crosses no such tile;
+// and the column its part right of the groups' names starts at, 0 on a tab with no names' column.
+type lineMarks struct {
+	named   int
+	pointed columnSpan
+	split   int
+}
+
+// columnSpan is the columns of a line from a first to the one past its last; the zero span holds none.
+type columnSpan struct {
+	start int
+	end   int
+}
+
+// holds is whether a column lies in the span.
+func (span columnSpan) holds(column int) bool {
+	return column >= span.start && column < span.end
+}
+
+// pageMarks are what sets runs of a tab's lines apart beside their kinds: the match the search's count names; the
+// tile the keys stand on, the zero tile where the tab holds none; and the column the lines' parts right of the
+// groups' names start at.
+type pageMarks struct {
+	named   namedMatch
+	pointed laidTile
+	split   int
+}
+
+// on are the marks of one line of the tab.
+func (marks pageMarks) on(line int) lineMarks {
+	return lineMarks{named: marks.named.occurrenceOn(line), pointed: marks.pointed.groundOn(line), split: marks.split}
+}
+
+// tab paints a tab's lines in the frame, as the tab's marks set their runs apart.
+func (paint paint) tab(lines []markedLine, frame frame, marks pageMarks) []paintedLine {
 	drawn := make([]paintedLine, 0, len(lines))
 	for place, shown := range lines {
-		drawn = append(drawn, paint.pageLine(shown, frame, named.occurrenceOn(place)))
+		drawn = append(drawn, paint.pageLine(shown, frame, nil, marks.on(place)))
 	}
 	return drawn
 }
 
-// pageLine paints a line of a tab at the page's left edge, cut at its right one, its matches marked, the one of them
-// the count names apart, where the count names one of this line.
-func (paint paint) pageLine(shown markedLine, frame frame, named int) paintedLine {
-	painted, width := paint.line(shown.runs, frame.inner, nil, named)
-	return paintedLine{text: strings.Repeat(space, frame.left) + painted, width: frame.left + width}
+// pageLine paints a line of a tab at the page's left edge, cut at its right one, its text in a faded colour where
+// one is given, its runs set apart as its marks say; and, on a list with a names' column, apart from it the line's
+// part right of the column its marks split it at, which a group's name stuck over its left part stands beside.
+func (paint paint) pageLine(shown markedLine, frame frame, faded color.Color, marks lineMarks) paintedLine {
+	if marks.split == 0 {
+		painted, width := paint.line(shown.runs, 0, frame.inner, faded, marks)
+		return paintedLine{text: strings.Repeat(space, frame.left) + painted, width: frame.left + width, rest: paintedBar{text: "", width: 0}}
+	}
+	left, right := partedAt(shown.runs, marks.split)
+	before, beforeWidth := paint.line(left, 0, frame.inner, faded, marks)
+	after, afterWidth := paint.line(right, marks.split, frame.inner, faded, marks)
+	if afterWidth > 0 {
+		before += strings.Repeat(space, marks.split-beforeWidth)
+		beforeWidth = marks.split
+	}
+	text := strings.Repeat(space, frame.left) + before + after
+	return paintedLine{text: text, width: frame.left + beforeWidth + afterWidth, rest: paintedBar{text: after, width: afterWidth}}
 }
 
-// faded paints a line of the page as a row at its foot fades, its text in a faded colour, its highlight, its marks
-// and its link kept.
-func (paint paint) faded(shown markedLine, frame frame, colour color.Color, named int) string {
-	painted, _ := paint.line(shown.runs, frame.inner, colour, named)
-	return strings.Repeat(space, frame.left) + painted
-}
-
-// line paints a line cut at a width, its text in a faded colour where one is given, its match the count names
-// apart, and says how many columns it took.
-func (paint paint) line(shown []matchedRun, width int, faded color.Color, named int) (string, int) {
-	var builder strings.Builder
+// partedAt are runs parted at a column: those before it, and those from it on, a run that spans it cut in two.
+func partedAt(runs []matchedRun, column int) ([]matchedRun, []matchedRun) {
 	used := 0
+	for index, piece := range runs {
+		width := textWidth(piece.text)
+		if used+width <= column {
+			used += width
+			continue
+		}
+		head, tail := piece, piece
+		head.text, tail.text = ansi.Cut(piece.text, 0, column-used), ansi.Cut(piece.text, column-used, width)
+		return append(slices.Clone(runs[:index]), head), append([]matchedRun{tail}, runs[index+1:]...)
+	}
+	return runs, nil
+}
+
+// line paints runs from a column of the page, cut at a width, its text in a faded colour where one is given, its runs
+// set apart as its marks say, and says how many columns it took.
+func (paint paint) line(shown []matchedRun, from, width int, faded color.Color, marks lineMarks) (string, int) {
+	var builder strings.Builder
+	used := from
 	for _, piece := range shown {
 		text := ansi.Truncate(piece.text, width-used, "")
 		if text == "" {
 			continue
 		}
-		builder.WriteString(paint.style(piece, faded, piece.occurrence != noMatch && piece.occurrence == named).Render(text))
+		named := piece.occurrence != noMatch && piece.occurrence == marks.named
+		builder.WriteString(paint.style(piece, faded, named, marks.pointed.holds(used)).Render(text))
 		used += textWidth(text)
 	}
-	return builder.String(), used
+	return builder.String(), used - from
 }
 
 // style is the look of a run: its kind's, its text in a faded colour where one is given, highlighted where it is a
-// result, marked where it matches the search, apart where it is the match the count names, carrying its address
-// where it links.
-func (paint paint) style(piece matchedRun, faded color.Color, named bool) lipgloss.Style {
+// result, on the panel's ground where it lies in the tile the keys stand on, its title then underlined, marked where
+// it matches the search, apart where it is the match the count names, carrying its address where it links.
+func (paint paint) style(piece matchedRun, faded color.Color, named, pointed bool) lipgloss.Style {
 	style := paint.kinds[piece.kind]
 	if tones := paint.tonesOf(piece.kind); len(tones) > 0 {
 		style = style.Foreground(tones[piece.tone%len(tones)])
 	}
 	if faded != nil {
 		style = style.Foreground(faded)
+	}
+	if pointed {
+		style = style.Background(paint.pointedGround)
+	}
+	if pointed && piece.kind == kindTileTitle {
+		style = style.Underline(true).UnderlineColor(paint.pointedUnderline)
 	}
 	if piece.highlighted {
 		style = style.Background(paint.highlightGround).Underline(paint.noColours)

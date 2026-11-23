@@ -97,10 +97,11 @@ func normalActions() map[string]action {
 	actions := map[string]action{
 		quitKey:      Model.closed,
 		interruptKey: Model.quit,
-		downKey:      Model.scrollDown,
-		downArrow:    Model.scrollDown,
-		upKey:        Model.scrollUp,
-		upArrow:      Model.scrollUp,
+		downKey:      Model.downward,
+		downArrow:    Model.downward,
+		upKey:        Model.upward,
+		upArrow:      Model.upward,
+		enterKey:     Model.openTile,
 		topKey:       Model.toLine,
 		homeKey:      Model.home,
 		bottomKey:    Model.toLineOrEnd,
@@ -233,14 +234,6 @@ func (model Model) quit(int) (Model, tea.Cmd) {
 	return model, tea.Quit
 }
 
-func (model Model) scrollDown(count int) (Model, tea.Cmd) {
-	return model.scrolledTo(model.scrolls[model.chosen] + max(count, 1)), nil
-}
-
-func (model Model) scrollUp(count int) (Model, tea.Cmd) {
-	return model.scrolledTo(model.scrolls[model.chosen] - max(count, 1)), nil
-}
-
 // toLine goes to the line of a number, the first where none was typed: gg, and 5gg.
 func (model Model) toLine(count int) (Model, tea.Cmd) {
 	return model.scrolledTo(max(count, 1) - 1), nil
@@ -269,6 +262,19 @@ func (model Model) nextTab(count int) (Model, tea.Cmd) {
 func (model Model) previousTab(count int) (Model, tea.Cmd) {
 	return model.choose(model.chosen - max(count, 1)), nil
 }
+
+// shownLetter is a letter of a text from outside as strings.Map keeps it: a letter a terminal shows as it is, any
+// other, a control character among them, left out, so the text reaches the screen only as letters, as what the reader
+// types does.
+func shownLetter(letter rune) rune {
+	if unicode.IsPrint(letter) {
+		return letter
+	}
+	return leftOut
+}
+
+// What strings.Map leaves a letter out for
+const leftOut = -1
 
 // printable is whether typed text is letters a terminal shows as they are, with no control character among them.
 func printable(text string) bool {

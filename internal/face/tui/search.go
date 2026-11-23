@@ -103,10 +103,23 @@ func (model Model) typedInSearch(key tea.KeyPressMsg) Model {
 // that line where nothing matches.
 func (model Model) retyped() Model {
 	model = model.repaintedChosen()
-	if named := model.drawn.tabs[model.chosen].named; named.occurrence != noMatch {
-		return model.scrolledTo(named.line)
+	drawn := model.drawn.tabs[model.chosen]
+	if named := drawn.marks.named; named.occurrence != noMatch {
+		return model.scrolledToward(named.line, drawn.spotOf(named)).withMatchTileTop(named.line)
 	}
 	return model.scrolledTo(model.search.begunAt)
+}
+
+// spotOf is where a match a tab's count names stands: its line, and the column its letters start at.
+func (page paintedPage) spotOf(named namedMatch) spot {
+	column := 0
+	for _, piece := range page.marked[named.line].runs {
+		if piece.occurrence == named.occurrence {
+			break
+		}
+		column += textWidth(piece.text)
+	}
+	return spot{line: named.line, column: column}
 }
 
 // searchLeft is the model after the reader leaves the search line unconfirmed: the chosen tab marks the search
@@ -175,7 +188,7 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 	}
 	place := choose(matches)
 	model.said = commandMessage{text: searchMark + query + space + matchCount(place, len(matches)), failed: false}
-	model = model.scrolledTo(matches[place])
+	model = model.scrolledToward(matches[place], model.drawn.tabs[model.chosen].spotOf(namedAt(matches, place))).withMatchTileTop(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
 	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.scrolls[model.chosen], shown: true}
 	return model.renamed()
@@ -185,17 +198,28 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 // and the line of the one named now painted again, and no other.
 func (model Model) renamed() Model {
 	drawn := model.drawn.tabs[model.chosen]
-	named := model.namedMatchOf(model.chosen, drawn.matches)
-	lines := slices.Clone(drawn.lines)
-	painted := []int{}
-	for _, changed := range []namedMatch{drawn.named, named} {
-		if changed.occurrence != noMatch && !slices.Contains(painted, changed.line) {
-			lines[changed.line] = model.paint.pageLine(drawn.marked[changed.line], model.frame, named.occurrenceOn(changed.line))
-			painted = append(painted, changed.line)
+	marks := drawn.marks
+	marks.named = model.namedMatchOf(model.chosen, drawn.matches)
+	changed := []int{}
+	for _, named := range []namedMatch{drawn.marks.named, marks.named} {
+		if named.occurrence != noMatch {
+			changed = append(changed, named.line)
 		}
 	}
+	return model.repaintedLines(changed, marks)
+}
+
+// repaintedLines is the model with lines of the chosen tab painted again, each once, as new marks set their runs apart,
+// and no other line.
+func (model Model) repaintedLines(changed []int, marks pageMarks) Model {
+	drawn := model.drawn.tabs[model.chosen]
+	lines := slices.Clone(drawn.lines)
+	slices.Sort(changed)
+	for _, line := range slices.Compact(changed) {
+		lines[line] = model.paint.pageLine(drawn.marked[line], model.frame, nil, marks.on(line))
+	}
 	model.drawn.tabs = slices.Clone(model.drawn.tabs)
-	model.drawn.tabs[model.chosen].lines, model.drawn.tabs[model.chosen].named = lines, named
+	model.drawn.tabs[model.chosen].lines, model.drawn.tabs[model.chosen].marks = lines, marks
 	return model
 }
 

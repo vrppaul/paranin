@@ -26,7 +26,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 		Skills:         []string{"Go", "Shell scripts for the build machines"},
 		Languages:      []string{"English"},
 		Profiles:       []string{"https://github.test/mira"},
-		Page:           resumePage(),
+		Page:           document.PageOf(document.PageResume),
 	}
 	work := WorkRecord{
 		Name:        "tidy-tool",
@@ -34,7 +34,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 		Language:    "Lua",
 		Repository:  "https://github.test/mira/tidy",
 		Author:      "Mira Example",
-		AuthorPage:  resumePage(),
+		AuthorPage:  document.PageOf(document.PageResume),
 		Page:        tidyTool,
 	}
 	cases := []struct {
@@ -42,7 +42,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 		page document.Page
 		want Record
 	}{
-		{name: "the résumé", page: resumePage(), want: person},
+		{name: "the résumé", page: document.PageOf(document.PageResume), want: person},
 		{name: "a project's page", page: tidyTool, want: work},
 	}
 	for _, testCase := range cases {
@@ -67,7 +67,7 @@ func TestARecordReadsTheMarksAway(test *testing.T) {
 		profile.Education[index].Name = "==" + profile.Education[index].Name + "=="
 	}
 	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Sources: nil, Learning: false}}}}
-	record := as[PersonRecord](test, recordOf(test, &marked, resumePage()))
+	record := as[PersonRecord](test, recordOf(test, &marked, document.PageOf(document.PageResume)))
 	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Schools: record.Schools, Skills: record.Skills}
 	want := markedFacts{Name: "Mira Example", Title: "Software Engineer", Employer: "Northwind", Schools: []string{"A University"}, Skills: []string{"Go"}}
 	if !reflect.DeepEqual(got, want) {
@@ -90,7 +90,7 @@ func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
 	ended.Profile.Experience = slices.DeleteFunc(slices.Clone(ended.Profile.Experience), func(role content.Role) bool {
 		return role.End.Kind() == content.MonthCurrent
 	})
-	if record := as[PersonRecord](test, recordOf(test, &ended, resumePage())); record.Employer != "" {
+	if record := as[PersonRecord](test, recordOf(test, &ended, document.PageOf(document.PageResume))); record.Employer != "" {
 		test.Errorf("the employer of a person with no role going on = %q, want none", record.Employer)
 	}
 }

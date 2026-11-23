@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -21,7 +23,9 @@ func (model Model) copiedValue(int) (Model, tea.Cmd) {
 		model.said = commandMessage{text: nothingToCopyOpening + searchKey + nothingToCopyClosing, failed: true}
 		return model, nil
 	}
-	model.said = commandMessage{text: copiedOpening + value, failed: false}
+	// the command line is one line, so each run of spaces, tabs and line ends in a value, as a post's code holds, is
+	// said as one space
+	model.said = commandMessage{text: copiedOpening + strings.Join(strings.Fields(value), space), failed: false}
 	return model, tea.SetClipboard(value)
 }
 
@@ -32,7 +36,7 @@ func (model Model) valueFound() (string, bool) {
 	if !standing {
 		return "", false
 	}
-	found := model.laid[model.chosen][model.drawn.tabs[model.chosen].matches[shown.place]]
+	found := model.laid[model.chosen].lines[model.drawn.tabs[model.chosen].matches[shown.place]]
 	for _, piece := range found {
 		if piece.copied != "" {
 			return piece.copied, true

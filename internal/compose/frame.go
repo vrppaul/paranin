@@ -15,9 +15,9 @@ const programEnd = " "
 // theme button, which is pressed while the page is dark, the words of the button that copies a command or a block of
 // code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
-// has one, in the profile's order, which a face's command line goes to by slug as the TUI's :e does, the name of the
-// blog's session, which a post belongs to as the résumé's pages belong to the site's, the labels of a post's facts,
-// the words of its series and of the panes at its foot, the name of its outline, and the words of the blog's list.
+// has one, in the profile's order, which a face's command line goes to by slug as the TUI's :e does, the site's
+// sessions, the labels of a post's facts, the words of its series and of the panes at its foot, the name of its
+// outline, and the words of the blog's list.
 type Frame struct {
 	DarkTheme    string
 	CopyWords    CopyWords
@@ -25,12 +25,38 @@ type Frame struct {
 	ReadingGives string
 	WriteTo      string
 	Projects     []document.Page
-	Blog         string
+	Sessions     []Session
 	PostLabels   PostLabels
 	SeriesWords  SeriesWords
 	PaneWords    PaneWords
 	Contents     string
 	ListWords    ListWords
+}
+
+// Session is one of the site's sessions, as a face's foot line names them after tmux's (DESIGN.md, FootLine): its
+// name, and the page it begins at, which its name leads to.
+type Session struct {
+	Name  string
+	Start document.Page
+}
+
+// Holds is whether a page belongs to the session: a page of the blog to the blog's, any other to the site's.
+func (session Session) Holds(page document.Page) bool {
+	return session.Start.InBlog() == page.InBlog()
+}
+
+// Grouping is a way the blog's list groups its posts, as its head's Switch offers it: its word, and the list grouped
+// so.
+type Grouping struct {
+	Words string
+	List  document.Page
+}
+
+// Window is a window of the blog's session, as a face's foot line names it after tmux's: its name, and the page it
+// shows.
+type Window struct {
+	Name string
+	Page document.Page
 }
 
 // ListWords are the site's words a face lays round the blog's list: its window, the way to it beside a post's other
@@ -119,11 +145,14 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projectPages(snapshot.Profile.Projects),
-		Blog:         words.Text(content.WordBlog),
-		PostLabels:   PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
-		SeriesWords:  SeriesWords{words: words},
-		PaneWords:    paneWords(words),
-		Contents:     words.Text(content.WordContents),
+		Sessions: []Session{
+			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
+			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog)},
+		},
+		PostLabels:  PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
+		SeriesWords: SeriesWords{words: words},
+		PaneWords:   paneWords(words),
+		Contents:    words.Text(content.WordContents),
 		ListWords: ListWords{
 			Window:   words.Text(content.WordListWindow),
 			AllPosts: words.Text(content.WordAllPosts),
@@ -132,6 +161,21 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 			Series:   words.Text(content.WordSeries),
 		},
 	}
+}
+
+// Groupings are the ways the blog's list groups its posts: by year, then by series.
+func (listWords ListWords) Groupings() []Grouping {
+	return []Grouping{{Words: listWords.Years, List: document.PageOf(document.PageBlog)}, {Words: listWords.Series, List: document.PageOf(document.PageBlogSeries)}}
+}
+
+// BlogWindows are the windows of the blog's session showing a list, and a post read beside it, PageNone where none
+// is: the list first, by the site's word for its window, then the post by its slug.
+func (listWords ListWords) BlogWindows(list, post document.Page) []Window {
+	windows := []Window{{Name: listWords.Window, Page: list}}
+	if post.Kind == document.PageNone {
+		return windows
+	}
+	return append(windows, Window{Name: post.Slug, Page: post})
 }
 
 // paneWords are the words of the panes at a post's foot, in a language.
@@ -168,6 +212,15 @@ func (seriesWords SeriesWords) AllParts(parts int) string {
 // Part is a part of a series by its number: "part 4".
 func (seriesWords SeriesWords) Part(number int) string {
 	return seriesWords.words.Phrase(content.PhrasePart, strconv.Itoa(number))
+}
+
+// PaneName is the name set into the top edge of a side of a post's foot holding a neighbour: the neighbour's part,
+// where it is one of a series, "part 4"; else the side's own name, "older".
+func (seriesWords SeriesWords) PaneName(side SideWords, neighbour *document.Neighbour) string {
+	if neighbour != nil && neighbour.Part > 0 {
+		return seriesWords.Part(neighbour.Part)
+	}
+	return side.Name
 }
 
 // State is where a part stands for the reader of the part read, as a face writes it beside the part's title: the part

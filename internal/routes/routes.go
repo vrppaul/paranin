@@ -4,6 +4,7 @@ package routes
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/vrppaul/paranin/internal/document"
 )
@@ -152,6 +153,24 @@ func Path(page document.Page, format Format) string {
 // address: in the blog's folder, as its slug is, since a slug is never digits alone.
 func NumberPath(number int) string {
 	return blogFolder + strconv.Itoa(number)
+}
+
+// The slash every path opens with, which a name a terminal writes for a path leaves out
+const pathStart = "/"
+
+// TerminalName is the name a path reaches its page by in a terminal, which has no root to begin a path at (D26): an SSH
+// user name and the TUI's :e write blog/12 for /blog/12.
+//
+//wrapper:names the address a terminal reads, which an SSH user name and :e both write, once beside the paths
+func TerminalName(path string) string {
+	return strings.TrimPrefix(path, pathStart)
+}
+
+// IsBlogName is whether a name a terminal writes is the blog's: its list's, or one in its folder, as blog/99 is,
+// whether or not a page goes by it.
+func IsBlogName(name string) bool {
+	path := pathStart + name
+	return path == blogList || strings.HasPrefix(path, blogFolder)
 }
 
 // postPaths are where a post is served: in the blog's folder by its slug, its files under the same name. A post has

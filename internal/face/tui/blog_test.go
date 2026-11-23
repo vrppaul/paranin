@@ -1,0 +1,442 @@
+package tui
+
+import (
+	"slices"
+	"strings"
+	"testing"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
+)
+
+// The footer's windows of the blog's session on the fixture: its list shown alone, its list beside the post read, and
+// the post read
+const (
+	listAlone      = "1:posts*"
+	listBesidePost = "1:posts"
+	postRead       = "2:reading-slowly*"
+	resumeOpened   = "1:about*"
+)
+
+// openedModel is a session on what the fixture draws, opened on the page a name reaches, of a size.
+func openedModel(test *testing.T, opening string, width, height int) Model {
+	return New(sessionDrawing(fixtures.LoadedContent(test)), opening, width, height, fixtures.Day())
+}
+
+// A session opens on the page of the blog its SSH user's name reaches (D26): the blog's list by blog, a post by its
+// slug and by its number, the list beside it in the first window; a name in the blog's folder that reaches no post,
+// a draft's among them, opens the list and says it finds no page by the name; any other name opens the résumé.
+func TestASessionOpensOnTheBlogsPageItsNameReaches(test *testing.T) {
+	cases := []struct {
+		name  string
+		user  string
+		holds []string
+		lacks []string
+	}{
+		{name: "the list", user: "blog", holds: []string{"[example.test] [blog]", listAlone}, lacks: []string{"2:"}},
+		{name: "a post by its number", user: "blog/1", holds: []string{listBesidePost, postRead}, lacks: nil},
+		{name: "a post by its slug", user: "blog/reading-slowly", holds: []string{listBesidePost, postRead}, lacks: nil},
+		{name: "a number no post has", user: "blog/9", holds: []string{listAlone, `E447: Can't find file "blog/9" in path`}, lacks: nil},
+		{name: "a draft's number", user: "blog/2", holds: []string{listAlone, `E447: Can't find file "blog/2" in path`}, lacks: nil},
+		{name: "a login name", user: "reader", holds: []string{resumeOpened}, lacks: []string{"posts", "E447"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			footer := atTheFoot(screenOf(test, openedModel(test, testCase.user, commonWidth, commonHeight)))
+			for _, want := range testCase.holds {
+				if !strings.Contains(footer, want) {
+					test.Errorf("opened by %q the footer = %q, want it to hold %q", testCase.user, footer, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(footer, unwanted) {
+					test.Errorf("opened by %q the footer = %q, want it not to hold %q", testCase.user, footer, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// A name from outside reaches the screen as letters alone: a control character in an SSH user's name, as a terminal's
+// title written with OSC 0, never reaches the terminal, and the command line says the name without it.
+func TestANameFromOutsideReachesTheScreenAsLetters(test *testing.T) {
+	view := openedModel(test, "blog/\x1b]0;owned\x07x", commonWidth, commonHeight).View().Content
+	if strings.Contains(view, "\x1b]0;") || !strings.Contains(ansi.Strip(view), `E447: Can't find file "blog/]0;ownedx" in path`) {
+		test.Errorf("opened by a name holding OSC 0 the screen = %q, want the name's letters alone", view)
+	}
+}
+
+// A session handed no list of the blog opens a post by its name with no list beside it, q on it going back to the
+// résumé, and a name of the blog that reaches no page opens the résumé, saying so.
+func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	documents := []document.Document{compose.Resume(snapshot), fixtures.DocumentOf(test, compose.Posts(snapshot), document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
+	drawing := Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
+	cases := []struct {
+		name  string
+		model Model
+		holds []string
+	}{
+		{name: "a post, closed", model: pressed(test, New(drawing, "blog/1", commonWidth, commonHeight, fixtures.Day()), "q"), holds: []string{resumeOpened}},
+		{name: "a name of no page", model: New(drawing, "blog/9", commonWidth, commonHeight, fixtures.Day()), holds: []string{resumeOpened, `E447: Can't find file "blog/9" in path`}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			below := atTheFoot(screenOf(test, testCase.model))
+			for _, want := range testCase.holds {
+				if !strings.Contains(below, want) {
+					test.Errorf("the foot = %q, want it to hold %q", below, want)
+				}
+			}
+		})
+	}
+}
+
+// :e opens the blog's pages from the résumé by the names a terminal reaches them by: the list by year, a post by its
+// number and its slug, and the list by series; and says it finds no post of a number no post has.
+func TestEditOpensTheBlogsPages(test *testing.T) {
+	cases := []struct {
+		name   string
+		text   string
+		holds  string
+		footer string
+	}{
+		{name: "the list", text: "e blog", holds: "Reading slowly", footer: listAlone},
+		{name: "a post by its number", text: "e blog/1", holds: "What a reader keeps", footer: postRead},
+		{name: "a post by its slug", text: "e blog/reading-slowly", holds: "What a reader keeps", footer: postRead},
+		{name: "the list by series", text: "e blog/series", holds: "1 of 2 out", footer: listAlone},
+		{name: "a number no post has", text: "e blog/9", holds: `E447: Can't find file "blog/9" in path`, footer: resumeOpened},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), testCase.text))
+			if !strings.Contains(screen, testCase.holds) || !strings.Contains(footerOf(screen), testCase.footer) {
+				test.Errorf("after :%s the screen =\n%s\nwant %q on it and %q in the footer", testCase.text, screen, testCase.holds, testCase.footer)
+			}
+		})
+	}
+}
+
+// In the blog's session h and l go between the list and the post read; q on the post goes back to the list, its
+// window closed, and q on the list back to the résumé, from the list beside a post too, the session going on.
+func TestTheBlogsKeysGoBetweenItsWindows(test *testing.T) {
+	cases := []struct {
+		name  string
+		keys  []string
+		holds []string
+		lacks []string
+	}{
+		{name: "h to the list", keys: []string{"h"}, holds: []string{"1:posts*", "2:reading-slowly"}, lacks: []string{postRead}},
+		{name: "l back to the post", keys: []string{"h", "l"}, holds: []string{postRead}, lacks: []string{"1:posts*"}},
+		{name: "q on the post", keys: []string{"q"}, holds: []string{listAlone}, lacks: []string{"2:"}},
+		{name: "q on the list", keys: []string{"q", "q"}, holds: []string{resumeOpened}, lacks: []string{"posts"}},
+		{name: "q on the list beside the post", keys: []string{"h", "q"}, holds: []string{resumeOpened}, lacks: []string{"posts"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := openedModel(test, "blog/1", commonWidth, commonHeight)
+			for _, key := range testCase.keys {
+				next, command := model.Update(keyPress(test, key))
+				if command != nil {
+					test.Fatalf("after %q a command came, want the session going on", testCase.keys)
+				}
+				model = as[Model](test, next)
+			}
+			footer := footerOf(screenOf(test, model))
+			for _, want := range testCase.holds {
+				if !strings.Contains(footer, want) {
+					test.Errorf("on blog/1 after %q the footer = %q, want it to hold %q", testCase.keys, footer, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(footer, unwanted) {
+					test.Errorf("on blog/1 after %q the footer = %q, want it not to hold %q", testCase.keys, footer, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// The blog's session owns its windows: :e of a list from a post shows that list in the first window, the post read
+// kept beside it, and going to the résumé and back keeps both.
+func TestTheBlogKeepsThePostReadBesideTheListShown(test *testing.T) {
+	cases := []struct {
+		name   string
+		opened Model
+		holds  string
+	}{
+		{name: "the list by year", opened: commanded(test, openedModel(test, "blog/1", commonWidth, tallHeight), "e blog"), holds: "1 post"},
+		{name: "the list by series", opened: commanded(test, openedModel(test, "blog/1", commonWidth, tallHeight), "e blog/series"), holds: "1 of 2 out"},
+		{name: "back from the résumé", opened: commanded(test, commanded(test, openedModel(test, "blog/1", commonWidth, tallHeight), "e tidy-tool"), "e blog"), holds: "1 post"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, testCase.opened)
+			if footer := footerOf(screen); !strings.Contains(footer, "1:posts*") || !strings.Contains(footer, "2:reading-slowly") || !strings.Contains(screen, testCase.holds) {
+				test.Errorf("the screen =\n%s\nwant the list shown, holding %q, the post's window beside it", screen, testCase.holds)
+			}
+		})
+	}
+}
+
+// The slugs of the posts of a list a test builds by hand, in its order, newest first: the first of one year, the rest
+// of the year before
+func handPostSlugs() []string {
+	return []string{"fifth", "fourth", "third", "second", "first"}
+}
+
+// The years of the list a test builds by hand, newest first
+const (
+	newerYear = "2027"
+	olderYear = "2026"
+)
+
+// handBlogModel is a session of a size on a résumé and a blog's list a test builds by hand, of five posts in two
+// years, each a post of its own, opened on the list; each year's count of its posts names the year.
+func handBlogModel(test *testing.T, width, height int) Model {
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
+	list := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, textOf("blog")), Blocks: nil}
+	documents := []document.Document{resume}
+	years := map[string][]document.ListedPost{}
+	for index, slug := range handPostSlugs() {
+		page := document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}
+		documents = append(documents, document.Document{Head: fixtures.HeadOf(page, textOf("The "+slug+" post")), Blocks: nil})
+		year := olderYear
+		if index == 0 {
+			year = newerYear
+		}
+		out := document.PostOut{Page: page, Published: time.Date(2026, time.November, index+1, 0, 0, 0, 0, time.UTC)}
+		years[year] = append(years[year], document.ListedPost{Readiness: out, Title: textOf("The " + slug + " post"), Lead: nil, Part: nil, Series: nil, Tags: nil})
+	}
+	for _, year := range []string{newerYear, olderYear} {
+		posts := document.Posts{Line: nil, Count: textOf("posts of " + year), List: years[year]}
+		list.Blocks = append(list.Blocks, document.Section{Title: textOf(year), Blocks: []document.Block{posts}})
+	}
+	// the list by series holds the same posts in one series, the oldest first
+	inSeries := slices.Concat(years[newerYear], years[olderYear])
+	slices.Reverse(inSeries)
+	series := document.Document{
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}, textOf("blog")),
+		Blocks: []document.Block{document.Section{Title: textOf("A series"), Blocks: []document.Block{document.Posts{Line: nil, Count: textOf("five"), List: inSeries}}}},
+	}
+	return commanded(test, handModel(test, width, height, slices.Concat(documents, []document.Document{list, series})...), "e blog")
+}
+
+// Each of the blog's lists keeps the tile its keys stood on, as it keeps its scroll: back from the résumé, and back
+// from the other list, the keys of each stand where they stood on it.
+func TestEachListKeepsTheTileItsKeysStoodOn(test *testing.T) {
+	model := handBlogModel(test, commonWidth, tallHeight)
+	byYear := commanded(test, pressed(test, model, "j", "q"), "e blog")
+	if footer := footerOf(screenOf(test, pressed(test, byYear, "enter"))); !strings.Contains(footer, "2:fourth*") {
+		test.Errorf("after j, q, :e blog and Enter the footer = %q, want %q", footer, "2:fourth*")
+	}
+	bySeries := commanded(test, pressed(test, commanded(test, pressed(test, model, "j"), "e blog/series"), "j", "j"), "e blog")
+	if footer := footerOf(screenOf(test, pressed(test, bySeries, "enter"))); !strings.Contains(footer, "2:fourth*") {
+		test.Errorf("after j, :e blog/series, j j, :e blog and Enter the footer = %q, want %q", footer, "2:fourth*")
+	}
+	if footer := footerOf(screenOf(test, pressed(test, commanded(test, bySeries, "e blog/series"), "enter"))); !strings.Contains(footer, "2:third*") {
+		test.Errorf("back on the list by series, Enter gives the footer %q, want %q", footer, "2:third*")
+	}
+}
+
+// The keys never stand on a tile out of sight: a move that takes the page from the tile they stand on has them stand
+// on the tile in sight nearest where the page went, G on the last, gg on the first, a search's match on its own; and a
+// screen made smaller keeps the tile they stand on in sight. Enter then reads the post of a tile the reader sees.
+func TestTheTileTheKeysStandOnStaysInSight(test *testing.T) {
+	// a screen too short for the list whole, and one shorter still
+	const (
+		shortScreen  = 14
+		shorterStill = 10
+	)
+	list := handBlogModel(test, commonWidth, shortScreen)
+	cases := []struct {
+		name    string
+		moved   Model
+		resized int
+		post    string
+		// date is the day set into the post's tile's top edge, which shows where the tile is in sight at all
+		date string
+	}{
+		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, post: "first", date: "5 Nov 2026"},
+		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, post: "fifth", date: "1 Nov 2026"},
+		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, post: "third", date: "3 Nov 2026"},
+		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, post: "second", date: "4 Nov 2026"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			next, _ := testCase.moved.Update(tea.WindowSizeMsg{Width: commonWidth, Height: testCase.resized})
+			model := as[Model](test, next)
+			if seen := screenOf(test, model); !strings.Contains(seen, testCase.date) {
+				test.Errorf("the screen =\n%s\nwant the %s post's tile in sight", seen, testCase.post)
+			}
+			if footer := footerOf(screenOf(test, pressed(test, model, "enter"))); !strings.Contains(footer, "2:"+testCase.post+"*") {
+				test.Errorf("after Enter the footer = %q, want the %s post read", footer, testCase.post)
+			}
+		})
+	}
+}
+
+// The list opens at its top, as gg leaves it, its first tile in sight though not whole, the blog's name whole above
+// it; and a search that finds a tile's words shows that tile from its top edge, its date with it, as j does.
+func TestTheListOpensAtItsTopAndASearchShowsItsTilesDate(test *testing.T) {
+	// a terminal short enough to show the fixture's first tile in part
+	const tileInPart = 20
+	if footer := footerOf(screenOf(test, openedModel(test, "blog", narrowWidth*sides, tileInPart))); !strings.Contains(footer, startShown) {
+		test.Errorf("opened by blog the footer = %q, want the list at its top, %q", footer, startShown)
+	}
+	found := pressed(test, typed(test, pressed(test, handBlogModel(test, commonWidth, 14), "/"), "third post"), "enter")
+	if screen := screenOf(test, found); !strings.Contains(screen, "3 Nov 2026") {
+		test.Errorf("after /third post the screen =\n%s\nwant the third post's tile from its top edge, %q", screen, "3 Nov 2026")
+	}
+}
+
+// On the blog's list j and k go from tile to tile in reading order, newest first, staying on the first and the last,
+// and Enter opens the post of the tile the keys stand on beside the list.
+func TestTheKeysGoFromTileToTile(test *testing.T) {
+	cases := []struct {
+		name string
+		keys []string
+		post string
+	}{
+		{name: "Enter on the first tile", keys: []string{"enter"}, post: "2:fifth*"},
+		{name: "j to the next, in the next group", keys: []string{"j", "enter"}, post: "2:fourth*"},
+		{name: "a count of tiles on", keys: []string{"2", "j", "enter"}, post: "2:third*"},
+		{name: "past the last", keys: []string{"j", "j", "j", "j", "j", "enter"}, post: "2:first*"},
+		{name: "k back", keys: []string{"j", "j", "k", "enter"}, post: "2:fourth*"},
+		{name: "past the first", keys: []string{"k", "enter"}, post: "2:fifth*"},
+		{name: "the down arrow", keys: []string{"down", "enter"}, post: "2:fourth*"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := pressed(test, handBlogModel(test, commonWidth, tallHeight), testCase.keys...)
+			if footer := footerOf(screenOf(test, model)); !strings.Contains(footer, testCase.post) {
+				test.Errorf("on the list after %q the footer = %q, want %q", testCase.keys, footer, testCase.post)
+			}
+		})
+	}
+}
+
+// Where the list has a column for the groups' names, a group's name stays in sight while its tiles scroll under it:
+// at the list's end, the top of the last group's tiles scrolled away, its count still shows.
+func TestAGroupsNameStaysInSightWhileItsTilesScroll(test *testing.T) {
+	// a terminal wide enough for the groups' names' column, and short enough for a page of five rows
+	const (
+		columnWidth  = 120
+		fiveRowsHigh = 9
+	)
+	model := pressed(test, handBlogModel(test, columnWidth, fiveRowsHigh), "G")
+	if want := "posts of " + olderYear; !strings.Contains(screenOf(test, model), want) {
+		test.Errorf("at the list's end the screen =\n%s\nwant %q in sight", screenOf(test, model), want)
+	}
+}
+
+// The blog's list writes its head and each tile as the page does (DESIGN.md, BlogHead and Tile): the blog's line, the
+// way it is grouped and the tags of its posts; how many posts a group holds; and on a tile when its post came out, its
+// title and lead, its part in its series and the series, and its tags. It writes the same where the page is too narrow
+// for the groups' names' column.
+func TestTheListWritesItsHeadAndTiles(test *testing.T) {
+	// a terminal wide enough for the groups' names' column beside the tiles
+	const columnWidth = 120
+	want := []string{
+		"What the writer reads, and how.", "by years series", "#reading #terminals", "1 post", "10 Nov 2026",
+		"Reading slowly", "Why a page read twice", "part 1 · Reading",
+	}
+	for _, width := range []int{commonWidth, columnWidth, narrowWidth} {
+		read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog", width, tallHeight))))
+		for _, phrase := range want {
+			if !strings.Contains(read, phrase) {
+				test.Errorf("at %d columns the list =\n%s\nwant %q on it", width, read, phrase)
+			}
+		}
+	}
+}
+
+// A post writes its head, its body and its foot as the page does (DESIGN.md, PostHead, Article and Panes): its facts
+// under its lead; its paragraphs numbered, a note cited by its number raised, a list's points and numbers, a quote
+// after its bar, its code framed under its language, and its pause as three stars; its sources at
+// its end, each by its number; the panes' heading and the way to all the parts, each pane by its name and what it
+// holds, the next first; and where the post is discussed.
+func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
+	read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog/1", commonWidth, tallHeight))))
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the day", want: "version 10 Nov 2026"},
+		{name: "the series", want: "series Reading 1 of 2"},
+		{name: "the tags", want: "tags #reading #terminals"},
+		{name: "a numbered paragraph citing a note", want: "1 A page read twice is read once, if the first reading was slow.¹"},
+		{name: "a paragraph of a section, numbered on", want: "2 See the reader's notes"},
+		{name: "a point", want: "- the margins"},
+		{name: "a point nested", want: "- in pencil²"},
+		{name: "a list in order", want: "3. open the file"},
+		{name: "a quote", want: "▎ A book is read with a pencil."},
+		{name: "code under its language", want: "┌── go ─"},
+		{name: "a pause", want: "* * *"},
+		{name: "a source", want: "1 Mira Example, on her own reading."},
+		{name: "the panes' heading", want: "Other parts of Reading all 2 parts"},
+		{name: "the next part, to come", want: "part 2"},
+		{name: "the next part's title", want: "Reading aloud soon"},
+		{name: "the side before, with nothing there", want: "none: this is the first part"},
+		{name: "where it is discussed", want: "discuss Lobsters"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(read, testCase.want) {
+				test.Errorf("the post =\n%s\nwant %q on it", read, testCase.want)
+			}
+		})
+	}
+}
+
+// A post's panes stand one under the other, the next part's first (DESIGN.md, The TUI).
+func TestAPostsPanesStandTheNextFirst(test *testing.T) {
+	read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog/1", commonWidth, tallHeight))))
+	if next, before := strings.Index(read, "── part 2 ─"), strings.Index(read, "── previous ─"); next < 0 || next > before {
+		test.Errorf("the post =\n%s\nwant the pane of part 2 over the pane before it", read)
+	}
+}
+
+// codeModel is a session on a résumé and a post a test builds by hand, of one block of code, opened on the post.
+func codeModel(test *testing.T, code string) Model {
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
+	block := document.CodeBlock{Language: "", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: code}}}
+	post := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "coded", Tab: ""}, textOf("Coded")), Blocks: []document.Block{block}}
+	return commanded(test, handModel(test, commonWidth, tallHeight, resume, post), "e blog/coded")
+}
+
+// A tab in a post's code stands as the spaces to the next stop of its line, look.TabStop apart, never as a tab,
+// which a terminal would widen to its own eight: in the middle of a line as at its start.
+func TestATabInCodeStandsToItsStop(test *testing.T) {
+	cases := []struct {
+		name string
+		code string
+		want string
+	}{
+		{name: "in the middle of a line", code: "ab\tc", want: "ab  c"},
+		{name: "at a line's start", code: "x\n\ty", want: "    y"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if screen := screenOf(test, codeModel(test, testCase.code)); !strings.Contains(screen, testCase.want) || strings.Contains(screen, tabCharacter) {
+				test.Errorf("the post of %q =\n%s\nwant %q on it, and no tab", testCase.code, screen, testCase.want)
+			}
+		})
+	}
+}
+
+// A line of code wider than its frame goes on under itself, each row it goes on in opening with a mark that says so,
+// as Neovim's showbreak does, and no letter of it lost.
+func TestALongLineOfCodeGoesOnUnderItsMark(test *testing.T) {
+	code := strings.Repeat("word ", 30) + "end"
+	screen := screenOf(test, codeModel(test, code))
+	read := strings.Join(strings.Fields(strings.NewReplacer(frameDown, "", codeGoesOnMark, "").Replace(aboveTheFooter(screen))), "")
+	if !strings.Contains(screen, frameDown+"  "+codeGoesOnMark) || !strings.Contains(read, strings.Join(strings.Fields(code), "")) {
+		test.Errorf("the post =\n%s\nwant the line going on under %q, whole", screen, codeGoesOnMark)
+	}
+}

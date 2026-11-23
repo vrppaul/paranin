@@ -12,28 +12,37 @@ import (
 const wideWidth = 160
 
 // y copies the value of the fact on the line the search found, whole, to the reader's clipboard over OSC 52, and the
-// command line says what it copied, for a terminal that takes no OSC 52; a link gives its text, as its line shows it,
-// and a value wrapped over lines is copied whole from any of them. On a project's page a command in its box is copied
-// without the box's edges and the prompt's mark, and the repository's owner and name give its address.
+// command line says what it copied on its one line, cut with a mark at its right margin, for a terminal that takes no
+// OSC 52; a link gives its text, as its line shows it, and a value wrapped over lines is copied whole from any of
+// them. On a project's page a command in its box is copied without the box's edges and the prompt's mark, and the
+// repository's owner and name give its address; a line of a post's code gives the block whole, without its frame.
 func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 	resume := fixtureModel(test, wideWidth, commonHeight)
 	contact := commanded(test, fixtureModel(test, wideWidth, commonHeight), "contact")
 	project := commanded(test, fixtureModel(test, wideWidth, commonHeight), "e tidy-tool")
+	post := openedModel(test, "blog/1", wideWidth, commonHeight)
 	cases := []struct {
 		name  string
 		model Model
 		query string
 		value string
+		said  string
 	}{
-		{name: "the mail", model: resume, query: "mira@", value: "mira@example.test"},
-		{name: "a link", model: contact, query: "github.test", value: "github.test/mira"},
-		{name: "the ssh command in its box", model: contact, query: "ssh ex", value: "ssh example.test"},
+		{name: "the mail", model: resume, query: "mira@", value: "mira@example.test", said: "copied: mira@example.test"},
+		{name: "a link", model: contact, query: "github.test", value: "github.test/mira", said: "copied: github.test/mira"},
+		{name: "the ssh command in its box", model: contact, query: "ssh ex", value: "ssh example.test", said: "copied: ssh example.test"},
 		{
-			name: "a value from its second line", model: resume, query: "next",
+			name: "a value from its second line, said cut at the line's end", model: resume, query: "next",
 			value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next",
+			said:  "copied: Small tools for people who live in the terminal, written to last and to be read by whoever …",
 		},
-		{name: "a command in its box", model: project, query: "go install", value: "go install example.test/tidy@latest"},
-		{name: "a repository's owner and name", model: project, query: "mira /", value: "https://github.test/mira/tidy"},
+		{name: "a command in its box", model: project, query: "go install", value: "go install example.test/tidy@latest", said: "copied: go install example.test/tidy@latest"},
+		{name: "a repository's owner and name", model: project, query: "mira /", value: "https://github.test/mira/tidy", said: "copied: https://github.test/mira/tidy"},
+		{
+			name: "a post's code in its frame, said on one line", model: post, query: "fmt.Println",
+			value: "// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println(\"slowly\", page)\n\treturn len(page) * 2\n}",
+			said:  `copied: // slowly reads a page twice, aloud func slowly(page string) int { fmt.Println("slowly", page) return len(page) * 2 }`,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -46,8 +55,8 @@ func TestYankCopiesTheValueOnTheLineFound(test *testing.T) {
 			if got, want := command(), tea.SetClipboard(testCase.value)(); got != want {
 				test.Errorf("after /%s and y the command gave %v, want %v", testCase.query, got, want)
 			}
-			if below := atTheFoot(screenOf(test, as[Model](test, next))); !strings.Contains(below, "copied: "+testCase.value) {
-				test.Errorf("after /%s and y the footer = %q, want %q", testCase.query, below, "copied: "+testCase.value)
+			if below := atTheFoot(screenOf(test, as[Model](test, next))); !strings.Contains(below, testCase.said) {
+				test.Errorf("after /%s and y the footer = %q, want %q", testCase.query, below, testCase.said)
 			}
 		})
 	}

@@ -29,7 +29,7 @@ func Lists(snapshot *content.Snapshot) []document.Document {
 func listHead(kind document.PageKind, read blog, words content.Words) document.Head {
 	line := textSpans(words.Text(content.WordBlogLine))
 	return document.Head{
-		Page:        document.Page{Kind: kind, Slug: "", Tab: ""},
+		Page:        document.PageOf(kind),
 		Number:      0,
 		Language:    words.Language(),
 		Greeting:    "",

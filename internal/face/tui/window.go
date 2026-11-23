@@ -7,8 +7,9 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// The marks of every frame the TUI draws, a window over the page and the box a command stands in: square, as tmux
-// draws its panes, its corners, its edges across and down, and where a rule inside it meets the left and right edges
+// The marks of every frame the TUI draws, a window over the page, the box a command stands in, the blog's tiles and a
+// post's panes and code: square, as tmux draws its panes, its corners, its edges across and down, where a rule inside
+// it meets the left and right edges, and where the lines between panes meet a top edge, a bottom edge or each other
 const (
 	frameTopLeft     = "┌"
 	frameTopRight    = "┐"
@@ -18,6 +19,9 @@ const (
 	frameDown        = "│"
 	frameRuleLeft    = "├"
 	frameRuleRight   = "┤"
+	frameTopJoin     = "┬"
+	frameBottomJoin  = "┴"
+	frameCrossing    = "┼"
 )
 
 // The room between a row's keys and what they do, in a window over the page

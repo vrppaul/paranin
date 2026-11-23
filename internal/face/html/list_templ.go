@@ -172,7 +172,7 @@ func (writer PageWriter) blogHead(head document.Head, groupings []grouping) temp
 
 // postGroup is a group of the list (DESIGN.md, Group): its name, a series' line under it and how many posts it holds,
 // then its posts as tiles.
-func (writer PageWriter) postGroup(group postGroup) templ.Component {
+func (writer PageWriter) postGroup(group document.Group) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -193,7 +193,7 @@ func (writer PageWriter) postGroup(group postGroup) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.spans(group.title).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.spans(group.Title).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -201,12 +201,12 @@ func (writer PageWriter) postGroup(group postGroup) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if len(group.posts.Line) > 0 {
+		if len(group.Posts.Line) > 0 {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"group-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = writer.spans(group.posts.Line).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = writer.spans(group.Posts.Line).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -219,7 +219,7 @@ func (writer PageWriter) postGroup(group postGroup) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.spans(group.posts.Count).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.spans(group.Posts.Count).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -227,7 +227,7 @@ func (writer PageWriter) postGroup(group postGroup) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.tiles(group.posts).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.tiles(group.Posts).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -390,7 +390,7 @@ func (writer PageWriter) tileParts(post document.ListedPost, when templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if partInEdge(post) {
+		if post.InItsSeriesGroup() {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<span class=\"tile-part\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

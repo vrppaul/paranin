@@ -462,7 +462,11 @@ templ (writer PageWriter) table(table document.Table) {
 				for _, row := range table.Rows {
 					<tr>
 						for _, cell := range row.Cells {
-							<td>
+							<td
+								if setBack(cell.Kind) {
+									class="table-duration"
+								}
+							>
 								@writer.spans(cell.Spans)
 							</td>
 						}

@@ -315,7 +315,11 @@ func skillsSection(groups []content.SkillGroup, words content.Words, after ...do
 		rows := make([]document.Row, 0, len(group.Skills))
 		for _, skill := range group.Skills {
 			listed := listedSkill(skill, words)
-			rows = append(rows, document.Row{Cells: []document.Cell{{Spans: listed.Name}, {Spans: listed.Duration}, {Spans: listed.Sources}}})
+			rows = append(rows, document.Row{Cells: []document.Cell{
+				{Kind: document.CellText, Spans: listed.Name},
+				{Kind: document.CellDuration, Spans: listed.Duration},
+				{Kind: document.CellText, Spans: listed.Sources},
+			}})
 		}
 		table := document.Table{Header: document.Row{Cells: nil}, Rows: rows}
 		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{table}})

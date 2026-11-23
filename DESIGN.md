@@ -378,7 +378,7 @@ summary, its facts. An install line is a fact whose value is Code alone; the pag
 
 ### Table
 
-Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a length `muted`; cells
+Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a duration `muted`; cells
 `cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A
 post's table may name its columns: the page draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
 Whatever scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.

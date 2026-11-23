@@ -93,6 +93,20 @@ func TestTheResumeKeepsOneOrder(test *testing.T) {
 	}
 }
 
+// A skill group's table tells a skill's duration from the words beside it, so each face can draw it set back.
+func TestASkillsDurationStandsInACellOfItsOwnKind(test *testing.T) {
+	group := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "Tools")
+	table := as[document.Table](test, group.Blocks[0])
+	got := [][]string{}
+	for _, row := range table.Rows {
+		got = append(got, kindNamesOf(row.Cells))
+	}
+	want := [][]string{{"text", "duration", "text"}}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("the group's cells are of the kinds %q, want %q", got, want)
+	}
+}
+
 // The résumé's first section, about the author, holds the summary and then the facts, and nothing more.
 func TestTheAboutSectionHoldsTheSummaryAndTheFacts(test *testing.T) {
 	about := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "About").Blocks
@@ -497,6 +511,20 @@ func sectionIn(test *testing.T, blocks []document.Block, title string) (document
 		}
 	}
 	return document.Section{Title: nil, Blocks: nil}, false
+}
+
+// kindNamesOf are the names of a row's cells' kinds, in its order; a kind with no name reads as "".
+func kindNamesOf(cells []document.Cell) []string {
+	names := make([]string, 0, len(cells))
+	for _, cell := range cells {
+		names = append(names, cellKindNames()[cell.Kind])
+	}
+	return names
+}
+
+// cellKindNames name each kind of a table's cell, so a failure says which kinds came.
+func cellKindNames() map[document.CellKind]string {
+	return map[document.CellKind]string{document.CellText: "text", document.CellDuration: "duration"}
 }
 
 func titleOf(test *testing.T, section document.Section) string {

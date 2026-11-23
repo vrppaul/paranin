@@ -443,7 +443,10 @@ func TestARoleReadsWithItsPeriodAndPlace(test *testing.T) {
 func TestARowGivenWayToWordsFillsItsFirstLine(test *testing.T) {
 	// the words of the row's first line, its cells parted by the place mark, exactly as wide as a phone's page
 	const firstLine = "abcdefghijklmn · opqrstuvwxy"
-	row := document.Row{Cells: []document.Cell{{Spans: textOf("abcdefghijklmn")}, {Spans: textOf("opqrstuvwxy z")}}}
+	row := document.Row{Cells: []document.Cell{
+		{Kind: document.CellText, Spans: textOf("abcdefghijklmn")},
+		{Kind: document.CellText, Spans: textOf("opqrstuvwxy z")},
+	}}
 	model := handResume(test, "home", phoneWidth, tallHeight, document.Table{Rows: []document.Row{row}})
 	if page := aboveTheFooter(screenOf(test, model)); !strings.Contains(page, firstLine) {
 		test.Errorf("at %d columns the page =\n%s\nwant the row's first line %q whole", phoneWidth, page, firstLine)

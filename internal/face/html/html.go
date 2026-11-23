@@ -288,6 +288,18 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	return templ.NopComponent
 }
 
+// setBack is whether a table's cell of a kind stands back from the words beside it, as a duration does.
+func setBack(kind document.CellKind) bool {
+	switch kind {
+	case document.CellText:
+		return false
+	case document.CellDuration:
+		return true
+	}
+	// the zero kind, which compose never builds, reads as words
+	return false
+}
+
 // span is the component of a span; a link whose target has no address reads as its text.
 func (writer PageWriter) span(span document.Span) templ.Component {
 	switch typed := span.(type) {

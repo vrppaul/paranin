@@ -111,8 +111,14 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			name: "a table under its header",
 			body: "| Reading | Kept |\n| --- | --- |\n| Slow | **Most** |",
 			want: []document.Block{document.Table{
-				Header: document.Row{Cells: []document.Cell{{Spans: textSpans("Reading")}, {Spans: textSpans("Kept")}}},
-				Rows:   []document.Row{{Cells: []document.Cell{{Spans: textSpans("Slow")}, {Spans: []document.Span{document.Strong{Spans: textSpans("Most")}}}}}},
+				Header: document.Row{Cells: []document.Cell{
+					{Kind: document.CellText, Spans: textSpans("Reading")},
+					{Kind: document.CellText, Spans: textSpans("Kept")},
+				}},
+				Rows: []document.Row{{Cells: []document.Cell{
+					{Kind: document.CellText, Spans: textSpans("Slow")},
+					{Kind: document.CellText, Spans: []document.Span{document.Strong{Spans: textSpans("Most")}}},
+				}}},
 			}},
 		},
 		{

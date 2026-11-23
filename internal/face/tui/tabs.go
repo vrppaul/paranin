@@ -489,7 +489,7 @@ func (layout layout) table(table document.Table, indent int) []line {
 // wrapping under itself.
 func (layout layout) columnedRow(lead line, cells []document.Cell, widths []int, column int) []line {
 	for place, cell := range cells {
-		words := layout.words(cell.Spans, cellKind(place))
+		words := layout.words(cell.Spans, cellLook(place, cell.Kind))
 		if place == len(cells)-1 {
 			return layout.continued(lead, words, column)
 		}
@@ -503,17 +503,25 @@ func (layout layout) columnedRow(lead line, cells []document.Cell, widths []int,
 func (layout layout) flowingCells(cells []document.Cell) []word {
 	words := []word{}
 	for place, cell := range cells {
-		words = markedWords(words, layout.words(cell.Spans, cellKind(place)), placeMark)
+		words = markedWords(words, layout.words(cell.Spans, cellLook(place, cell.Kind)), placeMark)
 	}
 	return words
 }
 
-// cellKind is what a cell of a row is: the first is read as text, and the rest as what stands beside it.
-func cellKind(place int) kind {
+// cellLook is how a cell of a row reads (DESIGN.md, Table): the first names the row, and the rest read as what they
+// hold, a duration set back from the words beside it.
+func cellLook(place int, cellKind document.CellKind) kind {
 	if place == 0 {
-		return kindText
+		return kindStrong
 	}
-	return kindMuted
+	switch cellKind {
+	case document.CellText:
+		return kindText
+	case document.CellDuration:
+		return kindMuted
+	}
+	// the zero kind, which compose never builds, reads as the words around it
+	return kindText
 }
 
 // columnWidths are the widths of the rows' columns, each as wide as its widest cell laid in a line.

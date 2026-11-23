@@ -19,7 +19,7 @@ type Paragraph struct {
 }
 
 // Table is rows of cells, each column one kind of value, under a header that names each column where the table has
-// one: a post's table may, a skill group's has none.
+// one: a post's table may, a skill group's has none. A row's first cell names the row.
 type Table struct {
 	// Header is the row naming the columns; a row of no cells where the table has none
 	Header Row
@@ -31,10 +31,24 @@ type Row struct {
 	Cells []Cell
 }
 
-// Cell is one cell of a row.
+// Cell is one cell of a row, of a kind a face draws it by. The kind rides on each cell, not on its column, so a
+// face reads a cell's kind off the cell itself; the first cell's look is the Table's own rule.
 type Cell struct {
+	Kind  CellKind
 	Spans []Span
 }
+
+// CellKind is what a cell of a table holds.
+type CellKind int
+
+const (
+	// The zero kind names none
+	_ CellKind = iota
+	// CellText is words, read as the text around them
+	CellText
+	// CellDuration is how long something lasted, as a skill's use, which a face sets back from the words beside it
+	CellDuration
+)
 
 // CodeBlock is text shown as it is, line for line: a terminal's recording, a post's code.
 type CodeBlock struct {

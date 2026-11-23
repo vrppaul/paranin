@@ -1317,6 +1317,11 @@ a.session:hover {
   text-align: start;
 }
 
+/* a duration stands back from the words beside it */
+.table .table-duration {
+  color: var(--muted);
+}
+
 /* text on lines of its own (DESIGN.md, Code): on the ground a shade below the page, scrolling sideways inside itself,
  * never wrapping */
 .code-block {

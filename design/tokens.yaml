@@ -300,6 +300,9 @@ lengths:
   - name: lead
     about: the longest line of the headline under the name
     cells: 40
+  - name: post_lead
+    about: the longest line of a post's lead under its title, which says more than the headline does
+    cells: 52
   - name: measure
     about: the longest line of prose, a paragraph's or a point's
     cells: 64

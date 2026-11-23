@@ -62,6 +62,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `measure` | `design/tokens.yaml` | the longest line of prose |
 | `brief`, `brief_mid` | `design/tokens.yaml` | the brief beside the name, from `wide` and from `phone` |
 | `lead` | `design/tokens.yaml` | the longest line of the headline |
+| `post_lead` | `design/tokens.yaml` | the longest line of a post's lead |
 | `when` | `design/tokens.yaml` | an entry's dates column |
 | `span_thin` | `design/tokens.yaml` | a role's bar in the phone's career list |
 | `dialog` | `design/tokens.yaml` | the widest a window over the page runs, a Dialog's or a Hint's |
@@ -473,10 +474,11 @@ A word that opens a window over the page, as the Hint's chip does: a post's vers
 ### PostHead
 
 A post's first screen, as the résumé's. Left, over the Outline and the text, its title (`title_text` in `title_soft`,
-a few words a line, balanced) and its lead. Right, in the sources' column, its Facts `row_half` apart: version (the
-Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date that a newer
-stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the whole a link,
-`tint_strong` (to add) under the pointer. On a phone one column, the facts under the lead, a `quiet` hairline under the head.
+a few words a line, balanced) and its lead, `post_lead` at most. Right, in the sources' column, its Facts `row_half`
+apart: version (the Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date
+that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the
+whole a link, `tint_strong` (to add) under the pointer. On a phone one column, the facts under the lead, a `quiet`
+hairline under the head.
 
 ### Outline
 

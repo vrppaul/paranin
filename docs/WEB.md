@@ -73,8 +73,9 @@ left out, and a gap among written words stands marked as one.
   tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead.
-- **`llms.txt`** is the author's name, the headline, then `## Résumé` and `## Projects`, a link to each page's
-  markdown.
+- **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
+  page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
+  names, newest first, by its description; never a draft, a preview or a post unlisted.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script. A page with an address adds its canonical link; Open Graph's `og:type`
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as

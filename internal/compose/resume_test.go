@@ -294,8 +294,8 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 	}
 }
 
-// The index lists every page compose makes, in the order it makes them: a page added to the site is a page added
-// to the index.
+// The index lists the résumé and every project's page compose makes, in the order it makes them: a project's page
+// added to the site is a page added to the index.
 func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	index := Index(snapshot)
@@ -314,6 +314,41 @@ func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 	}
 }
 
+// seenListing is a page the index lists as a test reads it: the page, its title and its line.
+type seenListing struct {
+	page  document.Page
+	title string
+	note  string
+}
+
+// The index lists the blog under the site's word for it: the blog's list in each grouping, by its title naming the
+// grouping and by the blog's line, then each post the list names, newest first, by its title and its description;
+// never a draft, a preview or a post unlisted.
+func TestTheIndexListsTheBlogsListsThenEveryPostListedNewestFirst(test *testing.T) {
+	posts := []writtenPost{
+		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
+		{slug: "toolbox", id: 4, status: "published", published: latest, tags: ""},
+		{slug: "drafted", id: 5, status: "draft", published: later, tags: ""},
+		{slug: "previewed", id: 6, status: "preview", published: later, tags: ""},
+		{slug: "hidden", id: 7, status: "unlisted", published: later, tags: ""},
+	}
+	index := Index(withPostsAndSeries(test, posts, nil))
+	want := []seenListing{
+		{page: document.PageOf(document.PageBlog), title: "blog by years", note: "What the writer reads, and how."},
+		{page: document.PageOf(document.PageBlogSeries), title: "blog by series", note: "What the writer reads, and how."},
+		{page: document.Page{Kind: document.PagePost, Slug: "toolbox", Tab: ""}, title: "toolbox", note: "About toolbox."},
+		{page: document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}, title: fixturePostTitle, note: "Why a page read twice is read once."},
+		{page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, title: "first", note: "About first."},
+	}
+	got := []seenListing{}
+	for _, listed := range contentsOf(test, sectionTitled(test, index, "blog")).Listings {
+		got = append(got, seenListing{page: listed.Page, title: document.PlainText(listed.Title), note: document.PlainText(listed.Note)})
+	}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("listings under the blog = %+v, want %+v", got, want)
+	}
+}
+
 // The projects' word stands in the index only where a project has a page to list under it.
 func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 	withoutPages := *fixtures.LoadedContent(test)
@@ -325,7 +360,7 @@ func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 	for _, block := range Index(&withoutPages).Blocks {
 		got = append(got, titleOf(test, as[document.Section](test, block)))
 	}
-	if want := []string{"Résumé"}; !slices.Equal(got, want) {
+	if want := []string{"Résumé", "blog"}; !slices.Equal(got, want) {
 		test.Errorf("sections = %q, want %q", got, want)
 	}
 }

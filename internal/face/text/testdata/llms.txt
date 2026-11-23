@@ -9,3 +9,9 @@
 ## Projects
 
 - [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files.
+
+## blog
+
+- [blog by years](https://example.test/blog.md): What the writer reads, and how.
+- [blog by series](https://example.test/blog/series.md): What the writer reads, and how.
+- [Reading slowly](https://example.test/blog/reading-slowly.md): Why a page read twice is read once.

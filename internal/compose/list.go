@@ -24,6 +24,23 @@ func Lists(snapshot *content.Snapshot) []document.Document {
 	}
 }
 
+// blogListings are the blog's pages as the site's index lists them: the blog's list in each grouping, by its own
+// head's title named with the grouping, and its description, the blog's line; then each post the list names, newest
+// first, by its title and its description.
+func blogListings(snapshot *content.Snapshot) []document.Listing {
+	read, words := blogOf(snapshot), snapshot.Words
+	listings := []document.Listing{}
+	for _, grouping := range listWordsOf(words).Groupings() {
+		head := listHead(grouping.List.Kind, read, words)
+		title := words.Phrase(content.PhraseGroupedList, document.PlainText(head.Title), grouping.Words)
+		listings = append(listings, document.Listing{Page: head.Page, Title: textSpans(title), Note: head.Description})
+	}
+	for _, post := range read.newestFirst() {
+		listings = append(listings, document.Listing{Page: postPage(post), Title: textSpans(post.Title), Note: textSpans(post.Description)})
+	}
+	return listings
+}
+
 // listHead is the head of the blog's list in a grouping: the blog's name its title, its line the lead and the page's
 // description, and the tags of the posts it lists.
 func listHead(kind document.PageKind, read blog, words content.Words) document.Head {

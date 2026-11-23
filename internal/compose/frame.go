@@ -153,13 +153,18 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		SeriesWords: SeriesWords{words: words},
 		PaneWords:   paneWords(words),
 		Contents:    words.Text(content.WordContents),
-		ListWords: ListWords{
-			Window:   words.Text(content.WordListWindow),
-			AllPosts: words.Text(content.WordAllPosts),
-			By:       words.Text(content.WordBy),
-			Years:    words.Text(content.WordYears),
-			Series:   words.Text(content.WordSeries),
-		},
+		ListWords:   listWordsOf(words),
+	}
+}
+
+// listWordsOf are the site's words of the blog's list.
+func listWordsOf(words content.Words) ListWords {
+	return ListWords{
+		Window:   words.Text(content.WordListWindow),
+		AllPosts: words.Text(content.WordAllPosts),
+		By:       words.Text(content.WordBy),
+		Years:    words.Text(content.WordYears),
+		Series:   words.Text(content.WordSeries),
 	}
 }
 

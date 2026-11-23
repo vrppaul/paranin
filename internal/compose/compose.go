@@ -112,8 +112,9 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 }
 
 // Index is the site's index, the list of its pages an agent reads first: whose site it is and its headline, then
-// the résumé and the page of each project that has one, each under the site's word for it, the projects' word
-// only where a project has a page. A page is listed by the title and subtitle its own head opens with.
+// the résumé, the page of each project that has one, and the blog's lists and the posts they name, each under the
+// site's word for it, the projects' word only where a project has a page. The résumé and a project's page are
+// listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
 func Index(snapshot *content.Snapshot) document.Document {
 	words := snapshot.Words
 	resume := resumeHead(snapshot.Profile, words)
@@ -125,6 +126,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	if len(projects) > 0 {
 		blocks = append(blocks, section(words.Text(content.WordProjects), document.Contents{Listings: projects}))
 	}
+	blocks = append(blocks, section(words.Text(content.WordBlog), document.Contents{Listings: blogListings(snapshot)}))
 	return document.Document{
 		Head: document.Head{
 			Page:        document.PageOf(document.PageIndex),

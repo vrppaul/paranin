@@ -58,3 +58,4 @@ outside_series: other posts
 one_post: "{} post"
 posts_count: "{} posts"
 parts_out: "{} of {} out"
+grouped_list: "{} by {}"

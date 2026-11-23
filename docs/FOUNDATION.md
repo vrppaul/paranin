@@ -473,8 +473,8 @@ updated: 2026-11-12
   preview link at once.
 - **Publishing on a date.** A `published` date in the future keeps the post
   a preview until then. The status is worked out per request from the
-  time, with the feed and the sitemap cached per snapshot and minute, so
-  the post comes out on time with no push.
+  time, with the feed, the sitemap and `llms.txt` cached per snapshot and
+  minute, so the post comes out on time with no push.
 
 #### Editing and publishing (Decided, D5; the rest Proposed)
 

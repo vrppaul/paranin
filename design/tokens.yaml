@@ -76,9 +76,13 @@ colours:
     basic: 3
   - name: host
     about: the site's host where it is written, as the footer's session, and the far end of the author's name
-    light: "#8839ef"
+    # Latte's mauve darkened along OKLCH lightness, its hue and chroma kept, just enough for its least contrast
+    light: "#8230e7"
     dark: "#c6a0f6"
     basic: 5
+    # small text, which WCAG asks to read at 4.5:1: the mail's host on the page's ground, the session on the foot line
+    # and on its ground under the pointer
+    least_contrast: {ratio: 4.5, over: [background, sunk, deep]}
   - name: label
     about: what names the text after it, as a fact's label
     light: "#1e66f5"
@@ -98,9 +102,13 @@ colours:
     basic: 0
   - name: error
     about: what says something went wrong, as a search that found nothing
-    light: "#d20f39"
+    # Latte's red darkened along OKLCH lightness, its hue and chroma kept, just enough for its least contrast
+    light: "#d10e39"
     dark: "#ed8796"
     basic: 1
+    # small text, which WCAG asks to read at 4.5:1: the TUI's failed check on the page's ground, a refused command on
+    # the command line
+    least_contrast: {ratio: 4.5, over: [background, sunk]}
   - name: passed
     about: what says a check passed, as the health report's OK
     light: "#40a02b"

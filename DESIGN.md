@@ -105,7 +105,9 @@ other size: a control that seems to need one is the wrong control.
   the name, and a mark beside words that says where to look (the arrow to a newer version, the Outline's heading
   read). In Latte it is a fill, a display colour and such a mark, never small text (2.64:1).
 - `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first, and the way from an
-  older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words.
+  older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words. In Latte
+  `host` and `error` are Catppuccin's mauve and red a shade darker, so each reads as small text at the 4.5:1 WCAG asks,
+  over the grounds `design/tokens.yaml` names.
 - Borders: `quiet` for rules between parts, `muted` for a control's border and for a pane's or a tile's frame, `edge`
   for the corner crosses and for what lies over the page, a tooltip, a toast and a pick's window. A pane or a tile
   that leads nowhere is framed in `quiet` at half its strength (`quiet_half`).
@@ -321,7 +323,8 @@ in a `quiet` hairline, `radius`, what it does `muted`.
   letter: before a letter the page's tabs but the one shown, then every tab and project's page the letters start, after
   `:e ` the projects' pages. A hairline box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name
   under where the line writes it, a cell of air either side, its kind `muted` four cells after it, `tab` or `project`.
-  The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as small text.
+  The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as small text, on the
+  TUI's menu too.
 - Tab and Shift+Tab go round them, writing the one chosen on the line, reversed and bold as the window shown. The menu
   holds as many whole rows as the screen has over the foot line's two, a row of air above, stands a `nudge` clear of
   its hairline, and scrolls in the browser's own thin bar, keeping the one chosen in sight; the page does not move.

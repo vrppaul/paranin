@@ -93,6 +93,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 	panel := plain.Background(colour(look.ColourSunk))
 	// with no colours the menu has no ground to part it from the page, so it is reversed
 	menu := plain.Background(colour(look.ColourQuiet)).Reverse(noColours)
+	accentMark := accentWhereColourful(colour(look.ColourAccent), fewColours)
 	return paint{
 		kinds: map[kind]lipgloss.Style{
 			kindText:   plain.Foreground(colour(look.ColourText)),
@@ -142,8 +143,10 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			partPanelKey:    panel.Foreground(colour(look.ColourText)).Bold(true),
 			partPanelNote:   panel.Foreground(colour(look.ColourFaint)),
 			partMenu:        menu.Foreground(colour(look.ColourText)),
-			partMenuTyped:   menu.Foreground(colour(look.ColourAccent)).Bold(true),
-			partMenuKind:    menu.Foreground(colour(look.ColourMuted)),
+			// the letters typed bold and underlined in the accent, as the page marks them, the accent reading too faint as
+			// small text in the light theme
+			partMenuTyped: menu.Foreground(colour(look.ColourText)).Bold(true).Underline(true).UnderlineColor(accentMark),
+			partMenuKind:  menu.Foreground(colour(look.ColourMuted)),
 			// the item chosen reversed, as DESIGN.md marks what is chosen, and as the tab shown is; where the terminal shows
 			// no colours, whose menu is reversed to stand out from the page, it stands upright and underlined instead
 			partMenuChosen: plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(!noColours).Underline(noColours),
@@ -161,8 +164,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 		highlightText:   colour(look.ColourOnAccent),
 		matchGround:     colour(look.ColourAccent),
 		matchText:       colour(look.ColourOnAccent),
-		matchUnderline:  accentWhereColourful(colour(look.ColourAccent), fewColours),
-		cursorColour:    accentWhereColourful(colour(look.ColourAccent), fewColours),
+		matchUnderline:  accentMark,
+		cursorColour:    accentMark,
 		fewColours:      fewColours,
 		noColours:       noColours,
 	}

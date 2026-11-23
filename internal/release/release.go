@@ -3,9 +3,9 @@
 // A page names the files of the build it was drawn with, so the two parts are never swapped apart: a load that
 // fails in either keeps both as they were. The content is held, beside its own load, to a check the composition root
 // hands in from the parts over a release, which it knows nothing of. What a host draws from a snapshot is worked out
-// once for each (Derived). Watch looks at the folders in a goroutine of its own, until its context ends, and says when
-// they changed and held still, for whoever reloads (watch.go). A folder on disk is read so no read leaves it
-// (ReadFolder).
+// once for each, and again once what it drew lapses (Derived). Watch looks at the folders in a goroutine of its own,
+// until its context ends, and says when they changed and held still, for whoever reloads (watch.go). A folder on disk
+// is read so no read leaves it (ReadFolder).
 package release
 
 import (
@@ -15,6 +15,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/content"
@@ -102,36 +103,47 @@ func (store *Store) Reload() error {
 	return nil
 }
 
-// Derived is a value worked out from the store's snapshots, once for each snapshot a reader meets, and kept until
-// the store holds another: what a host draws from a release, which no request or session works out again.
+// Derived is a value worked out from the store's snapshots at a moment, once for each snapshot a reader meets, and
+// kept until the store holds another or the moment its work says it lapses at comes: what a host draws from a release,
+// which no request or session works out again.
 type Derived[Value any] struct {
 	store *Store
-	work  func(*Snapshot) Value
+	work  Work[Value]
 	// last is the value of the last snapshot a reader met
 	last atomic.Pointer[derivation[Value]]
 }
 
-// derivation is a value and the snapshot it was worked out from.
+// Work works a value out from a snapshot at a moment, and says when it lapses: the zero time where it holds as long as
+// its snapshot.
+type Work[Value any] func(snapshot *Snapshot, moment time.Time) (Value, time.Time)
+
+// derivation is a value, the snapshot it was worked out from and when it lapses, the zero time where it never does.
 type derivation[Value any] struct {
 	snapshot *Snapshot
 	value    Value
+	lapses   time.Time
 }
 
 // Derive is a value the store's snapshots make, by the work that makes it.
-func Derive[Value any](store *Store, work func(*Snapshot) Value) *Derived[Value] {
+func Derive[Value any](store *Store, work Work[Value]) *Derived[Value] {
 	return &Derived[Value]{store: store, work: work, last: atomic.Pointer[derivation[Value]]{}}
 }
 
-// Current is the value of the store's current snapshot. Two readers that meet a new snapshot at once may each work
-// it out, and a value is kept only over the one its reader found. The kept value is read before the snapshot, and
-// a store's snapshots only move forward, so the snapshot worked out is never older than the value it replaces.
-func (derived *Derived[Value]) Current() Value {
+// Current is the value of the store's current snapshot at a moment; one kept is replaced only by a newer.
+func (derived *Derived[Value]) Current(moment time.Time) Value {
 	found := derived.last.Load()
 	snapshot := derived.store.Current()
-	if found != nil && found.snapshot == snapshot {
+	if found.holds(snapshot, moment) {
 		return found.value
 	}
-	worked := &derivation[Value]{snapshot: snapshot, value: derived.work(snapshot)}
+	value, lapses := derived.work(snapshot, moment)
+	worked := &derivation[Value]{snapshot: snapshot, value: value, lapses: lapses}
 	derived.last.CompareAndSwap(found, worked)
 	return worked.value
+}
+
+// holds is whether a derivation, none where nothing was worked out yet, is the value of a snapshot at a moment: worked
+// out from it, and not lapsed by then.
+func (found *derivation[Value]) holds(snapshot *Snapshot, moment time.Time) bool {
+	return found != nil && found.snapshot == snapshot && (found.lapses.IsZero() || moment.Before(found.lapses))
 }

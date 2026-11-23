@@ -14,10 +14,9 @@ import (
 // The count of posts a group holds that the site's words write as one post, not as posts
 const onePost = 1
 
-// Lists are the blog's list, a document every face draws (D25), in its two groupings: every post the blog lists by
-// year, newest first, and the same posts by series, the posts in no series last. Each opens with the blog's head.
-func Lists(snapshot *content.Snapshot) []document.Document {
-	read, words := blogOf(snapshot), snapshot.Words
+// blogLists are the blog's list, a document every face draws (D25), in its two groupings: every post the blog lists
+// by year, newest first, and the same posts by series, the posts in no series last. Each opens with the blog's head.
+func blogLists(read blog, words content.Words) []document.Document {
 	return []document.Document{
 		{Head: listHead(document.PageBlog, read, words), Blocks: read.byYear(words)},
 		{Head: listHead(document.PageBlogSeries, read, words), Blocks: read.bySeries(words)},
@@ -27,8 +26,7 @@ func Lists(snapshot *content.Snapshot) []document.Document {
 // blogListings are the blog's pages as the site's index lists them: the blog's list in each grouping, by its own
 // head's title named with the grouping, and its description, the blog's line; then each post the list names, newest
 // first, by its title and its description.
-func blogListings(snapshot *content.Snapshot) []document.Listing {
-	read, words := blogOf(snapshot), snapshot.Words
+func blogListings(read blog, words content.Words) []document.Listing {
 	listings := []document.Listing{}
 	for _, grouping := range listWordsOf(words).Groupings() {
 		head := listHead(grouping.List.Kind, read, words)
@@ -55,7 +53,7 @@ func listHead(kind document.PageKind, read blog, words content.Words) document.H
 		Place:       "",
 		Tags:        listedTags(read.listed),
 		Lead:        line,
-		Published:   time.Time{},
+		Version:     nil,
 		Repository:  nil,
 		Post:        nil,
 		Description: line,
@@ -101,7 +99,7 @@ func (read blog) byYear(words content.Words) []document.Block {
 func (read blog) bySeries(words content.Words) []document.Block {
 	groups := []document.Block{}
 	for _, series := range read.seriesNewestFirst() {
-		parts := read.partsOf(series)
+		parts := read.partsOf(series, read.audience.lists)
 		posts := make([]document.ListedPost, 0, len(parts))
 		out := 0
 		for index, part := range parts {
@@ -169,7 +167,7 @@ func (read blog) listedOutside(post content.Post, words content.Words) document.
 	if !inSeries {
 		return listed
 	}
-	parts := read.partsOf(series)
+	parts := read.partsOf(series, read.audience.lists)
 	index := slices.IndexFunc(parts, func(part listedPart) bool { return part.post != nil && part.post.Slug == post.Slug })
 	listed.Part = textSpans(words.Phrase(content.PhrasePart, strconv.Itoa(partNumber(index))))
 	listed.Series, listed.SeriesName = textSpans(series.Title), series.Name

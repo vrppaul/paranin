@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -21,19 +22,37 @@ const (
 	clashJoint  = "\n"
 )
 
-// What is said of a post's link inside the site that leads nowhere: to no page the site serves, by its path; to a
-// section of a page that has none, by the anchor and the path; or to none of its sections, naming those it has
+// What is said of a post's link inside the site that leads nowhere: to a post that comes out after the post linking
+// it, by its path and the moment it comes out, as front matter writes it; to no page the site serves, by its path; to
+// a section of a page that has none, by the anchor and the path; or to none of its sections, naming those it has
 const (
+	laterProblem      = "%q leads to a post that comes out only at %s, after the post linking it"
 	noPageProblem     = "%q leads to no page the site serves: a link inside it is a page's path from the root, as /blog/<slug>"
 	noSectionsProblem = "%q names a section of %q, which has none: link to the page alone"
 	noSectionProblem  = "%q names no section of %q, whose sections are %s"
 	anchorJoint       = ", "
 )
 
-// Check holds a snapshot to what only its whole site knows: no two pages at one address, no link inside it to nowhere.
-func Check(snapshot *content.Snapshot) error {
-	site := SiteOf(snapshot)
-	return errors.Join(sharedAddresses(headsOf(site.served)), linksLeadingNowhere(servedPosts(snapshot), site.paths, anchorsOf(site.served)))
+// Check holds a snapshot to what only its whole site knows, at each moment from now on it changes: no two pages at one
+// address, and no link inside it to nowhere, a draft's as its author reads the site.
+func Check(snapshot *content.Snapshot, now time.Time) error {
+	public := Audience{At: now, Drafts: false}
+	changes, later := public.changes(snapshot.Posts), laterPosts(snapshot.Posts, public)
+	faults := content.Faults{}
+	for _, moment := range changes {
+		site := SiteOf(snapshot, Audience{At: moment, Drafts: false})
+		faults = append(faults, destinationsOf(site, later).linksLeadingNowhere(site.postsServed)...)
+	}
+	// the author's site once every post that comes later is out holds the most pages
+	authorsSite := SiteOf(snapshot, Audience{At: changes[len(changes)-1], Drafts: true})
+	drafts := slices.DeleteFunc(slices.Clone(authorsSite.postsServed), func(post content.Post) bool { return post.Status != content.StatusDraft })
+	faults = append(faults, destinationsOf(authorsSite, later).linksLeadingNowhere(drafts)...)
+	var linkFaults error
+	if len(faults) > 0 {
+		slices.SortFunc(faults, byPlace)
+		linkFaults = slices.Compact(faults)
+	}
+	return errors.Join(sharedAddresses(headsOf(authorsSite.served)), linkFaults)
 }
 
 // AddressClash is an address more than one page of the site takes, in any format, as routes writes it, and the title
@@ -83,28 +102,53 @@ func sharedAddresses(heads []document.Head) error {
 	return clashes
 }
 
-// linksLeadingNowhere are the faults of the served posts' links inside the site, in the order of their files' lines.
-func linksLeadingNowhere(posts []content.Post, pages map[string]document.Page, anchors map[document.Page][]string) error {
+// destinations are where a site's links inside it may lead: the pages it serves by their paths, the anchors of each
+// page's sections, and the posts that come later by their paths, each by the moment it comes out.
+type destinations struct {
+	pages   map[string]document.Page
+	anchors map[document.Page][]string
+	later   map[string]content.Moment
+}
+
+// destinationsOf are where a site's links may lead, beside the posts that come later.
+func destinationsOf(site Site, later map[string]content.Moment) destinations {
+	return destinations{pages: site.paths, anchors: anchorsOf(site.served), later: later}
+}
+
+// laterPosts are the posts that come later than an audience's moment, by the path each is served at once out, each by
+// the moment it comes out.
+func laterPosts(posts []content.Post, audience Audience) map[string]content.Moment {
+	later := map[string]content.Moment{}
+	for _, post := range posts {
+		if audience.comesLater(post) {
+			later[routes.Path(postPage(post), routes.FormatChosen)] = post.Published
+		}
+	}
+	return later
+}
+
+// linksLeadingNowhere are the faults of posts' links inside the site, in no order.
+func (reached destinations) linksLeadingNowhere(posts []content.Post) content.Faults {
 	faults := content.Faults{}
 	for _, post := range posts {
 		for _, written := range post.SiteLinks {
-			if problem, nowhere := leadsNowhere(written.Link, pages, anchors); nowhere {
+			if problem, nowhere := reached.leadsNowhere(written.Link); nowhere {
 				faults = append(faults, content.Fault{File: written.File, Field: "", Line: written.Line, Problem: problem})
 			}
 		}
 	}
-	if len(faults) == 0 {
-		return nil
-	}
-	slices.SortFunc(faults, byPlace)
 	return faults
 }
 
-// leadsNowhere is what is wrong with a link inside the site, where it leads to no page served or no section of one.
-func leadsNowhere(link content.SiteLink, pages map[string]document.Page, anchors map[document.Page][]string) (string, bool) {
-	page, found := pages[link.Path]
-	taken := anchors[page]
+// leadsNowhere is what is wrong with a link inside the site, where it leads to a post not out yet, to no page served
+// or to no section of one.
+func (reached destinations) leadsNowhere(link content.SiteLink) (string, bool) {
+	page, found := reached.pages[link.Path]
+	taken := reached.anchors[page]
+	comes, isLater := reached.later[link.Path]
 	switch {
+	case !found && isLater:
+		return fmt.Sprintf(laterProblem, link.Path, comes.Written()), true
 	case !found:
 		return fmt.Sprintf(noPageProblem, link.Path), true
 	case link.Anchor == "" || slices.Contains(taken, link.Anchor):

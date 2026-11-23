@@ -506,7 +506,9 @@ a few words a line, balanced) and its lead, `post_lead` at most. Right, in the s
 apart: version (the Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date
 that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the
 whole a link, `tint_strong` (to add) under the pointer. On a phone one column, the facts under the lead, a `quiet`
-hairline under the head.
+hairline under the head. A draft, which its author alone reads under `paranin serve --drafts`, gives the word `draft`
+as its version, a fact's value like any other, where a post out gives its day; the TUI and the text faces write it
+there too. It is the plainest mark the tokens give, standing until the owner draws one.
 
 ### Outline
 

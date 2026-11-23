@@ -12,28 +12,38 @@ import (
 // The number of a series' first part, as a reader counts them
 const firstPart = 1
 
-// blog is what each post's place in the blog and the blog's lists are read from, read once from a snapshot: every
-// post by its slug, the posts the lists name, those published, in the order they came out, every series in their
-// names' order, and each series by the slug of every post it names.
+// blog is what each post's place in the blog and the blog's lists are read from, read once from a snapshot for an
+// audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order; the posts
+// the lists name, those published and out, in the order they came out; every series in their names' order; and each
+// series by the slug of every post it names.
 type blog struct {
+	audience Audience
 	posts    map[string]content.Post
+	served   []content.Post
 	listed   []content.Post
 	series   []content.Series
 	seriesOf map[string]content.Series
 }
 
-// listedPart is a part of a series as its list holds it, whoever reads it: its title, and its post where it is out.
+// listedPart is a part of a series as its reader holds it: its title, and its post where it is out or is the part
+// read.
 type listedPart struct {
 	title string
 	post  *content.Post
 }
 
-// blogOf is the blog of a snapshot's posts and series.
-func blogOf(snapshot *content.Snapshot) blog {
-	read := blog{posts: map[string]content.Post{}, listed: []content.Post{}, series: snapshot.Series, seriesOf: map[string]content.Series{}}
+// blogOf is the blog of a snapshot's posts and series, as an audience reads it.
+func blogOf(snapshot *content.Snapshot, audience Audience) blog {
+	read := blog{
+		audience: audience, posts: map[string]content.Post{}, served: []content.Post{}, listed: []content.Post{}, series: snapshot.Series,
+		seriesOf: map[string]content.Series{},
+	}
 	for _, post := range snapshot.Posts {
 		read.posts[post.Slug] = post
-		if listed(post.Status) {
+		if audience.serves(post) {
+			read.served = append(read.served, post)
+		}
+		if audience.lists(post) {
 			read.listed = append(read.listed, post)
 		}
 	}
@@ -55,10 +65,12 @@ func (read blog) placeOf(post content.Post) *document.PostPlace {
 
 // seriesAndNeighbours are the series a post is a part of, with every part where it stands for the post's reader, and
 // the posts beside it, the parts before and after it; outside a series, or as a part the series leaves out, no
-// series, and the posts the lists name before and after it by the time they came out.
+// series, and the posts the lists name before and after it by the time it comes out.
 func (read blog) seriesAndNeighbours(post content.Post) (*document.Series, document.Neighbours) {
 	series, inSeries := read.seriesOf[post.Slug]
-	parts := read.partsOf(series)
+	parts := read.partsOf(series, func(part content.Post) bool {
+		return read.audience.lists(part) || part.Slug == post.Slug && read.audience.showsItsSeries(part)
+	})
 	reading := slices.IndexFunc(parts, func(part listedPart) bool { return part.post != nil && part.post.Slug == post.Slug })
 	if !inSeries || reading < 0 {
 		return nil, read.byDate(post)
@@ -76,13 +88,14 @@ func (read blog) seriesAndNeighbours(post content.Post) (*document.Series, docum
 	return &document.Series{Title: textSpans(series.Title), Parts: documentParts}, neighbours
 }
 
-// partsOf are a series' parts in their order, as its list holds them: each post it names that is out, then each title
-// it names to come. A part not published, a draft, a preview or unlisted, is listed nowhere, so the series leaves it
-// out and keeps its working title off the site.
-func (read blog) partsOf(series content.Series) []listedPart {
+// partsOf are a series' parts in their order, as its list or the reader of one of its posts holds them: each post it
+// names that shows, then each title it names to come. A list shows the posts it names; a post's page those and itself.
+// Any other part not published, a draft, a preview or unlisted, is listed nowhere, so the series leaves it out and
+// keeps its working title off the site.
+func (read blog) partsOf(series content.Series, shows func(content.Post) bool) []listedPart {
 	parts := []listedPart{}
 	for _, slug := range series.Posts {
-		if post := read.posts[slug]; listed(post.Status) {
+		if post := read.posts[slug]; shows(post) {
 			parts = append(parts, listedPart{title: post.Title, post: &post})
 		}
 	}
@@ -92,21 +105,28 @@ func (read blog) partsOf(series content.Series) []listedPart {
 	return parts
 }
 
-// byDate are the posts the lists name before and after a post by the time they came out; a post unlisted, which no
-// list names, stands among them where the time it came out puts it.
+// byDate are the posts the lists name before and after a post by the time it comes out, or at the same moment and
+// before or after it by slug, as the lists order them; a post no list names, unlisted or a draft, stands among them
+// where that time puts it.
 func (read blog) byDate(post content.Post) document.Neighbours {
 	others := slices.DeleteFunc(slices.Clone(read.listed), func(other content.Post) bool { return other.Slug == post.Slug })
-	after := slices.IndexFunc(others, func(other content.Post) bool { return cameOutAfter(other, post) })
+	comes := read.comesOutAt(post)
+	after := slices.IndexFunc(others, func(other content.Post) bool {
+		return cmp.Or(other.Published.At().Compare(comes), cmp.Compare(other.Slug, post.Slug)) > 0
+	})
 	if after < 0 {
 		after = len(others)
 	}
 	return document.Neighbours{Before: datedNeighbour(others, after-1), After: datedNeighbour(others, after)}
 }
 
-// cameOutAfter is whether a post came out after another, or at the same moment and after it by slug, as the lists
-// order them.
-func cameOutAfter(post, other content.Post) bool {
-	return cmp.Or(post.Published.At().Compare(other.Published.At()), cmp.Compare(post.Slug, other.Slug)) > 0
+// comesOutAt is when a post comes out: when it is dated, or for a draft not yet dated as the audience reads it, which
+// is when it would come out were it published then.
+func (read blog) comesOutAt(post content.Post) time.Time {
+	if dated := post.Published.At(); !dated.IsZero() {
+		return dated
+	}
+	return read.audience.At
 }
 
 // partState is where a part stands for the reader of the part read: the part read, the part out after it, which is

@@ -1,0 +1,11 @@
+NOTES-ON-TOOLS(1)               User Commands                NOTES-ON-TOOLS(1)
+
+NAME
+       Notes on tools
+
+DESCRIPTION
+       The tools a writer keeps.
+
+       A draft, with no date yet.
+
+example.test                        draft                    NOTES-ON-TOOLS(1)

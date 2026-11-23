@@ -30,13 +30,11 @@ const (
 // The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
 const unnamedHeading = "heading"
 
-// composedPosts are the posts a snapshot serves, each a document, in the snapshot's order: those published, and those
-// unlisted, whose address serves them though no list names them, never a draft or a preview; each link inside the
-// site read into the page at its path among pages.
-func composedPosts(snapshot *content.Snapshot, pages map[string]document.Page) []document.Document {
-	read := blogOf(snapshot)
+// composedPosts are the posts the blog serves its audience, each a document, in the snapshot's order; each link inside
+// the site read into the page at its path among pages.
+func composedPosts(snapshot *content.Snapshot, read blog, pages map[string]document.Page) []document.Document {
 	documents := []document.Document{}
-	for _, post := range servedPosts(snapshot) {
+	for _, post := range read.served {
 		documents = append(documents, postDocument(post, read, snapshot, pages))
 	}
 	return documents
@@ -48,11 +46,11 @@ type PostPicture struct {
 	Picture content.Picture
 }
 
-// Pictures are the pictures of the posts a snapshot serves, each at its file beside its post, in no order: never a
-// draft's or a preview's.
-func Pictures(snapshot *content.Snapshot) []PostPicture {
+// picturesOf are the pictures of the posts the blog serves its audience, each at its file beside its post, in no
+// order.
+func picturesOf(read blog) []PostPicture {
 	pictures := []PostPicture{}
-	for _, post := range servedPosts(snapshot) {
+	for _, post := range read.served {
 		for name, picture := range post.Pictures {
 			pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
 		}
@@ -61,45 +59,12 @@ func Pictures(snapshot *content.Snapshot) []PostPicture {
 }
 
 // postHeads are the heads of the posts composedPosts makes, their bodies left unread: where the site serves each post.
-func postHeads(snapshot *content.Snapshot) []document.Head {
-	read := blogOf(snapshot)
+func postHeads(read blog, words content.Words) []document.Head {
 	heads := []document.Head{}
-	for _, post := range servedPosts(snapshot) {
-		heads = append(heads, postHead(post, read, snapshot.Words))
+	for _, post := range read.served {
+		heads = append(heads, postHead(post, read, words))
 	}
 	return heads
-}
-
-// servedPosts are a snapshot's posts its site serves, in the snapshot's order.
-func servedPosts(snapshot *content.Snapshot) []content.Post {
-	posts := []content.Post{}
-	for _, post := range snapshot.Posts {
-		if served(post.Status) {
-			posts = append(posts, post)
-		}
-	}
-	return posts
-}
-
-// served is whether a post of a status is served at its address. exhaustive holds the switch to every status.
-func served(status content.Status) bool {
-	switch status {
-	case content.StatusPublished, content.StatusUnlisted:
-		return true
-	case content.StatusDraft, content.StatusPreview:
-	}
-	return false
-}
-
-// listed is whether a post of a status is named by the blog's lists and its series' parts. exhaustive holds the switch
-// to every status.
-func listed(status content.Status) bool {
-	switch status {
-	case content.StatusPublished:
-		return true
-	case content.StatusDraft, content.StatusPreview, content.StatusUnlisted:
-	}
-	return false
 }
 
 // postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
@@ -109,7 +74,7 @@ func postDocument(post content.Post, read blog, snapshot *content.Snapshot, page
 	head := postHead(post, read, snapshot.Words)
 	body := bodyReader{
 		body: post.Body, page: head.Page, pictures: post.Pictures, links: post.SiteLinks, pages: pages,
-		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(head, snapshot)),
+		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(post, read, snapshot)),
 	}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(post.Body.Tree, body.readNote)
@@ -118,24 +83,20 @@ func postDocument(post content.Post, read blog, snapshot *content.Snapshot, page
 
 // namesBeside are the names a post's page offers its places by but its headings, which theirs keep clear of on every
 // face, so each name on the page leads to one place: its windows', each project's page's, the window of keys' and each
-// part's of its series.
-func namesBeside(head document.Head, snapshot *content.Snapshot) []string {
+// part's its series names, out or not, so a heading's anchor holds as a part comes out.
+func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []string {
 	taken := []string{KeysPlace}
-	for _, window := range listWordsOf(snapshot.Words).BlogWindows(document.PageOf(document.PageBlog), head.Page) {
+	for _, window := range listWordsOf(snapshot.Words).BlogWindows(document.PageOf(document.PageBlog), postPage(post)) {
 		taken = append(taken, window.Name)
 	}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
 		taken = append(taken, project.Slug)
 	}
-	// the page's places but its headings, which stand in the blocks: the parts of its series a reader goes to
-	for _, part := range document.PlacesOf(document.Document{Head: head, Blocks: nil}) {
-		taken = append(taken, part.Name)
-	}
-	return taken
+	return append(taken, read.seriesOf[post.Slug].Posts...)
 }
 
 // postHead is a post's head: its page by its slug, its number, the language of the site's words, its title, its
-// description as its lead and its page's description, its tags, when it came out, and where it stands in the blog.
+// description as its lead and its page's description, its tags, the version read, and where it stands in the blog.
 func postHead(post content.Post, read blog, words content.Words) document.Head {
 	description := textSpans(post.Description)
 	return document.Head{
@@ -148,11 +109,22 @@ func postHead(post content.Post, read blog, words content.Words) document.Head {
 		Place:       "",
 		Tags:        slices.Clone(post.Tags),
 		Lead:        description,
-		Published:   post.Published.At(),
+		Version:     versionOf(post, words),
 		Repository:  nil,
 		Post:        read.placeOf(post),
 		Description: description,
 	}
+}
+
+// versionOf is the version of a post its reader reads: a draft, by the site's word for one, or the post out, when it
+// came out. exhaustive holds the switch to every status.
+func versionOf(post content.Post, words content.Words) document.Version {
+	switch post.Status {
+	case content.StatusDraft:
+		return document.VersionDraft{Word: words.Text(content.WordDraft)}
+	case content.StatusPreview, content.StatusPublished, content.StatusUnlisted:
+	}
+	return document.VersionOut{Published: post.Published.At()}
 }
 
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its

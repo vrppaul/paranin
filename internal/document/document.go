@@ -7,8 +7,6 @@
 // mailbox, its mailbox and its host (target.go).
 package document
 
-import "time"
-
 // Document is one page as every face draws it.
 type Document struct {
 	Head   Head
@@ -36,8 +34,8 @@ type Head struct {
 	// it is built on; on a post's page its tags; none on another page
 	Tags []string
 	Lead []Span
-	// Published is when a post came out, in the zone it was written in; the zero time on any other page
-	Published time.Time
+	// Version is the version of a post its reader reads; none on any other page
+	Version Version
 	// Repository is where the code of a project's page lives; none on another page or for a project that names none
 	Repository *Repository
 	// Post is where a post stands in the blog and where it is discussed; none on any other page

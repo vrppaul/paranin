@@ -1,12 +1,15 @@
 package compose
 
 import (
+	"time"
+
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// Site is every page a snapshot's site serves, composed once, so a post's links read the pages its hosts draw.
+// Site is every page a snapshot's site serves an audience, composed once, so a post's links read the pages its hosts
+// draw, with the frame round them and until when it holds.
 type Site struct {
 	// Index is the list of the site's pages an agent reads first
 	Index document.Document
@@ -16,18 +19,32 @@ type Site struct {
 	Lists []document.Document
 	// Posts are the posts the site serves, in the snapshot's order, each link inside the site read into its page
 	Posts []document.Document
+	// Pictures are the pictures of the posts the site serves, each at its file beside its post, in no order
+	Pictures []PostPicture
+	// Frame is what a face lays round the pages, the pages :e opens among it
+	Frame Frame
+	// Until is when the site changes as the next post that comes later comes out, which a host keeps what it drew
+	// until; the zero time where none comes later, so the site holds as long as its snapshot
+	Until time.Time
 	// paths are the pages served by the path a link inside the site reaches each by
 	paths map[string]document.Page
 	// served are the documents of every page the site serves, each tab of a page alone too
 	served []document.Document
+	// postsServed are the posts the site serves as the content holds them, whose links Check reads
+	postsServed []content.Post
 }
 
-// SiteOf composes a snapshot's site: its pages first, then its posts, whose links lead among them by their paths.
-func SiteOf(snapshot *content.Snapshot) Site {
-	site := Site{Index: Index(snapshot), Pages: Pages(snapshot), Lists: Lists(snapshot), Posts: nil, paths: nil, served: nil}
+// SiteOf composes a snapshot's site as an audience reads it: its pages first, then its posts, whose links lead among
+// them by their paths.
+func SiteOf(snapshot *content.Snapshot, audience Audience) Site {
+	read := blogOf(snapshot, audience)
+	site := Site{
+		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Posts: nil, Pictures: picturesOf(read),
+		Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil, postsServed: read.served,
+	}
 	pages := site.pagesButPosts()
-	site.paths = pagesAt(append(headsOf(pages), postHeads(snapshot)...))
-	site.Posts = composedPosts(snapshot, site.paths)
+	site.paths = pagesAt(append(headsOf(pages), postHeads(read, snapshot.Words)...))
+	site.Posts = composedPosts(snapshot, read, site.paths)
 	site.served = append(pages, site.Posts...)
 	return site
 }

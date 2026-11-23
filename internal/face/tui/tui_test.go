@@ -734,6 +734,7 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // the blog's name in the titles' font, and a post's code of several lines in a frame, an edge between each two.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
+	drawn := sessionDrawing(snapshot, false)
 	cases := []struct {
 		name  string
 		shown document.Document
@@ -743,7 +744,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	}{
 		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
 		{
-			name: "a project's page", shown: fixtures.DocumentOf(test, compose.SiteOf(snapshot).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
+			name: "a project's page", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
 			byForm: []string{"repository", "https://github.test/mira/tidy", "Why"},
 		},
@@ -764,12 +765,12 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 			model: commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "Lazy"), byForm: []string{"Skills"},
 		},
 		{
-			name: "the blog's list", shown: fixtures.DocumentOf(test, compose.Lists(snapshot), document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}),
-			model: New(sessionDrawing(snapshot), "blog", commonWidth, tallHeight, fixtures.Day()), byForm: []string{"blog"},
+			name: "the blog's list", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}),
+			model: New(drawn, "blog", commonWidth, tallHeight, fixtures.Day()), byForm: []string{"blog"},
 		},
 		{
-			name: "a post", shown: fixtures.DocumentOf(test, compose.SiteOf(snapshot).Posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
-			model:  New(sessionDrawing(snapshot), "blog/1", commonWidth, tallHeight, fixtures.Day()),
+			name: "a post", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
+			model:  New(drawn, "blog/1", commonWidth, tallHeight, fixtures.Day()),
 			byForm: []string{"// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println(\"slowly\", page)\n\treturn len(page) * 2\n}"},
 		},
 	}
@@ -876,22 +877,23 @@ func fixtureModel(test *testing.T, width, height int) Model {
 
 // sessionModel is a session on what a snapshot draws, as the SSH server opens one, opened on the résumé.
 func sessionModel(snapshot *content.Snapshot, width, height int) Model {
-	return New(sessionDrawing(snapshot), "", width, height, fixtures.Day())
+	return New(sessionDrawing(snapshot, false), "", width, height, fixtures.Day())
 }
 
-// sessionDrawing is what the SSH server hands a session of a snapshot: its pages, the TUI's extras, the blog's lists
-// and its posts, with the site's words and its site.
-func sessionDrawing(snapshot *content.Snapshot) Drawing {
-	site := compose.SiteOf(snapshot)
+// sessionDrawing is what the SSH server hands a session of a snapshot on the tests' day, its drafts too where drafts
+// says, as their author reads them: its pages, the TUI's extras, the blog's lists and its posts, with the site's words
+// and its site.
+func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
+	site := compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: drafts})
 	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Posts)
-	return Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
+	return Drawing{Documents: documents, Frame: site.Frame, Site: fixtures.Site(snapshot)}
 }
 
 // handModel is a session on documents a test builds by hand, the résumé among them, with the fixture's words and site,
 // opened on the résumé.
 func handModel(test *testing.T, width, height int, documents ...document.Document) Model {
 	snapshot := fixtures.LoadedContent(test)
-	return New(Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}, "", width, height, fixtures.Day())
+	return New(Drawing{Documents: documents, Frame: sessionDrawing(snapshot, false).Frame, Site: fixtures.Site(snapshot)}, "", width, height, fixtures.Day())
 }
 
 // handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a

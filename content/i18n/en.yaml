@@ -43,6 +43,7 @@ ssh_gives: My résumé as an app in your terminal.
 reading_gives: This page as a manual, in your terminal.
 blog: blog
 version: version
+draft: draft
 tags: tags
 copy_code: "copy code block {}"
 copied_code: Copied the code

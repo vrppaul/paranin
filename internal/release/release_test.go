@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -79,29 +80,51 @@ func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
-	counter := &workCounter{times: 0}
+	counter := &workCounter{times: 0, lapses: time.Time{}}
 	names := Derive(store, counter.name)
-	first, again := names.Current(), names.Current()
+	first, again := names.Current(fixtures.Day()), names.Current(fixtures.Day())
 	fixtures.ReplaceIn(test, folders.Content, profileFile, authorName, "name: Mira Other")
 	if err := store.Reload(); err != nil {
 		test.Fatalf("Reload = %v, want no error", err)
 	}
-	reloaded := names.Current()
+	reloaded := names.Current(fixtures.Day())
 	if first != "Mira Example" || again != first || reloaded != "Mira Other" || counter.times != 2 {
 		test.Errorf("values %q, %q, then %q after a reload, worked out %d times; want %q twice, then %q, worked out twice",
 			first, again, reloaded, counter.times, "Mira Example", "Mira Other")
 	}
 }
 
-// workCounter counts how many times a value is worked out.
-type workCounter struct {
-	times int
+// A value derived is held until the moment its work says it lapses at and worked out again from then; one that never
+// lapses is held for as long as its snapshot.
+func TestADerivedValueIsWorkedOutAgainOnceLapsed(test *testing.T) {
+	store, err := Open(fixtureCopies(test), passes)
+	if err != nil {
+		test.Fatalf("Open(fixtures) = %v, want no error", err)
+	}
+	lapse := fixtures.Day().Add(time.Hour)
+	counter := &workCounter{times: 0, lapses: lapse}
+	names := Derive(store, counter.name)
+	names.Current(fixtures.Day())
+	names.Current(lapse.Add(-time.Minute))
+	beforeLapse := counter.times
+	counter.lapses = time.Time{}
+	names.Current(lapse)
+	names.Current(lapse.Add(time.Hour))
+	if beforeLapse != 1 || counter.times != 2 {
+		test.Errorf("worked out %d times before the value lapsed and %d times after; want once, then twice", beforeLapse, counter.times)
+	}
 }
 
-// name works out the author's name, and counts it.
-func (counter *workCounter) name(snapshot *Snapshot) string {
+// workCounter counts how many times a value is worked out, and says when each value it works out lapses.
+type workCounter struct {
+	times  int
+	lapses time.Time
+}
+
+// name works out the author's name, lapsing when the counter says, and counts it.
+func (counter *workCounter) name(snapshot *Snapshot, _ time.Time) (string, time.Time) {
 	counter.times++
-	return snapshot.Content.Profile.Person.Name
+	return snapshot.Content.Profile.Person.Name, counter.lapses
 }
 
 // fixtureCopies are copies of both fixtures on disk, which a test may change.

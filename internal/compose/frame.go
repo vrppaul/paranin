@@ -147,8 +147,8 @@ type Way struct {
 	Gives   string
 }
 
-// FrameOf is the frame of a site's pages.
-func FrameOf(snapshot *content.Snapshot) Frame {
+// frameOf is the frame of a site's pages, with the blog's pages it serves its audience.
+func frameOf(snapshot *content.Snapshot, read blog) Frame {
 	words := snapshot.Words
 	copyWords := CopyWords{words: words}
 	projects := projectPlaces(snapshot.Profile.Projects)
@@ -159,7 +159,7 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projects,
-		Pages:        slices.Concat(projectPages(projects), blogPages(snapshot)),
+		Pages:        slices.Concat(projectPages(projects), blogPages(read, words)),
 		Sessions: []Session{
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
 			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog)},
@@ -280,21 +280,20 @@ func projectPages(projects []document.Place) []OpenedPage {
 // blogPages are the blog's pages :e opens by the names a terminal reaches them by (D26): its list in each grouping and
 // each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, and
 // every post served by its number, which :e opens though Tab offers none.
-func blogPages(snapshot *content.Snapshot) []OpenedPage {
+func blogPages(read blog, words content.Words) []OpenedPage {
 	pages := []OpenedPage{}
-	for _, grouping := range listWordsOf(snapshot.Words).Groupings() {
+	for _, grouping := range listWordsOf(words).Groupings() {
 		pages = append(pages, openedPage(grouping.List, routes.Path(grouping.List, routes.FormatChosen), document.PlaceList, true))
 	}
-	served := servedPosts(snapshot)
-	for _, post := range blogOf(snapshot).newestFirst() {
+	for _, post := range read.newestFirst() {
 		pages = append(pages, openedPage(postPage(post), routes.Path(postPage(post), routes.FormatChosen), document.PlacePost, true))
 	}
-	for _, post := range served {
-		if !listed(post.Status) {
+	for _, post := range read.served {
+		if !read.audience.lists(post) {
 			pages = append(pages, openedPage(postPage(post), routes.Path(postPage(post), routes.FormatChosen), document.PlacePost, false))
 		}
 	}
-	for _, post := range served {
+	for _, post := range read.served {
 		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.ID), document.PlacePost, false))
 	}
 	return pages

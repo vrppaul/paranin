@@ -10,7 +10,6 @@ package compose
 import (
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -28,7 +27,7 @@ type Composed struct {
 }
 
 // Pages are the pages a snapshot makes for a person to read, each with its record: the résumé, then the page of
-// each project that has one. Index lists them.
+// each project that has one. The site's index lists them.
 func Pages(snapshot *content.Snapshot) []Composed {
 	profile := snapshot.Profile
 	pages := []Composed{composedPage(Resume(snapshot), personRecord(profile))}
@@ -67,7 +66,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Place:       "",
 		Tags:        nil,
 		Lead:        nil,
-		Published:   time.Time{},
+		Version:     nil,
 		Repository:  nil,
 		Post:        nil,
 		Description: head.Description,
@@ -107,11 +106,11 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 	}
 }
 
-// Index is the site's index, the list of its pages an agent reads first: whose site it is and its headline, then
+// indexOf is the site's index, the list of its pages an agent reads first: whose site it is and its headline, then
 // the résumé, the page of each project that has one, and the blog's lists and the posts they name, each under the
 // site's word for it, the projects' word only where a project has a page. The résumé and a project's page are
 // listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
-func Index(snapshot *content.Snapshot) document.Document {
+func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	words := snapshot.Words
 	resume := resumeHead(snapshot.Profile, words)
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
@@ -122,7 +121,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 	if len(projects) > 0 {
 		blocks = append(blocks, section(words.Text(content.WordProjects), document.Contents{Listings: projects}))
 	}
-	blocks = append(blocks, section(words.Text(content.WordBlog), document.Contents{Listings: blogListings(snapshot)}))
+	blocks = append(blocks, section(words.Text(content.WordBlog), document.Contents{Listings: blogListings(read, words)}))
 	return document.Document{
 		Head: document.Head{
 			Page:        document.PageOf(document.PageIndex),
@@ -134,7 +133,7 @@ func Index(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        resume.Lead,
-			Published:   time.Time{},
+			Version:     nil,
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,
@@ -163,7 +162,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Place:       person.Location,
 		Tags:        nil,
 		Lead:        headline,
-		Published:   time.Time{},
+		Version:     nil,
 		Repository:  nil,
 		Post:        nil,
 		Description: headline,
@@ -259,7 +258,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Place:       "",
 		Tags:        projectTags(project),
 		Lead:        description,
-		Published:   time.Time{},
+		Version:     nil,
 		Repository:  projectRepository(project, words),
 		Post:        nil,
 		Description: description,

@@ -13,6 +13,18 @@ const (
 	dayLayout   = time.DateOnly
 )
 
+// versionText writes the version a page's head says is read: the day a post came out, or the site's word for a draft,
+// which has not; nothing on any other page, which has none.
+func versionText(head document.Head) string {
+	switch version := head.Version.(type) {
+	case document.VersionOut:
+		return dayText(version.Published)
+	case document.VersionDraft:
+		return version.Word
+	}
+	return ""
+}
+
 // dayText writes the day a moment falls on, in the zone it holds; nothing for the zero time, which is none.
 func dayText(moment time.Time) string {
 	if moment.IsZero() {

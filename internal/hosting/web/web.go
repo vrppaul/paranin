@@ -1,15 +1,16 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003, ADR-0004). It draws every page of a release's
-// snapshot once, the first time a request meets that snapshot (release.Derived), and serves the drawing until the
-// store holds another, so no request composes or draws a page; beside the pages it serves every file of the
-// snapshot's build at its path, from memory, for a cache to keep for good, each picture of a post served, beside it,
-// for a cache to ask for again, and each picture of the site, which the HTML face draws once and a cache asks for
-// again. Each page, and each of its tabs alone, is served at the path routes
-// writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
-// browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
-// llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn whole in every format, and
-// its number sends the reader on to its address; so is the blog's list, in each of its groupings. Each format of a page
-// names in a Link header the address the page is known by, the one where the reader chooses, so a search engine counts
-// its markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
+// snapshot once, the first time a request meets that snapshot (release.Derived), as the site stands at the request's
+// moment, and serves the drawing until the store holds another or a post dated later comes out, so no request
+// composes or draws a page; a draft it serves only where its author runs it to read them. Beside the pages it serves
+// every file of the snapshot's build at its path, from memory, for a cache to keep for good, each picture of a post
+// served, beside it, for a cache to ask for again, and each picture of the site, which the HTML face draws once and a
+// cache asks for again. Each page, and each of its tabs alone, is served at the path routes writes for it in each
+// format, and at its own address in the format the reader's request asks for: HTML for a browser, markdown for an
+// agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
+// a name ending in .txt promises. A post served is drawn whole in every format, and its number sends the reader on to
+// its address; so is the blog's list, in each of its groupings. Each format of a page names in a Link header the
+// address the page is known by, the one where the reader chooses, so a search engine counts its markdown and its
+// manual as the page. Any other path is answered with the page of no page, in text or in HTML,
 // whichever the reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the
 // chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and
 // to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own; a post's
@@ -113,7 +114,8 @@ const (
 
 // Server serves the pages and the built files of the store's current snapshot, and the pictures of the site.
 type Server struct {
-	// drawn is every page of the store's current snapshot, drawn once for each snapshot
+	// drawn is every page of the store's current snapshot, drawn once for each snapshot and again as a post dated
+	// later comes out
 	drawn *release.Derived[*drawing]
 	// pictures are the pictures of the site, drawn once, since no snapshot changes them
 	pictures map[string]answer
@@ -215,10 +217,13 @@ func (sent answer) knownAt(address string) answer {
 	return sent
 }
 
-// New is a server of the site the store holds.
-func New(store *release.Store) *Server {
+// New is a server of the site the store holds, serving its drafts too where drafts says, to their author alone.
+func New(store *release.Store, drafts bool) *Server {
 	mux := http.NewServeMux()
-	server := &Server{drawn: release.Derive(store, draw), pictures: picturesOf(html.Icons()), handler: mux}
+	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (*drawing, time.Time) {
+		return draw(snapshot, compose.Audience{At: moment, Drafts: drafts})
+	})
+	server := &Server{drawn: drawn, pictures: picturesOf(html.Icons()), handler: mux}
 	mux.HandleFunc(pagePattern, server.servePage)
 	return server
 }
@@ -237,7 +242,7 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		send(writer, http.StatusOK, picture)
 		return
 	}
-	drawn := server.drawn.Current()
+	drawn := server.drawn.Current(time.Now())
 	if found, isFixed := drawn.fixed[request.URL.Path]; isFixed {
 		send(writer, http.StatusOK, found)
 		return
@@ -332,22 +337,22 @@ func statusLine(status int) string {
 	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
 }
 
-// draw draws every page of a snapshot, at the address it is served at, beside every file of its build and every picture
-// of its posts served, on the day it is drawn: the résumé's career line runs to it until the store holds another
-// snapshot.
-func draw(snapshot *release.Snapshot) *drawing {
+// draw draws every page of a snapshot as an audience reads it, at the address it is served at, beside every file of its
+// build and every picture of its posts served, and says until when it holds: until the next post dated later comes
+// out, the résumé's career line running to the audience's day until then, or the store holds another snapshot.
+func draw(snapshot *release.Snapshot, audience compose.Audience) (*drawing, time.Time) {
 	facts, build := snapshot.Content, snapshot.Build
 	addresses := routes.New(facts.Profile.Site.BaseURL)
-	composition := compose.SiteOf(facts)
-	frame := compose.FrameOf(facts)
-	pageWriter := html.NewPageWriter(addresses, build, frame, time.Now())
+	composition := compose.SiteOf(facts, audience)
+	frame := composition.Frame
+	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
 	fixed := map[string]answer{
 		routes.Path(composition.Index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(composition.Index, addresses)),
 	}
 	for path, file := range build.Files() {
 		fixed[path] = builtAs(file)
 	}
-	for _, shown := range compose.Pictures(facts) {
+	for _, shown := range composition.Pictures {
 		fixed[routes.FilePath(shown.File)] = postPicturedAs(shown.Picture)
 	}
 	chosen := map[string]choice{}
@@ -371,7 +376,7 @@ func draw(snapshot *release.Snapshot) *drawing {
 		{mediaType: plainMediaType, draw: text.NewNotFound(addresses, status).For},
 		{mediaType: htmlMediaType, draw: html.NewNotFound(addresses, status, facts.Words.Language(), build, frame).For},
 	}
-	return &drawing{fixed: fixed, chosen: chosen, moved: moved, notFound: notFound}
+	return &drawing{fixed: fixed, chosen: chosen, moved: moved, notFound: notFound}, composition.Until
 }
 
 // serveEveryFormat draws a page in the text formats and serves each at its own path among the fixed answers, and serves

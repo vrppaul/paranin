@@ -10,26 +10,42 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// How a case writes a post of its own, and the catalogue's word a case retitles a section of the résumé by
+// How a case writes a post of its own, its file and the moment it is dated, and the catalogue's word a case retitles a
+// section of the résumé by
 const (
-	sharedPostText      = "---\nid: 9\ntitle: A post\ndescription: About it.\nstatus: published\npublished: 2026-11-20T09:00+01:00\n---\nIts text.\n"
+	sharedPostFile      = "posts/series/post.en.md"
+	sharedPostMoment    = "2026-11-20T09:00+01:00"
+	sharedPostText      = "---\nid: 9\ntitle: A post\ndescription: About it.\nstatus: published\npublished: " + sharedPostMoment + "\n---\nIts text.\n"
 	wordsFile           = "i18n/en.yaml"
 	experienceWord      = "experience: Experience"
 	experienceAsTheBlog = "experience: Blog"
 )
 
-// The fixture's published post's file, and its status, which a case turns to a draft's; and the file's line the
+// A part slugged as a heading of the fixture's post, dated after the tests' day: its file and its text; and how the
+// fixture's series names it, after the fixture's post
+const (
+	headingPartFile    = "posts/afterwards/post.en.md"
+	headingPartText    = "---\nid: 10\ntitle: Afterwards\ndescription: About it.\nstatus: published\npublished: " + afterTheDay + "\n---\nIts text.\n"
+	fixtureSeriesFile  = "series/reading.yaml"
+	fixtureSeriesParts = "posts: [reading-slowly"
+	headingPartAfter   = ", afterwards"
+)
+
+// The fixture's published post's file, and its status, which a case turns to a draft's; the field a case dates a post
+// by, and the day the fixture's post was updated, which a case dating it later takes away; and the file's line the
 // sample post's body opens on, after its front matter
 const (
 	fixturePostFile    = "posts/reading-slowly/post.en.md"
 	publishedStatus    = "status: published"
 	draftStatus        = "status: draft"
+	publishedField     = "published: "
+	fixturePostUpdated = "\nupdated: 2026-11-12"
 	samplePostBodyLine = 8
 )
 
 // No two pages of the site share an address in any format: a post slugged as the address the blog's list by series
-// takes, or a tab of the résumé titled as the blog, whose address the list by year takes, is found at every address it
-// shares; content whose pages each have their own is found to share none.
+// takes, a draft or one out later among them, or a tab of the résumé titled as the blog, whose address the list by
+// year takes, is found at every address it shares; content whose pages each have their own is found to share none.
 func TestNoTwoPagesShareAnAddress(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -38,6 +54,8 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 	}{
 		{name: "the fixture", change: keepFolder, want: []string{}},
 		{name: "a post slugged as the list by series", change: postSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
+		{name: "a draft slugged as the list by series", change: draftSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
+		{name: "a post out later slugged as the list by series", change: laterPostSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a tab of the résumé titled as the blog", change: tabTitledBlog, want: []string{"/blog", "/blog.md", "/blog.txt"}},
 	}
 	for _, testCase := range cases {
@@ -49,7 +67,7 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 				test.Fatalf("load the fixture changed: %v", err)
 			}
 			var clashes AddressClashes
-			errors.As(Check(snapshot), &clashes)
+			errors.As(Check(snapshot, fixtures.Day()), &clashes)
 			paths := []string{}
 			for _, clash := range clashes {
 				paths = append(paths, clash.Path)
@@ -69,8 +87,10 @@ type faultSpot struct {
 
 // A post's link inside the site leads to a page the site serves by the path it is served at, and to a section of that
 // page where it names one: a path no page takes, a post's number, which only sends the reader on, a page's markdown, a
-// draft's page, or an anchor no section of its page takes, is a fault at its file's line. Links to the résumé, a tab, a
-// project's page and its tab, the blog's lists, a heading and a series' group lead somewhere.
+// draft's page, a post out after the post linking it, or an anchor no section of its page takes, is a fault at its
+// file's line. Links to the résumé, a tab, a project's page and its tab, the blog's lists, a heading and a series'
+// group lead somewhere, and to a post out before the post linking it, or with it. A draft's links are held to the
+// site as its author reads it once every post dated later is out, where a draft's page leads somewhere.
 func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -87,6 +107,17 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "a post's number", body: "[a](/blog/1)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's page", body: "[a](/blog/reading-slowly)", change: fixturePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a post out after the post linking it", body: "[a](/blog/reading-slowly)", change: fixturePostLater, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a post out after the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostSooner, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a post out before the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostLater, want: []faultSpot{}},
+		{name: "a post out with the post linking it, both later", body: "[a](/blog/reading-slowly)", change: bothPostsLaterTogether, want: []faultSpot{}},
+		{
+			name: "a heading named as a part of its series out later", body: "[a](/blog/reading-slowly#afterwards)", change: laterPartNamedAsAHeading,
+			want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}},
+		},
+		{name: "a draft's link to no page", body: "[a](/nowhere)", change: samplePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a draft's link to a draft", body: "[a](/blog/reading-slowly)", change: bothDrafted, want: []faultSpot{}},
+		{name: "a draft's link to a post out later", body: "[a](/blog/reading-slowly)", change: draftLinkingALaterPost, want: []faultSpot{}},
 		{name: "a heading no post holds", body: "[a](/blog/reading-slowly#no-such-heading)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "an anchor of a page whose sections take none", body: "[a](/experience#experience)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a link on a later line", body: "[a](/), then\n[b](/nowhere)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine + 1}}},
@@ -105,7 +136,7 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 				test.Fatalf("load the fixture with the body %q: %v", testCase.body, err)
 			}
 			var faults content.Faults
-			errors.As(Check(snapshot), &faults)
+			errors.As(Check(snapshot, fixtures.Day()), &faults)
 			got := []faultSpot{}
 			for _, fault := range faults {
 				got = append(got, faultSpot{file: fault.File, line: fault.Line})
@@ -124,7 +155,20 @@ func keepFolder(*testing.T, string) {}
 //
 //wrapper:a case of the table names the change it writes
 func postSluggedSeries(test *testing.T, folder string) {
-	fixtures.WriteIn(test, folder, "posts/series/post.en.md", sharedPostText)
+	fixtures.WriteIn(test, folder, sharedPostFile, sharedPostText)
+}
+
+// draftSluggedSeries writes a draft whose folder bears the name the list by series takes in the blog's folder.
+func draftSluggedSeries(test *testing.T, folder string) {
+	postSluggedSeries(test, folder)
+	fixtures.ReplaceIn(test, folder, sharedPostFile, publishedStatus, draftStatus)
+}
+
+// laterPostSluggedSeries writes a post whose folder bears the name the list by series takes in the blog's folder, dated
+// after the tests' day.
+func laterPostSluggedSeries(test *testing.T, folder string) {
+	postSluggedSeries(test, folder)
+	fixtures.ReplaceIn(test, folder, sharedPostFile, publishedField+sharedPostMoment, publishedField+afterTheDay)
 }
 
 // tabTitledBlog titles the résumé's experience as the blog, so its tab takes the name the blog's list stands at.
@@ -139,4 +183,60 @@ func tabTitledBlog(test *testing.T, folder string) {
 //wrapper:a case of the table names the change it writes
 func fixturePostDrafted(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedStatus, draftStatus)
+}
+
+// samplePostDrafted turns the sample post to a draft, whose links its author's site holds.
+//
+//wrapper:a case of the table names the change it writes
+func samplePostDrafted(test *testing.T, folder string) {
+	fixtures.ReplaceIn(test, folder, samplePostFile, publishedStatus, draftStatus)
+}
+
+// bothDrafted turns the sample post and the fixture's post to drafts.
+func bothDrafted(test *testing.T, folder string) {
+	samplePostDrafted(test, folder)
+	fixturePostDrafted(test, folder)
+}
+
+// fixturePostLater dates the fixture's post after the tests' day, so it comes out later than the sample post, out now.
+//
+//wrapper:a case of the table names the change it writes
+func fixturePostLater(test *testing.T, folder string) {
+	fixturePostDated(test, folder, afterTheDay)
+}
+
+// linkingPostSooner dates both posts after the tests' day, the sample post, which links, sooner than the fixture's.
+func linkingPostSooner(test *testing.T, folder string) {
+	fixturePostDated(test, folder, afterTheDay)
+	fixtures.ReplaceIn(test, folder, samplePostFile, publishedField+sampleMoment, publishedField+soonAfterTheDay)
+}
+
+// linkingPostLater dates both posts after the tests' day, the sample post, which links, later than the fixture's.
+func linkingPostLater(test *testing.T, folder string) {
+	fixturePostDated(test, folder, soonAfterTheDay)
+	fixtures.ReplaceIn(test, folder, samplePostFile, publishedField+sampleMoment, publishedField+afterTheDay)
+}
+
+// laterPartNamedAsAHeading writes a post dated after the tests' day, slugged as a heading of the fixture's post, and
+// names it a part of the fixture's series, after the fixture's post.
+func laterPartNamedAsAHeading(test *testing.T, folder string) {
+	fixtures.WriteIn(test, folder, headingPartFile, headingPartText)
+	fixtures.ReplaceIn(test, folder, fixtureSeriesFile, fixtureSeriesParts, fixtureSeriesParts+headingPartAfter)
+}
+
+// bothPostsLaterTogether dates both posts at one moment after the tests' day.
+func bothPostsLaterTogether(test *testing.T, folder string) {
+	fixturePostDated(test, folder, afterTheDay)
+	fixtures.ReplaceIn(test, folder, samplePostFile, publishedField+sampleMoment, publishedField+afterTheDay)
+}
+
+// fixturePostDated dates the fixture's post a moment, which leaves it updated on no day before it.
+func fixturePostDated(test *testing.T, folder, moment string) {
+	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedField+fixturePostMoment+fixturePostUpdated, publishedField+moment)
+}
+
+// draftLinkingALaterPost turns the sample post to a draft, and dates the fixture's post after the tests' day.
+func draftLinkingALaterPost(test *testing.T, folder string) {
+	samplePostDrafted(test, folder)
+	fixturePostLater(test, folder)
 }

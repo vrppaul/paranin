@@ -38,10 +38,10 @@ func manualHolds(text, phrase string) bool {
 	return strings.Contains(words, wanted) || strings.Contains(words, strings.ToUpper(wanted))
 }
 
-// textPages are the pages a text face writes of a snapshot: the pages of the résumé and its projects, the posts, and
-// the blog's list in each grouping.
+// textPages are the pages a text face writes of a snapshot as its author reads it on the tests' day: the pages of the
+// résumé and its projects, the posts, its draft among them, and the blog's list in each grouping.
 func textPages(snapshot *content.Snapshot) []document.Document {
-	site := compose.SiteOf(snapshot)
+	site := compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: true})
 	return slices.Concat(site.Documents(), site.Posts, site.Lists)
 }
 
@@ -65,7 +65,7 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 // the site is, and each page listed under its section. It is held to its golden file too.
 func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	index := compose.Index(snapshot)
+	index := compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: false}).Index
 	path := routes.Path(index.Head.Page, routes.FormatMarkdown)
 	golden.Match(test, path, Markdown(index, fixtures.Site(snapshot)))
 }
@@ -91,7 +91,7 @@ func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 // lists, by its title and its line.
 func TestEveryPhraseOfTheIndexReachesItsMarkdown(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	index := compose.Index(snapshot)
+	index := compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: false}).Index
 	text := Markdown(index, fixtures.Site(snapshot))
 	for _, phrase := range document.Phrases(index) {
 		if !strings.Contains(text, phrase) {

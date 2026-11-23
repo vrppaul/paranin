@@ -60,8 +60,9 @@ templ (writer PageWriter) outline(headings []outlined) {
 }
 
 // postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
-// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, its series'
-// pick, and its tags; the corners' crosses round it, as round the résumé's first screen.
+// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, or a draft's by
+// the site's word for one, its series' pick, and its tags; the corners' crosses round it, as round the résumé's first
+// screen.
 templ (writer PageWriter) postHead(head document.Head) {
 	<header class="post-head">
 		<div class="post-intro">
@@ -75,11 +76,15 @@ templ (writer PageWriter) postHead(head document.Head) {
 			}
 		</div>
 		<dl class="facts post-facts">
-			if !head.Published.IsZero() {
-				<dt>{ writer.frame.postLabels.Version }</dt>
-				<dd>
-					@day(head.Published)
-				</dd>
+			switch version := head.Version.(type) {
+				case document.VersionOut:
+					<dt>{ writer.frame.postLabels.Version }</dt>
+					<dd>
+						@day(version.Published)
+					</dd>
+				case document.VersionDraft:
+					<dt>{ writer.frame.postLabels.Version }</dt>
+					<dd>{ version.Word }</dd>
 			}
 			if head.Post != nil && head.Post.Series != nil {
 				<dt>{ writer.frame.postLabels.Series }</dt>

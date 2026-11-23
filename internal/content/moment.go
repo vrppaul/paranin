@@ -36,6 +36,11 @@ func (moment Moment) At() time.Time {
 	return moment.at
 }
 
+// Written is the moment as the front matter writes it.
+func (moment Moment) Written() string {
+	return moment.written
+}
+
 // day is the day the moment falls on in its own zone, as a Day's start holds one: its first moment in UTC.
 func (moment Moment) day() time.Time {
 	year, month, day := moment.at.Date()

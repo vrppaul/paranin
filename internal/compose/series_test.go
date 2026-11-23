@@ -31,6 +31,9 @@ const (
 	earliest          = "2026-11-01T09:00+01:00"
 	later             = "2026-11-20T09:00+01:00"
 	latest            = "2026-11-21T09:00+01:00"
+	// after the tests' day, when a case's post comes later than its reader, and sooner after it
+	afterTheDay     = "2026-11-30T09:00+01:00"
+	soonAfterTheDay = "2026-11-25T09:00+01:00"
 	// the zero time, as RFC 3339 writes it: when a neighbour inside a series came out, which it does not say
 	noTime = "0001-01-01T00:00:00Z"
 )
@@ -75,8 +78,9 @@ type seenNeighbour struct {
 
 // A post of a series shows every part of it in order, numbered from one: itself as the part read, the part out after
 // it as the next, any other part out as out, and as to come each title the series names to come; a part not published,
-// a draft, a preview or unlisted, is listed nowhere, so the series leaves it out, and the parts after it count on
-// without it. A post the series leaves out, unlisted, shows no series.
+// a draft, a preview, unlisted or coming later than its reader, is listed nowhere, so the series leaves it out, and the
+// parts after it count on without it. A draft's own page, as its author reads it, shows it as the part it stands as
+// among the parts out. A post the series leaves out for good, unlisted, shows no series.
 func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -84,8 +88,29 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 		series string
 		toCome string
 		read   string
+		drafts bool
 		want   []seenPart
 	}{
+		{
+			name: "a draft read by its author, among the parts out",
+			posts: []writtenPost{
+				{slug: "first", id: 3, status: content.StatusPublished, published: earlier},
+				{slug: "drafted", id: 4, status: content.StatusDraft, published: ""},
+				{slug: "other-draft", id: 5, status: content.StatusDraft, published: ""},
+			},
+			series: "first, drafted, other-draft, reading-slowly", read: "drafted", drafts: true,
+			want: []seenPart{
+				{number: 1, title: "first", state: document.PartOut, page: "first"},
+				{number: 2, title: "drafted", state: document.PartReading, page: "drafted"},
+				{number: 3, title: fixturePostTitle, state: document.PartNext, page: fixturePostSlug},
+			},
+		},
+		{
+			name:   "a part coming later, left out",
+			posts:  []writtenPost{{slug: "coming", id: 3, status: content.StatusPublished, published: afterTheDay}},
+			series: "reading-slowly, coming", read: fixturePostSlug,
+			want: []seenPart{{number: 1, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug}},
+		},
 		{
 			name: "the first part, the rest to come", series: fixturePostSlug, toCome: "Reading aloud", read: fixturePostSlug,
 			want: []seenPart{
@@ -129,7 +154,7 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			series := postNamed(test, SiteOf(snapshot).Posts, testCase.read).Head.Post.Series
+			series := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: testCase.drafts}).Posts, testCase.read).Head.Post.Series
 			if got := seenParts(series); !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the series of %q = %+v, want %+v", testCase.read, got, testCase.want)
 			}
@@ -154,23 +179,43 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
 		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
 	}
-	if got := document.PlacesOf(postNamed(test, SiteOf(snapshot).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
+	if got := document.PlacesOf(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
 		test.Errorf("the post's places = %+v, want %+v", got, want)
 	}
 }
 
-// A heading named as another part of its post's series takes its count, so its name leads to one place.
+// A heading named as another part of its post's series takes its count, so its name leads to one place; and takes it
+// whether the part is out or not, so its anchor holds as the part comes out.
 func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
-	posts := []writtenPost{{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier}}
-	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
-	places := document.PlacesOf(postNamed(test, SiteOf(snapshot).Posts, fixturePostSlug))
-	want := []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps"}
-	got := []string{}
-	for _, place := range places {
-		got = append(got, place.Name)
+	cases := []struct {
+		name string
+		part writtenPost
+		want []string
+	}{
+		{
+			name: "a part out", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps"},
+		},
+		{
+			name: "a part dated later", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: afterTheDay},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards"},
+		},
+		{
+			name: "a draft", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusDraft, published: ""},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards"},
+		},
 	}
-	if !reflect.DeepEqual(got, want) {
-		test.Errorf("the post's places = %q, want %q", got, want)
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withPostsAndSeries(test, []writtenPost{testCase.part}, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
+			got := []string{}
+			for _, place := range document.PlacesOf(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, fixturePostSlug)) {
+				got = append(got, place.Name)
+			}
+			if !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the post's places = %q, want %q", got, testCase.want)
+			}
+		})
 	}
 }
 
@@ -178,7 +223,8 @@ func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 // title alone, with no page, past any part not published; outside one the posts the blog lists before and after it by
 // the time they came out, each with its lead and that time, posts out at one moment by their slugs, so never a draft,
 // a preview or a post unlisted; none on a side with nothing there.
-// An unlisted post, in no list itself, leads to the posts listed before and after the time it came out.
+// An unlisted post, in no list itself, leads to the posts listed before and after the time it came out; a draft, read
+// by its author, to those before and after the time it is dated, or the time it is read where it is dated none.
 func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -186,9 +232,24 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 		series string
 		toCome string
 		read   string
+		drafts bool
 		before *seenNeighbour
 		after  *seenNeighbour
 	}{
+		{
+			name:   "a draft dated none, after the newest post out",
+			posts:  []writtenPost{{slug: "older", id: 3, status: content.StatusPublished, published: earlier}, {slug: "drafted", id: 4, status: content.StatusDraft, published: ""}},
+			series: "older", read: "drafted", drafts: true,
+			before: &seenNeighbour{part: 0, title: fixturePostTitle, lead: "Why a page read twice is read once.", page: fixturePostSlug, published: "2026-11-10T09:00:00+01:00"},
+			after:  nil,
+		},
+		{
+			name:   "a draft dated, between the posts out before and after it",
+			posts:  []writtenPost{{slug: "older", id: 3, status: content.StatusPublished, published: earliest}, {slug: "drafted", id: 4, status: content.StatusDraft, published: earlier}},
+			series: "older", read: "drafted", drafts: true,
+			before: &seenNeighbour{part: 0, title: "older", lead: "About older.", page: "older", published: "2026-11-01T09:00:00+01:00"},
+			after:  &seenNeighbour{part: 0, title: fixturePostTitle, lead: "Why a page read twice is read once.", page: fixturePostSlug, published: "2026-11-10T09:00:00+01:00"},
+		},
 		{
 			name: "the first part, the next to come", series: fixturePostSlug, toCome: "Reading aloud", read: fixturePostSlug,
 			before: nil, after: &seenNeighbour{part: 2, title: "Reading aloud", lead: "", page: "", published: noTime},
@@ -252,7 +313,7 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			neighbours := postNamed(test, SiteOf(snapshot).Posts, testCase.read).Head.Post.Neighbours
+			neighbours := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: testCase.drafts}).Posts, testCase.read).Head.Post.Neighbours
 			before, after := seenNeighbourOf(neighbours.Before), seenNeighbourOf(neighbours.After)
 			if !reflect.DeepEqual(before, testCase.before) || !reflect.DeepEqual(after, testCase.after) {
 				test.Errorf("the neighbours of %q = %+v and %+v, want %+v and %+v", testCase.read, before, after, testCase.before, testCase.after)

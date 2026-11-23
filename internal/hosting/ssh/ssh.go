@@ -17,7 +17,8 @@
 // session's program answers the server's own signals, so a stop waits for the sessions open before it closes them.
 //
 // The documents are composed once for each snapshot the store holds (release.Derived), from its content alone, and
-// each session draws the snapshot current when it opened; a reload reaches the sessions that open after it.
+// again as a post dated later comes out; each session draws the site as it stood when it opened, so a reload, or a
+// post coming out, reaches the sessions that open after it.
 package ssh
 
 import (
@@ -65,13 +66,16 @@ const (
 )
 
 // Settings are what the server is run with: where its host key lives, how long a connection may take to start its
-// session from when it connects, its handshake within that, and how long a session may stay idle and stay open.
+// session from when it connects, its handshake within that, how long a session may stay idle and stay open, and
+// whether its sessions read the drafts.
 type Settings struct {
 	// HostKeyPath is the file of the server's key, made there on the first start when it is missing (SEC-10)
 	HostKeyPath    string
 	OpeningTimeout time.Duration
 	IdleTimeout    time.Duration
 	MaxTimeout     time.Duration
+	// Drafts is whether the sessions read the drafts too, as their author runs the site to read them
+	Drafts bool
 }
 
 // Server serves the résumé, and the projects' pages a reader opens from it, to each session with a terminal.
@@ -92,7 +96,10 @@ type guard struct {
 
 // New is a server of the site the store holds, logging through the logger.
 func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server, error) {
-	opening := sessions{logger: logger, drawn: release.Derive(store, draw)}
+	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (tui.Drawing, time.Time) {
+		return draw(snapshot, compose.Audience{At: moment, Drafts: settings.Drafts})
+	})
+	opening := sessions{logger: logger, drawn: drawn}
 	watching := guard{logger: logger}
 	// wish runs the last listed outermost: the log, then the guard against panics, then the refusal of a
 	// session with no terminal, then the TUI
@@ -140,21 +147,23 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// draw is what the sessions of a snapshot draw: the pages of its content, the extras the TUI opens by a command, and
-// the blog's lists and posts, with the site's words of the frame round them.
-func draw(snapshot *release.Snapshot) tui.Drawing {
+// draw is what the sessions of a snapshot draw as an audience reads it: the pages of its content, the extras the TUI
+// opens by a command, and the blog's lists and posts, with the site's words of the frame round them; and until when it
+// holds, as the next post dated later comes out.
+func draw(snapshot *release.Snapshot, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
-	composition := compose.SiteOf(facts)
+	composition := compose.SiteOf(facts, audience)
 	documents := slices.Concat(composition.Documents(), compose.Extras(facts), composition.Lists, composition.Posts)
-	return tui.Drawing{Documents: documents, Frame: compose.FrameOf(facts), Site: routes.New(facts.Profile.Site.BaseURL)}
+	return tui.Drawing{Documents: documents, Frame: composition.Frame, Site: routes.New(facts.Profile.Site.BaseURL)}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).
 func (opening sessions) open(session charmssh.Session) (tea.Model, []tea.ProgramOption) {
 	terminal, _, _ := session.Pty()
+	opened := time.Now()
 	model := watchedModel{
 		logger: opening.logger,
-		model:  tui.New(opening.drawn.Current(), session.User(), terminal.Window.Width, terminal.Window.Height, time.Now()),
+		model:  tui.New(opening.drawn.Current(opened), session.User(), terminal.Window.Width, terminal.Window.Height, opened),
 		remote: session.RemoteAddr().String(),
 	}
 	return model, []tea.ProgramOption{tea.WithoutSignalHandler()}

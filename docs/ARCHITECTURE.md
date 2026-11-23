@@ -131,6 +131,9 @@ apart. Amended 2026-11-23, with the command line's places: a page's own places a
 names each anchor once, the kinds of place are `document`'s, and the page's own ids take a form no anchor takes. Amended
 2026-11-23, with the post's pictures: the figure, a picture read from the post's folder into the snapshot. Amended
 2026-11-23, with a post's links inside the site: a link's anchor, a target of its own, and the site's check of them.
+Amended 2026-11-23, with statuses and dates: `compose` composes for an audience, a moment and whether drafts are read,
+the hosts keep what they draw until the next post dated later comes out, and the check runs over each moment the site
+changes.
 
 ### Context
 
@@ -180,39 +183,65 @@ and web routes.
   composition root hands the release's load since `release` knows nothing
   over it (amended 2026-11-23): no two pages `compose` makes share an
   address `routes` writes, in any format, as a post slugged `series` would
-  share the list by series'; and each link inside the site of a post the
-  site serves leads to a page served at its path and, where it names an
-  anchor, to a section of that page, a fault at the post's file and line
-  where not. `content` reads a link's form and keeps those inside the site
-  with their lines; only `compose` knows which pages are served and the
-  anchors it named.
+  share the list by series'; and each link inside the site of a post
+  leads to a page served at its path and, where it names an anchor, to a
+  section of that page, a fault at the post's file and line where not.
+  `content` reads a link's form and keeps those inside the site with their
+  lines; only `compose` knows which pages are served and the anchors it
+  named. The check takes the moment of the load, which the composition
+  root reads (amended 2026-11-23): the links of every post served are
+  checked over the site as it stands at each moment it changes from then
+  on, as each post dated later comes out, and a draft's links and the
+  addresses over the site as the author reads it with the drafts once
+  every post dated later is out, where it holds the most pages. A link to
+  a post that comes out after the one linking it is refused, naming when
+  that post comes out, since it would lead nowhere until then; one to a
+  post out before it or with it passes. A heading's anchor holds over
+  time, since it keeps clear of every part its series names, out or not.
+  Ways weighed: the check over the site as it stands now alone, which
+  sees neither a post dated later nor its links; every link to a post
+  dated later let pass, which serves a dead link until that post comes
+  out.
 - **One document, every face.** `compose` turns content into documents: the
   résumé, a page for each project that has one, each post, the blog's list
   in its two groupings, by year and by series, the index of the
   site that `llms.txt` lists, and the extras of the TUI and the vim mode.
   Every face draws them, the HTML page included, each part in a layout of its
   own; no face picks the facts or their order again. `compose` is a function
-  of a snapshot, and of the time where a post's date makes it one; who holds
-  what it makes is the hosts' to say.
+  of a snapshot and of its audience (amended 2026-11-23): the moment they
+  read at, which a post dated later stays out until, a preview, and
+  whether they read the drafts, as the author does under
+  `paranin serve --drafts`; the hosts read the clock and hand the moment
+  in. It says until when what it makes holds, the moment the next post
+  dated later comes out, and each host keeps what it drew until then or
+  the next snapshot (`release.Derived`), so a post comes out on time and
+  no request composes. Ways weighed, on the fixture's one post: composing
+  per request, about 3 ms a request to compose and draw the site, growing
+  with every post; composing per snapshot and minute, as FOUNDATION
+  planned, a composition each minute for the few moments the site
+  changes, and a post up to a minute late.
 - **A document is a head and its blocks.** The head holds the page it is,
-  where it is one; the language it is written in; its title, a subtitle, a place and a lead (the résumé's
-  are the name, the title, where the author lives, the headline); on a
-  project's page its tags, the language it is written in and then its
-  stack, as the profile lists them; a description for the page's
-  metadata; and on a project's page where its code lives, a repository
-  typed as its address and the site's word for it, since every face shows
-  it first; on a post's page its number, its tags, its description as its
-  lead, and when it came out, which each face writes its own way; and,
-  in one field only a post fills, none on every other page, where it
+  where it is one; the language it is written in; its title, a subtitle,
+  a place and a lead (the résumé's are the name, the title, where the
+  author lives, the headline); on a project's page its tags, the
+  language it is written in and then its stack, as the profile lists
+  them; a description for the page's metadata; and on a project's page
+  where its code lives, a repository typed as its address and the site's
+  word for it, since every face shows it first; on a post's page its
+  number, its tags, its description as its lead, and the version read, a
+  closed set (amended 2026-11-23): out, by when it came out, which each
+  face writes its own way, or a draft, by the site's word for one, which a
+  face writes where it would write the day;
+  and, in one field only a post fills, none on every other page, where it
   stands in the blog: its series, every part with where it stands for
   the post's reader; the posts beside it, which its foot leads to; and
   where it is discussed. `compose` reads them once from every post and
   series of a snapshot, so no face picks a post's neighbours again
-  (FOUNDATION §5.4). The ways
-  to reach the author (mail, the profiles, `ssh`, the CV) left the head
-  (amended 2026-11-15, the owner's word): they are facts of their own kind,
-  in the résumé's last section under the site's word for contact, which a
-  face finds by that kind and shows where it chooses.
+  (FOUNDATION §5.4). The ways to reach the author (mail, the profiles,
+  `ssh`, the CV) left the head (amended 2026-11-15, the owner's word):
+  they are facts of their own kind, in the résumé's last section under the
+  site's word for contact, which a face finds by that kind and shows where
+  it chooses.
   One more is the site's word, which a face shows only where it has a use
   for it, so `Phrases` leaves it out: a greeting before the title. The
   résumé carries it; the TUI and the page show it.
@@ -357,8 +386,9 @@ and web routes.
   and notes are, so no list of places is kept in step with the blocks. A
   heading's section carries its anchor, which `compose` names once, by the
   heading's words, counted where the page's other places, the TUI's `help`
-  among them, or an earlier heading take them, so no face filters a place
-  out; a series' group carries the series' name, and a post
+  among them, every part its series names, out or not, so the anchor holds
+  as a part comes out (2026-11-23), or an earlier heading take them, so no
+  face filters a place out; a series' group carries the series' name, and a post
   the list names its series' name. Every face reaches a section by that
   anchor: the page writes it as the section's id, and the TUI keeps the
   line it stands at. The page's own ids, its menu's, its hints', its
@@ -389,9 +419,10 @@ and web routes.
   table of the served pages by their paths, which `compose` builds from
   the addresses `routes` writes, so no reading of a path is kept in step
   with `routes`. `content` reads each such link once, at the load, and
-  keeps it by its node. `compose.SiteOf` composes a snapshot's pages, its
-  lists and then its posts once, keeping the table, and both hosts and
-  `compose.Check` draw on that one composition. Ways weighed: the anchor
+  keeps it by its node. `compose.SiteOf` composes a snapshot's pages for
+  an audience, its lists, its frame and then its posts once, keeping the
+  table, and both hosts draw on that one composition, `compose.Check` on
+  one for each moment it checks. Ways weighed: the anchor
   a field of the page, which every comparison of a page with a head's
   would have to leave out; `routes` parsing a path back into a page, a
   second copy of its paths; a list of the served pages made apart from
@@ -508,8 +539,9 @@ included (D8). Their widgets are code, built by the page's toolchain.
 - **Status**: `draft` (never shipped), `preview` (a link signed by the
   server's secret, `noindex`, listed nowhere), `published`, `unlisted`. A
   `published` date in the future keeps a post a preview until then, worked
-  out per request from the time (tests hold it in `testing/synctest`). The
-  preview link is printed on the owner's machine; CI never sees the secret.
+  out from the time, the site composed again as the post comes out
+  (ADR-0003; tests hold it in `testing/synctest`). The preview link is
+  printed on the owner's machine; CI never sees the secret.
 - **One front-end build**: one Vite build takes the site's entries and every
   post's widgets, and writes hashed files, one manifest and each widget's
   props as JSON Schema into the release folder. Go serves every front-end

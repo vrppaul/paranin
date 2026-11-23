@@ -3,11 +3,12 @@
 //	paranin check content              loads a content folder as the site would and lists every fault in it
 //	paranin check content build/web    loads a content folder and the page's build as one release, the same way
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
+//	paranin serve --drafts content build/web    the same, the drafts too, each marked, for their author to read
 //
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
 // load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
-// inside the site leading to no page or no section of one, which the content alone cannot know, since routes writes
-// the addresses and compose names the anchors.
+// inside the site leading to no page or no section of one, now or as each post dated later comes out, the drafts'
+// among them, which the content alone cannot know, since routes writes the addresses and compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds
@@ -19,7 +20,9 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -49,12 +52,22 @@ const (
 const (
 	checkCommand     = "check"
 	serveCommand     = "serve"
-	usage            = "usage: paranin check <content folder> [<build folder>] | paranin serve <content folder> <build folder>"
+	usage            = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder>"
 	commandArgument  = 1
 	contentArgument  = 2
 	buildArgument    = 3
 	contentArguments = 3
 	releaseArguments = 4
+)
+
+// How serve is written after its command: the flag that serves the drafts too, then the content folder and the build
+// folder, by their places among the words past the flags
+const (
+	draftsFlag      = "drafts"
+	draftsUsage     = "serve the drafts too, marked as drafts, for their author to read"
+	contentPlace    = 0
+	buildPlace      = 1
+	servedArguments = 2
 )
 
 // Where the site is served, and the SSH server's host key, unless the environment says otherwise; and over what.
@@ -82,6 +95,7 @@ const (
 	sshKey     = "ssh"
 	contentKey = "content"
 	buildKey   = "build"
+	draftsKey  = "drafts"
 	errorKey   = "error"
 	faultsKey  = "faults"
 )
@@ -125,12 +139,39 @@ func run(arguments []string) int {
 		return check(arguments[contentArgument])
 	case command == checkCommand && len(arguments) == releaseArguments:
 		return checkRelease(arguments[contentArgument], arguments[buildArgument])
-	case command == serveCommand && len(arguments) == releaseArguments:
-		return serve(arguments[contentArgument], arguments[buildArgument])
+	case command == serveCommand:
+		asked, isWritten := servingOf(arguments[contentArgument:])
+		if !isWritten {
+			return usageWrong()
+		}
+		return serve(asked)
 	default:
-		fmt.Fprintln(os.Stderr, usage)
-		return usageMistaken
+		return usageWrong()
 	}
+}
+
+// usageWrong prints how the command is written, and is what the program exits with when it is written wrong.
+func usageWrong() int {
+	fmt.Fprintln(os.Stderr, usage)
+	return usageMistaken
+}
+
+// servingAsked is what serve is asked to serve: the release's folders, and whether the drafts too.
+type servingAsked struct {
+	folders release.Folders
+	drafts  bool
+}
+
+// servingOf reads what serve is asked from the words after its command, and whether they are written right.
+func servingOf(words []string) (servingAsked, bool) {
+	flags := flag.NewFlagSet(serveCommand, flag.ContinueOnError)
+	// a mistake is told by the usage alone, as for any other command
+	flags.SetOutput(io.Discard)
+	drafts := flags.Bool(draftsFlag, false, draftsUsage)
+	if err := flags.Parse(words); err != nil || flags.NArg() != servedArguments {
+		return servingAsked{folders: release.Folders{Content: "", Build: ""}, drafts: false}, false
+	}
+	return servingAsked{folders: release.Folders{Content: flags.Arg(contentPlace), Build: flags.Arg(buildPlace)}, drafts: *drafts}, true
 }
 
 // commandOf is the command the arguments name, or nothing where they name none.
@@ -146,14 +187,21 @@ func commandOf(arguments []string) string {
 func check(contentFolder string) int {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err == nil {
-		err = compose.Check(loaded)
+		err = checkedNow(loaded)
 	}
 	return checked(err, contentFolder)
 }
 
 func checkRelease(contentFolder, buildFolder string) int {
-	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, compose.Check)
+	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, checkedNow)
 	return checked(err, contentFolder, buildFolder)
+}
+
+// checkedNow holds content to the site's own check, from the moment it is loaded on.
+//
+//wrapper:reads the clock as each load is checked, which the check takes as a value
+func checkedNow(loaded *content.Snapshot) error {
+	return compose.Check(loaded, time.Now()) //nolint:wrapcheck // the content's faults, printed one a line as they come
 }
 
 // checked is what a check of folders exits with: success, or a failure once their faults are printed.
@@ -175,20 +223,20 @@ func refused(err error, folders ...string) int {
 	return failed
 }
 
-func serve(contentFolder, buildFolder string) int {
+func serve(asked servingAsked) int {
 	stopping, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	folders := release.Folders{Content: contentFolder, Build: buildFolder}
+	folders := asked.folders
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
 	changes := release.Watch(stopping, folders, lookInterval)
-	store, err := release.Open(folders, compose.Check)
+	store, err := release.Open(folders, checkedNow)
 	if err != nil {
-		return refused(err, contentFolder, buildFolder)
+		return refused(err, folders.Content, folders.Build)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	settings := ssh.Settings{
 		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), OpeningTimeout: openingTimeout,
-		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout,
+		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout, Drafts: asked.drafts,
 	}
 	sshServer, err := ssh.New(store, logger, settings)
 	if err != nil {
@@ -201,7 +249,7 @@ func serve(contentFolder, buildFolder string) int {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	webServer := newServer(web.New(store), logger)
+	webServer := newServer(web.New(store, asked.drafts), logger)
 	servers := []server{webServer, sshServer}
 	running := serving{
 		logger:      logger,
@@ -215,7 +263,7 @@ func serve(contentFolder, buildFolder string) int {
 	signal.Notify(running.reloads, syscall.SIGHUP)
 	go func() { running.failures <- webServer.Serve(webListener) }()
 	go func() { running.failures <- sshServer.Serve(sshListener) }()
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, contentFolder, buildKey, buildFolder)
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts)
 	return running.watch(stopping)
 }
 

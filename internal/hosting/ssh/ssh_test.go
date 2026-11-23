@@ -21,6 +21,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/release"
 )
@@ -76,6 +77,26 @@ func TestASessionOpensOnTheBlogsPageItsUserNames(test *testing.T) {
 		test.Run(testCase.user, func(test *testing.T) {
 			output, _ := openTerminal(test, clientSession(test, address, testCase.user), commonTerminal())
 			readUntil(test, output, testCase.window)
+		})
+	}
+}
+
+// A draft's number opens the draft only on a server its author runs to read the drafts, the list in the first window;
+// on any other it names no post, and the list is shown alone.
+func TestADraftOpensForItsAuthorAlone(test *testing.T) {
+	cases := []struct {
+		name   string
+		drafts bool
+		shown  string
+	}{
+		{name: "to the public", drafts: false, shown: "1:posts*"},
+		{name: "to its author", drafts: true, shown: "2:notes-on-tools*"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			address := listening(test, newServer(test, slog.New(slog.DiscardHandler), testCase.drafts))
+			output, _ := openTerminal(test, clientSession(test, address, "blog/2"), commonTerminal())
+			readUntil(test, output, testCase.shown)
 		})
 	}
 }
@@ -510,7 +531,8 @@ func allocated() uint64 {
 // own deadline would.
 func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 	lines := make(chan string, logLines)
-	server, address := servingServer(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)))
+	server := newServer(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)), false)
+	address := listening(test, server)
 	output, _ := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
 	readUntil(test, output, "contact")
 	ended, end := context.WithCancel(context.Background())
@@ -673,22 +695,20 @@ func (brokenView) Update(tea.Msg) (tea.Model, tea.Cmd) { return brokenView{}, ni
 
 func (brokenView) View() tea.View { panic(breakage) }
 
-// serving is the address of a server of the fixture, which serves until the test ends.
+// serving is the address of a server of the fixture, reading no draft, which serves until the test ends.
 func serving(test *testing.T, logger *slog.Logger) string {
-	_, address := servingServer(test, logger)
-	return address
+	return listening(test, newServer(test, logger, false))
 }
 
-// servingServer is a server of the fixture, which serves until the test ends, and its address.
-func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
-	server := newServer(test, logger)
+// listening is the address a server serves at until the test ends.
+func listening(test *testing.T, server *Server) string {
 	listener, err := (&net.ListenConfig{}).Listen(test.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		test.Fatalf("listen: %v", err)
 	}
 	go func() { _ = server.Serve(listener) }()
 	test.Cleanup(func() { _ = server.Shutdown(context.Background()) })
-	return server, listener.Addr().String()
+	return listener.Addr().String()
 }
 
 // drawnServer is a server of the fixture, logging nothing, that has drawn its snapshot outside any synctest bubble, by
@@ -696,7 +716,7 @@ func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
 // a clock goroutine of their own (regexp2's fastclock) that no bubble outlives, and the server draws a snapshot on the
 // first session that meets it.
 func drawnServer(test *testing.T) *Server {
-	server := newServer(test, slog.New(slog.DiscardHandler))
+	server := newServer(test, slog.New(slog.DiscardHandler), false)
 	clientEnd, serverEnd := memoryConnections()
 	go server.server.HandleConn(serverEnd)
 	client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
@@ -706,15 +726,17 @@ func drawnServer(test *testing.T) *Server {
 	return server
 }
 
-// newServer is a server of the fixture, not yet serving.
-func newServer(test *testing.T, logger *slog.Logger) *Server {
-	store, err := release.Open(release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test)}, compose.Check)
+// newServer is a server of the fixture, not yet serving, its sessions reading the drafts where drafts says.
+func newServer(test *testing.T, logger *slog.Logger, drafts bool) *Server {
+	store, err := release.Open(release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test)}, func(loaded *content.Snapshot) error {
+		return compose.Check(loaded, time.Now())
+	})
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
 	settings := Settings{
 		HostKeyPath: filepath.Join(test.TempDir(), "host_key"), OpeningTimeout: openingTimeout, IdleTimeout: longTimeout,
-		MaxTimeout: longTimeout,
+		MaxTimeout: longTimeout, Drafts: drafts,
 	}
 	server, err := New(store, logger, settings)
 	if err != nil {

@@ -223,7 +223,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	writer := fixtureWriter(test)
 	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot))
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Frame)
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
@@ -254,7 +254,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		blogSessions = `<span class="sessions"><a class="session session-other" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>` +
 			`<a class="session" href="/blog"><span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span></a></span>`
 	)
-	lists := compose.Lists(snapshot)
+	lists := siteOnTheDay(snapshot).Lists
 	cases := []struct {
 		name  string
 		page  string
@@ -663,7 +663,7 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 // its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot)).For("/nothing\x1b[2J<b>")
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Frame).For("/nothing\x1b[2J<b>")
 	golden.Match(test, "notfound.html", lined(missing))
 }
 
@@ -684,7 +684,7 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 // grouping is held to its golden file, named after its own address.
 func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 	files := []string{"blog.html", "blog/series.html"}
-	for index, list := range compose.Lists(fixtures.LoadedContent(test)) {
+	for index, list := range siteOnTheDay(fixtures.LoadedContent(test)).Lists {
 		test.Run(files[index], func(test *testing.T) {
 			golden.Match(test, files[index], lined(fixtureWriter(test).List(list)))
 		})
@@ -694,7 +694,7 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 // Every phrase of the blog's list reaches its page, as HTML writes text, in each grouping: every post it names is
 // there, with where it stands and its tags.
 func TestEveryPhraseOfTheListReachesItsPage(test *testing.T) {
-	for _, list := range compose.Lists(fixtures.LoadedContent(test)) {
+	for _, list := range siteOnTheDay(fixtures.LoadedContent(test)).Lists {
 		page := fixtureWriter(test).List(list)
 		for _, phrase := range document.Phrases(list) {
 			if !strings.Contains(page, html.EscapeString(phrase)) {
@@ -792,6 +792,16 @@ func TestABlockOfTheListThatIsNoGroupStandsAsAnyPageDraws(test *testing.T) {
 // named after the post's own address.
 func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
 	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(fixturePost(test))))
+}
+
+// A draft's page, as its author reads it, says it is a draft where a post out says the day of the version read.
+func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
+	site := compose.SiteOf(fixtures.LoadedContent(test), compose.Audience{At: fixtures.Day(), Drafts: true})
+	draft := fixtures.DocumentOf(test, site.Posts, document.Page{Kind: document.PagePost, Slug: "notes-on-tools", Tab: ""})
+	const mark = "<dt>version</dt><dd>draft</dd>"
+	if page := fixtureWriter(test).Post(draft); !strings.Contains(page, mark) {
+		test.Errorf("the draft's page %q holds no %q", page, mark)
+	}
 }
 
 // A pre whole, and a tag of markup, which a browser shows none of
@@ -892,7 +902,7 @@ func TestAPostOfASeriesReadsAsItsGoldenMarkup(test *testing.T) {
 // page, and a series to its group on the list by series, which that list names by the series' name.
 func TestAPagesOwnPlacesLeadWhereThePageDrawsThem(test *testing.T) {
 	post := fixtureWriter(test).Post(seriesPost(emptySection("More")))
-	lists := compose.Lists(fixtures.LoadedContent(test))
+	lists := siteOnTheDay(fixtures.LoadedContent(test)).Lists
 	cases := []struct {
 		name string
 		page string
@@ -1112,8 +1122,15 @@ func emptySection(title string) document.Block {
 
 // fixturePost is the fixture's post as compose makes it.
 func fixturePost(test *testing.T) document.Document {
-	posts := compose.SiteOf(fixtures.LoadedContent(test)).Posts
+	posts := siteOnTheDay(fixtures.LoadedContent(test)).Posts
 	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
+}
+
+// siteOnTheDay is the site of a snapshot as the public reads it on the tests' day.
+//
+//wrapper:names the one site every test of the page draws
+func siteOnTheDay(snapshot *content.Snapshot) compose.Site {
+	return compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: false})
 }
 
 // What lined breaks a line between, two tags that meet, and what it keeps whole, a pre, whose every letter shows
@@ -1146,7 +1163,7 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), compose.FrameOf(snapshot), fixtures.Day())
+	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Frame, fixtures.Day())
 }
 
 // composedOf is a page of the fixture as compose makes it, its document and its record.

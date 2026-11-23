@@ -27,7 +27,7 @@ const (
 
 // openedModel is a session on what the fixture draws, opened on the page a name reaches, of a size.
 func openedModel(test *testing.T, opening string, width, height int) Model {
-	return New(sessionDrawing(fixtures.LoadedContent(test)), opening, width, height, fixtures.Day())
+	return New(sessionDrawing(fixtures.LoadedContent(test), false), opening, width, height, fixtures.Day())
 }
 
 // A session opens on the page of the blog its SSH user's name reaches (D26): the blog's list by blog, a post by its
@@ -79,8 +79,9 @@ func TestANameFromOutsideReachesTheScreenAsLetters(test *testing.T) {
 // says it finds none.
 func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := []document.Document{compose.Resume(snapshot), fixtures.DocumentOf(test, compose.SiteOf(snapshot).Posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
-	drawing := Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
+	drawn := sessionDrawing(snapshot, false)
+	documents := []document.Document{compose.Resume(snapshot), fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
+	drawing := Drawing{Documents: documents, Frame: drawn.Frame, Site: fixtures.Site(snapshot)}
 	cases := []struct {
 		name  string
 		model Model
@@ -567,6 +568,14 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 				test.Errorf("the post =\n%s\nwant %q on it", read, testCase.want)
 			}
 		})
+	}
+}
+
+// A draft, as its author reads it, says it is a draft where a post out says the day of the version read.
+func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
+	model := New(sessionDrawing(fixtures.LoadedContent(test), true), "blog/2", commonWidth, tallHeight, fixtures.Day())
+	if read, want := readRows(aboveTheFooter(screenOf(test, model))), "version draft"; !strings.Contains(read, want) {
+		test.Errorf("the draft =\n%s\nwant %q on it", read, want)
 	}
 }
 

@@ -46,10 +46,10 @@ type seenListed struct {
 	tags       string
 }
 
-// The blog's list by year holds every post the blog lists, never a draft, a preview or a post unlisted, a group a
-// year, the newest year first and the newest post first in each, a post's year the one it came out in by its own
-// zone; each says how many posts it holds, one post apart from more, and each post its page and when it came out,
-// and its part and its series where it is a part of one.
+// The blog's list by year holds every post the blog lists, never a draft, a preview, a post unlisted or one that comes
+// later than its reader, a group a year, the newest year first and the newest post first in each, a post's year the
+// one it came out in by its own zone; each says how many posts it holds, one post apart from more, and each post its
+// page and when it came out, and its part and its series where it is a part of one.
 func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: "reading"},
@@ -57,8 +57,9 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 		{slug: "new-year", id: 5, status: "published", published: newYearsNight, tags: ""},
 		{slug: "hidden", id: 6, status: "unlisted", published: later, tags: ""},
 		{slug: "previewed", id: 7, status: "preview", published: later, tags: ""},
+		{slug: "coming", id: 8, status: "published", published: afterTheDay, tags: ""},
 	}
-	series := fixtureSeriesOf("first, hidden, reading-slowly, previewed", "")
+	series := fixtureSeriesOf("first, hidden, reading-slowly, previewed, coming", "")
 	want := []seenGroup{
 		{
 			title: "2026", name: "", line: "", count: "3 posts",
@@ -76,7 +77,7 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 			posts: []seenListed{{readiness: outAt(test, "old-one", yearBefore), title: "old-one", part: "", series: "", seriesName: "", tags: ""}},
 		},
 	}
-	lists := Lists(withPostsAndSeries(test, posts, series))
+	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
 	if got := seenGroups(lists[0]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by year = %+v, want %+v", got, want)
 	}
@@ -85,8 +86,8 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 // The blog's list by series holds a group a series with a part out, the series whose latest part came out last first,
 // each named by the series' name, as a place reaches it, with its line, how many of its parts, out and to come, are
 // out, and each of them in order by its number, a part named to come saying it comes, with no page; a part not
-// published, a draft, a preview or unlisted, is left out, as its series leaves it. The posts in no series come last,
-// newest first.
+// published, a draft, a preview, unlisted or coming later than its reader, is left out, as its series leaves it, and a
+// series with no part out yet is in no list. The posts in no series come last, newest first.
 func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
@@ -96,11 +97,14 @@ func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 		{slug: "idle", id: 7, status: "draft", published: later, tags: ""},
 		{slug: "old-one", id: 8, status: "published", published: yearBefore, tags: ""},
 		{slug: "new-year", id: 9, status: "published", published: newYearsNight, tags: ""},
+		{slug: "coming", id: 10, status: "published", published: afterTheDay, tags: ""},
+		{slug: "upcoming", id: 11, status: "published", published: afterTheDay, tags: ""},
 	}
 	series := []writtenSeries{
-		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, hidden, reading-slowly, drafted", toCome: "Reading aloud"},
+		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, hidden, reading-slowly, drafted, coming", toCome: "Reading aloud"},
 		{name: "tools", title: "Tools", parts: "toolbox", toCome: ""},
 		{name: "quiet", title: "Quiet", parts: "idle", toCome: ""},
+		{name: "later", title: "Later", parts: "upcoming", toCome: ""},
 	}
 	toCome := fmt.Sprint(document.ComingPart{Coming: textSpans("soon")})
 	want := []seenGroup{
@@ -127,7 +131,7 @@ func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 			},
 		},
 	}
-	lists := Lists(withPostsAndSeries(test, posts, series))
+	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
 	if got := seenGroups(lists[1]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by series = %+v, want %+v", got, want)
 	}
@@ -144,7 +148,7 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf(fixturePostSlug, ""))
 	want := []string{"terminals", "reading", "writing"}
 	pages := []document.PageKind{document.PageBlog, document.PageBlogSeries}
-	for index, list := range Lists(snapshot) {
+	for index, list := range SiteOf(snapshot, publicOnTheDay()).Lists {
 		head := list.Head
 		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.Tags, want) || document.PlainText(head.Title) != snapshot.Words.Text(content.WordBlog) ||
 			document.PlainText(head.Lead) != "What the writer reads, and how." || document.PlainText(head.Description) != "What the writer reads, and how." {
@@ -178,7 +182,7 @@ func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
 		{Name: "tools", Kind: document.PlaceSeries, Page: bySeries, Section: "tools"},
 		{Name: fixtureSeriesName, Kind: document.PlaceSeries, Page: bySeries, Section: fixtureSeriesName},
 	}
-	lists := Lists(withPostsAndSeries(test, posts, series))
+	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
 	cases := []struct {
 		name string
 		list document.Document
@@ -198,12 +202,15 @@ func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
 
 // Every face's :e opens each project's page by its slug, then the blog's list in each grouping and each post the list
 // names, newest first, which Tab offers; then a post served and no list names, by its slug, and every post served by
-// its number, which Tab never offers; never a draft or a preview, each by the name a terminal reaches it by.
+// its number, which Tab never offers; never a draft, a preview or a post that comes later than its reader, each by the
+// name a terminal reaches it by.
 func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
 		{slug: "drafted", id: 4, status: "draft", published: later, tags: ""},
 		{slug: "hidden", id: 5, status: "unlisted", published: later, tags: ""},
+		{slug: "coming", id: 6, status: "published", published: afterTheDay, tags: ""},
+		{slug: "coming-unlisted", id: 7, status: "unlisted", published: afterTheDay, tags: ""},
 	}
 	read, first, hidden := postPageOf(fixturePostSlug), postPageOf("first"), postPageOf("hidden")
 	want := []OpenedPage{
@@ -217,7 +224,7 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/5", Kind: document.PlacePost, Page: hidden, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/1", Kind: document.PlacePost, Page: read, Section: ""}, Offered: false},
 	}
-	if got := FrameOf(withPostsAndSeries(test, posts, nil)).Pages; !reflect.DeepEqual(got, want) {
+	if got := SiteOf(withPostsAndSeries(test, posts, nil), publicOnTheDay()).Frame.Pages; !reflect.DeepEqual(got, want) {
 		test.Errorf("the pages :e opens = %+v, want %+v", got, want)
 	}
 }
@@ -257,9 +264,15 @@ func seenListedOf(post document.ListedPost) seenListed {
 // fmt writes the value.
 func outAt(test *testing.T, slug, moment string) string {
 	test.Helper()
-	published, err := time.Parse(writtenMomentLayout, moment)
+	return fmt.Sprint(document.PostOut{Page: document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}, Published: momentOf(test, moment)})
+}
+
+// momentOf is a moment as a case writes it, as front matter does.
+func momentOf(test *testing.T, written string) time.Time {
+	test.Helper()
+	moment, err := time.Parse(writtenMomentLayout, written)
 	if err != nil {
-		test.Fatalf("read the moment %q: %v", moment, err)
+		test.Fatalf("read the moment %q: %v", written, err)
 	}
-	return fmt.Sprint(document.PostOut{Page: document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}, Published: published})
+	return moment
 }

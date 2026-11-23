@@ -378,8 +378,13 @@ the format, and its anchor, where it names one, the anchor of a section
 of that page, a heading of a post or a series' group of the list by
 series; each face writes the page's address in its own format. Only the
 whole site knows its pages, so this part of the check runs once the
-content loads (ADR-0003), and over the posts the site serves: a link to a
-draft leads nowhere, and a draft's own links wait until it is served.
+content loads (ADR-0003), each post's links over the site as it stands
+when the post comes out, now or at its later date: a link to a draft, a
+preview or a post that comes out after the one linking it leads nowhere,
+one to a post out before it or with it leads somewhere. A draft's links
+are checked too, over the site as its author reads it under
+`paranin serve --drafts` once every post dated later is out, where
+another draft's page leads somewhere (2026-11-23).
 It refuses as well what no face draws yet: a link's title; a table's row
 of more cells than its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
@@ -486,7 +491,7 @@ updated: 2026-11-12
 
 | Status | Seen where |
 | --- | --- |
-| `draft` | Locally alone: `paranin serve --drafts` marks the page as a draft. Never shipped. |
+| `draft` | Locally alone: `paranin serve --drafts` serves it at its address, listed nowhere, its page marked as a draft, for now by its version reading `draft` where a post's day stands, until the owner picks a mark (DESIGN.md, PostHead). Never served otherwise. |
 | `preview` | On the server, at a secret link alone. Not in the feed, the sitemap, `llms.txt`, the lists or the TUI; sent with `noindex`. |
 | `published` | Everywhere: the page, the feed, the sitemap, `llms.txt`, the TUI, its card. |
 | `unlisted` | At its address, listed nowhere: a post taken off the lists without breaking links to it. |
@@ -497,10 +502,12 @@ updated: 2026-11-12
   same secret. CI never sees the secret and never prints a link: the logs
   of a public repository are public too. A new secret ends every old
   preview link at once.
-- **Publishing on a date.** A `published` date in the future keeps the post
-  a preview until then. The status is worked out per request from the
-  time, with the feed, the sitemap and `llms.txt` cached per snapshot and
-  minute, so the post comes out on time with no push.
+- **Publishing on a date.** A `published` date in the future keeps the post,
+  published or unlisted, a preview until then. The status is worked out
+  from the time: a host composes the site once a snapshot, as it stands
+  when a reader first meets it, and again as the next post dated later
+  comes out, so the post comes out on time with no push and no request
+  composes the site (ADR-0003, 2026-11-23).
 
 #### Editing and publishing (Decided, D5; the rest Proposed)
 
@@ -551,12 +558,16 @@ and SSH to the host: "without a new binary" does not mean without a build.
   parts to come are the titles under `to_come`, which the author chose to
   announce. A part not yet published, a draft or a preview, is listed
   nowhere, as a preview is, so its working title stays in the repository
-  (owner, 2026-11-23). An unlisted part is listed nowhere, so its
-  series leaves it out and counts on without it, and its own page shows
-  no series. Outside a series a post's foot leads to the posts published
-  before and after it, by the time they came out, so never to a draft, a
-  preview or an unlisted post; an unlisted post's own foot leads to those
-  published either side of its time.
+  (owner, 2026-11-23); its own page, a draft's as its author reads it,
+  shows its series, itself the part read among the parts out, so a
+  preview link of part 3 says it is part 3. An unlisted part is listed
+  nowhere, so its series leaves it out and counts on without it, and its
+  own page shows no series. Outside a series a post's foot leads to the
+  posts published before and after it, by the time they came out, so
+  never to a draft, a preview or an unlisted post; an unlisted post's own
+  foot leads to those published either side of its time, a draft's to
+  those either side of its date, or of the moment it is read where it
+  has none.
 - **Tags** stand in a post's front matter: `tags: [payments, agents]`.
 - **One list, no pages of its own for a tag or a series** (owner,
   2026-11-22): `/blog`, every post by year, newest first, with its date,

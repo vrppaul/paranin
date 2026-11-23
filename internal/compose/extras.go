@@ -1,8 +1,6 @@
 package compose
 
 import (
-	"time"
-
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 )
@@ -29,7 +27,7 @@ func Skills(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        nil,
-			Published:   time.Time{},
+			Version:     nil,
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,
@@ -67,7 +65,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 			Place:       "",
 			Tags:        nil,
 			Lead:        nil,
-			Published:   time.Time{},
+			Version:     nil,
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,

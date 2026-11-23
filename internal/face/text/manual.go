@@ -77,7 +77,8 @@ type manualWriter struct {
 
 // Manual writes a document as a manual page laid out as text: a title line, NAME from its head, DESCRIPTION from its
 // head and the blocks that are no section, then a section for each of its sections, NOTES where its blocks cite any,
-// and a closing line, the day a post came out in its middle, where man(1) writes a page's date.
+// and a closing line, the version a post's reader reads in its middle, its day or a draft's word, where man(1) writes a
+// page's date.
 func Manual(composed document.Document, site routes.Site) string {
 	writer := manualWriter{site: site}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
@@ -89,7 +90,7 @@ func Manual(composed document.Document, site routes.Site) string {
 		lines = append(lines, writer.pageSection(section)...)
 	}
 	lines = append(lines, writer.notes(document.NotesOf(composed.Blocks))...)
-	lines = append(lines, "", columns(site.Host(), dayText(composed.Head.Published), title))
+	lines = append(lines, "", columns(site.Host(), versionText(composed.Head), title))
 	return strings.Join(lines, lineEnd) + lineEnd
 }
 

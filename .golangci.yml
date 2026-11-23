@@ -96,6 +96,8 @@ linters:
         - ^github\.com/vrppaul/paranin/internal/document\.Block$
         # compose's addressTarget and autoLinkTarget
         - ^github\.com/vrppaul/paranin/internal/document\.Target$
+        # compose's versionOf
+        - ^github\.com/vrppaul/paranin/internal/document\.Version$
         # the TUI's openingBody and sectionBody
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return

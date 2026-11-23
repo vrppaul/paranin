@@ -15,8 +15,9 @@ Three readers, three formats, from one document per page:
 
 A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé or a
 project's page is a tab, named by its title's letters and digits in small letters, a hyphen between each run of them
-(`Experience` is `experience`); a post and the list have no tabs. A post is served while it is published or unlisted,
-never as a draft or a preview; the list names the posts published alone.
+(`Experience` is `experience`); a post and the list have no tabs. A post is served while it is published or unlisted
+and its `published` time has come, never as a preview, and as a draft only under `paranin serve --drafts`, to its
+author; the list names the posts published and out alone. A post dated later comes out at its time with no reload.
 
 | Method, path | Answer |
 | --- | --- |
@@ -42,7 +43,7 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
+| A page in any format, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list
@@ -65,28 +66,28 @@ left out, and a gap among written words stands marked as one.
 
 - **The manual** opens with `NAME` and `DESCRIPTION`, then a section for each of the page's, as `man(1)` lays a page
   out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds a post's day in the
-  middle, as `2026-11-10`, where `man(1)` writes a page's date. A link to a page of the site, or to a section of
-  one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an anchor; a card's
-  page, its address on a line of its own. A post's table stands in columns under its header where it fits the 78
+  middle, as `2026-11-10`, or `draft` for a draft, where `man(1)` writes a page's date. A link to a page of the site,
+  or to a section of one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an
+  anchor; a card's page, its address on a line of its own. A post's table stands in columns under its header where it fits the 78
   columns, a bullet a row where not; a quote behind `│`; a picture its alt text, its address between `<` and `>` and
   its caption, a line each; a tab in code as the spaces to its stop, every eight columns. The blog's list stands a
   section a group, each post its title with its day at the right, then its lead, its part and series, its tags and
   its address.
-- **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, its
-  tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
+- **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, `draft`
+  for a draft, its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
   `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
-  names, newest first, by its description; never a draft, a preview or a post unlisted.
+  names, newest first, by its description; never a draft, a preview, a post unlisted or one not yet out.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script. A page with an address adds its canonical link; Open Graph's `og:type`
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as
   JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
   its tabs; a post's comes with the site's SEO (`TODO.md`). A post's page is the post whole: its title the one `h1`,
-  its day in a `<time datetime>`, each paragraph a place `#_p1` names and its number a link to it, each heading a
-  place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
+  its day in a `<time datetime>`, a draft's version the word `draft`, each paragraph a place `#_p1` names and its
+  number a link to it, each heading a place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first
   cites it, and every note once at the text's end, which a phone shows in their place; a picture a `<figure>`, its
   `<img>` holding its alt text and its size, so the page keeps its room before it comes, fetched as it nears the

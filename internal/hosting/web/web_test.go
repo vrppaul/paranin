@@ -10,8 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/release"
 )
@@ -30,7 +33,7 @@ const (
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
 		name        string
 		path        string
@@ -45,7 +48,6 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the index", path: "/llms.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files."},
 		{name: "a post", path: "/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Reading slowly"},
 		{name: "a post as a manual", path: "/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "READING-SLOWLY(1)"},
-		{name: "a draft", path: "/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: "404"},
 		{name: "the blog's list", path: "/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
 		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
 		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
@@ -66,7 +68,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 // A tab of a page is served alone at its own address in each format, and as the reader asks at the address it is
 // known by: what it holds, with none of the tabs beside it.
 func TestATabIsServedAlone(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const (
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
@@ -107,7 +109,7 @@ func TestATabIsServedAlone(test *testing.T) {
 // for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
 // cache keeps one copy for each Accept.
 func TestTheReaderChoosesTheFormat(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const (
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
@@ -170,7 +172,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 // Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code, a
 // tab its page's, the person and the code at their page's address whole.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
 		name  string
 		path  string
@@ -194,7 +196,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
 // its manual as that page; the index, which is no page a person reads, names none.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
 		name   string
 		path   string
@@ -227,7 +229,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 // A post's number sends the reader on for good to the post's own address, by its path from the root, and a cache asks
 // again, since the post's slug is its folder's name, which may change; the number of a post not served is no page.
 func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
 		name     string
 		path     string
@@ -253,7 +255,7 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 // the request decoded it: in plain text to a terminal, an agent and a request naming nothing, in HTML, in the
 // site's language, to a browser; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const (
 		plain   = "text/plain; charset=utf-8"
 		browsed = "text/html; charset=utf-8"
@@ -299,7 +301,7 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 // Every answer tells a browser not to guess its type, to load nothing and send no form but from and to the site,
 // and to let no site frame it: a page in each format, the page of no page, and a refusal net/http writes itself.
 func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const policy = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	cases := []struct {
 		name   string
@@ -327,7 +329,7 @@ func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
 
 // A page tells a cache to ask again each time, since a reload can change it.
 func TestAPageTellsCachesToAskAgain(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, "/index.md", "")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, "/index.md", "")
 	if got := response.Header().Get("Cache-Control"); got != "no-cache" {
 		test.Errorf("GET /index.md: Cache-Control = %q, want %q", got, "no-cache")
 	}
@@ -336,7 +338,7 @@ func TestAPageTellsCachesToAskAgain(test *testing.T) {
 // A file of the build is served at its path as the type its name says, whatever the request asks for, and a cache
 // keeps it for good: a file changed is built under another name.
 func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, stylesheetPath, "*/*")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, stylesheetPath, "*/*")
 	header := response.Header()
 	const (
 		wantType  = "text/css; charset=utf-8"
@@ -352,7 +354,7 @@ func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
 
 // A page a browser reads, and the page of no page, are drawn in the build's stylesheet and run its script.
 func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	wanted := []string{`<link rel="stylesheet" href="` + stylesheetPath + `">`, `<script type="module" src="` + scriptPath + `"`}
 	cases := []struct {
 		name string
@@ -377,7 +379,7 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 // screen and the one a browser asks for by name on a page with no head, as the manual, is served at its path as its
 // type, for a cache to ask for again, since a new build of the server may draw it anew under the same path.
 func TestABrowserFindsTheSiteIcon(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	page := serve(server, http.MethodGet, "/", "text/html").Body.String()
 	cases := []struct {
 		name        string
@@ -409,7 +411,7 @@ func TestABrowserFindsTheSiteIcon(test *testing.T) {
 // change it under the same name; under a policy that loads and runs nothing in it, so a drawing opened alone runs no
 // script.
 func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, picturePath, "image/*")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, picturePath, "image/*")
 	header := response.Header()
 	const (
 		wantType   = "image/png"
@@ -446,7 +448,7 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 			store := fixtureStore(test, folder)
-			server := New(store)
+			server := New(store, false)
 			serve(server, http.MethodGet, testCase.path, "")
 			fixtures.ReplaceIn(test, folder, testCase.file, testCase.original, testCase.replacement)
 			if err := store.Reload(); err != nil {
@@ -459,9 +461,82 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 	}
 }
 
+// A post dated an hour after a synctest bubble's clock starts, which every request in the bubble reads the site at,
+// and its file
+const (
+	comingPostFile = "posts/coming/post.en.md"
+	comingPostText = "---\nid: 3\ntitle: Coming\ndescription: About what comes.\nstatus: published\npublished: 2000-01-01T01:00+00:00\n---\nIts text.\n"
+	comingIn       = time.Hour
+)
+
+// seenAnswer is an answer as a test reads it: its status, and whether it holds a text.
+type seenAnswer struct {
+	status int
+	holds  bool
+}
+
+// A post dated later than the request is served nowhere until its moment: not at its address nor its number, nor in
+// the blog's list or llms.txt; from its moment on it is, with no reload.
+func TestAPostComesOutAtItsMoment(test *testing.T) {
+	cases := []struct {
+		name   string
+		path   string
+		holds  string
+		before seenAnswer
+		after  seenAnswer
+	}{
+		{name: "its page", path: "/blog/coming.md", holds: "# Coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
+		{name: "its number", path: "/blog/3", holds: "/blog/coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusMovedPermanently, holds: true}},
+		{name: "the blog's list", path: "/blog.md", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
+		{name: "the index", path: "/llms.txt", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			synctest.Test(test, func(test *testing.T) {
+				folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+				fixtures.WriteIn(test, folder, comingPostFile, comingPostText)
+				server := New(fixtureStore(test, folder), false)
+				before := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
+				time.Sleep(comingIn)
+				after := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
+				if before != testCase.before || after != testCase.after {
+					test.Errorf("GET %s before the post's moment and at it = %+v and %+v, want %+v and %+v", testCase.path, before, after,
+						testCase.before, testCase.after)
+				}
+			})
+		})
+	}
+}
+
+// seenAnswerOf is an answer as a test reads it, whether it holds a text in its body or its location.
+func seenAnswerOf(response *httptest.ResponseRecorder, text string) seenAnswer {
+	held := response.Body.String() + response.Header().Get("Location")
+	return seenAnswer{status: response.Code, holds: strings.Contains(held, text)}
+}
+
+// A draft is served at its address only on a server its author runs to read the drafts.
+func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
+	cases := []struct {
+		name   string
+		drafts bool
+		want   seenAnswer
+	}{
+		{name: "to the public", drafts: false, want: seenAnswer{status: http.StatusNotFound, holds: false}},
+		{name: "to its author", drafts: true, want: seenAnswer{status: http.StatusOK, holds: true}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			server := New(fixtureStore(test, fixtures.ContentFolder(test)), testCase.drafts)
+			if got := seenAnswerOf(serve(server, http.MethodGet, "/blog/notes-on-tools.md", ""), "# Notes on tools"); got != testCase.want {
+				test.Errorf("GET /blog/notes-on-tools.md = %+v, want %+v", got, testCase.want)
+			}
+		})
+	}
+}
+
 // A page is only read: a request to change it is refused.
 func TestAPageIsOnlyRead(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	if response := serve(server, http.MethodPost, "/index.md", ""); response.Code != http.StatusMethodNotAllowed {
 		test.Errorf("POST /index.md = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
@@ -498,7 +573,9 @@ func pngOfTwoByOne(test *testing.T) []byte {
 
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.
 func fixtureStore(test *testing.T, folder string) *release.Store {
-	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.Check)
+	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, func(loaded *content.Snapshot) error {
+		return compose.Check(loaded, time.Now())
+	})
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

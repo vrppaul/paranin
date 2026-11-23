@@ -28,6 +28,7 @@ ssh_gives: The résumé as an app in a terminal.
 reading_gives: The page as a manual in a terminal.
 blog: blog
 version: version
+draft: draft
 tags: tags
 copy_code: "copy code block {}"
 copied_code: Copied the code

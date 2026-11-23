@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -17,12 +18,14 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// The fixture's post of every kind of block, and its draft, whose file a case writes over with a post of its own
+// The fixture's post of every kind of block, and its draft, whose file a case writes over with a post of its own,
+// dated a moment of its own
 const (
 	fixturePostSlug  = "reading-slowly"
 	samplePostSlug   = "notes-on-tools"
 	samplePostFile   = "posts/notes-on-tools/post.en.md"
-	samplePostFields = "---\nid: 2\ntitle: Notes on tools\ndescription: The tools a writer keeps.\npublished: 2026-11-10T09:00+01:00\n"
+	sampleMoment     = "2026-11-10T09:00+01:00"
+	samplePostFields = "---\nid: 2\ntitle: Notes on tools\ndescription: The tools a writer keeps.\npublished: " + sampleMoment + "\n"
 )
 
 // A drawing a case writes beside the sample post, by its name, four pixels by two
@@ -173,7 +176,7 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
-			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -218,29 +221,33 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
-			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
 	}
 }
 
-// The site serves the pictures of the posts it serves, each at its file beside its post, and a draft's never.
+// The site serves the pictures of the posts it serves, each at its file beside its post: a draft's never, and a
+// post's that comes later than its reader not yet.
 func TestThePicturesServedAreThePostsServed(test *testing.T) {
+	both := []document.File{fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)}
 	cases := []struct {
 		name   string
 		status content.Status
+		at     time.Time
 		want   []document.File
 	}{
-		{name: "a published post's", status: content.StatusPublished, want: []document.File{fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)}},
-		{name: "a draft's", status: content.StatusDraft, want: []document.File{fixtureFile(fixturePostSlug, "margin.png")}},
+		{name: "a published post's", status: content.StatusPublished, at: fixtures.Day(), want: both},
+		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), want: []document.File{fixtureFile(fixturePostSlug, "margin.png")}},
+		{name: "a published post's, read before both come out", status: content.StatusPublished, at: momentOf(test, sampleMoment).Add(-time.Minute), want: []document.File{}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\n![A page](margin.svg)\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
 			files := []document.File{}
-			for _, served := range Pictures(snapshot) {
+			for _, served := range SiteOf(snapshot, Audience{At: testCase.at, Drafts: false}).Pictures {
 				files = append(files, served.File)
 			}
 			if !sameMembers(files, testCase.want) {
@@ -395,7 +402,7 @@ func TestCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
 			want := []document.Block{testCase.want}
-			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
+			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, want)
 			}
 		})
@@ -442,7 +449,7 @@ func TestCodeRunsJoinToTheCodesTextWhole(test *testing.T) {
 		languages = append(languages, testCase.language)
 		test.Run(testCase.language, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n```"+testCase.language+"\n"+testCase.code+"\n```\n")
-			code := codeOf(test, postNamed(test, SiteOf(snapshot).Posts, samplePostSlug))
+			code := codeOf(test, postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug))
 			if got := code.Text(); got != testCase.code || len(kindsOfRuns(code.Runs)) < 2 {
 				test.Errorf("the code %q in %s = runs %+v, joined %q; want them joined to the code, of more than one kind",
 					testCase.code, testCase.language, code.Runs, got)
@@ -485,7 +492,7 @@ func kindsOfRuns(runs []document.CodeRun) map[document.CodeKind]bool {
 // Every word a post writes reaches its document as a phrase of its own, wherever it stands: a face that shows every
 // phrase shows the whole post.
 func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
-	phrases := document.Phrases(postNamed(test, SiteOf(fixtures.LoadedContent(test)).Posts, fixturePostSlug))
+	phrases := document.Phrases(postNamed(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Posts, fixturePostSlug))
 	cases := []struct {
 		name string
 		want string
@@ -558,7 +565,7 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		test.Run(testCase.kind.String(), func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n", testCase.pictures...)
 			post := snapshot.Posts[slices.IndexFunc(snapshot.Posts, func(post content.Post) bool { return post.Slug == samplePostSlug })]
-			phrases := document.Phrases(postNamed(test, SiteOf(snapshot).Posts, samplePostSlug))
+			phrases := document.Phrases(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug))
 			if !slices.Contains(kindsOf(post.Body.Tree), testCase.kind) || !slices.Contains(phrases, testCase.phrase) {
 				test.Errorf("the body %q = kinds %v, phrases %q; want a %v among the kinds and %q among the phrases",
 					testCase.body, kindsOf(post.Body.Tree), phrases, testCase.kind, testCase.phrase)
@@ -584,27 +591,73 @@ func kindsOf(node ast.Node) []ast.NodeKind {
 	return kinds
 }
 
-// A post is served while it is published, and while it is unlisted, at its address though no list names it; a draft
-// and a preview never.
+// A post is served while it is published, and while it is unlisted, at its address though no list names it, each once
+// the moment it is dated has come, a preview until then; a draft only to its author, who reads the drafts; a preview
+// never, until its secret link comes.
 func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
+	dated := momentOf(test, sampleMoment)
+	before := dated.Add(-time.Minute)
 	cases := []struct {
+		name   string
 		status content.Status
+		at     time.Time
+		drafts bool
 		served bool
 	}{
-		{status: content.StatusPublished, served: true},
-		{status: content.StatusUnlisted, served: true},
-		{status: content.StatusDraft, served: false},
-		{status: content.StatusPreview, served: false},
+		{name: "published, read at its moment", status: content.StatusPublished, at: dated, drafts: false, served: true},
+		{name: "unlisted, read at its moment", status: content.StatusUnlisted, at: dated, drafts: false, served: true},
+		{name: "published, read before its moment", status: content.StatusPublished, at: before, drafts: false, served: false},
+		{name: "unlisted, read before its moment", status: content.StatusUnlisted, at: before, drafts: false, served: false},
+		{name: "published, read before its moment by its author", status: content.StatusPublished, at: before, drafts: true, served: false},
+		{name: "a draft", status: content.StatusDraft, at: dated, drafts: false, served: false},
+		{name: "a draft, read by its author", status: content.StatusDraft, at: before, drafts: true, served: true},
+		{name: "a preview", status: content.StatusPreview, at: dated, drafts: false, served: false},
+		{name: "a preview, read by its author", status: content.StatusPreview, at: dated, drafts: true, served: false},
 	}
 	for _, testCase := range cases {
-		test.Run(string(testCase.status), func(test *testing.T) {
+		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
 			slugs := []string{}
-			for _, post := range SiteOf(snapshot).Posts {
+			for _, post := range SiteOf(snapshot, Audience{At: testCase.at, Drafts: testCase.drafts}).Posts {
 				slugs = append(slugs, post.Head.Page.Slug)
 			}
 			if slices.Contains(slugs, samplePostSlug) != testCase.served {
 				test.Errorf("the posts served = %q, want %q among them: %t", slugs, samplePostSlug, testCase.served)
+			}
+		})
+	}
+}
+
+// A site holds until the first post that comes later than its reader comes out, published or unlisted alike, and as
+// long as its snapshot where none comes later: a draft and a preview change nothing at their date.
+func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
+	cases := []struct {
+		name  string
+		posts []writtenPost
+		want  time.Time
+	}{
+		{name: "no post later", posts: []writtenPost{{slug: "first", id: 3, status: content.StatusPublished, published: earlier}}, want: time.Time{}},
+		{
+			name: "posts later",
+			posts: []writtenPost{
+				{slug: "coming", id: 3, status: content.StatusPublished, published: afterTheDay},
+				{slug: "hidden", id: 4, status: content.StatusUnlisted, published: soonAfterTheDay},
+			},
+			want: momentOf(test, soonAfterTheDay),
+		},
+		{
+			name: "a draft and a preview dated later",
+			posts: []writtenPost{
+				{slug: "drafted", id: 3, status: content.StatusDraft, published: soonAfterTheDay},
+				{slug: "previewed", id: 4, status: content.StatusPreview, published: soonAfterTheDay},
+			},
+			want: time.Time{},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := SiteOf(withPostsAndSeries(test, testCase.posts, nil), publicOnTheDay()).Until; !got.Equal(testCase.want) {
+				test.Errorf("the site with the posts %+v holds until %v, want %v", testCase.posts, got, testCase.want)
 			}
 		})
 	}
@@ -615,16 +668,16 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 // it came out, in the zone it was written in, and where it is discussed, each a link by its site's name; and its
 // series and the posts beside it.
 func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
-	head := postNamed(test, SiteOf(fixtures.LoadedContent(test)).Posts, fixturePostSlug).Head
-	published := head.Published
-	head.Published = time.Time{}
+	head := postNamed(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Posts, fixturePostSlug).Head
+	version := fmt.Sprint(head.Version)
+	head.Version = nil
 	description := textSpans("Why a page read twice is read once.")
 	page := document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}
 	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
 	want := document.Head{
 		Page: page, Number: 1, Language: "en",
 		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "", Tags: []string{"reading", "terminals"},
-		Lead: description, Published: time.Time{}, Repository: nil,
+		Lead: description, Version: nil, Repository: nil,
 		Post: &document.PostPlace{
 			Series: &document.Series{Title: textSpans("Reading"), Parts: []document.Part{
 				{Number: 1, Title: textSpans("Reading slowly"), State: document.PartReading, Page: page},
@@ -641,8 +694,30 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)
 	}
-	if got, wantPublished := published.Format(time.RFC3339), "2026-11-10T09:00:00+01:00"; got != wantPublished {
-		test.Errorf("the head's day of publishing = %q, want %q", got, wantPublished)
+	if want := fmt.Sprint(document.VersionOut{Published: momentOf(test, fixturePostMoment)}); version != want {
+		test.Errorf("the head's version = %s, want %s", version, want)
+	}
+}
+
+// A draft's head, as its author reads it, gives its version as a draft in the site's words, not the day it is dated;
+// a post out gives the day it came out.
+func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
+	cases := []struct {
+		name   string
+		status content.Status
+		want   document.Version
+	}{
+		{name: "a draft", status: content.StatusDraft, want: document.VersionDraft{Word: "draft"}},
+		{name: "a post out", status: content.StatusPublished, want: document.VersionOut{Published: momentOf(test, sampleMoment)}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
+			head := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: true}).Posts, samplePostSlug).Head
+			if got, want := fmt.Sprint(head.Version), fmt.Sprint(testCase.want); got != want {
+				test.Errorf("the version of %s = %s, want %s", testCase.name, got, want)
+			}
+		})
 	}
 }
 
@@ -653,7 +728,7 @@ func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	composed := make([][]document.Document, 2)
 	var group sync.WaitGroup
 	for index := range composed {
-		group.Go(func() { composed[index] = SiteOf(snapshot).Posts })
+		group.Go(func() { composed[index] = SiteOf(snapshot, publicOnTheDay()).Posts })
 	}
 	group.Wait()
 	if !reflect.DeepEqual(composed[0], composed[1]) {
@@ -681,6 +756,11 @@ func withSamplePost(test *testing.T, text string, pictures ...samplePicture) *co
 		test.Fatalf("load the fixture with the post %q: %v", text, err)
 	}
 	return snapshot
+}
+
+// publicOnTheDay is the public reading the site on the tests' day, after every post a case dates has come out.
+func publicOnTheDay() Audience {
+	return Audience{At: fixtures.Day(), Drafts: false}
 }
 
 // postNamed is the document of the post of a slug among documents.

@@ -190,8 +190,11 @@ type postFact struct {
 func (layout layout) postFacts(head document.Head) []line {
 	labels := layout.siteWords.PostLabels
 	facts := []postFact{}
-	if !head.Published.IsZero() {
-		facts = append(facts, postFact{label: labels.Version, value: textWords(head.Published.Format(look.DayLayout), kindText)})
+	switch version := head.Version.(type) {
+	case document.VersionOut:
+		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Published.Format(look.DayLayout), kindText)})
+	case document.VersionDraft:
+		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Word, kindText)})
 	}
 	if place := head.Post; place != nil && place.Series != nil {
 		series := place.Series

@@ -39,16 +39,16 @@ func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
 }
 
-// The year and the day of the month the faces' tests draw on, in November
+// The year and the day of the month the tests draw on, in November
 const (
 	dayYear       = 2026
-	dayOfTheMonth = 1
+	dayOfTheMonth = 23
 )
 
-// Day is the day the faces' tests draw on, a TUI's session opening and the page's career line, the fixture's role
-// still held running to it.
+// Day is the day the tests draw on, a TUI's session opening and the page's career line, the fixture's role still
+// held running to it, and read the site on, after the fixture's post, and every post a test dates, has come out.
 //
-//wrapper:names the one day every face's test draws on
+//wrapper:names the one day every test draws on
 func Day() time.Time {
 	return time.Date(dayYear, time.November, dayOfTheMonth, 0, 0, 0, 0, time.UTC)
 }
@@ -65,7 +65,7 @@ func Site(snapshot *content.Snapshot) routes.Site {
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
 		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Tags: nil, Lead: nil,
-		Published: time.Time{}, Repository: nil, Post: nil, Description: nil,
+		Version: nil, Repository: nil, Post: nil, Description: nil,
 	}
 }
 

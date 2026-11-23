@@ -10,6 +10,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
 // The days a case's posts of other years come out on: one in the year before the fixture's post, and one in the
@@ -150,17 +151,129 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	pages := []document.PageKind{document.PageBlog, document.PageBlogSeries}
 	for index, list := range SiteOf(Prepare(snapshot), publicOnTheDay()).Lists {
 		head := list.Head
-		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.Tags, want) || document.PlainText(head.Title) != snapshot.Words.Text(content.WordBlog) ||
+		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.ListedWords(), want) || document.PlainText(head.Title) != snapshot.Words.Text(content.WordBlog) ||
 			document.PlainText(head.Lead) != "What the writer reads, and how." || document.PlainText(head.Description) != "What the writer reads, and how." {
 			test.Errorf("the list's head = %+v, want the page of kind %d, the tags %q and the blog's name and line", head, pages[index], want)
 		}
 	}
 }
 
-// Each grouping of the blog's list has for places each post out it names, in its own order, by its slug at its page,
+// The blog's list is filtered by each tag its head names, in its order, then by each series with a part out, the one
+// whose latest part came out last first: each a list by year of the posts the list names that carry the tag or are
+// parts of the series, newest first, its head the list's, every tag of the blog among it, with the filter in the
+// site's words beside the blog's name. No tag of a post the list leaves out, and no series with no part out, filters
+// it.
+func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
+	posts := []writtenPost{
+		{slug: "first", id: 3, status: "published", published: earlier, tags: "terminals, tools"},
+		{slug: "old-one", id: 4, status: "published", published: yearBefore, tags: "tools"},
+		{slug: "toolbox", id: 5, status: "published", published: latest, tags: ""},
+		{slug: "drafted", id: 6, status: "draft", published: later, tags: "secret"},
+		{slug: "idle", id: 7, status: "draft", published: later, tags: ""},
+	}
+	series := []writtenSeries{
+		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, reading-slowly", toCome: "Reading aloud"},
+		{name: "tools", title: "Tools", parts: "toolbox, old-one", toCome: ""},
+		{name: "quiet", title: "Quiet", parts: "idle", toCome: ""},
+	}
+	tags := []string{"terminals", "tools", "reading"}
+	fixturePost := seenListed{
+		readiness: outAt(test, fixturePostSlug, fixturePostMoment), title: fixturePostTitle, part: "part 2", series: fixtureSeriesTitle,
+		seriesName: fixtureSeriesName, tags: "reading,terminals",
+	}
+	first := seenListed{
+		readiness: outAt(test, "first", earlier), title: "first", part: "part 1", series: fixtureSeriesTitle, seriesName: fixtureSeriesName, tags: "terminals,tools",
+	}
+	oldOne := seenListed{readiness: outAt(test, "old-one", yearBefore), title: "old-one", part: "part 2", series: "Tools", seriesName: "tools", tags: "tools"}
+	toolbox := seenListed{readiness: outAt(test, "toolbox", latest), title: "toolbox", part: "part 1", series: "Tools", seriesName: "tools", tags: ""}
+	cases := []struct {
+		page     document.Page
+		subtitle string
+		groups   []seenGroup
+	}{
+		{
+			page: document.TagFilter("terminals"), subtitle: "posts tagged terminals",
+			groups: []seenGroup{{title: "2026", name: "", line: "", count: "2 posts", posts: []seenListed{fixturePost, first}}},
+		},
+		{
+			page: document.TagFilter("tools"), subtitle: "posts tagged tools",
+			groups: []seenGroup{
+				{title: "2026", name: "", line: "", count: "1 post", posts: []seenListed{first}},
+				{title: "2025", name: "", line: "", count: "1 post", posts: []seenListed{oldOne}},
+			},
+		},
+		{
+			page: document.TagFilter("reading"), subtitle: "posts tagged reading",
+			groups: []seenGroup{{title: "2026", name: "", line: "", count: "1 post", posts: []seenListed{fixturePost}}},
+		},
+		{
+			page: document.SeriesFilter("tools"), subtitle: "parts of Tools",
+			groups: []seenGroup{
+				{title: "2026", name: "", line: "", count: "1 post", posts: []seenListed{toolbox}},
+				{title: "2025", name: "", line: "", count: "1 post", posts: []seenListed{oldOne}},
+			},
+		},
+		{
+			page: document.SeriesFilter(fixtureSeriesName), subtitle: "parts of Reading",
+			groups: []seenGroup{{title: "2026", name: "", line: "", count: "2 posts", posts: []seenListed{fixturePost, first}}},
+		},
+	}
+	filtered := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Filtered
+	if len(filtered) != len(cases) {
+		test.Fatalf("the list is filtered %d ways, %+v, want %d", len(filtered), filtered, len(cases))
+	}
+	for index, testCase := range cases {
+		test.Run(testCase.subtitle, func(test *testing.T) {
+			head := filtered[index].Head
+			if head.Page != testCase.page || document.PlainText(head.Subtitle) != testCase.subtitle || !reflect.DeepEqual(head.ListedWords(), tags) ||
+				document.PlainText(head.Title) != "blog" {
+				test.Errorf("the filtered list's head = %+v, want the page %+v, the subtitle %q and the tags %q", head, testCase.page, testCase.subtitle, tags)
+			}
+			if got := seenGroups(filtered[index]); !reflect.DeepEqual(got, testCase.groups) {
+				test.Errorf("the list filtered as %+v = %+v, want %+v", testCase.page, got, testCase.groups)
+			}
+		})
+	}
+}
+
+// A head of the blog's list offers its filters, each leading to the list it filters: every tag of the posts the list
+// names, in the head's order; on a list filtered by a tag that tag current, leading back to the whole list, named to a
+// screen reader as the way there; on a list filtered by a series that series first, in the site's words, current and
+// leading back too.
+func TestAListsHeadOffersItsFilters(test *testing.T) {
+	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
+	lists := slices.Concat(site.Lists, site.Filtered)
+	whole := document.PageOf(document.PageBlog)
+	reading := document.Filter{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: document.TagFilter("reading"), Current: false, WayOut: ""}
+	terminals := document.Filter{Kind: document.FilterTag, Name: "terminals", Words: textSpans("terminals"), Page: document.TagFilter("terminals"), Current: false, WayOut: ""}
+	readingShown := document.Filter{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: whole, Current: true, WayOut: "posts tagged reading, show all posts"}
+	seriesShown := document.Filter{
+		Kind: document.FilterSeries, Name: fixtureSeriesName, Words: textSpans("parts of Reading"), Page: whole, Current: true, WayOut: "parts of Reading, show all posts",
+	}
+	cases := []struct {
+		name string
+		page document.Page
+		want []document.Filter
+	}{
+		{name: "the list", page: whole, want: []document.Filter{reading, terminals}},
+		{name: "the list by series", page: document.PageOf(document.PageBlogSeries), want: []document.Filter{reading, terminals}},
+		{name: "filtered by a tag", page: document.TagFilter("reading"), want: []document.Filter{readingShown, terminals}},
+		{name: "filtered by a series", page: document.SeriesFilter(fixtureSeriesName), want: []document.Filter{seriesShown, reading, terminals}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := fixtures.DocumentOf(test, lists, testCase.page).Head.Filters; !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the filters of %+v = %+v, want %+v", testCase.page, got, testCase.want)
+			}
+		})
+	}
+}
+
+// Each grouping of the blog's list, and each filter of it, has for places each post out it names, in its own order,
+// by its slug at its page, then each tag its head names, at the list it filters, or on that list back at the list,
 // then each series with a group, by its name at its group on the list by series, in the groups' order; never a post
 // the list leaves out, nor a series with no part out, nor one for a post in none.
-func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
+func TestAListsPlacesAreItsPostsThenItsTagsThenItsSeries(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
 		{slug: "toolbox", id: 4, status: "published", published: latest, tags: ""},
@@ -182,14 +295,26 @@ func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
 		{Name: "tools", Kind: document.PlaceSeries, Page: bySeries, Section: "tools"},
 		{Name: fixtureSeriesName, Kind: document.PlaceSeries, Page: bySeries, Section: fixtureSeriesName},
 	}
-	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
+	tagPlaces := []document.Place{
+		{Name: "reading", Kind: document.PlaceTag, Page: document.TagFilter("reading"), Section: ""},
+		{Name: "terminals", Kind: document.PlaceTag, Page: document.TagFilter("terminals"), Section: ""},
+	}
+	filteredTagPlaces := []document.Place{
+		{Name: "reading", Kind: document.PlaceTag, Page: document.PageOf(document.PageBlog), Section: ""},
+		{Name: "terminals", Kind: document.PlaceTag, Page: document.TagFilter("terminals"), Section: ""},
+	}
+	site := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay())
 	cases := []struct {
 		name string
 		list document.Document
 		want []document.Place
 	}{
-		{name: "by year, newest first", list: lists[0], want: slices.Concat([]document.Place{toolbox, read, first, loner}, seriesPlaces)},
-		{name: "by series, by its groups", list: lists[1], want: slices.Concat([]document.Place{toolbox, first, read, loner}, seriesPlaces)},
+		{name: "by year, newest first", list: site.Lists[0], want: slices.Concat([]document.Place{toolbox, read, first, loner}, tagPlaces, seriesPlaces)},
+		{name: "by series, by its groups", list: site.Lists[1], want: slices.Concat([]document.Place{toolbox, first, read, loner}, tagPlaces, seriesPlaces)},
+		{
+			name: "filtered by a tag, which leads back to the list", list: fixtures.DocumentOf(test, site.Filtered, document.TagFilter("reading")),
+			want: slices.Concat([]document.Place{read}, filteredTagPlaces, seriesPlaces[1:]),
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -202,8 +327,8 @@ func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
 
 // Every face's :e opens each project's page by its slug, then the blog's list in each grouping and each post the list
 // names, newest first, which Tab offers; then a post served and no list names, by its slug, and every post served by
-// its number, which Tab never offers; never a draft, a preview or a post that comes later than its reader, each by the
-// name a terminal reaches it by.
+// its number, and the list filtered by each tag and each series, which Tab never offers; never a draft, a preview or a
+// post that comes later than its reader, each by the name a terminal reaches it by.
 func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
@@ -223,6 +348,9 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/3", Kind: document.PlacePost, Page: first, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/5", Kind: document.PlacePost, Page: hidden, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/1", Kind: document.PlacePost, Page: read, Section: ""}, Offered: false},
+		{Place: document.Place{Name: "blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading"), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals"), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading"), Section: ""}, Offered: false},
 	}
 	if got := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Frame.Pages; !reflect.DeepEqual(got, want) {
 		test.Errorf("the pages :e opens = %+v, want %+v", got, want)

@@ -95,8 +95,9 @@ func Manual(composed document.Document, site routes.Site) string {
 }
 
 // pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page and
-// a post, its path from the root for the blog's list, its folders joined by a hyphen (blog-series); the index, served
-// in markdown alone, and the hidden pages, served in neither, have no manual to name.
+// a post, its path from the root for the blog's list, its folders joined by a hyphen (blog-series), and a filtered
+// list's the list's it filters, as man(1) names a page by its name and never by how it was asked for; the index,
+// served in markdown alone, and the hidden pages, served in neither, have no manual to name.
 func (writer manualWriter) pageName(page document.Page) string {
 	switch page.Kind {
 	case document.PageResume:
@@ -105,6 +106,9 @@ func (writer manualWriter) pageName(page document.Page) string {
 		return page.Slug
 	case document.PageBlog, document.PageBlogSeries:
 		return strings.ReplaceAll(strings.TrimPrefix(routes.Path(page, routes.FormatChosen), pathRoot), pathRoot, nameJoint)
+	case document.PageTagFilter, document.PageSeriesFilter:
+		list, _ := page.Unfiltered()
+		return writer.pageName(list)
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return ""
@@ -116,13 +120,13 @@ func (writer manualWriter) name(head document.Head) []string {
 	return append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
 }
 
-// description writes the description section: the lead, what a project is made of, where a project's code lives,
-// then the blocks that are no section; none where there is nothing to describe.
+// description writes the description section: the lead, what a project is made of or a post's or the list's tags,
+// where a project's code lives, then the blocks that are no section; none where there is nothing to describe.
 func (writer manualWriter) description(head document.Head, others []document.Block) []string {
 	lines := paragraph(sectionIndent, 0, writer.words(head.Lead))
-	if len(head.Tags) > 0 {
-		tags := make([][]string, 0, len(head.Tags))
-		for _, tag := range head.Tags {
+	if named := head.ListedWords(); len(named) > 0 {
+		tags := make([][]string, 0, len(named))
+		for _, tag := range named {
 			tags = append(tags, strings.Fields(tag))
 		}
 		lines = append(append(lines, ""), paragraph(sectionIndent, 0, joinedWords(dotWord, tags...))...)

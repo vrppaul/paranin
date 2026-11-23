@@ -18,9 +18,100 @@ const onePost = 1
 // by year, newest first, and the same posts by series, the posts in no series last. Each opens with the blog's head.
 func blogLists(read blog, words content.Words) []document.Document {
 	return []document.Document{
-		{Head: listHead(document.PageBlog, read, words), Blocks: read.byYear(words)},
-		{Head: listHead(document.PageBlogSeries, read, words), Blocks: read.bySeries(words)},
+		{Head: read.listHead(document.PageOf(document.PageBlog), nil, words), Blocks: read.byYear(read.newest, words)},
+		{Head: read.listHead(document.PageOf(document.PageBlogSeries), nil, words), Blocks: read.bySeries(words)},
 	}
+}
+
+// listFilter is a filter of the blog's list: the list it makes; what it filters by and the name it goes by, a tag or a
+// series' name; the phrase that writes it and the title the phrase takes, the tag or the series' title; and the posts
+// it keeps, newest first.
+type listFilter struct {
+	page   document.Page
+	kind   document.FilterKind
+	name   string
+	phrase content.Phrase
+	title  string
+	posts  []content.Post
+}
+
+// filtersOf are the filters of the blog's list (D25): by each tag its head names, in its order, then by each series
+// with a part out, the one whose latest part came out last first; each keeping the posts the list names that carry the
+// tag or are parts of the series.
+func (read blog) filtersOf() []listFilter {
+	filters := make([]listFilter, 0, len(read.tags))
+	for _, tag := range read.tags {
+		kept := slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return !slices.Contains(post.Tags, tag) })
+		filters = append(filters, listFilter{
+			page: document.TagFilter(tag), kind: document.FilterTag, name: tag, phrase: content.PhraseTagFilter, title: tag, posts: kept,
+		})
+	}
+	for _, series := range read.seriesNewestFirst() {
+		kept := slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return read.seriesOf[post.Slug].Name != series.Name })
+		filters = append(filters, listFilter{
+			page: document.SeriesFilter(series.Name), kind: document.FilterSeries, name: series.Name, phrase: content.PhraseSeriesFilter,
+			title: series.Title, posts: kept,
+		})
+	}
+	return filters
+}
+
+// filteredLists are the blog's list by year filtered by each of its filters, a view of the list each, not a page of its
+// own (docs/FOUNDATION.md §5.4): its head the list's, with the filter in the site's words beside the blog's name.
+func filteredLists(read blog, words content.Words) []document.Document {
+	lists := make([]document.Document, 0, len(read.filters))
+	for _, filter := range read.filters {
+		lists = append(lists, document.Document{Head: read.listHead(filter.page, filter.words(words), words), Blocks: read.byYear(filter.posts, words)})
+	}
+	return lists
+}
+
+// words are a filter in the site's words: "posts tagged go", "parts of Stint".
+func (filter listFilter) words(words content.Words) []document.Span {
+	return textSpans(words.Phrase(filter.phrase, filter.title))
+}
+
+// listFilters are the filters the head of the blog's list offers on a page of it (DESIGN.md, BlogHead): on a list
+// filtered by a series that series; then every tag of the posts the list names. The filter the list shown is filtered
+// by leads back to the whole list, every other to the list it filters.
+func (read blog) listFilters(shown document.Page, words content.Words) []document.Filter {
+	series, tags := []document.Filter{}, []document.Filter{}
+	for _, filter := range read.filters {
+		switch filter.kind {
+		case document.FilterTag:
+			tags = append(tags, filter.offered(shown, textSpans(filter.title), words))
+		case document.FilterSeries:
+			if filter.page == shown {
+				series = append(series, filter.offered(shown, filter.words(words), words))
+			}
+		}
+	}
+	return slices.Concat(series, tags)
+}
+
+// offered is a filter as a head on a page offers it, in its words there: leading to the list it filters, or, on that
+// list, where it is the filter shown, back to the whole list, named as the way there.
+func (filter listFilter) offered(shown document.Page, written []document.Span, words content.Words) document.Filter {
+	offered := document.Filter{Kind: filter.kind, Name: filter.name, Words: written, Page: filter.page, Current: false, WayOut: ""}
+	if filter.page == shown {
+		offered.Page, _ = filter.page.Unfiltered()
+		offered.Current, offered.WayOut = true, words.Phrase(content.PhraseFilterWayOut, document.PlainText(filter.words(words)))
+	}
+	return offered
+}
+
+// postFilters are the filters a post's head offers: each of its tags, leading to the list it filters where the lists
+// name the post; a draft's, a preview's and an unlisted post's lead nowhere, since a tag of theirs may filter none.
+func (read blog) postFilters(post content.Post) []document.Filter {
+	filters := make([]document.Filter, 0, len(post.Tags))
+	for _, tag := range post.Tags {
+		leads := document.PageOf(document.PageNone)
+		if read.audience.lists(post) {
+			leads = document.TagFilter(tag)
+		}
+		filters = append(filters, document.Filter{Kind: document.FilterTag, Name: tag, Words: textSpans(tag), Page: leads, Current: false, WayOut: ""})
+	}
+	return filters
 }
 
 // blogListings are the blog's pages as the site's index lists them: the blog's list in each grouping, by its own
@@ -29,29 +120,31 @@ func blogLists(read blog, words content.Words) []document.Document {
 func blogListings(read blog, words content.Words) []document.Listing {
 	listings := []document.Listing{}
 	for _, grouping := range listWordsOf(words).Groupings() {
-		head := listHead(grouping.List.Kind, read, words)
+		head := read.listHead(grouping.List, nil, words)
 		title := words.Phrase(content.PhraseGroupedList, document.PlainText(head.Title), grouping.Words)
 		listings = append(listings, document.Listing{Page: head.Page, Title: textSpans(title), Note: head.Description})
 	}
-	for _, post := range read.newestFirst() {
+	for _, post := range read.newest {
 		listings = append(listings, document.Listing{Page: postPage(post), Title: textSpans(post.Title), Note: textSpans(post.Description)})
 	}
 	return listings
 }
 
-// listHead is the head of the blog's list in a grouping: the blog's name its title, its line the lead and the page's
-// description, and the tags of the posts it lists.
-func listHead(kind document.PageKind, read blog, words content.Words) document.Head {
+// listHead is the head of the blog's list as a page shows it, in a grouping or filtered: the blog's name its title, the
+// filter beside it, none where it filters none, its line the lead and the page's description, and the filters it
+// offers, the tags of every post the blog lists among them.
+func (read blog) listHead(page document.Page, filter []document.Span, words content.Words) document.Head {
 	line := textSpans(words.Text(content.WordBlogLine))
 	return document.Head{
-		Page:        document.PageOf(kind),
+		Page:        page,
 		Number:      0,
 		Language:    words.Language(),
 		Greeting:    "",
 		Title:       textSpans(words.Text(content.WordBlog)),
-		Subtitle:    nil,
+		Subtitle:    filter,
 		Place:       "",
-		Tags:        listedTags(read.listed),
+		Filters:     read.listFilters(page, words),
+		MadeOf:      nil,
 		Lead:        line,
 		Version:     nil,
 		Repository:  nil,
@@ -73,12 +166,12 @@ func listedTags(posts []content.Post) []string {
 	})
 }
 
-// byYear are the posts the blog lists, a group a year, newest first, as each came out in its own zone; each post
-// says where it stands in its series, which its group does not.
-func (read blog) byYear(words content.Words) []document.Block {
+// byYear are posts the blog lists, newest first, a group a year, as each came out in its own zone; each post says
+// where it stands in its series, which its group does not.
+func (read blog) byYear(newest []content.Post, words content.Words) []document.Block {
 	years := []int{}
 	postsOf := map[int][]document.ListedPost{}
-	for _, post := range read.newestFirst() {
+	for _, post := range newest {
 		year := post.Published.At().Year()
 		if _, seen := postsOf[year]; !seen {
 			years = append(years, year)
@@ -112,7 +205,7 @@ func (read blog) bySeries(words content.Words) []document.Block {
 		groups = append(groups, postGroup(series.Title, series.Name, textSpans(series.Line), count, posts))
 	}
 	others := []document.ListedPost{}
-	for _, post := range read.newestFirst() {
+	for _, post := range read.newest {
 		if _, inSeries := read.seriesOf[post.Slug]; !inSeries {
 			others = append(others, read.listedOutside(post, words))
 		}
@@ -138,9 +231,9 @@ func postCount(posts int, words content.Words) []document.Span {
 	return textSpans(words.Phrase(phrase, strconv.Itoa(posts)))
 }
 
-// newestFirst are the posts the blog lists, the one out last first.
-func (read blog) newestFirst() []content.Post {
-	posts := slices.Clone(read.listed)
+// newestFirst are posts in the order they came out turned round, the one out last first.
+func newestFirst(listed []content.Post) []content.Post {
+	posts := slices.Clone(listed)
 	slices.Reverse(posts)
 	return posts
 }

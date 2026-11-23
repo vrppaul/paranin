@@ -259,16 +259,22 @@ func rendered(component templ.Component) string {
 	return builder.String()
 }
 
-// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab.
+// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab. A
+// filtered list, a view of the list, is indexed by no search engine and known at no address, as a preview is: a part of
+// the list is no copy of it to name the list's.
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	site := writer.frame.site
-	return pageMetadata{
+	metadata := pageMetadata{
 		title:       document.PlainText(title),
 		description: document.PlainText(head.Description),
 		canonical:   site.Address(shown, routes.FormatChosen),
 		markdown:    site.Reference(shown, routes.FormatMarkdown),
 		indexed:     true,
 	}
+	if _, isFilter := shown.Unfiltered(); isFilter {
+		metadata.canonical, metadata.indexed = "", false
+	}
+	return metadata
 }
 
 // block is the component of a block, at the depth of its headings.

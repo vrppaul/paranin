@@ -55,10 +55,10 @@ func tonedRows(rows []string, shown kind, width int) []line {
 // so the colours run on across the words wherever a line breaks them.
 func gradientWords(text string, shown kind) []word {
 	letters := []rune(text)
-	words, current := []word{}, word{runs: nil, highlightBefore: false}
+	words, current := []word{}, word{runs: nil, highlightBefore: false, spaceBefore: kindText}
 	for index, letter := range letters {
 		if unicode.IsSpace(letter) {
-			words, current = appendWord(words, current), word{runs: nil, highlightBefore: false}
+			words, current = appendWord(words, current), word{runs: nil, highlightBefore: false, spaceBefore: kindText}
 			continue
 		}
 		piece := run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: toneAt(index, len(letters)), cites: noCitation}

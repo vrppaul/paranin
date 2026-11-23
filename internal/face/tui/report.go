@@ -108,7 +108,7 @@ func tallyWords(checks []document.Check) []word {
 			continue
 		}
 		mark := run{text: placeMark + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
-		words = append(words, word{runs: []run{mark, counted}, highlightBefore: false})
+		words = append(words, word{runs: []run{mark, counted}, highlightBefore: false, spaceBefore: kindText})
 	}
 	return words
 }

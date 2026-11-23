@@ -64,7 +64,8 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Title:       tab.Title,
 		Subtitle:    nil,
 		Place:       "",
-		Tags:        nil,
+		Filters:     nil,
+		MadeOf:      nil,
 		Lead:        nil,
 		Version:     nil,
 		Repository:  nil,
@@ -131,7 +132,8 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 			Title:       resume.Title,
 			Subtitle:    nil,
 			Place:       "",
-			Tags:        nil,
+			Filters:     nil,
+			MadeOf:      nil,
 			Lead:        resume.Lead,
 			Version:     nil,
 			Repository:  nil,
@@ -160,7 +162,8 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Title:       markedSpans(person.Name),
 		Subtitle:    markedSpans(person.Title),
 		Place:       person.Location,
-		Tags:        nil,
+		Filters:     nil,
+		MadeOf:      nil,
 		Lead:        headline,
 		Version:     nil,
 		Repository:  nil,
@@ -256,7 +259,8 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Title:       markedSpans(project.Name),
 		Subtitle:    markedSpans(project.Tagline),
 		Place:       "",
-		Tags:        projectTags(project),
+		Filters:     nil,
+		MadeOf:      projectMadeOf(project),
 		Lead:        description,
 		Version:     nil,
 		Repository:  projectRepository(project, words),
@@ -265,9 +269,9 @@ func projectHead(project content.Project, words content.Words) document.Head {
 	}
 }
 
-// projectTags are what a project is made of: the language it is written in, where the profile names one, then what
+// projectMadeOf is what a project is made of: the language it is written in, where the profile names one, then what
 // it is built on.
-func projectTags(project content.Project) []string {
+func projectMadeOf(project content.Project) []string {
 	if project.Language == "" {
 		return slices.Clone(project.Stack)
 	}

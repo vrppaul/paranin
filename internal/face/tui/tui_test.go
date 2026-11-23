@@ -881,11 +881,11 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 }
 
 // sessionDrawing is what the SSH server hands a session of a snapshot on the tests' day, its drafts too where drafts
-// says, as their author reads them: its pages, the TUI's extras, the blog's lists and its posts, with the site's words
-// and its site.
+// says, as their author reads them: its pages, the TUI's extras, the blog's lists, filtered or not, and its posts, with
+// the site's words and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
-	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Posts)
+	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Filtered, site.Posts)
 	return Drawing{Documents: documents, Frame: site.Frame, Site: fixtures.Site(snapshot)}
 }
 

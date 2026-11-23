@@ -22,6 +22,8 @@ const (
 	PlacePost PlaceKind = "post"
 	// PlaceSeries is a series' group on the blog's list by series
 	PlaceSeries PlaceKind = "series"
+	// PlaceTag is a tag of the posts the blog's list names, which leads where the list's head leads by it
+	PlaceTag PlaceKind = "tag"
 )
 
 // Place is somewhere a page's command line goes by its name: its kind, the page it is or lies in, and the section of
@@ -35,16 +37,16 @@ type Place struct {
 
 // PlacesOf are a page's own places, which its command line offers after its tabs and before the projects' pages, read
 // off the document as its tabs and its notes are, so none is kept in step with the blocks: on a post every heading in
-// reading order, then its series' other parts out; on the blog's list each post out it names, then each series a post
-// out is a part of, in the order they first stand in; none on any other page. exhaustive holds the switch to every
-// kind.
+// reading order, then its series' other parts out; on the blog's list, filtered or not, each post out it names, then
+// each tag its head names, then each series a post out is a part of, in the order they first stand in; none on any
+// other page. exhaustive holds the switch to every kind.
 func PlacesOf(composed Document) []Place {
 	head := composed.Head
 	switch head.Page.Kind {
 	case PagePost:
 		return slices.Concat(headingPlaces(head.Page, composed.Blocks), partPlaces(head.Post))
-	case PageBlog, PageBlogSeries:
-		return listPlaces(composed.Blocks)
+	case PageBlog, PageBlogSeries, PageTagFilter, PageSeriesFilter:
+		return listPlaces(head, composed.Blocks)
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
 	}
 	return nil
@@ -80,17 +82,32 @@ func partPlaces(place *PostPlace) []Place {
 	return places
 }
 
-// listPlaces are the places of the blog's list in either grouping: each post out its groups name, by its slug, then
-// each series one of them is a part of, by its name, at its group on the list by series.
-func listPlaces(blocks []Block) []Place {
-	posts, series := []Place{}, []Place{}
+// listPlaces are the places of the blog's list of a head: each post out its groups name, by its slug, then each tag
+// its head's filters name, leading where the filter leads, then each series one of the posts is a part of, by its
+// name, at its group on the list by series.
+func listPlaces(head Head, blocks []Block) []Place {
+	posts, tags, series := []Place{}, []Place{}, []Place{}
 	for _, out := range postsOut(blocks) {
 		posts = append(posts, Place{Name: out.page.Slug, Kind: PlacePost, Page: out.page, Section: ""})
 		if out.seriesName != "" && !slices.ContainsFunc(series, func(known Place) bool { return known.Name == out.seriesName }) {
 			series = append(series, Place{Name: out.seriesName, Kind: PlaceSeries, Page: PageOf(PageBlogSeries), Section: out.seriesName})
 		}
 	}
-	return slices.Concat(posts, series)
+	for _, filter := range head.Filters {
+		tags = append(tags, tagPlaces(filter)...)
+	}
+	return slices.Concat(posts, tags, series)
+}
+
+// tagPlaces are the places of a filter of a list's head: a tag, by its name, where the filter leads; none for a
+// series, which its group stands for as a place of its own. exhaustive holds the switch to every kind.
+func tagPlaces(filter Filter) []Place {
+	switch filter.Kind {
+	case FilterTag:
+		return []Place{{Name: filter.Name, Kind: PlaceTag, Page: filter.Page, Section: ""}}
+	case FilterSeries:
+	}
+	return nil
 }
 
 // postOut is a post out the blog's list names, as its places read it: its page, and its series' name, none outside one.

@@ -249,19 +249,26 @@ a.session:hover {
   color: var(--prompt);
 }
 
-/* the window shown, the place chosen on the command line's menu, and the chip whose window is open, a way's hint or a
- * series' pick, reversed and bold as the TUI's tab: a mark of form, not of colour alone; the chip's hairline and its
- * marks with it */
+/* the hash before a tag's word (DESIGN.md, Tag), faint */
+.tag-mark {
+  color: var(--faint);
+}
+
+/* the window shown, the place chosen on the command line's menu, the chip whose window is open, a way's hint or a
+ * series' pick, and the filter the blog's list shows, reversed and bold as the TUI's tab: a mark of form, not of colour
+ * alone; the chip's hairline and the marks of each with it */
 .window[aria-current],
 .places-item[aria-selected="true"],
-.way-chip:has(+ :is(.hint, .pick):popover-open) {
+.way-chip:has(+ :is(.hint, .pick):popover-open),
+a.tag[aria-current] {
   background: var(--text);
   color: var(--background);
   font-weight: var(--type-strong-weight);
 }
 
 .window[aria-current] .window-number,
-.way-chip:has(+ :is(.hint, .pick):popover-open) :is(.way-mark, .series-count, .series-mark) {
+.way-chip:has(+ :is(.hint, .pick):popover-open) :is(.way-mark, .series-count, .series-mark),
+a.tag[aria-current] .tag-mark {
   color: var(--background);
 }
 
@@ -992,13 +999,16 @@ a.session:hover {
   cursor: pointer;
 }
 
-/* the focus on the button rings the whole chip, which is the control */
-.command:has(> :focus-visible) {
+/* the focus on the button rings the whole chip, which is the control, and the focus on a tile's title the whole tile,
+ * which its link stands over */
+.command:has(> :focus-visible),
+.tile:has(> a.tile-title:focus-visible) {
   outline: var(--focus-width) solid var(--label);
   outline-offset: var(--focus-width);
 }
 
-.command-copy:focus-visible {
+.command-copy:focus-visible,
+a.tile-title:focus-visible {
   outline: none;
 }
 
@@ -1636,8 +1646,8 @@ a.session:hover {
   padding-top: var(--row-half);
 }
 
-/* a post's tags (DESIGN.md, Tag): each its hash faint and its word muted, in the small style, two cells apart,
- * wrapping whole */
+/* a post's tags (DESIGN.md, Tag): each its hash faint (.tag-mark, with the other marks) and its word muted, in the
+ * small style, two cells apart, wrapping whole */
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -1650,8 +1660,28 @@ a.session:hover {
   font-weight: var(--type-small-weight);
 }
 
-.tag-mark {
-  color: var(--faint);
+/* a tag that filters the blog's list is a link, told by its hash, not an underline: its ground under the pointer
+ * reaches a nudge past its words, which keep the line of the words beside them, and its word turns the text's colour.
+ * The filter the list shows stands reversed with the window shown; under the pointer it takes a link's underline, as
+ * the way back to the whole list it is */
+a.tag {
+  margin-inline: calc(-1 * var(--nudge));
+  padding: 0 var(--nudge);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background var(--quick),
+    color var(--quick);
+}
+
+a.tag:not([aria-current]):hover {
+  background: var(--sunk);
+  color: var(--text);
+}
+
+a.tag[aria-current]:hover {
+  text-decoration: underline var(--accent) var(--underline-hover);
+  text-underline-offset: var(--nudge);
 }
 
 /* the article (DESIGN.md, Article): its blocks on the post's grid, a row apart, each in the text's column; a section
@@ -2164,13 +2194,13 @@ a.pick-row:hover {
   line-height: var(--type-small-line);
 }
 
-/* a pane that leads somewhere under the pointer: its ground a shade down, its name on both grounds, the page's above
- * the edge and the pane's below it */
-a.pane:hover {
+/* a pane that leads somewhere under the pointer, and a tile of the blog's list, whose title's link leads: its ground a
+ * shade down, its name on both grounds, the page's above the edge and the pane's below it */
+:is(a.pane:hover, .tile:has(> a.tile-title:hover)) {
   background: var(--sunk);
 }
 
-a.pane:hover .pane-name {
+:is(a.pane:hover, .tile:has(> a.tile-title:hover)) .pane-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--sunk) 0);
 }
 
@@ -2180,11 +2210,11 @@ a.pane:hover .pane-title {
 }
 
 /* pressed, one shade further, as a quiet control (DESIGN.md, States) */
-a.pane:active {
+:is(a.pane:active, .tile:has(> a.tile-title:active)) {
   background: var(--deep);
 }
 
-a.pane:active .pane-name {
+:is(a.pane:active, .tile:has(> a.tile-title:active)) .pane-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--deep) 0);
 }
 
@@ -2458,9 +2488,9 @@ a.pane:active .pane-name {
   margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
 }
 
-/* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .pane-name, and their
- * states under the pointer and pressed): what differs is here. Its day muted and not bold; in a series' own group its
- * part before it, bold in the text's colour */
+/* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .pane-name), its title
+ * the link (a.tile-title, below): what differs is here. Its day muted and not bold; in a series' own group its part
+ * before it, bold in the text's colour */
 .tile-edge {
   color: var(--muted);
   font-weight: var(--type-small-weight);
@@ -2484,9 +2514,9 @@ a.pane:active .pane-name {
   text-wrap: pretty;
 }
 
-/* at its foot, whatever its words above, where its post stands, apart from the post: its part and its series' title
- * where its group is no series' own, a long title wrapping, the dot faint; then its tags, words of the tile's link,
- * faint and smaller */
+/* at its foot, whatever its words above, where its post stands, apart from the post: its part and its series' title,
+ * a link to the series' group, where its group is no series' own, a long title wrapping, the dot faint; then its tags,
+ * words of the tile, faint and smaller */
 .tile-foot {
   display: grid;
   gap: var(--nudge);
@@ -2529,19 +2559,38 @@ a.pane:active .pane-name {
 }
 
 /* a tile that leads somewhere stands over a tile to come beside it, so the line the two share is its own, and the one
- * the keyboard is on over every tile, so no day set into a tile below cuts its ring; under the pointer its title, which
- * no underline marks at rest as a pane's does, takes the accent's, twice as thick */
-a.tile {
+ * the keyboard is on over every tile, so no day set into a tile below cuts its ring. Its title is the link to its post,
+ * its edge inside it, stretched over the whole tile, since its series leads elsewhere and a link holds no other: the
+ * keyboard's ring and the pointer's states are the tile's, as a pane's (.pane, .command), and its title, which no
+ * underline marks at rest, takes the accent's under the pointer, twice as thick, its edge left out, set into the frame
+ * as it is */
+.tile:has(> a.tile-title:any-link) {
   z-index: var(--layer-tile);
 }
 
-a.tile:focus-visible {
+.tile:has(> a.tile-title:focus-visible) {
   z-index: var(--layer-tile-focus);
 }
 
-a.tile:hover .tile-title {
+a.tile-title:any-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.tile-title::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.tile:has(> a.tile-title:hover) .tile-title {
   text-decoration: underline var(--accent) var(--underline-hover);
   text-underline-offset: var(--nudge);
+}
+
+/* its series a link of its own, to the series' group on the list by series, standing over the title's */
+.tile-series-link {
+  position: relative;
 }
 
 @media (prefers-reduced-motion: reduce) {

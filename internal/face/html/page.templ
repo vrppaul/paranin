@@ -417,8 +417,8 @@ templ (writer PageWriter) head(head document.Head) {
 				@text(head.Place)
 			</p>
 		}
-		if len(head.Tags) > 0 {
-			<p class="page-tags">{ strings.Join(head.Tags, dot) }</p>
+		if len(head.MadeOf) > 0 {
+			<p class="page-tags">{ strings.Join(head.MadeOf, dot) }</p>
 		}
 		if len(head.Lead) > 0 {
 			<p class="page-lead">

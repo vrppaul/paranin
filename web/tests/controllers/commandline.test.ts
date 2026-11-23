@@ -125,7 +125,12 @@ test("the menu narrows to the places a letter starts, the letter typed apart", (
 test.each([
   { name: "a post's headings", golden: postPage, typed: "a", want: ["afterwards"] },
   { name: "a post's other parts", golden: partPage, typed: "t", want: ["third", "tidy-tool"] },
-  { name: "the list's posts and its series", golden: listPage, typed: "r", want: ["reading-slowly", "reading"] },
+  {
+    name: "the list's posts, tags and series, a tag and a series named alike each standing",
+    golden: listPage,
+    typed: "r",
+    want: ["reading-slowly", "reading", "reading"],
+  },
 ])("the menu offers $name among the places a letter starts", ({ golden, typed, want }) => {
   started(true, () => undefined, golden);
   press(":");
@@ -143,10 +148,10 @@ test.each([
   { name: "a post, at its page", golden: listPage, typed: "reading-slowly", want: ["/blog/reading-slowly"] },
   { name: "another part, at its page", golden: partPage, typed: "first", want: ["/blog/first"] },
   {
-    name: "a series, at its group on the list by series",
+    name: "a tag, at the list it filters, the first of the places its name names",
     golden: listPage,
     typed: "reading",
-    want: ["/blog/series#reading"],
+    want: ["/blog?tag=reading"],
   },
 ])("Enter goes to $name", ({ golden, typed, want }) => {
   const { went } = started(true, () => undefined, golden);
@@ -154,6 +159,17 @@ test.each([
   type(typed);
   press("Enter");
   expect(went).toEqual(want);
+});
+
+test("Enter goes to a series, at its group on the list by series, where Tab chose it beside the tag named alike", () => {
+  const { went } = started(true, () => undefined, listPage);
+  press(":");
+  type("reading");
+  press("Tab");
+  press("Tab");
+  press("Tab");
+  press("Enter");
+  expect(went).toEqual(["/blog/series#reading"]);
 });
 
 test.each([

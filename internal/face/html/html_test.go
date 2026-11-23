@@ -679,22 +679,129 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 }
 
 // The blog's list is read as a browser, a screen reader and a search engine read it: the blog's name the page's one
-// h1, in block letters, its line, the Switch of its groupings and its tags; each group under its name, an h2, its
-// posts in order, each a link to its post, a part to come no link; then the foot line of the blog's session. Each
-// grouping is held to its golden file, named after its own address.
+// h1, in block letters, its line, the Switch of its groupings and its tags, each a link to the list it filters; each
+// group under its name, an h2, its posts in order, each a link to its post, a part to come no link; then the foot line
+// of the blog's session. Each grouping is held to its golden file, named after its own address, and each filter of the
+// list by tag and by series to its own, named by the filter, since the list's path holds a query.
 func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
-	files := []string{"blog.html", "blog/series.html"}
-	for index, list := range siteOnTheDay(fixtures.LoadedContent(test)).Lists {
-		test.Run(files[index], func(test *testing.T) {
-			golden.Match(test, files[index], lined(fixtureWriter(test).List(list)))
+	site := siteOnTheDay(fixtures.LoadedContent(test))
+	cases := []struct {
+		page document.Page
+		file string
+	}{
+		{page: document.PageOf(document.PageBlog), file: "blog.html"},
+		{page: document.PageOf(document.PageBlogSeries), file: "blog/series.html"},
+		{page: document.TagFilter("reading"), file: "filtered/tag-reading.html"},
+		{page: document.SeriesFilter("reading"), file: "filtered/series-reading.html"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.file, func(test *testing.T) {
+			list := fixtures.DocumentOf(test, slices.Concat(site.Lists, site.Filtered), testCase.page)
+			golden.Match(test, testCase.file, lined(fixtureWriter(test).List(list)))
 		})
 	}
 }
 
-// Every phrase of the blog's list reaches its page, as HTML writes text, in each grouping: every post it names is
-// there, with where it stands and its tags.
+// A filtered list is a view of the list and no page of its own: its page tells a search engine not to index it, names
+// no address it is known by, as a preview's names none, since a part of the list is no copy of it, and is called by
+// the blog's name and its filter; the list itself is indexed and known at its own address.
+func TestAFilteredListIsIndexedByNoSearchEngine(test *testing.T) {
+	site := siteOnTheDay(fixtures.LoadedContent(test))
+	cases := []struct {
+		name  string
+		page  document.Page
+		holds []string
+		lacks []string
+	}{
+		{
+			name: "filtered by a tag", page: document.TagFilter("reading"),
+			holds: []string{noIndexTag, `<title>blog — posts tagged reading</title>`}, lacks: []string{`rel="canonical"`, `og:url`},
+		},
+		{
+			name: "filtered by a series", page: document.SeriesFilter("reading"),
+			holds: []string{noIndexTag, `<title>blog — parts of Reading</title>`}, lacks: []string{`rel="canonical"`, `og:url`},
+		},
+		{
+			name: "the list", page: document.PageOf(document.PageBlog),
+			holds: []string{`<link rel="canonical" href="https://example.test/blog">`, `<title>blog</title>`}, lacks: []string{noIndexTag},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			page := fixtureWriter(test).List(fixtures.DocumentOf(test, slices.Concat(site.Lists, site.Filtered), testCase.page))
+			for _, held := range testCase.holds {
+				if !strings.Contains(page, held) {
+					test.Errorf("the page %q holds no %q", page, held)
+				}
+			}
+			for _, lacked := range testCase.lacks {
+				if strings.Contains(page, lacked) {
+					test.Errorf("the page %q holds %q", page, lacked)
+				}
+			}
+		})
+	}
+}
+
+// A head's filters stand in their order, the list's and a post's alike: each a link to where it leads, a tag's word
+// after a hash a screen reader skips; the filter shown current, named to a screen reader as the way to the whole list;
+// a series' words with no hash; and a filter that leads nowhere, as a tag of a post the lists name nowhere, as words.
+func TestAHeadsFiltersLeadWhereTheyLead(test *testing.T) {
+	whole, nowhere := document.PageOf(document.PageBlog), document.PageOf(document.PageNone)
+	cases := []struct {
+		name    string
+		page    document.Page
+		filters []document.Filter
+		want    string
+	}{
+		{
+			name: "a list's tags", page: whole,
+			filters: []document.Filter{tagFilter("go", document.TagFilter("go")), tagFilter("rust", document.TagFilter("rust"))},
+			want:    `<ul class="tags"><li>` + tagLink("go", "/blog?tag=go") + `</li><li>` + tagLink("rust", "/blog?tag=rust") + `</li></ul>`,
+		},
+		{
+			name: "the tag shown, the way to the whole list", page: document.TagFilter("go"),
+			filters: []document.Filter{{Kind: document.FilterTag, Name: "go", Words: textOf("go"), Page: whole, Current: true, WayOut: "posts tagged go, show all posts"}},
+			want: `<ul class="tags"><li><a class="tag" href="/blog" aria-current="true" aria-label="posts tagged go, show all posts">` +
+				`<span class="tag-mark" aria-hidden="true">#</span>go</a></li></ul>`,
+		},
+		{
+			name: "the series shown", page: document.SeriesFilter("stint"),
+			filters: []document.Filter{{Kind: document.FilterSeries, Name: "stint", Words: textOf("parts of Stint"), Page: whole, Current: true, WayOut: "away"}},
+			want:    `<ul class="tags"><li><a class="tag" href="/blog" aria-current="true" aria-label="away">parts of Stint</a></li></ul>`,
+		},
+		{
+			name: "a tag that leads nowhere", page: postPage("one"),
+			filters: []document.Filter{tagFilter("go", nowhere)},
+			want:    `<ul class="tags"><li><span class="tag-mark" aria-hidden="true">#</span>go</li></ul>`,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			head := fixtures.HeadOf(testCase.page, textOf("blog"))
+			head.Filters = testCase.filters
+			if page := fixtureWriter(test).List(document.Document{Head: head, Blocks: nil}); !strings.Contains(page, testCase.want) {
+				test.Errorf("the page %q holds no %q", page, testCase.want)
+			}
+		})
+	}
+}
+
+// tagFilter is a tag a head offers, by its name, leading to a page, not the filter shown.
+func tagFilter(name string, leads document.Page) document.Filter {
+	return document.Filter{Kind: document.FilterTag, Name: name, Words: textOf(name), Page: leads, Current: false, WayOut: ""}
+}
+
+// tagLink is a tag as a head's filters write it, by its word and the address it leads to.
+func tagLink(name, address string) string {
+	return `<a class="tag" href="` + address + `"><span class="tag-mark" aria-hidden="true">#</span>` + name + `</a>`
+}
+
+// Every phrase of the blog's list reaches its page, as HTML writes text, in each grouping and each filter: every post
+// it names is there, with where it stands and its tags, and the filter.
 func TestEveryPhraseOfTheListReachesItsPage(test *testing.T) {
-	for _, list := range siteOnTheDay(fixtures.LoadedContent(test)).Lists {
+	site := siteOnTheDay(fixtures.LoadedContent(test))
+	for _, list := range slices.Concat(site.Lists, site.Filtered) {
 		page := fixtureWriter(test).List(list)
 		for _, phrase := range document.Phrases(list) {
 			if !strings.Contains(page, html.EscapeString(phrase)) {
@@ -704,25 +811,30 @@ func TestEveryPhraseOfTheListReachesItsPage(test *testing.T) {
 	}
 }
 
-// The list's head offers both its groupings, each a link to the list grouped so, the one shown the current page.
+// The list's head offers both its groupings, each a link to the list grouped so, the one shown the current page; on a
+// filtered list the grouping it shows, by year, current, though the list it leads to is another page.
 func TestTheSwitchMarksTheGroupingShown(test *testing.T) {
 	cases := []struct {
 		name string
-		kind document.PageKind
+		page document.Page
 		want string
 	}{
 		{
-			name: "by year", kind: document.PageBlog,
+			name: "by year", page: document.PageOf(document.PageBlog),
 			want: `<span class="switch"><a class="switch-way" href="/blog" aria-current="page">years</a><a class="switch-way" href="/blog/series">series</a></span>`,
 		},
 		{
-			name: "by series", kind: document.PageBlogSeries,
+			name: "by series", page: document.PageOf(document.PageBlogSeries),
 			want: `<span class="switch"><a class="switch-way" href="/blog">years</a><a class="switch-way" href="/blog/series" aria-current="page">series</a></span>`,
+		},
+		{
+			name: "filtered", page: document.SeriesFilter("stint"),
+			want: `<span class="switch"><a class="switch-way" href="/blog" aria-current="true">years</a><a class="switch-way" href="/blog/series">series</a></span>`,
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			list := document.Document{Head: fixtures.HeadOf(document.Page{Kind: testCase.kind, Slug: "", Tab: ""}, textOf("blog")), Blocks: nil}
+			list := document.Document{Head: fixtures.HeadOf(testCase.page, textOf("blog")), Blocks: nil}
 			if page := fixtureWriter(test).List(list); !strings.Contains(page, testCase.want) {
 				test.Errorf("the page %q holds no %q", page, testCase.want)
 			}
@@ -730,9 +842,10 @@ func TestTheSwitchMarksTheGroupingShown(test *testing.T) {
 	}
 }
 
-// A tile is a post the list names, the whole of it a link to the post: in its series' own group its part and its day
-// in its top edge; in a group that is no series' own its day there, and at its foot its part and its series' title,
-// then its tags; a part still to come its part and the word saying it comes, no link.
+// A tile is a post the list names, the whole of it leading to the post by its title's link, whose words open with what
+// its top edge says: in its series' own group its part and its day there; in a group that is no series' own its day
+// there, and at its foot its part and its series' title, a link of its own to its series' group on the list by series,
+// then its tags, as words; a part still to come its part and the word saying it comes, no link.
 func TestATileSaysWhereItsPostStands(test *testing.T) {
 	out := document.PostOut{Page: postPage("one"), Published: time.Date(2026, time.November, 10, 9, 0, 0, 0, time.UTC)}
 	cases := []struct {
@@ -742,23 +855,26 @@ func TestATileSaysWhereItsPostStands(test *testing.T) {
 	}{
 		{
 			name: "a part in its series' group",
-			post: document.ListedPost{Readiness: out, Title: textOf("One"), Lead: textOf("About one."), Part: textOf("part 1")},
-			want: `<a class="pane tile" href="/blog/one"><span class="pane-name tile-edge"><span class="tile-part">part 1</span>` + dot +
-				`<time datetime="2026-11-10">10 Nov 2026</time></span> <span class="tile-title">One</span> <span class="tile-lead">About one.</span> </a>`,
+			post: document.ListedPost{Readiness: out, Title: textOf("One"), Lead: textOf("About one."), Part: textOf("part 1"), SeriesName: "stint"},
+			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="pane-name tile-edge"><span class="tile-part">part 1</span>` + dot +
+				`<time datetime="2026-11-10">10 Nov 2026</time></span> One</a> <span class="tile-lead">About one.</span> </div>`,
 		},
 		{
 			name: "a part in its year's group, tagged",
-			post: document.ListedPost{Readiness: out, Title: textOf("One"), Part: textOf("part 1"), Series: textOf("Stint"), Tags: []string{"payments", "agents"}},
-			want: `<a class="pane tile" href="/blog/one"><span class="pane-name tile-edge"><time datetime="2026-11-10">10 Nov 2026</time></span> ` +
-				`<span class="tile-title">One</span> <div class="tile-foot"><span class="tile-series"><span class="tile-part">part 1</span>` +
-				`<span class="tile-dot">` + dot + `</span>Stint</span> <ul class="tags"><li><span class="tag-mark" aria-hidden="true">#</span>payments</li>` +
-				`<li><span class="tag-mark" aria-hidden="true">#</span>agents</li></ul></div></a>`,
+			post: document.ListedPost{
+				Readiness: out, Title: textOf("One"), Part: textOf("part 1"), Series: textOf("Stint"), SeriesName: "stint", Tags: []string{"payments", "agents"},
+			},
+			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="pane-name tile-edge"><time datetime="2026-11-10">10 Nov 2026</time></span> ` +
+				`One</a> <div class="tile-foot"><span class="tile-series"><span class="tile-part">part 1</span>` +
+				`<span class="tile-dot">` + dot + `</span> <a class="tile-series-link" href="/blog/series#stint">Stint</a></span> ` +
+				`<ul class="tags"><li><span class="tag-mark" aria-hidden="true">#</span>payments</li>` +
+				`<li><span class="tag-mark" aria-hidden="true">#</span>agents</li></ul></div></div>`,
 		},
 		{
 			name: "a part to come",
-			post: document.ListedPost{Readiness: document.ComingPart{Coming: textOf("soon")}, Title: textOf("Three"), Part: textOf("part 3")},
+			post: document.ListedPost{Readiness: document.ComingPart{Coming: textOf("soon")}, Title: textOf("Three"), Part: textOf("part 3"), SeriesName: "stint"},
 			want: `<div class="pane tile tile-to-come"><span class="pane-name tile-edge"><span class="tile-part">part 3</span>` + dot +
-				`soon</span> <span class="tile-title">Three</span> </div>`,
+				`soon</span><span class="tile-title">Three</span> </div>`,
 		},
 	}
 	for _, testCase := range cases {

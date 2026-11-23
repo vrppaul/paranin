@@ -694,7 +694,11 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
 	want := document.Head{
 		Page: page, Number: 1, Language: "en",
-		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "", Tags: []string{"reading", "terminals"},
+		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "", MadeOf: nil,
+		Filters: []document.Filter{
+			{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: document.TagFilter("reading"), Current: false, WayOut: ""},
+			{Kind: document.FilterTag, Name: "terminals", Words: textSpans("terminals"), Page: document.TagFilter("terminals"), Current: false, WayOut: ""},
+		},
 		Lead: description, Version: nil, Repository: nil,
 		Post: &document.PostPlace{
 			Series: &document.Series{Title: textSpans("Reading"), Parts: []document.Part{
@@ -734,6 +738,32 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 			head := postNamed(test, SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true}).Posts, samplePostSlug).Head
 			if got, want := fmt.Sprint(head.Version), fmt.Sprint(testCase.want); got != want {
 				test.Errorf("the version of %s = %s, want %s", testCase.name, got, want)
+			}
+		})
+	}
+}
+
+// A post's head offers each of its tags as a filter of the blog's list, leading to the list it filters where the lists
+// name the post: a post published and out; a tag of an unlisted post, a draft as its author reads it or a preview,
+// which the lists name nowhere and whose tag may filter none, leads nowhere.
+func TestAPostsTagsLeadToTheListWhereTheListsNameThePost(test *testing.T) {
+	cases := []struct {
+		name   string
+		status content.Status
+		leads  document.Page
+	}{
+		{name: "published", status: content.StatusPublished, leads: document.TagFilter("tools")},
+		{name: "unlisted", status: content.StatusUnlisted, leads: document.PageOf(document.PageNone)},
+		{name: "a draft", status: content.StatusDraft, leads: document.PageOf(document.PageNone)},
+		{name: "a preview", status: content.StatusPreview, leads: document.PageOf(document.PageNone)},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"tags: [tools]\nstatus: "+string(testCase.status)+"\n---\nIts text.\n")
+			head := postNamed(test, postsAndPreviews(SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true})), samplePostSlug).Head
+			want := []document.Filter{{Kind: document.FilterTag, Name: "tools", Words: textSpans("tools"), Page: testCase.leads, Current: false, WayOut: ""}}
+			if !reflect.DeepEqual(head.Filters, want) {
+				test.Errorf("the filters of %s = %+v, want %+v", testCase.name, head.Filters, want)
 			}
 		})
 	}

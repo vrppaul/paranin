@@ -135,7 +135,9 @@ Amended 2026-11-23, with statuses and dates: `compose` composes for an audience,
 the hosts keep what they draw until the next post dated later comes out, and the check runs over each moment the site
 changes. Amended 2026-11-23, with preview links: `compose` composes each preview beside the site and splits a
 snapshot's code once (`Prepare`), `routes` writes a preview's addresses under its link's token, and the web host alone
-holds the key that signs it.
+holds the key that signs it. Amended 2026-11-24, with the list's filters: a filtered list is a page of two kinds of its
+own, which `compose` composes with the site and the web host draws when first asked for, a head holds the filters it
+offers, and `routes` reads a request's query into its address.
 
 ### Context
 
@@ -250,12 +252,12 @@ and web routes.
 - **A document is a head and its blocks.** The head holds the page it is,
   where it is one; the language it is written in; its title, a subtitle,
   a place and a lead (the résumé's are the name, the title, where the
-  author lives, the headline); on a project's page its tags, the
-  language it is written in and then its stack, as the profile lists
+  author lives, the headline); on a project's page what it is made of,
+  the language it is written in and then its stack, as the profile lists
   them; a description for the page's metadata; and on a project's page
   where its code lives, a repository typed as its address and the site's
   word for it, since every face shows it first; on a post's page its
-  number, its tags, its description as its lead, and the version read, a
+  number, its tags as filters of the list, its description as its lead, and the version read, a
   closed set (amended 2026-11-23): out, by when it came out, which each
   face writes its own way, or a draft, by the site's word for one, which a
   face writes where it would write the day;
@@ -372,6 +374,32 @@ and web routes.
     and the TUI could not draw as they draw every other page; a group as a
     block of its own with its title, which would leave the text faces'
     sections and the manual's to write a second time.
+    A filtered list (amended 2026-11-24) is the list by year of the posts
+    a tag or a series keeps, a page of a kind of its own for each, its slug
+    the tag or the series' name, its head the list's with the filter in
+    the site's words as its subtitle: every face draws it as the list. The
+    page says it filters the list (`Page.Unfiltered`), which a face and the
+    web host read to send it with `noindex` and name no canonical address,
+    as a preview names none, since a part of the list is no copy of it.
+    The head of a list and of a post holds its filters (`Head.Filters`),
+    which `compose` works out once: each tag, or the series a list is
+    filtered by, by its name and words, where it leads and whether it is
+    the filter shown, then named to a screen reader as the way to the
+    whole list; a tag of a post the lists name nowhere, a draft's, a
+    preview's or an unlisted post's, leads nowhere, since it may filter
+    none. The faces draw the filters in that order and the list's places
+    are its tags among them, so no face works out where a tag leads.
+    `compose` composes one for each tag and each series with a part out,
+    with the site, so no request composes; the web host draws each
+    filter's formats the first time a request asks for one, once a
+    drawing however many ask at once (`sync.OnceValue`), as it draws a
+    preview's: on 72 posts, 45 tags and 2 series, drawing them all with
+    the site took 52 ms and 53 MB of allocations a snapshot, not 23 ms and
+    27 MB, where drawing them when asked takes 22 ms and 30 MB. Ways
+    weighed: the filter a field of every page, which every page written by
+    hand would carry; a filter composed per request, a request that
+    composes; the TUI filtering the list's buffer in place, a list no
+    other face could name.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
   strong, a link, a highlight (`==result==`) and a note hold spans; text,
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a
@@ -409,7 +437,7 @@ and web routes.
 - **A page's places are read off its document** (amended 2026-11-23): the
   places its command line goes to by name beside its tabs and the projects'
   pages, a post's headings and its series' other parts out, the posts out
-  the blog's list names and their series (`document.PlacesOf`), as its tabs
+  the blog's list names, its tags and their series (`document.PlacesOf`), as its tabs
   and notes are, so no list of places is kept in step with the blocks. A
   heading's section carries its anchor, which `compose` names once, by the
   heading's words, counted where the page's other places, the TUI's `help`
@@ -422,10 +450,14 @@ and web routes.
   paragraphs', open with a mark `SlugOf` never writes, so no anchor takes
   one. The kinds of place are `document`'s words, and `compose` hands every
   face the pages `:e` opens in one list, by every name it reads, a post's
-  number among them, each saying whether Tab offers it. Ways weighed: the
-  places a field of the head, which kept a second list beside the blocks;
-  each face naming its anchors, which named a heading twice and let the page
-  rename one its own ids took.
+  number among them, each saying whether Tab offers it. A name two places
+  share stands once where both lead to one place, as the post read and the
+  list's own post do, and for each, by its kind, where they lead apart, as
+  a tag and a series named alike do (amended 2026-11-24); Enter goes to the
+  one Tab chose, or the first. A place is no anchor, so none takes a count.
+  Ways weighed: the places a field of the head, which kept a second list
+  beside the blocks; each face naming its anchors, which named a heading
+  twice and let the page rename one its own ids took.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still
@@ -501,7 +533,12 @@ and web routes.
   alone whether a path is in the folder, so the host sends whatever it
   answers there privately. A link inside a page is written by the site
   too, `Site.Reference`, so a face drawing a preview leads nowhere near
-  its public address.
+  its public address. A filtered list is the site's one address with a
+  query, `/blog?tag=go` (amended 2026-11-24), and `Requested` reads a
+  request's path and query into the address `Path` writes, by the one
+  encoding both use, so the host only looks the address up: on the list
+  by year the one filter the query names, every other key passed over; a
+  filter named twice, or both, an address no page has.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
   foundation, and on `routes`, through which it finds two pages at one

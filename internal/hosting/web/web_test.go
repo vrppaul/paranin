@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -57,6 +58,17 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
 		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
 		{name: "the list by series as a manual", path: "/blog/series.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG-SERIES(1)"},
+		{name: "the list filtered by a tag", path: "/blog.md?tag=terminals", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "posts tagged terminals"},
+		{
+			name: "the list filtered by a series, as a manual", path: "/blog.txt?series=reading", status: http.StatusOK, contentType: "text/plain; charset=utf-8",
+			holds: "blog — parts of Reading",
+		},
+		{name: "the list filtered, chosen", path: "/blog?tag=reading", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "blog — posts tagged reading"},
+		{
+			name: "the list filtered, its other keys passed over", path: "/blog.md?ref=feed&tag=reading", status: http.StatusOK,
+			contentType: "text/markdown; charset=utf-8", holds: "posts tagged reading",
+		},
+		{name: "the list, its other keys passed over", path: "/blog.md?ref=feed", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -199,7 +211,8 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 }
 
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
-// its manual as that page; the index, which is no page a person reads, names none.
+// its manual as that page; the index, which is no page a person reads, names none, nor a filtered list, a part of the
+// list and no copy of it.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
@@ -218,6 +231,9 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a post in markdown", path: "/blog/reading-slowly.md", accept: "", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post, chosen", path: "/blog/reading-slowly", accept: "*/*", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
+		{name: "a filtered list in markdown, a part of the list and no copy of it", path: "/blog.md?tag=reading", accept: "", want: ""},
+		{name: "a filtered list as a manual", path: "/blog.txt?series=reading", accept: "", want: ""},
+		{name: "a filtered list in a browser", path: "/blog?tag=terminals", accept: "text/html", want: ""},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
 	}
@@ -229,6 +245,73 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 			}
 		})
 	}
+}
+
+// A filtered list, a view of the list and no page of its own, tells a search engine not to index it, in each format;
+// the list itself, and any other page, leaves it free to.
+func TestAFilteredListIsSentForNoSearchEngineToIndex(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
+	cases := []struct {
+		name   string
+		path   string
+		accept string
+		want   string
+	}{
+		{name: "filtered by a tag, in a browser", path: "/blog?tag=reading", accept: "text/html", want: "noindex"},
+		{name: "filtered by a series, chosen", path: "/blog?series=reading", accept: "*/*", want: "noindex"},
+		{name: "filtered, in markdown", path: "/blog.md?tag=terminals", accept: "", want: "noindex"},
+		{name: "filtered, as a manual", path: "/blog.txt?tag=terminals", accept: "", want: "noindex"},
+		{name: "the list", path: "/blog", accept: "text/html", want: ""},
+		{name: "the list in markdown", path: "/blog.md", accept: "", want: ""},
+		{name: "a post", path: "/blog/reading-slowly", accept: "text/html", want: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			if got := response.Header().Get("X-Robots-Tag"); response.Code != http.StatusOK || got != testCase.want {
+				test.Errorf("GET %s, Accept %q = %d, X-Robots-Tag %q; want %d, %q", testCase.path, testCase.accept, response.Code, got, http.StatusOK, testCase.want)
+			}
+		})
+	}
+}
+
+// Readers who first ask for a filtered list at the same moment, in each format, each get the whole list as one drawing
+// of it, which -race holds to drawing it once without a race.
+func TestAFilteredListAskedForAtOnceIsServedWhole(test *testing.T) {
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
+	formats := []struct {
+		path   string
+		accept string
+		holds  string
+	}{
+		{path: "/blog?tag=reading", accept: "text/html", holds: "<title>blog — posts tagged reading</title>"},
+		{path: "/blog?tag=reading", accept: "", holds: "blog — posts tagged reading"},
+		{path: "/blog.md?tag=reading", accept: "", holds: "posts tagged reading"},
+	}
+	// how many readers ask for each format at the same moment
+	const readersEach = 8
+	answered := make(chan readersAnswer, readersEach*len(formats))
+	var readers sync.WaitGroup
+	for range readersEach {
+		for _, format := range formats {
+			readers.Go(func() {
+				answered <- readersAnswer{holds: format.holds, body: serve(server, http.MethodGet, format.path, format.accept).Body.String()}
+			})
+		}
+	}
+	readers.Wait()
+	close(answered)
+	for got := range answered {
+		if !strings.Contains(got.body, got.holds) {
+			test.Errorf("a reader asking at once got %q, want it holding %q", got.body, got.holds)
+		}
+	}
+}
+
+// readersAnswer is what one of the readers asking at once got, and what it should hold.
+type readersAnswer struct {
+	holds string
+	body  string
 }
 
 // A post's number sends the reader on for good to the post's own address, by its path from the root, and a cache asks
@@ -256,9 +339,9 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 	}
 }
 
-// An address of no page is not found, and says so with the status it is answered with and the path asked for, as
-// the request decoded it: in plain text to a terminal, an agent and a request naming nothing, in HTML, in the
-// site's language, to a browser; and a cache keeps one copy for each Accept.
+// An address of no page is not found, and says so with the status it is answered with and the address asked for, its
+// path as the request decoded it and its query as written: in plain text to a terminal, an agent and a request naming
+// nothing, in HTML, in the site's language, to a browser; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const (
@@ -284,6 +367,17 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 			name: "a path out of a post's folder, its slashes escaped", path: "/blog/reading-slowly/..%2F..%2Fprofile.yaml", accept: "",
 			contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/../../profile.yaml"`,
 		},
+		{name: "the list filtered by a tag no post carries", path: "/blog?tag=nothing", accept: "", contentType: plain, holds: `404 Not Found: "/blog?tag=nothing"`},
+		{name: "the list filtered by no tag", path: "/blog.md?tag=", accept: "", contentType: plain, holds: `404 Not Found: "/blog.md?tag="`},
+		{
+			name: "the list filtered by a tag twice", path: "/blog?tag=reading&tag=terminals", accept: "", contentType: plain,
+			holds: `404 Not Found: "/blog?tag=reading&tag=terminals"`,
+		},
+		{
+			name: "the list filtered by a tag and a series", path: "/blog?tag=reading&series=reading&ref=feed", accept: "", contentType: plain,
+			holds: `404 Not Found: "/blog?tag=reading&series=reading&ref=feed"`,
+		},
+		{name: "no page, with a query", path: "/nothing?ref=feed", accept: "", contentType: plain, holds: `404 Not Found: "/nothing?ref=feed"`},
 		{name: "curl, taking anything", path: "/nothing", accept: "*/*", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},

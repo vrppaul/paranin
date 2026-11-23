@@ -476,8 +476,10 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
 `#` in `faint`, then the word in `muted`, `small`; tags stand `cell_2` apart and wrap whole. On the blog a tag is a
 link that filters the list, told by its hash, not an underline: under the pointer its ground goes `sunk` a `nudge`
-past its word and the word turns `text`; the tag the list is filtered by is reversed and bold. On a tile the tags are
-words of the tile's link, `caption`, all `faint`. Only posts have tags.
+past its word and the word turns `text`; the tag the list is filtered by is reversed and bold, its hash too, and leads
+back to the list, which a screen reader hears it named as; under the pointer it takes the Link's underline, `accent`
+and `underline_hover` thick, until the owner draws its way out (`TODO.md`). A post the lists name nowhere, a draft, a preview or one unlisted, keeps its tags as words. On a
+tile the tags are words of the tile, `caption`, all `faint`. Only posts have tags.
 
 ### Switch
 
@@ -570,7 +572,10 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 
 - BlogHead: BLOG in the title font, the gradient across it, in the names' column; beside it the blog's line in `lead`, and under it `by` in
   `muted`, the Switch of `years` and `series`, and the Tags, each a filter of the list. On a phone the tags take a row
-  of their own.
+  of their own. On a filtered list the Switch shows `years`, the grouping it filters; a list filtered by a series
+  opens its tags with the filter in the site's words, `parts of Stint`, reversed and bold as the tag a list is
+  filtered by, with no hash, leading back to the list: the plainest form the tokens give, standing until the owner
+  draws one. A filtered list's page is called `blog — posts tagged go`.
 - Group: its name in `title_text_mid` (`title_text` from `wide`), `title_soft`, staying in sight at the top while its
   own tiles scroll, but on a phone, where it stands over them; under it what it
   holds, `small` in `muted`: `6 posts`, or a series' line and `6 of 11 out`. By year, newest first, at `/blog`;
@@ -579,7 +584,8 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
   into its top edge, `small` in `muted`, or in a series' group its part, bold in `text`, then the date. Its title bold,
   balanced; its lead `small` in `muted`. At its foot, apart from the post, where it stands: its series where the
   group does not say it, `part 6 · stint`, the part bold in `text`, the dot `faint`, the name `text`, a long name
-  wrapping; then its Tags. The whole tile is the link, `sunk` under the pointer, its title underlined in `accent`; the keyboard's
+  wrapping, the name a Link to the series' group on the list by series, standing over the tile's; then its Tags. The
+  whole tile is the link, its title's, which holds its date set into the edge, stretched over it, `sunk` under the pointer, its title underlined in `accent`; the keyboard's
   ring parts where the date is set in, as the frame does. A
   part to come: framed in `quiet_half`, its date and title `faint`, not bold, no link.
 
@@ -643,6 +649,10 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   2026-11-23).
 - The `:` menu names each place by its kind: on a post `tab`, `heading`, `part` and `version`; on the list `post`,
   `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
-  heading, a series to its group on the list by series. Each name leads to one place: a heading named as another
-  place of its page, `help` among them, takes its count, `posts-2`, and a name two places share, as the post read
-  beside the list and the list's own, goes to the first the menu lists.
+  heading, a series to its group on the list by series, a tag to the list it filters, shown in the list's window, and
+  on that list back to the list; the list's head shows the filter reversed, as the page's does. A heading named as
+  another place of its page, `help` among them, takes its count, `posts-2`, since a heading is an anchor; a name two
+  places share stands once where both lead to one place, as the post read beside the list and the list's own, and for
+  each, by its kind, where they lead apart, as a tag and a series named alike, Tab going round both. On the page and in
+  the TUI alike, Enter goes to the place Tab chose, while the line holds the name Tab wrote for it, and else to the
+  first the menu lists by the name typed.

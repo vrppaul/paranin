@@ -166,45 +166,81 @@ func (layout layout) blogHead(head document.Head, column int) []line {
 }
 
 // waysLines are the ways the list is grouped (compose.ListWords.Groupings), after the site's word before them, the
-// grouping shown chosen, then the tags of the posts it lists; the tags on lines of their own where both do not fit a
-// line.
+// grouping shown chosen, a filtered list's the one it filters; then its filters, the series it is filtered by and the
+// tags of the posts it lists; the filters on lines of their own where both do not fit a line.
 func (layout layout) waysLines(head document.Head) []line {
 	listWords := layout.siteWords.ListWords
+	grouped, _ := head.Page.Unfiltered()
 	grouping := []word{wordOf(listWords.By, kindMuted)}
 	for _, way := range listWords.Groupings() {
 		shown := kindText
-		if way.List == head.Page {
+		if way.List == grouped {
 			shown = kindChosen
 		}
 		grouping = append(grouping, wordOf(space+way.Words+space, shown))
 	}
-	ways, tags := wordRuns(grouping), tagRuns(tagWords(head.Tags, kindMuted))
+	filters := make([][]word, 0, len(head.Filters))
+	for _, filter := range head.Filters {
+		filters = append(filters, filterWords(filter))
+	}
+	ways, tags := wordRuns(grouping), tagRuns(filters)
 	if len(tags) == 0 {
 		return []line{ways}
 	}
 	if runsWidth(ways)+waysGap+runsWidth(tags) <= layout.width {
 		return []line{slices.Concat(ways, line{gapRun(waysGap)}, tags)}
 	}
-	return slices.Concat([]line{ways}, blankLines(), layout.fill(tagWords(head.Tags, kindMuted), 0))
+	return slices.Concat([]line{ways}, blankLines(), layout.fill(slices.Concat(filters...), 0))
+}
+
+// filterWords are a filter the list's head offers as the page writes it (DESIGN.md, BlogHead and Tag): a tag's muted
+// word after a faint hash, a series by its words; the filter the list is filtered by chosen whole, a space either side
+// and between its words chosen too, so it stands as one chip and breaks only at a space.
+func filterWords(filter document.Filter) []word {
+	mark := ""
+	if filter.MarkedAsTag() {
+		mark = tagMark
+	}
+	if !filter.Current {
+		words := textWords(document.PlainText(filter.Words), kindMuted)
+		if len(words) > 0 && mark != "" {
+			words[0].runs = append([]run{plainRun(mark, kindFaint)}, words[0].runs...)
+		}
+		return words
+	}
+	written := strings.Fields(mark + document.PlainText(filter.Words))
+	words := make([]word, 0, len(written))
+	for index, piece := range written {
+		if index == 0 {
+			piece = space + piece
+		}
+		if index == len(written)-1 {
+			piece += space
+		}
+		chosen := wordOf(piece, kindChosen)
+		chosen.spaceBefore = kindChosen
+		words = append(words, chosen)
+	}
+	return words
 }
 
 // tagWords are tags as the page writes them (DESIGN.md, Tag): each its word after a faint hash, the word of a kind.
 func tagWords(tags []string, wordKind kind) []word {
 	words := make([]word, 0, len(tags))
 	for _, tag := range tags {
-		words = append(words, word{runs: []run{plainRun(tagMark, kindFaint), plainRun(tag, wordKind)}, highlightBefore: false})
+		words = append(words, word{runs: []run{plainRun(tagMark, kindFaint), plainRun(tag, wordKind)}, highlightBefore: false, spaceBefore: kindText})
 	}
 	return words
 }
 
-// tagRuns are tags on one line, each two the page's gap apart.
-func tagRuns(tags []word) line {
+// tagRuns are filters on one line, each two the page's gap apart, the words of each a space apart.
+func tagRuns(filters [][]word) line {
 	runs := line{}
-	for index, tag := range tags {
+	for index, filter := range filters {
 		if index > 0 {
 			runs = append(runs, gapRun(tagGap))
 		}
-		runs = append(runs, tag.runs...)
+		runs = append(runs, wordRuns(filter)...)
 	}
 	return runs
 }

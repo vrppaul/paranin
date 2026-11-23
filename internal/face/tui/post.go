@@ -201,8 +201,12 @@ func (layout layout) postFacts(head document.Head) []line {
 		partOf := layout.siteWords.SeriesWords.PartOf(series.Reading(), len(series.Parts))
 		facts = append(facts, postFact{label: labels.Series, value: append(layout.words(series.Title, kindText), textWords(partOf, kindMuted)...)})
 	}
-	if len(head.Tags) > 0 {
-		facts = append(facts, postFact{label: labels.Tags, value: tagWords(head.Tags, kindMuted)})
+	if len(head.Filters) > 0 {
+		tags := []word{}
+		for _, filter := range head.Filters {
+			tags = append(tags, filterWords(filter)...)
+		}
+		facts = append(facts, postFact{label: labels.Tags, value: tags})
 	}
 	column := 0
 	for _, fact := range facts {

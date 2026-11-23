@@ -233,7 +233,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := fixtures.DocumentOf(test, SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Documents(), tidyTool).Head.Tags; !slices.Equal(got, testCase.want) {
+			if got := fixtures.DocumentOf(test, SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Documents(), tidyTool).Head.MadeOf; !slices.Equal(got, testCase.want) {
 				test.Errorf("the tags of tidy-tool's page = %q, want %q", got, testCase.want)
 			}
 		})

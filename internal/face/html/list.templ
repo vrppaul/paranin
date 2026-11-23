@@ -19,8 +19,8 @@ templ (writer PageWriter) listMain(head document.Head, groupings []grouping, blo
 
 // blogHead is the list's head (DESIGN.md, BlogHead): the blog's name in the titles' block letters, the page's h1, in
 // the names' column; beside it the blog's line, then the word before the Switch of the list's groupings, each a link
-// to the list grouped so, the one shown the current page, and the tags of the posts it lists, words until a tag filters
-// the list.
+// to the list grouped so, the one shown current, and its filters, the tags of the posts it lists among them, each
+// leading to the list it filters, the filter shown reversed.
 templ (writer PageWriter) blogHead(head document.Head, groupings []grouping) {
 	<header class="blog-head">
 		@titleHeading(document.PlainText(head.Title), writer.spans(head.Title))
@@ -35,14 +35,14 @@ templ (writer PageWriter) blogHead(head document.Head, groupings []grouping) {
 						<a
 							class="switch-way"
 							href={ shown.address }
-							if shown.current {
-								aria-current="page"
+							if shown.current != "" {
+								aria-current={ shown.current }
 							}
 						>{ shown.words }</a>
 					}
 				</span>
-				if len(head.Tags) > 0 {
-					@tags(head.Tags)
+				if len(head.Filters) > 0 {
+					@writer.filters(head.Filters)
 				}
 			</div>
 		</div>
@@ -86,38 +86,40 @@ templ (writer PageWriter) tiles(posts document.Posts) {
 	</ol>
 }
 
-// tileOut is a post out as its tile (DESIGN.md, Tile), a pane, the whole of it a link to the post, its day set into its
-// top edge.
+// tileOut is a post out as its tile (DESIGN.md, Tile), a pane, its day set into its top edge, the whole of it leading
+// to the post by its title's link, which the stylesheet stretches over the tile, since its series leads elsewhere and
+// a link holds no other.
 templ (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut) {
-	<a class="pane tile" href={ writer.frame.site.Reference(out.Page, routes.FormatChosen) }>
-		@writer.tileParts(post, day(out.Published))
-	</a>
+	<div class="pane tile">
+		@writer.tileParts(post, day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen))
+	</div>
 }
 
 // tileToCome is a part of a series still to come as its tile, off, with no link, the word saying it comes set into its
 // top edge.
 templ (writer PageWriter) tileToCome(post document.ListedPost, toCome document.ComingPart) {
 	<div class="pane tile tile-to-come">
-		@writer.tileParts(post, writer.spans(toCome.Coming))
+		@writer.tileParts(post, writer.spans(toCome.Coming), "")
 	</div>
 }
 
-// tileParts are what a tile holds: set into its top edge, as a pane's name, when its post came out or that it comes,
-// after its part in its series' own group; its title and its lead; and at its foot where it stands, its part and its
-// series' title where its group is no series' own, and its tags, words of the tile's link.
-templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Component) {
-	<span class="pane-name tile-edge">
-		if post.InItsSeriesGroup() {
-			<span class="tile-part">
-				@writer.spans(post.Part)
-			</span>
-			@text(dot)
-		}
-		@when
-	</span>
-	<span class="tile-title">
-		@writer.spans(post.Title)
-	</span>
+// tileParts are what a tile holds: its edge and its title, a link to its post where it has an address, the edge
+// inside it, so the link's name opens with the day and the edge leads to the post too; its lead; and at its foot where
+// it stands, its part and its series' title, a link to the series' group on the list by series, where its group is no
+// series' own, and its tags, words of the tile.
+templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Component, address string) {
+	if address != "" {
+		<a class="tile-title" href={ address }>
+			@writer.tileEdge(post, when)
+			@text(wordSpace)
+			@writer.spans(post.Title)
+		</a>
+	} else {
+		@writer.tileEdge(post, when)
+		<span class="tile-title">
+			@writer.spans(post.Title)
+		</span>
+	}
 	if len(post.Lead) > 0 {
 		<span class="tile-lead">
 			@writer.spans(post.Lead)
@@ -128,7 +130,9 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 			if len(post.Series) > 0 {
 				<span class="tile-series">
 					<span class="tile-part">{ document.PlainText(post.Part) }</span><span class="tile-dot">{ dot }</span>
-					@writer.spans(post.Series)
+					<a class="tile-series-link" href={ writer.frame.site.Reference(post.SeriesGroup(), routes.FormatChosen) }>
+						@writer.spans(post.Series)
+					</a>
 				</span>
 			}
 			if len(post.Tags) > 0 {
@@ -136,4 +140,18 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 			}
 		</div>
 	}
+}
+
+// tileEdge is what is set into a tile's top edge, as a pane's name: when its post came out or that it comes, after its
+// part in its series' own group.
+templ (writer PageWriter) tileEdge(post document.ListedPost, when templ.Component) {
+	<span class="pane-name tile-edge">
+		if post.InItsSeriesGroup() {
+			<span class="tile-part">
+				@writer.spans(post.Part)
+			</span>
+			@text(dot)
+		}
+		@when
+	</span>
 }

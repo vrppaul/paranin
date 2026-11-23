@@ -92,10 +92,10 @@ templ (writer PageWriter) postHead(head document.Head) {
 					@writer.seriesPick(writer.headPick(*head.Post.Series))
 				</dd>
 			}
-			if len(head.Tags) > 0 {
+			if len(head.Filters) > 0 {
 				<dt>{ writer.frame.postLabels.Tags }</dt>
 				<dd>
-					@tags(head.Tags)
+					@writer.filters(head.Filters)
 				</dd>
 			}
 		</dl>
@@ -108,14 +108,45 @@ templ day(published time.Time) {
 	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(look.DayLayout) }</time>
 }
 
-// tags are a post's tags, or the blog's list's (DESIGN.md, Tag), each its word after a hash a screen reader skips;
-// words, which lead to the list they filter once a tag filters it (TODO.md).
+// tags are a tile's tags, words of the tile (DESIGN.md, Tag), each its word after a hash a screen reader skips.
 templ tags(tags []string) {
 	<ul class="tags">
 		for _, tag := range tags {
 			<li><span class="tag-mark" aria-hidden="true">{ tagMark }</span>{ tag }</li>
 		}
 	</ul>
+}
+
+// filters are the filters a head offers, the list's or a post's (DESIGN.md, Tag and BlogHead), in the order compose
+// hands them: each a link where it leads somewhere, words where it leads nowhere; the one the list shown is filtered by
+// current, named as the way to the whole list.
+templ (writer PageWriter) filters(filters []document.Filter) {
+	<ul class="tags">
+		for _, filter := range filters {
+			<li>
+				if address := writer.frame.site.Reference(filter.Page, routes.FormatChosen); address == "" {
+					@filterWords(filter)
+				} else if filter.Current {
+					<a class="tag" href={ address } aria-current={ currentWay } aria-label={ filter.WayOut }>
+						@filterWords(filter)
+					</a>
+				} else {
+					<a class="tag" href={ address }>
+						@filterWords(filter)
+					</a>
+				}
+			</li>
+		}
+	</ul>
+}
+
+// filterWords are a filter's words, a tag's after its hash, which a screen reader skips.
+templ filterWords(filter document.Filter) {
+	if filter.MarkedAsTag() {
+		<span class="tag-mark" aria-hidden="true">{ tagMark }</span>{ document.PlainText(filter.Words) }
+	} else {
+		{ document.PlainText(filter.Words) }
+	}
 }
 
 // seriesPick is the series' Pick (DESIGN.md, Pick): the chip, its words, the count after them and a mark saying it

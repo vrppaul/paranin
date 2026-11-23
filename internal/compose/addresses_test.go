@@ -108,6 +108,8 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 			body:   "[a](/) [b](/experience) [c](/p/tidy-tool) [d](/p/tidy-tool/why) [e](/blog) [f](/blog/series#reading) [g](/blog/reading-slowly#what-a-reader-keeps) [h](/blog/reading-slowly#in-a-terminal)",
 			change: keepFolder, want: []faultSpot{},
 		},
+		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: keepFolder, want: []faultSpot{}},
+		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post's number", body: "[a](/blog/1)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},

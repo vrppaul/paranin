@@ -3,7 +3,6 @@ package compose
 import (
 	"cmp"
 	"maps"
-	"slices"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -134,7 +133,8 @@ func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []str
 }
 
 // postHead is a post's head: its page by its slug, its number, the language of the site's words, its title, its
-// description as its lead and its page's description, its tags, the version read, and where it stands in the blog.
+// description as its lead and its page's description, its tags as the filters of the list they are, the version read,
+// and where it stands in the blog.
 func postHead(post content.Post, read blog, words content.Words) document.Head {
 	description := textSpans(post.Description)
 	return document.Head{
@@ -145,7 +145,8 @@ func postHead(post content.Post, read blog, words content.Words) document.Head {
 		Title:       textSpans(post.Title),
 		Subtitle:    nil,
 		Place:       "",
-		Tags:        slices.Clone(post.Tags),
+		Filters:     read.postFilters(post),
+		MadeOf:      nil,
 		Lead:        description,
 		Version:     versionOf(post, words),
 		Repository:  nil,

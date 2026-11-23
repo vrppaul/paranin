@@ -138,8 +138,9 @@ func escaperOf(letters string) *strings.Replacer {
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place), writer.text(versionText(head))))
-	tags := make([]string, 0, len(head.Tags))
-	for _, tag := range head.Tags {
+	named := head.ListedWords()
+	tags := make([]string, 0, len(named))
+	for _, tag := range named {
 		tags = append(tags, writer.text(tag))
 	}
 	chunks = appendLine(chunks, joined(dot, tags...))

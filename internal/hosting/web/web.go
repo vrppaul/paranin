@@ -8,17 +8,19 @@
 // format, and at its own address in the format the reader's request asks for: HTML for a browser, markdown for an
 // agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
 // a name ending in .txt promises. A post served is drawn whole in every format, and its number sends the reader on to
-// its address; so is the blog's list, in each of its groupings. Each format of a page names in a Link header the
-// address the page is known by, the one where the reader chooses, so a search engine counts its markdown and its
-// manual as the page. A preview is served at its link alone, under a key the server is handed (preview.go), until the
-// link lapses: every face and picture of it where its post would stand, the blog's folder swapped for the preview's
-// folder and the link's token, drawn for the request, since each link writes its own token into them; once the post
-// is out, the link sends its reader on to it. Whatever is answered in the preview's folder is for its reader alone:
-// no search engine indexes it, no cache keeps it and no browser sends its address on from it. Any other path is
-// answered with the page of no page, in text or in HTML, whichever the reader's request ranks higher: drawn for each
-// request, since it quotes the path asked for, in the chosen format alone. Every answer, a refusal net/http writes
-// among them, tells a browser not to guess its type and to load nothing but the site's own files, so markup slipped
-// into a page runs no script but the site's own; a post's picture, to load and run nothing at all.
+// its address; so is the blog's list, in each of its groupings and filtered by each tag and series, at the address the
+// request's query names (routes.Requested). Each format of a page names in a Link header the address the page is known
+// by, the one where the reader chooses, so a search engine counts its markdown and its manual as the page; a filtered
+// list names the list's, and tells a search engine not to index it. A preview is served at its link alone, under a key
+// the server is handed (preview.go), until the link lapses: every face and picture of it where its post would stand,
+// the blog's folder swapped for the preview's folder and the link's token, drawn for the request, since each link
+// writes its own token into them; once the post is out, the link sends its reader on to it. Whatever is answered in
+// the preview's folder is for its reader alone: no search engine indexes it, no cache keeps it and no browser sends its
+// address on from it. Any other address is answered with the page of no page, in text or in HTML, whichever the
+// reader's request ranks higher: drawn for each request, since it quotes the address asked for, in the chosen format
+// alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and to load nothing
+// but the site's own files, so markup slipped into a page runs no script but the site's own; a post's picture, to load
+// and run nothing at all.
 package web
 
 import (
@@ -27,6 +29,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
@@ -70,8 +73,8 @@ const ownSiteAlone = "default-src 'self'; base-uri 'self'; form-action 'self'; f
 const pictureAlone = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
 
 // What every answer in the preview's folder is sent with, since its address may hold a link's token (docs/WEB.md): that
-// no search engine indexes it, that no cache, a shared one least of all, keeps it, and that a browser sends its
-// address on to nothing it loads or opens from it
+// no search engine indexes it, as none indexes a filtered list either, that no cache, a shared one least of all, keeps
+// it, and that a browser sends its address on to nothing it loads or opens from it
 const (
 	robotsHeader   = "X-Robots-Tag"
 	noIndex        = "noindex"
@@ -161,6 +164,15 @@ type drawing struct {
 type answers struct {
 	fixed  map[string]answer
 	chosen map[string]choice
+	// fixedLater and chosenLater are the pages drawn only once a request first asks for them, as fixed and chosen hold
+	// the others (laterPage)
+	fixedLater  map[string]lazyFormat
+	chosenLater map[string][]lazyFormat
+}
+
+// answersOf are answers holding nothing yet.
+func answersOf() answers {
+	return answers{fixed: map[string]answer{}, chosen: map[string]choice{}, fixedLater: map[string]lazyFormat{}, chosenLater: map[string][]lazyFormat{}}
 }
 
 // previewing is what a preview's faces are drawn from as a request opens its link, which holds a token of its own, so
@@ -209,12 +221,14 @@ func (format missingFormat) servedAs() string {
 
 // answer is a page or a file as it is sent: the media type a page is, which an Accept header ranks, empty for a file,
 // which no reader chooses; the header that says what it is; the Link header naming the address a page is known by,
-// empty where it is none a person reads; how long a cache keeps it; the policy a browser holds it to, empty where it
-// is the site's own; where it sends the reader on to, empty where it sends them nowhere; and what it holds.
+// empty where it is none a person reads; what it tells a search engine, empty where it leaves it free to index it; how
+// long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; where it sends the reader
+// on to, empty where it sends them nowhere; and what it holds.
 type answer struct {
 	mediaType    string
 	contentType  string
 	link         string
+	robots       string
 	cacheControl string
 	policy       string
 	location     string
@@ -224,7 +238,7 @@ type answer struct {
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
 func drawnAs(mediaType, text string) answer {
 	return answer{
-		mediaType: mediaType, contentType: mediaType + utf8Text, link: "", cacheControl: askEveryTime, policy: "", location: "",
+		mediaType: mediaType, contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", location: "",
 		body: []byte(text),
 	}
 }
@@ -232,20 +246,25 @@ func drawnAs(mediaType, text string) answer {
 // builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
 // another name.
 func builtAs(file assets.File) answer {
-	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, policy: "", location: "", body: file.Body}
+	return answer{
+		mediaType: "", contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", location: "", body: file.Body,
+	}
 }
 
 // picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
 // new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
-	return answer{mediaType: "", contentType: icon.MediaType, link: "", cacheControl: askEveryTime, policy: "", location: "", body: icon.Body}
+	return answer{
+		mediaType: "", contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", location: "", body: icon.Body,
+	}
 }
 
 // postPicturedAs is a post's picture as it is served, which a cache asks for again, since a reload may change it
 // under the same name, and which a browser opening it by itself runs nothing in.
 func postPicturedAs(picture content.Picture) answer {
 	return answer{
-		mediaType: "", contentType: picture.MediaType, link: "", cacheControl: askEveryTime, policy: pictureAlone, location: "", body: picture.Body,
+		mediaType: "", contentType: picture.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, location: "",
+		body: picture.Body,
 	}
 }
 
@@ -273,9 +292,15 @@ func picturesOf(icons []html.Icon) map[string]answer {
 	return pictures
 }
 
-// knownAt is a page naming the address it is known by, as a Link header writes it (RFC 8288, RFC 6596).
-func (sent answer) knownAt(address string) answer {
-	sent.link = linkOpening + address + canonicalRelation
+// knownAs is a page's answer naming the address the page is known by, as a Link header writes it (RFC 8288, RFC 6596);
+// a filtered list's names none and tells a search engine not to index it, since it is a view of the list and no page
+// of its own, and a part of the list is no copy of it to name the list's address (docs/FOUNDATION.md §5.4).
+func (sent answer) knownAs(page document.Page, site routes.Site) answer {
+	if _, isFilter := page.Unfiltered(); isFilter {
+		sent.robots = noIndex
+		return sent
+	}
+	sent.link = linkOpening + site.Address(page, routes.FormatChosen) + canonicalRelation
 	return sent
 }
 
@@ -330,24 +355,31 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		http.Redirect(writer, request, location, http.StatusMovedPermanently)
 		return
 	}
-	status, sent := drawn.served.answerTo(writer.Header(), request, path, drawn.notFound)
+	status, sent := drawn.served.answerTo(writer.Header(), request, routes.Requested(path, request.URL.Query()), drawn.notFound)
 	send(writer, status, sent)
 }
 
 // answerTo is the status and the answer to a request for a path among the answers: its file or page in the one format
-// served there, the page in the format the request ranks first where the reader chooses, or else the page of no page,
-// quoting the path the request asked for. Where the reader chooses, the header says the answer hangs on Accept.
+// served there, the page in the format the request ranks first where the reader chooses, each drawn first where it is
+// drawn only once asked for, or else the page of no page, quoting the address the request asked for, as it was written.
+// Where the reader chooses, the header says the answer hangs on Accept.
 func (served answers) answerTo(header http.Header, request *http.Request, path string, notFound missingChoice) (int, answer) {
 	if found, isFixed := served.fixed[path]; isFixed {
 		return http.StatusOK, found
+	}
+	if waiting, isLater := served.fixedLater[path]; isLater {
+		return http.StatusOK, waiting.draw()
 	}
 	header.Set(varyHeader, acceptHeader)
 	accept := request.Header.Get(acceptHeader)
 	if offered, isChosen := served.chosen[path]; isChosen {
 		return http.StatusOK, rankedFirst(accept, offered)
 	}
+	if offered, isLater := served.chosenLater[path]; isLater {
+		return http.StatusOK, rankedFirst(accept, offered).draw()
+	}
 	missing := rankedFirst(accept, notFound)
-	return missingStatus, drawnAs(missing.mediaType, missing.draw(request.URL.Path))
+	return missingStatus, drawnAs(missing.mediaType, missing.draw(routes.Asked(request.URL.Path, request.URL.RawQuery)))
 }
 
 // atLink is the status and the answer to a request in the preview's folder at a moment: where its path is a preview
@@ -355,55 +387,38 @@ func (served answers) answerTo(header http.Header, request *http.Request, path s
 // preview, drawn for that link, or the reader sent on to the same at its own address once the post is out; else, a
 // path of no post among them, as no page, so a link tells nothing of which posts there are.
 func (server *Server) atLink(drawn *drawing, header http.Header, request *http.Request, moment time.Time) (int, answer) {
-	none := answers{fixed: nil, chosen: nil}
 	link, isLink := routes.PreviewPath(request.URL.Path)
 	if !isLink || !server.previewKey.admits(link.Token, link.Slug, moment) {
-		return none.answerTo(header, request, link.PostPath, drawn.notFound)
+		return answersOf().answerTo(header, request, link.PostPath, drawn.notFound)
 	}
 	if previewed, isPreview := drawn.previews.posts[link.Slug]; isPreview {
-		return drawn.previews.faceAt(previewed, link, header, request, drawn.notFound)
+		return drawn.previews.at(previewed, link.Token).answerTo(header, request, link.PostPath, drawn.notFound)
 	}
 	if drawn.served.holds(link.PostPath) {
 		return sentOnForAWhile, sentOnTo(link.PostPath)
 	}
-	return none.answerTo(header, request, link.PostPath, drawn.notFound)
+	return answersOf().answerTo(header, request, link.PostPath, drawn.notFound)
 }
 
-// holds is whether the answers hold a path, in one format or where the reader chooses.
+// holds is whether the answers hold a path, in one format or where the reader chooses, drawn or still to draw.
 func (served answers) holds(path string) bool {
 	_, isFixed := served.fixed[path]
 	_, isChosen := served.chosen[path]
-	return isFixed || isChosen
+	_, isFixedLater := served.fixedLater[path]
+	_, isChosenLater := served.chosenLater[path]
+	return isFixed || isChosen || isFixedLater || isChosenLater
 }
 
-// faceAt is the status and the answer at a preview's link: its face or picture at the link's path, drawn alone, leading
-// to the others at that link, its markdown or its manual at its own path, the format the reader's request ranks first
-// at the post's own address, or a picture; the page of no page where the post has none there.
-func (previews previewing) faceAt(
-	previewed compose.Preview, link routes.PreviewLink, header http.Header, request *http.Request, notFound missingChoice,
-) (int, answer) {
+// at are a preview's answers at a link holding a token, as its post would be served in the blog's folder: its faces,
+// each drawn once asked for, leading to the others at that link, and its pictures.
+func (previews previewing) at(previewed compose.Preview, token string) answers {
 	post := previewed.Post
-	page := post.Head.Page
-	site := previews.site.Previewing(page.Slug, link.Token)
-	manual := lazyFormat{mediaType: plainMediaType, draw: func() answer { return manualOf(post, site) }}
-	markdown := lazyFormat{mediaType: markdownMediaType, draw: func() answer { return markdownOf(post, site) }}
+	site := previews.site.Previewing(post.Head.Page.Slug, token)
 	writer := html.NewPageWriter(site, previews.build, previews.frame, previews.today)
-	browsed := lazyFormat{mediaType: htmlMediaType, draw: func() answer { return drawnAs(htmlMediaType, writer.Preview(post)) }}
-	switch link.PostPath {
-	case routes.Path(page, routes.FormatManual):
-		return http.StatusOK, manual.draw()
-	case routes.Path(page, routes.FormatMarkdown):
-		return http.StatusOK, markdown.draw()
-	case routes.Path(page, routes.FormatChosen):
-		header.Set(varyHeader, acceptHeader)
-		return http.StatusOK, rankedFirst(request.Header.Get(acceptHeader), inTieOrder(manual, markdown, browsed)).draw()
-	}
-	for _, shown := range previewed.Pictures {
-		if routes.FilePath(shown.File) == link.PostPath {
-			return http.StatusOK, postPicturedAs(shown.Picture)
-		}
-	}
-	return answers{fixed: nil, chosen: nil}.answerTo(header, request, link.PostPath, notFound)
+	served := answersOf()
+	served.serveLater(laterPageOf(post, site, func() string { return writer.Preview(post) }))
+	served.servePictures(previewed.Pictures)
+	return served
 }
 
 // lazyFormat is a format a reader may choose, drawn only once chosen: its media type, which an Accept header ranks, and
@@ -415,6 +430,36 @@ type lazyFormat struct {
 
 func (format lazyFormat) servedAs() string {
 	return format.mediaType
+}
+
+// laterPage is a page in each format a reader may choose, its manual, its markdown and its HTML, each drawn the first
+// time a request asks for it and kept for those after, once however many ask at the same moment: a filtered list,
+// of which there is one for each tag and series and few are read; a preview, whose faces each link draws anew.
+type laterPage struct {
+	page     document.Page
+	manual   lazyFormat
+	markdown lazyFormat
+	browsed  lazyFormat
+}
+
+// laterPageOf is a page drawn when asked for: its manual and its markdown as the site writes its addresses, and its
+// HTML as browse draws it, each naming the address it is known by.
+func laterPageOf(shown document.Document, site routes.Site, browse func() string) laterPage {
+	page := shown.Head.Page
+	return laterPage{
+		page:     page,
+		manual:   lazyFormat{mediaType: plainMediaType, draw: sync.OnceValue(func() answer { return manualOf(shown, site) })},
+		markdown: lazyFormat{mediaType: markdownMediaType, draw: sync.OnceValue(func() answer { return markdownOf(shown, site) })},
+		browsed:  lazyFormat{mediaType: htmlMediaType, draw: sync.OnceValue(func() answer { return drawnAs(htmlMediaType, browse()).knownAs(page, site) })},
+	}
+}
+
+// serveLater serves a page drawn when asked for, as serveEveryFormat serves one drawn already: each text format at its
+// own path, and every format at the address where the reader chooses.
+func (served answers) serveLater(later laterPage) {
+	served.fixedLater[routes.Path(later.page, routes.FormatMarkdown)] = later.markdown
+	served.fixedLater[routes.Path(later.page, routes.FormatManual)] = later.manual
+	served.chosenLater[routes.Path(later.page, routes.FormatChosen)] = inTieOrder(later.manual, later.markdown, later.browsed)
 }
 
 // rankedFirst is the format an Accept header ranks highest, the first of them where it ranks two alike: a browser,
@@ -477,6 +522,9 @@ func send(writer http.ResponseWriter, status int, sent answer) {
 	if sent.link != "" {
 		header.Set(linkHeader, sent.link)
 	}
+	if sent.robots != "" {
+		header.Set(robotsHeader, sent.robots)
+	}
 	if sent.policy != "" {
 		header.Set(securityPolicy, sent.policy)
 	}
@@ -504,12 +552,8 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	composition := compose.SiteOf(prepared, audience)
 	frame := composition.Frame
 	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
-	served := answers{
-		fixed: map[string]answer{
-			routes.Path(composition.Index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(composition.Index, addresses)),
-		},
-		chosen: map[string]choice{},
-	}
+	served := answersOf()
+	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(plainMediaType, text.Markdown(composition.Index, addresses))
 	for path, file := range build.Files() {
 		served.fixed[path] = builtAs(file)
 	}
@@ -528,6 +572,10 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	}
 	for _, list := range composition.Lists {
 		served.serveEveryFormat(list, pageWriter.List(list), addresses)
+	}
+	// a filtered list is drawn as a request first asks for it: there is one for each tag and series, and few are read
+	for _, list := range composition.Filtered {
+		served.serveLater(laterPageOf(list, addresses, func() string { return pageWriter.List(list) }))
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
@@ -556,17 +604,15 @@ func (served answers) serveEveryFormat(shown document.Document, browsed string, 
 	markdown, manual := markdownOf(shown, site), manualOf(shown, site)
 	served.fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 	served.fixed[routes.Path(page, routes.FormatManual)] = manual
-	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(
-		manual, markdown, drawnAs(htmlMediaType, browsed).knownAt(site.Address(page, routes.FormatChosen)),
-	)
+	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(htmlMediaType, browsed).knownAs(page, site))
 }
 
 // markdownOf is a page in markdown, as the site writes its addresses, naming the address the page is known by.
 func markdownOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAt(site.Address(shown.Head.Page, routes.FormatChosen))
+	return drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAs(shown.Head.Page, site)
 }
 
 // manualOf is a page as a manual, as the site writes its addresses, naming the address the page is known by.
 func manualOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(plainMediaType, text.Manual(shown, site)).knownAt(site.Address(shown.Head.Page, routes.FormatChosen))
+	return drawnAs(plainMediaType, text.Manual(shown, site)).knownAs(shown.Head.Page, site)
 }

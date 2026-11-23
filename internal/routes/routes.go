@@ -1,9 +1,11 @@
 // Package routes writes every address of the site, from a document's link target and a format, or a picture of the
-// site, and a post's at its preview link, so no face and no host writes a path of its own (docs/ARCHITECTURE.md,
-// ADR-0003). It reads document alone.
+// site, and a post's at its preview link, and reads a request's query into the address of the filtered list it names,
+// so no face and no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
 package routes
 
 import (
+	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -238,7 +240,7 @@ func FilePath(file document.File) string {
 	case document.PagePost:
 		return fileIn(postPaths(file.Page.Slug), file.Name)
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
-		document.PageSkills, document.PageBlog, document.PageBlogSeries:
+		document.PageSkills, document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
 	}
 	return ""
 }
@@ -259,11 +261,68 @@ func Path(page document.Page, format Format) string {
 	case document.PagePost:
 		return postPaths(page.Slug).inFormat(format)
 	case document.PageBlog:
-		return paths{chosen: blogList, files: blogList}.inFormat(format)
+		return listPaths().inFormat(format)
 	case document.PageBlogSeries:
 		return paths{chosen: seriesList, files: seriesList}.inFormat(format)
+	case document.PageTagFilter:
+		return filtered(listPaths().inFormat(format), tagKey, page.Slug)
+	case document.PageSeriesFilter:
+		return filtered(listPaths().inFormat(format), seriesKey, page.Slug)
 	}
 	return ""
+}
+
+// The keys of the query a filter of the blog's list is written in, /blog?tag=payments and /blog?series=stint, the
+// site's one address with a query (docs/FOUNDATION.md §5.4, Series, tags and lists), and the mark that opens a query
+const (
+	tagKey     = "tag"
+	seriesKey  = "series"
+	queryStart = "?"
+)
+
+// filterKeys are the keys of the query a filter of the blog's list is written in.
+func filterKeys() []string {
+	return []string{tagKey, seriesKey}
+}
+
+// listPaths are where the blog's list by year is served, and every filter of it beside it, with its query.
+func listPaths() paths {
+	return paths{chosen: blogList, files: blogList}
+}
+
+// filtered is the path of the blog's list in a format, filtered by a key's value in its query; none where the list has
+// no path in the format.
+func filtered(listPath, key, value string) string {
+	if listPath == "" {
+		return ""
+	}
+	return listPath + queryStart + url.Values{key: {value}}.Encode()
+}
+
+// Asked is the address a request asked for as its reader wrote it, which the page of no page quotes back: its path as
+// the request decoded it, then its query as it was written, where it has one.
+func Asked(path, rawQuery string) string {
+	if rawQuery == "" {
+		return path
+	}
+	return path + queryStart + rawQuery
+}
+
+// Requested is the address a request for a path with a query reaches its page by, as Path writes it: on the blog's
+// list by year, in any format, the list filtered by the one filter its query names, by tag or by series; every other
+// key, and the query of any other path, passed over, as a link's tracking words are. A query that names a filter
+// twice, or both, is read with its filters alone, an address Path never writes, so it reaches no page.
+func Requested(path string, query url.Values) string {
+	named := url.Values{}
+	for _, key := range filterKeys() {
+		if values, isNamed := query[key]; isNamed {
+			named[key] = values
+		}
+	}
+	if len(named) == 0 || !slices.ContainsFunc(Formats(), func(format Format) bool { return Path(document.PageOf(document.PageBlog), format) == path }) {
+		return path
+	}
+	return path + queryStart + named.Encode()
 }
 
 // NumberPath is where a post's number reaches it (D26), which answers by sending the reader on to the post's own
@@ -289,10 +348,10 @@ func BlogFolder() string {
 	return blogFolder
 }
 
-// IsBlogName is whether a name a terminal writes is the blog's: its list's, or one in its folder, as blog/99 is,
-// whether or not a page goes by it.
+// IsBlogName is whether a name a terminal writes is the blog's: its list's, with a query or none, as blog?tag=go is,
+// or one in its folder, as blog/99 is, whether or not a page goes by it.
 func IsBlogName(name string) bool {
-	path := pathStart + name
+	path, _, _ := strings.Cut(pathStart+name, queryStart)
 	return path == blogList || strings.HasPrefix(path, blogFolder)
 }
 

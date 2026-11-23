@@ -278,14 +278,14 @@ func projectPages(projects []document.Place) []OpenedPage {
 }
 
 // blogPages are the blog's pages :e opens by the names a terminal reaches them by (D26): its list in each grouping and
-// each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, and
-// every post served by its number, which :e opens though Tab offers none.
+// each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, every
+// post served by its number, and the list by each of its filters, which :e opens though Tab offers none.
 func blogPages(read blog, words content.Words) []OpenedPage {
 	pages := []OpenedPage{}
 	for _, grouping := range listWordsOf(words).Groupings() {
 		pages = append(pages, openedPage(grouping.List, routes.Path(grouping.List, routes.FormatChosen), document.PlaceList, true))
 	}
-	for _, post := range read.newestFirst() {
+	for _, post := range read.newest {
 		pages = append(pages, openedPage(postPage(post), routes.Path(postPage(post), routes.FormatChosen), document.PlacePost, true))
 	}
 	for _, post := range read.served {
@@ -295,6 +295,9 @@ func blogPages(read blog, words content.Words) []OpenedPage {
 	}
 	for _, post := range read.served {
 		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.ID), document.PlacePost, false))
+	}
+	for _, filter := range read.filters {
+		pages = append(pages, openedPage(filter.page, routes.Path(filter.page, routes.FormatChosen), document.PlaceList, false))
 	}
 	return pages
 }

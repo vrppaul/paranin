@@ -45,6 +45,11 @@ const (
 	PageBlog
 	// PageBlogSeries is the blog's list, its posts by series; it has no slug and no tabs
 	PageBlogSeries
+	// PageTagFilter is the blog's list by year filtered to the posts of a tag, by the tag; it has no tabs
+	PageTagFilter
+	// PageSeriesFilter is the blog's list by year filtered to the parts of a series, by the series' name; it has no
+	// tabs
+	PageSeriesFilter
 )
 
 // PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
@@ -53,15 +58,37 @@ func PageOf(kind PageKind) Page {
 	return Page{Kind: kind, Slug: "", Tab: ""}
 }
 
-// InBlog is whether a page is the blog's, a post or the list by year or by series, which a face shows in the blog's
-// session, as tmux keeps a session apart. exhaustive holds the switch to every kind.
+// TagFilter is the blog's list filtered by a tag (docs/FOUNDATION.md §5.4, Series, tags and lists).
+func TagFilter(tag string) Page {
+	return Page{Kind: PageTagFilter, Slug: tag, Tab: ""}
+}
+
+// SeriesFilter is the blog's list filtered by a series, by its name.
+func SeriesFilter(name string) Page {
+	return Page{Kind: PageSeriesFilter, Slug: name, Tab: ""}
+}
+
+// InBlog is whether a page is the blog's, a post or the list, by year, by series or filtered, which a face shows in
+// the blog's session, as tmux keeps a session apart. exhaustive holds the switch to every kind.
 func (page Page) InBlog() bool {
 	switch page.Kind {
-	case PagePost, PageBlog, PageBlogSeries:
+	case PagePost, PageBlog, PageBlogSeries, PageTagFilter, PageSeriesFilter:
 		return true
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
 	}
 	return false
+}
+
+// Unfiltered is the list a filtered list filters, the blog's list by year, and whether the page is a filtered list: a
+// view of the list, not a page of its own, which no search engine indexes, and which names no canonical address, since
+// a part of the list is no copy of it (docs/FOUNDATION.md §5.4). exhaustive holds the switch to every kind.
+func (page Page) Unfiltered() (Page, bool) {
+	switch page.Kind {
+	case PageTagFilter, PageSeriesFilter:
+		return PageOf(PageBlog), true
+	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills, PagePost, PageBlog, PageBlogSeries:
+	}
+	return page, false
 }
 
 // Anchor is a section of a page of the site, by the page and the section's anchor (Section.Name): a heading of a post,

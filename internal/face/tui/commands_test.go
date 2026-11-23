@@ -205,13 +205,21 @@ func TestThePlacesFollowThePageShown(test *testing.T) {
 	}
 }
 
-// Each name goes to one place: a tab titled as the window of keys is named takes the name, so Tab goes round it once.
-func TestANameGoesToOnePlace(test *testing.T) {
+// A name two places share that lead apart stands for each, by its kind, and Tab goes round both: a tab titled as the
+// window of keys is named stands beside the window, Tab writing the name for each in turn before the round comes back
+// to what was typed.
+func TestANameTwoPlacesShareStandsForEach(test *testing.T) {
 	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := handModel(test, commonWidth, commonHeight, composed)
-	if line := commandLineOf(screenOf(test, pressed(test, model, ":", "tab", "tab"))); line != ":" {
-		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, ":")
+	model := pressed(test, handModel(test, commonWidth, commonHeight, composed), ":", "tab", "tab")
+	screen := screenOf(test, model)
+	for _, want := range []string{`help +tab`, `help +keys`} {
+		if !regexp.MustCompile(want).MatchString(aboveTheCommandLine(screen)) {
+			test.Errorf("on a page with a tab titled Help, after a colon the menu =\n%s\nwant it to hold %q", aboveTheCommandLine(screen), want)
+		}
+	}
+	if line := commandLineOf(screen); line != ":help" {
+		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, ":help")
 	}
 }
 

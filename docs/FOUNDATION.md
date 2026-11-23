@@ -631,10 +631,33 @@ and SSH to the host: "without a new binary" does not mean without a build.
   2026-11-22): `/blog`, every post by year, newest first, with its date,
   series and tags; `/blog/series`, the same posts by series. A tag or a
   series filters the list, the filter reversed in the list's head; a
-  filtered list is sent with `noindex` and names `/blog` as canonical. Its
+  filtered list is sent with `noindex` and names no canonical address,
+  as a preview names none (2026-11-24): a part of the list is no copy of
+  `/blog`, and a search engine reads `noindex` beside a canonical address
+  as two signs that disagree. Its
   address is the site's first with a query, `/blog?tag=payments` and
   `/blog?series=stint` (owner, 2026-11-23): a filter is a view of the
-  list, not a page to index. The list is a
+  list, not a page to index. A filtered list is the list by year of the
+  posts the list names that carry the tag or are parts of the series,
+  its head the list's with the filter beside the blog's name; there is
+  one for each tag of a post the list names and each series with a part
+  out, composed with the site, and the web host draws each the first
+  time a reader asks for it, since few are read; every face draws
+  it: the page and its markdown and manual at `/blog.md?tag=` and
+  `/blog.txt?tag=`, the TUI in the list's window. One rule reads the
+  query: on the list by year the one filter it names; any other key, and
+  the query of any other page, passed over, as a link's tracking words
+  are; a filter named twice, both, or one no list has (a tag no post the
+  list names carries) is an address of no page, `404`, as any other,
+  quoting the address as it was asked for.
+  Ways weighed: an empty list for an unknown filter, a page that says
+  nothing found where nothing is; the filters read per request, which
+  composes in a request. The head's tags and a post's lead to the list
+  they filter, but a draft's, a preview's and an unlisted post's, which
+  the lists name nowhere and whose tag may filter none; on a filtered
+  list the filter leads back to the list; a tile's series leads to its
+  group on the list by series. A tag and a series named alike each stand
+  in the `:` menu by their kind. `llms.txt` lists no filter. The list is a
   document every face draws: the TUI gives the blog a session of its own
   (DESIGN.md, The TUI), and its posts, tags and series stand in the `:`
   menu.
@@ -661,7 +684,8 @@ and SSH to the host: "without a new binary" does not mean without a build.
   `/blog/<slug>` the post as the project pages answer, its markdown and its
   manual at `.md` and `.txt` beside it (`docs/WEB.md`).
 - **In the TUI** `:e blog` opens the list, `:e blog/12` and
-  `:e blog/<slug>` the post.
+  `:e blog/<slug>` the post, `:e blog?tag=go` the list filtered, as a
+  tag's place of the list's `:` menu shows it in the list's window.
 - **Over SSH** the user name is the address: `ssh blog@paran.in` opens the
   TUI on the list, `ssh blog/12@paran.in` and `ssh blog/<slug>@paran.in`
   on the post. SSH has no path, and sends no host name a server could

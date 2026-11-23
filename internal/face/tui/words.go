@@ -119,11 +119,13 @@ const noCitation = 0
 // line is one line of a tab, the runs it is made of; every line a layout makes opens with its indent.
 type line []run
 
-// word is text no line breaks inside: its runs, and whether the space before it lay in a highlight, which the
-// space between it and the word before keeps.
+// word is text no line breaks inside: its runs; whether the space before it lay in a highlight, which the space between
+// it and the word before keeps; and the kind of that space, the text's but inside words shown as one, as a filter
+// chosen, reversed whole, which may break at its spaces.
 type word struct {
 	runs            []run
 	highlightBefore bool
+	spaceBefore     kind
 }
 
 // words are the words of spans read as a kind of text: marks become runs of their own kind, a link carries its
@@ -140,7 +142,7 @@ func (layout layout) valueWords(value []document.Span) []word {
 
 // formWords are the words of spans read in the form a run gives them.
 func (layout layout) formWords(spans []document.Span, form run) []word {
-	reader := wordReader{site: layout.site, words: []word{}, current: word{runs: nil, highlightBefore: false}}
+	reader := wordReader{site: layout.site, words: []word{}, current: word{runs: nil, highlightBefore: false, spaceBefore: kindText}}
 	reader.read(spans, form)
 	return reader.done()
 }
@@ -156,7 +158,9 @@ func textWords(text string, base kind) []word {
 
 // wordOf is a text as one word of a kind, which no line breaks inside, its spaces and all: a check's cell, a count.
 func wordOf(text string, shown kind) word {
-	return word{runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}, highlightBefore: false}
+	return word{
+		runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}, highlightBefore: false, spaceBefore: kindText,
+	}
 }
 
 // wordReader gathers words from spans read one by one: a word goes on until a space ends it.
@@ -243,7 +247,7 @@ func (reader *wordReader) end() {
 	if len(reader.current.runs) > 0 {
 		reader.words = append(reader.words, reader.current)
 	}
-	reader.current = word{runs: nil, highlightBefore: false}
+	reader.current = word{runs: nil, highlightBefore: false, spaceBefore: kindText}
 }
 
 func (reader *wordReader) done() []word {
@@ -328,8 +332,8 @@ func (packing *packing) open() {
 // at least the word's first letter, as the screen shows it, though that letter be wider than the width, so the rest
 // is always narrower than the word.
 func cutWord(whole word, width int) (word, word) {
-	piece := word{runs: nil, highlightBefore: whole.highlightBefore}
-	rest := word{runs: nil, highlightBefore: false}
+	piece := word{runs: nil, highlightBefore: whole.highlightBefore, spaceBefore: whole.spaceBefore}
+	rest := word{runs: nil, highlightBefore: false, spaceBefore: kindText}
 	used := 0
 	for _, part := range whole.runs {
 		partWidth := textWidth(part.text)
@@ -359,7 +363,7 @@ func cutWord(whole word, width int) (word, word) {
 
 // spaceRun is the space before a word, highlighted where the space was.
 func spaceRun(next word) run {
-	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: "", tone: 0, cites: noCitation}
+	return run{text: space, kind: next.spaceBefore, highlighted: next.highlightBefore, address: "", copied: "", tone: 0, cites: noCitation}
 }
 
 // wordRuns are words laid in one line, a space between each two.

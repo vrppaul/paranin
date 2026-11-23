@@ -29,9 +29,9 @@ const BACKWARD = -1;
 test.each([
   { name: "before anything is typed, the tabs but the one shown", typed: "", want: ["about", "skills"] },
   {
-    name: "the places a letter typed starts, a project's among them, a name two share once, the first's",
+    name: "the places a letter typed starts, a project's among them, a name two share leading apart for each",
     typed: "s",
-    want: ["skills", "sorted-list"],
+    want: ["skills", "sorted-list", "skills"],
   },
   { name: "never the tab shown, typed whole", typed: "experience", want: [] },
   { name: "never a page :e alone opens", typed: "b", want: [] },
@@ -49,8 +49,13 @@ test.each([
 test.each([
   { name: "Tab writes the first", typed: "s", steps: [FORWARD], want: "skills" },
   { name: "Tab again writes the next", typed: "s", steps: [FORWARD, FORWARD], want: "sorted-list" },
-  { name: "past the last, Tab writes what was typed again", typed: "s", steps: [FORWARD, FORWARD, FORWARD], want: "s" },
-  { name: "Shift+Tab writes the last", typed: "s", steps: [BACKWARD], want: "sorted-list" },
+  {
+    name: "past the last, Tab writes what was typed again",
+    typed: "s",
+    steps: [FORWARD, FORWARD, FORWARD, FORWARD],
+    want: "s",
+  },
+  { name: "Shift+Tab writes the last", typed: "s", steps: [BACKWARD], want: "skills" },
   { name: "Tab writes a page :e opens after the command", typed: "e t", steps: [FORWARD], want: "e tidy-tool" },
   { name: "with nothing to go round, Tab leaves what was typed", typed: "x", steps: [FORWARD], want: "x" },
 ])("$name", ({ typed, steps, want }) => {
@@ -94,5 +99,21 @@ test.each<{ name: string; typed: string; want: Partial<Outcome> }>([
   },
   { name: "refuses :e of a page it does not open", typed: "e about", want: { kind: "failed", fault: "missing" } },
 ])("Enter $name", ({ typed, want }) => {
-  expect(ran(PLACES, typed)).toMatchObject(want);
+  expect(ran(PLACES, typed, undefined)).toMatchObject(want);
+});
+
+test.each([
+  {
+    name: "goes to the first place a name two share names, typed",
+    steps: [],
+    want: { kind: "go", address: "/skills" },
+  },
+  {
+    name: "goes to the place Tab chose among those a name two share names",
+    steps: [FORWARD, FORWARD],
+    want: { kind: "go", address: "/p/skills" },
+  },
+])("Enter $name", ({ steps, want }) => {
+  const completions = steps.reduce((current, step) => stepped(current, step), completionsOf(PLACES, "skills"));
+  expect(ran(PLACES, lineOf(completions), completions.listed[completions.chosen])).toMatchObject(want);
 });

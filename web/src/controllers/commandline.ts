@@ -11,6 +11,7 @@ import {
   placesOf,
   ran,
   stepped,
+  type Completion,
   type Completions,
   type Folder,
   type Place,
@@ -311,10 +312,10 @@ class CommandLine {
     this.markKept();
   }
 
-  /** A press on a place goes where the line would with the place written on it. */
+  /** A press on a place goes where the line would with the place written on it and chosen. */
   private pressed(place: Place): void {
     const completion = this.completions.listed.find((listed) => listed.place === place);
-    this.went(completion?.written ?? place.name);
+    this.went(completion?.written ?? place.name, completion);
   }
 
   /** A key on the page: it puts away what the line said, and where the keys are on, answers the vim keys. */
@@ -424,7 +425,7 @@ class CommandLine {
   /** Enter: a place or a command is run, a search kept; Enter on an empty search leaves it. */
   private entered(): void {
     if (this.mode === "command") {
-      this.went(this.parts.field.value);
+      this.went(this.parts.field.value, this.completions.listed[this.completions.chosen]);
     } else if (this.parts.field.value === "") {
       this.leave();
     } else {
@@ -502,9 +503,9 @@ class CommandLine {
     this.show();
   }
 
-  /** Goes where a line says, or says why it will not. */
-  private went(line: string): void {
-    const outcome = ran(this.places, line);
+  /** Goes where a line says, to the place chosen where one is, or says why it will not. */
+  private went(line: string, chosen: Completion | undefined): void {
+    const outcome = ran(this.places, line, chosen);
     switch (outcome.kind) {
       case "go":
         this.leave();

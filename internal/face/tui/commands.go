@@ -67,12 +67,15 @@ func commands(buffers map[document.Page][]tab) []command {
 	return known
 }
 
-// completion is a place or a page Tab goes round on the command line: what it writes there where it chooses it, and
-// the name and the kind the menu over the command line names it by.
+// completion is a place or a page Tab goes round on the command line: what it writes there where it chooses it, the
+// name and the kind the menu over the command line names it by, and where a place goes.
 type completion struct {
 	written string
 	name    string
 	kind    string
+	// goes is what Enter does where Tab chose the completion, so a place among those a name names goes where it was
+	// chosen; none for a page :e opens, which the command opens by the name written
+	goes action
 }
 
 // completionState is what Tab goes round on the command line: what the reader typed, the completions for it, what of
@@ -176,7 +179,7 @@ func (model Model) pageCompletions(name, typed string) []completion {
 	}
 	for _, page := range model.siteWords.Pages {
 		if page.Offered && strings.HasPrefix(page.Place.Name, typed) {
-			listed = append(listed, completion{written: name + space + page.Place.Name, name: page.Place.Name, kind: string(page.Place.Kind)})
+			listed = append(listed, completion{written: name + space + page.Place.Name, name: page.Place.Name, kind: string(page.Place.Kind), goes: nil})
 		}
 	}
 	return listed
@@ -192,14 +195,17 @@ func (model Model) commandNamed(name string) (command, bool) {
 	return command{names: nil, takesArgument: false, act: nil}, false
 }
 
-// ranCommand goes to the place typed, or runs the command typed, as Neovim does: the one named by the first word,
-// with what follows it, or none, and the command line says it knows no such command; the keys go back to normal mode
-// either way, and nothing typed runs nothing.
+// ranCommand goes to the place Tab chose, where the line is what it wrote, or the first place typed, or runs the
+// command typed, as Neovim does: the one named by the first word, with what follows it, or none, and the command line
+// says it knows no such command; the keys go back to normal mode either way, and nothing typed runs nothing.
 func (model Model) ranCommand() (Model, tea.Cmd) {
 	model.keys.mode = modeNormal
 	typed := strings.TrimSpace(model.keys.typing)
 	if typed == "" {
 		return model, nil
+	}
+	if goes, chosen := model.completion.chosenGoing(typed); chosen {
+		return goes(model)
 	}
 	if known, found := model.placeNamed(typed); found {
 		return known.act(model)
@@ -210,6 +216,16 @@ func (model Model) ranCommand() (Model, tea.Cmd) {
 	}
 	model.said = commandMessage{text: unknownCommand + typed, failed: true}
 	return model, nil
+}
+
+// chosenGoing is where the place Tab chose goes, where the line is still what Tab wrote for it, so among places a name
+// two share Enter goes to the one chosen; none where nothing is chosen, or a page :e opens is, which the command opens.
+func (state completionState) chosenGoing(line string) (action, bool) {
+	if state.chosen == noneChosen {
+		return nil, false
+	}
+	chosen := state.listed[state.chosen]
+	return chosen.goes, chosen.written == line && chosen.goes != nil
 }
 
 // ranWith runs a command with the argument typed after it, where the command takes that: one that takes an argument

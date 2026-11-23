@@ -28,12 +28,17 @@ type Head struct {
 	// that greets nobody
 	Greeting string
 	Title    []Span
+	// Subtitle is what stands beside the title: the author's title on the résumé, a project's tagline on its page,
+	// the filter in the site's words on a filtered list
 	Subtitle []Span
 	Place    string
-	// Tags are what a project's page says the project is made of, by name: the language it is written in, then what
-	// it is built on; on a post's page its tags; none on another page
-	Tags []string
-	Lead []Span
+	// Filters are the ways a post's head and the blog's list's offer to filter the list: on a list filtered by a series
+	// that series, then each tag; none on any other page
+	Filters []Filter
+	// MadeOf is what a project's page says the project is made of, by name: the language it is written in, then what
+	// it is built on; none on another page, a post's and the list's tags standing among their Filters
+	MadeOf []string
+	Lead   []Span
 	// Version is the version of a post its reader reads; none on any other page
 	Version Version
 	// Repository is where the code of a project's page lives; none on another page or for a project that names none

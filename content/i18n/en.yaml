@@ -10,10 +10,12 @@
 # reader, the panes' headings, each side's name and what a side with none says, the word before where the post is
 # discussed, and the name of its outline; and the blog's list: the line it opens with, its window, the way to it beside
 # a post's other posts, the word before how it groups its posts, its grouping by year, its group of the posts in no
-# series, and how many posts a group holds, one or more, and how many of a series' parts are out. A phrase holds a
-# place, {}, for each value it takes, in the order the site hands them: the command, the code block's number on its
+# series, how many posts a group holds, one or more, how many of a series' parts are out, its name in a grouping, and
+# the filter of a list filtered by a tag or a series, and that filter as the way back to the whole list. A phrase holds
+# a place, {}, for each value it takes, in the order the site hands them: the command, the code block's number on its
 # page, a part's number and the count of parts, the series' title, a count of posts, the parts out and the count of
-# parts. `paranin check content` requires every one of them.
+# parts, the list's title and the grouping's word, the tag, the filter's words. `paranin check content` requires every
+# one of them.
 
 about: About
 greeting: Hi, my name is
@@ -75,3 +77,6 @@ one_post: "{} post"
 posts_count: "{} posts"
 parts_out: "{} of {} out"
 grouped_list: "{} by {}"
+tag_filter: "posts tagged {}"
+series_filter: "parts of {}"
+filter_way_out: "{}, show all posts"

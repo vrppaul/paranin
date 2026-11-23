@@ -1,6 +1,8 @@
 package html
 
 import (
+	"slices"
+
 	"github.com/a-h/templ"
 
 	"github.com/vrppaul/paranin/internal/compose"
@@ -8,17 +10,25 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
+// What aria-current says of a link that is the one shown among its kind: the page shown, or the current one of a set
+// whose link leads to another page than the one shown, as a filtered list's grouping and filter do
+const (
+	currentPage = "page"
+	currentWay  = "true"
+)
+
 // grouping is a way the blog's list groups its posts, as its head's Switch offers it (DESIGN.md, Switch): its word,
-// the address of the list grouped so, and whether it is the grouping shown.
+// the address of the list grouped so, and what aria-current says of it, empty where it is not the grouping shown.
 type grouping struct {
 	words   string
 	address string
-	current bool
+	current string
 }
 
-// List writes the blog's list as a page of HTML (DESIGN.md, Pages): what the page says of itself, then its head, with
-// the Switch between its groupings, its groups of tiles, and the foot line, in the blog's session, the list its one
-// window, its command line going to the list's posts and series too.
+// List writes the blog's list as a page of HTML (DESIGN.md, Pages): what the page says of itself, by the blog's name
+// and the filter beside it, where it is filtered; then its head, with the Switch between its groupings and its
+// filters, its groups of tiles, and the foot line, in the blog's session, the list its one window, its command line
+// going to the list's posts, tags and series too.
 func (writer PageWriter) List(composed document.Document) string {
 	head := composed.Head
 	page := head.Page
@@ -26,14 +36,27 @@ func (writer PageWriter) List(composed document.Document) string {
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
 	foot := footLineOf(around, around.sessionsOf(page), windows, page, document.PlacesOf(composed))
 	main := writer.listMain(head, around.groupingsOf(around.listWords.Groupings(), page), composed.Blocks)
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, head.Title), nil, main, foot))
+	title := head.Title
+	if len(head.Subtitle) > 0 {
+		title = slices.Concat(head.Title, []document.Span{document.Text{Text: dash}}, head.Subtitle)
+	}
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), nil, main, foot))
 }
 
-// groupingsOf are the ways the blog's list groups its posts as its head's Switch links them, the list shown current.
+// groupingsOf are the ways the blog's list groups its posts as its head's Switch links them, the list shown current,
+// or the one a filtered list filters.
 func (around frame) groupingsOf(groupings []compose.Grouping, shown document.Page) []grouping {
+	grouped, isFilter := shown.Unfiltered()
 	linked := make([]grouping, 0, len(groupings))
 	for _, way := range groupings {
-		linked = append(linked, grouping{words: way.Words, address: around.site.Reference(way.List, routes.FormatChosen), current: way.List == shown})
+		current := ""
+		switch {
+		case way.List == shown:
+			current = currentPage
+		case way.List == grouped && isFilter:
+			current = currentWay
+		}
+		linked = append(linked, grouping{words: way.Words, address: around.site.Reference(way.List, routes.FormatChosen), current: current})
 	}
 	return linked
 }

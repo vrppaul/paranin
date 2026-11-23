@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"slices"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
@@ -17,6 +18,9 @@ type Site struct {
 	Pages []Composed
 	// Lists are the blog's list by year and by series
 	Lists []document.Document
+	// Filtered are the blog's list by year filtered by each tag its head names, then by each series with a part out:
+	// views of the list, which a reader opens from its head and no index lists
+	Filtered []document.Document
 	// Posts are the posts the site serves, in the snapshot's order, each link inside the site read into its page
 	Posts []document.Document
 	// Pictures are the pictures of the posts the site serves, each at its file beside its post, in no order
@@ -43,8 +47,8 @@ func SiteOf(prepared *Prepared, audience Audience) Site {
 	snapshot := prepared.snapshot
 	read := blogOf(snapshot, audience)
 	site := Site{
-		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Posts: nil, Pictures: picturesOf(read),
-		Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil,
+		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Filtered: filteredLists(read, snapshot.Words),
+		Posts: nil, Pictures: picturesOf(read), Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil,
 		postsServed: read.served,
 	}
 	pages := site.pagesButPosts()
@@ -65,13 +69,13 @@ func (site Site) Documents() []document.Document {
 }
 
 // pagesButPosts are the documents of every page the site serves but its posts: the index, the résumé and each
-// project's page with each of their tabs alone, and the blog's lists.
+// project's page with each of their tabs alone, and the blog's lists, filtered or not.
 func (site Site) pagesButPosts() []document.Document {
 	pages := []document.Document{site.Index}
 	for _, page := range site.Pages {
 		pages = append(append(pages, page.Document), page.Tabs...)
 	}
-	return append(pages, site.Lists...)
+	return slices.Concat(pages, site.Lists, site.Filtered)
 }
 
 // pagesAt are the pages of heads by the path a link inside the site reaches each by, where the reader chooses its

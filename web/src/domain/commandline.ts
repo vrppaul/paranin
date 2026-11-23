@@ -30,7 +30,7 @@ export interface Folder {
 }
 
 /**
- * A page's places, worked out once: each name with the first place that has it, the pages :e opens, and the folder
+ * A page's places, worked out once: each name with each place it leads to, the pages :e opens, and the folder
  * where it opens any other.
  */
 export interface Places {
@@ -40,7 +40,7 @@ export interface Places {
 }
 
 /** A place Tab goes round, with what it writes on the line where it is chosen. */
-interface Completion {
+export interface Completion {
   place: Place;
   written: string;
 }
@@ -86,13 +86,16 @@ const SAID: Record<Fault, (typed: string) => string> = {
 };
 
 /**
- * A page's places: those it goes to by name, a name two share going to the first, as the TUI's places do, so a
- * project's page named as a tab is goes by :e alone; the pages :e opens; and the folder where :e opens a page the
+ * A page's places: those it goes to by name, as the TUI's places do, a name two share standing once where both lead to
+ * one address, as the post read and the list's own post do, and for each where they lead apart, as a tag and a series
+ * named alike, each by its kind, Enter going to the first; the pages :e opens; and the folder where :e opens a page the
  * menu does not list.
  */
 export function placesOf(all: readonly Place[], folder: Folder): Places {
   const byName = all.filter((place) => !place.edited);
-  const named = byName.filter((place, index) => byName.findIndex((each) => each.name === place.name) === index);
+  const named = byName.filter(
+    (place, index) => byName.findIndex((each) => each.name === place.name && each.address === place.address) === index,
+  );
   return { named, edited: all.filter((place) => place.edited), folder };
 }
 
@@ -132,11 +135,17 @@ export function lineOf(completions: Completions): string {
   return completions.listed[completions.chosen]?.written ?? completions.typed;
 }
 
-/** What Enter does with a line: goes to the place it names or :e names, stays, does nothing, or refuses. */
-export function ran(places: Places, line: string): Outcome {
+/**
+ * What Enter does with a line: goes to the place chosen, where Tab or a press chose the one the line writes, among
+ * places that share a name; else to the first place the line names, or :e names; stays, does nothing, or refuses.
+ */
+export function ran(places: Places, line: string, chosen: Completion | undefined): Outcome {
   const typed = line.trim();
   if (typed === "") {
     return { kind: "nothing" };
+  }
+  if (chosen?.written === typed) {
+    return wentTo(chosen.place);
   }
   const named = places.named.find((place) => place.name === typed);
   if (named !== undefined) {

@@ -1,6 +1,7 @@
 package text
 
 import (
+	"path"
 	"slices"
 	"strings"
 	"testing"
@@ -61,6 +62,29 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 	}
 }
 
+// A filtered list is written as the list it filters, its manual named as the list's, with the filter in the site's
+// words beside the blog's name, and the posts it keeps; each filter, by tag and by series, in each format, is held to
+// its golden file, named by the filter, since the list's path holds a query.
+func TestAFilteredListReadsAsItsGoldenText(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Filtered
+	cases := []struct {
+		page document.Page
+		name string
+	}{
+		{page: document.TagFilter("reading"), name: "filtered/tag-reading"},
+		{page: document.SeriesFilter("reading"), name: "filtered/series-reading"},
+	}
+	for _, testCase := range cases {
+		for _, written := range formats() {
+			file := testCase.name + path.Ext(routes.Path(document.PageOf(document.PageBlog), written.format))
+			test.Run(file, func(test *testing.T) {
+				golden.Match(test, file, written.write(fixtures.DocumentOf(test, filtered, testCase.page), fixtures.Site(snapshot)))
+			})
+		}
+	}
+}
+
 // The index is what an agent reads first, llms.txt: markdown as llmstxt.org lays it out, a title, a quote of what
 // the site is, and each page listed under its section. It is held to its golden file too.
 func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
@@ -74,7 +98,8 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 // document holds, found as each format writes them.
 func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents, site := textPages(snapshot), fixtures.Site(snapshot)
+	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Filtered
+	documents, site := slices.Concat(textPages(snapshot), filtered), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {
 			text := written.write(composed, site)

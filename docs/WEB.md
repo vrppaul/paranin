@@ -32,15 +32,16 @@ token into them.
 | `GET /{tab}`, `GET /p/{slug}/{tab}` | One tab, chosen the same way: the text formats write it alone, the HTML shows it inside its page. |
 | `GET /blog/{slug}` | A post, whole, in the format the reader's request chooses. |
 | `GET /blog`, `GET /blog/series` | The blog's list, every post published, by year, newest first, and by series, the posts in no series last, chosen the same way. No two pages share an address: content where two would, as a post slugged `series`, is refused as it loads. |
-| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md` | The same in markdown, `text/markdown`. |
-| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt` | The same as the manual, `text/plain`. |
+| `GET /blog?tag={tag}`, `GET /blog?series={name}` | The list by year filtered to the posts of a tag, or to the parts of a series, chosen the same way, for each tag of a post the list names and each series with a part out. On the list by year the query names one filter; any other key, and the query of any other path, is passed over. A filter named twice, both at once, or one no list has is `404`. Each is drawn the first time a request asks for it, and kept. |
+| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md`, `/blog.md?tag={tag}`, `/blog.md?series={name}` | The same in markdown, `text/markdown`. |
+| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}`, `/blog.txt?series={name}` | The same as the manual, `text/plain`. |
 | `GET /blog/{slug}/{picture}` | A picture the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. |
 | `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
-| any other `GET` | `404`, the page of no page: the status, the path asked for, quoted, and where the site begins; text or HTML, chosen as a page is. |
+| any other `GET` | `404`, the page of no page: the status, the address asked for, quoted, its path decoded and its query as written, and where the site begins; text or HTML, chosen as a page is. |
 | any other method | `405`, `Allow: GET, HEAD`, from `net/http`. |
 | a request whose line and headers pass the server's bound, 16 KB and the 4 KB of slack `net/http` adds | `431`, from `net/http`, before the handler reads it. |
 
@@ -55,16 +56,20 @@ How long a cache keeps an answer:
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 | Any answer in the preview's folder, `302`, `404` and what `net/http` writes there among them | `private, no-store`: its address may hold a link's token, which no cache keeps |
 
-### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list
+### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list, filtered or not
 
 The format the `Accept` header ranks highest, by the closest range that names it (RFC 9110, 12.5.1): HTML
 (`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each with `; charset=utf-8`. Where it ranks
 two alike the manual goes first, then markdown, then HTML, so `curl`, which sends `*/*`, and a request with no
 `Accept` get the manual (D21).
 
-Every negotiated response sets `Vary: Accept` alone, the page of no page among them. Every format of a page, at its
-own path and where the reader chooses, sets `Link: <canonical URL>; rel="canonical"`, the URL where the reader
-chooses; the HTML names it in its head too, with `rel="alternate"` to its markdown. Links inside the HTML lead to the
+Every negotiated response sets `Vary: Accept` alone, the page of no page among them: a filter's query is part of the
+address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
+`Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses; the HTML names it in its head too, with
+`rel="alternate"` to its markdown. A filtered list, a view of the list and no page of its own (`docs/FOUNDATION.md`
+§5.4), names no canonical URL, as a preview names none, since a part of the list is no copy of `/blog`, and sends
+`X-Robots-Tag: noindex` in every format, which its HTML says in its head too (`<meta name="robots">`), with no Open
+Graph tags. Links inside the HTML lead to the
 site's pages by their path from the root; the canonical URL and the text formats' links are whole.
 
 ## What each format holds
@@ -81,12 +86,13 @@ left out, and a gap among written words stands marked as one.
   columns, a bullet a row where not; a quote behind `│`; a picture its alt text, its address between `<` and `>` and
   its caption, a line each; a tab in code as the spaces to its stop, every eight columns. The blog's list stands a
   section a group, each post its title with its day at the right, then its lead, its part and series, its tags and
-  its address.
+  its address; a filtered list is named as the list, `BLOG(1)`, its filter in `NAME` after the blog's,
+  `blog — posts tagged go`.
 - **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, `draft`
   for a draft, its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
   `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
-  tags and its lead.
+  tags and its lead; a filtered list writes its filter on the line under the blog's name.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
   names, newest first, by its description; never a draft, a preview, a post unlisted or one not yet out.
@@ -101,8 +107,11 @@ left out, and a gap among written words stands marked as one.
   cites it, and every note once at the text's end, which a phone shows in their place; a picture a `<figure>`, its
   `<img>` holding its alt text and its size, so the page keeps its room before it comes, fetched as it nears the
   screen, and its caption a `<figcaption>`. The blog's list has the blog's
-  name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it with its
-  day in a `<time datetime>`, a part to come no link; it has no record until the site's SEO. Every page ends with the
+  name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it, its
+  day in a `<time datetime>` then its title, stretched over its tile, its series a link to its group on the list by
+  series, a part to come no link; it has no record until the site's SEO. The list's tags and a post's are links to the
+  list each filters, a post's only where the lists name it; the filter shown is `aria-current="true"`, leads back to
+  the list and is named to a screen reader as the way there (`posts tagged go, show all posts`); a filtered list is called by the blog's name and its filter, `blog — posts tagged go`. Every page ends with the
   foot line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.
 
 ## Security headers

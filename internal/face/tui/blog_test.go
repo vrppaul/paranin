@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
@@ -133,33 +135,43 @@ func TestEditOpensTheBlogsPages(test *testing.T) {
 }
 
 // The menu names the blog's places by their kinds, those of the tab chosen alone: on a post its headings; on the list
-// its posts and its series, and not the headings of the post read beside it, the post read going by its window; and
-// after :e and a space the blog's lists and each post they list, by the names a terminal reaches them by.
+// its posts, its tags and its series, a series named as a tag standing beside it, and not the headings of the post
+// read beside it, the post read going by its window; and after :e and a space the blog's lists and each post they
+// list, by the names a terminal reaches them by, never a filter of the list, which Tab does not offer.
 func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
+	beside := pressed(test, openedModel(test, "blog/1", commonWidth, commonHeight), "h")
 	cases := []struct {
-		name    string
-		opening string
-		keys    []string
-		text    string
-		holds   []string
-		lacks   []string
+		name  string
+		model Model
+		text  string
+		after []string
+		holds []string
+		lacks []string
 	}{
-		{name: "a post's headings", opening: "blog/1", keys: nil, text: "a", holds: []string{`afterwards +heading`}, lacks: nil},
-		{name: "the list beside the post", opening: "blog/1", keys: []string{"h"}, text: "a", holds: nil, lacks: []string{`afterwards`}},
+		{name: "a post's headings", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "a", after: nil, holds: []string{`afterwards +heading`}, lacks: nil},
+		{name: "the list beside the post", model: beside, text: "a", after: nil, holds: nil, lacks: []string{`afterwards`}},
 		{
-			name: "the list's post read beside it, by its window", opening: "blog/1", keys: []string{"h"}, text: "r",
-			holds: []string{`reading-slowly +tab`}, lacks: []string{`reading-slowly +post`},
+			name: "the list's post read beside it, by its window", model: beside, text: "r", after: nil, holds: []string{`reading-slowly +tab`},
+			lacks: []string{`reading-slowly +post`},
 		},
-		{name: "the list's posts and series", opening: "blog", keys: nil, text: "r", holds: []string{`reading-slowly +post`, `reading +series`}, lacks: nil},
 		{
-			name: "the blog's pages :e opens", opening: "", keys: nil, text: "e b",
-			holds: []string{`blog +list`, `blog/series +list`, `blog/reading-slowly +post`}, lacks: []string{`blog/1`},
+			name: "the list's posts, tags and series, a tag and a series named alike each by its kind", model: openedModel(test, "blog", commonWidth, commonHeight),
+			text: "re", after: nil, holds: []string{`reading-slowly +post`, `reading +tag`, `reading +series`}, lacks: nil,
+		},
+		{
+			name: "the series Tab chose beside the tag named alike, which Enter goes to", model: openedModel(test, "blog", commonWidth, commonHeight),
+			text: "rea", after: []string{"tab", "tab", "tab", "enter"}, holds: []string{`1 of 2 out`}, lacks: nil,
+		},
+		{name: "the list's other tag", model: openedModel(test, "blog", commonWidth, commonHeight), text: "t", after: nil, holds: []string{`terminals +tag`}, lacks: nil},
+		{name: "the list's series", model: handSeriesModel(test, commonHeight), text: "ea", after: nil, holds: []string{`early +series`}, lacks: nil},
+		{
+			name: "the blog's pages :e opens", model: openedModel(test, "", commonWidth, commonHeight), text: "e b", after: nil,
+			holds: []string{`blog +list`, `blog/series +list`, `blog/reading-slowly +post`}, lacks: []string{`blog/1`, `blog\?tag`},
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, openedModel(test, testCase.opening, commonWidth, commonHeight), testCase.keys...)
-			above := aboveTheCommandLine(screenOf(test, typed(test, pressed(test, model, ":"), testCase.text)))
+			above := aboveTheCommandLine(screenOf(test, pressed(test, typed(test, pressed(test, testCase.model, ":"), testCase.text), testCase.after...)))
 			for _, want := range testCase.holds {
 				if !regexp.MustCompile(want).MatchString(above) {
 					test.Errorf("after :%s the screen above the command line =\n%s\nwant it to hold %q", testCase.text, above, want)
@@ -171,6 +183,76 @@ func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// A second post the tests write beside the fixture's, of a tag of its own: its file, and its text
+const (
+	secondPostFile = "posts/second/post.en.md"
+	secondPostText = "---\nid: 3\ntitle: The second post\ndescription: About the second.\nstatus: published\npublished: 2026-11-12T09:00+01:00\n" +
+		"tags: [tools]\n---\nIts text.\n"
+)
+
+// A tag's name shows the list filtered by it in the list's window, and on that list, where it is the filter, the list
+// whole again; another tag's filters the list anew. :e opens the list filtered by a tag or by a series, the series'
+// filter said beside the blog's name, by the name a terminal reaches it by.
+func TestATagsPlaceFiltersTheList(test *testing.T) {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	fixtures.WriteIn(test, folder, secondPostFile, secondPostText)
+	snapshot, err := content.Load(os.DirFS(folder))
+	if err != nil {
+		test.Fatalf("load the fixture with a second post: %v", err)
+	}
+	list := New(sessionDrawing(snapshot, false), "blog", commonWidth, tallHeight, fixtures.Day())
+	cases := []struct {
+		name     string
+		commands []string
+		holds    []string
+		lacks    []string
+	}{
+		{name: "a tag", commands: []string{"tools"}, holds: []string{"The second post"}, lacks: []string{"Reading slowly"}},
+		{name: "the tag filtering it", commands: []string{"tools", "tools"}, holds: []string{"The second post", "Reading slowly"}, lacks: nil},
+		{name: "another tag", commands: []string{"tools", "terminals"}, holds: []string{"Reading slowly"}, lacks: []string{"The second post"}},
+		{name: "a tag's filter by :e", commands: []string{"e blog?tag=tools"}, holds: []string{"The second post"}, lacks: []string{"Reading slowly"}},
+		{
+			name: "a series' filter by :e", commands: []string{"e blog?series=reading"}, holds: []string{"parts of Reading", "Reading slowly"},
+			lacks: []string{"The second post"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := list
+			for _, text := range testCase.commands {
+				model = commanded(test, model, text)
+			}
+			screen := screenOf(test, model)
+			for _, want := range testCase.holds {
+				if !strings.Contains(screen, want) || !strings.Contains(footerOf(screen), listAlone) {
+					test.Errorf("after :%s the screen =\n%s\nwant %q on it and %q in the footer", strings.Join(testCase.commands, ", :"), screen, want, listAlone)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(screen, unwanted) {
+					test.Errorf("after :%s the screen =\n%s\nwant no %q on it", strings.Join(testCase.commands, ", :"), screen, unwanted)
+				}
+			}
+		})
+	}
+}
+
+// The filter a list is filtered by stands reversed as one chip, and where it is too long for its line it breaks only
+// at a space between its words, never inside one.
+func TestALongFilterBreaksOnlyBetweenItsWords(test *testing.T) {
+	// a filter whose line at 80 columns ends inside a word, "th|e"
+	const filterWords = "parts of Notes from a long series whose title runs past one line, as the web has it"
+	resume := document.Document{Head: fixtures.HeadOf(document.PageOf(document.PageResume), textOf("home")), Blocks: nil}
+	head := fixtures.HeadOf(document.PageOf(document.PageBlog), textOf("blog"))
+	head.Filters = []document.Filter{{
+		Kind: document.FilterSeries, Name: "notes", Words: textOf(filterWords), Page: document.PageOf(document.PageBlog), Current: true, WayOut: "",
+	}}
+	model := commanded(test, handModel(test, assumedWidth, tallHeight, resume, document.Document{Head: head, Blocks: nil}), "e blog")
+	if read := strings.Join(strings.Fields(screenOf(test, model)), space); !strings.Contains(read, filterWords) {
+		test.Errorf("the screen, its words read in order, = %q, want %q whole among them", read, filterWords)
 	}
 }
 

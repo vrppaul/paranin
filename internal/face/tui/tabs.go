@@ -150,15 +150,16 @@ func (plainSection) tabBody()  {}
 func (listBody) tabBody()      {}
 func (postBody) tabBody()      {}
 
-// tabsOf lays a document's tabs out as the TUI shows them: the blog's list and a post whole, a tab each, which the
-// blog's session names as its windows (Model.windows); any other document's as document.TabsOf parts it.
+// tabsOf lays a document's tabs out as the TUI shows them: the blog's list, filtered or not, and a post whole, a tab
+// each, which the blog's session names as its windows (Model.windows); any other document's as document.TabsOf parts
+// it.
 func tabsOf(composed document.Document) []tab {
 	head := composed.Head
 	page, title := head.Page, document.PlainText(head.Title)
 	switch page.Kind {
 	case document.PagePost:
 		return []tab{{page: page, place: 0, title: title, slug: "", body: postBody{post: composed}}}
-	case document.PageBlog, document.PageBlogSeries:
+	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
 		return []tab{{page: page, place: 0, title: title, slug: "", body: listBody{head: head, groups: composed.Blocks}}}
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
@@ -186,7 +187,8 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 		return reportOpening{head: head, blocks: blocks}
 	case document.PageSkills:
 		return skillsOpening{head: head, blocks: blocks}
-	case document.PageNone, document.PageResume, document.PageIndex, document.PagePost, document.PageBlog, document.PageBlogSeries:
+	case document.PageNone, document.PageResume, document.PageIndex, document.PagePost, document.PageBlog, document.PageBlogSeries,
+		document.PageTagFilter, document.PageSeriesFilter:
 	}
 	return plainOpening{head: head, blocks: blocks}
 }
@@ -197,7 +199,8 @@ func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	switch kind {
 	case document.PageResume, document.PageProject:
 		return titledSection{blocks: blocks}
-	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost, document.PageBlog, document.PageBlogSeries:
+	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost, document.PageBlog, document.PageBlogSeries,
+		document.PageTagFilter, document.PageSeriesFilter:
 	}
 	return plainSection{blocks: blocks}
 }
@@ -293,7 +296,7 @@ func carriesCursor(kind document.PageKind) bool {
 	case document.PageResume:
 		return true
 	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost,
-		document.PageBlog, document.PageBlogSeries:
+		document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
 	}
 	return false
 }

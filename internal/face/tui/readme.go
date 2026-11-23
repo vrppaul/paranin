@@ -17,7 +17,7 @@ const pathMark = "/"
 // the repository's owner and name under it, a link to it; what it is made of; the tagline, and what the project does.
 func (layout layout) readme(head document.Head) []line {
 	lines := slices.Concat(layout.heading(document.PlainText(head.Title)), layout.fill(layout.repositoryWords(head.Repository), 0))
-	lines = stacked(lines, layout.fill(madeOfWords(head.Tags), 0))
+	lines = stacked(lines, layout.fill(madeOfWords(head.MadeOf), 0))
 	return stacked(lines, slices.Concat(layout.fill(layout.words(head.Subtitle, kindStrong), 0), layout.fill(layout.words(head.Lead, kindText), 0)))
 }
 
@@ -32,18 +32,18 @@ func (layout layout) repositoryWords(repository *document.Repository) []word {
 	link := run{text: written, kind: kindText, highlighted: false, address: layout.site.Address(repository.Address, routes.FormatChosen), copied: written, tone: 0, cites: noCitation}
 	parts := pathParts(written)
 	if len(parts) == 0 {
-		return []word{{runs: []run{link}, highlightBefore: false}}
+		return []word{{runs: []run{link}, highlightBefore: false, spaceBefore: kindText}}
 	}
 	words := []word{}
 	for index, part := range parts {
 		if index > 0 {
-			words = append(words, word{runs: []run{retold(link, pathMark, kindFaint)}, highlightBefore: false})
+			words = append(words, word{runs: []run{retold(link, pathMark, kindFaint)}, highlightBefore: false, spaceBefore: kindText})
 		}
 		partKind := kindOwner
 		if index == len(parts)-1 {
 			partKind = kindRepository
 		}
-		words = append(words, word{runs: []run{retold(link, part, partKind)}, highlightBefore: false})
+		words = append(words, word{runs: []run{retold(link, part, partKind)}, highlightBefore: false, spaceBefore: kindText})
 	}
 	return words
 }

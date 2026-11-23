@@ -9,8 +9,8 @@ func Phrases(document Document) []string {
 	phrases := spanPhrases(nil, head.Title)
 	phrases = spanPhrases(phrases, head.Subtitle)
 	phrases = textPhrase(phrases, head.Place)
-	for _, tag := range head.Tags {
-		phrases = textPhrase(phrases, tag)
+	for _, listed := range head.ListedWords() {
+		phrases = textPhrase(phrases, listed)
 	}
 	phrases = spanPhrases(phrases, head.Lead)
 	phrases = factPhrases(phrases, head.Repository.Facts())

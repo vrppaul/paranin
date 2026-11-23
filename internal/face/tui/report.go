@@ -82,10 +82,10 @@ func (layout layout) checks(checks document.Checks, indent int) []line {
 	looks := levelLooks()
 	for _, check := range checks.List {
 		look := looks[check.Level]
-		lead := line{gapRun(indent + checkIndent), {text: look.mark + space + look.word + space, kind: look.kind, highlighted: false, address: "", copied: "", tone: 0}}
+		lead := line{gapRun(indent + checkIndent), {text: look.mark + space + look.word + space, kind: look.kind, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}
 		lines = append(lines, layout.continued(lead, layout.words(check.Spans, kindText), runsWidth(lead))...)
 		if len(check.Advice) > 0 {
-			advice := line{gapRun(indent + checkIndent + adviceIndent), {text: adviceWord + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}}
+			advice := line{gapRun(indent + checkIndent + adviceIndent), {text: adviceWord + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}
 			lines = append(lines, layout.continued(advice, layout.words(check.Advice, kindText), runsWidth(advice))...)
 		}
 	}
@@ -102,12 +102,12 @@ func tallyWords(checks []document.Check) []word {
 		if count == 0 {
 			continue
 		}
-		counted := run{text: strconv.Itoa(count) + space + looks[level].word, kind: looks[level].kind, highlighted: false, address: "", copied: "", tone: 0}
+		counted := run{text: strconv.Itoa(count) + space + looks[level].word, kind: looks[level].kind, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 		if len(words) == 0 {
 			words = append(words, wordOf(counted.text, counted.kind))
 			continue
 		}
-		mark := run{text: placeMark + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
+		mark := run{text: placeMark + space, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 		words = append(words, word{runs: []run{mark, counted}, highlightBefore: false})
 	}
 	return words

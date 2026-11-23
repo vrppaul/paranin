@@ -111,13 +111,13 @@ func (layout layout) skill(skill document.Skill, indent int, columns skillColumn
 func barRuns(months int, columns skillColumns) line {
 	if months == 0 {
 		return line{
-			{text: unmeasuredMark, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0},
+			{text: unmeasuredMark, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation},
 			gapRun(columns.barWidth - textWidth(unmeasuredMark) + columnGap),
 		}
 	}
 	cells := max(shortestBar, int(math.Round(float64(months)/float64(columns.longestMonths)*float64(columns.barWidth))))
 	return line{
-		{text: strings.Repeat(barCell, cells), kind: kindBar, highlighted: false, address: "", copied: "", tone: 0},
+		{text: strings.Repeat(barCell, cells), kind: kindBar, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation},
 		gapRun(columns.barWidth - cells + columnGap),
 	}
 }
@@ -126,7 +126,7 @@ func barRuns(months int, columns skillColumns) line {
 // one still being learnt.
 func skillMark(learning bool) run {
 	if learning {
-		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}
+		return run{text: learningMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 	}
-	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: "", tone: 0}
+	return run{text: usedMark + space, kind: kindPassed, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 }

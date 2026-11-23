@@ -27,7 +27,8 @@ const (
 
 // The list's head and groups: the width the blog's line wraps at, as the page holds its lead to a measure; the gap
 // between the way the list is grouped and its tags, and between two tags; the rows between the head and the first
-// group and between two groups; and the row a group's name keeps from the page's top while its tiles scroll under it
+// group and between two groups; and the row a group's name keeps from the page's top while its tiles scroll under it,
+// as a post's Outline keeps while its body scrolls
 const (
 	blogLineMeasure = 52
 	waysGap         = 4
@@ -112,7 +113,7 @@ func junctionMarks() map[junction]string {
 // writes none of, stands as any page lays it out, as the page draws it.
 func (layout layout) list(head document.Head, blocks []document.Block) laidTab {
 	column := nameColumnOf(layout.width)
-	laid := laidTab{lines: layout.blogHead(head, column), tiles: []laidTile{}, groups: []laidGroup{}, split: 0, sections: map[string]int{}}
+	laid := laidTab{lines: layout.blogHead(head, column), tiles: []laidTile{}, groups: []laidGroup{}, split: 0, sections: map[string]int{}, outline: noOutline()}
 	if column > 0 {
 		laid.split = column + nameGap
 	}
@@ -210,7 +211,7 @@ func tagRuns(tags []word) line {
 
 // plainRun is a text of a kind, as one run with no mark of its own.
 func plainRun(text string, shown kind) run {
-	return run{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0}
+	return run{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 }
 
 // groupOver lays out a group on a page with no names' column: its name in the gradient and how many posts it holds on
@@ -242,24 +243,54 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 	grid := gridOf(layout.width)
 	inside := layout
 	inside.width = grid.inside()
-	laid, above := laidTab{lines: []line{}, tiles: []laidTile{}, groups: nil, split: 0, sections: nil}, []bool{}
+	rows := [][]gridCell{}
 	for first := 0; first < len(posts); first += grid.columns {
-		row := posts[first:min(first+grid.columns, len(posts))]
-		labels, tiles, leads := make([]line, 0, len(row)), make([]tileWords, 0, len(row)), make([]bool, 0, len(row))
-		for _, post := range row {
+		row := []gridCell{}
+		for _, post := range posts[first:min(first+grid.columns, len(posts))] {
 			_, isOut := post.Readiness.(document.PostOut)
-			labels, tiles, leads = append(labels, edgeLabel(post)), append(tiles, inside.tileWordsOf(post)), append(leads, isOut)
+			row = append(row, gridCell{label: edgeLabel(post), words: inside.tileWordsOf(post), leads: isOut})
 		}
-		top := len(laid.lines)
-		laid.lines = append(append(laid.lines, grid.edgeLine(above, leads, labels)), grid.tileRows(tiles, leads)...)
-		for column, post := range row {
-			if out, isOut := post.Readiness.(document.PostOut); isOut {
-				left := column*grid.width + textWidth(frameDown)
-				laid.tiles = append(laid.tiles, laidTile{page: out.Page, top: top, bottom: len(laid.lines), left: left, right: left + grid.width - textWidth(frameDown)})
-			}
+		rows = append(rows, row)
+	}
+	framed := grid.framed(rows)
+	laid := laidTab{lines: framed.lines, tiles: []laidTile{}, groups: nil, split: 0, sections: nil, outline: noOutline()}
+	for index, post := range posts {
+		if out, isOut := post.Readiness.(document.PostOut); isOut {
+			row, left := index/grid.columns, index%grid.columns*grid.width+textWidth(frameDown)
+			laid.tiles = append(laid.tiles, laidTile{page: out.Page, top: framed.edges[row], bottom: framed.edges[row+1], left: left, right: left + grid.width - textWidth(frameDown)})
 		}
+	}
+	return laid
+}
+
+// gridCell is a cell of a grid framed as tmux frames its panes, a tile of the blog's list or a pane of a post's foot:
+// what is set into its top edge, its words, and whether it leads somewhere, which its frame says.
+type gridCell struct {
+	label line
+	words tileWords
+	leads bool
+}
+
+// framedGrid is a grid of cells laid out: its lines, and the line of each row's top edge, then of the grid's bottom
+// edge, so a row of cells stands between two of them.
+type framedGrid struct {
+	lines []line
+	edges []int
+}
+
+// framed lays out rows of cells as a grid, each row as tall as its tallest cell, the cells sharing their edges.
+func (grid tileGrid) framed(rows [][]gridCell) framedGrid {
+	laid, above := framedGrid{lines: []line{}, edges: []int{}}, []bool{}
+	for _, row := range rows {
+		labels, words, leads := make([]line, 0, len(row)), make([]tileWords, 0, len(row)), make([]bool, 0, len(row))
+		for _, cell := range row {
+			labels, words, leads = append(labels, cell.label), append(words, cell.words), append(leads, cell.leads)
+		}
+		laid.edges = append(laid.edges, len(laid.lines))
+		laid.lines = append(append(laid.lines, grid.edgeLine(above, leads, labels)), grid.tileRows(words, leads)...)
 		above = leads
 	}
+	laid.edges = append(laid.edges, len(laid.lines))
 	laid.lines = append(laid.lines, grid.edgeLine(above, nil, nil))
 	return laid
 }
@@ -276,18 +307,34 @@ func (laid laidTab) joined(lines []line, tiles []laidTile, left int) laidTab {
 	return laid
 }
 
-// tileGrid is how the list's tiles share a width: how many stand in a row, and how wide each is with its left edge.
+// tileGrid is how the list's tiles, or a post's panes, share a width: how many stand in a row, how wide each is with
+// its left edge, and how much wider the last column stands, so a row fills the width whole.
 type tileGrid struct {
-	columns int
-	width   int
+	columns   int
+	width     int
+	lastWider int
 }
 
 // gridOf is the grid of tiles over a width: as many in a row as are at least the least tile wide, their right edge
-// closing the row.
+// closing the row, the room left over after it.
 func gridOf(width int) tileGrid {
 	room := width - textWidth(frameDown)
 	columns := max(room/leastTile, 1)
-	return tileGrid{columns: columns, width: room / columns}
+	return tileGrid{columns: columns, width: room / columns, lastWider: 0}
+}
+
+// filledGrid is a grid of a number of columns sharing a width whole, the last column taking what is left over.
+func filledGrid(columns, width int) tileGrid {
+	room := width - textWidth(frameDown)
+	return tileGrid{columns: columns, width: room / columns, lastWider: room % columns}
+}
+
+// widthOf is how wide a column of the grid stands with its left edge.
+func (grid tileGrid) widthOf(column int) int {
+	if column == grid.columns-1 {
+		return grid.width + grid.lastWider
+	}
+	return grid.width
 }
 
 // inside is the room for a tile's words, its padding at each side gone.
@@ -295,8 +342,8 @@ func (grid tileGrid) inside() int {
 	return grid.width - textWidth(frameDown) - sides*tilePadding
 }
 
-// tileWords are a tile's words laid out: its title and lead at its top, and at its foot where it stands, after a row of
-// room.
+// tileWords are a tile's or a pane's words laid out: its title and lead at its top, and at its foot where it stands,
+// after a row of room.
 type tileWords struct {
 	top  []line
 	foot []line
@@ -358,9 +405,9 @@ func edgeLabel(post document.ListedPost) line {
 // somewhere, each label of those below set into its top edge; each piece of it framed as the tiles it bounds have it.
 func (grid tileGrid) edgeLine(above, below []bool, labels []line) line {
 	marks, widest := junctionMarks(), max(len(above), len(below))
-	across := grid.width - textWidth(frameDown)
 	edge := line{gapRun(0)}
 	for point := 0; point <= widest; point++ {
+		across := grid.widthOf(point) - textWidth(frameDown)
 		meeting := junction{above: point <= len(above) && len(above) > 0, below: point <= len(below) && len(below) > 0, left: point > 0, right: point < widest}
 		around := frameKind(leadsAt(above, point-1), leadsAt(above, point), leadsAt(below, point-1), leadsAt(below, point))
 		edge = append(edge, plainRun(marks[meeting], around))
@@ -394,7 +441,7 @@ func (grid tileGrid) tileRows(tiles []tileWords, leads []bool) []line {
 		for column, tile := range tiles {
 			cell := append(line{gapRun(tilePadding)}, tile.wordsOn(row, footStart)...)
 			edge := plainRun(frameDown, frameKind(leadsAt(leads, column-1), leadsAt(leads, column)))
-			shown = slices.Concat(shown, line{edge}, cell, line{gapRun(grid.width - textWidth(frameDown) - runsWidth(cell))})
+			shown = slices.Concat(shown, line{edge}, cell, line{gapRun(grid.widthOf(column) - textWidth(frameDown) - runsWidth(cell))})
 		}
 		lines = append(lines, append(shown, plainRun(frameDown, frameKind(leadsAt(leads, len(leads)-1)))))
 	}
@@ -433,22 +480,17 @@ func (tile tileWords) wordsOn(row, footStart int) line {
 type paintedGroup struct {
 	first int
 	end   int
-	rows  []string
-	blank string
+	rows  []stuckLine
+	blank stuckLine
 }
 
 // groupNames paints the names of the blog's list's groups alone, once, each row as wide as the names' column and its
 // gap, the split of the list's lines.
-func (paint paint) groupNames(groups []laidGroup, split int) []paintedGroup {
+func (paint paint) groupNames(groups []laidGroup, split int, frame frame) []paintedGroup {
 	painted := make([]paintedGroup, 0, len(groups))
-	unmarked := lineMarks{named: noMatch, pointed: columnSpan{start: 0, end: 0}, split: 0}
+	blank := paint.stuckLineOf(line{}, 0, split, frame)
 	for _, group := range groups {
-		rows := make([]string, 0, len(group.name))
-		for _, shown := range group.name {
-			text, used := paint.line(markedLineOf(shown, "").runs, 0, split, nil, unmarked)
-			rows = append(rows, text+strings.Repeat(space, split-used))
-		}
-		painted = append(painted, paintedGroup{first: group.first, end: group.end, rows: rows, blank: strings.Repeat(space, split)})
+		painted = append(painted, paintedGroup{first: group.first, end: group.end, rows: paint.stuckLines(group.name, 0, split, frame), blank: blank})
 	}
 	return painted
 }
@@ -457,8 +499,8 @@ func (paint paint) groupNames(groups []laidGroup, split int) []paintedGroup {
 // row's left part, none where none is: each group whose top has scrolled past the row a name keeps from the page's top
 // keeps its name at that row, its other rows blank; where the group's tiles end above the name's last row, the name
 // rises with them.
-func stuckNames(groups []paintedGroup, scroll, pageRows int) []string {
-	stuck := make([]string, pageRows)
+func stuckNames(groups []paintedGroup, scroll, pageRows int) []stuckLine {
+	stuck := make([]stuckLine, pageRows)
 	for _, group := range groups {
 		nameTop := min(scroll+stuckRow, group.end-len(group.rows))
 		if nameTop <= group.first {
@@ -480,7 +522,7 @@ func (model Model) pointedTile(place int) laidTile {
 	if len(tiles) == 0 {
 		return laidTile{page: document.PageOf(document.PageNone), top: 0, bottom: 0, left: 0, right: 0}
 	}
-	return tiles[model.tiles[place]]
+	return tiles[model.positions[place].tile]
 }
 
 // onList is whether the tab chosen is the blog's list, whose keys go from tile to tile.
@@ -501,18 +543,18 @@ func (model Model) upward() (Model, tea.Cmd) {
 // movedBy is the model a step on or back: on the blog's list a tile, else a line.
 func (model Model) movedBy(step int) Model {
 	if model.onList() {
-		return model.toTile(model.tiles[model.chosen] + step)
+		return model.toTile(model.positions[model.chosen].tile + step)
 	}
-	return model.scrolledTo(model.scrolls[model.chosen] + step)
+	return model.scrolledTo(model.positions[model.chosen].scroll + step)
 }
 
 // toTile has the keys stand on a tile of the chosen list, in reading order, and the page scrolled to show it whole;
 // past the first tile or the last the keys stay and the page scrolls by the line the step went past, so the list's
 // head and foot come in sight.
 func (model Model) toTile(wanted int) Model {
-	tiles, scroll := model.laid[model.chosen].tiles, model.scrolls[model.chosen]
+	tiles, scroll := model.laid[model.chosen].tiles, model.positions[model.chosen].scroll
 	chosen := min(max(wanted, 0), len(tiles)-1)
-	if chosen == model.tiles[model.chosen] {
+	if chosen == model.positions[model.chosen].tile {
 		return model.scrolledTo(scroll + wanted - chosen)
 	}
 	model = model.choseTile(chosen)
@@ -523,11 +565,11 @@ func (model Model) toTile(wanted int) Model {
 // other line.
 func (model Model) choseTile(chosen int) Model {
 	tiles := model.laid[model.chosen].tiles
-	left, tile := tiles[model.tiles[model.chosen]], tiles[chosen]
+	left, tile := tiles[model.positions[model.chosen].tile], tiles[chosen]
 	marks := model.drawn.tabs[model.chosen].marks
 	marks.pointed = tile
-	model.tiles = slices.Clone(model.tiles)
-	model.tiles[model.chosen] = chosen
+	model.positions = slices.Clone(model.positions)
+	model.positions[model.chosen].tile = chosen
 	return model.repaintedLines(slices.Concat(linesBetween(left.top, left.bottom), linesBetween(tile.top, tile.bottom)), marks)
 }
 
@@ -535,7 +577,7 @@ func (model Model) choseTile(chosen int) Model {
 // the keys stand on the tile nearest a spot the page went to, among those in sight where any is.
 func (model Model) withChosenTileNear(near spot) Model {
 	tiles, chosen := model.laid[model.chosen].tiles, model.chosen
-	if len(tiles) == 0 || model.inSight(chosen, tiles[model.tiles[chosen]]) {
+	if len(tiles) == 0 || model.inSight(chosen, tiles[model.positions[chosen].tile]) {
 		return model
 	}
 	nearest := 0
@@ -558,7 +600,7 @@ func (model Model) withChosenTileNear(near spot) Model {
 // any is.
 func (model Model) withFirstTileFrom(line int) Model {
 	first := slices.IndexFunc(model.laid[model.chosen].tiles, func(tile laidTile) bool { return tile.top >= line })
-	if first < 0 || first == model.tiles[model.chosen] {
+	if first < 0 || first == model.positions[model.chosen].tile {
 		return model
 	}
 	return model.choseTile(first)
@@ -566,17 +608,17 @@ func (model Model) withFirstTileFrom(line int) Model {
 
 // inSight is whether a line of a tile shows on a tab's page at its scroll.
 func (model Model) inSight(place int, tile laidTile) bool {
-	scroll := model.scrolls[place]
+	scroll := model.positions[place].scroll
 	return tile.bottom >= scroll && tile.top < scroll+model.frame.rows
 }
 
 // withTilesInSight is the model with each list among the tabs whose tile the keys stand on is out of sight scrolled
 // as little as shows it whole; a list whose tile shows stays where it stands, at its top as it opens.
 func (model Model) withTilesInSight() Model {
-	model.scrolls = slices.Clone(model.scrolls)
+	model.positions = slices.Clone(model.positions)
 	for place := range model.tabs {
-		if tiles := model.laid[place].tiles; len(tiles) > 0 && !model.inSight(place, tiles[model.tiles[place]]) {
-			model.scrolls[place] = model.scrollShowing(place, tiles[model.tiles[place]])
+		if tiles := model.laid[place].tiles; len(tiles) > 0 && !model.inSight(place, tiles[model.positions[place].tile]) {
+			model.positions[place].scroll = model.scrollShowing(place, tiles[model.positions[place].tile])
 		}
 	}
 	return model.clamped()
@@ -586,7 +628,7 @@ func (model Model) withTilesInSight() Model {
 // keys stand on but not its top edge, so the tile shows its date, as j shows it.
 func (model Model) withMatchTileTop(line int) Model {
 	tile := model.pointedTile(model.chosen)
-	if !model.onList() || line < tile.top || line > tile.bottom || tile.top >= model.scrolls[model.chosen] {
+	if !model.onList() || line < tile.top || line > tile.bottom || tile.top >= model.positions[model.chosen].scroll {
 		return model
 	}
 	return model.scrolledTo(tile.top)
@@ -604,7 +646,7 @@ func linesBetween(first, last int) []int {
 // scrollShowing is the scroll of a tab nearest its own that shows a tile whole, its edges with it, or its top where the
 // page is too short for the whole.
 func (model Model) scrollShowing(place int, tile laidTile) int {
-	return min(max(model.scrolls[place], tile.bottom+1-model.frame.rows), tile.top)
+	return min(max(model.positions[place].scroll, tile.bottom+1-model.frame.rows), tile.top)
 }
 
 // openTile is Enter's: on the blog's list the post of the tile the keys stand on, beside the list.

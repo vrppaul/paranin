@@ -3,6 +3,7 @@ package tui
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -479,6 +480,33 @@ func TestAGroupsNameStaysInSightWhileItsTilesScroll(test *testing.T) {
 	}
 }
 
+// A search typed and confirmed paints the lines again and leaves what stays in sight over them: a post's Outline,
+// its heading read marked, and on the blog's list the name of the group whose tiles it scrolled to.
+func TestASearchConfirmedLeavesWhatStaysInSight(test *testing.T) {
+	// a terminal wide enough for the groups' names' column, and short enough for a page of five rows
+	const (
+		columnWidth  = 120
+		fiveRowsHigh = 9
+	)
+	cases := []struct {
+		name  string
+		model Model
+		query string
+		want  string
+	}{
+		{name: "a post's Outline", model: openedModel(test, "blog/1", outlinedWidth, tallHeight), query: "Afterwards", want: readMark + " Afterwards"},
+		{name: "a group's name on the list", model: handBlogModel(test, columnWidth, fiveRowsHigh), query: "The first post", want: "posts of " + olderYear},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			searched := pressed(test, typed(test, pressed(test, testCase.model, "/"), testCase.query), "enter")
+			if screen := screenOf(test, searched); !strings.Contains(screen, testCase.want) {
+				test.Errorf("after the search %q the screen =\n%s\nwant %q on it", testCase.query, screen, testCase.want)
+			}
+		})
+	}
+}
+
 // The blog's list writes its head and each tile as the page does (DESIGN.md, BlogHead and Tile): the blog's line, the
 // way it is grouped and the tags of its posts; how many posts a group holds; and on a tile when its post came out, its
 // title and lead, its part in its series and the series, and its tags. It writes the same where the page is too narrow
@@ -546,13 +574,168 @@ func TestAPostsPanesStandTheNextFirst(test *testing.T) {
 	}
 }
 
-// codeModel is a session on a résumé and a post a test builds by hand, of one block of code, opened on the post, at
-// the fixture's post's address, which the frame's :e reads.
-func codeModel(test *testing.T, code string) Model {
+// The narrowest terminals whose page, eight cells narrower, holds a post's Outline and its sources beside its text,
+// 132 cells, the blog's widest; and its sources alone, 106 cells
+const (
+	outlinedWidth = 140
+	sourcedWidth  = 114
+)
+
+// A post stands in the columns its page is wide enough for (DESIGN.md, The TUI): from the width of its sources beside
+// its text, its head's facts beside its title, a source beside the line that first cites it, and the panes side by
+// side, the side before at the left; from the blog's widest, its Outline beside its body as well, its heading read
+// marked, at the post's end its last. Narrower, none of them, each standing under what it stood beside.
+func TestAPostStandsInTheColumnsItsPageHasRoomFor(test *testing.T) {
+	besides := []struct {
+		name    string
+		pattern string
+		from    int
+	}{
+		{name: "the facts beside the title", pattern: `(?m)^Reading slowly version 10 Nov 2026$`, from: sourcedWidth},
+		{name: "a source beside its line", pattern: `slow\.¹ 1 Mira Example`, from: sourcedWidth},
+		{name: "a source beside its line, under the one before", pattern: `in pencil² 2 A soft one`, from: sourcedWidth},
+		{name: "the panes side by side", pattern: `── previous ─+┬── part 2 ─`, from: sourcedWidth},
+		{name: "the Outline beside its body", pattern: `(?m)^What a reader keeps 1 A page read twice`, from: outlinedWidth},
+		{name: "the Outline's heading read", pattern: readMark + ` Afterwards`, from: outlinedWidth},
+	}
+	for _, width := range []int{outlinedWidth, outlinedWidth - 1, sourcedWidth, sourcedWidth - 1} {
+		read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog/1", width, tallHeight))))
+		for _, beside := range besides {
+			test.Run(beside.name+" at "+strconv.Itoa(width), func(test *testing.T) {
+				if shown := width >= beside.from; regexp.MustCompile(beside.pattern).MatchString(read) != shown {
+					test.Errorf("at %d columns the post =\n%s\nwant %q on it: %t", width, read, beside.pattern, shown)
+				}
+			})
+		}
+	}
+}
+
+// As a post scrolls, its Outline marks the heading read as the page's does (DESIGN.md, Outline): none while the first
+// heading stands on or under the page's reading line, a third of the way down; the first once it has passed the line;
+// and at the post's end its last. Where the post's foot scrolls into sight, the Outline rises with its body's end.
+func TestScrollingAPostMovesTheHeadingItsOutlineMarksRead(test *testing.T) {
+	// a page of twelve rows, its reading line three rows down, and one tall enough for the first heading to stand
+	// above its reading line at the post's top; and how far the fixture's post scrolls on the short page until its
+	// first heading, seven lines down it, stands on the reading line
+	const (
+		shortPage          = 16
+		tallPage           = 40
+		toTheReadingLine   = 4
+		pastTheReadingLine = toTheReadingLine + 1
+	)
+	// no heading marked read anywhere on the screen
+	noneRead := `\A[^` + readMark + `]*\z`
+	cases := []struct {
+		name    string
+		height  int
+		keys    []string
+		pattern string
+	}{
+		{name: "the top of a short page", height: shortPage, keys: nil, pattern: noneRead},
+		{name: "the first heading on the reading line", height: shortPage, keys: slices.Repeat([]string{"j"}, toTheReadingLine), pattern: noneRead},
+		{name: "the first heading past the reading line", height: shortPage, keys: slices.Repeat([]string{"j"}, pastTheReadingLine), pattern: readMark + " What a reader keeps"},
+		{name: "the end of a short page, beside the body's last line", height: shortPage, keys: []string{"G"}, pattern: readMark + " Afterwards 4 What stays"},
+		{name: "the top of a tall page", height: tallPage, keys: nil, pattern: readMark + " What a reader keeps"},
+		{name: "the end of a tall page", height: tallPage, keys: []string{"G"}, pattern: readMark + " Afterwards"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			read := readRows(aboveTheFooter(screenOf(test, pressed(test, openedModel(test, "blog/1", outlinedWidth, testCase.height), testCase.keys...))))
+			if !regexp.MustCompile(testCase.pattern).MatchString(read) {
+				test.Errorf("after %q the post =\n%s\nwant %q on it", testCase.keys, read, testCase.pattern)
+			}
+		})
+	}
+}
+
+// A source stands beside the line that first cites it, though another's number is raised beside its own there: the
+// second note of two cited side by side stands under the first, not at a later line that cites it alone.
+func TestASourceStandsBesideTheFirstLineCitingItsNote(test *testing.T) {
+	first, second := document.Note{Number: 1, Spans: textOf("First source.")}, document.Note{Number: 2, Spans: textOf("Second source.")}
+	post := handPost(test, outlinedWidth, tallHeight,
+		document.Paragraph{Spans: []document.Span{document.Text{Text: "Both cited"}, first, second}},
+		document.Pause{}, document.Pause{},
+		document.Paragraph{Spans: []document.Span{document.Text{Text: "Cited again"}, second}},
+	)
+	read := readRows(aboveTheFooter(screenOf(test, post)))
+	if beside, later := strings.Index(read, "2 Second source."), strings.Index(read, "Cited again"); beside < 0 || beside > later {
+		test.Errorf("the post =\n%s\nwant the second source over the line citing it again", read)
+	}
+}
+
+// A heading gone to by the command line is the one the Outline marks read, as the page marks the heading a link goes
+// to (DESIGN.md, Outline), though the reading line has passed the next too, its section being short; and at the post's
+// end anywhere on the page, though the last is under it. Once a scroll takes it above the page, the heading the
+// reading line passed last is read again.
+func TestTheOutlineMarksTheHeadingGoneTo(test *testing.T) {
+	// a page of thirty-six rows, its reading line eleven rows down; pauses enough to keep the third heading under the
+	// line while the second passes it, and to make the post longer than the page
+	const (
+		pageHeight  = 40
+		shortPauses = 2
+		longPauses  = 20
+	)
+	second := append([]document.Block{document.Paragraph{Spans: textOf("Two.")}}, slices.Repeat([]document.Block{document.Pause{}}, shortPauses)...)
+	sections := []document.Block{
+		document.Section{Title: textOf("First"), Name: "first", Blocks: []document.Block{document.Paragraph{Spans: textOf("One.")}}},
+		document.Section{Title: textOf("Second"), Name: "second", Blocks: second},
+		document.Section{Title: textOf("Third"), Name: "third", Blocks: slices.Repeat([]document.Block{document.Pause{}}, longPauses)},
+		document.Section{Title: textOf("Fourth"), Name: "fourth", Blocks: []document.Block{document.Paragraph{Spans: textOf("Four.")}}},
+		document.Section{Title: textOf("Fifth"), Name: "fifth", Blocks: []document.Block{document.Paragraph{Spans: textOf("Five.")}}},
+	}
+	cases := []struct {
+		name   string
+		goneTo string
+		then   func(test *testing.T, model Model) Model
+		marked string
+	}{
+		{name: "gone to", goneTo: "first", then: func(_ *testing.T, model Model) Model { return model }, marked: readMark + " First"},
+		{
+			name: "gone to, the post closed and opened again", goneTo: "first",
+			then: func(test *testing.T, model Model) Model {
+				return commanded(test, pressed(test, model, "q"), "e blog/reading-slowly")
+			},
+			marked: readMark + " First",
+		},
+		{name: "scrolled past it", goneTo: "first", then: func(test *testing.T, model Model) Model { return pressed(test, model, "j") }, marked: readMark + " Second"},
+		{name: "gone to at the post's end", goneTo: "fourth", then: func(_ *testing.T, model Model) Model { return model }, marked: readMark + " Fourth"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			gone := commanded(test, handPost(test, outlinedWidth, pageHeight, sections...), testCase.goneTo)
+			if read := readRows(aboveTheFooter(screenOf(test, testCase.then(test, gone)))); !strings.Contains(read, testCase.marked) {
+				test.Errorf("%s, the post =\n%s\nwant %q on it", testCase.name, read, testCase.marked)
+			}
+		})
+	}
+}
+
+// A heading whose title wraps in the Outline's column, once read, takes one bar, before its first row, its words going
+// on under themselves.
+func TestAWrappedHeadingReadTakesOneBarBeforeItsFirstRow(test *testing.T) {
+	sections := []document.Block{
+		document.Section{Title: textOf("Before"), Name: "before", Blocks: []document.Block{document.Paragraph{Spans: textOf("One.")}}},
+		document.Section{Title: textOf("A heading whose title wraps in the rail"), Name: "wrapped", Blocks: []document.Block{document.Paragraph{Spans: textOf("Two.")}}},
+	}
+	// at the post's end, its last heading read
+	screen := screenOf(test, handPost(test, outlinedWidth, tallHeight, sections...))
+	read := readRows(aboveTheFooter(screen))
+	if marks := strings.Count(screen, readMark); marks != 1 || !regexp.MustCompile(`(?m)^`+readMark+` A heading whose title.*\nwraps in the rail`).MatchString(read) {
+		test.Errorf("the post =\n%s\nwant one %q, before the wrapped heading's first row and over its second", read, readMark)
+	}
+}
+
+// handPost is a session on a résumé and a post a test builds by hand of blocks, of a size, opened on the post, at the
+// fixture's post's address, which the frame's :e reads.
+func handPost(test *testing.T, width, height int, blocks ...document.Block) Model {
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
-	block := document.CodeBlock{Language: "", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: code}}}
-	post := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, textOf("Coded")), Blocks: []document.Block{block}}
-	return commanded(test, handModel(test, commonWidth, tallHeight, resume, post), "e blog/reading-slowly")
+	post := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, textOf("Coded")), Blocks: blocks}
+	return commanded(test, handModel(test, width, height, resume, post), "e blog/reading-slowly")
+}
+
+// codeModel is a post a test builds by hand, of one block of code.
+func codeModel(test *testing.T, code string) Model {
+	return handPost(test, commonWidth, tallHeight, document.CodeBlock{Language: "", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: code}}})
 }
 
 // A tab in a post's code stands as the spaces to the next stop of its line, look.TabStop apart, never as a tab,

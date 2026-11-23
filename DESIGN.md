@@ -512,7 +512,10 @@ hairline under the head.
 
 A post's headings of its top level in `rail`, `small`, standing in sight as the article scrolls, from its head on:
 each `muted`, a link with no underline, `text` under the pointer; the heading read bold in `text`, `▌` in `accent`
-hanging before it. Gone below `wide`; the `:` menu holds the headings too.
+hanging before it. Gone below `wide`; the `:` menu holds the headings too. The heading read is the one whose section
+holds the place last gone to, by a link or the menu, while that place stands between the screen's top and
+`reading_line`, or anywhere on the screen at the page's end; else, at the page's end, the last; else the last whose
+top has passed `reading_line`; none before the first has.
 
 ### Article
 
@@ -621,10 +624,13 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   the page from the tile chosen chooses one in sight: G the last, gg the first, a search's match its own.
 - A post's lists stand inside the text's column, so their marks never read as the paragraphs' numbers: a point's dash
   `faint`, an ordered list's numbers `muted`, the words after the widest mark.
-- A post: the Outline (20 cells) from 132 cells wide, the paragraphs' numbers (4), the text (66), the sources beside it
-  (32) from 108 cells and at the text's end under a `quiet` rule where narrower. Its head's facts beside the title
-  where the sources' column is, under the lead where not. The Outline stays in sight as the post scrolls, the heading
-  read marked `▌` in `accent`. The panes side by side from 108 cells, one under the other narrower, the next first.
+- A post: the Outline (`rail`) on a page 132 cells wide (a screen of 140), the paragraphs' numbers (4), the text (66),
+  the sources beside it (`aside`) on a page 106 cells wide (a screen of 114) and at the text's end under a `quiet`
+  rule where narrower, each column four cells clear of the text. Its head's facts beside the title where the sources'
+  column is, under the lead where not; its lead held to `post_lead` at every width, as the page's. The Outline stays
+  in sight as the post scrolls, the heading read marked `▌` in `accent` hanging before it in the page's margin, as the
+  page marks it (Outline). The panes side by side, filling the text's and the sources' columns, on a page 106 cells
+  wide, one under the other narrower, the next first.
 - A widget is its frame, its name and `● live` in the edge, and inside its alt text and the address of the live one. A
   diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
 - A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,

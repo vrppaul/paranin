@@ -12,7 +12,9 @@
 # The mixes, the faces, the text styles, the lengths, the times and the layers after the colours are the page's alone,
 # since a terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing
 # of internal/look, but a length in cells marked `terminal`, which a terminal lays out by too, and internal/look
-# carries as a number of cells.
+# carries as a number of cells. A share of the screen's height is in whole percent from its top, a line a script and a
+# terminal measure by and no stylesheet lays out by: it becomes a constant of internal/look and of the page's script,
+# and no custom property.
 # A mix is a colour of the file moved a share toward another in each theme, worked out as a blend is, and where it
 # must read, its least contrast is held as a colour's. A face is its families by name, in the order a browser tries
 # them, and the files of the first, which the site serves: an upright one for each weight a text style drawn in it is
@@ -357,6 +359,7 @@ lengths:
   - name: post_lead
     about: the longest line of a post's lead under its title, which says more than the headline does
     cells: 52
+    terminal: true
   - name: measure
     about: the longest line of prose, a paragraph's or a point's
     cells: 64
@@ -369,9 +372,11 @@ lengths:
   - name: aside
     about: how wide the sources beside an article's text stand
     cells: 30
+    terminal: true
   - name: rail
     about: how wide a post's Outline stands beside its text, from the wide screen on
     cells: 22
+    terminal: true
   - name: group_name
     about: how wide the column of the groups' names stands on the blog's list, a year's or a series' of a few words
     cells: 24
@@ -444,6 +449,11 @@ times:
   - name: toast
     about: how long a toast stays, and a copied command's button says so
     milliseconds: 2400
+
+screen_shares:
+  - name: reading_line
+    about: the line a post's heading counts as read once its top has passed, so one gone to is read at once
+    percent: 33
 
 layers:
   - name: tile

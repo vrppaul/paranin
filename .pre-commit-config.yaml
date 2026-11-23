@@ -57,10 +57,10 @@ repos:
         language: system
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
-      # The design's colours in Go and in CSS, and the page's faces, text styles and lengths in CSS, are the ones
-      # design/tokens.yaml makes (scripts/tokens/main.go)
+      # The design's colours in Go and in CSS, the page's faces, text styles and lengths in CSS, and the lengths and the
+      # shares of the screen both faces measure by, are the ones design/tokens.yaml makes (scripts/tokens/main.go)
       - id: design-tokens
-        name: design tokens (internal/look and the page's tokens.css and times.ts as design/tokens.yaml makes them)
+        name: design tokens (internal/look and the page's tokens.css, times.ts and shares.ts as design/tokens.yaml makes them)
         entry: go run ./scripts/tokens
         language: system
         files: (^design/|^internal/look/|^scripts/tokens/|^web/src/tokens/)

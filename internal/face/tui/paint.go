@@ -136,6 +136,7 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindQuietLine: plain.Foreground(colour(look.ColourQuiet)),
 			kindOff:       plain.Foreground(colour(look.ColourQuietHalf)),
 			kindQuoteBar:  plain.Foreground(colour(look.ColourEdge)),
+			kindReadMark:  plain.Foreground(colour(look.ColourAccent)),
 			// each kind of word in code in its own hue (DESIGN.md, Article)
 			kindCodeKeyword:  plain.Foreground(colour(look.ColourCodeKeyword)),
 			kindCodeString:   plain.Foreground(colour(look.ColourCodeString)),
@@ -236,7 +237,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
 		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar, kindEmphasis,
-		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindCodeKeyword, kindCodeString, kindCodeNumber,
+		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindReadMark, kindCodeKeyword, kindCodeString, kindCodeNumber,
 		kindCodeFunction, kindCodeType, kindCodeBuiltin, kindCodeOperator, kindCodeVariable:
 	}
 	return nil
@@ -282,7 +283,8 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 
 // lineMarks are what sets runs of a line apart beside their kinds: which match of the line the search's count names,
 // noMatch where none; the columns the tile the keys stand on takes on it, none where the line crosses no such tile;
-// and the column its part right of the groups' names starts at, 0 on a tab with no names' column.
+// and the column its part right of what stays in sight over its left part starts at, the groups' names or a post's
+// Outline, 0 on a tab with neither.
 type lineMarks struct {
 	named   int
 	pointed columnSpan
@@ -301,17 +303,33 @@ func (span columnSpan) holds(column int) bool {
 }
 
 // pageMarks are what sets runs of a tab's lines apart beside their kinds: the match the search's count names; the
-// tile the keys stand on, the zero tile where the tab holds none; and the column the lines' parts right of the
-// groups' names start at.
+// tile the keys stand on, the zero tile where the tab holds none; the column the lines' parts right of what stays in
+// sight over their left part start at; and the lines it may stand over, the only ones parted there.
 type pageMarks struct {
-	named   namedMatch
-	pointed laidTile
-	split   int
+	named     namedMatch
+	pointed   laidTile
+	split     int
+	overLines []lineSpan
 }
 
-// on are the marks of one line of the tab.
+// lineSpan is a tab's lines from a first to the one past its last; the zero span holds none.
+type lineSpan struct {
+	first int
+	end   int
+}
+
+// holds is whether a line lies in the span.
+func (span lineSpan) holds(line int) bool {
+	return line >= span.first && line < span.end
+}
+
+// on are the marks of one line of the tab: parted at the split where what stays in sight may stand over it.
 func (marks pageMarks) on(line int) lineMarks {
-	return lineMarks{named: marks.named.occurrenceOn(line), pointed: marks.pointed.groundOn(line), split: marks.split}
+	split := 0
+	if slices.ContainsFunc(marks.overLines, func(span lineSpan) bool { return span.holds(line) }) {
+		split = marks.split
+	}
+	return lineMarks{named: marks.named.occurrenceOn(line), pointed: marks.pointed.groundOn(line), split: split}
 }
 
 // tab paints a tab's lines in the frame, as the tab's marks set their runs apart.
@@ -323,13 +341,15 @@ func (paint paint) tab(lines []markedLine, frame frame, marks pageMarks) []paint
 	return drawn
 }
 
-// pageLine paints a line of a tab at the page's left edge, cut at its right one, its text in a faded colour where
-// one is given, its runs set apart as its marks say; and, on a list with a names' column, apart from it the line's
-// part right of the column its marks split it at, which a group's name stuck over its left part stands beside.
+// pageLine paints a line of a tab from the screen's left edge, cut at the page's right one, its text in a faded colour
+// where one is given, its runs set apart as its marks say: on a list with a names' column or a post with its
+// Outline, its parts before and after the column its marks split it at apart, which what stays in sight over its
+// left part stands beside; any other line whole.
 func (paint paint) pageLine(shown markedLine, frame frame, faded color.Color, marks lineMarks) paintedLine {
+	margin := strings.Repeat(space, frame.left)
 	if marks.split == 0 {
 		painted, width := paint.line(shown.runs, 0, frame.inner, faded, marks)
-		return paintedLine{text: strings.Repeat(space, frame.left) + painted, width: frame.left + width, rest: paintedBar{text: "", width: 0}}
+		return paintedLine{left: paintedBar{text: margin + painted, width: frame.left + width}, right: paintedBar{text: "", width: 0}}
 	}
 	left, right := partedAt(shown.runs, marks.split)
 	before, beforeWidth := paint.line(left, 0, frame.inner, faded, marks)
@@ -338,8 +358,7 @@ func (paint paint) pageLine(shown markedLine, frame frame, faded color.Color, ma
 		before += strings.Repeat(space, marks.split-beforeWidth)
 		beforeWidth = marks.split
 	}
-	text := strings.Repeat(space, frame.left) + before + after
-	return paintedLine{text: text, width: frame.left + beforeWidth + afterWidth, rest: paintedBar{text: after, width: afterWidth}}
+	return paintedLine{left: paintedBar{text: margin + before, width: frame.left + beforeWidth}, right: paintedBar{text: after, width: afterWidth}}
 }
 
 // partedAt are runs parted at a column: those before it, and those from it on, a run that spans it cut in two.

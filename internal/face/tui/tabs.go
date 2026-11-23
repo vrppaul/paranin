@@ -49,16 +49,28 @@ type tab struct {
 	body  tabBody
 }
 
-// laidTab is a tab laid out: its lines; on the blog's list the tiles a key goes to, in reading order, the groups
-// whose names stay in sight while their tiles scroll, and the column the names' column ends at, gap and all, where the
-// list has one; none on any other tab; and the line each named section starts at, a post's heading's and a series'
-// group's, which a place of the page goes to.
+// laidTab is a tab laid out: its lines; on the blog's list the tiles a key goes to, in reading order, and the groups
+// whose names stay in sight while their tiles scroll; the column what stays in sight over the lines' left part ends
+// at, gap and all, the groups' names' column or a post's Outline's, where the tab has one; and the line each named
+// section starts at, a post's heading's and a series' group's, which a place of the page goes to; and on a post its
+// Outline, none on any other tab.
 type laidTab struct {
 	lines    []line
 	tiles    []laidTile
 	groups   []laidGroup
 	split    int
 	sections map[string]int
+	outline  laidOutline
+}
+
+// overLines are the spans of a tab's lines what stays in sight may stand over: each group's of the blog's list, and
+// a post's body beside its Outline.
+func (laid laidTab) overLines() []lineSpan {
+	spans := make([]lineSpan, 0, len(laid.groups)+1)
+	for _, group := range laid.groups {
+		spans = append(spans, lineSpan{first: group.first, end: group.end})
+	}
+	return append(spans, lineSpan{first: laid.outline.first, end: laid.outline.end})
 }
 
 // tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
@@ -230,7 +242,7 @@ func (layout layout) tab(shown tab) laidTab {
 
 // linesAlone is a tab laid out in lines, with no tile, no group of the blog's list and no named section.
 func linesAlone(lines []line) laidTab {
-	return laidTab{lines: lines, tiles: nil, groups: nil, split: 0, sections: nil}
+	return laidTab{lines: lines, tiles: nil, groups: nil, split: 0, sections: nil, outline: noOutline()}
 }
 
 // stacked is lines above others, a row of nothing between where there are lines on both sides.
@@ -295,7 +307,7 @@ func withCursor(words []word) []word {
 		return words
 	}
 	marked := slices.Clone(words)
-	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: "", copied: "", tone: 0}
+	cursor := run{text: cursorBar, kind: kindCursor, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 	marked[last].runs = append(slices.Clone(marked[last].runs), cursor)
 	return marked
 }
@@ -454,7 +466,7 @@ func valueColumn(facts []document.Fact) int {
 
 // fact lays out a label of a kind and its value, the value in a column a width in from the label.
 func (layout layout) fact(fact document.Fact, indent, column int, labelKind kind) []line {
-	lead := line{gapRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0}}
+	lead := line{gapRun(indent), {text: padded(fact.Label, column), kind: labelKind, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}
 	return layout.continued(lead, layout.valueWords(fact.Value), indent+column)
 }
 
@@ -490,14 +502,14 @@ func (layout layout) commandBox(fact document.Fact, indent int) []line {
 	topRoom := width - textWidth(frameTopLeft+frameAcross+space+fact.Label+space+frameTopRight)
 	prompted := slices.Concat(line{
 		boxRun(frameDown + space),
-		{text: look.PromptMark, kind: kindPrompt, highlighted: false, address: "", copied: "", tone: 0},
+		{text: look.PromptMark, kind: kindPrompt, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation},
 		gapRun(spaceWidth),
 	}, wordRuns(layout.valueWords(fact.Value)))
 	insideRoom := width - runsWidth(prompted) - textWidth(space+frameDown)
 	if topRoom < 1 || insideRoom < 0 {
 		return nil
 	}
-	label := run{text: fact.Label, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
+	label := run{text: fact.Label, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 	top := line{gapRun(indent), boxRun(frameTopLeft + frameAcross + space), label, boxRun(space + strings.Repeat(frameAcross, topRoom) + frameTopRight)}
 	inside := slices.Concat(line{gapRun(indent)}, prompted, line{gapRun(insideRoom), boxRun(space + frameDown)})
 	bottom := frameBottomLeft + strings.Repeat(frameAcross, width-textWidth(frameBottomLeft+frameBottomRight)) + frameBottomRight
@@ -506,7 +518,7 @@ func (layout layout) commandBox(fact document.Fact, indent int) []line {
 
 // boxRun is a piece of a box's edge, muted as the page draws the Command's hairline, so the box shows on any ground.
 func boxRun(edge string) run {
-	return run{text: edge, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}
+	return run{text: edge, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 }
 
 // table lays out a table's rows a line each, each cell in a column as wide as the widest cell of its own, the last
@@ -587,7 +599,7 @@ func (layout layout) columnWidths(rows []document.Row) []int {
 
 // bullet lays out words as a point: its mark, then the words, the lines after the first standing in under them.
 func (layout layout) bullet(words []word, indent int) []line {
-	lead := line{gapRun(indent), {text: look.PointMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0}}
+	lead := line{gapRun(indent), {text: look.PointMark + space, kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}
 	return layout.continued(lead, words, indent+bulletHang)
 }
 
@@ -606,7 +618,7 @@ func (layout layout) titleLine(left, right []word, indent int) []line {
 func codeLines(code string, indent int) []line {
 	lines := []line{}
 	for written := range strings.SplitSeq(code, lineEnd) {
-		lines = append(lines, line{gapRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0}})
+		lines = append(lines, line{gapRun(indent), {text: written, kind: kindMuted, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}})
 	}
 	return lines
 }

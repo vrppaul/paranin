@@ -44,7 +44,7 @@ func tonedRows(rows []string, shown kind, width int) []line {
 				toned[last].text += string(letter)
 				continue
 			}
-			toned = append(toned, run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: tone})
+			toned = append(toned, run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: tone, cites: noCitation})
 		}
 		lines = append(lines, toned)
 	}
@@ -61,7 +61,7 @@ func gradientWords(text string, shown kind) []word {
 			words, current = appendWord(words, current), word{runs: nil, highlightBefore: false}
 			continue
 		}
-		piece := run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: toneAt(index, len(letters))}
+		piece := run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: toneAt(index, len(letters)), cites: noCitation}
 		current.runs = append(current.runs, piece)
 	}
 	return appendWord(words, current)

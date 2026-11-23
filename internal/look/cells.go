@@ -5,6 +5,12 @@ package look
 // The design's lengths a terminal lays out by as well as the page, each in cells, in the order design/tokens.yaml
 // names them
 const (
+	// PostLead is the longest line of a post's lead under its title, which says more than the headline does
+	PostLead = 52
+	// Aside is how wide the sources beside an article's text stand
+	Aside = 30
+	// Rail is how wide a post's Outline stands beside its text, from the wide screen on
+	Rail = 22
 	// TabStop is how far apart a tab's stops stand in code, as an editor sets them, not a browser's or a terminal's eight
 	TabStop = 4
 )

@@ -1,10 +1,11 @@
 // The script every page runs (internal/assets, Site), before the page is first painted: the stylesheet every page
 // is drawn in, then the theme, which the page is first seen in, and the switch of the vim keys, which the foot line is
 // first seen with; the controllers a page needs only once it is seen load after, by a dynamic import of their own,
-// each handed what it waits on from the design's times.
+// each handed what it waits on from the design's times, and the outline the reading line it measures by.
 import "../ui/ui.css";
 import { startTheme } from "../controllers/theme";
 import { startVimSwitch } from "../controllers/vimswitch";
+import { SCREEN_SHARES } from "../tokens/shares";
 import { TIMES } from "../tokens/times";
 
 // The system's own theme, which a page follows until its reader chooses one
@@ -36,5 +37,10 @@ void Promise.all([import("../controllers/commandline"), import("../controllers/s
 );
 void import("../controllers/copy").then(({ startCopying }) => startCopying(document, navigator.clipboard, TIMES.toast));
 void import("../controllers/outline").then(({ startOutline }) =>
-  startOutline(document, window, (callback, options) => new IntersectionObserver(callback, options)),
+  startOutline(
+    document,
+    window,
+    (callback, options) => new IntersectionObserver(callback, options),
+    SCREEN_SHARES.readingLine,
+  ),
 );

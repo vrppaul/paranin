@@ -51,15 +51,16 @@ var (
 
 // tokensFile is the file as it is written.
 type tokensFile struct {
-	Background backgroundToken `yaml:"background"`
-	Colours    []colourToken   `yaml:"colours"`
-	Blends     []blendToken    `yaml:"blends"`
-	Mixes      []mixToken      `yaml:"mixes"`
-	Faces      []faceToken     `yaml:"faces"`
-	Type       []typeToken     `yaml:"type"`
-	Lengths    []lengthToken   `yaml:"lengths"`
-	Times      []timeToken     `yaml:"times"`
-	Layers     []layerToken    `yaml:"layers"`
+	Background   backgroundToken    `yaml:"background"`
+	Colours      []colourToken      `yaml:"colours"`
+	Blends       []blendToken       `yaml:"blends"`
+	Mixes        []mixToken         `yaml:"mixes"`
+	Faces        []faceToken        `yaml:"faces"`
+	Type         []typeToken        `yaml:"type"`
+	Lengths      []lengthToken      `yaml:"lengths"`
+	Times        []timeToken        `yaml:"times"`
+	ScreenShares []screenShareToken `yaml:"screen_shares"`
+	Layers       []layerToken       `yaml:"layers"`
 }
 
 // themedValue is one value in each theme.

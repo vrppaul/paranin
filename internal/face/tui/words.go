@@ -84,6 +84,8 @@ const (
 	kindOff
 	// kindQuoteBar is the bar beside the lines a post quotes
 	kindQuoteBar
+	// kindReadMark is the bar before the heading of a post's Outline the reader is reading: their place in the post
+	kindReadMark
 	// kindCodeKeyword to kindCodeVariable are the kinds of word in a post's code that stand in colours of their own
 	// (document.CodeKind); a comment, punctuation and any other word read as muted, faint and text
 	kindCodeKeyword
@@ -99,7 +101,8 @@ const (
 // run is a piece of text of one kind: highlighted where it is a result worth seeing first, leading to an address
 // where it is a link, and carrying the value y copies from its line where it is part of a fact's value; and, for a
 // kind painted in several colours, its tone: which of them it takes, the name's going along it, the swatches' round
-// the design's.
+// the design's; and where it is a note's number citing the note, the note's number, by which a post's source stands
+// beside the line that cites it.
 type run struct {
 	text        string
 	kind        kind
@@ -107,7 +110,11 @@ type run struct {
 	address     string
 	copied      string
 	tone        int
+	cites       int
 }
+
+// The note a run that cites none names, since a note's number counts from one
+const noCitation = 0
 
 // line is one line of a tab, the runs it is made of; every line a layout makes opens with its indent.
 type line []run
@@ -122,13 +129,13 @@ type word struct {
 // words are the words of spans read as a kind of text: marks become runs of their own kind, a link carries its
 // address, and a command stays one word, its spaces and all, so it never breaks.
 func (layout layout) words(spans []document.Span, base kind) []word {
-	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: "", tone: 0})
+	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation})
 }
 
 // valueWords are the words of a fact's value, read as text, each run carrying the value they read as, which y
 // copies from any line of them.
 func (layout layout) valueWords(value []document.Span) []word {
-	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value), tone: 0})
+	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value), tone: 0, cites: noCitation})
 }
 
 // formWords are the words of spans read in the form a run gives them.
@@ -149,7 +156,7 @@ func textWords(text string, base kind) []word {
 
 // wordOf is a text as one word of a kind, which no line breaks inside, its spaces and all: a check's cell, a count.
 func wordOf(text string, shown kind) word {
-	return word{runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0}}, highlightBefore: false}
+	return word{runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}, highlightBefore: false}
 }
 
 // wordReader gathers words from spans read one by one: a word goes on until a space ends it.
@@ -193,7 +200,7 @@ func (reader *wordReader) read(spans []document.Span, form run) {
 			// a note cites its source by its number raised after the word, as the page sets it; its words stand with the
 			// post's sources
 			cited := form
-			cited.kind = kindLabel
+			cited.kind, cited.cites = kindLabel, typed.Number
 			reader.keep(raised(typed.Number), cited)
 		}
 	}
@@ -244,10 +251,10 @@ func (reader *wordReader) done() []word {
 	return reader.words
 }
 
-// sameForm is whether two runs read alike, so one may take the other's text; the runs of one reading carry one
-// value for y to copy, so it is no part of their form.
+// sameForm is whether two runs read alike, so one may take the other's text: two notes cited side by side stay two
+// runs. The runs of one reading carry one value for y to copy, so it is no part of their form.
 func sameForm(first, second run) bool {
-	return first.kind == second.kind && first.highlighted == second.highlighted && first.address == second.address
+	return first.kind == second.kind && first.highlighted == second.highlighted && first.address == second.address && first.cites == second.cites
 }
 
 // fill lays words out in lines of the layout's width, each from an indent; no line where there are no words.
@@ -352,7 +359,7 @@ func cutWord(whole word, width int) (word, word) {
 
 // spaceRun is the space before a word, highlighted where the space was.
 func spaceRun(next word) run {
-	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: "", tone: 0}
+	return run{text: space, kind: kindText, highlighted: next.highlightBefore, address: "", copied: "", tone: 0, cites: noCitation}
 }
 
 // wordRuns are words laid in one line, a space between each two.
@@ -392,7 +399,7 @@ func linesWidth(lines []line) int {
 
 // gapRun is a run of blanks a width wide: an indent, or the room between two columns.
 func gapRun(width int) run {
-	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: "", tone: 0}
+	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
 }
 
 // padded is a text with spaces after it to a width.

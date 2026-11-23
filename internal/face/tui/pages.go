@@ -21,12 +21,20 @@ const (
 // The place among the tabs shown of a tab none of them is
 const noPlace = -1
 
-// readerPlace is where a reader stood in a buffer: the tab chosen, and how far down each tab they scrolled and the
-// tile the keys stood on in each, on the blog's list, by the tab's place.
+// readerPlace is where a reader stood in a buffer: the tab chosen, and where they stood in each tab, by the tab's
+// place.
 type readerPlace struct {
-	chosen  int
-	scrolls []int
-	tiles   []int
+	chosen    int
+	positions []tabPosition
+}
+
+// tabPosition is where a reader stands in a tab: how far down it they scrolled; on the blog's list the tile the keys
+// stand on; and the section the command line last went to, by its anchor, none where it went to none, as a page's
+// address names the place a link went to.
+type tabPosition struct {
+	scroll int
+	tile   int
+	goneTo string
 }
 
 // blogSession is what the blog's session shows, as tmux holds a session's windows: the list its first window shows,
@@ -62,7 +70,7 @@ func pagePlacesOf(documents []document.Document) map[document.Page][]document.Pl
 func placesLeft(buffers map[document.Page][]tab) map[document.Page]readerPlace {
 	left := make(map[document.Page]readerPlace, len(buffers))
 	for page, tabs := range buffers {
-		left[page] = readerPlace{chosen: 0, scrolls: make([]int, len(tabs)), tiles: make([]int, len(tabs))}
+		left[page] = readerPlace{chosen: 0, positions: make([]tabPosition, len(tabs))}
 	}
 	return left
 }
@@ -90,8 +98,8 @@ func (model Model) kept() Model {
 	left := maps.Clone(model.left)
 	for index, shown := range model.tabs {
 		place := left[shown.page]
-		place.scrolls, place.tiles = slices.Clone(place.scrolls), slices.Clone(place.tiles)
-		place.scrolls[shown.place], place.tiles[shown.place] = model.scrolls[index], model.tiles[index]
+		place.positions = slices.Clone(place.positions)
+		place.positions[shown.place] = model.positions[index]
 		if index == model.chosen {
 			place.chosen = shown.place
 		}
@@ -133,34 +141,33 @@ func (model Model) windowed() Model {
 	tabs, chosen := model.windows()
 	before := model
 	model.tabs, model.chosen = tabs, chosen
-	model.scrolls, model.tiles = make([]int, 0, len(tabs)), make([]int, 0, len(tabs))
+	model.positions = make([]tabPosition, 0, len(tabs))
 	for _, shown := range tabs {
-		place := model.left[shown.page]
-		model.scrolls, model.tiles = append(model.scrolls, place.scrolls[shown.place]), append(model.tiles, place.tiles[shown.place])
+		model.positions = append(model.positions, model.left[shown.page].positions[shown.place])
 	}
 	model.places = shownPlacesOf(tabs, model.sitePlaces, model.pagePlaces)
 	if frameOf(model.terminal.width, model.terminal.height, widestPageOf(model.inBlog)) != model.frame {
 		return model.relaid()
 	}
 	model.laid, model.search.shown = make([]laidTab, 0, len(tabs)), make([]shownMatch, 0, len(tabs))
-	reused, layout := map[int]paintedPage{}, model.layout()
+	reused, layout := map[int]paintedTab{}, model.layout()
 	for place, shown := range tabs {
 		if old := before.placeOf(shown); old != noPlace {
 			model.laid, model.search.shown = append(model.laid, before.laid[old]), append(model.search.shown, before.search.shown[old])
-			reused[place] = before.drawn.tabs[old].paintedPage
+			reused[place] = paintedTab{page: before.drawn.tabs[old].paintedPage, stuck: before.drawn.tabs[old].stuck}
 			continue
 		}
 		model.laid, model.search.shown = append(model.laid, layout.tab(shown)), append(model.search.shown, shownMatch{place: 0, scroll: 0, shown: false})
 	}
-	pages := make([]paintedPage, 0, len(tabs))
+	painted := make([]paintedTab, 0, len(tabs))
 	for place := range tabs {
-		painted, isReused := reused[place]
+		kept, isReused := reused[place]
 		if !isReused {
-			painted = model.paintedPage(place)
+			kept = model.paintedTab(place)
 		}
-		pages = append(pages, painted)
+		painted = append(painted, kept)
 	}
-	model.drawn = model.drawnScreen(pages)
+	model.drawn = model.drawnScreen(painted)
 	return model.clamped().windowOfKeysSettled()
 }
 
@@ -216,7 +223,8 @@ func openedPages(pages []compose.OpenedPage) map[string]document.Page {
 }
 
 // wentTo is the model at a place of a page's own: its page shown, where the tab chosen shows another, then scrolled to
-// the place's section, where it names one the page lays out; on the blog's list the keys on the section's first tile.
+// the place's section, where it names one the page lays out, which it keeps as the section gone to; on the blog's
+// list the keys on the section's first tile.
 func (model Model) wentTo(place document.Place) Model {
 	if model.tabs[model.chosen].page != place.Page {
 		model = model.showing(place.Page)
@@ -225,6 +233,8 @@ func (model Model) wentTo(place document.Place) Model {
 	if !laid {
 		return model
 	}
+	model.positions = slices.Clone(model.positions)
+	model.positions[model.chosen].goneTo = place.Section
 	return model.scrolledTo(line).withFirstTileFrom(line)
 }
 

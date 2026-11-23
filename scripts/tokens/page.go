@@ -172,15 +172,16 @@ func (style readType) properties() []styleProperty {
 	}
 }
 
-// pageTokens are the tokens the page alone reads, read: the colours it mixes, its faces, its text styles, its lengths,
-// its times and its layers.
+// pageTokens are the tokens the page reads but its colours, read: the colours it mixes, its faces, its text styles,
+// its lengths, its times, the shares of the screen's height its script measures by, and its layers.
 type pageTokens struct {
-	mixes   []readMix
-	faces   []readFace
-	types   []readType
-	lengths []readLength
-	times   []readTime
-	layers  []readLayer
+	mixes        []readMix
+	faces        []readFace
+	types        []readType
+	lengths      []readLength
+	times        []readTime
+	screenShares []readScreenShare
+	layers       []readLayer
 }
 
 // readType is a text style read, the name of the face it is drawn in, its numbers each there and each one a face can
@@ -242,8 +243,9 @@ type readLayer struct {
 	place int
 }
 
-// readPageTokens reads the faces, the text styles, the lengths, the times and the layers of the file beside the mixes
-// of its colours, read with the colours, each property a name of its own beside every property named already.
+// readPageTokens reads the faces, the text styles, the lengths, the times, the shares of the screen's height and the
+// layers of the file beside the mixes of its colours, read with the colours, each a name of its own beside every
+// property named already.
 func readPageTokens(written tokensFile, mixes []readMix, named map[string]bool) (pageTokens, error) {
 	faces, err := readFaces(written.Faces, named)
 	if err != nil {
@@ -266,11 +268,15 @@ func readPageTokens(written tokensFile, mixes []readMix, named map[string]bool) 
 	if err != nil {
 		return pageTokens{}, err
 	}
+	screenShares, err := readEach(written.ScreenShares, named, readScreenShareToken)
+	if err != nil {
+		return pageTokens{}, err
+	}
 	layers, err := readLayerTokens(written.Layers, named)
 	if err != nil {
 		return pageTokens{}, err
 	}
-	return pageTokens{mixes: mixes, faces: faces, types: types, lengths: lengths, times: times, layers: layers}, nil
+	return pageTokens{mixes: mixes, faces: faces, types: types, lengths: lengths, times: times, screenShares: screenShares, layers: layers}, nil
 }
 
 // readLayerTokens reads the layers, each in its place, the lowest first; a layer's property is named by the word layer

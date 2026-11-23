@@ -10,7 +10,7 @@ import tseslint from "typescript-eslint";
 // into what is built on it. A part comes into the list with its first module
 const LAYERS = {
   // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, and the design's
-  // times they wait
+  // times they wait and shares of the screen they measure by
   entries: ["controllers", "ui", "tokens"],
   // Behaviour over the markup the server draws, each over one part of it, on the logic of the page
   controllers: ["domain"],

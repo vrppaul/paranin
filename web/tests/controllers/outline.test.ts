@@ -4,6 +4,7 @@
 // test puts them.
 import { beforeEach, expect, test, vi } from "vitest";
 import { startOutline, type HeadingObserver } from "../../src/controllers/outline";
+import { SCREEN_SHARES } from "../../src/tokens/shares";
 import { found } from "./linepage";
 import postPage from "../../../internal/face/html/testdata/blog/reading-slowly.html?raw";
 
@@ -98,7 +99,7 @@ async function followed(fragment: string): Promise<void> {
 /** The outline of the golden page, started over a fake observer, which the test scrolls. */
 function started(): FakeObserver {
   const maker = new FakeObserverMaker();
-  startOutline(document, window, maker.make);
+  startOutline(document, window, maker.make, SCREEN_SHARES.readingLine);
   return maker.made();
 }
 

@@ -65,10 +65,8 @@ type Model struct {
 	paint  paint
 	drawn  drawnScreen
 	chosen int
-	// scrolls is how far down each tab the reader has scrolled, and tiles the tile the keys stand on in each, on the
-	// blog's list, by the tab's place
-	scrolls []int
-	tiles   []int
+	// positions are where the reader stands in each tab, by the tab's place
+	positions []tabPosition
 	// actions are what each key does in normal mode, commands what the command line runs, and places where it goes
 	// from the tabs shown
 	actions    map[string]action
@@ -117,12 +115,11 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 		laid:       nil,
 		paint:      paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, pointedGround: nil, pointedUnderline: nil, matchGround: nil, matchText: nil, matchUnderline: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn: drawnScreen{
-			tabs: nil, crossRow: "", blankRow: "", margin: "", track: "", thumb: "",
+			tabs: nil, crossRow: "", blankRow: "", track: "", thumb: "",
 			footer: paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: paintedBar{text: "", width: 0}},
 		},
 		chosen:     0,
-		scrolls:    nil,
-		tiles:      nil,
+		positions:  nil,
 		actions:    normalActions(),
 		commands:   commands(buffers),
 		places:     shownPlaces{tabs: nil, own: nil, site: nil, named: nil},
@@ -213,11 +210,11 @@ func (model Model) layout() layout {
 // and colours.
 func (model Model) repainted() Model {
 	model.paint = paintFor(model.terminal.theme, model.terminal.profile)
-	pages := make([]paintedPage, 0, len(model.tabs))
+	painted := make([]paintedTab, 0, len(model.tabs))
 	for place := range model.tabs {
-		pages = append(pages, model.paintedPage(place))
+		painted = append(painted, model.paintedTab(place))
 	}
-	model.drawn = model.drawnScreen(pages)
+	model.drawn = model.drawnScreen(painted)
 	return model.clamped()
 }
 
@@ -226,6 +223,15 @@ func (model Model) repaintedChosen() Model {
 	model.drawn.tabs = slices.Clone(model.drawn.tabs)
 	model.drawn.tabs[model.chosen].paintedPage = model.paintedPage(model.chosen)
 	return model
+}
+
+// repaintedPages is the model with every tab's page painted again, for the search they mark.
+func (model Model) repaintedPages() Model {
+	model.drawn.tabs = slices.Clone(model.drawn.tabs)
+	for place := range model.drawn.tabs {
+		model.drawn.tabs[place].paintedPage = model.paintedPage(place)
+	}
+	return model.clamped()
 }
 
 // choose shows a tab by its place, round from the last to the first and back.
@@ -243,7 +249,7 @@ func wrapped(place, count int) int {
 // sight, they stand on the tile in sight nearest the line, the later of a row going down and the earlier going up.
 func (model Model) scrolledTo(line int) Model {
 	column := 0
-	if line > model.scrolls[model.chosen] {
+	if line > model.positions[model.chosen].scroll {
 		column = model.frame.inner
 	}
 	return model.scrolledToward(line, spot{line: line, column: column})
@@ -252,18 +258,18 @@ func (model Model) scrolledTo(line int) Model {
 // scrolledToward is the chosen tab scrolled to a line; on the blog's list, where the tile the keys stand on goes out
 // of sight, they stand on the tile in sight nearest a spot the move went to.
 func (model Model) scrolledToward(line int, near spot) Model {
-	model.scrolls = slices.Clone(model.scrolls)
-	model.scrolls[model.chosen] = line
+	model.positions = slices.Clone(model.positions)
+	model.positions[model.chosen].scroll = line
 	return model.clamped().withChosenTileNear(near)
 }
 
 // clamped is the model with each tab scrolled within it, as the tab is drawn now.
 func (model Model) clamped() Model {
-	scrolls := make([]int, len(model.drawn.tabs))
-	for place := range model.drawn.tabs {
-		scrolls[place] = model.scrollWithin(place, model.scrolls[place])
+	positions := slices.Clone(model.positions)
+	for place := range positions {
+		positions[place].scroll = model.scrollWithin(place, positions[place].scroll)
 	}
-	model.scrolls = scrolls
+	model.positions = positions
 	return model
 }
 

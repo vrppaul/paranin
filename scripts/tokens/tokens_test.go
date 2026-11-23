@@ -88,6 +88,10 @@ times:
   - name: blink
     about: a cursor's blink
     milliseconds: 1060
+screen_shares:
+  - name: reading_line
+    about: where a heading counts as read
+    percent: 33
 layers:
   - name: row
     about: what sticks to the top
@@ -310,6 +314,34 @@ func TestEachTimeReachesThePagesScriptInMilliseconds(test *testing.T) {
 	}
 }
 
+// A share of the screen's height reaches both the faces' Go and the page's script as its whole percent, under what it
+// is for, each named as its language names a constant.
+func TestAShareOfTheScreenReachesTheTerminalAndThePagesScript(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	source, err := sharesSource(read)
+	if err != nil {
+		test.Fatalf("sharesSource(fixture) = %v, want no fault", err)
+	}
+	cases := []struct {
+		name    string
+		written string
+		want    string
+	}{
+		{name: "the Go, under what it is for", written: string(source), want: "\t// ReadingLine is where a heading counts as read\n\tReadingLine = 33\n"},
+		{name: "the script, under what it is for", written: string(sharesScript(read)), want: "  /** where a heading counts as read */\n  readingLine: 33,\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(testCase.written, testCase.want) {
+				test.Errorf("the generated file = %q, want it to hold %q", testCase.written, testCase.want)
+			}
+		})
+	}
+}
+
 // A name of words parted by underscores is a custom property's, parted by hyphens.
 func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	read, err := readTokens([]byte(strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n")))
@@ -418,6 +450,11 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a time written as a string", original: "milliseconds: 1060", replacement: `milliseconds: "1060"`, want: `"1060" is no whole number`},
 		{name: "a time's milliseconds left out", original: "    milliseconds: 1060\n", replacement: "", want: `"blink" has no milliseconds`},
 		{name: "a time named as a length is", original: "name: blink", replacement: "name: row", want: `"row" is named twice`},
+		{name: "a share of none of the screen", original: "percent: 33", replacement: "percent: 0", want: `"reading_line" has the percent 0`},
+		{name: "a share beyond the screen", original: "percent: 33", replacement: "percent: 101", want: `"reading_line" has the percent 101, which is more than the whole screen`},
+		{name: "a share of part of a percent", original: "percent: 33", replacement: "percent: 33.5", want: `"33.5" is no whole number`},
+		{name: "a share's percent left out", original: "    percent: 33\n", replacement: "", want: `"reading_line" has no percent`},
+		{name: "a share named as a length is", original: "name: reading_line", replacement: "name: row", want: `"row" is named twice`},
 		{name: "a blend named as the face's property is", original: "name: tint", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
 		{name: "a blend named as the page's own colour is", original: "name: tint", replacement: "name: background", want: `"background" is named twice`},
@@ -613,6 +650,8 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 		{name: "a palette edited by hand", path: palettePath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "a stylesheet edited by hand", path: stylesheetPath, change: func(generated string) string { return generated + "\n/* edited */\n" }, want: failed},
 		{name: "the terminal's lengths edited by hand", path: cellsPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the terminal's shares edited by hand", path: sharesPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the script's shares edited by hand", path: sharesScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

@@ -11,16 +11,26 @@ import (
 	"github.com/vrppaul/paranin/internal/look"
 )
 
-// A post's columns (DESIGN.md, The TUI): its paragraphs' numbers, the gap after them, and its text at the measure a
-// paragraph is read at; the column the numbers and the text take together; and the width its title wraps at, a few
-// words a line, as the page holds it
+// A post's columns (DESIGN.md, The TUI), beside its Outline's and its sources', look.Rail and look.Aside wide: the gap
+// after the Outline; its paragraphs' numbers and the gap after them; its text at the measure a paragraph is read at;
+// the gap before the sources beside the text; and the width its title wraps at, a few words a line, as the page holds
+// it
 const (
+	outlineGap   = 4
 	numberWidth  = 4
 	numberGap    = 2
 	textMeasure  = 66
-	textColumn   = numberWidth + numberGap
-	postWidth    = textColumn + textMeasure
+	sourcesGap   = 4
 	titleMeasure = 44
+)
+
+// How a post's columns add up: the column its text starts at, after the numbers; the numbers and the text together;
+// the width the sources stand beside the text from; and the width the Outline stands beside them from
+const (
+	textColumn   = numberWidth + numberGap
+	articleWidth = textColumn + textMeasure
+	sourcesFrom  = articleWidth + sourcesGap + look.Aside
+	outlineFrom  = look.Rail + outlineGap + sourcesFrom
 )
 
 // The marks of a post's body: what follows an ordered list's number, the bar beside a quote and the room it takes
@@ -35,9 +45,9 @@ const (
 )
 
 // How a post's parts stand apart: the rows between its head and its body and between its body and its panes; the
-// room inside a frame of code or a pane at each side, and above and below what it holds; how far into a frame's top
-// edge its name stands; and the gap between the panes' heading and the way to all of them, and between the word
-// before where the post is discussed and the places
+// room inside a frame of code at each side, and above and below what it holds; how far into a frame's top edge its
+// name stands; and the gap between the panes' heading and the way to all of them, and between the word before where
+// the post is discussed and the places
 const (
 	partRows       = 2
 	framePadding   = 2
@@ -47,21 +57,102 @@ const (
 	discussGap     = 2
 )
 
-// post lays out a post (DESIGN.md, The TUI) in a column of its numbers and its text, in the middle of the page: its
-// head, its body numbered in the margin, its sources at its end under a rule, and the panes at its foot one under the
-// other, with the line each heading stands at. The outline, the sources beside the text and the panes side by side
-// wait for the page wide enough (TODO.md).
-func (layout layout) post(post document.Document) laidTab {
-	column := layout
-	column.width = min(layout.width, postWidth)
-	head := slices.Concat(column.postHead(post.Head), make([]line, partRows))
-	body := article{layout: column, paragraphs: 0, headings: map[string]int{}}
-	lines := slices.Concat(head, body.body(post.Blocks, len(head)))
-	lines = stacked(lines, column.sources(document.NotesOf(post.Blocks)))
-	if place := post.Head.Post; place != nil {
-		lines = slices.Concat(lines, make([]line, partRows), column.panes(*place))
+// postShape is how a post stands, by the columns its page has room for (DESIGN.md, The TUI).
+type postShape int
+
+const (
+	// narrowPost is its numbers and its text alone, its sources at the text's end, its panes one under the other
+	narrowPost postShape = iota
+	// sourcedPost has its sources beside its text and its head's facts beside its title, its panes side by side
+	sourcedPost
+	// outlinedPost has its Outline at its left as well
+	outlinedPost
+)
+
+// postShapeOf is how a post stands on a page of a width: with its Outline and its sources beside its text each from
+// the width it needs.
+func postShapeOf(width int) postShape {
+	switch {
+	case width >= outlineFrom:
+		return outlinedPost
+	case width >= sourcesFrom:
+		return sourcedPost
 	}
-	return laidTab{lines: shiftedLines(lines, (layout.width-column.width)/sides), tiles: nil, groups: nil, split: 0, sections: body.headings}
+	return narrowPost
+}
+
+// width is how wide a post of the shape stands on a page of a width: its numbers and its text alone no wider than the
+// page.
+func (shape postShape) width(page int) int {
+	switch shape {
+	case sourcedPost:
+		return sourcesFrom
+	case outlinedPost:
+		return outlineFrom
+	case narrowPost:
+	}
+	return min(page, articleWidth)
+}
+
+// articleStart is the column the post's numbers stand from: after the Outline and its gap where it stands.
+func (shape postShape) articleStart() int {
+	switch shape {
+	case outlinedPost:
+		return look.Rail + outlineGap
+	case narrowPost, sourcedPost:
+	}
+	return 0
+}
+
+// sourcesBeside is whether the post's sources stand beside its text.
+func (shape postShape) sourcesBeside() bool {
+	switch shape {
+	case sourcedPost, outlinedPost:
+		return true
+	case narrowPost:
+	}
+	return false
+}
+
+// sourcesStart is the column the sources beside the post's text stand from.
+func (shape postShape) sourcesStart() int {
+	return shape.articleStart() + articleWidth + sourcesGap
+}
+
+// post lays out a post (DESIGN.md, The TUI) in the middle of the page, in the columns it has room for: its head; its
+// body numbered in the margin, its sources beside the lines that cite them or at its end under a rule; the panes at
+// its foot; with the line each heading stands at, and the Outline, which stands in sight beside its body as it
+// scrolls.
+func (layout layout) post(post document.Document) laidTab {
+	shape := postShapeOf(layout.width)
+	width := shape.width(layout.width)
+	headed, numbered := layout, layout
+	headed.width, numbered.width = width, min(width, articleWidth)
+	head := slices.Concat(headed.postHead(post.Head, shape), make([]line, partRows))
+	body := article{layout: numbered, paragraphs: 0, headings: map[string]int{}}
+	lines := slices.Concat(head, shiftedLines(body.body(post.Blocks, len(head)), shape.articleStart()))
+	notes := document.NotesOf(post.Blocks)
+	if shape.sourcesBeside() {
+		sourced := layout
+		sourced.width = look.Aside
+		lines = besideLines(lines, shape.sourcesStart(), sourced.sourcesBeside(lines, len(head), notes))
+	} else {
+		lines = stacked(lines, numbered.sources(notes))
+	}
+	bodyEnd := len(lines)
+	if place := post.Head.Post; place != nil {
+		footed := layout
+		footed.width = width - shape.articleStart()
+		lines = slices.Concat(lines, make([]line, partRows), shiftedLines(footed.panes(*place, shape.sourcesBeside()), shape.articleStart()))
+	}
+	shift := (layout.width - width) / sides
+	laid := laidTab{lines: shiftedLines(lines, shift), tiles: nil, groups: nil, split: 0, sections: body.headings, outline: noOutline()}
+	if shape == outlinedPost {
+		outlined := layout
+		outlined.width = outlineHang + look.Rail
+		laid.split, laid.outline = shift+shape.articleStart(), outlined.outline(post.Blocks, body.headings, len(head), bodyEnd)
+	}
+	return laid
 }
 
 // shiftedLines are lines standing a number of columns further in.
@@ -73,13 +164,19 @@ func shiftedLines(lines []line, by int) []line {
 	return moved
 }
 
-// postHead is a post's head (DESIGN.md, PostHead): its title bold, its lead, and its facts under the lead: the day it
-// came out, its series and where it stands in it, and its tags.
-func (layout layout) postHead(head document.Head) []line {
-	titled := layout
-	titled.width = min(layout.width, titleMeasure)
-	lines := stacked(titled.fill(layout.words(head.Title, kindStrong), 0), layout.fill(layout.words(head.Lead, kindText), 0))
-	return stacked(lines, layout.postFacts(head))
+// postHead is a post's head (DESIGN.md, PostHead): its title bold, a few words a line, its lead under it, and its
+// facts, the day it came out, its series and where it stands in it, and its tags: beside the title in the sources'
+// column where the post has one, under the lead where not.
+func (layout layout) postHead(head document.Head, shape postShape) []line {
+	titled, led := layout, layout
+	titled.width, led.width = min(layout.width, titleMeasure), min(layout.width, look.PostLead)
+	intro := stacked(titled.fill(layout.words(head.Title, kindStrong), 0), led.fill(layout.words(head.Lead, kindText), 0))
+	if !shape.sourcesBeside() {
+		return stacked(intro, layout.postFacts(head))
+	}
+	beside := layout
+	beside.width = look.Aside
+	return besideLines(intro, shape.sourcesStart(), beside.postFacts(head))
 }
 
 // postFact is a fact of a post's head: its label, and its value's words.
@@ -296,7 +393,7 @@ func codeRows(block document.CodeBlock, width int) []line {
 	copied := block.Text()
 	rows := codeRowing{width: max(width, textWidth(codeGoesOnMark)+spaceWidth), rows: []line{}, current: line{}, used: 0, column: 0}
 	for _, written := range block.Runs {
-		shown := run{text: "", kind: codeKindOf(written.Kind), highlighted: false, address: "", copied: copied, tone: 0}
+		shown := run{text: "", kind: codeKindOf(written.Kind), highlighted: false, address: "", copied: copied, tone: 0, cites: noCitation}
 		for _, letter := range written.Text {
 			rows.add(letter, shown)
 		}
@@ -378,20 +475,53 @@ func codeKindOf(codeKind document.CodeKind) kind {
 	return kindText
 }
 
-// sources lays out a post's sources at the text's end (DESIGN.md, Article), each note once under a quiet rule: its
-// number, then its words muted, standing in under themselves; nothing where the post cites none.
+// sources lays out a post's sources at the text's end (DESIGN.md, Article), in the text's column, each note once under
+// a quiet rule; nothing where the post cites none.
 func (layout layout) sources(notes []document.Note) []line {
 	if len(notes) == 0 {
 		return nil
 	}
-	rule := line{gapRun(textColumn), plainRun(strings.Repeat(frameAcross, max(layout.width-textColumn, 0)), kindQuietLine)}
-	lines := []line{rule}
+	noted := layout
+	noted.width = layout.width - textColumn
+	lines := []line{{gapRun(textColumn), plainRun(strings.Repeat(frameAcross, max(noted.width, 0)), kindQuietLine)}}
 	for _, note := range notes {
-		number := strconv.Itoa(note.Number)
-		lead := line{gapRun(textColumn), plainRun(number, kindLabel), gapRun(spaceWidth)}
-		lines = append(lines, layout.continued(lead, layout.words(note.Spans, kindMuted), runsWidth(lead))...)
+		lines = append(lines, shiftedLines(noted.noteLines(note), textColumn)...)
 	}
 	return lines
+}
+
+// sourcesBeside are the lines a post's sources stand in beside its lines, from a line on (DESIGN.md, Article): each
+// note at the line that first cites it, or a row under the note before where that one runs on past it; none beside
+// any other line.
+func (layout layout) sourcesBeside(lines []line, from int, notes []document.Note) []line {
+	cited := citedLines(lines)
+	beside, free := []line{}, from
+	for _, note := range notes {
+		at := max(cited[note.Number], free)
+		beside = slices.Concat(beside, make([]line, at-len(beside)), layout.noteLines(note))
+		free = len(beside) + blockGap
+	}
+	return beside
+}
+
+// citedLines are the line among lines that first cites each note, by the note's number.
+func citedLines(lines []line) map[int]int {
+	cited := map[int]int{}
+	for index, shown := range lines {
+		for _, piece := range shown {
+			if _, seen := cited[piece.cites]; !seen && piece.cites != noCitation {
+				cited[piece.cites] = index
+			}
+		}
+	}
+	return cited
+}
+
+// noteLines are a note as a source stands (DESIGN.md, Article): its number, then its words muted, standing in under
+// themselves.
+func (layout layout) noteLines(note document.Note) []line {
+	lead := line{gapRun(0), plainRun(strconv.Itoa(note.Number), kindLabel), gapRun(spaceWidth)}
+	return layout.continued(lead, layout.words(note.Spans, kindMuted), runsWidth(lead))
 }
 
 // paneSide is a side of a post's foot: the name set into its pane's top edge, the post there, none on a side with
@@ -402,10 +532,9 @@ type paneSide struct {
 	none      string
 }
 
-// panes lays out a post's foot (DESIGN.md, Panes): a heading saying where its panes lead and the way to all of them,
-// then the two panes one under the other, the side after first, as tmux splits a window; then where the post is
-// discussed.
-func (layout layout) panes(place document.PostPlace) []line {
+// panes lays out a post's foot (DESIGN.md, Panes) from the text's column: a heading saying where its panes lead and
+// the way to all of them, then the two panes, side by side or one under the other; then where the post is discussed.
+func (layout layout) panes(place document.PostPlace, sideBySide bool) []line {
 	paneWords, seriesWords := layout.siteWords.PaneWords, layout.siteWords.SeriesWords
 	sides, heading, all := paneWords.Posts, paneWords.OtherPosts, layout.siteWords.ListWords.AllPosts
 	if series := place.Series; series != nil {
@@ -414,7 +543,7 @@ func (layout layout) panes(place document.PostPlace) []line {
 	after := paneSide{name: seriesWords.PaneName(sides.After, place.Neighbours.After), neighbour: place.Neighbours.After, none: sides.After.None}
 	before := paneSide{name: seriesWords.PaneName(sides.Before, place.Neighbours.Before), neighbour: place.Neighbours.Before, none: sides.Before.None}
 	title := line{gapRun(textColumn), plainRun(heading, kindStrong), gapRun(headingGap), plainRun(all, kindMuted)}
-	lines := slices.Concat([]line{title}, blankLines(), layout.stackedPanes(after, before))
+	lines := slices.Concat([]line{title}, blankLines(), shiftedLines(layout.paneGrid(after, before, sideBySide), textColumn))
 	if len(place.Discussions) == 0 {
 		return lines
 	}
@@ -426,41 +555,36 @@ func (layout layout) panes(place document.PostPlace) []line {
 	return stacked(lines, layout.continued(lead, discussed, runsWidth(lead)))
 }
 
-// stackedPanes are two panes of a post's foot, one under the other across the text's column, sharing the line between
-// them, each piece of the frame read as the panes it bounds have it (frameKind).
-func (layout layout) stackedPanes(first, second paneSide) []line {
-	across := layout.width - textColumn - sides*textWidth(frameDown)
+// paneGrid are a post's two panes as tmux splits a window, across the width the layout leaves after the text's column,
+// sharing the line between them as the blog's tiles do, filling the width: side by side, the side before at the left,
+// as the page sets them; else one under the other, the side after first.
+func (layout layout) paneGrid(after, before paneSide, sideBySide bool) []line {
+	rows := [][]paneSide{{after}, {before}}
+	if sideBySide {
+		rows = [][]paneSide{{before, after}}
+	}
+	grid := filledGrid(len(rows[0]), layout.width-textColumn)
 	inside := layout
-	inside.width = across - sides*framePadding
-	firstLeads, secondLeads := first.neighbour != nil, second.neighbour != nil
-	lines := []line{paneEdge(frameTopLeft, frameTopRight, first, frameKind(firstLeads), across)}
-	lines = append(lines, paneRows(inside.paneWordsOf(first), frameKind(firstLeads), across)...)
-	lines = append(lines, paneEdge(frameRuleLeft, frameRuleRight, second, frameKind(firstLeads, secondLeads), across))
-	lines = append(lines, paneRows(inside.paneWordsOf(second), frameKind(secondLeads), across)...)
-	bottom := plainRun(frameBottomLeft+strings.Repeat(frameAcross, max(across, 0))+frameBottomRight, frameKind(secondLeads))
-	return append(lines, line{gapRun(textColumn), bottom})
+	inside.width = grid.inside()
+	cells := make([][]gridCell, 0, len(rows))
+	for _, row := range rows {
+		cells = append(cells, inside.paneCells(row))
+	}
+	return grid.framed(cells).lines
 }
 
-// paneEdge is a pane's top edge across a width, between two corners, in a kind: its name set in at the left, bold
-// where the pane leads somewhere, faint where not.
-func paneEdge(left, right string, side paneSide, edge kind, across int) line {
-	nameKind := kindStrong
-	if side.neighbour == nil {
-		nameKind = kindFaint
+// paneCells are sides of a post's foot as a row of its grid's cells: each its name set into its top edge, bold where
+// the pane leads somewhere, faint where not, and what it holds.
+func (layout layout) paneCells(row []paneSide) []gridCell {
+	cells := make([]gridCell, 0, len(row))
+	for _, side := range row {
+		nameKind := kindStrong
+		if side.neighbour == nil {
+			nameKind = kindFaint
+		}
+		cells = append(cells, gridCell{label: line{plainRun(side.name, nameKind)}, words: tileWords{top: layout.paneWordsOf(side), foot: nil}, leads: side.neighbour != nil})
 	}
-	name := space + side.name + space
-	rest := max(across-frameNameInset-textWidth(name), 0)
-	return line{gapRun(textColumn), plainRun(left+strings.Repeat(frameAcross, frameNameInset), edge), plainRun(name, nameKind), plainRun(strings.Repeat(frameAcross, rest)+right, edge)}
-}
-
-// paneRows are a pane's rows across a width, its words between a row of room above and below, its edges in a kind.
-func paneRows(words []line, edge kind, across int) []line {
-	rows := []line{}
-	for _, shown := range slices.Concat(make([]line, frameRowsRound), words, make([]line, frameRowsRound)) {
-		cell := append(line{gapRun(framePadding)}, shown...)
-		rows = append(rows, slices.Concat(line{gapRun(textColumn), plainRun(frameDown, edge)}, cell, line{gapRun(across - runsWidth(cell)), plainRun(frameDown, edge)}))
-	}
-	return rows
+	return cells
 }
 
 // paneWordsOf lays out what a pane holds (DESIGN.md, Panes): the post there by its title, bold and leading to it, its

@@ -6,13 +6,16 @@
 //     a blend is worked out into a colour of its own;
 //   - internal/look/cells.go, for the faces drawn in a terminal: each length a terminal lays out by too, a constant of
 //     its cells;
+//   - internal/look/shares.go, for them too: each share of the screen's height, a constant of its percent;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
 //     reads: each mix of two colours, worked out in each theme, each face, each text style as its size, its line's
 //     height and its weight, each length, each time, and each layer as its place among the layers, the z-index of
 //     what stands on it; and each of the faces' files, under design/, as a font face the page loads;
 //   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
-//     since the build writes the stylesheet's times the shortest way.
+//     since the build writes the stylesheet's times the shortest way;
+//   - web/src/tokens/shares.ts, for the page's script too: each share of the screen's height in percent, which no
+//     stylesheet lays out by, so tokens.css holds none.
 //
 // Its usage:
 //
@@ -44,13 +47,15 @@ const (
 
 // How the command is written, and the files it reads and writes, from the repository's root
 const (
-	writeFlag      = "-write"
-	usage          = "usage: go run ./scripts/tokens [-write]"
-	tokensPath     = "design/tokens.yaml"
-	palettePath    = "internal/look/palette.go"
-	cellsPath      = "internal/look/cells.go"
-	stylesheetPath = "web/src/tokens/tokens.css"
-	timesPath      = "web/src/tokens/times.ts"
+	writeFlag        = "-write"
+	usage            = "usage: go run ./scripts/tokens [-write]"
+	tokensPath       = "design/tokens.yaml"
+	palettePath      = "internal/look/palette.go"
+	cellsPath        = "internal/look/cells.go"
+	sharesPath       = "internal/look/shares.go"
+	stylesheetPath   = "web/src/tokens/tokens.css"
+	timesPath        = "web/src/tokens/times.ts"
+	sharesScriptPath = "web/src/tokens/shares.ts"
 	// a generated file may be read by anyone, as the rest of the tree
 	generatedMode = 0o644
 )
@@ -125,11 +130,17 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 	if err != nil {
 		return nil, err
 	}
+	shares, err := sharesSource(read)
+	if err != nil {
+		return nil, err
+	}
 	return []generatedFile{
 		{path: palettePath, body: palette},
 		{path: cellsPath, body: cells},
+		{path: sharesPath, body: shares},
 		{path: stylesheetPath, body: stylesheet(read)},
 		{path: timesPath, body: timesScript(read)},
+		{path: sharesScriptPath, body: sharesScript(read)},
 	}, nil
 }
 

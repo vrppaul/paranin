@@ -67,7 +67,7 @@ func back() matchWay {
 // startSearch opens the search line, empty, after a slash: the chosen tab marks nothing until the reader types,
 // where Neovim keeps the marks of the search before until then.
 func (model Model) startSearch() (Model, tea.Cmd) {
-	model.keys.mode, model.keys.typing, model.search.begunAt = modeSearch, "", model.scrolls[model.chosen]
+	model.keys.mode, model.keys.typing, model.search.begunAt = modeSearch, "", model.positions[model.chosen].scroll
 	return model.repaintedChosen(), nil
 }
 
@@ -77,7 +77,7 @@ func (model Model) endSearch() (Model, tea.Cmd) {
 		return model, nil
 	}
 	model.search.query, model.search.shown = "", make([]shownMatch, len(model.tabs))
-	return model.repainted(), nil
+	return model.repaintedPages(), nil
 }
 
 // typedInSearch is the model after a key while the reader types a search: Enter searches; any other key edits the
@@ -139,8 +139,8 @@ func (model Model) searched() Model {
 	model.keys.mode = modeNormal
 	model.search.query = model.keys.typing
 	model.search.shown = make([]shownMatch, len(model.tabs))
-	model = model.repainted()
-	return model.toMatch(func(matches []int) int { return matchAtOrAfter(matches, model.scrolls[model.chosen]) })
+	model = model.repaintedPages()
+	return model.toMatch(func(matches []int) int { return matchAtOrAfter(matches, model.positions[model.chosen].scroll) })
 }
 
 // nextMatch goes a match on, from the one the tab showed last, or from the page's top line, as Enter does, where it
@@ -160,14 +160,14 @@ func (model Model) stepped(matches []int, way matchWay) int {
 	if last, standing := model.standingMatch(); standing {
 		return wrapped(last.place+way.step, len(matches))
 	}
-	return way.byTheTop(matches, model.scrolls[model.chosen])
+	return way.byTheTop(matches, model.positions[model.chosen].scroll)
 }
 
 // standingMatch is the match the chosen tab showed last, while its page stays where the match left it, and whether
 // there is one: n steps on from it, and y copies from its line.
 func (model Model) standingMatch() (shownMatch, bool) {
 	last := model.search.shown[model.chosen]
-	return last, last.shown && last.scroll == model.scrolls[model.chosen]
+	return last, last.shown && last.scroll == model.positions[model.chosen].scroll
 }
 
 // toMatch shows a match of the chosen tab, the one a choice picks among its matches, and says which of how many it
@@ -185,7 +185,7 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 	model.said = commandMessage{text: searchMark + query + space + matchCount(place, len(matches)), failed: false}
 	model = model.scrolledToward(matches[place], model.drawn.tabs[model.chosen].spotOf(namedAt(matches, place))).withMatchTileTop(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
-	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.scrolls[model.chosen], shown: true}
+	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.positions[model.chosen].scroll, shown: true}
 	return model.renamed()
 }
 

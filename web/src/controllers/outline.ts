@@ -1,10 +1,8 @@
 // The outline (DESIGN.md, Outline), over the markup internal/face/html draws: the headings of a post's top level,
-// each a link beside the article. As the article scrolls, the heading read, the last whose top has passed a line
-// across the screen's upper part, is marked as the reader's place, which the stylesheet draws bold, a bar before it;
-// a page read without the script marks none. The heading whose section holds the place the address names, a link
-// followed to it, is read while that place stands above the line, though the next has passed it too; and a page
-// scrolled to its end, where a short last section never brings its heading up to the line, reads that heading while it
-// is in sight, or else its last. Every heading is measured when one crosses the band above the line, which an observer
+// each a link beside the article. As the article scrolls, the heading read, as DESIGN.md's Outline says which it is,
+// by the reading line its entry hands it (design/tokens.yaml), is marked as the reader's place, which the stylesheet
+// draws bold, a bar before it; a page read without the script marks none. The place gone to is the one the address
+// names, a link followed to it. Every heading is measured when one crosses the band above the line, which an observer
 // says as the page scrolls, when a scroll ends, since a jump past the whole band crosses nothing the observer watches,
 // and when the address names another place.
 
@@ -17,14 +15,9 @@ const FRAGMENT_MARK = "#";
 const TARGET = ":target";
 const CURRENT = "aria-current";
 const CURRENT_PLACE = "location";
-// The line a heading counts as read once its top has passed, in percent of the screen's height from its top: the
-// foot of its upper third, so a heading a link scrolls to the top is read at once, and one under the words in view is
-// not yet; and the screen's whole height, in percent
-const READING_LINE_PERCENT = 33;
+// The screen's whole height, in percent, which the reading line is a share of
 const WHOLE_PERCENT = 100;
-// The band the observer watches, from the screen's top down to the reading line; the events a scroll ends with and
-// the address names another place with
-const READING_BAND = `0px 0px ${String(READING_LINE_PERCENT - WHOLE_PERCENT)}% 0px`;
+// The events a scroll ends with and the address names another place with
 const SCROLL_END = "scrollend";
 const HASH_CHANGE = "hashchange";
 // How far short of its end, in pixels, a page counts as scrolled to it: a zoomed page's scroll stops a fraction short
@@ -51,15 +44,24 @@ interface OutlinePlace {
   heading: HTMLElement;
 }
 
-/** Marks, as the page scrolls in its window, the outline's link to the heading read. */
-export function startOutline(page: Document, view: ScrolledView, makeObserver: ObserverMaker): void {
+/**
+ * Marks, as the page scrolls in its window, the outline's link to the heading read, by a reading line a share of the
+ * screen's height down it, in percent; the observer watches the band from the screen's top down to that line.
+ */
+export function startOutline(
+  page: Document,
+  view: ScrolledView,
+  makeObserver: ObserverMaker,
+  readingLinePercent: number,
+): void {
   const places = placesOf(page);
-  const observer = makeObserver(() => markRead(places, page, view), { rootMargin: READING_BAND });
+  const readingBand = `0px 0px ${String(readingLinePercent - WHOLE_PERCENT)}% 0px`;
+  const observer = makeObserver(() => markRead(places, page, view, readingLinePercent), { rootMargin: readingBand });
   for (const place of places) {
     observer.observe(place.heading);
   }
-  view.addEventListener(SCROLL_END, () => markRead(places, page, view));
-  view.addEventListener(HASH_CHANGE, () => markRead(places, page, view));
+  view.addEventListener(SCROLL_END, () => markRead(places, page, view, readingLinePercent));
+  view.addEventListener(HASH_CHANGE, () => markRead(places, page, view, readingLinePercent));
 }
 
 /** The places of a page's outline: each link with the heading it leads to, a link to no heading of the page left out. */
@@ -76,19 +78,17 @@ function placesOf(page: Document): OutlinePlace[] {
 }
 
 /**
- * Marks the link to the heading read, and no other: the one whose section holds the place the address names, a
- * heading or a paragraph under it, while that place stands between the screen's top and the reading line, or anywhere
- * on the screen once the page is scrolled to its end, so a link followed to a short section marks its heading, not the
- * next one the line has passed too; else at the page's end its last, and anywhere else the last the line has passed,
- * none where it has passed none.
+ * Marks the link to the heading read (DESIGN.md, Outline), by a reading line a share of the screen's height down it,
+ * and no other; the place gone to is the one the address names, a heading or a paragraph under it.
  */
-function markRead(places: OutlinePlace[], page: Document, view: ScrolledView): void {
+function markRead(places: OutlinePlace[], page: Document, view: ScrolledView, readingLinePercent: number): void {
   const atEnd = view.scrollY + view.innerHeight >= page.documentElement.scrollHeight - END_SLACK;
-  const reach = atEnd ? view.innerHeight : readingLine(view);
+  const line = readingLine(view, readingLinePercent);
+  const reach = atEnd ? view.innerHeight : line;
   const target = namedPlace(page);
   const named =
     target !== null && standsAbove(target, reach) ? places.find((place) => holds(place, target)) : undefined;
-  const read = named ?? (atEnd ? places.at(-1) : lastPassed(places, view));
+  const read = named ?? (atEnd ? places.at(-1) : lastPassed(places, line));
   for (const place of places) {
     if (place === read) {
       place.link.setAttribute(CURRENT, CURRENT_PLACE);
@@ -108,15 +108,14 @@ function holds(place: OutlinePlace, element: HTMLElement): boolean {
   return place.heading.parentElement?.contains(element) ?? false;
 }
 
-/** The last place whose heading's top stands above the screen's reading line; none where the line has passed none. */
-function lastPassed(places: OutlinePlace[], view: ScrolledView): OutlinePlace | undefined {
-  const line = readingLine(view);
+/** The last place whose heading's top stands above a line down the screen; none where the line has passed none. */
+function lastPassed(places: OutlinePlace[], line: number): OutlinePlace | undefined {
   return places.filter((place) => place.heading.getBoundingClientRect().top < line).at(-1);
 }
 
-/** How far down the screen its reading line runs, in pixels. */
-function readingLine(view: ScrolledView): number {
-  return (view.innerHeight * READING_LINE_PERCENT) / WHOLE_PERCENT;
+/** How far down the screen its reading line runs, in pixels, a share of its height in percent. */
+function readingLine(view: ScrolledView, readingLinePercent: number): number {
+  return (view.innerHeight * readingLinePercent) / WHOLE_PERCENT;
 }
 
 /** Whether a heading's top stands on the screen, above a height down it. */

@@ -32,7 +32,8 @@ const HINT = '[data-part="hint"]';
 const CODE = '[data-part="code"]';
 const CODE_WORDS = '[data-part="code-words"]';
 const CODE_COPY = `${CODE} ${COPY}`;
-const CODE_TEXT = 'fmt.Println("slowly")';
+const CODE_TEXT =
+  '// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println("slowly", page)\n\treturn len(page) * 2\n}';
 const CODE_TOAST_SAYS = "Copied the code";
 
 /** The browser's clipboard as the chip uses it: what it was handed, and whether it refuses. */

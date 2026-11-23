@@ -159,7 +159,7 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Table:
 		return appendChunk(chunks, writer.table(typed))
 	case document.CodeBlock:
-		return appendChunk(chunks, codeBlock(typed.Text, typed.Language))
+		return appendChunk(chunks, codeBlock(typed.Text(), typed.Language))
 	case document.List:
 		return appendChunk(chunks, writer.list(typed, depth))
 	case document.Quote:

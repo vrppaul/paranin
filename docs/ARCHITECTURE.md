@@ -125,7 +125,9 @@ Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in 
 name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
 Amended 2026-11-22, with the first post served: the posts' blocks and spans, a footnote as a note where a line cites
 it, and the post's head. Amended 2026-11-23, with the blog's list: a document in two groupings, its groups sections
-holding the posts they name. Amended 2026-11-23, on the owner's choice of its look: a post's pause.
+holding the posts they name. Amended 2026-11-23, on the owner's choice of its look: a post's pause. Amended
+2026-11-23, with code coloured: a block of code holds its text in runs of the kinds of word a reader of code tells
+apart.
 
 ### Context
 
@@ -267,11 +269,11 @@ and web routes.
     the salary range among them, so `compose` places them too;
   - the posts' (step 8): a list, in order from its first number or not,
     whose items hold blocks; a quote, holding blocks; code with its
-    language; a pause, a thematic break standing between two of the
-    post's own blocks, never inside a quote or a list nor at the body's
-    start or end (amended 2026-11-23); and a figure,
-    which comes with the post's pictures (TODO). A
-    table gains a header row, and a post's headings nest into sections, each
+    language, its text in runs of the kinds of word (below); a pause, a
+    thematic break standing between two of the post's own blocks, never
+    inside a quote or a list nor at the body's start or end (amended
+    2026-11-23); and a figure, which comes with the post's pictures (TODO).
+    A table gains a header row, and a post's headings nest into sections, each
     holding what follows it up to the next heading of its level or above;
   - the blog's list's (amended 2026-11-23): posts, the block a group of the
     list holds, a section under the group's name, a year's, a series' or the
@@ -291,6 +293,23 @@ and web routes.
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a
   highlight, as the profile has it. The profile's marks and a post's markdown
   become the same spans.
+- **A block of code is runs of kinds of word** (amended 2026-11-23): its
+  text whole in runs, each one kind of a closed set, a keyword, a string, a
+  number, a function's name, a type, a builtin, an operator, a variable, a
+  comment, punctuation or plain, so a face colours each kind from the tokens
+  and none reads a language. `compose` splits the text by chroma's lexer of
+  the language, the highlighter Hugo uses, for the languages one table of
+  `compose` names, each held by a test, since a lexer runs as the hosts
+  draw a snapshot's pages, on the first request after it, and some never
+  end on text they do not expect; code in any other language, or in none,
+  is one plain run. depguard keeps chroma out of
+  every part but `compose`, and lets `compose` take its lexers alone. Its
+  cost: the binary grows from 18.4 MB to 22.2 MB, and `paranin check`'s
+  peak memory from 13.2 MB to 19.5 MB. Ways weighed: Shiki in the browser,
+  which a reader without script, the manual and the TUI would never get; a
+  lexer of our own for the languages posts hold, a second highlighter to
+  write and keep; chroma's own HTML, drawing in `compose` in colours
+  outside the tokens.
 - **A footnote is a note where a line cites it** (amended 2026-11-22): a
   span holding its number, the order of the first citations, and its words,
   alike at each citation. A face sets it beside the line, as the page and a

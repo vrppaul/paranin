@@ -330,14 +330,18 @@ templ pause() {
 // sets at its top right, the language it is written in, where its author names one, and the button that copies it,
 // hidden until the site's script shows it; then the code as it is, line for line, scrolling sideways rather than
 // wrapping. The toast says what was copied.
-templ copyableCode(language string, copied compose.Copyable) {
+templ copyableCode(code document.CodeBlock, button compose.CopyButton) {
 	<div class="code" data-part={ codePart }>
 		<p class="code-bar">
-			if language != "" {
-				<span class="code-language">{ language }</span>
+			if code.Language != "" {
+				<span class="code-language">{ code.Language }</span>
 			}
-			<button type="button" class="code-copy" data-part={ copyPart } aria-label={ copied.CopyName } data-copied={ copied.Copied } data-toast={ copied.Toast } hidden>{ copied.Copy }</button>
+			<button type="button" class="code-copy" data-part={ copyPart } aria-label={ button.CopyName } data-copied={ button.Copied } data-toast={ button.Toast } hidden>{ button.Copy }</button>
 		</p>
-		<pre class="code-block"><code data-part={ codeWordsPart }>{ copied.Text }</code></pre>
+		<pre class="code-block">
+			<code data-part={ codeWordsPart }>
+				@codeRuns(code.Runs)
+			</code>
+		</pre>
 	</div>
 }

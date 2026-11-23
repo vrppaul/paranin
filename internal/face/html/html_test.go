@@ -2,6 +2,7 @@ package html
 
 import (
 	"html"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -782,15 +783,29 @@ func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
 	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(fixturePost(test))))
 }
 
-// Every phrase of a post reaches its page, as HTML writes text: the facts a browser shows are the post's whole.
+// A pre whole, and a tag of markup, which a browser shows none of
+const (
+	preformatted = `(?s)<pre[^>]*>.*?</pre>`
+	markupTag    = `<[^>]*>`
+)
+
+// Every phrase of a post reaches the text its page shows, as HTML writes text, the tags round its code's kinds of
+// word gone: the facts a browser shows are the post's whole.
 func TestEveryPhraseOfAPostReachesItsPage(test *testing.T) {
 	post := fixturePost(test)
-	page := fixtureWriter(test).Post(post)
+	shown := codeAsShown(fixtureWriter(test).Post(post))
 	for _, phrase := range document.Phrases(post) {
-		if !strings.Contains(page, html.EscapeString(phrase)) {
+		if !strings.Contains(shown, html.EscapeString(phrase)) {
 			test.Errorf("the page of %+v holds no %q", post.Head.Page, phrase)
 		}
 	}
+}
+
+// codeAsShown is a page with every tag inside a pre gone, the spans its code's kinds of word stand in among them, so
+// the code reads as a browser shows it and every other part as it is written.
+func codeAsShown(page string) string {
+	tag := regexp.MustCompile(markupTag)
+	return regexp.MustCompile(preformatted).ReplaceAllStringFunc(page, func(pre string) string { return tag.ReplaceAllString(pre, "") })
 }
 
 // A post's page is read as a reader moves through it: its title the one h1; a heading and a paragraph each a place a
@@ -1055,10 +1070,31 @@ func fixturePost(test *testing.T) document.Document {
 	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
 }
 
+// What lined breaks a line between, two tags that meet, and what it keeps whole, a pre, whose every letter shows
+const (
+	tagsMeeting   = "><"
+	tagsBroken    = ">\n<"
+	preOpening    = "<pre"
+	preClosing    = "</pre>"
+	goldenFileEnd = "\n"
+)
+
 // lined is a page with a line break between each two tags that meet, so its golden file reads in a diff; a space
-// or a word between two tags stays where it is.
+// or a word between two tags stays where it is, and so does all inside a pre, where a break would show, and the
+// page's tests, which run over the golden files, would copy it.
 func lined(page string) string {
-	return strings.ReplaceAll(page, "><", ">\n<") + "\n"
+	var builder strings.Builder
+	rest := page
+	for {
+		outside, opened, found := strings.Cut(rest, preOpening)
+		if !found {
+			return builder.String() + strings.ReplaceAll(outside, tagsMeeting, tagsBroken) + goldenFileEnd
+		}
+		builder.WriteString(strings.ReplaceAll(outside+preOpening, tagsMeeting, tagsBroken))
+		inside, after, _ := strings.Cut(opened, preClosing)
+		builder.WriteString(inside)
+		rest = preClosing + after
+	}
 }
 
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.

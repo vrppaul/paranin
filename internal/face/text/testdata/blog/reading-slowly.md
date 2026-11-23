@@ -30,7 +30,15 @@ A page read twice is read once, if the first reading was *slow*.[^1]
 4. read it with `less`
 
 ```go
-fmt.Println("slowly")
+// slowly reads a page twice, aloud
+func slowly(page string) int {
+	fmt.Println("slowly", page)
+	return len(page) * 2
+}
+```
+
+```sh
+less "$HOME/notes"
 ```
 
 See [the reader's notes](https://notes.example.test/slow), or write to [mira@example.test](mailto:mira@example.test).[^1]

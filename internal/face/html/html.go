@@ -269,7 +269,7 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	case document.Table:
 		return writer.table(typed)
 	case document.CodeBlock:
-		return codeBlock(typed.Text)
+		return codeBlock(typed.Runs)
 	case document.Facts:
 		return writer.facts(typed.List)
 	case document.Entry:

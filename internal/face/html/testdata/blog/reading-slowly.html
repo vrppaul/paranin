@@ -158,9 +158,17 @@
 <p class="code-bar">
 <span class="code-language">go</span> <button type="button" class="code-copy" data-part="copy" aria-label="copy code block 1" data-copied="copied" data-toast="Copied the code" hidden>copy</button>
 </p>
-<pre class="code-block">
-<code data-part="code-words">fmt.Println(&#34;slowly&#34;)</code>
-</pre>
+<pre class="code-block"><code data-part="code-words"><span class="code-comment">// slowly reads a page twice, aloud</span>
+<span class="code-keyword">func</span> <span class="code-function">slowly</span><span class="code-punctuation">(</span>page <span class="code-type">string</span><span class="code-punctuation">)</span> <span class="code-type">int</span> <span class="code-punctuation">{</span>
+	fmt<span class="code-punctuation">.</span><span class="code-function">Println</span><span class="code-punctuation">(</span><span class="code-string">&#34;slowly&#34;</span><span class="code-punctuation">,</span> page<span class="code-punctuation">)</span>
+	<span class="code-keyword">return</span> <span class="code-builtin">len</span><span class="code-punctuation">(</span>page<span class="code-punctuation">)</span> <span class="code-operator">*</span> <span class="code-number">2</span>
+<span class="code-punctuation">}</span></code></pre>
+</div>
+<div class="code" data-part="code">
+<p class="code-bar">
+<span class="code-language">sh</span> <button type="button" class="code-copy" data-part="copy" aria-label="copy code block 2" data-copied="copied" data-toast="Copied the code" hidden>copy</button>
+</p>
+<pre class="code-block"><code data-part="code-words">less <span class="code-string">&#34;</span><span class="code-variable">$HOME</span><span class="code-string">/notes&#34;</span></code></pre>
 </div>
 <a class="paragraph-number" href="#p2">2</a>
 <p id="p2">See <a href="https://notes.example.test/slow">the reader&#39;s notes</a>, or write to <a href="mailto:mira@example.test">mira@example.test</a>.<sup class="citation">1</sup>

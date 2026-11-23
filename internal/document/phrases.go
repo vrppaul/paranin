@@ -33,7 +33,7 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 	case Table:
 		return rowPhrases(phrases, append([]Row{typed.Header}, typed.Rows...))
 	case CodeBlock:
-		return textPhrase(phrases, typed.Text)
+		return textPhrase(phrases, typed.Text())
 	case List:
 		for _, item := range typed.Items {
 			phrases = blockPhrases(phrases, item.Blocks)

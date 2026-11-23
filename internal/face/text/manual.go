@@ -49,11 +49,8 @@ const (
 	headerRule  = "─"
 )
 
-// A tab in a line of code, and how far apart a terminal sets its stops
-const (
-	tabLetter    = '\t'
-	tabStopWidth = 8
-)
+// A tab in a line of code
+const tabLetter = '\t'
 
 // How a link to a page of the site is written: its text, then its address as a manual between brackets; the slash a
 // path from the site's root opens with and parts its folders by; and what joins those parts in a manual's name, as
@@ -163,7 +160,7 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	case document.Table:
 		return writer.table(indent, typed)
 	case document.CodeBlock:
-		return codeLines(indent, typed.Text)
+		return codeLines(indent, typed.Text())
 	case document.List:
 		return writer.list(indent, typed)
 	case document.Quote:
@@ -479,8 +476,8 @@ func codeLines(indent int, code string) []string {
 	return lines
 }
 
-// expandedTabs is a line of code with each tab the spaces to the next tab stop, counted from the line's start, as a
-// terminal sets a tab every eight columns: a tab reaches no terminal, whose stops the page's indent would move.
+// expandedTabs is a line of code with each tab the spaces to the next tab stop, counted from the line's start, the
+// stops as far apart as the page's: a tab reaches no terminal, whose stops the page's indent would move.
 func expandedTabs(line string) string {
 	var builder strings.Builder
 	column := 0
@@ -490,7 +487,7 @@ func expandedTabs(line string) string {
 			column++
 			continue
 		}
-		stop := tabStopWidth - column%tabStopWidth
+		stop := look.TabStop - column%look.TabStop
 		builder.WriteString(strings.Repeat(space, stop))
 		column += stop
 	}

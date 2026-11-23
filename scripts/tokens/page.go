@@ -91,14 +91,16 @@ type typeToken struct {
 	Weight *wholeNumber `yaml:"weight"`
 }
 
-// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, and how long it is,
-// in rem, in the face's cells or as a share of its text's size, in one of them alone.
+// lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, how long it is, in
+// rem, in the face's cells or as a share of its text's size, in one of them alone, and whether a terminal lays out by
+// it too, in cells.
 type lengthToken struct {
 	Name      string       `yaml:"name"`
 	About     string       `yaml:"about"`
 	Rem       *remSize     `yaml:"rem"`
 	Cells     *wholeNumber `yaml:"cells"`
 	TextShare *remSize     `yaml:"em"`
+	Terminal  bool         `yaml:"terminal"`
 }
 
 // layerToken is a layer of what stands over the page, as the file writes it: its name and what stands on it. Its place
@@ -192,11 +194,13 @@ type readType struct {
 	weight wholeNumber
 }
 
-// readLength is a length read, in rem or in cells.
+// readLength is a length read, in rem or in cells, and the cells a terminal lays out by it in, none where the page
+// alone does.
 type readLength struct {
-	name  string
-	about string
-	value lengthValue
+	name          string
+	about         string
+	value         lengthValue
+	terminalCells cellCount
 }
 
 // lengthValue is a length in one of the units the file writes one in, each written in the stylesheet its own way.
@@ -320,7 +324,8 @@ func readTypeToken(token typeToken, faces []readFace, named map[string]bool) (re
 }
 
 // readLengthToken reads a length, more than nothing long, in rem, in cells or in em: one of them, since a length
-// written in two would leave the stylesheet to guess which the file means.
+// written in two would leave the stylesheet to guess which the file means; and in cells where a terminal lays out by
+// it, since a terminal has no other unit.
 func readLengthToken(token lengthToken, named map[string]bool) (readLength, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
@@ -335,7 +340,10 @@ func readLengthToken(token lengthToken, named map[string]bool) (readLength, erro
 		return readLength{}, fmt.Errorf("%w: %q has %d of %s, %s and %s, where it takes one",
 			errTokens, token.Name, written, remKey, cellsKey, textShareKey)
 	}
-	read := readLength{name: token.Name, about: token.About, value: nil}
+	if token.Terminal && token.Cells == nil {
+		return readLength{}, fmt.Errorf("%w: %q is for a terminal, which lays out in cells alone", errTokens, token.Name)
+	}
+	read := readLength{name: token.Name, about: token.About, value: nil, terminalCells: 0}
 	var err error
 	switch {
 	case token.Rem != nil:
@@ -344,6 +352,9 @@ func readLengthToken(token lengthToken, named map[string]bool) (readLength, erro
 		var cells wholeNumber
 		cells, err = counted(token.Cells, token.Name, cellsKey)
 		read.value = cellCount(cells)
+		if token.Terminal {
+			read.terminalCells = cellCount(cells)
+		}
 	default:
 		var share remSize
 		share, err = counted(token.TextShare, token.Name, textShareKey)

@@ -267,7 +267,7 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return drawing.writer.table(typed)
 	case document.CodeBlock:
 		drawing.codes++
-		return copyableCode(typed.Language, drawing.writer.frame.copyWords.CodeOf(typed.Text, drawing.codes))
+		return copyableCode(typed, drawing.writer.frame.copyWords.CodeButton(drawing.codes))
 	case document.List:
 		items := make([]templ.Component, 0, len(typed.Items))
 		for _, item := range typed.Items {

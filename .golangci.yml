@@ -301,6 +301,25 @@ linters:
               desc: a face draws documents; compose makes them from the content
             - pkg: github.com/vrppaul/paranin/internal/release
               desc: a face draws documents; the hosts hand it what it draws from a release
+        # compose alone splits a block of code into its kinds of word, by chroma's lexers (ADR-0003); every other part
+        # reads the kinds, and colouring them is a face's, from the design's tokens
+        chroma-in-compose-alone:
+          files:
+            - "**/internal/**"
+            - "!**/internal/compose/**"
+          deny:
+            - pkg: github.com/alecthomas/chroma
+              desc: compose alone splits code into kinds of word; a face colours the kinds from the tokens
+        compose-lexes-with-chroma:
+          list-mode: lax
+          files:
+            - "**/internal/compose/**"
+          allow:
+            - github.com/alecthomas/chroma/v2$
+            - github.com/alecthomas/chroma/v2/lexers$
+          deny:
+            - pkg: github.com/alecthomas/chroma
+              desc: compose takes chroma's lexers and their token types alone; drawing code is a face's, from the tokens
         routes-read-documents-alone:
           files:
             - "**/internal/routes/**"

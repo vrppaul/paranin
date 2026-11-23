@@ -84,15 +84,20 @@ type CopyWords struct {
 	words content.Words
 }
 
-// Copyable is text the reader copies whole, a command they can run or a post's block of code, with the words of the
-// button that copies it: the word on the button, the word it turns to once it has, its name, which names what it
-// copies, since a page may hold more than one, and what the toast says once it has copied.
-type Copyable struct {
-	Text     string
+// CopyButton is the words of a button that copies text whole, a command or a post's block of code: the word on the
+// button, the word it turns to once it has, its name, which names what it copies, since a page may hold more than
+// one, and what the toast says once it has copied.
+type CopyButton struct {
 	Copy     string
 	Copied   string
 	CopyName string
 	Toast    string
+}
+
+// Copyable is a command the reader can run, with the button that copies it.
+type Copyable struct {
+	Text   string
+	Button CopyButton
 }
 
 // Way is a way a terminal reaches the site: the program it runs, which names it, its command whole to copy, and what
@@ -194,20 +199,21 @@ func projectPages(projects []content.Project) []document.Page {
 // and what the toast says, which both name the command.
 func (copyWords CopyWords) Of(command string) Copyable {
 	return Copyable{
-		Text:     command,
-		Copy:     copyWords.words.Text(content.WordCopy),
-		Copied:   copyWords.words.Text(content.WordCopied),
-		CopyName: copyWords.words.Phrase(content.PhraseCopyCommand, command),
-		Toast:    copyWords.words.Phrase(content.PhraseCopiedCommand, command),
+		Text: command,
+		Button: CopyButton{
+			Copy:     copyWords.words.Text(content.WordCopy),
+			Copied:   copyWords.words.Text(content.WordCopied),
+			CopyName: copyWords.words.Phrase(content.PhraseCopyCommand, command),
+			Toast:    copyWords.words.Phrase(content.PhraseCopiedCommand, command),
+		},
 	}
 }
 
-// CodeOf is a block of code with the words of the button that copies it: the word on it and the word it turns to, as
-// a command's; its name, which names the block by its number among a page's, counted from one, so a screen reader
-// tells two apart; and what the toast says, which names the code by what it is, not by its lines.
-func (copyWords CopyWords) CodeOf(code string, number int) Copyable {
-	return Copyable{
-		Text:     code,
+// CodeButton is the button that copies a block of code: the word on it and the word it turns to, as a command's; its
+// name, which names the block by its number among a page's, counted from one, so a screen reader tells two apart; and
+// what the toast says, which names the code by what it is, not by its lines.
+func (copyWords CopyWords) CodeButton(number int) CopyButton {
+	return CopyButton{
 		Copy:     copyWords.words.Text(content.WordCopy),
 		Copied:   copyWords.words.Text(content.WordCopied),
 		CopyName: copyWords.words.Phrase(content.PhraseCopyCode, strconv.Itoa(number)),

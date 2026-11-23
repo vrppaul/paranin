@@ -19,7 +19,7 @@ import "image/color"
 const (
 `
 
-// What a constant's name is made of: the type's name, then the token's words, which the file parts with an
+// What a colour's constant's name is made of: the type's name, then the token's words, which the file parts with an
 // underscore
 const (
 	constantPrefix = "Colour"
@@ -45,12 +45,13 @@ func source(read tokens) ([]byte, error) {
 	var builder strings.Builder
 	builder.WriteString(sourceOpening)
 	for index, colour := range palette {
-		fmt.Fprintf(&builder, "\t// %s is %s\n", constantName(colour.name), colour.about)
+		name := constantPrefix + constantName(colour.name)
+		fmt.Fprintf(&builder, "\t// %s is %s\n", name, colour.about)
 		if index == 0 {
-			fmt.Fprintf(&builder, "\t%s Colour = iota\n", constantName(colour.name))
+			fmt.Fprintf(&builder, "\t%s Colour = iota\n", name)
 			continue
 		}
-		fmt.Fprintf(&builder, "\t%s\n", constantName(colour.name))
+		fmt.Fprintf(&builder, "\t%s\n", name)
 	}
 	builder.WriteString(")\n\n")
 	builder.WriteString("// Palette is each of the design's colours as each kind of terminal shows it, in a theme.\n")
@@ -71,15 +72,14 @@ func writeTheme(builder *strings.Builder, theme string, palette []worked, inThem
 	for _, colour := range palette {
 		chosen := inTheme(colour.shades)
 		fmt.Fprintf(builder, "\t\t\t%s: {TrueColour: %s, Indexed: %d, Basic: %s},\n",
-			constantName(colour.name), rgbaLiteral(chosen.trueColour), chosen.indexed, basicLiteral(chosen.basic))
+			constantPrefix+constantName(colour.name), rgbaLiteral(chosen.trueColour), chosen.indexed, basicLiteral(chosen.basic))
 	}
 	builder.WriteString("\t\t}\n")
 }
 
-// constantName is the Go name of a token: on_accent is ColourOnAccent.
+// constantName is a token's words as a Go name writes them: on_accent is OnAccent.
 func constantName(token string) string {
 	var builder strings.Builder
-	builder.WriteString(constantPrefix)
 	for word := range strings.SplitSeq(token, wordSeparator) {
 		letters := []rune(word)
 		if len(letters) == 0 {

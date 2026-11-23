@@ -52,7 +52,9 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 		{
 			name: "code fenced with words after its language",
 			body: "```go title=\"main.go\"\nmain()\n```",
-			want: []document.Block{document.CodeBlock{Text: "main()", Language: "go"}},
+			want: []document.Block{document.CodeBlock{Language: "go", Runs: []document.CodeRun{
+				{Kind: document.CodeFunction, Text: "main"}, {Kind: document.CodePunctuation, Text: "()"},
+			}}},
 		},
 		{name: "a paragraph's lines joined", body: "Its text,\nand more.", want: []document.Block{paragraphOf(document.Text{Text: "Its text, and more."})}},
 		{
@@ -102,12 +104,6 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			want: []document.Block{document.Quote{Blocks: []document.Block{paragraphOf(document.Text{Text: "One."}), paragraphOf(document.Text{Text: "Two."})}}},
 		},
 		{
-			name: "code fenced with its language",
-			body: "```go\nfunc main() {\n\tprintln()\n}\n```",
-			want: []document.Block{document.CodeBlock{Text: "func main() {\n\tprintln()\n}", Language: "go"}},
-		},
-		{name: "code indented", body: "    ls -la\n    ls", want: []document.Block{document.CodeBlock{Text: "ls -la\nls", Language: ""}}},
-		{
 			name: "a pause between paragraphs",
 			body: "Before.\n\n***\n\nAfter.",
 			want: []document.Block{paragraphOf(document.Text{Text: "Before."}), document.Pause{}, paragraphOf(document.Text{Text: "After."})},
@@ -146,6 +142,233 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	}
 }
 
+// A post's code is split into runs of the kinds of word a reader of code tells apart, by the language its author
+// names in any case, each run the longest of its kind, so a face colours each kind; code in a language compose lexes
+// none of, or in none, stays one plain run, its text whole.
+func TestCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want document.CodeBlock
+	}{
+		{
+			name: "a Go function",
+			body: "```go\nfunc twice(page string) int {\n\treturn len(page) * 2 // twice\n}\n```",
+			want: document.CodeBlock{Language: "go", Runs: []document.CodeRun{
+				{Kind: document.CodeKeyword, Text: "func"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeFunction, Text: "twice"},
+				{Kind: document.CodePunctuation, Text: "("},
+				{Kind: document.CodePlain, Text: "page "},
+				{Kind: document.CodeType, Text: "string"},
+				{Kind: document.CodePunctuation, Text: ")"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeType, Text: "int"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodePunctuation, Text: "{"},
+				{Kind: document.CodePlain, Text: "\n\t"},
+				{Kind: document.CodeKeyword, Text: "return"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeBuiltin, Text: "len"},
+				{Kind: document.CodePunctuation, Text: "("},
+				{Kind: document.CodePlain, Text: "page"},
+				{Kind: document.CodePunctuation, Text: ")"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeOperator, Text: "*"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "2"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeComment, Text: "// twice"},
+				{Kind: document.CodePlain, Text: "\n"},
+				{Kind: document.CodePunctuation, Text: "}"},
+			}},
+		},
+		{
+			name: "a Go call of a string and a constant",
+			body: "```go\nfmt.Println(\"twice\", true)\n```",
+			want: document.CodeBlock{Language: "go", Runs: []document.CodeRun{
+				{Kind: document.CodePlain, Text: "fmt"},
+				{Kind: document.CodePunctuation, Text: "."},
+				{Kind: document.CodeFunction, Text: "Println"},
+				{Kind: document.CodePunctuation, Text: "("},
+				{Kind: document.CodeString, Text: `"twice"`},
+				{Kind: document.CodePunctuation, Text: ","},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "true"},
+				{Kind: document.CodePunctuation, Text: ")"},
+			}},
+		},
+		{
+			name: "a shell's line",
+			body: "```sh\nPAGER=less man \"$HOME/notes\"\n```",
+			want: document.CodeBlock{Language: "sh", Runs: []document.CodeRun{
+				{Kind: document.CodeVariable, Text: "PAGER"},
+				{Kind: document.CodeOperator, Text: "="},
+				{Kind: document.CodePlain, Text: "less man "},
+				{Kind: document.CodeString, Text: `"`},
+				{Kind: document.CodeVariable, Text: "$HOME"},
+				{Kind: document.CodeString, Text: `/notes"`},
+			}},
+		},
+		{
+			name: "YAML",
+			body: "```yaml\ntitle: Slowly\ncount: 2 # read twice\nread: 2026-11-10\n```",
+			want: document.CodeBlock{Language: "yaml", Runs: []document.CodeRun{
+				{Kind: document.CodeFunction, Text: "title"},
+				{Kind: document.CodePunctuation, Text: ":"},
+				{Kind: document.CodePlain, Text: " Slowly\n"},
+				{Kind: document.CodeFunction, Text: "count"},
+				{Kind: document.CodePunctuation, Text: ":"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "2"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeComment, Text: "# read twice"},
+				{Kind: document.CodePlain, Text: "\n"},
+				{Kind: document.CodeFunction, Text: "read"},
+				{Kind: document.CodePunctuation, Text: ":"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeString, Text: "2026-11-10"},
+			}},
+		},
+		{
+			name: "a Python class, its operators written as words plain",
+			body: "```python\nclass Page:\n    read = 2 in pages and None\n```",
+			want: document.CodeBlock{Language: "python", Runs: []document.CodeRun{
+				{Kind: document.CodeKeyword, Text: "class"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeType, Text: "Page"},
+				{Kind: document.CodePunctuation, Text: ":"},
+				{Kind: document.CodePlain, Text: "\n    read "},
+				{Kind: document.CodeOperator, Text: "="},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "2"},
+				{Kind: document.CodePlain, Text: " in pages and "},
+				{Kind: document.CodeNumber, Text: "None"},
+			}},
+		},
+		{
+			name: "a Rust constant",
+			body: "```Rust\nconst MAX: u32 = 2;\n```",
+			want: document.CodeBlock{Language: "Rust", Runs: []document.CodeRun{
+				{Kind: document.CodeKeyword, Text: "const"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "MAX"},
+				{Kind: document.CodePlain, Text: ": "},
+				{Kind: document.CodeType, Text: "u32"},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeOperator, Text: "="},
+				{Kind: document.CodePlain, Text: " "},
+				{Kind: document.CodeNumber, Text: "2"},
+				{Kind: document.CodePunctuation, Text: ";"},
+			}},
+		},
+		{
+			name: "a language the highlighter does not know",
+			body: "```klingon\nqaStaH nuq \"'e'\"\n```",
+			want: document.CodeBlock{Language: "klingon", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: `qaStaH nuq "'e'"`}}},
+		},
+		{
+			name: "a language the highlighter knows and compose lexes none of",
+			body: "```ruby\nPAGES = 2\n```",
+			want: document.CodeBlock{Language: "ruby", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "PAGES = 2"}}},
+		},
+		{
+			name: "code indented, in no language",
+			body: "    ls -la\n    ls",
+			want: document.CodeBlock{Language: "", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "ls -la\nls"}}},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
+			want := []document.Block{testCase.want}
+			if got := postNamed(test, Posts(snapshot), samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
+				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, want)
+			}
+		})
+	}
+}
+
+// In every language compose lexes, a post's code is read into more than one kind of word and its runs join to its
+// text whole, a letter past ASCII among it, no line end added or changed, since a reader copies the text and the text
+// faces write it; and a case stands for every language lexedLanguages names, so a language added is held too.
+func TestCodeRunsJoinToTheCodesTextWhole(test *testing.T) {
+	cases := []struct {
+		language string
+		code     string
+	}{
+		{language: "go", code: `x := "é"`},
+		{language: "sh", code: `echo "$HOME" é`},
+		{language: "bash", code: `echo "$HOME" é`},
+		{language: "shell", code: `echo "$HOME" é`},
+		{language: "console", code: "$ echo \"$HOME\"\n/home/é"},
+		{language: "shell-session", code: "$ echo \"$HOME\"\n/home/é"},
+		{language: "yaml", code: "title: é # read"},
+		{language: "yml", code: "title: é # read"},
+		{language: "json", code: `{"title": "é"}`},
+		{language: "toml", code: `title = "é"`},
+		{language: "python", code: `def read(): return "é"`},
+		{language: "py", code: `def read(): return "é"`},
+		{language: "rust", code: `fn main() { let title = "é"; }`},
+		{language: "rs", code: `fn main() { let title = "é"; }`},
+		{language: "typescript", code: `const title: string = "é"`},
+		{language: "ts", code: `const title: string = "é"`},
+		{language: "javascript", code: `const title = "é"`},
+		{language: "js", code: `const title = "é"`},
+		{language: "sql", code: "SELECT 'é' FROM pages"},
+		{language: "dockerfile", code: "FROM golang:1.26 # é"},
+		{language: "makefile", code: "all:\n\tgo build é"},
+		{language: "make", code: "all:\n\tgo build é"},
+		{language: "html", code: `<p class="title">é</p>`},
+		{language: "css", code: "p { color: red } /* é */"},
+		{language: "c", code: `int main(void) { return 0; } // é`},
+		{language: "svelte", code: `<script>let title = "é"</script>`},
+	}
+	languages := []string{}
+	for _, testCase := range cases {
+		languages = append(languages, testCase.language)
+		test.Run(testCase.language, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n```"+testCase.language+"\n"+testCase.code+"\n```\n")
+			code := codeOf(test, postNamed(test, Posts(snapshot), samplePostSlug))
+			if got := code.Text(); got != testCase.code || len(kindsOfRuns(code.Runs)) < 2 {
+				test.Errorf("the code %q in %s = runs %+v, joined %q; want them joined to the code, of more than one kind",
+					testCase.code, testCase.language, code.Runs, got)
+			}
+		})
+	}
+	if lexed := lexedNames(); !sameMembers(languages, lexed) {
+		test.Errorf("the languages a case holds = %q, want every language compose lexes, %q", languages, lexed)
+	}
+}
+
+// lexedNames are the names of every language compose lexes, as an author writes one.
+func lexedNames() []string {
+	names := []string{}
+	for _, lexed := range lexedLanguages() {
+		names = append(names, lexed.names...)
+	}
+	return names
+}
+
+// codeOf is the one block of a post whose body is a block of code.
+func codeOf(test *testing.T, post document.Document) document.CodeBlock {
+	test.Helper()
+	code, isCode := post.Blocks[0].(document.CodeBlock)
+	if len(post.Blocks) != 1 || !isCode {
+		test.Fatalf("the post's blocks = %+v, want one block of code", post.Blocks)
+	}
+	return code
+}
+
+// kindsOfRuns are the kinds runs of code hold, each once.
+func kindsOfRuns(runs []document.CodeRun) map[document.CodeKind]bool {
+	kinds := map[document.CodeKind]bool{}
+	for _, run := range runs {
+		kinds[run.Kind] = true
+	}
+	return kinds
+}
+
 // Every word a post writes reaches its document as a phrase of its own, wherever it stands: a face that shows every
 // phrase shows the whole post.
 func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
@@ -162,7 +385,7 @@ func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
 		{name: "strong words in a cell", want: "Most"},
 		{name: "a list nested in an item", want: "in ink"},
 		{name: "a quote's second paragraph", want: "Twice, with a pen."},
-		{name: "code", want: `fmt.Println("slowly")`},
+		{name: "code", want: `less "$HOME/notes"`},
 		{name: "a link's words", want: "the reader's notes"},
 		{name: "a note's words", want: "A soft one, which rubs out."},
 	}
@@ -222,14 +445,14 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 			}
 		})
 	}
-	if !sameKinds(kinds, content.PostKinds()) {
+	if !sameMembers(kinds, content.PostKinds()) {
 		test.Errorf("the kinds a case holds = %v, want every kind a post may hold, %v", kinds, content.PostKinds())
 	}
 }
 
-// sameKinds is whether two lists of kinds name the same kinds, whatever their order.
-func sameKinds(first, second []ast.NodeKind) bool {
-	return len(first) == len(second) && !slices.ContainsFunc(first, func(kind ast.NodeKind) bool { return !slices.Contains(second, kind) })
+// sameMembers is whether two lists name the same members, whatever their order.
+func sameMembers[Member comparable](first, second []Member) bool {
+	return len(first) == len(second) && !slices.ContainsFunc(first, func(member Member) bool { return !slices.Contains(second, member) })
 }
 
 // kindsOf are the kinds of a tree's nodes, the root's first and then its children's, each in turn.

@@ -29,7 +29,13 @@ WHAT A READER KEEPS
               3. open the file
               4. read it with less
 
-              fmt.Println("slowly")
+              // slowly reads a page twice, aloud
+              func slowly(page string) int {
+                  fmt.Println("slowly", page)
+                  return len(page) * 2
+              }
+
+              less "$HOME/notes"
 
               See the reader's notes, or write to mira@example.test.[1]
 

@@ -4,6 +4,8 @@
 //   - internal/look/palette.go, for the TUI: each colour becomes a constant of look.Colour and a shade in each theme
 //     for each kind of terminal, its value whole, the nearest of xterm's 256, and the one of sixteen the file names;
 //     a blend is worked out into a colour of its own;
+//   - internal/look/cells.go, for the faces drawn in a terminal: each length a terminal lays out by too, a constant of
+//     its cells;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
 //     reads: each mix of two colours, worked out in each theme, each face, each text style as its size, its line's
@@ -46,6 +48,7 @@ const (
 	usage          = "usage: go run ./scripts/tokens [-write]"
 	tokensPath     = "design/tokens.yaml"
 	palettePath    = "internal/look/palette.go"
+	cellsPath      = "internal/look/cells.go"
 	stylesheetPath = "web/src/tokens/tokens.css"
 	timesPath      = "web/src/tokens/times.ts"
 	// a generated file may be read by anyone, as the rest of the tree
@@ -118,8 +121,13 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 	if err != nil {
 		return nil, err
 	}
+	cells, err := cellsSource(read)
+	if err != nil {
+		return nil, err
+	}
 	return []generatedFile{
 		{path: palettePath, body: palette},
+		{path: cellsPath, body: cells},
 		{path: stylesheetPath, body: stylesheet(read)},
 		{path: timesPath, body: timesScript(read)},
 	}, nil

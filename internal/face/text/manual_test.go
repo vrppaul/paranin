@@ -66,16 +66,16 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 	}
 }
 
-// A tab in code reaches no terminal: it stands as the spaces to its next stop, eight columns apart from the code's
-// own start, so the code lines up as its author's editor showed it, whatever the page's indent.
+// A tab in code reaches no terminal: it stands as the spaces to its next stop, four columns apart from the code's
+// own start, as on the page, so the code lines up as its author's editor showed it, whatever the page's indent.
 func TestATabInCodeStandsAsTheSpacesToItsStop(test *testing.T) {
 	composed := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil),
-		Blocks: []document.Block{document.CodeBlock{Text: "if x {\n\treturn\n}\nab\tc", Language: "go"}},
+		Blocks: []document.Block{document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "if x {\n\treturn\n}\nab\tc"}}}},
 	}
 	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
 	indent := strings.Repeat(" ", sectionIndent)
-	for _, want := range []string{indent + "        return\n", indent + "ab      c\n"} {
+	for _, want := range []string{indent + "    return\n", indent + "ab  c\n"} {
 		if !strings.Contains(got, want) || strings.Contains(got, "\t") {
 			test.Errorf("Manual = %q, want %q and no tab", got, want)
 		}

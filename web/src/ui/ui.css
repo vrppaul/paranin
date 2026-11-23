@@ -1397,13 +1397,53 @@ a.session:hover {
 }
 
 /* text on lines of its own (DESIGN.md, Code): on the ground a shade below the page, scrolling sideways inside itself,
- * never wrapping */
+ * never wrapping, a tab's stops as an editor sets them */
 .code-block {
   padding: var(--row-half) var(--cell-2);
   overflow-x: auto;
   border-radius: var(--radius);
   background: var(--sunk);
   scrollbar-width: thin;
+  tab-size: var(--tab-stop);
+}
+
+/* each kind of word in code in its own colour (DESIGN.md, Article); a comment and punctuation faint, what a reader may
+ * pass over */
+.code-keyword {
+  color: var(--code-keyword);
+}
+
+.code-string {
+  color: var(--code-string);
+}
+
+.code-number {
+  color: var(--code-number);
+}
+
+.code-function {
+  color: var(--code-function);
+}
+
+.code-type {
+  color: var(--code-type);
+}
+
+.code-builtin {
+  color: var(--code-builtin);
+}
+
+.code-operator {
+  color: var(--code-operator);
+}
+
+.code-variable {
+  color: var(--code-variable);
+}
+
+.code-comment,
+.code-punctuation {
+  color: var(--faint);
 }
 
 /* what a page opens with, its title in block letters first, each part a row from the next: the page of an address of

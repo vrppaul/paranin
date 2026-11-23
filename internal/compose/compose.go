@@ -240,7 +240,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 	details = append(details, factList(project.Facts)...)
 	blocks := []document.Block{document.Facts{Kind: document.FactsDetails, List: append(details, installFacts(project, words)...)}}
 	if project.Recording != "" {
-		blocks = append(blocks, document.CodeBlock{Text: project.Recording, Language: ""})
+		blocks = append(blocks, codeBlock(project.Recording, noLanguage))
 	}
 	for _, section := range project.Sections {
 		paragraphs := make([]document.Block, 0, len(section.Paragraphs))

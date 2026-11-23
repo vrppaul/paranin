@@ -304,7 +304,7 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 	case document.Table:
 		return layout.table(typed, indent)
 	case document.CodeBlock:
-		return codeLines(typed.Text, indent+nestIndent)
+		return codeLines(typed.Text(), indent+nestIndent)
 	case document.Facts:
 		return layout.factBlock(typed.List, indent)
 	case document.Entry:

@@ -11,7 +11,8 @@
 #
 # The mixes, the faces, the text styles, the lengths, the times and the layers after the colours are the page's alone,
 # since a terminal has a face, a size and a grid of its own: each becomes custom properties of tokens.css and nothing
-# of internal/look.
+# of internal/look, but a length in cells marked `terminal`, which a terminal lays out by too, and internal/look
+# carries as a number of cells.
 # A mix is a colour of the file moved a share toward another in each theme, worked out as a blend is, and where it
 # must read, its least contrast is held as a colour's. A face is its families by name, in the order a browser tries
 # them, and the files of the first, which the site serves: an upright one for each weight a text style drawn in it is
@@ -124,6 +125,58 @@ colours:
     light: "#1e66f5"
     dark: "#8aadf4"
     basic: 4
+  # The kinds of word in code, each in the hue Catppuccin's own style guide gives it. In Latte each hue is darkened
+  # along OKLCH lightness, its hue and chroma kept, just enough to read as small text on sunk, the code block's ground.
+  # A comment and punctuation are faint, what a reader may pass over; every other word the text's colour
+  - name: code_keyword
+    about: a word of the language itself in code, as func and return
+    light: "#8738ee"
+    dark: "#c6a0f6"
+    basic: 5
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_string
+    about: text written into code, in its quotes
+    light: "#0e7a00"
+    dark: "#a6da95"
+    basic: 2
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_number
+    about: a number in code, or a constant the language names, as true and nil
+    # teal, where the guide has peach, the accent, which is never small text
+    light: "#00757c"
+    dark: "#8bd5ca"
+    basic: 6
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_function
+    about: a function's name in code, and a key of data, as YAML's
+    light: "#155dec"
+    dark: "#8aadf4"
+    basic: 4
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_type
+    about: the name of a type in code, as int and string
+    light: "#a15500"
+    dark: "#eed49f"
+    basic: 3
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_builtin
+    about: a function a language comes with, as len
+    light: "#d10d38"
+    dark: "#ed8796"
+    basic: 1
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_operator
+    about: a sign in code that works on values, as * and :=
+    light: "#006eab"
+    dark: "#91d7e3"
+    basic: 14
+    least_contrast: {ratio: 4.5, over: [sunk]}
+  - name: code_variable
+    about: a variable a language marks as one, as a shell's $HOME
+    light: "#c9253c"
+    dark: "#ee99a0"
+    basic: 9
+    least_contrast: {ratio: 4.5, over: [sunk]}
 
 blends:
   - name: tint
@@ -334,6 +387,10 @@ lengths:
   - name: code_in_words
     about: code among an article's words, a share of their size, since a mono face looks larger than theirs at one size
     em: 0.9375
+  - name: tab_stop
+    about: how far apart a tab's stops stand in code, as an editor sets them, not a browser's or a terminal's eight
+    cells: 4
+    terminal: true
   - name: cross
     about: how big the square of the cross at each corner of the first screen is
     rem: 0.8125

@@ -37,6 +37,22 @@
   --warned: light-dark(#df8e1d, #eed49f);
   /* a bar as long as the time a skill was used, drawn to scale on the list of skills */
   --time-bar: light-dark(#1e66f5, #8aadf4);
+  /* a word of the language itself in code, as func and return */
+  --code-keyword: light-dark(#8738ee, #c6a0f6);
+  /* text written into code, in its quotes */
+  --code-string: light-dark(#0e7a00, #a6da95);
+  /* a number in code, or a constant the language names, as true and nil */
+  --code-number: light-dark(#00757c, #8bd5ca);
+  /* a function's name in code, and a key of data, as YAML's */
+  --code-function: light-dark(#155dec, #8aadf4);
+  /* the name of a type in code, as int and string */
+  --code-type: light-dark(#a15500, #eed49f);
+  /* a function a language comes with, as len */
+  --code-builtin: light-dark(#d10d38, #ed8796);
+  /* a sign in code that works on values, as * and := */
+  --code-operator: light-dark(#006eab, #91d7e3);
+  /* a variable a language marks as one, as a shell's $HOME */
+  --code-variable: light-dark(#c9253c, #ee99a0);
   /* a result worth seeing first, the accent laid over the page */
   --tint: light-dark(#fe640b29, #f5a97f38);
   /* the frame of a pane that leads nowhere, the quiet rule at half its strength, so it reads as off */
@@ -188,6 +204,8 @@
   --title-text-measure: 22ch;
   /* code among an article's words, a share of their size, since a mono face looks larger than theirs at one size */
   --code-in-words: 0.9375em;
+  /* how far apart a tab's stops stand in code, as an editor sets them, not a browser's or a terminal's eight */
+  --tab-stop: 4ch;
   /* how big the square of the cross at each corner of the first screen is */
   --cross: 0.8125rem;
   /* how thick a role's bar is in the phone's career list */

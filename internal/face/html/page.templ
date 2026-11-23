@@ -360,7 +360,7 @@ templ command(command compose.Copyable) {
 	<div class="command" data-part={ commandPart }>
 		<span class="command-prompt" aria-hidden="true">{ look.PromptMark }</span>
 		<code data-part={ commandWordsPart }>{ command.Text }</code>
-		<button type="button" class="command-copy" data-part={ copyPart } aria-label={ command.CopyName } data-copied={ command.Copied } data-toast={ command.Toast } hidden>{ command.Copy }</button>
+		<button type="button" class="command-copy" data-part={ copyPart } aria-label={ command.Button.CopyName } data-copied={ command.Button.Copied } data-toast={ command.Button.Toast } hidden>{ command.Button.Copy }</button>
 	</div>
 }
 
@@ -497,8 +497,22 @@ templ (writer PageWriter) table(table document.Table) {
 }
 
 // codeBlock is text shown as it is, line for line, scrolling sideways rather than wrapping (DESIGN.md, Code).
-templ codeBlock(text string) {
-	<pre class="code-block">{ text }</pre>
+templ codeBlock(runs []document.CodeRun) {
+	<pre class="code-block">
+		@codeRuns(runs)
+	</pre>
+}
+
+// codeRuns are code's runs as they are, each of a kind the stylesheet colours in a span its class names, the rest as
+// text: no space stands between two, since each run is drawn through a template of its own.
+templ codeRuns(runs []document.CodeRun) {
+	for _, run := range runs {
+		if class, coloured := codeClass(run.Kind); coloured {
+			<span class={ class }>{ run.Text }</span>
+		} else {
+			@text(run.Text)
+		}
+	}
 }
 
 // facts are labels and their values, each value as factValue draws it.

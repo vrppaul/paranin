@@ -43,14 +43,14 @@ func (clashes AddressClashes) Error() string {
 }
 
 // SharedAddresses are the addresses more than one page of a snapshot takes, as AddressClashes; none where every page
-// has addresses of its own. It reads the pages compose makes through the addresses routes writes, so a tab of the
-// résumé titled as the blog, or a post slugged as its list by series, is found as any other clash.
+// has addresses of its own. It reads the heads of the pages compose makes through the addresses routes writes, so a
+// tab of the résumé titled as the blog, or a post slugged as its list by series, is found as any other clash.
 func SharedAddresses(snapshot *content.Snapshot) error {
 	titlesAt := map[string][]string{}
-	for _, served := range servedPages(snapshot) {
+	for _, head := range servedHeads(snapshot) {
 		for _, format := range servedFormats() {
-			if path := routes.Path(served.Head.Page, format); path != "" {
-				titlesAt[path] = append(titlesAt[path], document.PlainText(served.Head.Title))
+			if path := routes.Path(head.Page, format); path != "" {
+				titlesAt[path] = append(titlesAt[path], document.PlainText(head.Title))
 			}
 		}
 	}
@@ -66,14 +66,18 @@ func SharedAddresses(snapshot *content.Snapshot) error {
 	return clashes
 }
 
-// servedPages are every page a snapshot's site serves: the index, the résumé and each project's page with each of their
-// tabs alone, each post, and the blog's list in each grouping.
-func servedPages(snapshot *content.Snapshot) []document.Document {
+// servedHeads are the heads of every page a snapshot's site serves: the index, the résumé and each project's page with
+// each of their tabs alone, the blog's list in each grouping, and each post, whose body a head needs none of.
+func servedHeads(snapshot *content.Snapshot) []document.Head {
 	pages := []document.Document{Index(snapshot)}
 	for _, page := range Documents(snapshot) {
 		pages = append(append(pages, page), TabDocuments(page)...)
 	}
-	return slices.Concat(pages, Posts(snapshot), Lists(snapshot))
+	heads := []document.Head{}
+	for _, page := range append(pages, Lists(snapshot)...) {
+		heads = append(heads, page.Head)
+	}
+	return append(heads, postHeads(snapshot)...)
 }
 
 // servedFormats are the formats a page is served in, each at an address of its own.

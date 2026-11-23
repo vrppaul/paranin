@@ -77,6 +77,10 @@ lengths:
   - name: cell
     about: the grid's one cell
     cells: 1
+  - name: tab_stop
+    about: how far apart a tab's stops stand
+    cells: 4
+    terminal: true
   - name: code_in_words
     about: code among words, a share of their size
     em: 0.9375
@@ -163,6 +167,35 @@ func TestEachColourIsACustomPropertyOfBothThemes(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			if !strings.Contains(written, testCase.want) {
 				test.Errorf("the stylesheet = %q, want it to hold %q", written, testCase.want)
+			}
+		})
+	}
+}
+
+// A length a terminal lays out by as well as the page reaches the faces' Go as a number of cells, under what it is
+// for; a length of the page alone reaches none.
+func TestALengthOfTheTerminalsIsAConstantOfCells(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	written, err := cellsSource(read)
+	if err != nil {
+		test.Fatalf("cellsSource(fixture) = %v, want no fault", err)
+	}
+	cases := []struct {
+		name string
+		want string
+		held bool
+	}{
+		{name: "the length in cells", want: "TabStop = 4", held: true},
+		{name: "what it is for", want: "// TabStop is how far apart a tab's stops stand", held: true},
+		{name: "a length of the page alone", want: "Cell =", held: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if held := strings.Contains(string(written), testCase.want); held != testCase.held {
+				test.Errorf("the Go = %q, want it to hold %q: %t", written, testCase.want, testCase.held)
 			}
 		})
 	}
@@ -375,6 +408,7 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a length of no share of its text", original: "em: 0.9375", replacement: "em: 0", want: `"code_in_words" has the em 0`},
 		{name: "a mix under its least contrast", original: "    share: 0.2\n", replacement: "    share: 0.2\n    least_contrast: {ratio: 21, over: [background]}\n", want: `"soft" reads`},
 		{name: "a length of no cells", original: "cells: 1", replacement: "cells: 0", want: `"cell" has the cells 0`},
+		{name: "a length in rem a terminal lays out by", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    terminal: true\n", want: `"row" is for a terminal, which lays out in cells alone`},
 		{name: "a length of part of a cell", original: "cells: 1", replacement: "cells: 1.5", want: `"1.5" is no whole number`},
 		{name: "a length named as a colour is", original: "name: row", replacement: "name: text", want: `"text" is named twice`},
 		{name: "a length named as the face's property is", original: "name: row", replacement: "name: face", want: `"face" is named twice`},
@@ -578,6 +612,7 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 		{name: "the files the tokens make", path: palettePath, change: func(generated string) string { return generated }, want: succeeded},
 		{name: "a palette edited by hand", path: palettePath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "a stylesheet edited by hand", path: stylesheetPath, change: func(generated string) string { return generated + "\n/* edited */\n" }, want: failed},
+		{name: "the terminal's lengths edited by hand", path: cellsPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

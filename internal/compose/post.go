@@ -31,12 +31,31 @@ const (
 func Posts(snapshot *content.Snapshot) []document.Document {
 	read := blogOf(snapshot)
 	documents := []document.Document{}
-	for _, post := range snapshot.Posts {
-		if served(post.Status) {
-			documents = append(documents, postDocument(post, read, snapshot.Words))
-		}
+	for _, post := range servedPosts(snapshot) {
+		documents = append(documents, postDocument(post, read, snapshot.Words))
 	}
 	return documents
+}
+
+// postHeads are the heads of the posts Posts makes, their bodies left unread: where the site serves each post.
+func postHeads(snapshot *content.Snapshot) []document.Head {
+	read := blogOf(snapshot)
+	heads := []document.Head{}
+	for _, post := range servedPosts(snapshot) {
+		heads = append(heads, postHead(post, read, snapshot.Words))
+	}
+	return heads
+}
+
+// servedPosts are a snapshot's posts its site serves, in the snapshot's order.
+func servedPosts(snapshot *content.Snapshot) []content.Post {
+	posts := []content.Post{}
+	for _, post := range snapshot.Posts {
+		if served(post.Status) {
+			posts = append(posts, post)
+		}
+	}
+	return posts
 }
 
 // served is whether a post of a status is served at its address. exhaustive holds the switch to every status.
@@ -149,9 +168,9 @@ func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 	case *ast.Paragraph, *ast.TextBlock:
 		return document.Paragraph{Spans: reader.spans(node)}, true
 	case *ast.FencedCodeBlock:
-		return document.CodeBlock{Text: reader.code(typed.Lines()), Language: reader.body.Language(typed)}, true
+		return codeBlock(reader.code(typed.Lines()), reader.body.Language(typed)), true
 	case *ast.CodeBlock:
-		return document.CodeBlock{Text: reader.code(typed.Lines()), Language: ""}, true
+		return codeBlock(reader.code(typed.Lines()), noLanguage), true
 	case *ast.Blockquote:
 		return document.Quote{Blocks: reader.containedBlocks(node)}, true
 	case *ast.ThematicBreak:

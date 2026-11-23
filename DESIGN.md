@@ -71,6 +71,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `rail`, `column`, `aside` | `design/tokens.yaml` | a post's Outline, its text and its sources beside it |
 | `title_text_measure` | `design/tokens.yaml` | the longest line of a title set in text |
 | `code_in_words` | `design/tokens.yaml` | code among an article's words, a share of their size |
+| `tab_stop` | `design/tokens.yaml` | how far apart a tab's stops stand in code |
 | `group_name`, `group_name_mid`, `tile` | `design/tokens.yaml` | the blog's list: the groups' names, and below `wide`; the least width of a tile |
 
 ## Sizes
@@ -109,6 +110,10 @@ other size: a control that seems to need one is the wrong control.
   older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words. In Latte
   `host` and `error` are Catppuccin's mauve and red a shade darker, so each reads as small text at the 4.5:1 WCAG asks,
   over the grounds `design/tokens.yaml` names.
+- Code colours each kind of word in the hue Catppuccin's own style guide gives it, a token for each (`code_keyword`
+  to `code_variable`), each reading at 4.5:1 on `sunk`, the code block's ground. In Latte each hue is a shade darker,
+  as `host` and `error` are. Numbers stand in teal where the guide has peach, since `accent` is never small text. A
+  comment and punctuation are `faint`.
 - Borders: `quiet` for rules between parts, `muted` for a control's border and for a pane's or a tile's frame, `edge`
   for the corner crosses and for what lies over the page, a tooltip, a toast and a pick's window. A pane or a tile
   that leads nowhere is framed in `quiet` at half its strength (`quiet_half`).
@@ -402,7 +407,8 @@ Whatever scrolls inside itself, a table, a Command, a code block, shows a thin s
 ### Code
 
 In a line, Code on a `sunk` ground; on lines of its own, a block padded `row_half` and `cell_2`, `radius`, scrolling
-sideways inside itself, never wrapping.
+sideways inside itself, never wrapping, a tab's stops `tab_stop` apart, as an editor sets them, not the browser's
+eight cells; the manual writes a tab as the spaces to the same stops.
 
 ### Contents and PageHead
 
@@ -522,8 +528,10 @@ A post's body, in the text's column.
 - Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
 - Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
   at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by
-  the button alone, so a reader selects the lines. Its colours come from
-  the tokens, chosen with the code blocks; never `accent` as small text.
+  the button alone, so a reader selects the lines. Each kind of word in its colour (Colour): a keyword mauve, a
+  string green, a number or a constant teal, a function's name and a YAML key blue, a type yellow, a builtin red, an
+  operator sky, a shell's variable maroon, a comment and punctuation `faint`, every other word `text`. Code in a
+  language the site does not colour, or in none, stands in `text`.
 - A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
   hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.
 - A widget: a window as tmux draws a popup, a `muted` hairline on the page's ground, `radius`; its name bold, `small`,

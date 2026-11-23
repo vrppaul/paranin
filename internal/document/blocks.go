@@ -1,5 +1,7 @@
 package document
 
+import "strings"
+
 // Block is one kind of block of a document.
 //
 //sumtype:decl
@@ -50,11 +52,57 @@ const (
 	CellDuration
 )
 
-// CodeBlock is text shown as it is, line for line: a terminal's recording, a post's code.
+// CodeBlock is text shown as it is, line for line: a terminal's recording, a post's code. Its runs hold the text whole
+// by kind of word, so a face colours a kind and never reads a language.
 type CodeBlock struct {
-	Text string
 	// Language is what the code is written in, as its author names it: "go"; none where the author names none
 	Language string
+	Runs     []CodeRun
+}
+
+// CodeRun is a run of a code block's text, every word of it one kind.
+type CodeRun struct {
+	Kind CodeKind
+	Text string
+}
+
+// CodeKind is the kind of word a run of code holds, as a reader of code tells words apart.
+type CodeKind int
+
+const (
+	// The zero kind names none
+	_ CodeKind = iota
+	// CodePlain is a word of no kind below, a name a program gives among them, and the space between words
+	CodePlain
+	// CodeKeyword is a word of the language itself: func, return
+	CodeKeyword
+	// CodeString is text written into the code, in its quotes
+	CodeString
+	// CodeNumber is a number, or a constant the language names: 2, true, nil
+	CodeNumber
+	// CodeFunction is a function's name, or a key of data, as YAML's, which names what follows it as a function does
+	CodeFunction
+	// CodeType is the name of a type: int, string
+	CodeType
+	// CodeBuiltin is a function the language comes with: len
+	CodeBuiltin
+	// CodeOperator is a sign that works on values: *, :=
+	CodeOperator
+	// CodeVariable is a variable a language marks as one, as a shell's $HOME
+	CodeVariable
+	// CodeComment is words for the reader that the program skips
+	CodeComment
+	// CodePunctuation is a sign that holds the code's parts apart or together: brackets, a comma
+	CodePunctuation
+)
+
+// Text is the code whole, its runs joined: what a reader copies, and what a face that colours nothing writes.
+func (block CodeBlock) Text() string {
+	var builder strings.Builder
+	for _, run := range block.Runs {
+		builder.WriteString(run.Text)
+	}
+	return builder.String()
 }
 
 // List is items one after another, numbered from its start where it is in order: a post's list.

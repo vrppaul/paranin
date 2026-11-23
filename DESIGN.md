@@ -185,9 +185,12 @@ other size: a control that seems to need one is the wrong control.
 
 ## Layout
 
-- Below `wide` (80rem) the brief narrows to `brief_mid` and a section's title stands above its content.
+- From `wide` (80rem) a section's title stands beside its content where it fits at its full size, and over it where
+  it would shrink (Frame and Section). Below `wide` the brief narrows to `brief_mid` and every section's title stands
+  above its content.
 - Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the foot line wraps, the career line
-  becomes a list, a table scrolls inside itself. No page is ever wider than its screen.
+  becomes a list, a skill table folds (Table) and a table that names its columns scrolls inside itself. No page is
+  ever wider than its screen.
 - The two widths are the only ones a media query may hold, in rem, since a custom property cannot stand in one;
   stylelint holds them from the first media query on, and refuses any width until then. A media query's rem is the
   reader's text size too, so a reader who sets larger text gets the narrower layout sooner.
@@ -362,7 +365,7 @@ in a Tooltip over it under the pointer. Without the script it is hidden and the 
 Label and value, two cells apart: the label `muted`, one or two lower-case words as the profile writes them; the value
 in `text`, on the label's baseline. On the first screen the first four the profile lists, its author's choice
 (experience, stack, now, languages); the rest stand in About under the summary (owner, 2026-11-18). On a phone a
-value that is a Command stands under its label across the whole width.
+value that is a Command stands under its label across the whole width, as a Card's install line does at any width.
 
 ### CareerLine
 
@@ -382,7 +385,8 @@ boxed.
 ### Card
 
 A piece of work: its name as a `strong` heading with a link to its page, its language and line in one `muted` row, its
-summary, its facts. An install line is a fact whose value is Code alone; the page draws it as a Command. Cards are
+summary, its facts. An install line is a fact whose value is Code alone; the page draws it as a Command, under its
+label across the card's width, since beside the label a long one outruns the value's column. Cards are
 `row_2` apart with a `quiet` hairline between, never boxed.
 
 ### Table
@@ -390,6 +394,8 @@ summary, its facts. An install line is a fact whose value is Code alone; the pag
 Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a duration `muted`; cells
 `cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A
 post's table may name its columns: the page draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
+On a phone a table that names no columns, a skill group's, folds: each row's last cell, a skill's sources, stands under
+the others across its width, and its first cell may wrap, so it fits rather than scroll.
 Whatever scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
 
 ### Code
@@ -449,9 +455,11 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 - Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
   from its top and foot: only there and round a post's head, which stands as a first screen, and not on a phone, whose
   gutter leaves them no room.
-- A section: its block title in the left column, its content in the right, as wide as an Entry: `when`, `cell_3` and
-  `measure`, the title taking what is left; `row_2` of air above and below it, `row` on a phone. Its blocks stand a
-  row apart, a subsection two. A tab of the résumé stands as a section, its title the page's `h1`.
+- A section: its block title at the left, its content at the right, as wide as an Entry: `when`, `cell_3` and
+  `measure`; a title too wide for the room the content leaves stands over the content in its column at its full size,
+  never shrunk to fit beside it, so the content stands in one column on every tab; `row_2` of air above and below it,
+  `row` on a phone. Its blocks stand a row apart, a subsection two. A tab of the résumé stands as a section, its title
+  the page's `h1`.
 
 ### Tag
 

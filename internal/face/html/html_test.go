@@ -20,7 +20,8 @@ func TestMain(tests *testing.M) {
 
 // The markup of a page is what a browser, a screen reader and a search engine read: the language it names and the
 // title it is called by, a heading's depth, a link's address, a month as a time, a result marked, a command as
-// code, a fact as a term and its description, and the words between the parts of a line. Each page of the fixture
+// code, a fact as a term and its description, a skill table's roles, which its fold as a grid would take from it, and
+// the words between the parts of a line. Each page of the fixture
 // is held to its golden file, named after the page's own address, with a line break between each two tags that
 // meet, so the file reads in a diff.
 func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
@@ -31,6 +32,7 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}{
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, file: "index.html"},
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, file: "experience.html"},
+		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "skills"}, file: "skills.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, file: "p/tidy-tool/why.html"},
 	}

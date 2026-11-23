@@ -1196,25 +1196,39 @@ a.session:hover {
   }
 }
 
-/* a section of the résumé (DESIGN.md, Frame and Section): its block title in the left column, taking what its blocks
- * leave, and its blocks in the right. Two rows above and below each, so two sections stand four rows apart */
+/* a section of the résumé (DESIGN.md, Frame and Section): its blocks at the right, and its block title at its full
+ * size in the room they leave, or, where it does not fit there, wrapped onto a line of its own over them, as wide as
+ * they are, so a title never shrinks and the blocks stand in one column on every tab. Two rows above and below each,
+ * so two sections stand four rows apart */
 .section {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--row) var(--row-3);
   align-items: start;
+  justify-content: flex-end;
   padding-block: var(--row-2);
 }
 
 .section > :is(h1, h2) {
+  flex-grow: 1;
   margin: 0;
 }
 
+/* a title in block letters is a heading that holds a drawing and no words: it takes the body's size, so its cells
+ * are the blocks'. A title the font cannot draw keeps its words' size */
+.section > :has(> .letters) {
+  font-size: inherit;
+}
+
 /* a section's blocks, as wide as the widest of them, an entry: its dates, the gap after them and a line of prose; no
- * wider than the screen leaves them */
+ * wider than the screen leaves them. A title in block letters over them is as wide */
+.blocks,
+.section > :has(> .letters) {
+  max-width: calc(var(--when) + var(--cell-3) + var(--measure));
+}
+
 .blocks {
-  width: calc(var(--when) + var(--cell-3) + var(--measure));
-  max-width: 100%;
+  width: 100%;
 }
 
 /* a heading below a section's title names in the strong style, its level shown by the space before it, never by its
@@ -1299,6 +1313,12 @@ a.session:hover {
   color: var(--muted);
 }
 
+/* an install line, a long command that never wraps, stands under its label across the card's width: beside the
+ * label it outruns the value's column and scrolls inside its chip */
+.card .facts dd:has(> .command) {
+  grid-column: 1 / -1;
+}
+
 /* rows of a few cells (DESIGN.md, Table): the first names the row, bold; cells three cells apart, each row a row and
  * half a row of air, a quiet hairline between two; numbers line up. A cell but the last keeps its words on one line,
  * so a narrow screen scrolls the table inside its part rather than breaking a name */
@@ -1317,8 +1337,10 @@ a.session:hover {
   vertical-align: top;
 }
 
-.table tr + tr td,
-.table thead + tbody td {
+/* the hairline is the row's, which the collapsed borders draw across its cells, so it holds when a phone lays a row
+ * out as a grid (below) */
+.table tr + tr,
+.table thead + tbody > tr:first-child {
   border-top: var(--hairline) solid var(--quiet);
 }
 
@@ -1341,6 +1363,37 @@ a.session:hover {
 /* a duration stands back from the words beside it */
 .table .table-duration {
   color: var(--muted);
+}
+
+/* on a phone a skill table folds (DESIGN.md, Table), so a long name never pushes its sources off the screen. The last
+ * cell's track is flexible, so its words widen no column; the row carries the air, so the last cell hugs the others */
+@media (width < 53.75rem) {
+  .table-headerless {
+    display: grid;
+    grid-template-columns: auto max-content minmax(0, 1fr);
+  }
+
+  .table-headerless :is(tbody, tr) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .table-headerless tr {
+    padding-block: calc(var(--row-half) / 2);
+  }
+
+  .table-headerless td {
+    padding-block: 0;
+  }
+
+  .table-headerless td:first-child {
+    white-space: normal;
+  }
+
+  .table-headerless td:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 /* text on lines of its own (DESIGN.md, Code): on the ground a shade below the page, scrolling sideways inside itself,
@@ -1426,10 +1479,10 @@ a.session:hover {
   margin-top: 0;
 }
 
-/* below the wide screen's width a section's title stands above its blocks */
+/* below the wide screen's width a section's title stands above its blocks, whatever its length */
 @media (width < 80rem) {
   .section {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
   }
 }
 

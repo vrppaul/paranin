@@ -443,11 +443,19 @@ templ (writer PageWriter) paragraph(paragraph document.Paragraph) {
 }
 
 // table is rows of cells (DESIGN.md, Table), under the row that names its columns where it has one, as a post's may,
-// in a part that scrolls sideways where the screen is narrower than the table, so the page never does.
+// in a part that scrolls sideways where the screen is narrower than the table, so the page never does. A table that
+// names no columns is marked, since a phone folds it into a grid, and each of its parts names its role, which a
+// browser drops from a table laid out as a grid.
 templ (writer PageWriter) table(table document.Table) {
+	{{ namesColumns := len(table.Header.Cells) > 0 }}
 	<div class="table-scroll">
-		<table class="table">
-			if len(table.Header.Cells) > 0 {
+		<table
+			class={ "table", templ.KV("table-headerless", !namesColumns) }
+			if !namesColumns {
+				role="table"
+			}
+		>
+			if namesColumns {
 				<thead>
 					<tr>
 						for _, cell := range table.Header.Cells {
@@ -458,11 +466,22 @@ templ (writer PageWriter) table(table document.Table) {
 					</tr>
 				</thead>
 			}
-			<tbody>
+			<tbody
+				if !namesColumns {
+					role="rowgroup"
+				}
+			>
 				for _, row := range table.Rows {
-					<tr>
+					<tr
+						if !namesColumns {
+							role="row"
+						}
+					>
 						for _, cell := range row.Cells {
 							<td
+								if !namesColumns {
+									role="cell"
+								}
 								if setBack(cell.Kind) {
 									class="table-duration"
 								}
@@ -611,8 +630,8 @@ templ knownMonth(start time.Time) {
 	<time datetime={ start.Format(machineMonthLayout) }>{ start.Format(monthLayout) }</time>
 }
 
-// resumeSection is a section of the résumé (DESIGN.md, Frame and Section): its heading, and beside it, or under it on
-// a narrower screen, its blocks.
+// resumeSection is a section of the résumé (DESIGN.md, Frame and Section): its heading, and its blocks beside it, or
+// under it where the two do not fit side by side.
 templ (writer PageWriter) resumeSection(blocks []document.Block, heading templ.Component) {
 	<section class="section">
 		@heading

@@ -12,12 +12,13 @@ import (
 // The number of a series' first part, as a reader counts them
 const firstPart = 1
 
-// blog is what each post's place in the blog is read from, read once from a snapshot: every post by its slug, the
-// posts the lists name, those published, in the order they came out, and each series by the slug of every post it
-// names.
+// blog is what each post's place in the blog and the blog's lists are read from, read once from a snapshot: every
+// post by its slug, the posts the lists name, those published, in the order they came out, every series in their
+// names' order, and each series by the slug of every post it names.
 type blog struct {
 	posts    map[string]content.Post
 	listed   []content.Post
+	series   []content.Series
 	seriesOf map[string]content.Series
 }
 
@@ -29,7 +30,7 @@ type listedPart struct {
 
 // blogOf is the blog of a snapshot's posts and series.
 func blogOf(snapshot *content.Snapshot) blog {
-	read := blog{posts: map[string]content.Post{}, listed: []content.Post{}, seriesOf: map[string]content.Series{}}
+	read := blog{posts: map[string]content.Post{}, listed: []content.Post{}, series: snapshot.Series, seriesOf: map[string]content.Series{}}
 	for _, post := range snapshot.Posts {
 		read.posts[post.Slug] = post
 		if post.Status == content.StatusPublished {

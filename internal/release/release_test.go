@@ -1,9 +1,11 @@
 package release
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
@@ -14,21 +16,24 @@ const (
 	authorName   = "name: Mira Example"
 )
 
-// A site cannot open on a release with a fault in either part, and says each fault: the content's and the build's.
+// A site cannot open on a release with a fault in either part, and says each fault: the content's, among them those the
+// check it is handed finds, and the build's.
 func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 	cases := []struct {
 		name   string
 		change func(test *testing.T, folders folderPaths)
+		check  Check
 		want   string
 	}{
-		{name: "faulty content", change: faultyContent, want: "person.name"},
-		{name: "a faulty build", change: faultyBuild, want: manifestFile},
+		{name: "faulty content", change: faultyContent, check: passes, want: "person.name"},
+		{name: "content its check refuses", change: keepFolders, check: refuses, want: refusal},
+		{name: "a faulty build", change: faultyBuild, check: passes, want: manifestFile},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			folders := fixtureCopies(test)
 			testCase.change(test, folders)
-			if store, err := Open(FoldersAt(folders.content, folders.build)); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
+			if store, err := Open(FoldersAt(folders.content, folders.build), testCase.check); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
 				test.Errorf("Open = %v, %v; want no store and a fault naming %q", store, err, testCase.want)
 			}
 		})
@@ -39,7 +44,7 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 // swapped apart; a good one swaps in the new snapshot.
 func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(FoldersAt(folders.content, folders.build))
+	store, err := Open(FoldersAt(folders.content, folders.build), passes)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -59,7 +64,7 @@ func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 // reload brings the next reader a value of the new one.
 func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(FoldersAt(folders.content, folders.build))
+	store, err := Open(FoldersAt(folders.content, folders.build), passes)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -98,6 +103,24 @@ type folderPaths struct {
 func fixtureCopies(test *testing.T) folderPaths {
 	return folderPaths{content: fixtures.Copy(test, fixtures.ContentFolder(test)), build: fixtures.Copy(test, fixtures.BuildFolder(test))}
 }
+
+// What the check a case hands in says where it refuses the content
+const refusal = "the check refuses it"
+
+// passes is a check that finds no fault.
+func passes(*content.Snapshot) error {
+	return nil
+}
+
+// refuses is a check that finds a fault in any content.
+//
+//wrapper:a case of the table names the check it hands the release
+func refuses(*content.Snapshot) error {
+	return errors.New(refusal)
+}
+
+// keepFolders leaves both fixtures as they are.
+func keepFolders(*testing.T, folderPaths) {}
 
 // faultyContent leaves the author with no name.
 //

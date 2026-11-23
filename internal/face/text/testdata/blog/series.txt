@@ -1,0 +1,24 @@
+BLOG-SERIES(1)                  User Commands                   BLOG-SERIES(1)
+
+NAME
+       blog
+
+DESCRIPTION
+       What the writer reads, and how.
+
+       reading · terminals
+
+READING
+       How a reader keeps what they read.
+       1 of 2 parts out
+
+       Reading slowly                                               2026-11-10
+              Why a page read twice is read once.
+              part 1
+              reading · terminals
+              https://example.test/blog/reading-slowly.txt
+
+       Reading aloud                                                      soon
+              part 2
+
+example.test                                                    BLOG-SERIES(1)

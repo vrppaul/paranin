@@ -171,11 +171,46 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return writer.card(chunks, typed, depth)
 	case document.Contents:
 		return appendChunk(chunks, writer.contents(typed))
+	case document.Posts:
+		chunks = appendLine(appendLine(chunks, writer.spans(typed.Line)), writer.spans(typed.Count))
+		for _, post := range typed.List {
+			chunks = writer.listedPost(chunks, post, depth)
+		}
+		return chunks
 	case document.Checks, document.Skills:
 		// only the hidden pages hold checks and the list of skills, and no host hands them to a text face: a page
 		// served with them would fail TestEveryPhraseReachesEveryFormat
 	}
 	return chunks
+}
+
+// listedPost writes a post of the blog's list as a card is written: under its title, a link to it where it is out;
+// the day it came out, or the word saying it comes, its part and its series in a line; its tags on the next; then its
+// lead.
+func (writer markdownWriter) listedPost(chunks []string, post document.ListedPost, depth int) []string {
+	title, when := post.Title, ""
+	switch typed := post.Readiness.(type) {
+	case document.PostOut:
+		title, when = linkedTo(typed.Page, post.Title), dayText(typed.Published)
+	case document.ComingPart:
+		when = writer.spans(typed.Coming)
+	}
+	chunks = appendChunk(chunks, heading(depth, writer.spans(title)))
+	chunks = appendLine(chunks, joined(dot, when, writer.spans(post.Part), writer.spans(post.Series)))
+	tags := make([]string, 0, len(post.Tags))
+	for _, tag := range post.Tags {
+		tags = append(tags, writer.text(tag))
+	}
+	chunks = appendLine(chunks, joined(dot, tags...))
+	return appendLine(chunks, writer.spans(post.Lead))
+}
+
+// linkedTo are spans as a link to a page, where it is one: a card's title, a listed post's.
+func linkedTo(page document.Page, spans []document.Span) []document.Span {
+	if page.Kind == document.PageNone {
+		return spans
+	}
+	return []document.Span{document.Link{Target: page, Spans: spans}}
 }
 
 // table writes a table under a header as GFM writes one, the posts' own format; one with no header, as a skill
@@ -311,11 +346,7 @@ func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth 
 // card writes a card under its title, a link to its page where it has one; its tag and subtitle in a line, its
 // summary, then its facts.
 func (writer markdownWriter) card(chunks []string, card document.Card, depth int) []string {
-	title := card.Title
-	if card.Page.Kind != document.PageNone {
-		title = []document.Span{document.Link{Target: card.Page, Spans: card.Title}}
-	}
-	chunks = appendChunk(chunks, heading(depth, writer.spans(title)))
+	chunks = appendChunk(chunks, heading(depth, writer.spans(linkedTo(card.Page, card.Title))))
 	chunks = appendLine(chunks, joined(dot, writer.text(card.Tag), writer.spans(card.Subtitle)))
 	chunks = appendLine(chunks, writer.spans(card.Summary))
 	return appendChunk(chunks, writer.facts(card.Facts))

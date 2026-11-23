@@ -15,7 +15,8 @@ import (
 // the blog's session, the labels of a post's facts, what the toast says once a code block is copied, and the words
 // of a post's series and the panes at its foot: where a part stands for the reader, each side's name, what a side
 // with none says, the panes' heading outside a series, the word before where the post is discussed, and the name of
-// its outline.
+// its outline; and the blog's list: the line it opens with, its window in the foot line, the way to it beside a post's
+// other posts, the word before how it groups its posts, its grouping by year, and its group of the posts in no series.
 type Word int
 
 const (
@@ -63,12 +64,20 @@ const (
 	WordOtherPosts
 	WordDiscuss
 	WordContents
+	WordBlogLine
+	WordListWindow
+	WordAllPosts
+	WordBy
+	WordYears
+	WordOutsideSeries
 )
 
 // Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
 // name and what the toast says once it has copied, each with the command; a code block's button's name, with the
 // block's number; and of a series, a part's place in it, with its number and the count of parts, the panes' heading,
-// with the series' title, the pick that lists every part, with their count, and a part's name, with its number. A
+// with the series' title, the pick that lists every part, with their count, and a part's name, with its number; and
+// of the blog's list, how many posts a group holds, one or more, and how many of a series' parts are out, with that
+// count and the count of parts. A
 // catalogue writes each place as phrasePlace, where its language puts the value, the values in the order the site
 // hands them.
 type Phrase int
@@ -83,6 +92,9 @@ const (
 	PhraseOtherParts
 	PhraseAllParts
 	PhrasePart
+	PhraseOnePost
+	PhrasePosts
+	PhrasePartsOut
 )
 
 // How a phrase writes the place of a value
@@ -110,6 +122,9 @@ func phraseForms() map[Phrase]phraseForm {
 		PhraseOtherParts:    {key: "other_parts", values: oneValue},
 		PhraseAllParts:      {key: "all_parts", values: oneValue},
 		PhrasePart:          {key: "part", values: oneValue},
+		PhraseOnePost:       {key: "one_post", values: oneValue},
+		PhrasePosts:         {key: "posts_count", values: oneValue},
+		PhrasePartsOut:      {key: "parts_out", values: twoValues},
 	}
 }
 
@@ -117,48 +132,54 @@ func phraseForms() map[Phrase]phraseForm {
 // every Word, so a word added to the constants has its key here too.
 func wordKeys() map[Word]string {
 	return map[Word]string{
-		WordAbout:        "about",
-		WordGreeting:     "greeting",
-		WordExperience:   "experience",
-		WordProjects:     "projects",
-		WordSkills:       "skills",
-		WordEducation:    "education",
-		WordLanguages:    "languages",
-		WordContact:      "contact",
-		WordMail:         "mail",
-		WordSSH:          "ssh",
-		WordRepository:   "repository",
-		WordInstall:      "install",
-		WordPresent:      "present",
-		WordSide:         "side",
-		WordLearning:     "learning",
-		WordAuthor:       "author",
-		WordResume:       "resume",
-		WordHealth:       "health",
-		WordDarkTheme:    "dark_theme",
-		WordCopy:         "copy",
-		WordCopied:       "copied",
-		WordWriteTo:      "write_to",
-		WordSSHGives:     "ssh_gives",
-		WordReadingGives: "reading_gives",
-		WordBlog:         "blog",
-		WordVersion:      "version",
-		WordTags:         "tags",
-		WordCopiedCode:   "copied_code",
-		WordSeries:       "series",
-		WordReading:      "reading",
-		WordNext:         "next",
-		WordSoon:         "soon",
-		WordPrevious:     "previous",
-		WordOlder:        "older",
-		WordNewer:        "newer",
-		WordFirstPart:    "first_part",
-		WordLastPart:     "last_part",
-		WordFirstPost:    "first_post",
-		WordNewestPost:   "newest_post",
-		WordOtherPosts:   "other_posts",
-		WordDiscuss:      "discuss",
-		WordContents:     "contents",
+		WordAbout:         "about",
+		WordGreeting:      "greeting",
+		WordExperience:    "experience",
+		WordProjects:      "projects",
+		WordSkills:        "skills",
+		WordEducation:     "education",
+		WordLanguages:     "languages",
+		WordContact:       "contact",
+		WordMail:          "mail",
+		WordSSH:           "ssh",
+		WordRepository:    "repository",
+		WordInstall:       "install",
+		WordPresent:       "present",
+		WordSide:          "side",
+		WordLearning:      "learning",
+		WordAuthor:        "author",
+		WordResume:        "resume",
+		WordHealth:        "health",
+		WordDarkTheme:     "dark_theme",
+		WordCopy:          "copy",
+		WordCopied:        "copied",
+		WordWriteTo:       "write_to",
+		WordSSHGives:      "ssh_gives",
+		WordReadingGives:  "reading_gives",
+		WordBlog:          "blog",
+		WordVersion:       "version",
+		WordTags:          "tags",
+		WordCopiedCode:    "copied_code",
+		WordSeries:        "series",
+		WordReading:       "reading",
+		WordNext:          "next",
+		WordSoon:          "soon",
+		WordPrevious:      "previous",
+		WordOlder:         "older",
+		WordNewer:         "newer",
+		WordFirstPart:     "first_part",
+		WordLastPart:      "last_part",
+		WordFirstPost:     "first_post",
+		WordNewestPost:    "newest_post",
+		WordOtherPosts:    "other_posts",
+		WordDiscuss:       "discuss",
+		WordContents:      "contents",
+		WordBlogLine:      "blog_line",
+		WordListWindow:    "list_window",
+		WordAllPosts:      "all_posts",
+		WordBy:            "by",
+		WordYears:         "years",
+		WordOutsideSeries: "outside_series",
 	}
 }
 

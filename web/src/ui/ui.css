@@ -1479,9 +1479,11 @@ a.session:hover {
   grid-column: rail-start / text-end;
 }
 
-/* the title set in text, the page's h1, a few words a line, balanced, in the gradient of the block letters softened
- * toward the text, so it reads apart from a title of blocks; as wide as its words, which the gradient spans */
-.post-title {
+/* a title set in text, a post's, the page's h1, and a group's on the blog's list: a few words a line, balanced, in the
+ * gradient of the block letters softened toward the text, so it reads apart from a title of blocks; as wide as its
+ * words, which the gradient spans */
+.post-title,
+.group-title {
   width: fit-content;
   max-width: var(--title-text-measure);
   margin: 0;
@@ -1886,6 +1888,14 @@ a.pick-row:hover {
   line-height: var(--type-strong-line);
 }
 
+/* beside the blog's other posts, its list: a page, so a link in the small style, not a chip, which would promise a
+ * window */
+.panes-all {
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
 /* two panes side by side, as tmux splits a window */
 .panes {
   display: grid;
@@ -1893,7 +1903,7 @@ a.pick-row:hover {
 }
 
 /* a pane, padded as a dialog, in a muted hairline; the whole of it the link, a shade down under the pointer, its
- * title's underline turning the accent, twice as thick */
+ * title's underline turning the accent, twice as thick. A tile of the blog's list is one too, and adds what differs */
 .pane {
   position: relative;
   display: flex;
@@ -2136,5 +2146,283 @@ a.pane:active .pane-name {
       max-width: none;
       margin: 0;
     }
+  }
+}
+
+/* the blog's list (DESIGN.md, Layout): one grid of two columns, the groups' names and the tiles; the head's letters
+ * stand in the first, what the blog is beside them, and each group takes both columns as its own (subgrid), so its
+ * name stays in sight only while its own tiles scroll, and the next group's name takes its place */
+.blog {
+  display: grid;
+  grid-template-columns: var(--group-name) minmax(0, 1fr);
+  column-gap: var(--row-3);
+  padding-block: var(--row-4);
+}
+
+/* its head (DESIGN.md, BlogHead): the blog's name in block letters in the names' column, its line in the lead's style
+ * beside them, and under it the word before the Switch, the Switch and the tags, on one line that wraps */
+.blog-head {
+  display: contents;
+}
+
+.blog-head h1 {
+  margin: 0;
+}
+
+.blog-about {
+  display: grid;
+  align-content: start;
+  gap: var(--row);
+}
+
+.blog-about .lead {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.blog-ways {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--row-half) var(--cell-2);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.blog-by {
+  color: var(--muted);
+}
+
+.blog-ways .tags {
+  gap: var(--nudge) var(--cell-2);
+  margin-left: var(--cell-3);
+}
+
+/* the Switch (DESIGN.md, Switch): a few addresses of one thing in one row of quiet hairlines, at a line's size, the
+ * links sharing the line between each two; the one shown reversed and bold as the window shown, the others a shade
+ * down under the pointer. Each link keeps its own corners, so a focus ring is never cut */
+.switch {
+  display: inline-flex;
+}
+
+.switch-way {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(var(--row) - 2 * var(--nudge));
+  padding: 0 var(--cell);
+  border: var(--hairline) solid var(--quiet);
+  color: var(--text);
+  line-height: var(--type-caption-line);
+  text-decoration: none;
+  transition: background var(--quick);
+}
+
+.switch-way + .switch-way {
+  margin-left: calc(-1 * var(--hairline));
+}
+
+.switch-way:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.switch-way:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.switch-way:hover {
+  background: var(--deep);
+}
+
+.switch-way[aria-current] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--background);
+  font-weight: var(--type-strong-weight);
+}
+
+/* a group (DESIGN.md, Group): its name in the names' column, staying in sight at the top while its own tiles scroll,
+ * four rows under the group before it; under the name a series' line, then what it holds, muted, in the small style */
+.group {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.group-name {
+  position: sticky;
+  top: var(--row);
+  display: grid;
+  align-self: start;
+  gap: var(--row-half);
+  margin-top: var(--row-4);
+}
+
+.group-line,
+.group-count {
+  margin: 0;
+}
+
+.group-count {
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+/* the tiles as tmux splits a window into panes, as many in a row as hold a tile each, with no gap: each laid a
+ * hairline over its neighbours to the right and below, so the two share the line between them. Half a row clear at
+ * the top for the first row's days, set into its edge */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr));
+  margin: var(--row-4) 0 0;
+  padding: var(--row-half) 0 0;
+  list-style: none;
+}
+
+.tiles > li {
+  display: grid;
+  margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
+}
+
+/* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .pane-name, and their
+ * states under the pointer and pressed): what differs is here. Its day muted and not bold; in a series' own group its
+ * part before it, bold in the text's colour */
+.tile-edge {
+  color: var(--muted);
+  font-weight: var(--type-small-weight);
+}
+
+.tile-part {
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+}
+
+.tile-title {
+  font-weight: var(--type-strong-weight);
+  text-wrap: balance;
+}
+
+.tile-lead {
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+  text-wrap: pretty;
+}
+
+/* at its foot, whatever its words above, where its post stands, apart from the post: its part and its series' title
+ * where its group is no series' own, a long title wrapping, the dot faint; then its tags, words of the tile's link,
+ * faint and smaller */
+.tile-foot {
+  display: grid;
+  gap: var(--nudge);
+  margin-top: auto;
+  padding-top: var(--row);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
+}
+
+.tile-series {
+  text-wrap: pretty;
+}
+
+.tile-dot {
+  color: var(--faint);
+}
+
+.tile-foot .tags {
+  gap: 0 var(--cell);
+  color: var(--faint);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  line-height: var(--type-small-line);
+}
+
+/* a part still to come is off, as a pane that leads nowhere: framed in the quiet rule at half its strength, under the
+ * live tiles beside it, its edge and its title faint and not bold; what is set into its edge over a live tile's line */
+.tile-to-come {
+  border-color: var(--quiet-half);
+}
+
+.tile-to-come :is(.tile-edge, .tile-part, .tile-title) {
+  color: var(--faint);
+  font-weight: var(--type-body-weight);
+}
+
+.tile-to-come .tile-edge {
+  z-index: var(--layer-tile-name);
+}
+
+/* a tile that leads somewhere stands over a tile to come beside it, so the line the two share is its own, and the one
+ * the keyboard is on over every tile, so no day set into a tile below cuts its ring; under the pointer its title, which
+ * no underline marks at rest as a pane's does, takes the accent's, twice as thick */
+a.tile {
+  z-index: var(--layer-tile);
+}
+
+a.tile:focus-visible {
+  z-index: var(--layer-tile-focus);
+}
+
+a.tile:hover .tile-title {
+  text-decoration: underline var(--accent) var(--underline-hover);
+  text-underline-offset: var(--nudge);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-way {
+    transition: none;
+  }
+}
+
+/* below the wide screen's width the names' column narrows, and a group's name with it */
+@media (width < 80rem) {
+  .blog {
+    grid-template-columns: var(--group-name-mid) minmax(0, 1fr);
+    column-gap: var(--row-2);
+  }
+
+  .group-title {
+    font-size: var(--type-title-text-mid-size);
+    font-weight: var(--type-title-text-mid-weight);
+    line-height: var(--type-title-text-mid-line);
+  }
+}
+
+/* on a phone one column: the head's line under the letters, the tags a row of their own under the Switch; a group's
+ * name over its tiles, scrolling with them, the tiles one under the other */
+@media (width < 53.75rem) {
+  .blog {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: var(--row-2);
+  }
+
+  .blog-about {
+    margin-top: var(--row);
+  }
+
+  .blog-ways .tags {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .group-name {
+    position: static;
+    margin-top: var(--row-3);
+  }
+
+  .group-title {
+    font-size: var(--type-title-text-phone-size);
+    font-weight: var(--type-title-text-phone-weight);
+    line-height: var(--type-title-text-phone-line);
+  }
+
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: var(--row);
   }
 }

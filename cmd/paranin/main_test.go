@@ -14,6 +14,9 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 	if err := os.WriteFile(filepath.Join(faulty, "profile.yaml"), []byte("person:\n  name: \"\"\n"), 0o600); err != nil {
 		test.Fatalf("write a faulty profile: %v", err)
 	}
+	// content that loads, but whose résumé's experience takes the blog's address
+	sharing := fixtures.Copy(test, fixtures.ContentFolder(test))
+	fixtures.ReplaceIn(test, sharing, "i18n/en.yaml", "experience: Experience", "experience: Blog")
 	cases := []struct {
 		name      string
 		arguments []string
@@ -21,6 +24,8 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 	}{
 		{name: "content that loads", arguments: []string{"paranin", "check", fixtures.ContentFolder(test)}, want: succeeded},
 		{name: "content with faults", arguments: []string{"paranin", "check", faulty}, want: failed},
+		{name: "content whose pages share an address", arguments: []string{"paranin", "check", sharing}, want: failed},
+		{name: "a release whose pages share an address", arguments: []string{"paranin", "check", sharing, fixtures.BuildFolder(test)}, want: failed},
 		{name: "no folder named", arguments: []string{"paranin", "check"}, want: usageMistaken},
 		{name: "a release that loads", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test)}, want: succeeded},
 		{name: "a release whose build has faults", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), faulty}, want: failed},

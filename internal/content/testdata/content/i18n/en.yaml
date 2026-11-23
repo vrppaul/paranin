@@ -49,3 +49,12 @@ newest_post: "none: this is the newest post"
 other_posts: Other posts
 discuss: discuss
 contents: contents
+blog_line: What the writer reads, and how.
+list_window: posts
+all_posts: all posts
+by: by
+years: years
+outside_series: other posts
+one_post: "{} post"
+posts_count: "{} posts"
+parts_out: "{} of {} parts out"

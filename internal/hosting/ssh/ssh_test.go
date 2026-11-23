@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	gossh "golang.org/x/crypto/ssh"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/release"
 )
@@ -673,7 +674,7 @@ func servingServer(test *testing.T, logger *slog.Logger) (*Server, string) {
 
 // newServer is a server of the fixture, not yet serving.
 func newServer(test *testing.T, logger *slog.Logger) *Server {
-	store, err := release.Open(release.FoldersAt(fixtures.ContentFolder(test), fixtures.BuildFolder(test)))
+	store, err := release.Open(release.FoldersAt(fixtures.ContentFolder(test), fixtures.BuildFolder(test)), compose.SharedAddresses)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

@@ -38,9 +38,10 @@ func manualHolds(text, phrase string) bool {
 	return strings.Contains(words, wanted) || strings.Contains(words, strings.ToUpper(wanted))
 }
 
-// textPages are the pages a text face writes of a snapshot: the pages of the résumé and its projects, and the posts.
+// textPages are the pages a text face writes of a snapshot: the pages of the résumé and its projects, the posts, and
+// the blog's list in each grouping.
 func textPages(snapshot *content.Snapshot) []document.Document {
-	return slices.Concat(compose.Documents(snapshot), compose.Posts(snapshot))
+	return slices.Concat(compose.Documents(snapshot), compose.Posts(snapshot), compose.Lists(snapshot))
 }
 
 // The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the

@@ -124,7 +124,8 @@ Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its m
 Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in the TUI: a page of the site may
 name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
 Amended 2026-11-22, with the first post served: the posts' blocks and spans, a footnote as a note where a line cites
-it, and the post's head.
+it, and the post's head. Amended 2026-11-23, with the blog's list: a document in two groupings, its groups sections
+holding the posts they name.
 
 ### Context
 
@@ -169,9 +170,14 @@ and web routes.
   keep to none. The posts stand in their slugs' order and the series in
   their names', as their folders list them.
 - **`paranin check`** runs the same loader, of the content or of a whole
-  release, so CI refuses what the server would refuse.
+  release, so CI refuses what the server would refuse. Both hold the
+  content to one check more, which the composition root hands the release's
+  load since `release` knows nothing over it (amended 2026-11-23): no two
+  pages `compose` makes share an address `routes` writes, in any format, as
+  a post slugged `series` would share the list by series'.
 - **One document, every face.** `compose` turns content into documents: the
-  résumé, a page for each project that has one, each post, the index of the
+  résumé, a page for each project that has one, each post, the blog's list
+  in its two groupings, by year and by series, the index of the
   site that `llms.txt` lists, and the extras of the TUI and the vim mode.
   Every face draws them, the HTML page included, each part in a layout of its
   own; no face picks the facts or their order again. `compose` is a function
@@ -263,7 +269,20 @@ and web routes.
     whose items hold blocks; a quote, holding blocks; code with its
     language; and a figure, which comes with the post's pictures (TODO). A
     table gains a header row, and a post's headings nest into sections, each
-    holding what follows it up to the next heading of its level or above.
+    holding what follows it up to the next heading of its level or above;
+  - the blog's list's (amended 2026-11-23): posts, the block a group of the
+    list holds, a section under the group's name, a year's, a series' or the
+    posts' in no series: a series' line, how many posts it holds in the
+    site's words, and each post it names, out, by its page and when it came
+    out, or a part still to come, by the site's word for it, a closed set
+    of two, with its title, its lead,
+    its part and its series' title where its group does not name it, and its
+    tags. Its head is the blog's name, its line and the tags of the posts it
+    lists; its page is one of two kinds, the list by year and by series. Ways
+    weighed: a record of the list beside no document, which the text faces
+    and the TUI could not draw as they draw every other page; a group as a
+    block of its own with its title, which would leave the text faces'
+    sections and the manual's to write a second time.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
   strong, a link, a highlight (`==result==`) and a note hold spans; text,
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a
@@ -323,12 +342,14 @@ and web routes.
   range (step 10), since `face/html` came without one; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
   in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
-  them with each face's post, a figure with the post's pictures (D18).
+  them with each face's post, a figure with the post's pictures (D18); the
+  blog's list with its page and its text faces (2026-11-23), the TUI's with
+  its blog session.
 - **`routes`** writes every address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
-  foundation, and on `routes` once it reads a post's links back into
-  targets; `inbox` on the foot alone, beside both; `release`, which holds the
+  foundation, and on `routes`, through which it finds two pages at one
+  address, and will read a post's links back into targets; `inbox` on the foot alone, beside both; `release`, which holds the
   content and the build as one snapshot, on the foot beside them; the faces
   and `brain` side by side on those, no face on another nor on `release`;
   `hosting` over everything but the composition root. depguard holds each
@@ -498,8 +519,8 @@ cmd/paranin
 Each part builds only on those below it, as ADR-0003 draws them; what each
 does is in the project layout below. A face draws documents and never reads
 the content they are made from, nor the release a host hands it; `release`
-stands beside `compose` and `routes`, `compose` coming to build on `routes`
-once it reads a post's links, and the hosts bring them together. The parts
+stands beside `compose` and `routes`, `compose` building on `routes` to find
+two pages at one address, and the hosts bring them together. The parts
 still to come land with their steps of [FOUNDATION](FOUNDATION.md) §8, where
 §5.2 places them: `face/feed` and `face/print` beside the faces, `inbox`
 beside `compose`, the brain beside the faces.

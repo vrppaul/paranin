@@ -37,7 +37,7 @@ func NewNotFound(site routes.Site, status, language string, build *assets.Build,
 		status:   status,
 		language: language,
 		included: build.Includes(assets.Site),
-		foot:     footLineOf(around, site, around.siteSession(), nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
+		foot:     footLineOf(around, site, around.sessionsOf(false), nil, document.Page{Kind: document.PageResume, Slug: "", Tab: ""}),
 		heading:  titleHeading(status, text(status)),
 	}
 }

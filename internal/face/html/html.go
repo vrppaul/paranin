@@ -28,7 +28,9 @@
 // A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it. A post
 // is drawn whole, with no tabs (post.go): its head as a first screen, its series' pick among its facts, its outline
 // beside its article, its paragraphs numbered and each note beside the line that first cites it, then the panes at its
-// foot leading to the posts beside it, in the blog's session of the foot line.
+// foot leading to the posts beside it, in the blog's session of the foot line. The blog's list (list.go) opens with
+// the blog's name in block letters, its line, the Switch of its groupings and its tags, then each group under its name,
+// its posts as tiles, each a link to its post.
 // Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
 // author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
 package html
@@ -280,6 +282,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		// with them would fail TestEveryPhraseReachesThePage
 	case document.List, document.Quote:
 		// a post's alone, which its article draws (post.go)
+	case document.Posts:
+		return writer.tiles(typed)
 	}
 	return templ.NopComponent
 }

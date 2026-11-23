@@ -38,8 +38,8 @@ const (
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command
 // the first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's
 // button that writes to the author; the projects' pages, places of every page's command line; the name of the blog's
-// session; the labels of a post's facts, the words of its series and of the panes at its foot, and the name of its
-// outline.
+// session and where it begins, its list; the labels of a post's facts, the words of its series and of the panes at
+// its foot, the name of its outline, and the words round the blog's list.
 type frame struct {
 	siteName     string
 	start        string
@@ -50,10 +50,12 @@ type frame struct {
 	writeTo      string
 	projects     []place
 	blog         string
+	blogStart    string
 	postLabels   compose.PostLabels
 	seriesWords  compose.SeriesWords
 	paneWords    compose.PaneWords
 	contents     string
+	listWords    compose.ListWords
 }
 
 // footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the sessions, the document's tabs as
@@ -87,7 +89,7 @@ type place struct {
 }
 
 // session is a part of the site as the foot line shows it, as tmux shows a session: its name, the address it leads to,
-// none where its page is still to come, and whether the page shown belongs to it.
+// and whether the page shown belongs to it.
 type session struct {
 	name    string
 	address string
@@ -116,17 +118,22 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		writeTo:      composed.WriteTo,
 		projects:     projectPlaces(composed.Projects),
 		blog:         composed.Blog,
+		blogStart:    routes.Reference(listPage(document.PageBlog), routes.FormatChosen),
 		postLabels:   composed.PostLabels,
 		seriesWords:  composed.SeriesWords,
 		paneWords:    composed.PaneWords,
 		contents:     composed.Contents,
+		listWords:    composed.ListWords,
 	}
 }
 
-// siteSession is the site's session alone, which the résumé's pages and the page of no page belong to. The blog's
-// session leads to the blog's list, which is still to come, so until it is these pages leave it out.
-func (around frame) siteSession() []session {
-	return []session{{name: around.siteName, address: around.start, current: true}}
+// sessionsOf are the foot line's sessions on a page of the blog or of the rest of the site: the site's, leading to
+// where it begins, then the blog's, leading to its list, the one the page belongs to current.
+func (around frame) sessionsOf(inBlog bool) []session {
+	return []session{
+		{name: around.siteName, address: around.start, current: !inBlog},
+		{name: around.blog, address: around.blogStart, current: inBlog},
+	}
 }
 
 // projectPlaces are the projects' pages as places of the command line, each by its slug.
@@ -147,7 +154,7 @@ func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs) footLin
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
 		windows = append(windows, windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(writer.frame, writer.site, writer.frame.siteSession(), windows, whole)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(false), windows, whole)
 }
 
 // footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl

@@ -204,15 +204,15 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 	}
 }
 
-// Every page ends with the foot line, the page of no page among them: the session, the site's name leading to where
-// it begins, and on a post's page the blog's after it, the post's own, the site's quiet; the document's tabs as
-// windows by their numbers and names, a post numbered as the blog's second window, after its list's, each leading to
-// its page, the one shown the current page; the programs that reach the site and read it in a terminal, each opening
-// its hint, a window that holds its command whole to copy and says what it gives, curl's reading the page whole, the
-// résumé where there is none; the markdown of the page whole, the résumé's where a page has none; the switch that
-// turns the vim keys on, and the theme button. Over it stands the command line those keys open, with the places it
-// goes to by name: the document's tabs, the one shown among them, then the page of each project that has one, by its
-// slug, shown where its opening is.
+// Every page ends with the foot line, the page of no page among them: the sessions, the site's name leading to where
+// it begins and the blog's leading to its list, the one the page belongs to current, the other quiet; the document's
+// tabs as windows by their numbers and names, on the blog's pages its list the first window, in either grouping, and a
+// post the second, each leading to its page, the one shown the current page; the programs that reach the site and
+// read it in a terminal, each opening its hint, a window that holds its command whole to copy and says what it gives,
+// curl's reading the page whole, the résumé where there is none; the markdown of the page whole, the résumé's where a
+// page has none; the switch that turns the vim keys on, and the theme button. Over it stands the command line those
+// keys open, with the places it goes to by name: the document's tabs, the one shown among them, then the page of each
+// project that has one, by its slug, shown where its opening is.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -240,13 +240,15 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	)
 	// the résumé's markdown, which the page of no page offers too
 	const resumeMarkdown = `<a class="way-chip" href="/index.md">index.md</a>`
-	// the site's session, alone on every page but a post's, which the blog's session holds, the site's quiet before it;
-	// and the blog's
+	// the two sessions, each leading to where it begins: the site's current on every page but the blog's, the blog's,
+	// leading to its list, quiet beside it; on the blog's pages the other way round
 	const (
-		siteSession      = `<span class="sessions"><a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a></span>`
-		siteSessionQuiet = `<a class="session session-other" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>`
-		blogSession      = `<span class="session"><span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span></span>`
+		siteSessions = `<span class="sessions"><a class="session" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>` +
+			`<a class="session session-other" href="/blog"><span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span></a></span>`
+		blogSessions = `<span class="sessions"><a class="session session-other" href="/"><span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span></a>` +
+			`<a class="session" href="/blog"><span aria-hidden="true">[</span>blog<span aria-hidden="true">]</span></a></span>`
 	)
+	lists := compose.Lists(snapshot)
 	cases := []struct {
 		name  string
 		page  string
@@ -256,7 +258,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
 			holds: slices.Concat(every, []string{
-				siteSession, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
+				siteSessions, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
@@ -267,7 +269,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
 			holds: slices.Concat(every, []string{
-				siteSession, resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
+				siteSessions, resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience" aria-current="page"><span class="window-number">2:</span>experience</a>`,
 			}),
 			lacks: nil,
@@ -275,7 +277,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a project's page", page: writer.Page(project.Document, project.Record, ""),
 			holds: slices.Concat(every, []string{
-				siteSession, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
+				siteSessions, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
 				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
 				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
@@ -285,22 +287,43 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		},
 		{
 			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: slices.Concat(every, []string{siteSession, projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
+			holds: slices.Concat(every, []string{siteSessions, projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
 		},
 		{
 			name: "the page of no page", page: missing.For("/nothing"),
-			holds: slices.Concat(every, []string{siteSession, resumeMarkdown, resumeReading, projectPlace}),
+			holds: slices.Concat(every, []string{siteSessions, resumeMarkdown, resumeReading, projectPlace}),
 			lacks: []string{`class="window"`, `data-place="tab"`},
 		},
 		{
 			name: "a post's page", page: writer.Post(fixturePost(test)),
 			holds: slices.Concat(every, []string{
-				siteSessionQuiet + blogSession, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
+				blogSessions, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog/reading-slowly</code>`,
+				`<a class="window" href="/blog"><span class="window-number">1:</span>posts</a>`,
 				`<a class="window" href="/blog/reading-slowly" aria-current="page"><span class="window-number">2:</span>reading-slowly</a>`,
+				`data-place="tab" data-name="posts" data-address="/blog" hidden`,
 				`data-place="tab" data-name="reading-slowly" data-address="/blog/reading-slowly" data-current`, projectPlace,
 			}),
 			lacks: nil,
+		},
+		{
+			name: "the blog's list by year", page: writer.List(lists[0]),
+			holds: slices.Concat(every, []string{
+				blogSessions, `<a class="way-chip" href="/blog.md">blog.md</a>`,
+				`<code data-part="command-words">curl https://example.test/blog</code>`,
+				`<a class="window" href="/blog" aria-current="page"><span class="window-number">1:</span>posts</a>`,
+				`data-place="tab" data-name="posts" data-address="/blog" data-current`, projectPlace,
+			}),
+			lacks: []string{`<span class="window-number">2:`},
+		},
+		{
+			name: "the blog's list by series", page: writer.List(lists[1]),
+			holds: slices.Concat(every, []string{
+				blogSessions, `<a class="way-chip" href="/blog/series.md">series.md</a>`,
+				`<code data-part="command-words">curl https://example.test/blog/series</code>`,
+				`<a class="window" href="/blog/series" aria-current="page"><span class="window-number">1:</span>posts</a>`,
+			}),
+			lacks: []string{`<span class="window-number">2:`},
 		},
 	}
 	for _, testCase := range cases {
@@ -641,6 +664,114 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 	}
 }
 
+// The blog's list is read as a browser, a screen reader and a search engine read it: the blog's name the page's one
+// h1, in block letters, its line, the Switch of its groupings and its tags; each group under its name, an h2, its
+// posts in order, each a link to its post, a part to come no link; then the foot line of the blog's session. Each
+// grouping is held to its golden file, named after its own address.
+func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
+	files := []string{"blog.html", "blog/series.html"}
+	for index, list := range compose.Lists(fixtures.LoadedContent(test)) {
+		test.Run(files[index], func(test *testing.T) {
+			golden.Match(test, files[index], lined(fixtureWriter(test).List(list)))
+		})
+	}
+}
+
+// Every phrase of the blog's list reaches its page, as HTML writes text, in each grouping: every post it names is
+// there, with where it stands and its tags.
+func TestEveryPhraseOfTheListReachesItsPage(test *testing.T) {
+	for _, list := range compose.Lists(fixtures.LoadedContent(test)) {
+		page := fixtureWriter(test).List(list)
+		for _, phrase := range document.Phrases(list) {
+			if !strings.Contains(page, html.EscapeString(phrase)) {
+				test.Errorf("the page of %+v holds no %q", list.Head.Page, phrase)
+			}
+		}
+	}
+}
+
+// The list's head offers both its groupings, each a link to the list grouped so, the one shown the current page.
+func TestTheSwitchMarksTheGroupingShown(test *testing.T) {
+	cases := []struct {
+		name string
+		kind document.PageKind
+		want string
+	}{
+		{
+			name: "by year", kind: document.PageBlog,
+			want: `<span class="switch"><a class="switch-way" href="/blog" aria-current="page">years</a><a class="switch-way" href="/blog/series">series</a></span>`,
+		},
+		{
+			name: "by series", kind: document.PageBlogSeries,
+			want: `<span class="switch"><a class="switch-way" href="/blog">years</a><a class="switch-way" href="/blog/series" aria-current="page">series</a></span>`,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			list := document.Document{Head: fixtures.HeadOf(document.Page{Kind: testCase.kind, Slug: "", Tab: ""}, textOf("blog")), Blocks: nil}
+			if page := fixtureWriter(test).List(list); !strings.Contains(page, testCase.want) {
+				test.Errorf("the page %q holds no %q", page, testCase.want)
+			}
+		})
+	}
+}
+
+// A tile is a post the list names, the whole of it a link to the post: in its series' own group its part and its day
+// in its top edge; in a group that is no series' own its day there, and at its foot its part and its series' title,
+// then its tags; a part still to come its part and the word saying it comes, no link.
+func TestATileSaysWhereItsPostStands(test *testing.T) {
+	out := document.PostOut{Page: postPage("one"), Published: time.Date(2026, time.November, 10, 9, 0, 0, 0, time.UTC)}
+	cases := []struct {
+		name string
+		post document.ListedPost
+		want string
+	}{
+		{
+			name: "a part in its series' group",
+			post: document.ListedPost{Readiness: out, Title: textOf("One"), Lead: textOf("About one."), Part: textOf("part 1")},
+			want: `<a class="pane tile" href="/blog/one"><span class="pane-name tile-edge"><span class="tile-part">part 1</span>` + dot +
+				`<time datetime="2026-11-10">10 Nov 2026</time></span> <span class="tile-title">One</span> <span class="tile-lead">About one.</span> </a>`,
+		},
+		{
+			name: "a part in its year's group, tagged",
+			post: document.ListedPost{Readiness: out, Title: textOf("One"), Part: textOf("part 1"), Series: textOf("Stint"), Tags: []string{"payments", "agents"}},
+			want: `<a class="pane tile" href="/blog/one"><span class="pane-name tile-edge"><time datetime="2026-11-10">10 Nov 2026</time></span> ` +
+				`<span class="tile-title">One</span> <div class="tile-foot"><span class="tile-series"><span class="tile-part">part 1</span>` +
+				`<span class="tile-dot">` + dot + `</span>Stint</span> <ul class="tags"><li><span class="tag-mark" aria-hidden="true">#</span>payments</li>` +
+				`<li><span class="tag-mark" aria-hidden="true">#</span>agents</li></ul></div></a>`,
+		},
+		{
+			name: "a part to come",
+			post: document.ListedPost{Readiness: document.ComingPart{Coming: textOf("soon")}, Title: textOf("Three"), Part: textOf("part 3")},
+			want: `<div class="pane tile tile-to-come"><span class="pane-name tile-edge"><span class="tile-part">part 3</span>` + dot +
+				`soon</span> <span class="tile-title">Three</span> </div>`,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			group := document.Section{Title: textOf("Stint"), Blocks: []document.Block{document.Posts{List: []document.ListedPost{testCase.post}}}}
+			list := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}, textOf("blog")), Blocks: []document.Block{group}}
+			if page := fixtureWriter(test).List(list); !strings.Contains(page, testCase.want) {
+				test.Errorf("the page %q holds no %q", page, testCase.want)
+			}
+		})
+	}
+}
+
+// A block of the blog's list that is no group, which compose writes none of, stands as any page draws it, never left
+// out: words, and posts outside a section, as tiles with no name over them.
+func TestABlockOfTheListThatIsNoGroupStandsAsAnyPageDraws(test *testing.T) {
+	post := document.ListedPost{Readiness: document.ComingPart{Coming: textOf("soon")}, Title: textOf("Loose post")}
+	blocks := []document.Block{document.Paragraph{Spans: textOf("Loose words.")}, document.Posts{List: []document.ListedPost{post}}}
+	list := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, textOf("blog")), Blocks: blocks}
+	page := fixtureWriter(test).List(list)
+	for _, want := range []string{"Loose words.", `<span class="tile-title">Loose post</span>`} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the page %q holds no %q", page, want)
+		}
+	}
+}
+
 // A post's page is the post whole, as a browser, a screen reader and a search engine read it: its title the page's
 // one h1, its lead and facts beside it, its paragraphs numbered, its headings, lists, quote, table and code, each note
 // beside the line that first cites it, then the foot line of the blog's session. It is held to its golden file,
@@ -818,10 +949,11 @@ func TestTheOutlineListsThePostsHeadings(test *testing.T) {
 	}
 }
 
-// A post's foot leads to the posts beside it, under a heading saying where: in a series its other parts, each side
-// named by its part, a part out a link to it with its lead, a part to come its title and the word saying it comes, no
-// link; outside a series the blog's other posts, older and newer, each with the day it came out; a side with nothing
-// there named by its side and saying why; and under them where the post is discussed, each place a link.
+// A post's foot leads to the posts beside it, under a heading saying where: in a series its other parts, the series'
+// pick beside the heading and no way to the blog's list, each side named by its part, a part out a link to it with its
+// lead, a part to come its title and the word saying it comes, no link; outside a series the blog's other posts, the
+// way to its list beside the heading, older and newer, each with the day it came out; a side with nothing there named
+// by its side and saying why; and under them where the post is discussed, each place a link.
 func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 	series := &document.Series{Title: textOf("Stint"), Parts: nil}
 	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
@@ -832,10 +964,12 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 		neighbours  document.Neighbours
 		discussions []document.Link
 		want        []string
+		lacks       []string
 	}{
 		{
 			name:   "a part of a series between a part out and a part to come",
 			series: series,
+			lacks:  []string{`class="panes-all"`},
 			neighbours: document.Neighbours{
 				Before: &document.Neighbour{Part: 1, Title: textOf("One"), Lead: textOf("About one."), Page: postPage("one"), Published: time.Time{}},
 				After:  &document.Neighbour{Part: 3, Title: textOf("Three"), Lead: nil, Page: toCome, Published: time.Time{}},
@@ -861,7 +995,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 				After:  &document.Neighbour{Part: 0, Title: textOf("Newer"), Lead: textOf("About newer."), Page: postPage("newer"), Published: newer},
 			},
 			want: []string{
-				`<h2 id="more" class="panes-title">Other posts</h2></div>`,
+				`<h2 id="more" class="panes-title">Other posts</h2><a class="panes-all" href="/blog">all posts</a></div>`,
 				`<div class="pane pane-none"><span class="pane-name">older</span> <span class="pane-words">none: this is the first post</span></div>`,
 				`<a class="pane pane-after" href="/blog/newer"><span class="pane-name">newer</span> <span class="pane-title">Newer</span> <span class="pane-lead">About newer.</span> <span class="pane-date"><time datetime="2026-11-20">20 Nov 2026</time></span></a>`,
 			},
@@ -887,6 +1021,11 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 			for _, want := range testCase.want {
 				if !strings.Contains(page, want) {
 					test.Errorf("the page %q holds no %q", page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(page, unwanted) {
+					test.Errorf("the page %q holds %q", page, unwanted)
 				}
 			}
 		})

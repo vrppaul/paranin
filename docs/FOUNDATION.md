@@ -529,7 +529,8 @@ and SSH to the host: "without a new binary" does not mean without a build.
   series filters the list, the filter reversed in the list's head; a
   filtered list is sent with `noindex` and names `/blog` as canonical. Its
   address is proposed, the site's first with a query, `/blog?tag=payments`
-  and `/blog?series=stint`, and settled with the lists. The list is a
+  and `/blog?series=stint`, and settled with the filter, a chunk of its own
+  after the lists. The list is a
   document every face draws: the TUI gives the blog a session of its own
   (DESIGN.md, The TUI), and its posts, tags and series stand in the `:`
   menu.
@@ -549,8 +550,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
 
 - **A post has a slug, its folder's name, and a number** in its front
   matter, `id: 12`, given once and never changed. `paranin check` refuses a
-  number two posts share and a slug of digits alone, which `blog/12` would
-  read as a number.
+  number two posts share, a slug of digits alone, which `blog/12` would
+  read as a number, and content of which two pages share an address, as a
+  post slugged `series` would share the list by series'.
 - **On the web** `/blog/12` answers `301` to `/blog/<slug>`, and
   `/blog/<slug>` the post as the project pages answer, its markdown and its
   manual at `.md` and `.txt` beside it (`docs/WEB.md`).

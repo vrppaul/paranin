@@ -17,6 +17,8 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
 	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
 	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
+	list := document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}
+	listBySeries := document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}
 	cases := []struct {
 		name   string
 		target document.Target
@@ -41,6 +43,12 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a post in markdown", target: post, format: FormatMarkdown, want: "https://example.test/blog/reading-slowly.md"},
 		{name: "a post as a manual", target: post, format: FormatManual, want: "https://example.test/blog/reading-slowly.txt"},
 		{name: "a post as the reader asks", target: post, format: FormatChosen, want: "https://example.test/blog/reading-slowly"},
+		{name: "the blog's list in markdown", target: list, format: FormatMarkdown, want: "https://example.test/blog.md"},
+		{name: "the blog's list as a manual", target: list, format: FormatManual, want: "https://example.test/blog.txt"},
+		{name: "the blog's list as the reader asks", target: list, format: FormatChosen, want: "https://example.test/blog"},
+		{name: "the list by series in markdown", target: listBySeries, format: FormatMarkdown, want: "https://example.test/blog/series.md"},
+		{name: "the list by series as a manual", target: listBySeries, format: FormatManual, want: "https://example.test/blog/series.txt"},
+		{name: "the list by series as the reader asks", target: listBySeries, format: FormatChosen, want: "https://example.test/blog/series"},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},

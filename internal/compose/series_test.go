@@ -12,13 +12,15 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// The fixture's series' file, which a case writes over with a series of its own, and how a case writes a post of its
-// own and the series
+// The fixture's series, by its name and its title, which a case writes over with a series of its own; and how a case
+// writes a post of its own and a series
 const (
-	fixtureSeriesFile = "series/reading.yaml"
-	postFileLayout    = "posts/%s/post.en.md"
-	postTextLayout    = "---\nid: %d\ntitle: %s\ndescription: About %s.\nstatus: %s\npublished: %s\n---\nIts text.\n"
-	seriesTextLayout  = "title: Reading\nline: How a reader keeps what they read.\nposts: [%s]\nto_come: [%s]\n"
+	fixtureSeriesName  = "reading"
+	fixtureSeriesTitle = "Reading"
+	postFileLayout     = "posts/%s/post.en.md"
+	postTextLayout     = "---\nid: %d\ntitle: %s\ndescription: About %s.\nstatus: %s\npublished: %s\ntags: [%s]\n---\nIts text.\n"
+	seriesFileLayout   = "series/%s.yaml"
+	seriesTextLayout   = "title: %s\nline: About %s.\nposts: [%s]\nto_come: [%s]\n"
 )
 
 // The fixture's post's title, and the day it came out, between the days a case's posts come out on
@@ -33,13 +35,23 @@ const (
 	noTime = "0001-01-01T00:00:00Z"
 )
 
-// writtenPost is a post a case writes into the fixture: its slug, its number, its status and when it came out; its
-// title is its slug, its lead says what it is about.
+// writtenPost is a post a case writes into the fixture: its slug, its number, its status, when it came out and its
+// tags, as YAML lists them, none where a case names none; its title is its slug, its lead says what it is about.
 type writtenPost struct {
 	slug      string
 	id        int
 	status    content.Status
 	published string
+	tags      string
+}
+
+// writtenSeries is a series a case writes into the fixture: its name, its title, its parts' slugs and the titles it
+// names to come, each as YAML lists them; its line says what it is about.
+type writtenSeries struct {
+	name   string
+	title  string
+	parts  string
+	toCome string
 }
 
 // seenPart is a part of a series as a test reads it: its number, its title, where it stands, and the slug of its
@@ -117,7 +129,7 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			snapshot := withPostsAndSeries(test, testCase.posts, testCase.series, testCase.toCome)
+			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
 			series := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Series
 			if got := seenParts(series); !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the series of %q = %+v, want %+v", testCase.read, got, testCase.want)
@@ -197,7 +209,7 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			snapshot := withPostsAndSeries(test, testCase.posts, testCase.series, testCase.toCome)
+			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
 			neighbours := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Neighbours
 			before, after := seenNeighbourOf(neighbours.Before), seenNeighbourOf(neighbours.After)
 			if !reflect.DeepEqual(before, testCase.before) || !reflect.DeepEqual(after, testCase.after) {
@@ -207,21 +219,30 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	}
 }
 
-// withPostsAndSeries is the fixture content with posts of a case's own beside its post, and the fixture's series
-// written over to hold the parts a case names, then the titles it names to come, loaded.
-func withPostsAndSeries(test *testing.T, posts []writtenPost, parts, toCome string) *content.Snapshot {
+// withPostsAndSeries is the fixture content with posts of a case's own beside its post, and series of its own, one of
+// them the fixture's written over, loaded.
+func withPostsAndSeries(test *testing.T, posts []writtenPost, series []writtenSeries) *content.Snapshot {
 	test.Helper()
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	for _, post := range posts {
-		text := fmt.Sprintf(postTextLayout, post.id, post.slug, post.slug, post.status, post.published)
+		text := fmt.Sprintf(postTextLayout, post.id, post.slug, post.slug, post.status, post.published, post.tags)
 		fixtures.WriteIn(test, folder, fmt.Sprintf(postFileLayout, post.slug), text)
 	}
-	fixtures.WriteIn(test, folder, fixtureSeriesFile, fmt.Sprintf(seriesTextLayout, parts, toCome))
+	for _, written := range series {
+		text := fmt.Sprintf(seriesTextLayout, written.title, written.title, written.parts, written.toCome)
+		fixtures.WriteIn(test, folder, fmt.Sprintf(seriesFileLayout, written.name), text)
+	}
 	snapshot, err := content.Load(os.DirFS(folder))
 	if err != nil {
-		test.Fatalf("load the fixture with the posts %+v and the series of %q: %v", posts, parts, err)
+		test.Fatalf("load the fixture with the posts %+v and the series %+v: %v", posts, series, err)
 	}
 	return snapshot
+}
+
+// fixtureSeriesOf is the fixture's series written over to hold the parts a case names, then the titles it names to
+// come.
+func fixtureSeriesOf(parts, toCome string) []writtenSeries {
+	return []writtenSeries{{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: parts, toCome: toCome}}
 }
 
 // seenParts are a series' parts as a test reads them, none where there is no series.

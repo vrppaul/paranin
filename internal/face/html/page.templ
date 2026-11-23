@@ -98,22 +98,11 @@ templ footLineMarkup(foot footLine) {
 }
 
 // sessionMark is a session as tmux writes one, its name between brackets a screen reader skips, leading to where it
-// begins; the one the page belongs to marked, which the stylesheet colours; its name alone where its page is still to
-// come.
+// begins; the one the page belongs to marked, which the stylesheet colours.
 templ sessionMark(shown session) {
-	if shown.address != "" {
-		<a class={ "session", templ.KV("session-other", !shown.current) } href={ shown.address }>
-			@sessionName(shown.name)
-		</a>
-	} else {
-		<span class={ "session", templ.KV("session-other", !shown.current) }>
-			@sessionName(shown.name)
-		</span>
-	}
-}
-
-templ sessionName(name string) {
-	<span aria-hidden="true">{ sessionOpening }</span>{ name }<span aria-hidden="true">{ sessionClosing }</span>
+	<a class={ "session", templ.KV("session-other", !shown.current) } href={ shown.address }>
+		<span aria-hidden="true">{ sessionOpening }</span>{ shown.name }<span aria-hidden="true">{ sessionClosing }</span>
+	</a>
 }
 
 // vimKeysSwitch is the switch that turns the vim keys on (DESIGN.md, VimKeys), a checkbox as a terminal writes one,

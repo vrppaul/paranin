@@ -8,9 +8,12 @@
 # foot line, the labels of a post's facts, and a code block's button that copies it: its name and what the toast says
 # then; and a post's series and the panes at its foot: a part's place in its series and where it stands for the
 # reader, the panes' headings, each side's name and what a side with none says, the word before where the post is
-# discussed, and the name of its outline. A phrase holds a place, {}, for each value it takes, in the order the site
-# hands them: the command, the code block's number on its page, a part's number and the count of parts, the series'
-# title. `paranin check content` requires every one of them.
+# discussed, and the name of its outline; and the blog's list: the line it opens with, its window, the way to it beside
+# a post's other posts, the word before how it groups its posts, its grouping by year, its group of the posts in no
+# series, and how many posts a group holds, one or more, and how many of a series' parts are out. A phrase holds a
+# place, {}, for each value it takes, in the order the site hands them: the command, the code block's number on its
+# page, a part's number and the count of parts, the series' title, a count of posts, the parts out and the count of
+# parts. `paranin check content` requires every one of them.
 
 about: About
 greeting: Hi, my name is
@@ -61,3 +64,12 @@ newest_post: "none: this is the newest post"
 other_posts: Other posts
 discuss: discuss
 contents: contents
+blog_line: What I build, and what I learn building it.
+list_window: posts
+all_posts: all posts
+by: by
+years: years
+outside_series: other posts
+one_post: "{} post"
+posts_count: "{} posts"
+parts_out: "{} of {} parts out"

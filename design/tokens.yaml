@@ -227,6 +227,11 @@ type:
     size: 2.5
     line: 3
     weight: 700
+  - name: title_text_mid
+    about: a group's title on the blog's list below the wide screen's width, where its column narrows
+    size: 2
+    line: 2.5
+    weight: 700
   - name: title_text_phone
     about: a title set in text on a phone
     size: 1.75
@@ -302,6 +307,15 @@ lengths:
   - name: rail
     about: how wide a post's Outline stands beside its text, from the wide screen on
     cells: 22
+  - name: group_name
+    about: how wide the column of the groups' names stands on the blog's list, a year's or a series' of a few words
+    cells: 24
+  - name: group_name_mid
+    about: how wide the column of the groups' names stands below the wide screen's width
+    cells: 18
+  - name: tile
+    about: the least width of a post's tile on the blog's list, a title of a few words a line
+    cells: 30
   - name: title_text_measure
     about: the longest line of a title set in text, a few words, in cells of its own size
     cells: 22
@@ -363,5 +377,11 @@ times:
     milliseconds: 2400
 
 layers:
+  - name: tile
+    about: a tile of the blog's list that leads somewhere, over a tile to come beside it, so the line the two share is the live one's
+  - name: tile_name
+    about: what is set into the top edge of a tile to come, over the line a live tile above it draws there
+  - name: tile_focus
+    about: the tile the keyboard is on, over its neighbours, so no day or label set into a tile beside it cuts its ring
   - name: foot
     about: the foot line, which the page scrolls under

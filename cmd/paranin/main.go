@@ -4,7 +4,9 @@
 //	paranin check content build/web    loads a content folder and the page's build as one release, the same way
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //
-// check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds.
+// check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
+// load, check's and serve's, holds the content to no two of the site's pages sharing an address, which the content
+// alone cannot know, since routes writes the addresses.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds
@@ -27,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
@@ -137,13 +140,18 @@ func commandOf(arguments []string) string {
 	return arguments[commandArgument]
 }
 
+// check loads a content folder as the site would, and holds what it loads to the site's own check, as a release's
+// load does.
 func check(contentFolder string) int {
-	_, err := content.Load(os.DirFS(contentFolder))
+	loaded, err := content.Load(os.DirFS(contentFolder))
+	if err == nil {
+		err = compose.SharedAddresses(loaded)
+	}
 	return checked(err, contentFolder)
 }
 
 func checkRelease(contentFolder, buildFolder string) int {
-	_, err := release.Load(release.FoldersAt(contentFolder, buildFolder))
+	_, err := release.Load(release.FoldersAt(contentFolder, buildFolder), compose.SharedAddresses)
 	return checked(err, contentFolder, buildFolder)
 }
 
@@ -172,7 +180,7 @@ func serve(contentFolder, buildFolder string) int {
 	folders := release.FoldersAt(contentFolder, buildFolder)
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
 	changes := release.Watch(stopping, folders, lookInterval)
-	store, err := release.Open(folders)
+	store, err := release.Open(folders, compose.SharedAddresses)
 	if err != nil {
 		return refused(err, contentFolder, buildFolder)
 	}

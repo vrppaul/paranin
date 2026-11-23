@@ -17,7 +17,7 @@ const programEnd = " "
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
 // has one, in the profile's order, which a face's command line goes to by slug as the TUI's :e does, the name of the
 // blog's session, which a post belongs to as the résumé's pages belong to the site's, the labels of a post's facts,
-// the words of its series and of the panes at its foot, and the name of its outline.
+// the words of its series and of the panes at its foot, the name of its outline, and the words of the blog's list.
 type Frame struct {
 	DarkTheme    string
 	CopyWords    CopyWords
@@ -30,6 +30,17 @@ type Frame struct {
 	SeriesWords  SeriesWords
 	PaneWords    PaneWords
 	Contents     string
+	ListWords    ListWords
+}
+
+// ListWords are the site's words a face lays round the blog's list: its window, the way to it beside a post's other
+// posts, the word before how it groups its posts, and the name of each grouping, by year and by series.
+type ListWords struct {
+	Window   string
+	AllPosts string
+	By       string
+	Years    string
+	Series   string
 }
 
 // PostLabels are the site's words a face labels a post's facts with: the version a reader reads, its series, and its
@@ -108,6 +119,13 @@ func FrameOf(snapshot *content.Snapshot) Frame {
 		SeriesWords:  SeriesWords{words: words},
 		PaneWords:    paneWords(words),
 		Contents:     words.Text(content.WordContents),
+		ListWords: ListWords{
+			Window:   words.Text(content.WordListWindow),
+			AllPosts: words.Text(content.WordAllPosts),
+			By:       words.Text(content.WordBy),
+			Years:    words.Text(content.WordYears),
+			Series:   words.Text(content.WordSeries),
+		},
 	}
 }
 

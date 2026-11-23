@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/release"
 )
@@ -34,6 +35,10 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "a post", path: "/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Reading slowly"},
 		{name: "a post as a manual", path: "/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "READING-SLOWLY(1)"},
 		{name: "a draft", path: "/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: "404"},
+		{name: "the blog's list", path: "/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
+		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
+		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 parts out"},
+		{name: "the list by series as a manual", path: "/blog/series.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG-SERIES(1)"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -130,6 +135,12 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 		{
 			name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 			contentType: browsed, holds: `<h1 class="post-title">`,
+		},
+		{name: "the blog's list in markdown", path: "/blog", accept: "text/markdown", contentType: markdown, holds: "# blog"},
+		{name: "the blog's list in a browser", path: "/blog", accept: "text/html", contentType: browsed, holds: `<a class="switch-way" href="/blog" aria-current="page">`},
+		{
+			name: "the list by series in a browser", path: "/blog/series", accept: "text/html", contentType: browsed,
+			holds: `<a class="switch-way" href="/blog/series" aria-current="page">`,
 		},
 	}
 	for _, testCase := range cases {
@@ -409,7 +420,7 @@ func serve(server http.Handler, method, path, accept string) *httptest.ResponseR
 
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.
 func fixtureStore(test *testing.T, folder string) *release.Store {
-	store, err := release.Open(release.FoldersAt(folder, fixtures.BuildFolder(test)))
+	store, err := release.Open(release.FoldersAt(folder, fixtures.BuildFolder(test)), compose.SharedAddresses)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

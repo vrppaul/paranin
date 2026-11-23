@@ -114,6 +114,12 @@
   --type-title-text-line: 3rem;
   /* a title set in text, a post's, a few words a line: its weight */
   --type-title-text-weight: 700;
+  /* a group's title on the blog's list below the wide screen's width, where its column narrows: its size */
+  --type-title-text-mid-size: 2rem;
+  /* a group's title on the blog's list below the wide screen's width, where its column narrows: its line's height */
+  --type-title-text-mid-line: 2.5rem;
+  /* a group's title on the blog's list below the wide screen's width, where its column narrows: its weight */
+  --type-title-text-mid-weight: 700;
   /* a title set in text on a phone: its size */
   --type-title-text-phone-size: 1.75rem;
   /* a title set in text on a phone: its line's height */
@@ -170,6 +176,12 @@
   --aside: 30ch;
   /* how wide a post's Outline stands beside its text, from the wide screen on */
   --rail: 22ch;
+  /* how wide the column of the groups' names stands on the blog's list, a year's or a series' of a few words */
+  --group-name: 24ch;
+  /* how wide the column of the groups' names stands below the wide screen's width */
+  --group-name-mid: 18ch;
+  /* the least width of a post's tile on the blog's list, a title of a few words a line */
+  --tile: 30ch;
   /* the longest line of a title set in text, a few words, in cells of its own size */
   --title-text-measure: 22ch;
   /* code among an article's words, a share of their size, since a mono face looks larger than theirs at one size */
@@ -208,8 +220,14 @@
   --quick: 120ms;
   /* how long a toast stays, and a copied command's button says so */
   --toast: 2400ms;
+  /* a tile of the blog's list that leads somewhere, over a tile to come beside it, so the line the two share is the live one's */
+  --layer-tile: 1;
+  /* what is set into the top edge of a tile to come, over the line a live tile above it draws there */
+  --layer-tile-name: 2;
+  /* the tile the keyboard is on, over its neighbours, so no day or label set into a tile beside it cuts its ring */
+  --layer-tile-focus: 3;
   /* the foot line, which the page scrolls under */
-  --layer-foot: 1;
+  --layer-foot: 4;
 }
 
 /* The faces' files, which the site serves itself, so every reader sees the faces the page is drawn and counted in */

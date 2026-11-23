@@ -70,7 +70,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `rail`, `column`, `aside` | `design/tokens.yaml` | a post's Outline, its text and its sources beside it |
 | `title_text_measure` | `design/tokens.yaml` | the longest line of a title set in text |
 | `code_in_words` | `design/tokens.yaml` | code among an article's words, a share of their size |
-| `group_name`, `group_name_mid`, `tile` | to add | the blog's list: the groups' names, and below `wide`; the least width of a tile |
+| `group_name`, `group_name_mid`, `tile` | `design/tokens.yaml` | the blog's list: the groups' names, and below `wide`; the least width of a tile |
 
 ## Sizes
 
@@ -129,7 +129,7 @@ other size: a control that seems to need one is the wrong control.
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
 | `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip, a source's number where a line cites it; never prose |
 | `title_text`, `title_text_phone` | `design/tokens.yaml` | `design/tokens.yaml` | a title set in text: a post's, and a group's on the blog's list; on a phone |
-| `title_text_mid` | to add | 700 | a group's title on the blog's list below `wide` |
+| `title_text_mid` | `design/tokens.yaml` | `design/tokens.yaml` | a group's title on the blog's list below `wide` |
 | `reading` | `design/tokens.yaml` | `design/tokens.yaml` | an article's words, in `reading_face`, on a line of its own taller than a row |
 | `source` | `design/tokens.yaml` | `design/tokens.yaml` | a source beside an article's text, `caption`'s size on a line short enough to read as one note |
 
@@ -158,7 +158,9 @@ other size: a control that seems to need one is the wrong control.
 
 - Lines are `hairline`. No shadows: depth is a shade of ground (`sunk`, `deep`) and a hairline.
 - What stands over the page as it scrolls lies on a layer of `design/tokens.yaml`, the layers listed lowest first:
-  the foot line on `foot`.
+  a live tile over a tile to come beside it on `tile`, so the line the two share is the live one's, what is set into
+  a tile to come's edge on `tile_name`, the tile the keyboard is on on `tile_focus`, so nothing beside it cuts its
+  ring, and the foot line on `foot`, over them all.
 - Nothing moves on its own but the cursor. Colours change under the pointer in `quick`; with reduced motion, at
   once. A toast stays `toast`.
 

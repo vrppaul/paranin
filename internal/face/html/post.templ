@@ -103,8 +103,8 @@ templ day(published time.Time) {
 	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(dayLayout) }</time>
 }
 
-// tags are a post's tags (DESIGN.md, Tag), each its word after a hash a screen reader skips; words for now, which lead
-// to the list they filter once there is one.
+// tags are a post's tags, or the blog's list's (DESIGN.md, Tag), each its word after a hash a screen reader skips;
+// words, which lead to the list they filter once a tag filters it (TODO.md).
 templ tags(tags []string) {
 	<ul class="tags">
 		for _, tag := range tags {
@@ -168,13 +168,17 @@ templ (writer PageWriter) partRow(part document.Part) {
 }
 
 // panes are the foot of a post's article (DESIGN.md, Panes): a heading saying where they lead, the series' pick beside
-// it where the post is a part of one; the two sides, the posts before and after it; and where the post is discussed.
+// it where the post is a part of one, a link to the blog's list where it is not, a page and no window; the two sides,
+// the posts before and after it; and where the post is discussed.
 templ (writer PageWriter) panes(foot panesFoot) {
 	<footer class="panes-foot">
 		<div class="panes-heading">
 			<h2 id={ panesHeadingID } class="panes-title">{ foot.heading }</h2>
 			if foot.pick != nil {
 				@writer.seriesPick(*foot.pick)
+			}
+			if foot.allPosts != "" {
+				<a class="panes-all" href={ foot.allPosts }>{ writer.frame.listWords.AllPosts }</a>
 			}
 		</div>
 		<nav class="panes" aria-labelledby={ panesHeadingID }>

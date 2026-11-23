@@ -54,10 +54,14 @@ const (
 	tabStopWidth = 8
 )
 
-// How a link to a page of the site is written: its text, then its address as a manual between brackets
+// How a link to a page of the site is written: its text, then its address as a manual between brackets; the slash a
+// path from the site's root opens with and parts its folders by; and what joins those parts in a manual's name, as
+// git-log(1) joins a command's
 const (
 	addressOpening = "<"
 	addressClosing = ">"
+	pathRoot       = "/"
+	nameJoint      = "-"
 )
 
 // The words that stand between the parts of one line of a manual: a title and its subtitle, and a subtitle and its
@@ -91,13 +95,16 @@ func Manual(composed document.Document, site routes.Site) string {
 }
 
 // pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page and
-// a post; the index, served in markdown alone, and the hidden pages, served in neither, have no manual to name.
+// a post, its path from the root for the blog's list, its folders joined by a hyphen (blog-series); the index, served
+// in markdown alone, and the hidden pages, served in neither, have no manual to name.
 func (writer manualWriter) pageName(page document.Page) string {
 	switch page.Kind {
 	case document.PageResume:
 		return writer.site.Host()
 	case document.PageProject, document.PagePost:
 		return page.Slug
+	case document.PageBlog, document.PageBlogSeries:
+		return strings.ReplaceAll(strings.TrimPrefix(routes.Path(page, routes.FormatChosen), pathRoot), pathRoot, nameJoint)
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
 	return ""
@@ -168,6 +175,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.card(indent, typed)
 	case document.Contents:
 		return writer.contents(indent, typed)
+	case document.Posts:
+		return writer.posts(indent, typed)
 	case document.Checks, document.Skills:
 		// only the hidden pages hold checks and the list of skills, and no host hands them to a text face: a page
 		// served with them would fail TestEveryPhraseReachesEveryFormat
@@ -185,6 +194,40 @@ func (writer manualWriter) card(indent int, card document.Card) []string {
 		lines = append(lines, paragraph(inner, 0, []string{address})...)
 	}
 	return append(lines, writer.pairs(inner, card.Facts)...)
+}
+
+// posts writes a group of the blog's list: a series' line and how many posts it holds, then each post, a blank line
+// before each.
+func (writer manualWriter) posts(indent int, posts document.Posts) []string {
+	lines := paragraph(indent, 0, writer.words(posts.Line))
+	lines = append(lines, paragraph(indent, 0, writer.words(posts.Count))...)
+	for _, post := range posts.List {
+		lines = append(append(lines, ""), writer.listedPost(indent, post)...)
+	}
+	return lines
+}
+
+// listedPost writes a post of the blog's list as a card is written: its title with the day it came out at the right,
+// or the word saying it comes; then under them its lead, its part and its series, its tags, and its page's address as
+// a manual, where it is out.
+func (writer manualWriter) listedPost(indent int, post document.ListedPost) []string {
+	when, address := []string{}, ""
+	switch typed := post.Readiness.(type) {
+	case document.PostOut:
+		when, address = strings.Fields(dayText(typed.Published)), writer.site.Address(typed.Page, routes.FormatManual)
+	case document.ComingPart:
+		when = writer.words(typed.Coming)
+	}
+	lines := titleLine(indent, writer.words(post.Title), when)
+	inner := indent + sectionIndent
+	lines = append(lines, paragraph(inner, 0, writer.words(post.Lead))...)
+	lines = append(lines, paragraph(inner, 0, joinedWords(dotWord, writer.words(post.Part), writer.words(post.Series)))...)
+	tags := make([][]string, 0, len(post.Tags))
+	for _, tag := range post.Tags {
+		tags = append(tags, strings.Fields(tag))
+	}
+	lines = append(lines, paragraph(inner, 0, joinedWords(dotWord, tags...))...)
+	return append(lines, paragraph(inner, 0, strings.Fields(address))...)
 }
 
 // contents writes each listed page as a bullet: its title and its address as a manual, as a link to it reads, then

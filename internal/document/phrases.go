@@ -53,6 +53,21 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return checkPhrases(spanPhrases(phrases, typed.Title), typed.List)
 	case Skills:
 		return skillPhrases(phrases, typed.List)
+	case Posts:
+		return listedPhrases(spanPhrases(spanPhrases(phrases, typed.Line), typed.Count), typed.List)
+	}
+	return phrases
+}
+
+// listedPhrases are what each post a list names says of it: the word saying a part comes, its title, its lead, where
+// it stands, its series and its tags; when a post came out is each face's to write.
+func listedPhrases(phrases []string, posts []ListedPost) []string {
+	for _, post := range posts {
+		phrases = spanPhrases(readinessPhrases(phrases, post.Readiness), post.Title)
+		phrases = spanPhrases(spanPhrases(spanPhrases(phrases, post.Lead), post.Part), post.Series)
+		for _, tag := range post.Tags {
+			phrases = textPhrase(phrases, tag)
+		}
 	}
 	return phrases
 }
@@ -107,6 +122,16 @@ func checkPhrases(phrases []string, checks []Check) []string {
 func skillPhrases(phrases []string, skills []Skill) []string {
 	for _, skill := range skills {
 		phrases = spanPhrases(spanPhrases(spanPhrases(phrases, skill.Name), skill.Duration), skill.Sources)
+	}
+	return phrases
+}
+
+// readinessPhrases are the word saying a part comes; a post's day is each face's to write.
+func readinessPhrases(phrases []string, readiness Readiness) []string {
+	switch typed := readiness.(type) {
+	case ComingPart:
+		return spanPhrases(phrases, typed.Coming)
+	case PostOut:
 	}
 	return phrases
 }

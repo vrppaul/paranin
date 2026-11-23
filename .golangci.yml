@@ -187,7 +187,7 @@ linters:
             - "**/internal/routes/**"
           deny:
             - pkg: github.com/vrppaul/paranin/internal/compose
-              desc: compose will read a post's links back into targets by routes, so routes never build on compose
+              desc: compose reads every page's addresses through routes, so routes never build on compose
         # content parses a post once and compose walks the tree it keeps (goldmark/ast, extension/ast): a parser in
         # compose would read the text a second time, by a format of its own. The anchor keeps extension/ast open
         compose-walks-never-parses:

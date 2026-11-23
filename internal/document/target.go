@@ -41,6 +41,10 @@ const (
 	PageSkills
 	// PagePost is a post of the blog, by its slug; it has no tabs
 	PagePost
+	// PageBlog is the blog's list, its posts by year; it has no slug and no tabs
+	PageBlog
+	// PageBlogSeries is the blog's list, its posts by series; it has no slug and no tabs
+	PageBlogSeries
 )
 
 // Mail is a mailbox a link writes to, by its address as the content writes it.

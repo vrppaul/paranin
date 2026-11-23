@@ -43,15 +43,18 @@ const (
 	askedByNameFile = "/favicon.ico"
 )
 
-// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the blog's,
-// where a post stands by its slug and by its number, the slash before a tab's name in its page's folder, the index
-// where agents look for it (llmstxt.org), and the endings of the formats
+// How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the blog's
+// list, by year at the blog's own name and by series in its folder, where a post stands by its slug and by its number,
+// the slash before a tab's name in its page's folder, the index where agents look for it (llmstxt.org), and the endings
+// of the formats
 const (
 	resumeRoot     = "/"
 	resumeFile     = "/index"
 	indexFile      = "/llms.txt"
 	projectFolder  = "/p/"
-	blogFolder     = "/blog/"
+	blogList       = "/blog"
+	blogFolder     = blogList + folderEnd
+	seriesList     = blogFolder + "series"
 	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
@@ -137,6 +140,10 @@ func Path(page document.Page, format Format) string {
 		return indexPath(format)
 	case document.PagePost:
 		return postPaths(page.Slug).inFormat(format)
+	case document.PageBlog:
+		return paths{chosen: blogList, files: blogList}.inFormat(format)
+	case document.PageBlogSeries:
+		return paths{chosen: seriesList, files: seriesList}.inFormat(format)
 	}
 	return ""
 }

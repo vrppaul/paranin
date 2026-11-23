@@ -16,12 +16,8 @@ const (
 	machineDayLayout = "2006-01-02"
 )
 
-// The window a post is shown in, in the blog's session: the second, after the list of posts, as the TUI numbers them;
-// and where the blog's session leads while its list is still to come: nowhere
-const (
-	postWindowNumber = 2
-	stillToCome      = ""
-)
+// The window a post is shown in, in the blog's session: the second, after the list of posts, as the TUI numbers them
+const postWindowNumber = 2
 
 // How the places of an article a reader links to are named: a paragraph by its number after paragraphIDOpening, a
 // heading by its title's words (document.SlugOf), or headingID where its title has none; a name the page holds already
@@ -105,10 +101,11 @@ type pick struct {
 }
 
 // panesFoot is the foot of a post's article (DESIGN.md, Panes): its heading, the series' pick beside it where the post
-// is a part of one, the two sides, and where the post is discussed.
+// is a part of one, or the way to the blog's list where it is not, the two sides, and where the post is discussed.
 type panesFoot struct {
 	heading     string
 	pick        *pick
+	allPosts    string
 	before      paneSide
 	after       paneSide
 	discussions []document.Link
@@ -155,24 +152,24 @@ func readPart(series document.Series) int {
 }
 
 // panesOf are the panes at the foot of a post: in a series, under the heading of the series' other parts, its pick
-// beside it, each side named by its part's number; outside one, under the heading of the blog's other posts, each
-// side named older or newer; none where a document holds no place in the blog. The way to the blog's list beside that
-// heading comes with the list (TODO.md).
+// beside it, each side named by its part's number; outside one, under the heading of the blog's other posts, the way
+// to the blog's list beside it, each side named older or newer; none where a document holds no place in the blog.
 func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 	if place == nil {
 		return nil
 	}
 	words, seriesWords := writer.frame.paneWords, writer.frame.seriesWords
-	sides, heading := words.Posts, words.OtherPosts
+	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.blogStart
 	var allParts *pick
 	if series := place.Series; series != nil {
-		sides, heading = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title))
+		sides, heading, allPosts = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title)), ""
 		footPick := pickOf(footPickID, seriesWords.AllParts(len(series.Parts)), "", *series)
 		allParts = &footPick
 	}
 	return &panesFoot{
 		heading:     heading,
 		pick:        allParts,
+		allPosts:    allPosts,
 		before:      writer.paneSideOf(sides.Before, place.Neighbours.Before, false),
 		after:       writer.paneSideOf(sides.After, place.Neighbours.After, true),
 		discussions: place.Discussions,
@@ -189,15 +186,14 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 	return paneSide{name: name, neighbour: neighbour, none: words.None, after: after}
 }
 
-// postFoot is the foot line of a post's page: the site's session, then the blog's, which the post belongs to and whose
-// list is still to come; the post as its one window, and the post to read in a terminal and as markdown.
+// postFoot is the foot line of a post's page, in the blog's session: the blog's list its first window and the post
+// its second, by its slug, and the post to read in a terminal and as markdown.
 func (writer PageWriter) postFoot(page document.Page) footLine {
-	sessions := []session{
-		{name: writer.frame.siteName, address: writer.frame.start, current: false},
-		{name: writer.frame.blog, address: stillToCome, current: true},
+	windows := []window{
+		windowOf(firstWindowNumber, writer.frame.listWords.Window, listPage(document.PageBlog), page),
+		windowOf(postWindowNumber, page.Slug, page, page),
 	}
-	windows := []window{windowOf(postWindowNumber, page.Slug, page, page)}
-	return footLineOf(writer.frame, writer.site, sessions, windows, page)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(true), windows, page)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from
@@ -280,7 +276,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return postList(typed.Ordered, typed.Start, items)
 	case document.Quote:
 		return postQuote(drawing.blocks(typed.Blocks))
-	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills:
+	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
+		document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; a
 		// list's item and a quote hold no heading
 	}

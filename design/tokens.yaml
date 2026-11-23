@@ -162,14 +162,15 @@ faces:
   - name: face
     about: the face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
     families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
-    # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them
+    # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them; the ExtraBold, which
+    # draws the mail alone, served cut to the characters a mail address holds, by scripts/cut_extrabold.sh
     files:
       - weight: 400
         path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2
       - weight: 700
         path: fonts/jetbrains-mono/JetBrainsMono-Bold.woff2
       - weight: 800
-        path: fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2
+        path: fonts/jetbrains-mono/JetBrainsMono-ExtraBold-ASCII.woff2
   - name: reading_face
     about: the face an article's words are read in, proportional where it may be, then the page's own face
     families: [iA Writer Duo S, JetBrains Mono, ui-monospace, monospace]
@@ -191,7 +192,7 @@ type:
     line: 1.5
     weight: 400
   - name: strong
-    about: what names, as the window shown in the foot line, and a regular control's words
+    about: what names, as the window shown in the foot line and a regular control's words, and a word made strong
     size: 1
     line: 1.5
     weight: 700

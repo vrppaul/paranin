@@ -128,7 +128,7 @@ other size: a control that seems to need one is the wrong control.
 | `lead`, `lead_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the headline under the name, and on a phone |
 | `heading` | `design/tokens.yaml` | `design/tokens.yaml` | an `h2` on a page that is not the résumé |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
-| `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words |
+| `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words, a word made strong |
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
 | `caption` | `design/tokens.yaml` | `design/tokens.yaml` | the career line's names and years, a chip's word, a tooltip, a source's number where a line cites it; never prose |
 | `title_text`, `title_text_phone` | `design/tokens.yaml` | `design/tokens.yaml` | a title set in text: a post's, and a group's on the blog's list; on a phone |
@@ -141,7 +141,8 @@ other size: a control that seems to need one is the wrong control.
   another page's `h2` is `heading`; every heading below is `strong`, its level shown by the space before it (`row_2`
   before `h3`, `row` before `h4` to `h6`). Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
-- Weights: 400 for text, 700 for what names (a role, a company, a button), 800 only for the mail, its @ left at 400.
+- Weights: 400 for text, 700 for what names (a role, a company, a button) and for a word made strong, wherever it
+  stands, 800 only for the mail, its @ left at 400.
 
 ## Block letters
 

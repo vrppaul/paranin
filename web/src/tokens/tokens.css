@@ -60,11 +60,11 @@
   --type-body-line: 1.5rem;
   /* the text read, every page's own: its weight */
   --type-body-weight: 400;
-  /* what names, as the window shown in the foot line, and a regular control's words: its size */
+  /* what names, as the window shown in the foot line and a regular control's words, and a word made strong: its size */
   --type-strong-size: 1rem;
-  /* what names, as the window shown in the foot line, and a regular control's words: its line's height */
+  /* what names, as the window shown in the foot line and a regular control's words, and a word made strong: its line's height */
   --type-strong-line: 1.5rem;
-  /* what names, as the window shown in the foot line, and a regular control's words: its weight */
+  /* what names, as the window shown in the foot line and a regular control's words, and a word made strong: its weight */
   --type-strong-weight: 700;
   /* the foot line's words, a field's hint: its size */
   --type-small-size: 0.875rem;
@@ -249,7 +249,7 @@
 }
 @font-face {
   font-family: "JetBrains Mono";
-  src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2") format("woff2");
+  src: url("../../../design/fonts/jetbrains-mono/JetBrainsMono-ExtraBold-ASCII.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;

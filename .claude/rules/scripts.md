@@ -14,3 +14,4 @@ The gates of our own, which no linter here can be told to keep, and the generato
 - `scripts/check_instruction_files.py` is claude-review's, taken whole and byte for byte, so it says nothing of this project: it is changed there and copied here, and its tests are there.
 - A gate never changes the working tree: what it would change, it changes in a copy.
 - A generator writes its output only when asked to, and checks it otherwise: `scripts/tokens` writes `internal/look/palette.go`, `web/src/tokens/tokens.css` and `web/src/tokens/times.ts` with `-write`, and its hook runs it bare.
+- `scripts/cut_extrabold.sh` cuts the mail's ExtraBold, by pyftsubset through `uvx`, run by hand: it has no check mode and no hook yet (`TODO.md`).

@@ -58,6 +58,12 @@ textarea {
   font: inherit;
 }
 
+/* a word made strong takes the bold of what names wherever it stands (DESIGN.md, Type): the browser's own bolder would
+ * take it to 900 inside a part already bold, a heading or a table's header, a weight the design never draws in */
+strong {
+  font-weight: var(--type-strong-weight);
+}
+
 /* a link reads in the text's colour, its underline saying it is one (DESIGN.md, Link): muted, and under the pointer
  * the accent, twice as thick; never an arrow */
 a {

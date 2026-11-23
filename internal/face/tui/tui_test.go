@@ -343,6 +343,37 @@ func TestTheFirstScreenShowsTheHead(test *testing.T) {
 	}
 }
 
+// A digit chooses the tab of its number at once, waiting for no key after it, as the page's vim keys do: a key after
+// it does what it does alone, never counted; a digit of no tab, zero among them, chooses none.
+func TestADigitChoosesItsTabAtOnce(test *testing.T) {
+	cases := []struct {
+		name  string
+		keys  []string
+		holds string
+		lacks string
+	}{
+		{name: "the third tab", keys: []string{"3"}, holds: "other-tool", lacks: "Kept the queue"},
+		{name: "the tab, then a line down", keys: []string{"2", "j"}, holds: "Kept the queue", lacks: "other-tool"},
+		{name: "a digit of no tab", keys: []string{"2", "9"}, holds: "Kept the queue", lacks: "other-tool"},
+		{name: "zero", keys: []string{"2", "0"}, holds: "Kept the queue", lacks: "other-tool"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := fixtureModel(test, commonWidth, shortHeight)
+			for _, key := range testCase.keys {
+				next, command := model.Update(keyPress(test, key))
+				if command != nil {
+					test.Fatalf("after %q a command came, want the digit taken at once", key)
+				}
+				model = as[Model](test, next)
+			}
+			if screen := screenOf(test, model); !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
+				test.Errorf("after %q the screen =\n%s\nwant it to hold %q and not %q", testCase.keys, screen, testCase.holds, testCase.lacks)
+			}
+		})
+	}
+}
+
 // The tab keys move to the next tab and the previous one, round from the last to the first.
 func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 	cases := []struct {

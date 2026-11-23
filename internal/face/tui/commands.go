@@ -39,9 +39,6 @@ func hiddenCommands() []hiddenCommand {
 	}
 }
 
-// A command runs with no count typed before it
-const noCount = 0
-
 // command is a command the command line runs, as Neovim's does, though Tab goes round none of them: the names it
 // goes by; whether it takes an argument, which it needs then; and what it does with the argument.
 type command struct {
@@ -58,8 +55,8 @@ type commandAction func(model Model, argument string) (Model, tea.Cmd)
 // pages the session holds, each showing its page in place of the one shown, as :e does a project's.
 func commands(buffers map[document.Page][]tab) []command {
 	known := []command{
-		{names: []string{"q", "quit", "q!"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.closed(noCount) }},
-		{names: []string{"qa"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.quit(noCount) }},
+		{names: []string{"q", "quit", "q!"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.closed() }},
+		{names: []string{"qa"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.quit() }},
 		{names: []string{editCommand, "edit"}, takesArgument: true, act: Model.edit},
 	}
 	for _, hidden := range hiddenCommands() {
@@ -92,7 +89,8 @@ type completionState struct {
 }
 
 // The place of the item chosen where none is, the line holding what the reader typed; the places what was typed
-// takes in the round Tab goes, its first, the items after it; and the steps Tab and Shift+Tab take through it
+// takes in the round Tab goes, its first, the items after it; and a step on and a step back, which Tab and Shift+Tab
+// take through that round, and j and k through a tab's lines or the blog's tiles
 const (
 	noneChosen   = -1
 	typedPlaces  = 1
@@ -203,7 +201,7 @@ func (model Model) ranCommand() (Model, tea.Cmd) {
 		return model, nil
 	}
 	if known, found := model.placeNamed(typed); found {
-		return known.act(model, noCount)
+		return known.act(model)
 	}
 	name, argument, _ := commandParts(typed)
 	if known, found := model.commandNamed(name); found {

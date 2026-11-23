@@ -2,7 +2,6 @@ package tui
 
 import (
 	"strconv"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -40,12 +39,6 @@ const (
 	backspaceKey     = "backspace"
 )
 
-// How long a number typed alone waits for a key to count before it chooses the tab of that number
-const countPause = 500 * time.Millisecond
-
-// What a digit is worth in the number typed before it
-const decimalBase = 10
-
 // The most code points the line typed after a slash or a colon holds: far past any place, command or search here,
 // and few enough that the work each key does on the line stays small however long a session types.
 const typedLimit = 256
@@ -65,14 +58,11 @@ const (
 )
 
 // keyState is what the keys pressed so far leave pending: the mode, what is typed on the command line after the
-// slash or the colon, a first g, and a number typed before a key, with the sequence of its last digit, so a pause
-// that ends an older number is passed over.
+// slash or the colon, and a first g.
 type keyState struct {
-	mode          mode
-	typing        string
-	topPending    bool
-	count         int
-	countSequence int
+	mode       mode
+	typing     string
+	topPending bool
 }
 
 // lineEdit is what a key does to the line the reader types: nothing, a change to it, or leaving it.
@@ -84,15 +74,10 @@ const (
 	lineLeft
 )
 
-// countPaused is the pause after a digit, by the digit's sequence.
-type countPaused struct {
-	sequence int
-}
+// action is what a key does in normal mode. No number before a key counts it, as the page's vim keys take none.
+type action func(model Model) (Model, tea.Cmd)
 
-// action is what a key does in normal mode, by the number typed before it, one where none was.
-type action func(model Model, count int) (Model, tea.Cmd)
-
-// normalActions are what each key does in normal mode.
+// normalActions are what each key does in normal mode; gg, the second g's, goes to the top as Home does.
 func normalActions() map[string]action {
 	actions := map[string]action{
 		quitKey:      Model.closed,
@@ -102,22 +87,22 @@ func normalActions() map[string]action {
 		upKey:        Model.upward,
 		upArrow:      Model.upward,
 		enterKey:     Model.openTile,
-		topKey:       Model.toLine,
+		topKey:       Model.home,
 		homeKey:      Model.home,
-		bottomKey:    Model.toLineOrEnd,
+		bottomKey:    Model.end,
 		endKey:       Model.end,
 		nextKey:      Model.nextTab,
 		rightArrow:   Model.nextTab,
-		tabKey: func(model Model, _ int) (Model, tea.Cmd) {
+		tabKey: func(model Model) (Model, tea.Cmd) {
 			return model.commandLineOpened().completed(forwardStep), nil
 		},
 		previousKey: Model.previousTab,
 		leftArrow:   Model.previousTab,
-		backwardTabKey: func(model Model, _ int) (Model, tea.Cmd) {
+		backwardTabKey: func(model Model) (Model, tea.Cmd) {
 			return model.commandLineOpened().completed(backwardStep), nil
 		},
 		searchKey:        Model.startSearch,
-		commandKey:       func(model Model, _ int) (Model, tea.Cmd) { return model.commandLineOpened(), nil },
+		commandKey:       func(model Model) (Model, tea.Cmd) { return model.commandLineOpened(), nil },
 		nextMatchKey:     Model.nextMatch,
 		previousMatchKey: Model.previousMatch,
 		copyKey:          Model.copiedValue,
@@ -179,46 +164,30 @@ func withoutLastLetter(text string) string {
 	return text[:lastStart]
 }
 
-// normalKey is the model after a key in normal mode: a digit of a number, a first g, or a key's action, counted
-// by the number before it.
+// normalKey is the model after a key in normal mode: a digit choosing its tab, a first g, or a key's action.
 func (model Model) normalKey(key string) (Model, tea.Cmd) {
 	model.said = commandMessage{text: "", failed: false}
-	if digit, isDigit := digitOf(key); isDigit {
-		return model.counting(digit)
-	}
 	topPending := model.keys.topPending
 	model.keys.topPending = false
+	if digit, isDigit := digitOf(key); isDigit {
+		return model.numbered(digit), nil
+	}
 	if key == topKey && !topPending {
-		// the number before it waits for the second g, so the pause after its last digit chooses no tab
 		model.keys.topPending = true
-		model.keys.countSequence++
 		return model, nil
 	}
-	count := model.keys.count
-	model.keys.count = 0
 	act, known := model.actions[key]
 	if !known {
 		return model, nil
 	}
-	return act(model, count)
+	return act(model)
 }
 
-// counting adds a digit to the number typed, and waits a pause for a key to count.
-func (model Model) counting(digit int) (Model, tea.Cmd) {
-	model.keys.count = model.keys.count*decimalBase + digit
-	model.keys.countSequence++
-	sequence := model.keys.countSequence
-	return model, tea.Tick(countPause, func(time.Time) tea.Msg { return countPaused{sequence: sequence} })
-}
-
-// countEnded chooses the tab of a number typed alone, once the pause after its last digit is over.
-func (model Model) countEnded(paused countPaused) Model {
-	if paused.sequence != model.keys.countSequence || model.keys.count == 0 {
-		return model
-	}
-	place := model.keys.count - firstTabNumber
-	model.keys.count = 0
-	if place >= len(model.tabs) {
+// numbered chooses the tab of a digit's number at once, as tmux's prefix and a digit chooses a window; a digit no tab
+// is numbered by, zero among them, chooses none.
+func (model Model) numbered(digit int) Model {
+	place := digit - firstTabNumber
+	if place < 0 || place >= len(model.tabs) {
 		return model
 	}
 	return model.choose(place)
@@ -230,37 +199,24 @@ func digitOf(key string) (int, bool) {
 	return digit, err == nil
 }
 
-func (model Model) quit(int) (Model, tea.Cmd) {
+func (model Model) quit() (Model, tea.Cmd) {
 	return model, tea.Quit
 }
 
-// toLine goes to the line of a number, the first where none was typed: gg, and 5gg.
-func (model Model) toLine(count int) (Model, tea.Cmd) {
-	return model.scrolledTo(max(count, 1) - 1), nil
-}
-
-// toLineOrEnd goes to the line of a number, the end where none was typed: G, and 5G.
-func (model Model) toLineOrEnd(count int) (Model, tea.Cmd) {
-	if count == 0 {
-		return model.end(count)
-	}
-	return model.toLine(count)
-}
-
-func (model Model) home(int) (Model, tea.Cmd) {
+func (model Model) home() (Model, tea.Cmd) {
 	return model.scrolledTo(0), nil
 }
 
-func (model Model) end(int) (Model, tea.Cmd) {
+func (model Model) end() (Model, tea.Cmd) {
 	return model.scrolledTo(len(model.drawn.tabs[model.chosen].lines)), nil
 }
 
-func (model Model) nextTab(count int) (Model, tea.Cmd) {
-	return model.choose(model.chosen + max(count, 1)), nil
+func (model Model) nextTab() (Model, tea.Cmd) {
+	return model.choose(model.chosen + 1), nil
 }
 
-func (model Model) previousTab(count int) (Model, tea.Cmd) {
-	return model.choose(model.chosen - max(count, 1)), nil
+func (model Model) previousTab() (Model, tea.Cmd) {
+	return model.choose(model.chosen - 1), nil
 }
 
 // shownLetter is a letter of a text from outside as strings.Map keeps it: a letter a terminal shows as it is, any

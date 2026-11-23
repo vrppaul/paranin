@@ -3,7 +3,6 @@ package tui
 import (
 	"strings"
 	"testing"
-	"testing/synctest"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -80,9 +79,9 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 		after []string
 		holds string
 	}{
-		{name: "a match after the top line", keys: []string{"3", "j"}, query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
+		{name: "a match after the top line", keys: []string{"j", "j", "j"}, query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
 		{name: "a match on the top line", keys: []string{"j"}, query: "the", after: []string{"enter"}, holds: "/the [1/4]"},
-		{name: "the count while the reader types", keys: []string{"3", "j"}, query: "kept", after: nil, holds: "[2/2]"},
+		{name: "the count while the reader types", keys: []string{"j", "j", "j"}, query: "kept", after: nil, holds: "[2/2]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -213,7 +212,6 @@ func TestTheNextMatchFollowsThePage(test *testing.T) {
 		holds string
 	}{
 		{name: "from the match shown", keys: []string{"n"}, holds: "/the [2/4]"},
-		{name: "a count goes as many matches on", keys: []string{"2", "n"}, holds: "/the [3/4]"},
 		{name: "from the top line after a scroll to the end", keys: []string{"G", "n"}, holds: "/the [3/4]"},
 	}
 	for _, testCase := range cases {
@@ -272,7 +270,7 @@ func TestThePageFollowsTheSearchTyped(test *testing.T) {
 		lacks  string
 	}{
 		{name: "typing goes to the first match", before: nil, text: "parser", keys: nil, holds: "Wrote the first parser", lacks: "Northwind"},
-		{name: "typing goes to the first match after the page", before: []string{"3", "j"}, text: "kept", keys: nil, holds: "Kept the build", lacks: "Kept the queue"},
+		{name: "typing goes to the first match after the page", before: []string{"j", "j", "j"}, text: "kept", keys: nil, holds: "Kept the build", lacks: "Kept the queue"},
 		{name: "typing what matches nothing goes back", before: nil, text: "parserz", keys: nil, holds: "Northwind", lacks: "Wrote the first parser"},
 		{name: "a backspace goes to the match again", before: nil, text: "parserz", keys: []string{"backspace"}, holds: "Wrote the first parser", lacks: "Northwind"},
 		{name: "a backspace seeks from where the search began", before: nil, text: "kept the b", keys: []string{"backspace"}, holds: "Kept the queue", lacks: "Kept the build"},
@@ -415,103 +413,4 @@ func TestAControlCharacterTypedNeverReachesTheScreen(test *testing.T) {
 			}
 		})
 	}
-}
-
-// A count before a key moves by as many: 3j three lines down, 2G to the second line.
-func TestACountMovesByAsMany(test *testing.T) {
-	cases := []struct {
-		name  string
-		keys  []string
-		holds string
-		lacks string
-	}{
-		{name: "3j goes three lines down", keys: []string{"3", "j"}, holds: "Southwind", lacks: "Kept the queue"},
-		{name: "2G goes to the second line", keys: []string{"G", "2", "G"}, holds: "Kept the queue", lacks: "Northwind"},
-		{name: "a zero alone counts nothing", keys: []string{"0", "j"}, holds: "Kept the queue", lacks: "Northwind"},
-		{name: "a number of two digits", keys: []string{"G", "1", "0", "k"}, holds: "Northwind", lacks: "one long winter"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), testCase.keys...)...)
-			if screen := screenOf(test, model); !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
-				test.Errorf("after %q the screen =\n%s\nwant it to hold %q and not %q", testCase.keys, screen, testCase.holds, testCase.lacks)
-			}
-		})
-	}
-}
-
-// A number pressed alone chooses the tab of that number once the reader stops typing it.
-func TestANumberAloneChoosesItsTab(test *testing.T) {
-	synctest.Test(test, func(test *testing.T) {
-		alone, wait := fixtureModel(test, commonWidth, shortHeight).Update(keyPress(test, "3"))
-		chosen, _ := alone.Update(wait())
-		if screen := screenOf(test, as[Model](test, chosen)); !strings.Contains(screen, "other-tool") {
-			test.Errorf("after 3 and a pause the screen =\n%s\nwant the third tab", screen)
-		}
-	})
-}
-
-// A number followed in time by a key counts the key, and the pause after it chooses no tab: 3l, and 2 g g, which a
-// pause between the two g's does not part.
-func TestANumberBeforeAKeyCountsTheKey(test *testing.T) {
-	cases := []struct {
-		name  string
-		start []string
-		digit int
-		then  []string
-		holds string
-		lacks string
-	}{
-		{name: "2l goes two tabs on", start: []string{"2", "l"}, digit: 0, then: nil, holds: "other-tool", lacks: "Kept the queue"},
-		{name: "2gg goes to the second line", start: append(toExperience(), "2", "g"), digit: len(toExperience()), then: []string{"g"}, holds: "Kept the queue", lacks: "Northwind"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			synctest.Test(test, func(test *testing.T) {
-				model, pause := pressedWaiting(test, fixtureModel(test, commonWidth, shortHeight), testCase.start, testCase.digit)
-				paused, _ := model.Update(pause())
-				screen := screenOf(test, pressed(test, as[Model](test, paused), testCase.then...))
-				if !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
-					test.Errorf("after %q, a pause and %q the screen =\n%s\nwant it to hold %q and not %q", testCase.start,
-						testCase.then, screen, testCase.holds, testCase.lacks)
-				}
-			})
-		})
-	}
-}
-
-// pressedWaiting is a model after keys, and the wait the key at a place among them started.
-func pressedWaiting(test *testing.T, model Model, keys []string, waitingPlace int) (Model, tea.Cmd) {
-	commands := []tea.Cmd{}
-	for _, key := range keys {
-		next, command := model.Update(keyPress(test, key))
-		model = as[Model](test, next)
-		commands = append(commands, command)
-	}
-	return model, commands[waitingPlace]
-}
-
-// A pause that ends a digit typed before the last one is passed over: the number still counts the key after it.
-func TestAPauseAfterAnEarlierDigitPassesOver(test *testing.T) {
-	synctest.Test(test, func(test *testing.T) {
-		first, earlier := pressed(test, fixtureModel(test, commonWidth, shortHeight), toExperience()...).Update(keyPress(test, "1"))
-		second, _ := first.Update(keyPress(test, "2"))
-		paused, _ := second.Update(earlier())
-		moved, _ := paused.Update(keyPress(test, "j"))
-		if screen := screenOf(test, as[Model](test, moved)); !strings.Contains(screen, "one long winter") {
-			test.Errorf("after 1, 2, the first digit's pause and j the screen =\n%s\nwant twelve lines down, at the end", screen)
-		}
-	})
-}
-
-// A number beyond the last tab, typed alone, chooses none, and counts nothing after it.
-func TestANumberBeyondTheTabsChoosesNone(test *testing.T) {
-	synctest.Test(test, func(test *testing.T) {
-		alone, wait := pressedWaiting(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "9"), len(toExperience()))
-		after, _ := alone.Update(wait())
-		screen := screenOf(test, pressed(test, as[Model](test, after), "j"))
-		if !strings.Contains(screen, "Kept the queue") || strings.Contains(screen, "one long winter") {
-			test.Errorf("after 9, a pause and j the screen =\n%s\nwant the same tab a line down", screen)
-		}
-	})
 }

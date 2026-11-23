@@ -66,13 +66,13 @@ func back() matchWay {
 
 // startSearch opens the search line, empty, after a slash: the chosen tab marks nothing until the reader types,
 // where Neovim keeps the marks of the search before until then.
-func (model Model) startSearch(int) (Model, tea.Cmd) {
+func (model Model) startSearch() (Model, tea.Cmd) {
 	model.keys.mode, model.keys.typing, model.search.begunAt = modeSearch, "", model.scrolls[model.chosen]
 	return model.repaintedChosen(), nil
 }
 
 // endSearch takes the search away, its marks and the matches it showed with it.
-func (model Model) endSearch(int) (Model, tea.Cmd) {
+func (model Model) endSearch() (Model, tea.Cmd) {
 	if model.search.query == "" {
 		return model, nil
 	}
@@ -143,27 +143,22 @@ func (model Model) searched() Model {
 	return model.toMatch(func(matches []int) int { return matchAtOrAfter(matches, model.scrolls[model.chosen]) })
 }
 
-// nextMatch goes a number of matches on, from the one the tab showed last, or from the page's top line, as Enter
-// does, where it shows none.
-func (model Model) nextMatch(count int) (Model, tea.Cmd) {
-	return model.toMatch(func(matches []int) int { return model.stepped(matches, onward(), max(count, 1)) }), nil
+// nextMatch goes a match on, from the one the tab showed last, or from the page's top line, as Enter does, where it
+// shows none.
+func (model Model) nextMatch() (Model, tea.Cmd) {
+	return model.toMatch(func(matches []int) int { return model.stepped(matches, onward()) }), nil
 }
 
-// previousMatch goes a number of matches back, from the one the tab showed last, or from the page's top line.
-func (model Model) previousMatch(count int) (Model, tea.Cmd) {
-	return model.toMatch(func(matches []int) int { return model.stepped(matches, back(), max(count, 1)) }), nil
+// previousMatch goes a match back, from the one the tab showed last, or from the page's top line.
+func (model Model) previousMatch() (Model, tea.Cmd) {
+	return model.toMatch(func(matches []int) int { return model.stepped(matches, back()) }), nil
 }
 
-// stepped is the place of the match a number of steps one way, round from the last to the first.
-func (model Model) stepped(matches []int, way matchWay, steps int) int {
-	return wrapped(model.firstStep(matches, way)+(steps-1)*way.step, len(matches))
-}
-
-// firstStep is the place of the match the first step one way goes to: a step from the match the tab showed last,
-// while the page stays there; with none, the match the way picks by the page's top line.
-func (model Model) firstStep(matches []int, way matchWay) int {
+// stepped is the place of the match a step one way goes to: a step from the match the tab showed last, while the page
+// stays there, round from the last to the first; with none, the match the way picks by the page's top line.
+func (model Model) stepped(matches []int, way matchWay) int {
 	if last, standing := model.standingMatch(); standing {
-		return last.place + way.step
+		return wrapped(last.place+way.step, len(matches))
 	}
 	return way.byTheTop(matches, model.scrolls[model.chosen])
 }

@@ -17,7 +17,7 @@ const (
 // copiedValue copies the value on the line the search found, as Neovim's yy yanks a line: the match a search or n
 // showed stands in for the cursor this TUI has not. The value goes to the reader's clipboard over OSC 52, which the
 // terminal at their end takes.
-func (model Model) copiedValue(int) (Model, tea.Cmd) {
+func (model Model) copiedValue() (Model, tea.Cmd) {
 	value, found := model.valueFound()
 	if !found {
 		model.said = commandMessage{text: nothingToCopyOpening + searchKey + nothingToCopyClosing, failed: true}

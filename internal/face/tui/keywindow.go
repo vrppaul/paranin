@@ -14,12 +14,8 @@ const (
 	closeHint = "close"
 )
 
-// The count shown before a key in the row that says what a count does, and the mark between the first tab's number
-// and the last's
-const (
-	countExample = "3"
-	keyRangeMark = "-"
-)
+// The mark between the first tab's number and the last's
+const keyRangeMark = "-"
 
 // What the command line says where the window of keys has no room on the screen, as Neovim says it of a window
 const notEnoughRoom = "E36: Not enough room"
@@ -38,10 +34,7 @@ func (model Model) keyNotes(place int) []hint {
 	if len(model.laid[place].tiles) > 0 {
 		moving = []hint{{key: downKey + space + upKey, does: "post after / before"}, {key: enterMark, does: "read the post"}}
 	}
-	notes := slices.Concat(moving, []hint{
-		{key: countExample + downKey, does: "move by a count"},
-		{key: topKey + topKey + space + bottomKey, does: "top / bottom"},
-	})
+	notes := append(moving, hint{key: topKey + topKey + space + bottomKey, does: "top / bottom"})
 	if lastTab := len(model.tabs) - 1 + firstTabNumber; lastTab > firstTabNumber {
 		notes = append(notes,
 			hint{key: previousKey + space + nextKey, does: "tab before / after"},
@@ -61,7 +54,7 @@ func (model Model) keyNotes(place int) []hint {
 
 // openKeys opens the window of keys where it shows whole on the screen; where it does not, the keys stay in normal
 // mode, so no mode opens unseen, and the command line says there is no room, as Neovim does.
-func (model Model) openKeys(int) (Model, tea.Cmd) {
+func (model Model) openKeys() (Model, tea.Cmd) {
 	if !model.shows(model.drawn.tabs[model.chosen].keyWindow) {
 		model.said = commandMessage{text: notEnoughRoom, failed: true}
 		return model, nil

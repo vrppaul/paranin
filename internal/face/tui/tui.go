@@ -124,7 +124,7 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 		actions:    normalActions(),
 		commands:   commands(buffers),
 		places:     nil,
-		keys:       keyState{mode: modeNormal, typing: "", topPending: false, count: 0, countSequence: 0},
+		keys:       keyState{mode: modeNormal, typing: "", topPending: false},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
 		completion: completionState{typed: "", listed: nil, matched: "", widest: menuWidths{name: 0, kind: 0}, chosen: noneChosen, first: 0},
 		said:       commandMessage{text: "", failed: false},
@@ -137,8 +137,7 @@ func (model Model) Init() tea.Cmd {
 	return tea.RequestBackgroundColor
 }
 
-// Update takes what the terminal says: its size, its background, its colours, or a key; and the pause after a
-// digit, which the model asks for itself.
+// Update takes what the terminal says: its size, its background, its colours, or a key.
 func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch typed := message.(type) {
 	case tea.WindowSizeMsg:
@@ -154,8 +153,6 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return model.repainted(), nil
 	case tea.KeyPressMsg:
 		return model.pressed(typed)
-	case countPaused:
-		return model.countEnded(typed), nil
 	}
 	return model, nil
 }

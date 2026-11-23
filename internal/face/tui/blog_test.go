@@ -305,7 +305,6 @@ func TestTheKeysGoFromTileToTile(test *testing.T) {
 	}{
 		{name: "Enter on the first tile", keys: []string{"enter"}, post: "2:fifth*"},
 		{name: "j to the next, in the next group", keys: []string{"j", "enter"}, post: "2:fourth*"},
-		{name: "a count of tiles on", keys: []string{"2", "j", "enter"}, post: "2:third*"},
 		{name: "past the last", keys: []string{"j", "j", "j", "j", "j", "enter"}, post: "2:first*"},
 		{name: "k back", keys: []string{"j", "j", "k", "enter"}, post: "2:fourth*"},
 		{name: "past the first", keys: []string{"k", "enter"}, post: "2:fifth*"},

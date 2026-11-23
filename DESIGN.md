@@ -623,5 +623,7 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   read marked `▌` in `accent`. The panes side by side from 108 cells, one under the other narrower, the next first.
 - A widget is its frame, its name and `● live` in the edge, and inside its alt text and the address of the live one. A
   diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
+- A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,
+  2026-11-23).
 - The `:` menu names each place by its kind: on a post `tab`, `heading`, `part` and `version`; on the list `post`,
   `tag` and `series`. The page's CommandLine offers the same places on the blog's pages.

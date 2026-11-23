@@ -219,7 +219,7 @@ func notFound(name string) commandMessage {
 // closed is the model after q, as Neovim's :q closes a window: on a post's tab its window closes and the blog's list
 // shows, where the session holds it; on any other page but the résumé, the blog's list among them, and on a post with
 // no list beside it, the résumé shows, where its reader left it; on the résumé the session ends.
-func (model Model) closed(int) (Model, tea.Cmd) {
+func (model Model) closed() (Model, tea.Cmd) {
 	resume := document.PageOf(document.PageResume)
 	switch shown := model.tabs[model.chosen].page; {
 	case shown.Kind == document.PagePost && model.holds(model.blog.list):

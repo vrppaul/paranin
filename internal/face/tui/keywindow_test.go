@@ -7,15 +7,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The fewest rows a terminal has that shows the window of keys whole: its sixteen rows, the row above the page and
+// The fewest rows a terminal has that shows the window of keys whole: its fifteen rows, the row above the page and
 // the footer
-const keyWindowHeight = 18
+const keyWindowHeight = 17
 
 // A question mark or a space opens the window of keys over the page, which names the keys of normal mode and what
 // each does, the tabs a number chooses among them, and how the window closes.
 func TestTheWindowOfKeysNamesTheKeys(test *testing.T) {
 	rows := []string{
-		"esc close", "j k", "line down / up", "3j", "move by a count", "gg G", "top / bottom", "h l", "tab before / after",
+		"esc close", "j k", "line down / up", "gg G", "top / bottom", "h l", "tab before / after",
 		"1-5", "go to a tab", "type a place to go", "complete a place", "find in the tab", "n N", "next / prior match",
 		"end the search", "quit",
 	}

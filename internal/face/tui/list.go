@@ -485,25 +485,27 @@ func (model Model) onList() bool {
 	return len(model.laid[model.chosen].tiles) > 0
 }
 
-// downward is j's and the down arrow's: on the blog's list a number of tiles on, else a number of lines down.
-func (model Model) downward(count int) (Model, tea.Cmd) {
-	if model.onList() {
-		return model.toTile(model.tiles[model.chosen] + max(count, 1)), nil
-	}
-	return model.scrolledTo(model.scrolls[model.chosen] + max(count, 1)), nil
+// downward is j's and the down arrow's: on the blog's list a tile on, else a line down.
+func (model Model) downward() (Model, tea.Cmd) {
+	return model.movedBy(forwardStep), nil
 }
 
-// upward is k's and the up arrow's: on the blog's list a number of tiles back, else a number of lines up.
-func (model Model) upward(count int) (Model, tea.Cmd) {
+// upward is k's and the up arrow's: on the blog's list a tile back, else a line up.
+func (model Model) upward() (Model, tea.Cmd) {
+	return model.movedBy(backwardStep), nil
+}
+
+// movedBy is the model a step on or back: on the blog's list a tile, else a line.
+func (model Model) movedBy(step int) Model {
 	if model.onList() {
-		return model.toTile(model.tiles[model.chosen] - max(count, 1)), nil
+		return model.toTile(model.tiles[model.chosen] + step)
 	}
-	return model.scrolledTo(model.scrolls[model.chosen] - max(count, 1)), nil
+	return model.scrolledTo(model.scrolls[model.chosen] + step)
 }
 
 // toTile has the keys stand on a tile of the chosen list, in reading order, and the page scrolled to show it whole;
-// past the first tile or the last the keys stay and the page scrolls by as many lines as the count went past, so the
-// list's head and foot come in sight.
+// past the first tile or the last the keys stay and the page scrolls by the line the step went past, so the list's
+// head and foot come in sight.
 func (model Model) toTile(wanted int) Model {
 	tiles, scroll := model.laid[model.chosen].tiles, model.scrolls[model.chosen]
 	chosen := min(max(wanted, 0), len(tiles)-1)
@@ -593,7 +595,7 @@ func (model Model) scrollShowing(place int, tile laidTile) int {
 }
 
 // openTile is Enter's: on the blog's list the post of the tile the keys stand on, beside the list.
-func (model Model) openTile(int) (Model, tea.Cmd) {
+func (model Model) openTile() (Model, tea.Cmd) {
 	if !model.onList() {
 		return model, nil
 	}

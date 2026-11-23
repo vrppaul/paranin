@@ -30,7 +30,7 @@ type place struct {
 	// offeredIdle is whether Tab offers the place before anything is typed: the tabs and the window of keys it does,
 	// the projects' pages only once the reader types, so Tab goes round the page shown first
 	offeredIdle bool
-	// act is what going there does, as a key's action does it, with no count
+	// act is what going there does, as a key's action does it
 	act action
 }
 
@@ -40,10 +40,10 @@ type place struct {
 func placesOf(tabs []tab, slugs []string) []place {
 	places := make([]place, 0, len(tabs)+len(slugs)+1)
 	for index, shown := range tabs {
-		places = append(places, place{name: shown.slug, kind: tabKind, tab: index, offeredIdle: true, act: func(model Model, _ int) (Model, tea.Cmd) { return model.choose(index), nil }})
+		places = append(places, place{name: shown.slug, kind: tabKind, tab: index, offeredIdle: true, act: func(model Model) (Model, tea.Cmd) { return model.choose(index), nil }})
 	}
 	for _, slug := range slugs {
-		places = append(places, place{name: slug, kind: projectKind, tab: noTab, offeredIdle: false, act: func(model Model, _ int) (Model, tea.Cmd) { return model.edit(slug) }})
+		places = append(places, place{name: slug, kind: projectKind, tab: noTab, offeredIdle: false, act: func(model Model) (Model, tea.Cmd) { return model.edit(slug) }})
 	}
 	places = append(places, place{name: helpPlace, kind: keysTitle, tab: noTab, offeredIdle: true, act: Model.openKeys})
 	unique := make([]place, 0, len(places))

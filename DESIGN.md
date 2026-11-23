@@ -113,7 +113,7 @@ other size: a control that seems to need one is the wrong control.
 - Code colours each kind of word in the hue Catppuccin's own style guide gives it, a token for each (`code_keyword`
   to `code_variable`), each reading at 4.5:1 on `sunk`, the code block's ground. In Latte each hue is a shade darker,
   as `host` and `error` are. Numbers stand in teal where the guide has peach, since `accent` is never small text. A
-  comment and punctuation are `faint`.
+  comment is `muted`, words read at the contrast small text asks; punctuation `faint`.
 - Borders: `quiet` for rules between parts, `muted` for a control's border and for a pane's or a tile's frame, `edge`
   for the corner crosses and for what lies over the page, a tooltip, a toast and a pick's window. A pane or a tile
   that leads nowhere is framed in `quiet` at half its strength (`quiet_half`).
@@ -530,7 +530,7 @@ A post's body, in the text's column.
   at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by
   the button alone, so a reader selects the lines. Each kind of word in its colour (Colour): a keyword mauve, a
   string green, a number or a constant teal, a function's name and a YAML key blue, a type yellow, a builtin red, an
-  operator sky, a shell's variable maroon, a comment and punctuation `faint`, every other word `text`. Code in a
+  operator sky, a shell's variable maroon, a comment `muted`, punctuation `faint`, every other word `text`. Code in a
   language the site does not colour, or in none, stands in `text`.
 - A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
   hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.

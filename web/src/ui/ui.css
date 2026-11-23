@@ -1407,8 +1407,8 @@ a.session:hover {
   tab-size: var(--tab-stop);
 }
 
-/* each kind of word in code in its own colour (DESIGN.md, Article); a comment and punctuation faint, what a reader may
- * pass over */
+/* each kind of word in code in its own colour (DESIGN.md, Article); a comment muted, words a reader reads, at the
+ * contrast small text asks; punctuation faint, what a reader may pass over */
 .code-keyword {
   color: var(--code-keyword);
 }
@@ -1441,7 +1441,10 @@ a.session:hover {
   color: var(--code-variable);
 }
 
-.code-comment,
+.code-comment {
+  color: var(--muted);
+}
+
 .code-punctuation {
   color: var(--faint);
 }

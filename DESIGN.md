@@ -210,7 +210,8 @@ other size: a control that seems to need one is the wrong control.
 - No icon set. The page uses the terminal's glyphs: `[x]` and `(*)` for a checkbox and a radio, ❯ before a command
   (`prompt`), the cursor after the name, ✓ in a toast (`passed`), and `-` before a point (`faint`). The blog adds `#`
   before a tag (`faint`), `↑` before the way to a newer version (`accent`), `▾` after a pick that opens a window
-  (`faint`), `▌` before the Outline's heading read (`accent`) and `●` before `live` (`passed`).
+  (`faint`), `▌` before the Outline's heading read (`accent`), `●` before `live` (`passed`) and `*   *   *` for a
+  pause (`faint`).
 - Two drawn marks, SVGs in `currentColor`, `box` square, one stroke of 1.5 of its 16 units: the theme button's
   half-filled circle and the dialog's close cross. The first screen's corner crosses are drawn the same way, a `cross`
   square with two hairlines across it, the TUI's + on the page. A mark that needs drawing is drawn as these are, never
@@ -515,6 +516,9 @@ A post's body, in the text's column.
   cites it, under a `quiet` hairline, its number in `label` and its words `source` in `muted`. On a phone none stands
   beside the text: the sources stand at its end, each once, under a `quiet` hairline, `small`.
 - A quote: a bar of `edge`, `underline_hover` wide, at its left; who said it under it, `small` in `muted`.
+- A pause, a thematic break: three stars as a book sets them, `*   *   *`, in `faint` in the page's face, in the
+  middle of the text's column, a row of air above and below on top of the row its block before keeps; no paragraph's
+  number.
 - Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
 - Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
   at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by

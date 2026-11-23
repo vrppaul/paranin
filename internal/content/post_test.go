@@ -160,7 +160,8 @@ func TestAPostsBodyReadsAsCommonMarkWithTablesAndFootnotes(test *testing.T) {
 }
 
 // The format lets a post through that holds a tab inside code, which gofmt writes, a reference to a footnote written
-// as code or escaped, and front matter whose fences end as a file written on Windows ends its lines.
+// as code or escaped, front matter whose fences end as a file written on Windows ends its lines, and a pause inside a
+// part, in each of the marks CommonMark breaks a theme with.
 func TestAPostTheFormatAllowsLoads(test *testing.T) {
 	cases := []struct {
 		name        string
@@ -180,6 +181,9 @@ func TestAPostTheFormatAllowsLoads(test *testing.T) {
 		{name: "a reference to a letter", original: "Its text.", replacement: "Its &amp; &#233; text."},
 		{name: "a reference to a control character as code", original: "Its text.", replacement: "Its `&#27;` text."},
 		{name: "a reference to a control character escaped", original: "Its text.", replacement: `Its \&#27; text.`},
+		{name: "a pause of stars", original: "Its text.", replacement: "Its text.\n\n***\n\nMore."},
+		{name: "a pause of hyphens", original: "Its text.", replacement: "Its text.\n\n---\n\nMore."},
+		{name: "a pause of underscores", original: "Its text.", replacement: "Its text.\n\n___\n\nMore."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -262,7 +266,12 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a heading citing a footnote", sample: samplePost, file: samplePostFile, original: "## A section\n\nIts text.", replacement: "## A section[^note]\n\nIts text.\n\n[^note]: A source.", want: faultPlace{file: samplePostFile, field: "", line: 10}},
 		{name: "a footnote citing a footnote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^one]\n\n[^one]: See [^two].\n[^two]: A source.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
 		{name: "a picture", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its ![a cache](cache.svg) text.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
-		{name: "a thematic break", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.\n\n***\n\nMore.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a pause in a quote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "> One.\n>\n> ***\n>\n> Two.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a pause in a list's item", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "- one\n\n  ***\n\n  two", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a pause at the body's start", sample: samplePost, file: samplePostFile, original: "A paragraph.", replacement: "***\n\nA paragraph.", want: faultPlace{file: samplePostFile, field: "", line: 8}},
+		{name: "a pause at the body's end", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.\n\n***", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a pause before the notes alone", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^note]\n\n***\n\n[^note]: A note.", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a pause before a link's definition alone", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its [text][x].\n\n***\n\n[x]: https://example.test", want: faultPlace{file: samplePostFile, field: "", line: 14}},
 		{name: "a hard line break by a backslash", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text,\\\nand more.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "a hard line break by two spaces", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text,  \nand more.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "a link inside the site", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its [text](/p/tidy-tool).", want: faultPlace{file: samplePostFile, field: "", line: 12}},

@@ -154,6 +154,8 @@ func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 		return document.CodeBlock{Text: reader.code(typed.Lines()), Language: ""}, true
 	case *ast.Blockquote:
 		return document.Quote{Blocks: reader.containedBlocks(node)}, true
+	case *ast.ThematicBreak:
+		return document.Pause{}, true
 	case *ast.List:
 		return reader.list(typed), true
 	case *extensionast.Table:

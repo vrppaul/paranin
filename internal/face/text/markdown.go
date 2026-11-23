@@ -25,6 +25,7 @@ const (
 	listMark      = "- "
 	orderedMark   = ". "
 	quoteMark     = ">"
+	breakMark     = "***"
 	highlightMark = "**"
 	strongMark    = "**"
 	emphasisMark  = "*"
@@ -163,6 +164,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return appendChunk(chunks, writer.list(typed, depth))
 	case document.Quote:
 		return appendChunk(chunks, quote(strings.Join(writer.blocks(nil, typed.Blocks, depth), blankLine)))
+	case document.Pause:
+		return appendChunk(chunks, breakMark)
 	case document.Facts:
 		return appendChunk(chunks, writer.facts(typed.List))
 	case document.Entry:

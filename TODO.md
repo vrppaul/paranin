@@ -47,7 +47,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The owner's
 
-- A thematic break's look, on a storyboard: posts need the pause (owner, 2026-11-23), which the load refuses until it is drawn.
 - The blog's line, "What I build, and what I learn building it." (`blog_line` in `content/i18n/en.yaml`), is not the owner's own: his words, later.
 - Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
 - In Latte the TUI's menu writes its kinds in `muted` on `quiet` at 4.05:1, under the 4.7 `muted` is held to over its grounds, among which `quiet` is not: another ground for the menu, or another ink for its kinds. His eye.

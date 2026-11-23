@@ -320,6 +320,12 @@ templ postQuote(blocks []templ.Component) {
 	</blockquote>
 }
 
+// pause is a turn a post takes inside a part (DESIGN.md, Article): a rule, which a screen reader names a separator,
+// carrying the stars the stylesheet draws it as, since a rule holds no text.
+templ pause() {
+	<hr data-mark={ look.PauseMark }/>
+}
+
 // copyableCode is a post's code on lines of its own (DESIGN.md, Article and Code): first its bar, which the stylesheet
 // sets at its top right, the language it is written in, where its author names one, and the button that copies it,
 // hidden until the site's script shows it; then the code as it is, line for line, scrolling sideways rather than

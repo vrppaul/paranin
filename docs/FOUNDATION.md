@@ -360,13 +360,15 @@ The format is CommonMark with GFM's tables and footnotes, YAML front matter
 and widget blocks, and nothing else. `paranin check` refuses what falls
 outside it, raw HTML first of all: a terminal cannot draw it and the CSP
 would not run it. It refuses as well a heading of level 1, which the title
-is, a heading that skips a level, a footnote no reference cites and a
-reference to no footnote, and the characters the content refuses
-everywhere but a tab inside code, which a face expands as it draws the
+is, a heading that skips a level, a pause (a thematic break) anywhere but
+between two of the post's own blocks, since it parts two runs of its text
+(inside a quote or a list, at the body's start or end, or with nothing
+after it but footnotes and links' definitions, it parts none), a footnote
+no reference cites and a reference to no footnote, and the characters the
+content refuses everywhere but a tab inside code, which a face expands as it draws the
 code, written or as a reference (`&#27;`); each fault at its file and line.
 It refuses as well what no face draws yet: a picture, until the post's
-pictures are served from its folder; a thematic break, a pause inside a
-part of a post, until its look is drawn; a link's title; a link to
+pictures are served from its folder; a link's title; a link to
 anything but an absolute web address or `mailto:` a bare mail address, until a link inside
 the site is read back into a page of it; a table's row of more cells than
 its header, whose cells past it GFM drops; a footnote that is more than
@@ -378,11 +380,13 @@ the one list `content` keeps is refused, so a part of the format no face
 draws never passes unseen.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and
-quotes as text; code with its syntax colours from the tokens; tables laid
-out to the terminal's width; links as OSC 8 hyperlinks with the address
-beside them; an image as its alt text and its address; a widget as its
-caption, its alt text and a link to the live version. A post opens with
-`:e blog/<slug>` or `:e blog/<number>` (Addresses, below).
+quotes as text; a thematic break, a pause inside a part, as the page's
+three stars in the middle of the text; code with its syntax colours from
+the tokens; tables laid out to the terminal's width; links as OSC 8
+hyperlinks with the address beside them; an image as its alt text and its
+address; a widget as its caption, its alt text and a link to the live
+version. A post opens with `:e blog/<slug>` or `:e blog/<number>`
+(Addresses, below).
 
 #### Layout of a post
 

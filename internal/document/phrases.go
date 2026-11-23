@@ -41,6 +41,8 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return phrases
 	case Quote:
 		return blockPhrases(phrases, typed.Blocks)
+	case Pause:
+		// a pause says nothing: each face draws its stars
 	case Facts:
 		return factPhrases(phrases, typed.List)
 	case Entry:

@@ -1748,6 +1748,24 @@ a.session:hover {
   margin-top: var(--row-half);
 }
 
+/* a pause (DESIGN.md, Article): the three stars its rule carries, as a book sets them, in the page's face, faint, in the
+ * middle of the text's column, a row of air above and below on top of the row a block keeps; a screen reader names the
+ * rule a separator and reads no star */
+.post .article hr {
+  height: var(--row);
+  margin: var(--row) 0 var(--row-2);
+  border: 0;
+  color: var(--faint);
+  font-family: var(--face);
+  line-height: var(--row);
+  text-align: center;
+}
+
+.post .article hr::after {
+  content: attr(data-mark) / "";
+  white-space: pre;
+}
+
 /* a block of code (DESIGN.md, Article and Code): the block, in the small style, a row clear at its top for its bar,
  * which stands at its top right: its language, faint, and its button, muted, turning the text's colour under the
  * pointer, underlined in the accent */

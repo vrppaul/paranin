@@ -317,7 +317,7 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.checks(typed, indent)
 	case document.Skills:
 		return layout.skills(typed, indent)
-	case document.List, document.Quote:
+	case document.List, document.Quote, document.Pause:
 		// a post's alone, which no buffer shows yet: the TUI's post draws them as DESIGN.md has it
 	case document.Posts:
 		// the blog's list alone, which no buffer shows yet: the TUI's blog session draws it as DESIGN.md has it

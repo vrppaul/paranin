@@ -125,7 +125,7 @@ Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in 
 name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
 Amended 2026-11-22, with the first post served: the posts' blocks and spans, a footnote as a note where a line cites
 it, and the post's head. Amended 2026-11-23, with the blog's list: a document in two groupings, its groups sections
-holding the posts they name.
+holding the posts they name. Amended 2026-11-23, on the owner's choice of its look: a post's pause.
 
 ### Context
 
@@ -267,7 +267,10 @@ and web routes.
     the salary range among them, so `compose` places them too;
   - the posts' (step 8): a list, in order from its first number or not,
     whose items hold blocks; a quote, holding blocks; code with its
-    language; and a figure, which comes with the post's pictures (TODO). A
+    language; a pause, a thematic break standing between two of the
+    post's own blocks, never inside a quote or a list nor at the body's
+    start or end (amended 2026-11-23); and a figure,
+    which comes with the post's pictures (TODO). A
     table gains a header row, and a post's headings nest into sections, each
     holding what follows it up to the next heading of its level or above;
   - the blog's list's (amended 2026-11-23): posts, the block a group of the

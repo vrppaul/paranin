@@ -75,6 +75,9 @@ type Quote struct {
 	Blocks []Block
 }
 
+// Pause is a turn a post takes inside a part, which no heading names: a thematic break.
+type Pause struct{}
+
 // Facts is a list of labels and their values, of a kind a face finds them by, not by their place.
 type Facts struct {
 	Kind FactsKind
@@ -198,6 +201,7 @@ func (Table) block()     {}
 func (CodeBlock) block() {}
 func (List) block()      {}
 func (Quote) block()     {}
+func (Pause) block()     {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}

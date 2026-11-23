@@ -66,7 +66,7 @@ const (
 	noteHeadingProblem   = "cites a footnote from a heading, which names a part and is no line a source stands beside"
 	kindProblem          = "is a node of goldmark's kind %s, which no post holds: no face draws it"
 	pictureProblem       = "is a picture, and pictures come with the step that serves them from the post's folder"
-	breakProblem         = "is a thematic break, which no face draws: a heading parts a post"
+	pausePlaceProblem    = "is a pause between no two of the post's own blocks, so it parts no two runs of its text"
 	extraCellsProblem    = "is a table's row of more cells than its header, whose cells past the header's GFM drops"
 	lineBreakProblem     = "breaks its line hard, which no face draws: a paragraph's lines join, and a list parts them"
 	linkProblem          = "%q is no absolute web address and no mailto: of a bare mail address"

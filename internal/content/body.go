@@ -51,9 +51,10 @@ type bodyInspection struct {
 
 // inspectBody finds in a post's body, which starts at a line of its file, what the format refuses: a node of a kind
 // no post holds (PostKinds), raw HTML among them, a heading of the title's level or one that skips a level, a widget,
-// a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph or cites
-// another, a reference to no footnote and one in a heading; what no face draws, a line broken hard and a link's
-// title; a link to neither the web nor a mailbox; and characters no value may hold, written or referenced.
+// a pause between no two of the post's own blocks, a table's row of more cells than its header, a footnote no
+// reference cites, one that is no one paragraph or cites another, a reference to no footnote and one in a heading;
+// what no face draws, a line broken hard and a link's title; a link to neither the web nor a mailbox; and characters
+// no value may hold, written or referenced.
 func inspectBody(inspection *inspection, body Markdown, firstLine int) {
 	checked := &bodyInspection{
 		inspection: inspection, body: body, firstLine: firstLine, headingLevel: titleLevel,
@@ -90,8 +91,6 @@ func (checked *bodyInspection) refuseKind(node ast.Node) {
 		checked.addRawHTML(node, typed.Segments.Value(checked.body.Source))
 	case *ast.Image:
 		checked.inspection.addAtLine(checked.lineOf(node), pictureProblem)
-	case *ast.ThematicBreak:
-		checked.inspection.addAtLine(checked.lineOf(node), breakProblem)
 	default:
 		checked.inspection.addAtLine(checked.lineOf(node), kindProblem, node.Kind())
 	}
@@ -109,6 +108,8 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 		checked.addCodeLines(typed.Lines())
 	case *ast.CodeBlock:
 		checked.addCodeLines(typed.Lines())
+	case *ast.ThematicBreak:
+		checked.inspectPause(typed)
 	case *ast.CodeSpan:
 		checked.addCodeSpan(typed)
 		// a code span's text is code, where a reference is written as it is
@@ -134,6 +135,32 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 		}
 	}
 	return ast.WalkContinue
+}
+
+// inspectPause holds a pause to a place between two of the post's own blocks, the two runs of text it parts: one inside
+// a quote or a list, or at the body's start or end, parts none.
+func (checked *bodyInspection) inspectPause(pause *ast.ThematicBreak) {
+	between := pause.Parent().Kind() == ast.KindDocument &&
+		hasBlockToward(pause, ast.Node.PreviousSibling) && hasBlockToward(pause, ast.Node.NextSibling)
+	if !between {
+		checked.inspection.addAtLine(checked.lineOf(pause), pausePlaceProblem)
+	}
+}
+
+// placelessKinds are the kinds of block a post's text holds that stand nowhere in it: the footnotes, each drawn where a
+// line cites it, and a link's definition, which the links it names carry.
+func placelessKinds() []ast.NodeKind {
+	return []ast.NodeKind{extensionast.KindFootnoteList, ast.KindLinkReferenceDefinition}
+}
+
+// hasBlockToward is whether a block that stands in the text lies beside a node, one way, its siblings taken in turn.
+func hasBlockToward(node ast.Node, step func(ast.Node) ast.Node) bool {
+	for sibling := step(node); sibling != nil; sibling = step(sibling) {
+		if !slices.Contains(placelessKinds(), sibling.Kind()) {
+			return true
+		}
+	}
+	return false
 }
 
 // inspectRow finds a row of a table with more cells than its header, which GFM drops from the tree: words left on

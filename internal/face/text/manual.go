@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -167,6 +168,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.list(indent, typed)
 	case document.Quote:
 		return writer.quote(indent, typed)
+	case document.Pause:
+		return pause(indent)
 	case document.Facts:
 		return writer.pairs(indent, typed.List)
 	case document.Entry:
@@ -389,6 +392,13 @@ func (writer manualWriter) quote(indent int, quote document.Quote) []string {
 		lines = append(lines, bar+strings.TrimPrefix(line, strings.Repeat(space, indent+1)))
 	}
 	return lines
+}
+
+// pause writes a pause as the page draws it: the three stars in the middle of the text's column, from the indent to
+// the page's edge, a row of air above and below them.
+func pause(indent int) []string {
+	room := pageWidth - indent - textWidth(look.PauseMark)
+	return []string{"", strings.Repeat(space, indent+room/sides) + look.PauseMark, ""}
 }
 
 // notes writes the notes the page's blocks cite, in a section of their own at its end, each its number and then

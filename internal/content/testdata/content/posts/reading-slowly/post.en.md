@@ -42,5 +42,9 @@ See [the reader's notes](https://notes.example.test/slow), or write to <mira@exa
 
 A page kept is a page read again.
 
+***
+
+What stays is what was argued with.
+
 [^pencil]: A soft one, which rubs out.
 [^source]: Mira Example, on her own reading.

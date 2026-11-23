@@ -39,5 +39,9 @@ See [the reader's notes](https://notes.example.test/slow), or write to [mira@exa
 
 A page kept is a page read again.
 
+***
+
+What stays is what was argued with.
+
 [^1]: Mira Example, on her own reading.
 [^2]: A soft one, which rubs out.

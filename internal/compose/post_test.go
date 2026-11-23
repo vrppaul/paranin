@@ -25,7 +25,7 @@ const (
 )
 
 // A post's body becomes the document's blocks kind by kind: its marks spans, its escapes and references read, its
-// headings sections that nest by their level, its lists, quotes, code and tables blocks, and each citation of a
+// headings sections that nest by their level, its lists, quotes, code, tables and pauses blocks, and each citation of a
 // footnote the note itself, numbered by the order of the first citations.
 func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	cases := []struct {
@@ -108,6 +108,11 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 		},
 		{name: "code indented", body: "    ls -la\n    ls", want: []document.Block{document.CodeBlock{Text: "ls -la\nls", Language: ""}}},
 		{
+			name: "a pause between paragraphs",
+			body: "Before.\n\n***\n\nAfter.",
+			want: []document.Block{paragraphOf(document.Text{Text: "Before."}), document.Pause{}, paragraphOf(document.Text{Text: "After."})},
+		},
+		{
 			name: "a table under its header",
 			body: "| Reading | Kept |\n| --- | --- |\n| Slow | **Most** |",
 			want: []document.Block{document.Table{
@@ -189,6 +194,8 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		{kind: ast.KindFencedCodeBlock, body: "```go\nfenced()\n```", phrase: "fenced()"},
 		{kind: ast.KindCodeBlock, body: "    indented()", phrase: "indented()"},
 		{kind: ast.KindBlockquote, body: "> Quoted.", phrase: "Quoted."},
+		// a break has no phrase of its own: its row keeps the kinds whole, and TestAPostsBodyBecomesItsBlocks holds its block
+		{kind: ast.KindThematicBreak, body: "Before.\n\n***\n\nAfter.", phrase: "After."},
 		{kind: ast.KindLinkReferenceDefinition, body: "[defined][x]\n\n[x]: https://example.test", phrase: "defined"},
 		{kind: ast.KindCodeSpan, body: "A `span`.", phrase: "span"},
 		{kind: ast.KindEmphasis, body: "*stressed*", phrase: "stressed"},

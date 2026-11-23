@@ -51,11 +51,12 @@ func postFormat() []parser.Option {
 
 // PostKinds are the kinds of node a post's tree may hold, as postFormat parses it, and each has its case in compose's
 // walk: the load refuses a node of any other kind, so a kind an extension brings later is refused, never dropped
-// unseen. Raw HTML, a picture and a thematic break stand outside it.
+// unseen. Raw HTML and a picture stand outside it.
 func PostKinds() []ast.NodeKind {
 	return []ast.NodeKind{
 		ast.KindDocument, ast.KindParagraph, ast.KindTextBlock, ast.KindHeading, ast.KindFencedCodeBlock,
-		ast.KindCodeBlock, ast.KindBlockquote, ast.KindList, ast.KindListItem, ast.KindLinkReferenceDefinition,
+		ast.KindCodeBlock, ast.KindBlockquote, ast.KindThematicBreak, ast.KindList, ast.KindListItem,
+		ast.KindLinkReferenceDefinition,
 		ast.KindText, ast.KindCodeSpan, ast.KindEmphasis, ast.KindLink, ast.KindAutoLink,
 		extensionast.KindTable, extensionast.KindTableHeader, extensionast.KindTableRow, extensionast.KindTableCell,
 		extensionast.KindFootnoteList, extensionast.KindFootnote, extensionast.KindFootnoteLink,

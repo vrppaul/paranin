@@ -276,6 +276,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return postList(typed.Ordered, typed.Start, items)
 	case document.Quote:
 		return postQuote(drawing.blocks(typed.Blocks))
+	case document.Pause:
+		return pause()
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; a

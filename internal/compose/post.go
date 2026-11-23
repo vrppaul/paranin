@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 
@@ -26,13 +27,16 @@ const (
 	codeLineEnd = "\n"
 )
 
+// The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
+const unnamedHeading = "heading"
+
 // Posts are the posts a snapshot serves, each a document, in the snapshot's order: those published, and those
 // unlisted, whose address serves them though no list names them; never a draft or a preview.
 func Posts(snapshot *content.Snapshot) []document.Document {
 	read := blogOf(snapshot)
 	documents := []document.Document{}
 	for _, post := range servedPosts(snapshot) {
-		documents = append(documents, postDocument(post, read, snapshot.Words))
+		documents = append(documents, postDocument(post, read, snapshot))
 	}
 	return documents
 }
@@ -80,12 +84,31 @@ func listed(status content.Status) bool {
 }
 
 // postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
-// tree the load parsed, which nothing here writes to.
-func postDocument(post content.Post, read blog, words content.Words) document.Document {
-	body := bodyReader{body: post.Body, notes: map[int][]document.Span{}}
+// tree the load parsed, which nothing here writes to, each heading named clear of the page's other places.
+func postDocument(post content.Post, read blog, snapshot *content.Snapshot) document.Document {
+	head := postHead(post, read, snapshot.Words)
+	body := bodyReader{body: post.Body, notes: map[int][]document.Span{}, names: namesHeld(namesBeside(head, snapshot))}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(post.Body.Tree, body.readNote)
-	return document.Document{Head: postHead(post, read, words), Blocks: body.containedBlocks(post.Body.Tree)}
+	return document.Document{Head: head, Blocks: body.containedBlocks(post.Body.Tree)}
+}
+
+// namesBeside are the names a post's page offers its places by but its headings, which theirs keep clear of on every
+// face, so each name on the page leads to one place: its windows', each project's page's, the window of keys' and each
+// part's of its series.
+func namesBeside(head document.Head, snapshot *content.Snapshot) []string {
+	taken := []string{KeysPlace}
+	for _, window := range listWordsOf(snapshot.Words).BlogWindows(document.PageOf(document.PageBlog), head.Page) {
+		taken = append(taken, window.Name)
+	}
+	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
+		taken = append(taken, project.Slug)
+	}
+	// the page's places but its headings, which stand in the blocks: the parts of its series a reader goes to
+	for _, part := range document.PlacesOf(document.Document{Head: head, Blocks: nil}) {
+		taken = append(taken, part.Name)
+	}
+	return taken
 }
 
 // postHead is a post's head: its page by its slug, its number, the language of the site's words, its title, its
@@ -109,11 +132,12 @@ func postHead(post content.Post, read blog, words content.Words) document.Head {
 	}
 }
 
-// bodyReader reads a post's body into blocks: the body, and the words of each footnote by its number, read first,
-// which every citation of it carries.
+// bodyReader reads a post's body into blocks: the body; the words of each footnote by its number, read first, which
+// every citation of it carries; and the names taken on the post's page, which each heading's is kept clear of.
 type bodyReader struct {
 	body  content.Markdown
 	notes map[int][]document.Span
+	names names
 }
 
 // readNote keeps the words of a footnote the walk meets, by its number; the load holds a footnote to one paragraph.
@@ -147,8 +171,10 @@ func (reader bodyReader) nested(nodes []ast.Node, level int) ([]document.Block, 
 		case isHeading && heading.Level <= level:
 			return blocks, nodes
 		case isHeading:
+			title := reader.spans(heading)
+			name := reader.names.given(cmp.Or(document.SlugOf(document.PlainText(title)), unnamedHeading))
 			inside, rest := reader.nested(nodes[1:], heading.Level)
-			blocks = append(blocks, document.Section{Title: reader.spans(heading), Blocks: inside})
+			blocks = append(blocks, document.Section{Title: title, Name: name, Blocks: inside})
 			nodes = rest
 		default:
 			if block, isBlock := reader.block(nodes[0]); isBlock {

@@ -58,6 +58,7 @@ const (
 	rawHTMLProblem       = "%q is raw HTML, which a terminal cannot draw and the page's policy would not run"
 	titleLevelProblem    = "is a heading of level 1, the post's title's alone"
 	skippedLevelProblem  = "is a heading of level %d after one of %d, which skips a level"
+	nestedHeadingProblem = "is a heading inside a quote or a list's item, where it opens no part of the post"
 	widgetProblem        = "is a widget, and widgets come with the first island"
 	uncitedProblem       = "%q is a footnote no reference cites"
 	unansweredProblem    = "%q cites no footnote"

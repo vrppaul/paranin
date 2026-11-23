@@ -1,30 +1,43 @@
 package compose
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What parts a command's program from the words after it
 const programEnd = " "
 
+// KeysPlace is the name the TUI's window of keys goes by on every page's command line, as Neovim's :help opens its
+// own, which no heading's anchor takes
+const KeysPlace = "help"
+
+// OpenedPage is a page :e opens by a name, as a place of the command line, and whether Tab offers it.
+type OpenedPage struct {
+	Place   document.Place
+	Offered bool
+}
+
 // Frame is what a face lays round the documents it draws, on every page alike, in the site's words: the name of the
 // theme button, which is pressed while the page is dark, the words of the button that copies a command or a block of
 // code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
-// has one, in the profile's order, which a face's command line goes to by slug as the TUI's :e does, the site's
-// sessions, the labels of a post's facts, the words of its series and of the panes at its foot, the name of its
-// outline, and the words of the blog's list.
+// has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, by each
+// name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the words of its series
+// and of the panes at its foot, the name of its outline, and the words of the blog's list.
 type Frame struct {
 	DarkTheme    string
 	CopyWords    CopyWords
 	SSH          Way
 	ReadingGives string
 	WriteTo      string
-	Projects     []document.Page
+	Projects     []document.Place
+	Pages        []OpenedPage
 	Sessions     []Session
 	PostLabels   PostLabels
 	SeriesWords  SeriesWords
@@ -138,13 +151,15 @@ type Way struct {
 func FrameOf(snapshot *content.Snapshot) Frame {
 	words := snapshot.Words
 	copyWords := CopyWords{words: words}
+	projects := projectPlaces(snapshot.Profile.Projects)
 	return Frame{
 		DarkTheme:    words.Text(content.WordDarkTheme),
 		CopyWords:    copyWords,
 		SSH:          copyWords.Way(snapshot.Profile.Site.SSH, words.Text(content.WordSSHGives)),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
-		Projects:     projectPages(snapshot.Profile.Projects),
+		Projects:     projects,
+		Pages:        slices.Concat(projectPages(projects), blogPages(snapshot)),
 		Sessions: []Session{
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
 			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog)},
@@ -244,13 +259,51 @@ func (seriesWords SeriesWords) State(state document.PartState) string {
 	return ""
 }
 
-// projectPages are the pages of the projects that have one.
-func projectPages(projects []content.Project) []document.Page {
-	pages := []document.Page{}
+// projectPlaces are the pages of the projects that have one, each a place by its slug.
+func projectPlaces(projects []content.Project) []document.Place {
+	places := []document.Place{}
 	for _, project := range projectsWithPages(projects) {
-		pages = append(pages, projectPage(project))
+		places = append(places, document.Place{Name: project.Slug, Kind: document.PlaceProject, Page: projectPage(project), Section: ""})
+	}
+	return places
+}
+
+// projectPages are the projects' places as pages :e opens by their slugs, each one Tab offers.
+func projectPages(projects []document.Place) []OpenedPage {
+	pages := make([]OpenedPage, 0, len(projects))
+	for _, project := range projects {
+		pages = append(pages, OpenedPage{Place: project, Offered: true})
 	}
 	return pages
+}
+
+// blogPages are the blog's pages :e opens by the names a terminal reaches them by (D26): its list in each grouping and
+// each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, and
+// every post served by its number, which :e opens though Tab offers none.
+func blogPages(snapshot *content.Snapshot) []OpenedPage {
+	pages := []OpenedPage{}
+	for _, grouping := range listWordsOf(snapshot.Words).Groupings() {
+		pages = append(pages, openedPage(grouping.List, routes.Path(grouping.List, routes.FormatChosen), document.PlaceList, true))
+	}
+	served := servedPosts(snapshot)
+	for _, post := range blogOf(snapshot).newestFirst() {
+		pages = append(pages, openedPage(postPage(post), routes.Path(postPage(post), routes.FormatChosen), document.PlacePost, true))
+	}
+	for _, post := range served {
+		if !listed(post.Status) {
+			pages = append(pages, openedPage(postPage(post), routes.Path(postPage(post), routes.FormatChosen), document.PlacePost, false))
+		}
+	}
+	for _, post := range served {
+		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.ID), document.PlacePost, false))
+	}
+	return pages
+}
+
+// openedPage is a page :e opens as a place of a kind, by the name a terminal reaches its path by, and whether Tab
+// offers it.
+func openedPage(page document.Page, path string, kind document.PlaceKind, offered bool) OpenedPage {
+	return OpenedPage{Place: document.Place{Name: routes.TerminalName(path), Kind: kind, Page: page, Section: ""}, Offered: offered}
 }
 
 // Of is a command with the words of the button that copies it: the word on it and the word it turns to, then its name

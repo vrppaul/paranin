@@ -1,7 +1,6 @@
 package html
 
 import (
-	"slices"
 	"strconv"
 
 	"github.com/a-h/templ"
@@ -14,15 +13,9 @@ import (
 // How a post's day is written for a machine, as a time's datetime holds it; a reader reads it as look.DayLayout has it
 const machineDayLayout = "2006-01-02"
 
-// How the places of an article a reader links to are named: a paragraph by its number after paragraphIDOpening, a
-// heading by its title's words (document.SlugOf), or headingID where its title has none; a name the page holds already
-// takes its count after it, from the second
-const (
-	paragraphIDOpening = "p"
-	headingID          = "heading"
-	nameCountJoint     = "-"
-	secondCount        = 2
-)
+// How a paragraph a reader links to is named: by its number after this, an id of the page's own (ownID); a heading
+// is named by its anchor (document.Section's Name)
+const paragraphIDOpening = "p"
 
 // The place an address names inside a page, after its path
 const fragmentMark = "#"
@@ -31,8 +24,9 @@ const fragmentMark = "#"
 // word saying it comes, the word before where a post is discussed and the first place
 const wordSpace = " "
 
-// The names of the parts of a post's page a link or a button names, beside its article's places: the series' pick in
-// its head and in its panes' heading, each window's title after the pick's name, and the panes' heading
+// The names of the parts of a post's page a link or a button names, beside its article's places, each an id of the
+// page's own (ownID): the series' pick in its head and in its panes' heading, each window's title after the pick's
+// name, and the panes' heading
 const (
 	headPickID     = "parts"
 	footPickID     = "parts-foot"
@@ -50,14 +44,12 @@ const (
 
 // Post writes a post as a page of HTML (DESIGN.md, Pages): what the page says of itself, then its head, its outline,
 // its article, the panes at its foot and the foot line. A post has no tabs: it is drawn whole, in the blog's session,
-// its window the post's slug. The places of its article a reader links to take names no part of the page holds, the
-// foot line's and the picks' among them.
+// its window the post's slug, its command line going to its headings and its series' other parts too.
 func (writer PageWriter) Post(composed document.Document) string {
 	head := composed.Head
 	page := head.Page
-	foot := writer.postFoot(page)
-	held := slices.Concat(foot.ids(), pickIDs(headPickID), pickIDs(footPickID), []string{panesHeadingID})
-	drawn := writer.articleOf(composed.Blocks, held)
+	foot := writer.postFoot(page, document.PlacesOf(composed))
+	drawn := writer.articleOf(composed.Blocks)
 	parts := postParts{
 		head:    head,
 		outline: drawn.outline,
@@ -115,19 +107,10 @@ type paneSide struct {
 	after     bool
 }
 
-// pickOf is a series' pick known by an id, its chip saying words and a count after them.
-func pickOf(id, words, count string, series document.Series) pick {
-	return pick{words: words, count: count, id: id, titleID: pickTitleID(id), series: series}
-}
-
-// pickIDs are the names a pick known by an id gives its parts: its window, then the window's title.
-func pickIDs(id string) []string {
-	return []string{id, pickTitleID(id)}
-}
-
-// pickTitleID is the name of the title of the window of a pick known by an id: the id, then the title's ending.
-func pickTitleID(id string) string {
-	return id + pickTitleEnd
+// pickOf is a series' pick known by a name, its chip saying words and a count after them: its window's id the name's,
+// its title's the name's with the title's ending.
+func pickOf(name, words, count string, series document.Series) pick {
+	return pick{words: words, count: count, id: ownID(name), titleID: ownID(name + pickTitleEnd), series: series}
 }
 
 // headPick is the pick of a post's series in its head: the series' title, then the post's place in it.
@@ -167,34 +150,29 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 }
 
 // postFoot is the foot line of a post's page, in the blog's session: the blog's list by year its first window, since a
-// page keeps no grouping a reader chose, and the post its second, and the post to read in a terminal and as markdown.
-func (writer PageWriter) postFoot(page document.Page) footLine {
+// page keeps no grouping a reader chose, and the post its second, and the post to read in a terminal and as markdown;
+// its command line going to the post's own places too.
+func (writer PageWriter) postFoot(page document.Page, own []document.Place) footLine {
 	windows := blogWindowsOf(writer.frame.listWords.BlogWindows(document.PageOf(document.PageBlog), page), page)
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page, own)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from
 // one; each block of code numbered, from one, its button named by its number; each note beside the first block that
-// cites it; each heading and numbered paragraph named for a reader to link to, by a name the page holds nowhere else;
-// and each heading of the body's top level listed for the outline, by its name. What it drew are its parts.
+// cites it; each heading named for a reader to link to by its anchor, and each numbered paragraph by its number; and
+// each heading of the body's top level listed for the outline, by its anchor. What it drew are its parts.
 type article struct {
 	writer     PageWriter
 	paragraphs int
 	codes      int
 	cited      map[int]bool
-	names      map[string]bool
 	outline    []outlined
 	parts      []templ.Component
 }
 
-// articleOf is a post's body as the article draws it, on a page whose other parts hold names already: the article
-// drawn, its parts and the headings its outline lists.
-func (writer PageWriter) articleOf(blocks []document.Block, held []string) *article {
-	names := make(map[string]bool, len(held))
-	for _, name := range held {
-		names[name] = true
-	}
-	drawing := &article{writer: writer, paragraphs: 0, codes: 0, cited: map[int]bool{}, names: names, outline: []outlined{}, parts: nil}
+// articleOf is a post's body as the article draws it: the article drawn, its parts and the headings its outline lists.
+func (writer PageWriter) articleOf(blocks []document.Block) *article {
+	drawing := &article{writer: writer, paragraphs: 0, codes: 0, cited: map[int]bool{}, outline: []outlined{}, parts: nil}
 	drawing.parts = drawing.partsOf(blocks, firstHeadingDepth)
 	return drawing
 }
@@ -206,11 +184,10 @@ func (drawing *article) partsOf(blocks []document.Block, depth int) []templ.Comp
 	parts := make([]templ.Component, 0, len(blocks))
 	for _, block := range blocks {
 		if section, isSection := block.(document.Section); isSection {
-			id := drawing.name(document.SlugOf(document.PlainText(section.Title)))
-			named := templ.Attributes{idAttribute: id}
+			named := templ.Attributes{idAttribute: section.Name}
 			if depth == firstHeadingDepth {
 				named[partAttribute] = outlineHeadingPart
-				drawing.outline = append(drawing.outline, outlined{id: id, title: section.Title})
+				drawing.outline = append(drawing.outline, outlined{id: section.Name, title: section.Title})
 			}
 			parts = append(parts, drawing.writer.articleSection(named, depth, section.Title, drawing.partsOf(section.Blocks, depth+1)))
 			continue
@@ -231,7 +208,7 @@ func (drawing *article) part(block document.Block) templ.Component {
 	}
 	drawing.paragraphs++
 	number := strconv.Itoa(drawing.paragraphs)
-	return drawing.writer.numberedParagraph(number, drawing.name(paragraphIDOpening+number), paragraph.Spans)
+	return drawing.writer.numberedParagraph(number, ownID(paragraphIDOpening+number), paragraph.Spans)
 }
 
 // block is a block of a post as its article draws it, inside a list's item or a quote as at the body's top: a list and
@@ -257,8 +234,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return pause()
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
-		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; a
-		// list's item and a quote hold no heading
+		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; the
+		// load refuses a heading inside a list's item or a quote
 	}
 	return templ.NopComponent
 }
@@ -294,19 +271,4 @@ func (drawing *article) firstCited(block document.Block) []document.Note {
 		}
 	}
 	return notes
-}
-
-// name is the name a place of the article is linked to by: the one it asks for, or that with its count after it where
-// the page holds the name already, a heading's of the same words or a part's of the page among them; a heading of no
-// words asks for headingID.
-func (drawing *article) name(asked string) string {
-	if asked == unnamed {
-		asked = headingID
-	}
-	given := asked
-	for count := secondCount; drawing.names[given]; count++ {
-		given = asked + nameCountJoint + strconv.Itoa(count)
-	}
-	drawing.names[given] = true
-	return given
 }

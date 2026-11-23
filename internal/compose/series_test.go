@@ -137,6 +137,43 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	}
 }
 
+// A post's places are its headings, then each other part of its series out, by its slug, at its page: never the part
+// read, which is the page shown, a part to come, which has no page, or a part the series leaves out.
+func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
+	posts := []writtenPost{
+		{slug: "first", id: 3, status: content.StatusPublished, published: earlier},
+		{slug: "drafted", id: 4, status: content.StatusDraft, published: later},
+		{slug: "third", id: 5, status: content.StatusPublished, published: latest},
+	}
+	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf("first, reading-slowly, drafted, third", "Reading aloud"))
+	read := document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}
+	want := []document.Place{
+		{Name: "what-a-reader-keeps", Kind: document.PlaceHeading, Page: read, Section: "what-a-reader-keeps"},
+		{Name: "in-a-terminal", Kind: document.PlaceHeading, Page: read, Section: "in-a-terminal"},
+		{Name: "afterwards", Kind: document.PlaceHeading, Page: read, Section: "afterwards"},
+		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
+		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
+	}
+	if got := document.PlacesOf(postNamed(test, Posts(snapshot), fixturePostSlug)); !reflect.DeepEqual(got, want) {
+		test.Errorf("the post's places = %+v, want %+v", got, want)
+	}
+}
+
+// A heading named as another part of its post's series takes its count, so its name leads to one place.
+func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
+	posts := []writtenPost{{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier}}
+	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
+	places := document.PlacesOf(postNamed(test, Posts(snapshot), fixturePostSlug))
+	want := []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps"}
+	got := []string{}
+	for _, place := range places {
+		got = append(got, place.Name)
+	}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("the post's places = %q, want %q", got, want)
+	}
+}
+
 // A post leads at its foot to the posts beside it: in a series the parts before and after it, a part to come by its
 // title alone, with no page, past any part not published; outside one the posts the blog lists before and after it by
 // the time they came out, each with its lead and that time, posts out at one moment by their slugs, so never a draft,

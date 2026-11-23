@@ -244,10 +244,14 @@ func (checked *bodyInspection) addRawHTML(node ast.Node, written []byte) {
 	checked.inspection.addAtLine(checked.lineOf(node), rawHTMLProblem, firstLine)
 }
 
-// inspectHeading holds a heading below the title's level, and at most one level below the heading before it. The
-// level a heading of the title's level stands for is the author's to say, so the heading after it is held to none.
+// inspectHeading holds a heading to the post's own blocks, never inside a quote or a list's item, where it opens no
+// part of the post; below the title's level, and at most one level below the heading before it. The level a heading
+// of the title's level stands for is the author's to say, so the heading after it is held to none.
 func (checked *bodyInspection) inspectHeading(heading *ast.Heading) {
 	switch {
+	case heading.Parent().Kind() != ast.KindDocument:
+		checked.inspection.addAtLine(checked.lineOf(heading), nestedHeadingProblem)
+		return
 	case heading.Level == titleLevel:
 		checked.inspection.addAtLine(checked.lineOf(heading), titleLevelProblem)
 		checked.headingLevel = deepestLevel

@@ -141,8 +141,17 @@ const (
 	searchCountPart = "search-count"
 )
 
-// The id of a place on the command line's menu, its number after this, which the field names as the one chosen
+// The name of a place on the command line's menu, its number after this, which the field names as the one chosen
 const placeIDOpening = "place-"
+
+// What opens the id of every part of the page's own: a mark document.SlugOf never writes and no slug holds, so the
+// page's anchors, a heading's and a series' group's (document.Section's Name), are theirs whatever their words
+const ownIDMark = "_"
+
+// ownID is the id of a part of the page's own by its name, in the one form no anchor takes (ownIDMark).
+func ownID(name string) string {
+	return ownIDMark + name
+}
 
 // The keys the command line names, each with what it does, as the TUI's names them; Esc closes a hint's window too
 const (
@@ -228,7 +237,7 @@ func (writer PageWriter) Page(composed document.Document, record compose.Record,
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
 	}
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), record, main, writer.footOf(page, tabs)))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), record, main, writer.footOf(page, tabs, document.PlacesOf(composed))))
 }
 
 // tabNamed is the tab of a name among tabs, where one has it.

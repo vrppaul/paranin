@@ -107,7 +107,7 @@ func (model Model) commandLineOpened() Model {
 }
 
 // completionsOf is what Tab goes round for what the reader typed, none of it chosen: before a space, the places whose
-// names start with it; after a command and a space, the pages whose slugs start with what follows, where the command
+// names start with it; after a command and a space, the pages whose names start with what follows, where the command
 // takes an argument, which only a page is.
 func (model Model) completionsOf(typed string) completionState {
 	name, argument, argued := commandParts(typed)
@@ -166,16 +166,17 @@ func commandParts(typed string) (name, argument string, argued bool) {
 	return name, strings.TrimLeft(argument, space), argued
 }
 
-// pageCompletions are the projects' pages Tab goes round after a command named and a space, by slug, where the
-// command takes an argument: those whose slugs start with what is typed, each written after the command's name.
+// pageCompletions are the pages :e opens that Tab goes round after a command named and a space, by name, where the
+// command takes an argument: those Tab offers whose names start with what is typed, each written after the command's
+// name.
 func (model Model) pageCompletions(name, typed string) []completion {
 	listed := []completion{}
 	if known, found := model.commandNamed(name); !found || !known.takesArgument {
 		return listed
 	}
-	for _, slug := range model.slugs {
-		if strings.HasPrefix(slug, typed) {
-			listed = append(listed, completion{written: name + space + slug, name: slug, kind: projectKind})
+	for _, page := range model.siteWords.Pages {
+		if page.Offered && strings.HasPrefix(page.Place.Name, typed) {
+			listed = append(listed, completion{written: name + space + page.Place.Name, name: page.Place.Name, kind: string(page.Place.Kind)})
 		}
 	}
 	return listed

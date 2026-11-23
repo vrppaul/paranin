@@ -17,44 +17,39 @@ const (
 	firstPlaceNumber  = 1
 )
 
-// How a hint is known: its window's id, the way's program after the opening, and its title's, the window's id before
-// the ending
+// How a hint is known: its window's name, the way's program after the opening, and its title's, the window's name
+// before the ending; each an id of the page's own (ownID)
 const (
 	hintIDOpening   = "hint-"
 	hintTitleEnding = "-title"
-)
-
-// placeKind is what a place of the command line is, which its menu names it by, as the TUI's names it, and which the
-// page's script reads: a tab of the page shown, or a project's page, which :e opens too.
-type placeKind string
-
-const (
-	placeTab     placeKind = "tab"
-	placeProject placeKind = "project"
 )
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
 // the site's name and where it begins, which the page of no address leads to; the theme button's name; the words of
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
-// that writes to the author; the projects' pages, places of every page's command line; the site's sessions, which the
-// foot line names; the labels of a post's facts, the words of its series and of the panes at its foot, the name of its
-// outline, and the words round the blog's list.
+// that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
+// blog's folder, by the name a terminal writes and by its address, where :e opens a post a page does not list;
+// the site's sessions, which the foot line names; the labels of a post's facts, the words of its series and of the
+// panes at its foot, the name of its outline, and the words round the blog's list.
 type frame struct {
-	siteName     string
-	start        string
-	darkTheme    string
-	copyWords    compose.CopyWords
-	ssh          compose.Way
-	readingGives string
-	writeTo      string
-	projects     []place
-	sessions     []compose.Session
-	postLabels   compose.PostLabels
-	seriesWords  compose.SeriesWords
-	paneWords    compose.PaneWords
-	contents     string
-	listWords    compose.ListWords
+	siteName      string
+	start         string
+	darkTheme     string
+	copyWords     compose.CopyWords
+	ssh           compose.Way
+	readingGives  string
+	writeTo       string
+	projects      []document.Place
+	pages         []compose.OpenedPage
+	folder        string
+	folderAddress string
+	sessions      []compose.Session
+	postLabels    compose.PostLabels
+	seriesWords   compose.SeriesWords
+	paneWords     compose.PaneWords
+	contents      string
+	listWords     compose.ListWords
 }
 
 // footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the sessions, the document's tabs as
@@ -78,13 +73,14 @@ type hint struct {
 	titleID string
 }
 
-// place is somewhere the command line goes by its name, as the TUI's does: its name, what it is, the address it is
-// shown at, and whether it is the page shown.
+// place is somewhere the command line goes, as the TUI's does: its name, what it is, the address it leads to, whether
+// it is the page shown, and whether :e opens it, where a name alone does not.
 type place struct {
 	name    string
-	kind    placeKind
+	kind    document.PlaceKind
 	address string
 	current bool
+	edited  bool
 }
 
 // session is a part of the site as the foot line shows it, as tmux shows a session: its name, the address it leads to,
@@ -107,20 +103,23 @@ type window struct {
 // frameOf is the frame of a site's pages.
 func frameOf(site routes.Site, composed compose.Frame) frame {
 	return frame{
-		siteName:     site.Host(),
-		start:        routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
-		darkTheme:    composed.DarkTheme,
-		copyWords:    composed.CopyWords,
-		ssh:          composed.SSH,
-		readingGives: composed.ReadingGives,
-		writeTo:      composed.WriteTo,
-		projects:     projectPlaces(composed.Projects),
-		sessions:     composed.Sessions,
-		postLabels:   composed.PostLabels,
-		seriesWords:  composed.SeriesWords,
-		paneWords:    composed.PaneWords,
-		contents:     composed.Contents,
-		listWords:    composed.ListWords,
+		siteName:      site.Host(),
+		start:         routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
+		darkTheme:     composed.DarkTheme,
+		copyWords:     composed.CopyWords,
+		ssh:           composed.SSH,
+		readingGives:  composed.ReadingGives,
+		writeTo:       composed.WriteTo,
+		projects:      composed.Projects,
+		pages:         composed.Pages,
+		folder:        routes.TerminalName(routes.BlogFolder()),
+		folderAddress: routes.BlogFolder(),
+		sessions:      composed.Sessions,
+		postLabels:    composed.PostLabels,
+		seriesWords:   composed.SeriesWords,
+		paneWords:     composed.PaneWords,
+		contents:      composed.Contents,
+		listWords:     composed.ListWords,
 	}
 }
 
@@ -134,25 +133,17 @@ func (around frame) sessionsOf(page document.Page) []session {
 	return sessions
 }
 
-// projectPlaces are the projects' pages as places of the command line, each by its slug.
-func projectPlaces(pages []document.Page) []place {
-	places := make([]place, 0, len(pages))
-	for _, page := range pages {
-		places = append(places, place{name: page.Slug, kind: placeProject, address: routes.Reference(page, routes.FormatChosen), current: false})
-	}
-	return places
-}
-
 // footOf is the foot line of a page showing one of its document's tabs: every tab a window, the opening at the page's
-// own address, and the page whole to read in a terminal and as markdown.
-func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs) footLine {
+// own address, the page whole to read in a terminal and as markdown, and its command line going to the page's own
+// places too.
+func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []document.Place) footLine {
 	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: ""}
 	windows := []window{windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
 	for _, tab := range tabs.Rest {
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
 		windows = append(windows, windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(whole), windows, whole)
+	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(whole), windows, whole, own)
 }
 
 // blogWindowsOf are the blog session's windows as the foot line shows them, numbered in their order, the one showing
@@ -166,8 +157,8 @@ func blogWindowsOf(windows []compose.Window, shown document.Page) []window {
 }
 
 // footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl
-// at its address, and as markdown.
-func footLineOf(around frame, site routes.Site, sessions []session, windows []window, page document.Page) footLine {
+// at its address, and as markdown; its command line going to the page's own places too.
+func footLineOf(around frame, site routes.Site, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
 	markdown := routes.Reference(page, routes.FormatMarkdown)
 	reading := around.copyWords.Way(site.ReadCommand(page), around.readingGives)
 	return footLine{
@@ -177,48 +168,58 @@ func footLineOf(around frame, site routes.Site, sessions []session, windows []wi
 		hints:        []hint{hintOf(around.ssh), hintOf(reading)},
 		markdown:     markdown,
 		markdownName: path.Base(markdown),
-		places:       placesOf(windows, around.projects),
+		places:       placesOf(windows, own, around, page),
 	}
 }
 
-// ids are the names the foot line gives its parts, which no other part of its page may take: the command line's
-// field, its menu and each place on it, the keys it names, each hint and its title, and the theme button's words.
-func (foot footLine) ids() []string {
-	ids := []string{commandFieldPart, placesPart, commandKeysPart, searchKeysPart, themeNameID}
-	for _, offered := range foot.hints {
-		ids = append(ids, offered.id, offered.titleID)
-	}
-	for index := range foot.places {
-		ids = append(ids, placeID(index))
-	}
-	return ids
-}
-
-// placeID is the name of the place of the command line's menu at an index, counted from one, which the field names
-// as the one chosen.
+// placeID is the id of the place of the command line's menu at an index, counted from one, which the field names as
+// the one chosen.
 func placeID(index int) string {
-	return placeIDOpening + strconv.Itoa(index+firstPlaceNumber)
+	return ownID(placeIDOpening + strconv.Itoa(index+firstPlaceNumber))
 }
 
 // hintOf is a way's hint, known by the program it runs.
 func hintOf(way compose.Way) hint {
-	id := hintIDOpening + way.Program
+	id := ownID(hintIDOpening + way.Program)
 	return hint{way: way, id: id, titleID: id + hintTitleEnding}
 }
 
-// placesOf are the places of a page's command line: each window, then each project's page, the page shown where a
-// window at its address is. A project's page is a place even where a window takes its name, since :e opens it by its
-// slug, as the TUI's does; the page's script leaves a name to the first place that has it.
-func placesOf(windows []window, projects []place) []place {
-	places := make([]place, 0, len(windows)+len(projects))
-	for _, shown := range windows {
-		places = append(places, place{name: shown.name, kind: placeTab, address: shown.address, current: shown.current})
+// placesOf are the places of a page's command line: each window, then each of the page's own places, then each
+// project's page, each by its name; then each page Tab offers after :e on the page shown (pageOffered). A project's
+// page is a place even where a window takes its name, since :e opens it by its slug, as the TUI's does; the page's
+// script leaves a name to the first place that has it.
+func placesOf(windows []window, own []document.Place, around frame, shown document.Page) []place {
+	places := make([]place, 0, len(windows)+len(own)+len(around.projects)+len(around.pages))
+	for _, window := range windows {
+		places = append(places, place{name: window.name, kind: document.PlaceTab, address: window.address, current: window.current, edited: false})
 	}
-	for _, project := range projects {
-		project.current = slices.ContainsFunc(windows, func(shown window) bool { return shown.current && shown.address == project.address })
-		places = append(places, project)
+	for _, named := range slices.Concat(own, around.projects) {
+		places = append(places, placeOf(named, windows, false))
+	}
+	for _, opened := range around.pages {
+		if pageOffered(opened, shown) {
+			places = append(places, placeOf(opened.Place, windows, true))
+		}
 	}
 	return places
+}
+
+// pageOffered is whether Tab offers a page :e opens on the page shown: every page it offers anywhere, but a post on the
+// blog's own pages alone, so the blog's posts weigh on no other page, where :e opens them by the blog's folder (the
+// command line's data-folder).
+func pageOffered(opened compose.OpenedPage, shown document.Page) bool {
+	return opened.Offered && (opened.Place.Kind != document.PlacePost || shown.InBlog())
+}
+
+// placeOf is a place of a page as the command line offers it, by its name or by :e: at its address, inside its page
+// at its section's anchor where it names one; the page shown where a window at that address is.
+func placeOf(offered document.Place, windows []window, edited bool) place {
+	address := routes.Reference(offered.Page, routes.FormatChosen)
+	if offered.Section != "" {
+		address += fragmentMark + offered.Section
+	}
+	current := slices.ContainsFunc(windows, func(shown window) bool { return shown.current && shown.address == address })
+	return place{name: offered.Name, kind: offered.Kind, address: address, current: current, edited: edited}
 }
 
 // windowOf is a tab as a window by its number and name, leading to the page that shows it, current where that page is

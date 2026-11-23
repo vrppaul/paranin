@@ -214,8 +214,10 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 // read it in a terminal, each opening its hint, a window that holds its command whole to copy and says what it gives,
 // curl's reading the page whole, the résumé where there is none; the markdown of the page whole, the résumé's where a
 // page has none; the switch that turns the vim keys on, and the theme button. Over it stands the command line those
-// keys open, with the places it goes to by name: the document's tabs, the one shown among them, then the page of each
-// project that has one, by its slug, shown where its opening is.
+// keys open, with the places it goes to by name: the document's tabs, the one shown among them, then the page's own
+// places, a post's headings and the posts and series of the blog's list, then the page of each project that has one,
+// by its slug, shown where its opening is; and the pages its :e opens, the projects' and the blog's lists, the one
+// shown among them, the blog's posts on its own pages alone, and the blog's folder, where :e opens any other.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -223,13 +225,14 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), compose.FrameOf(snapshot))
 	every := []string{
-		`popovertarget="hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
-		`popovertarget="hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
-		`<div id="hint-ssh" class="hint" popover role="dialog" aria-labelledby="hint-ssh-title" data-part="hint"><p id="hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code>`,
+		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
+		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
+		`<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint"><p id="_hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code>`,
 		`<p class="hint-gives">The résumé as an app in a terminal.</p>`,
 		`<p class="hint-gives">The page as a manual in a terminal.</p>`,
-		`popovertarget="hint-ssh" popovertargetaction="hide"`, `popovertarget="hint-curl" popovertargetaction="hide"`,
+		`popovertarget="_hint-ssh" popovertargetaction="hide"`, `popovertarget="_hint-curl" popovertargetaction="hide"`,
 		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
+		`data-place="list" data-name="blog/series" data-address="/blog/series"`,
 	}
 	// the commands that read the résumé whole, which the page of no page offers too, and the project's page whole
 	const (
@@ -265,9 +268,10 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
-				`data-place="tab" data-name="contact" data-address="/contact"`, projectPlace,
+				`data-place="tab" data-name="contact" data-address="/contact"`, projectPlace, projectPlace + ` data-edit`,
+				`data-folder="blog/" data-folder-address="/blog/"`,
 			}),
-			lacks: []string{noPagePlace},
+			lacks: []string{noPagePlace, `data-name="blog/reading-slowly"`},
 		},
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
@@ -305,7 +309,9 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				`<a class="window" href="/blog"><span class="window-number">1:</span>posts</a>`,
 				`<a class="window" href="/blog/reading-slowly" aria-current="page"><span class="window-number">2:</span>reading-slowly</a>`,
 				`data-place="tab" data-name="posts" data-address="/blog" hidden`,
-				`data-place="tab" data-name="reading-slowly" data-address="/blog/reading-slowly" data-current`, projectPlace,
+				`data-place="tab" data-name="reading-slowly" data-address="/blog/reading-slowly" data-current`,
+				`data-place="heading" data-name="in-a-terminal" data-address="/blog/reading-slowly#in-a-terminal"`, projectPlace,
+				`data-place="post" data-name="blog/reading-slowly" data-address="/blog/reading-slowly" data-current data-edit`,
 			}),
 			lacks: nil,
 		},
@@ -315,7 +321,11 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				blogSessions, `<a class="way-chip" href="/blog.md">blog.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog</code>`,
 				`<a class="window" href="/blog" aria-current="page"><span class="window-number">1:</span>posts</a>`,
-				`data-place="tab" data-name="posts" data-address="/blog" data-current`, projectPlace,
+				`data-place="tab" data-name="posts" data-address="/blog" data-current`,
+				`data-place="post" data-name="reading-slowly" data-address="/blog/reading-slowly"`,
+				`data-place="series" data-name="reading" data-address="/blog/series#reading"`, projectPlace,
+				`data-place="list" data-name="blog" data-address="/blog" data-current data-edit`,
+				`data-place="post" data-name="blog/reading-slowly" data-address="/blog/reading-slowly" data-edit`,
 			}),
 			lacks: []string{`<span class="window-number">2:`},
 		},
@@ -325,6 +335,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				blogSessions, `<a class="way-chip" href="/blog/series.md">series.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog/series</code>`,
 				`<a class="window" href="/blog/series" aria-current="page"><span class="window-number">1:</span>posts</a>`,
+				`data-place="series" data-name="reading" data-address="/blog/series#reading"`,
 			}),
 			lacks: []string{`<span class="window-number">2:`},
 		},
@@ -827,9 +838,9 @@ func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
 		{name: "the h1, the post's title", want: "<h1 class=\"post-title\">Reading slowly</h1>", count: 1},
 		{name: "a heading a link names", want: `id="what-a-reader-keeps">What a reader keeps</h2>`, count: 1},
 		{name: "a heading under it", want: `<h3 id="in-a-terminal">In a terminal</h3>`, count: 1},
-		{name: "the first paragraph's number, leading to it", want: `<a class="paragraph-number" href="#p1">1</a><p id="p1">`, count: 1},
-		{name: "a paragraph's number after the lists", want: `<a class="paragraph-number" href="#p2">2</a><p id="p2">`, count: 1},
-		{name: "a paragraph's number in the next section, counting on", want: `<a class="paragraph-number" href="#p3">3</a><p id="p3">`, count: 1},
+		{name: "the first paragraph's number, leading to it", want: `<a class="paragraph-number" href="#_p1">1</a><p id="_p1">`, count: 1},
+		{name: "a paragraph's number after the lists", want: `<a class="paragraph-number" href="#_p2">2</a><p id="_p2">`, count: 1},
+		{name: "a paragraph's number in the next section, counting on", want: `<a class="paragraph-number" href="#_p3">3</a><p id="_p3">`, count: 1},
 		{name: "each citation of the note cited twice, its number raised", want: `<sup class="citation">1</sup>`, count: 2},
 		{name: "the note cited twice, beside the line first citing it", want: `</sup></p><aside class="notes">` + firstNote, count: 1},
 		{name: "a note cited inside a list, beside the list", want: `</ul><aside class="notes">` + secondNote, count: 1},
@@ -844,38 +855,58 @@ func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
 	}
 }
 
-// Every place of a post a link names takes a name no other part of its page holds: a heading of a paragraph's name, a
-// second heading of the same words, a heading of the name of a part of the foot line, of the series' pick or of the
-// panes' heading, and a paragraph after a heading of its name each take their count after the name.
-func TestEveryPlaceOfAPostTakesANameOfItsOwn(test *testing.T) {
-	post := document.Document{
-		Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "names", Tab: ""}, nil),
-		Blocks: []document.Block{
-			emptySection("P1"), emptySection("Why"), emptySection("Why"), emptySection("Places"), emptySection("Hint ssh"),
-			emptySection("Parts"), emptySection("More"),
-			document.Paragraph{Spans: []document.Span{document.Text{Text: "First."}}},
-		},
-	}
+// A heading's anchor is its name, whatever its words, and no other part of its page takes it: a heading named as a
+// paragraph, the command line's menu, one of its places, a hint, the series' pick or the panes' heading keeps its name,
+// once on the page, since every id of the page's own stands in a form no anchor takes.
+func TestAHeadingsAnchorIsItsName(test *testing.T) {
+	post := seriesPost(emptySection("P1"), emptySection("Places"), emptySection("Place 1"), emptySection("Hint ssh"),
+		emptySection("Parts"), emptySection("More"), document.Paragraph{Spans: textOf("First.")})
 	page := fixtureWriter(test).Post(post)
-	// what stands before the name of each heading the outline lists
-	const outlineHeading = `<h2 data-part="outline-heading" `
 	cases := []struct {
 		name string
 		want string
 	}{
-		{name: "a heading of a paragraph's name, before the paragraph", want: outlineHeading + `id="p1">`},
-		{name: "the paragraph after it", want: `<p id="p1-2">`},
-		{name: "a first heading of its words", want: outlineHeading + `id="why">`},
-		{name: "a second heading of the same words", want: outlineHeading + `id="why-2">`},
-		{name: "a heading of the command line's menu's name", want: outlineHeading + `id="places-2">`},
-		{name: "a heading of a hint's name", want: outlineHeading + `id="hint-ssh-2">`},
-		{name: "a heading of the series' pick's name", want: outlineHeading + `id="parts-2">`},
-		{name: "a heading of the panes' heading's name", want: outlineHeading + `id="more-2">`},
+		{name: "a heading of a paragraph's name", want: `id="p1"`},
+		{name: "a heading of the command line's menu's name", want: `id="places"`},
+		{name: "a heading of a place's name on the menu", want: `id="place-1"`},
+		{name: "a heading of a hint's name", want: `id="hint-ssh"`},
+		{name: "a heading of the series' pick's name", want: `id="parts"`},
+		{name: "a heading of the panes' heading's name", want: `id="more"`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if !strings.Contains(page, testCase.want) {
-				test.Errorf("the page %q holds no %q", page, testCase.want)
+			if got := strings.Count(page, testCase.want); got != 1 {
+				test.Errorf("the page %q holds %q %d times, want once", page, testCase.want, got)
+			}
+		})
+	}
+}
+
+// A post of a series, which a test builds by hand, reads as its golden markup: the page the fixture's post, the one
+// part of its series out, cannot show, with its other parts among its places.
+func TestAPostOfASeriesReadsAsItsGoldenMarkup(test *testing.T) {
+	golden.Match(test, "blog/second.html", lined(fixtureWriter(test).Post(seriesPost(emptySection("More")))))
+}
+
+// A page's own places lead where the page draws them: a heading to its anchor, another part of a post's series to its
+// page, and a series to its group on the list by series, which that list names by the series' name.
+func TestAPagesOwnPlacesLeadWhereThePageDrawsThem(test *testing.T) {
+	post := fixtureWriter(test).Post(seriesPost(emptySection("More")))
+	lists := compose.Lists(fixtures.LoadedContent(test))
+	cases := []struct {
+		name string
+		page string
+		want string
+	}{
+		{name: "a heading, at its anchor", page: post, want: `data-place="heading" data-name="more" data-address="/blog/second#more"`},
+		{name: "another part, at its page", page: post, want: `data-place="part" data-name="first" data-address="/blog/first"`},
+		{name: "a series, at its group", page: fixtureWriter(test).List(lists[0]), want: `data-place="series" data-name="reading" data-address="/blog/series#reading"`},
+		{name: "the group a series leads to", page: fixtureWriter(test).List(lists[1]), want: `<section id="reading" class="group">`},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(testCase.page, testCase.want) {
+				test.Errorf("the page %q holds no %q", testCase.page, testCase.want)
 			}
 		})
 	}
@@ -900,8 +931,8 @@ func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
 		want  string
 		count int
 	}{
-		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="parts">Stint <span class="series-count">2 of 4</span>`, count: 1},
-		{name: "the foot's chip, the count of parts", want: `popovertarget="parts-foot">all 4 parts <span class="series-mark"`, count: 1},
+		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="_parts">Stint <span class="series-count">2 of 4</span>`, count: 1},
+		{name: "the foot's chip, the count of parts", want: `popovertarget="_parts-foot">all 4 parts <span class="series-mark"`, count: 1},
 		{name: "each window titled by the series", want: `class="pick-title">Stint</p>`, count: 2},
 		{
 			name:  "a part out, a link",
@@ -939,7 +970,7 @@ func TestTheOutlineListsThePostsHeadings(test *testing.T) {
 	headed := document.Document{
 		Head: fixtures.HeadOf(postPage("headed"), nil),
 		Blocks: []document.Block{
-			document.Section{Title: textOf("One"), Blocks: []document.Block{emptySection("Inner")}},
+			document.Section{Title: textOf("One"), Name: "one", Blocks: []document.Block{emptySection("Inner")}},
 			emptySection("Two"),
 		},
 	}
@@ -992,7 +1023,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 				After:  &document.Neighbour{Part: 3, Title: textOf("Three"), Lead: nil, Page: toCome, Published: time.Time{}},
 			},
 			want: []string{
-				`<h2 id="more" class="panes-title">Other parts of Stint</h2>`,
+				`<h2 id="_more" class="panes-title">Other parts of Stint</h2>`,
 				`<a class="pane" href="/blog/one"><span class="pane-name">part 1</span> <span class="pane-title">One</span> <span class="pane-lead">About one.</span> </a>`,
 				`<div class="pane pane-after"><span class="pane-name">part 3</span> <span class="pane-title pane-to-come">Three <span class="pane-soon">soon</span></span></div>`,
 			},
@@ -1012,7 +1043,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 				After:  &document.Neighbour{Part: 0, Title: textOf("Newer"), Lead: textOf("About newer."), Page: postPage("newer"), Published: newer},
 			},
 			want: []string{
-				`<h2 id="more" class="panes-title">Other posts</h2><a class="panes-all" href="/blog">all posts</a></div>`,
+				`<h2 id="_more" class="panes-title">Other posts</h2><a class="panes-all" href="/blog">all posts</a></div>`,
 				`<div class="pane pane-none"><span class="pane-name">older</span> <span class="pane-words">none: this is the first post</span></div>`,
 				`<a class="pane pane-after" href="/blog/newer"><span class="pane-name">newer</span> <span class="pane-title">Newer</span> <span class="pane-lead">About newer.</span> <span class="pane-date"><time datetime="2026-11-20">20 Nov 2026</time></span></a>`,
 			},
@@ -1054,14 +1085,29 @@ func postPage(slug string) document.Page {
 	return document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}
 }
 
+// seriesPost is a post a test builds by hand, of blocks: the second part of a series of four, the first out before it,
+// the third out after it and the fourth to come.
+func seriesPost(blocks ...document.Block) document.Document {
+	head := fixtures.HeadOf(postPage("second"), textOf("Second"))
+	none := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
+	series := &document.Series{Title: textOf("Stint"), Parts: []document.Part{
+		{Number: 1, Title: textOf("First"), State: document.PartOut, Page: postPage("first")},
+		{Number: 2, Title: textOf("Second"), State: document.PartReading, Page: postPage("second")},
+		{Number: 3, Title: textOf("Third"), State: document.PartNext, Page: postPage("third")},
+		{Number: 4, Title: textOf("Fourth"), State: document.PartToCome, Page: none},
+	}}
+	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil}
+	return document.Document{Head: head, Blocks: blocks}
+}
+
 // textOf is words a test builds by hand, with no marks.
 func textOf(words string) []document.Span {
 	return []document.Span{document.Text{Text: words}}
 }
 
-// emptySection is a section a test builds by hand: its title and no blocks.
+// emptySection is a section a test builds by hand: its title, named by its words, and no blocks.
 func emptySection(title string) document.Block {
-	return document.Section{Title: []document.Span{document.Text{Text: title}}, Blocks: nil}
+	return document.Section{Title: []document.Span{document.Text{Text: title}}, Name: document.SlugOf(title), Blocks: nil}
 }
 
 // fixturePost is the fixture's post as compose makes it.

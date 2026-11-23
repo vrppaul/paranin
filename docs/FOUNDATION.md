@@ -360,7 +360,8 @@ The format is CommonMark with GFM's tables and footnotes, YAML front matter
 and widget blocks, and nothing else. `paranin check` refuses what falls
 outside it, raw HTML first of all: a terminal cannot draw it and the CSP
 would not run it. It refuses as well a heading of level 1, which the title
-is, a heading that skips a level, a pause (a thematic break) anywhere but
+is, a heading that skips a level or stands inside a quote or a list's item,
+where it opens no part of the post, a pause (a thematic break) anywhere but
 between two of the post's own blocks, since it parts two runs of its text
 (inside a quote or a list, at the body's start or end, or with nothing
 after it but footnotes and links' definitions, it parts none), a footnote

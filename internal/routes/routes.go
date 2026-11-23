@@ -166,6 +166,12 @@ func TerminalName(path string) string {
 	return strings.TrimPrefix(path, pathStart)
 }
 
+// BlogFolder is the blog's folder, where the site answers for every post by its slug and by its number, sending a
+// number on to its slug.
+func BlogFolder() string {
+	return blogFolder
+}
+
 // IsBlogName is whether a name a terminal writes is the blog's: its list's, or one in its folder, as blog/99 is,
 // whether or not a page goes by it.
 func IsBlogName(name string) bool {

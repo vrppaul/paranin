@@ -334,9 +334,13 @@ the keys it names, `tab next` (while a place fits), `↵ go`, `esc cancel`, each
 in a `quiet` hairline, `radius`, what it does `muted`.
 
 - The menu of the places that fit what is typed stands over it as soon as the colon is typed and narrows with each
-  letter: before a letter the page's tabs but the one shown, then every tab and project's page the letters start, after
-  `:e ` the projects' pages. A hairline box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name
-  under where the line writes it, a cell of air either side, its kind `muted` four cells after it, `tab` or `project`.
+  letter: before a letter the page's tabs but the one shown, then every tab, place of the page's own (The TUI) and
+  project's page the letters start, after `:e ` the pages it opens: the projects', `project`, the blog's lists,
+  `list`, and on the blog's own pages each post the list names, `post`, which no other page carries for its weight, by
+  the names a terminal reaches them by, as the TUI's `:e`. `:e` opens any name in the blog's folder, a post by its
+  number or one no list names among them, by going to its address, where the site answers for it. A hairline
+  box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name under where the line writes it, a cell
+  of air either side, its kind `muted` in a column of the kinds four cells after the widest name, as The TUI names it.
   The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as small text, on the
   TUI's menu too.
 - Tab and Shift+Tab go round them, writing the one chosen on the line, reversed and bold as the window shown. The menu
@@ -626,4 +630,7 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
 - A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,
   2026-11-23).
 - The `:` menu names each place by its kind: on a post `tab`, `heading`, `part` and `version`; on the list `post`,
-  `tag` and `series`. The page's CommandLine offers the same places on the blog's pages.
+  `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
+  heading, a series to its group on the list by series. Each name leads to one place: a heading named as another
+  place of its page, `help` among them, takes its count, `posts-2`, and a name two places share, as the post read
+  beside the list and the list's own, goes to the first the menu lists.

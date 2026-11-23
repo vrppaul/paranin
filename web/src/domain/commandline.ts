@@ -1,26 +1,42 @@
 // The command line the vim keys open (DESIGN.md, CommandLine), as the TUI's command line works
 // (internal/face/tui/commands.go), with no page to touch: what Tab goes round for what is typed, a step round it, and
-// what Enter does with the line. A place goes by its name, a tab of the page shown or a project's page; Neovim's :e
-// opens a project's page by its slug too. What the line says of a command it refuses is Neovim's own words.
+// what Enter does with the line. A place goes by its name, a tab of the page shown, a place of the page's own or a
+// project's page; Neovim's :e opens a page by its name, a project's or one of the blog's. What the line says of a
+// command it refuses is Neovim's own words.
 
-// What a place is, as the server writes it: a tab of the page shown, or a project's page, which :e opens too
-const PLACE_KINDS = ["tab", "project"] as const;
+// The kind of a tab of the page shown, which Tab offers before a letter is typed; every other kind the line shows as
+// the server names it (document.PlaceKind), and treats alike
+const TAB_KIND = "tab";
 
-/** What a place is: a tab of the page shown, or a project's page. */
-export type PlaceKind = (typeof PLACE_KINDS)[number];
-
-/** Somewhere the command line goes by its name: what it is, its address, and whether it is the page shown. */
+/**
+ * Somewhere the command line goes: its name, its kind as the menu names it, its address, whether it is the page shown,
+ * and whether :e opens it, where its name alone does not.
+ */
 export interface Place {
   name: string;
-  kind: PlaceKind;
+  kind: string;
   address: string;
   current: boolean;
+  edited: boolean;
 }
 
-/** A page's places, worked out once: each name with the first place that has it, and the projects' pages. */
+/**
+ * A folder of the site where :e opens a page by its name though the menu lists none: the name a terminal writes for
+ * it, and its address, whose every page the site answers, a missing one by its page of no page.
+ */
+export interface Folder {
+  name: string;
+  address: string;
+}
+
+/**
+ * A page's places, worked out once: each name with the first place that has it, the pages :e opens, and the folder
+ * where it opens any other.
+ */
 export interface Places {
   named: readonly Place[];
-  projects: readonly Place[];
+  edited: readonly Place[];
+  folder: Folder;
 }
 
 /** A place Tab goes round, with what it writes on the line where it is chosen. */
@@ -40,7 +56,7 @@ export interface Completions {
   chosen: number;
 }
 
-/** Why the line refuses a command: one it does not know, :e with no page, or :e of a page that is no project's. */
+/** Why the line refuses a command: one it does not know, :e with no page, or :e of a page it does not open. */
 type Fault = "unknown" | "argument" | "missing";
 
 /** What Enter does: goes to an address, stays on the page shown, does nothing, or refuses, saying why. */
@@ -59,7 +75,7 @@ const TYPED_PLACES = 1;
 // What parts a command's name from its argument
 const SPACE = " ";
 
-// The names of Neovim's command that opens a file, here a project's page
+// The names of Neovim's command that opens a file, here a page by its name
 const EDIT_NAMES: readonly string[] = ["e", "edit"];
 
 // What the line says of a command it refuses, as Neovim says it
@@ -69,36 +85,33 @@ const SAID: Record<Fault, (typed: string) => string> = {
   missing: (typed) => `E447: Can't find file "${typed}" in path`,
 };
 
-/** The kind a word names, if it names one. */
-export function placeKindOf(word: string | undefined): PlaceKind | undefined {
-  return PLACE_KINDS.find((kind) => kind === word);
-}
-
 /**
- * A page's places: a name two share goes to the first, as the TUI's places do, so a project's page named as a tab is
- * goes by :e alone.
+ * A page's places: those it goes to by name, a name two share going to the first, as the TUI's places do, so a
+ * project's page named as a tab is goes by :e alone; the pages :e opens; and the folder where :e opens a page the
+ * menu does not list.
  */
-export function placesOf(all: readonly Place[]): Places {
-  const named = all.filter((place, index) => all.findIndex((each) => each.name === place.name) === index);
-  return { named, projects: all.filter((place) => place.kind === "project") };
+export function placesOf(all: readonly Place[], folder: Folder): Places {
+  const byName = all.filter((place) => !place.edited);
+  const named = byName.filter((place, index) => byName.findIndex((each) => each.name === place.name) === index);
+  return { named, edited: all.filter((place) => place.edited), folder };
 }
 
 /**
  * What Tab goes round for a line typed, none of it chosen: the places a name typed starts, never the tab shown, and
- * before a letter the tabs alone; after :e and a space, the projects' pages its argument starts.
+ * before a letter the tabs alone; after :e and a space, the pages it opens its argument starts.
  */
 export function completionsOf(places: Places, typed: string): Completions {
   const { name, argument, argued } = partsOf(typed);
   if (argued) {
     const listed = EDIT_NAMES.includes(name)
-      ? places.projects
+      ? places.edited
           .filter((place) => place.name.startsWith(argument))
           .map((place) => ({ place, written: name + SPACE + place.name }))
       : [];
     return { typed, listed, matched: argument, chosen: NONE_CHOSEN };
   }
   const listed = places.named
-    .filter((place) => !place.current && place.name.startsWith(name) && (name !== "" || place.kind === "tab"))
+    .filter((place) => !place.current && place.name.startsWith(name) && (name !== "" || place.kind === TAB_KIND))
     .map((place) => ({ place, written: place.name }));
   return { typed, listed, matched: name, chosen: NONE_CHOSEN };
 }
@@ -136,8 +149,15 @@ export function ran(places: Places, line: string): Outcome {
   if (argument === "") {
     return failed("argument", argument);
   }
-  const project = places.projects.find((place) => place.name === argument);
-  return project === undefined ? failed("missing", argument) : wentTo(project);
+  const opened = places.edited.find((place) => place.name === argument);
+  if (opened !== undefined) {
+    return wentTo(opened);
+  }
+  // the site answers in the blog's folder for every post, by its slug or its number, unlisted ones too
+  const { folder } = places;
+  return argument.startsWith(folder.name)
+    ? { kind: "go", address: folder.address + argument.slice(folder.name.length) }
+    : failed("missing", argument);
 }
 
 /** Where going to a place takes the reader: to its address, or nowhere where it is the page shown. */

@@ -90,7 +90,7 @@ func (read blog) byYear(words content.Words) []document.Block {
 	groups := make([]document.Block, 0, len(years))
 	for _, year := range years {
 		posts := postsOf[year]
-		groups = append(groups, postGroup(strconv.Itoa(year), nil, postCount(len(posts), words), posts))
+		groups = append(groups, postGroup(strconv.Itoa(year), "", nil, postCount(len(posts), words), posts))
 	}
 	return groups
 }
@@ -105,13 +105,13 @@ func (read blog) bySeries(words content.Words) []document.Block {
 		posts := make([]document.ListedPost, 0, len(parts))
 		out := 0
 		for index, part := range parts {
-			posts = append(posts, partInItsGroup(part, partNumber(index), words))
+			posts = append(posts, partInItsGroup(part, partNumber(index), series.Name, words))
 			if part.post != nil {
 				out++
 			}
 		}
 		count := textSpans(words.Phrase(content.PhrasePartsOut, strconv.Itoa(out), strconv.Itoa(len(parts))))
-		groups = append(groups, postGroup(series.Title, textSpans(series.Line), count, posts))
+		groups = append(groups, postGroup(series.Title, series.Name, textSpans(series.Line), count, posts))
 	}
 	others := []document.ListedPost{}
 	for _, post := range read.newestFirst() {
@@ -120,15 +120,15 @@ func (read blog) bySeries(words content.Words) []document.Block {
 		}
 	}
 	if len(others) > 0 {
-		groups = append(groups, postGroup(words.Text(content.WordOutsideSeries), nil, postCount(len(others), words), others))
+		groups = append(groups, postGroup(words.Text(content.WordOutsideSeries), "", nil, postCount(len(others), words), others))
 	}
 	return groups
 }
 
-// postGroup is a group of the blog's list: a section under its name, holding its posts, with a series' line where it
-// is a series' and how many posts it holds.
-func postGroup(title string, line, count []document.Span, posts []document.ListedPost) document.Section {
-	return document.Section{Title: textSpans(title), Blocks: []document.Block{document.Posts{Line: line, Count: count, List: posts}}}
+// postGroup is a group of the blog's list: a section under its title, holding its posts, with a series' name, which a
+// place reaches the group by, and its line where it is a series' and how many posts it holds.
+func postGroup(title, name string, line, count []document.Span, posts []document.ListedPost) document.Section {
+	return document.Section{Title: textSpans(title), Name: name, Blocks: []document.Block{document.Posts{Line: line, Count: count, List: posts}}}
 }
 
 // postCount is how many posts a group holds, in the site's words, one post apart from more.
@@ -162,7 +162,7 @@ func (read blog) seriesNewestFirst() []content.Series {
 }
 
 // listedOutside is a post as a group that is no series' own names it: when it came out, its title, its lead, its
-// tags, and its part and its series' title where it is a part of one.
+// tags, and its part, its series' title and its series' name where it is a part of one.
 func (read blog) listedOutside(post content.Post, words content.Words) document.ListedPost {
 	listed := listedPost(post)
 	series, inSeries := read.seriesOf[post.Slug]
@@ -172,22 +172,22 @@ func (read blog) listedOutside(post content.Post, words content.Words) document.
 	parts := read.partsOf(series)
 	index := slices.IndexFunc(parts, func(part listedPart) bool { return part.post != nil && part.post.Slug == post.Slug })
 	listed.Part = textSpans(words.Phrase(content.PhrasePart, strconv.Itoa(partNumber(index))))
-	listed.Series = textSpans(series.Title)
+	listed.Series, listed.SeriesName = textSpans(series.Title), series.Name
 	return listed
 }
 
-// partInItsGroup is a part of a series as its own group names it, by its number: a part out as the post it is, a part
-// to come by its title alone, saying it comes.
-func partInItsGroup(part listedPart, number int, words content.Words) document.ListedPost {
+// partInItsGroup is a part of a series of a name as its own group names it, by its number: a part out as the post it
+// is, a part to come by its title alone, saying it comes.
+func partInItsGroup(part listedPart, number int, seriesName string, words content.Words) document.ListedPost {
 	partWords := textSpans(words.Phrase(content.PhrasePart, strconv.Itoa(number)))
 	if part.post == nil {
 		return document.ListedPost{
 			Readiness: document.ComingPart{Coming: textSpans(words.Text(content.WordSoon))},
-			Title:     textSpans(part.title), Lead: nil, Part: partWords, Series: nil, Tags: nil,
+			Title:     textSpans(part.title), Lead: nil, Part: partWords, Series: nil, SeriesName: seriesName, Tags: nil,
 		}
 	}
 	listed := listedPost(*part.post)
-	listed.Part = partWords
+	listed.Part, listed.SeriesName = partWords, seriesName
 	return listed
 }
 
@@ -196,6 +196,6 @@ func partInItsGroup(part listedPart, number int, words content.Words) document.L
 func listedPost(post content.Post) document.ListedPost {
 	return document.ListedPost{
 		Readiness: document.PostOut{Page: postPage(post), Published: post.Published.At()},
-		Title:     textSpans(post.Title), Lead: textSpans(post.Description), Part: nil, Series: nil, Tags: slices.Clone(post.Tags),
+		Title:     textSpans(post.Title), Lead: textSpans(post.Description), Part: nil, Series: nil, SeriesName: "", Tags: slices.Clone(post.Tags),
 	}
 }

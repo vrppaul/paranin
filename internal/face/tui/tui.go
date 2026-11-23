@@ -45,11 +45,12 @@ type Model struct {
 	inBlog   bool
 	tabs     []tab
 	left     map[document.Page]readerPlace
-	// slugs are the slugs of the projects' pages the session holds, in the documents' order, as Tab goes round them
-	slugs []string
-	// blogPages are the pages of the blog by the names a terminal reaches them by, as :e and an SSH user name write
-	// them
-	blogPages map[string]document.Page
+	// pagePlaces are each page's own places (document.PlacesOf), and sitePlaces those every page's command line goes
+	// to after them, the projects' pages and the window of keys
+	pagePlaces map[document.Page][]document.Place
+	sitePlaces []place
+	// opened are the pages :e opens by every name it reads, as compose names them, an SSH user name among them
+	opened map[string]document.Page
 	// siteWords are the site's words of the frame, and site writes the addresses links lead to
 	siteWords compose.Frame
 	site      routes.Site
@@ -69,10 +70,10 @@ type Model struct {
 	scrolls []int
 	tiles   []int
 	// actions are what each key does in normal mode, commands what the command line runs, and places where it goes
-	// from the page shown
+	// from the tabs shown
 	actions    map[string]action
 	commands   []command
-	places     []place
+	places     shownPlaces
 	keys       keyState
 	search     searchState
 	completion completionState
@@ -99,21 +100,22 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 	}
 	buffers := buffersOf(drawing.Documents)
 	model := Model{
-		buffers:   buffers,
-		sitePage:  document.PageOf(document.PageResume),
-		blog:      blogSession{list: document.PageOf(document.PageBlog), post: document.PageOf(document.PageNone), atPost: false},
-		inBlog:    false,
-		tabs:      nil,
-		left:      placesLeft(buffers),
-		slugs:     projectSlugs(drawing.Documents),
-		blogPages: blogNames(drawing.Documents),
-		siteWords: drawing.Frame,
-		site:      drawing.Site,
-		terminal:  terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
-		today:     today,
-		frame:     frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, under: 0, crosses: false},
-		laid:      nil,
-		paint:     paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, pointedGround: nil, pointedUnderline: nil, matchGround: nil, matchText: nil, matchUnderline: nil, cursorColour: nil, fewColours: false, noColours: false},
+		buffers:    buffers,
+		sitePage:   document.PageOf(document.PageResume),
+		blog:       blogSession{list: document.PageOf(document.PageBlog), post: document.PageOf(document.PageNone), atPost: false},
+		inBlog:     false,
+		tabs:       nil,
+		left:       placesLeft(buffers),
+		pagePlaces: pagePlacesOf(drawing.Documents),
+		sitePlaces: sitePlaces(drawing.Frame.Projects),
+		opened:     openedPages(drawing.Frame.Pages),
+		siteWords:  drawing.Frame,
+		site:       drawing.Site,
+		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
+		today:      today,
+		frame:      frame{width: 0, height: 0, left: 0, inner: 0, above: 0, rows: 0, under: 0, crosses: false},
+		laid:       nil,
+		paint:      paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, pointedGround: nil, pointedUnderline: nil, matchGround: nil, matchText: nil, matchUnderline: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn: drawnScreen{
 			tabs: nil, crossRow: "", blankRow: "", margin: "", track: "", thumb: "",
 			footer: paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: paintedBar{text: "", width: 0}},
@@ -123,7 +125,7 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 		tiles:      nil,
 		actions:    normalActions(),
 		commands:   commands(buffers),
-		places:     nil,
+		places:     shownPlaces{tabs: nil, own: nil, site: nil, named: nil},
 		keys:       keyState{mode: modeNormal, typing: "", topPending: false},
 		search:     searchState{begunAt: 0, query: "", shown: nil},
 		completion: completionState{typed: "", listed: nil, matched: "", widest: menuWidths{name: 0, kind: 0}, chosen: noneChosen, first: 0},

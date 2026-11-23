@@ -66,7 +66,7 @@ func partsOf(briefed *document.Briefed, others []document.Block, today time.Time
 	return resumeParts{
 		brief: list[:shown], address: briefed.Address(), profiles: profilesOf(briefed.Ways),
 		career: careerDrawingOf(document.CareerOf(briefed.Roles, today)),
-		others: others, first: document.Section{Title: briefed.Title, Blocks: slices.Concat(briefed.Before, kept, briefed.After)},
+		others: others, first: document.Section{Title: briefed.Title, Name: "", Blocks: slices.Concat(briefed.Before, kept, briefed.After)},
 	}
 }
 

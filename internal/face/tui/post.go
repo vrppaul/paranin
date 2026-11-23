@@ -49,17 +49,19 @@ const (
 
 // post lays out a post (DESIGN.md, The TUI) in a column of its numbers and its text, in the middle of the page: its
 // head, its body numbered in the margin, its sources at its end under a rule, and the panes at its foot one under the
-// other. The outline, the sources beside the text and the panes side by side wait for the page wide enough (TODO.md).
-func (layout layout) post(post document.Document) []line {
+// other, with the line each heading stands at. The outline, the sources beside the text and the panes side by side
+// wait for the page wide enough (TODO.md).
+func (layout layout) post(post document.Document) laidTab {
 	column := layout
 	column.width = min(layout.width, postWidth)
-	body := article{layout: column, paragraphs: 0}
-	lines := slices.Concat(column.postHead(post.Head), make([]line, partRows), body.blocks(post.Blocks, textColumn, true))
+	head := slices.Concat(column.postHead(post.Head), make([]line, partRows))
+	body := article{layout: column, paragraphs: 0, headings: map[string]int{}}
+	lines := slices.Concat(head, body.body(post.Blocks, len(head)))
 	lines = stacked(lines, column.sources(document.NotesOf(post.Blocks)))
 	if place := post.Head.Post; place != nil {
 		lines = slices.Concat(lines, make([]line, partRows), column.panes(*place))
 	}
-	return shiftedLines(lines, (layout.width-column.width)/sides)
+	return laidTab{lines: shiftedLines(lines, (layout.width-column.width)/sides), tiles: nil, groups: nil, split: 0, sections: body.headings}
 }
 
 // shiftedLines are lines standing a number of columns further in.
@@ -112,29 +114,55 @@ func (layout layout) postFacts(head document.Head) []line {
 	return lines
 }
 
-// article lays out a post's body: its layout, and how many of its paragraphs it has numbered so far.
+// article lays out a post's body: its layout, how many of its paragraphs it has numbered so far, and the line of the
+// post each heading stands at, by its anchor.
 type article struct {
 	layout     layout
 	paragraphs int
+	headings   map[string]int
 }
 
-// blocks lays out blocks from a column, a row of nothing between each two; their paragraphs numbered in the margin
-// where they stand at the body's top or in a section.
-func (writing *article) blocks(blocks []document.Block, column int, numbered bool) []line {
+// body lays out the blocks of a post's body or of a section in the text's column, starting at a line of the post, a
+// row of nothing between each two: each section under its heading, bold, whose line it keeps by the heading's anchor,
+// and the paragraphs numbered in the margin.
+func (writing *article) body(blocks []document.Block, from int) []line {
 	lines := []line{}
 	for _, block := range blocks {
-		lines = stacked(lines, writing.block(block, column, numbered))
+		section, isSection := block.(document.Section)
+		if !isSection {
+			lines = stacked(lines, writing.block(block, textColumn, true))
+			continue
+		}
+		start := stackedFrom(from, lines)
+		writing.headings[section.Name] = start
+		heading := writing.layout.fill(writing.layout.words(section.Title, kindStrong), textColumn)
+		lines = stacked(lines, stacked(heading, writing.body(section.Blocks, stackedFrom(start, heading))))
 	}
 	return lines
 }
 
-// block lays out a block of a post from a column (DESIGN.md, Article): a heading bold over its section's blocks, a
-// paragraph numbered where it is numbered, a table, code in a frame, a list, a quote and a pause.
+// stackedFrom is the line of the post that lines stacked under others, which start at a line, start at.
+func stackedFrom(from int, above []line) int {
+	if len(above) == 0 {
+		return from
+	}
+	return from + len(above) + blockGap
+}
+
+// blocks lays out the blocks a quote holds from a column, a row of nothing between each two, no paragraph numbered.
+func (writing *article) blocks(blocks []document.Block, column int) []line {
+	lines := []line{}
+	for _, block := range blocks {
+		lines = stacked(lines, writing.block(block, column, false))
+	}
+	return lines
+}
+
+// block lays out a block of a post that is no section from a column (DESIGN.md, Article): a paragraph numbered where
+// it is numbered, a table, code in a frame, a list, a quote and a pause.
 func (writing *article) block(block document.Block, column int, numbered bool) []line {
 	layout := writing.layout
 	switch typed := block.(type) {
-	case document.Section:
-		return stacked(layout.fill(layout.words(typed.Title, kindStrong), column), writing.blocks(typed.Blocks, column, numbered))
 	case document.Paragraph:
 		words := layout.words(typed.Spans, kindText)
 		if !numbered {
@@ -154,8 +182,10 @@ func (writing *article) block(block document.Block, column int, numbered bool) [
 		return writing.quote(typed, column)
 	case document.Pause:
 		return layout.pause(column)
-	case document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills, document.Posts:
-		// a post's body holds none of the résumé's blocks nor the blog's list
+	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
+		document.Posts:
+		// body lays out the body's sections, and the load refuses a heading inside a list's item or a quote; a post's
+		// body holds none of the résumé's blocks nor the blog's list
 	}
 	return nil
 }
@@ -221,11 +251,11 @@ func firstParagraph(blocks []document.Block) (document.Paragraph, bool) {
 
 // quote lays out a quote from a column: its blocks, none numbered, each line after a bar as the page draws it.
 func (writing *article) quote(quote document.Quote, column int) []line {
-	inside := article{layout: writing.layout, paragraphs: 0}
+	inside := article{layout: writing.layout, paragraphs: 0, headings: nil}
 	inside.layout.width = writing.layout.width - column - quoteRoom
 	bar := line{gapRun(column), plainRun(quoteBar, kindQuoteBar), gapRun(quoteRoom - textWidth(quoteBar))}
 	lines := []line{}
-	for _, shown := range inside.blocks(quote.Blocks, 0, false) {
+	for _, shown := range inside.blocks(quote.Blocks, 0) {
 		lines = append(lines, slices.Concat(bar, shown))
 	}
 	return lines

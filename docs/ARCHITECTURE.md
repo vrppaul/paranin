@@ -127,7 +127,8 @@ Amended 2026-11-22, with the first post served: the posts' blocks and spans, a f
 it, and the post's head. Amended 2026-11-23, with the blog's list: a document in two groupings, its groups sections
 holding the posts they name. Amended 2026-11-23, on the owner's choice of its look: a post's pause. Amended
 2026-11-23, with code coloured: a block of code holds its text in runs of the kinds of word a reader of code tells
-apart.
+apart. Amended 2026-11-23, with the command line's places: a page's own places are read off its document, `compose`
+names each anchor once, the kinds of place are `document`'s, and the page's own ids take a form no anchor takes.
 
 ### Context
 
@@ -321,6 +322,25 @@ and web routes.
   document's end, each citation a span naming its number, which keeps two
   lists in step and leaves a face that sets notes beside the line to find
   each one; a note holding blocks, which puts blocks inside a span.
+- **A page's places are read off its document** (amended 2026-11-23): the
+  places its command line goes to by name beside its tabs and the projects'
+  pages, a post's headings and its series' other parts out, the posts out
+  the blog's list names and their series (`document.PlacesOf`), as its tabs
+  and notes are, so no list of places is kept in step with the blocks. A
+  heading's section carries its anchor, which `compose` names once, by the
+  heading's words, counted where the page's other places, the TUI's `help`
+  among them, or an earlier heading take them, so no face filters a place
+  out; a series' group carries the series' name, and a post
+  the list names its series' name. Every face reaches a section by that
+  anchor: the page writes it as the section's id, and the TUI keeps the
+  line it stands at. The page's own ids, its menu's, its hints', its
+  paragraphs', open with a mark `SlugOf` never writes, so no anchor takes
+  one. The kinds of place are `document`'s words, and `compose` hands every
+  face the pages `:e` opens in one list, by every name it reads, a post's
+  number among them, each saying whether Tab offers it. Ways weighed: the
+  places a field of the head, which kept a second list beside the blocks;
+  each face naming its anchors, which named a heading twice and let the page
+  rename one its own ids took.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still

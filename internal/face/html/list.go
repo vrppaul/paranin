@@ -18,12 +18,12 @@ type grouping struct {
 
 // List writes the blog's list as a page of HTML (DESIGN.md, Pages): what the page says of itself, then its head, with
 // the Switch between its groupings, its groups of tiles, and the foot line, in the blog's session, the list its one
-// window.
+// window, its command line going to the list's posts and series too.
 func (writer PageWriter) List(composed document.Document) string {
 	head := composed.Head
 	page := head.Page
 	windows := blogWindowsOf(writer.frame.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
-	foot := footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page)
+	foot := footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page, document.PlacesOf(composed))
 	main := writer.listMain(head, groupingsOf(writer.frame.listWords.Groupings(), page), composed.Blocks)
 	return rendered(writer.page(head.Language, writer.metadataOf(head, page, head.Title), nil, main, foot))
 }

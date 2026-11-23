@@ -68,15 +68,35 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			)},
 		},
 		{
-			name: "headings nest into sections by their level",
+			name: "headings nest into sections by their level, each named by its words",
 			body: "Before.\n\n## One\n\nIn one.\n\n### Inner\n\nIn inner.\n\n## Two\n\nIn two.",
 			want: []document.Block{
 				paragraphOf(document.Text{Text: "Before."}),
-				document.Section{Title: textSpans("One"), Blocks: []document.Block{
+				document.Section{Title: textSpans("One"), Name: "one", Blocks: []document.Block{
 					paragraphOf(document.Text{Text: "In one."}),
-					document.Section{Title: textSpans("Inner"), Blocks: []document.Block{paragraphOf(document.Text{Text: "In inner."})}},
+					document.Section{Title: textSpans("Inner"), Name: "inner", Blocks: []document.Block{paragraphOf(document.Text{Text: "In inner."})}},
 				}},
-				document.Section{Title: textSpans("Two"), Blocks: []document.Block{paragraphOf(document.Text{Text: "In two."})}},
+				document.Section{Title: textSpans("Two"), Name: "two", Blocks: []document.Block{paragraphOf(document.Text{Text: "In two."})}},
+			},
+		},
+		{
+			name: "a heading of words named before takes its count after them, and one of no words a name of its own",
+			body: "## Why\n\nOne.\n\n## Why\n\nTwo.\n\n## Why 2\n\nThree.\n\n## ?!\n\nFour.",
+			want: []document.Block{
+				document.Section{Title: textSpans("Why"), Name: "why", Blocks: []document.Block{paragraphOf(document.Text{Text: "One."})}},
+				document.Section{Title: textSpans("Why"), Name: "why-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Two."})}},
+				document.Section{Title: textSpans("Why 2"), Name: "why-2-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Three."})}},
+				document.Section{Title: textSpans("?!"), Name: "heading", Blocks: []document.Block{paragraphOf(document.Text{Text: "Four."})}},
+			},
+		},
+		{
+			name: "a heading of the name of another place of the page, a window, a project's page or the keys', takes its count",
+			body: "## Posts\n\nOne.\n\n## Notes on tools\n\nTwo.\n\n## Tidy tool\n\nThree.\n\n## Help\n\nFour.",
+			want: []document.Block{
+				document.Section{Title: textSpans("Posts"), Name: "posts-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "One."})}},
+				document.Section{Title: textSpans("Notes on tools"), Name: "notes-on-tools-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Two."})}},
+				document.Section{Title: textSpans("Tidy tool"), Name: "tidy-tool-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Three."})}},
+				document.Section{Title: textSpans("Help"), Name: "help-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Four."})}},
 			},
 		},
 		{

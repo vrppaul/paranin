@@ -8,11 +8,11 @@
 import {
   completionsOf,
   lineOf,
-  placeKindOf,
   placesOf,
   ran,
   stepped,
   type Completions,
+  type Folder,
   type Place,
   type Places,
 } from "../domain/commandline";
@@ -45,8 +45,9 @@ const MAIN = "main";
 // How the stylesheet takes a part out of the page, as it takes the switch on a phone
 const GONE = "none";
 
-// What the server writes of a place being the page shown
+// What the server writes of a place being the page shown, and of one :e opens
 const CURRENT = "current";
+const EDITED = "edit";
 
 // The keys the line answers, as a browser names them
 const COLON = ":";
@@ -100,7 +101,10 @@ interface FieldMenu {
   controls: string;
 }
 
-/** The parts of the line the server draws, and how its field presents itself for a place and for a search. */
+/**
+ * The parts of the line the server draws, how its field presents itself for a place and for a search, and the folder
+ * its field names, where :e opens a page the menu does not list.
+ */
 interface Parts {
   switchLabel: HTMLElement;
   box: HTMLInputElement;
@@ -116,6 +120,7 @@ interface Parts {
   searchKeys: HTMLElement;
   count: HTMLElement;
   kinds: Record<Mode, FieldKind>;
+  folder: Folder;
 }
 
 /** A place on the menu: where it goes, and its element with the letters typed of its name and the rest. */
@@ -168,6 +173,8 @@ function partsOf(page: Document): Parts | undefined {
   const role = field?.getAttribute(ROLE);
   const name = field?.getAttribute(NAME);
   const searchName = field?.dataset.searchName;
+  const folderName = field?.dataset.folder;
+  const folderAddress = field?.dataset.folderAddress;
   const autocomplete = field?.getAttribute(AUTOCOMPLETE);
   const controls = field?.getAttribute(CONTROLS);
   if (
@@ -187,6 +194,8 @@ function partsOf(page: Document): Parts | undefined {
     !role ||
     !name ||
     !searchName ||
+    !folderName ||
+    !folderAddress ||
     !autocomplete ||
     !controls
   ) {
@@ -211,19 +220,20 @@ function partsOf(page: Document): Parts | undefined {
     searchKeys,
     count,
     kinds,
+    folder: { name: folderName, address: folderAddress },
   };
 }
 
-/** A place as the server draws it on the menu, or nothing where it lacks a part or names no kind the line knows. */
+/** A place as the server draws it on the menu, its kind the word it names it by, or nothing where it lacks a part. */
 function itemOf(element: HTMLElement): Item | undefined {
-  const { name, place: word, address } = element.dataset;
-  const kind = placeKindOf(word);
+  const { name, place: kind, address } = element.dataset;
   const typed = element.querySelector<HTMLElement>(TYPED);
   const rest = element.querySelector<HTMLElement>(REST);
   if (name === undefined || address === undefined || kind === undefined || typed === null || rest === null) {
     return undefined;
   }
-  return { place: { name, kind, address, current: CURRENT in element.dataset }, element, typed, rest };
+  const place = { name, kind, address, current: CURRENT in element.dataset, edited: EDITED in element.dataset };
+  return { place, element, typed, rest };
 }
 
 /**
@@ -256,7 +266,10 @@ class CommandLine {
     private readonly search: Search,
     private readonly overlay: Overlay,
   ) {
-    this.places = placesOf(items.map((item) => item.place));
+    this.places = placesOf(
+      items.map((item) => item.place),
+      parts.folder,
+    );
     this.completions = completionsOf(this.places, "");
   }
 

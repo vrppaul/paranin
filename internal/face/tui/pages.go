@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
@@ -47,16 +48,13 @@ func buffersOf(documents []document.Document) map[document.Page][]tab {
 	return buffers
 }
 
-// projectSlugs are the slugs of the projects' pages among the documents, in the order compose hands them, the
-// profile's.
-func projectSlugs(documents []document.Document) []string {
-	slugs := []string{}
+// pagePlacesOf are each document's own places by its page, read off it once, as it never changes.
+func pagePlacesOf(documents []document.Document) map[document.Page][]document.Place {
+	places := make(map[document.Page][]document.Place, len(documents))
 	for _, held := range documents {
-		if held.Head.Page.Kind == document.PageProject {
-			slugs = append(slugs, held.Head.Page.Slug)
-		}
+		places[held.Head.Page] = document.PlacesOf(held)
 	}
-	return slugs
+	return places
 }
 
 // placesLeft are where a reader stands in each buffer before they first read it: on its first tab, scrolled nowhere,
@@ -140,7 +138,7 @@ func (model Model) windowed() Model {
 		place := model.left[shown.page]
 		model.scrolls, model.tiles = append(model.scrolls, place.scrolls[shown.place]), append(model.tiles, place.tiles[shown.place])
 	}
-	model.places = placesOf(tabs, model.slugs)
+	model.places = shownPlacesOf(tabs, model.sitePlaces, model.pagePlaces)
 	if frameOf(model.terminal.width, model.terminal.height, widestPageOf(model.inBlog)) != model.frame {
 		return model.relaid()
 	}
@@ -177,7 +175,7 @@ func (model Model) placeOf(wanted tab) int {
 // the blog.
 func (model Model) reached(given string) Model {
 	name := strings.Map(shownLetter, given)
-	if page, named := model.blogPages[name]; named {
+	if page, named := model.opened[name]; named && page.InBlog() && model.holds(page) {
 		return model.showing(page)
 	}
 	opened, blogs := document.PageOf(document.PageResume), routes.IsBlogName(name)
@@ -197,18 +195,37 @@ func (model Model) holds(page document.Page) bool {
 	return held
 }
 
-// edit shows a page by its name, as Neovim's :e opens a file: a page of the blog by the name a terminal reaches it by,
-// or a project's by its slug; or says it finds no such page.
+// edit shows a page by its name, as Neovim's :e opens a file: by any name compose says :e reads, a project's slug or
+// the name a terminal reaches a page of the blog by, where the session holds the page; or says it finds no such page.
 func (model Model) edit(name string) (Model, tea.Cmd) {
-	if page, named := model.blogPages[name]; named {
-		return model.showing(page), nil
-	}
-	wanted := document.Page{Kind: document.PageProject, Slug: name, Tab: ""}
-	if _, held := model.buffers[wanted]; !held {
+	page, named := model.opened[name]
+	if !named || !model.holds(page) {
 		model.said = notFound(name)
 		return model, nil
 	}
-	return model.showing(wanted), nil
+	return model.showing(page), nil
+}
+
+// openedPages are the pages :e opens, by every name it reads.
+func openedPages(pages []compose.OpenedPage) map[string]document.Page {
+	opened := make(map[string]document.Page, len(pages))
+	for _, page := range pages {
+		opened[page.Place.Name] = page.Place.Page
+	}
+	return opened
+}
+
+// wentTo is the model at a place of a page's own: its page shown, where the tab chosen shows another, then scrolled to
+// the place's section, where it names one the page lays out; on the blog's list the keys on the section's first tile.
+func (model Model) wentTo(place document.Place) Model {
+	if model.tabs[model.chosen].page != place.Page {
+		model = model.showing(place.Page)
+	}
+	line, laid := model.laid[model.chosen].sections[place.Section]
+	if !laid {
+		return model
+	}
+	return model.scrolledTo(line).withFirstTileFrom(line)
 }
 
 // notFound is what the command line says of a name no page goes by, as Neovim says it of a file.

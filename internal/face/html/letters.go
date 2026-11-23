@@ -175,10 +175,11 @@ func (drawing letterDrawing) svgHeight() string {
 	return strconv.FormatFloat(float64(drawing.height)/cellUnits, 'f', heightDecimals, floatBits) + fontSizeUnit
 }
 
-// gradientID is the name of the drawing's gradient on the page: its words, in small letters and digits alone. Two
-// drawings of the same words draw the same gradient, so a second of one name changes nothing it draws.
+// gradientID is the id of the drawing's gradient on the page, one of the page's own: its words, in small letters and
+// digits alone. Two drawings of the same words draw the same gradient, so a second of one name changes nothing it
+// draws.
 func (drawing letterDrawing) gradientID() string {
-	return gradientPrefix + strings.Map(keptInName, strings.ToLower(drawing.words))
+	return ownID(gradientPrefix + strings.Map(keptInName, strings.ToLower(drawing.words)))
 }
 
 // keptInName is a letter as a gradient's name keeps it: a letter or a digit as it is, anything else left out.

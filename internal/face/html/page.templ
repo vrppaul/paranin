@@ -68,7 +68,7 @@ templ headOpening(title string, included assets.Included) {
 // what a command's chip on the page, or in a hint, copied.
 templ footLineMarkup(foot footLine) {
 	<div class="foot" data-part={ footPart }>
-		@commandLineMarkup(foot.places)
+		@commandLineMarkup(foot)
 		<nav class="foot-row content-width">
 			<span class="sessions">
 				for _, shown := range foot.sessions {
@@ -115,25 +115,26 @@ templ vimKeysSwitch() {
 // commandLineMarkup is the command line the vim keys open over the foot line (DESIGN.md, CommandLine), as Neovim's
 // stands with no row of its own: a field the reader types a place's name or a command in, after the colon, or a
 // search after the slash, the menu of the places that fit what is typed over it, what the line says of a command or a
-// search, and the keys that finish it, a search's with the count of its matches. The site's script opens it, shows
-// the mark and the keys of the key that opened it, and goes where it says or marks what it finds.
-templ commandLineMarkup(places []place) {
+// search, and the keys that finish it, a search's with the count of its matches; the field names the blog's folder,
+// where :e opens a post the menu does not list. The site's script opens it, shows the mark and the keys of the key
+// that opened it, and goes where it says or marks what it finds.
+templ commandLineMarkup(foot footLine) {
 	<div class="command-line content-width" data-part={ commandLinePart } hidden>
 		<div class="command-entry" data-part={ commandEntryPart }>
-			<ul id={ placesPart } class="places-menu" role="listbox" aria-label={ placesName } data-part={ placesPart } hidden>
-				for index, shown := range places {
+			<ul id={ ownID(placesPart) } class="places-menu" role="listbox" aria-label={ placesName } data-part={ placesPart } hidden>
+				for index, shown := range foot.places {
 					@placeItem(index, shown)
 				}
 			</ul>
-			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><input id={ commandFieldPart } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ placesPart } aria-expanded="false" aria-autocomplete="list" aria-describedby={ commandKeysPart } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-name={ searchName }/>
+			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><input id={ ownID(commandFieldPart) } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ ownID(placesPart) } aria-expanded="false" aria-autocomplete="list" aria-describedby={ ownID(commandKeysPart) } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-name={ searchName } data-folder={ foot.frame.folder } data-folder-address={ foot.frame.folderAddress }/>
 		</div>
 		<p class="command-said" role="alert" data-part={ commandSaidPart } hidden></p>
-		<span id={ commandKeysPart } class="command-keys" data-part={ commandKeysPart }>
+		<span id={ ownID(commandKeysPart) } class="command-keys" data-part={ commandKeysPart }>
 			@keyHint(tabKey, nextHint, nextKeyPart)
 			@keyHint(enterMark, goHint, "")
 			@keyHint(escapeKey, cancelHint, "")
 		</span>
-		<span id={ searchKeysPart } class="command-keys" data-part={ searchKeysPart } hidden>
+		<span id={ ownID(searchKeysPart) } class="command-keys" data-part={ searchKeysPart } hidden>
 			<span class="command-count" data-part={ searchCountPart }></span>
 			@keyHint(enterMark, findHint, "")
 			@keyHint(escapeKey, cancelHint, "")
@@ -153,10 +154,10 @@ templ keyHint(key, does, part string) {
 }
 
 // placeItem is a place on the command line's menu, hidden until what is typed fits it: its name, the letters typed of
-// it apart from the rest, and what it is; it carries what the site's script reads of it, its name and address, its
-// kind, and whether it is the page shown.
+// it apart from the rest, and what it is; it carries what the site's script reads of it, its name and the address it
+// leads to, its kind, whether it is the page shown, and whether :e opens it.
 templ placeItem(index int, shown place) {
-	<li id={ placeID(index) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
+	<li id={ placeID(index) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } data-edit?={ shown.edited } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
 }
 
 // windowLink is a tab as tmux writes a window, its number, a colon and its name, leading to its page; the current one
@@ -188,10 +189,10 @@ templ wayWithHint(offered hint) {
 // script shows it and runs it; a page read without the script hides it, and follows the system's theme.
 templ themeButton(name string) {
 	<span class="theme" data-part={ themePart } hidden>
-		<button type="button" class="theme-button" aria-pressed="false" aria-labelledby={ themeNameID }>
+		<button type="button" class="theme-button" aria-pressed="false" aria-labelledby={ ownID(themeNameID) }>
 			@themeMark()
 		</button>
-		<span id={ themeNameID } class="tooltip" data-part={ tooltipPart }>{ name }</span>
+		<span id={ ownID(themeNameID) } class="tooltip" data-part={ tooltipPart }>{ name }</span>
 	</span>
 }
 

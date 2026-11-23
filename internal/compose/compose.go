@@ -104,6 +104,7 @@ func Resume(snapshot *content.Snapshot) document.Document {
 func aboutSection(profile content.Profile, words content.Words) document.Section {
 	return document.Section{
 		Title: textSpans(words.Text(content.WordAbout)),
+		Name:  "",
 		Blocks: []document.Block{
 			document.Paragraph{Spans: markedSpans(profile.Summary)},
 			document.Facts{Kind: document.FactsDetails, List: factList(profile.Facts)},
@@ -196,7 +197,7 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 			Points:   points(role.Bullets),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Blocks: entries}
+	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: entries}
 }
 
 func educationSection(schools []content.School, words content.Words) document.Section {
@@ -211,7 +212,7 @@ func educationSection(schools []content.School, words content.Words) document.Se
 			Points:   nil,
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordEducation)), Blocks: entries}
+	return document.Section{Title: textSpans(words.Text(content.WordEducation)), Name: "", Blocks: entries}
 }
 
 func projectsSection(projects []content.Project, words content.Words) document.Section {
@@ -226,7 +227,7 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 			Page:     projectPage(project),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Blocks: cards}
+	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
 // projectDocument is a project's own page: its head; its details, its author first, a link back to the résumé, and
@@ -244,7 +245,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 		for _, paragraph := range section.Paragraphs {
 			paragraphs = append(paragraphs, document.Paragraph{Spans: markedSpans(paragraph)})
 		}
-		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Blocks: paragraphs})
+		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Name: "", Blocks: paragraphs})
 	}
 	return document.Document{Head: projectHead(project, words), Blocks: blocks}
 }
@@ -319,9 +320,9 @@ func skillsSection(groups []content.SkillGroup, words content.Words, after ...do
 			}})
 		}
 		table := document.Table{Header: document.Row{Cells: nil}, Rows: rows}
-		sections = append(sections, document.Section{Title: markedSpans(group.Title), Blocks: []document.Block{table}})
+		sections = append(sections, document.Section{Title: markedSpans(group.Title), Name: "", Blocks: []document.Block{table}})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Blocks: append(sections, after...)}
+	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Name: "", Blocks: append(sections, after...)}
 }
 
 // languagesSection is the languages the author speaks, each with how well.
@@ -385,7 +386,7 @@ func points(bullets []string) []document.Point {
 
 // section is a section under a word of the site, holding one block.
 func section(title string, block document.Block) document.Section {
-	return document.Section{Title: textSpans(title), Blocks: []document.Block{block}}
+	return document.Section{Title: textSpans(title), Name: "", Blocks: []document.Block{block}}
 }
 
 // textSpans is a text with no marks of its own: a word of the site, or the text of a link the profile writes.

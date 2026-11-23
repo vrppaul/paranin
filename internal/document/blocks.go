@@ -11,7 +11,10 @@ type Block interface {
 
 // Section is a titled part of a document.
 type Section struct {
-	Title  []Span
+	Title []Span
+	// Name is the section's anchor on every face, which a link and the command line reach it by inside its page: a
+	// post's heading's, unique on its page, and a series' group's, the series' name; none where nothing reaches it
+	Name   string
 	Blocks []Block
 }
 

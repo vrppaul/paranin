@@ -108,17 +108,20 @@ func junctionMarks() map[junction]string {
 
 // list lays out the blog's list (DESIGN.md, The TUI): its head, then each group's tiles, the group's name in the
 // column at its left where the page is wide enough, over its tiles where not; with the tiles a key goes to and the
-// groups whose names stay in sight. A block that is no group, which compose writes none of, stands as any page lays
-// it out, as the page draws it.
+// groups whose names stay in sight, and the line each series' group starts at. A block that is no group, which compose
+// writes none of, stands as any page lays it out, as the page draws it.
 func (layout layout) list(head document.Head, blocks []document.Block) laidTab {
 	column := nameColumnOf(layout.width)
-	laid := laidTab{lines: layout.blogHead(head, column), tiles: []laidTile{}, groups: []laidGroup{}, split: 0}
+	laid := laidTab{lines: layout.blogHead(head, column), tiles: []laidTile{}, groups: []laidGroup{}, split: 0, sections: map[string]int{}}
 	if column > 0 {
 		laid.split = column + nameGap
 	}
 	for _, block := range blocks {
 		laid.lines = append(laid.lines, make([]line, groupRows)...)
 		group, isGroup := document.GroupOf(block)
+		if group.Name != "" {
+			laid.sections[group.Name] = len(laid.lines)
+		}
 		switch {
 		case !isGroup:
 			laid.lines = append(laid.lines, layout.blocks([]document.Block{block}, 0)...)
@@ -239,7 +242,7 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 	grid := gridOf(layout.width)
 	inside := layout
 	inside.width = grid.inside()
-	laid, above := laidTab{lines: []line{}, tiles: []laidTile{}, groups: nil, split: 0}, []bool{}
+	laid, above := laidTab{lines: []line{}, tiles: []laidTile{}, groups: nil, split: 0, sections: nil}, []bool{}
 	for first := 0; first < len(posts); first += grid.columns {
 		row := posts[first:min(first+grid.columns, len(posts))]
 		labels, tiles, leads := make([]line, 0, len(row)), make([]tileWords, 0, len(row)), make([]bool, 0, len(row))
@@ -549,6 +552,16 @@ func (model Model) withChosenTileNear(near spot) Model {
 		}
 	}
 	return model.choseTile(nearest)
+}
+
+// withFirstTileFrom is the model, on the blog's list chosen, with the keys on the first tile at or after a line, where
+// any is.
+func (model Model) withFirstTileFrom(line int) Model {
+	first := slices.IndexFunc(model.laid[model.chosen].tiles, func(tile laidTile) bool { return tile.top >= line })
+	if first < 0 || first == model.tiles[model.chosen] {
+		return model
+	}
+	return model.choseTile(first)
 }
 
 // inSight is whether a line of a tile shows on a tab's page at its scroll.

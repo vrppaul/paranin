@@ -12,8 +12,8 @@ type Posts struct {
 }
 
 // ListedPost is a post as the blog's list names it: whether it is out or still to come; its title, and its lead, none
-// for a part to come; where it stands in its series, and the series' title where its group does not name it; and its
-// tags.
+// for a part to come; where it stands in its series, the series' title where its group does not name it, and the
+// series' name; and its tags.
 type ListedPost struct {
 	Readiness Readiness
 	Title     []Span
@@ -23,12 +23,16 @@ type ListedPost struct {
 	// Series is its series' title where the group it stands in is no series' own; none in its series' group or
 	// outside a series
 	Series []Span
-	Tags   []string
+	// SeriesName is its series' name, its group's anchor, which a place of the list goes to; none outside a series
+	SeriesName string
+	Tags       []string
 }
 
-// Group is a group of the blog's list: its name, and the posts it holds.
+// Group is a group of the blog's list: its title, what a place reaches it by, a series' name and none for another
+// group, and the posts it holds.
 type Group struct {
 	Title []Span
+	Name  string
 	Posts Posts
 }
 
@@ -36,10 +40,10 @@ type Group struct {
 func GroupOf(block Block) (Group, bool) {
 	section, isSection := block.(Section)
 	if !isSection || len(section.Blocks) != 1 {
-		return Group{Title: nil, Posts: Posts{Line: nil, Count: nil, List: nil}}, false
+		return Group{Title: nil, Name: "", Posts: Posts{Line: nil, Count: nil, List: nil}}, false
 	}
 	posts, isPosts := section.Blocks[0].(Posts)
-	return Group{Title: section.Title, Posts: posts}, isPosts
+	return Group{Title: section.Title, Name: section.Name, Posts: posts}, isPosts
 }
 
 // InItsSeriesGroup is whether a post stands in its own series' group, which names the series, so its part alone says

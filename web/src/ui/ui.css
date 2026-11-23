@@ -474,7 +474,8 @@ a.session:hover {
 
 .command-line[hidden],
 .command-entry[hidden],
-.command-keys[hidden] {
+.command-keys[hidden],
+.places-menu[hidden] {
   display: none;
 }
 
@@ -563,8 +564,10 @@ a.session:hover {
 /* the menu of the places that fit what is typed: over the page, a nudge clear of the foot line's hairline, a hairline
  * box on the panel's ground as a tooltip, its names standing under where the line writes them, past the colon and what
  * comes before the name; its rows whole and as many as the screen holds over the foot line's two rows with a row of air
- * above, the rest scrolled to in the browser's own thin bar */
+ * above, the rest scrolled to in the browser's own thin bar; the names in one column and the kinds in another, four
+ * cells after the widest name, as the TUI's menu sets them */
 .places-menu {
+  display: grid;
   position: absolute;
   bottom: calc(100% + var(--hairline) + var(--nudge));
   left: calc(var(--typed-cells, 0) * var(--cell));
@@ -578,14 +581,17 @@ a.session:hover {
   list-style: none;
   scrollbar-color: var(--muted) var(--sunk);
   scrollbar-width: thin;
+  grid-template-columns: max-content max-content;
+  column-gap: calc(2 * var(--cell-2));
 }
 
-/* a place, its name then its kind four cells after it, a cell of air either side; the letters typed bold, underlined
- * in the accent, which Latte allows a fill, never small text; the one chosen reversed whole, its kind with it */
+/* a place, a row of the menu's columns, its name then its kind, a cell of air either side; the letters typed bold,
+ * underlined in the accent, which Latte allows a fill, never small text; the one chosen reversed whole, its kind with
+ * it */
 .places-item {
-  display: flex;
-  gap: calc(2 * var(--cell-2));
-  justify-content: space-between;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   padding: 0 var(--cell);
   color: var(--text);
   cursor: pointer;

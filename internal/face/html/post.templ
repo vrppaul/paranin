@@ -173,7 +173,7 @@ templ (writer PageWriter) partRow(part document.Part) {
 templ (writer PageWriter) panes(foot panesFoot) {
 	<footer class="panes-foot">
 		<div class="panes-heading">
-			<h2 id={ panesHeadingID } class="panes-title">{ foot.heading }</h2>
+			<h2 id={ ownID(panesHeadingID) } class="panes-title">{ foot.heading }</h2>
 			if foot.pick != nil {
 				@writer.seriesPick(*foot.pick)
 			}
@@ -181,7 +181,7 @@ templ (writer PageWriter) panes(foot panesFoot) {
 				<a class="panes-all" href={ foot.allPosts }>{ writer.frame.listWords.AllPosts }</a>
 			}
 		</div>
-		<nav class="panes" aria-labelledby={ panesHeadingID }>
+		<nav class="panes" aria-labelledby={ ownID(panesHeadingID) }>
 			@writer.pane(foot.before)
 			@writer.pane(foot.after)
 		</nav>

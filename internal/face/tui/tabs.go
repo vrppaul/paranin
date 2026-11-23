@@ -51,12 +51,14 @@ type tab struct {
 
 // laidTab is a tab laid out: its lines; on the blog's list the tiles a key goes to, in reading order, the groups
 // whose names stay in sight while their tiles scroll, and the column the names' column ends at, gap and all, where the
-// list has one; none on any other tab.
+// list has one; none on any other tab; and the line each named section starts at, a post's heading's and a series'
+// group's, which a place of the page goes to.
 type laidTab struct {
-	lines  []line
-	tiles  []laidTile
-	groups []laidGroup
-	split  int
+	lines    []line
+	tiles    []laidTile
+	groups   []laidGroup
+	split    int
+	sections map[string]int
 }
 
 // tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
@@ -221,14 +223,14 @@ func (layout layout) tab(shown tab) laidTab {
 	case listBody:
 		return layout.list(body.head, body.groups)
 	case postBody:
-		return linesAlone(layout.post(body.post))
+		return layout.post(body.post)
 	}
 	return linesAlone(nil)
 }
 
-// linesAlone is a tab laid out in lines, with no tile and no group of the blog's list.
+// linesAlone is a tab laid out in lines, with no tile, no group of the blog's list and no named section.
 func linesAlone(lines []line) laidTab {
-	return laidTab{lines: lines, tiles: nil, groups: nil, split: 0}
+	return laidTab{lines: lines, tiles: nil, groups: nil, split: 0, sections: nil}
 }
 
 // stacked is lines above others, a row of nothing between where there are lines on both sides.

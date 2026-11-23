@@ -4,15 +4,18 @@
 // test puts them.
 import { beforeEach, expect, test, vi } from "vitest";
 import { startOutline, type HeadingObserver } from "../../src/controllers/outline";
+import { found } from "./linepage";
 import postPage from "../../../internal/face/html/testdata/blog/reading-slowly.html?raw";
 
 // The outline's links and the headings they lead to, as the server draws them; the attribute that marks the heading
-// read; the address of the first heading, as a followed link names it, its name after the mark of a place
+// read; the address of the first heading, as a followed link names it, its name after the mark of a place; and of
+// the heading under it, which the outline does not list
 const OUTLINE_LINK = '[data-part="outline-link"]';
 const OUTLINE_HEADING = '[data-part="outline-heading"]';
 const CURRENT = "aria-current";
 const FRAGMENT_MARK = "#";
 const FIRST_HEADING = FRAGMENT_MARK + "what-a-reader-keeps";
+const INNER_HEADING = FRAGMENT_MARK + "in-a-terminal";
 
 // A heading's top above the reading line, off the screen and on it, under it, and under it though in sight near the
 // page's end, in pixels from the top of jsdom's window, 768 tall, whose line runs a third of the way down
@@ -85,6 +88,13 @@ function marked(): boolean[] {
   return [...document.querySelectorAll(OUTLINE_LINK)].map((link) => link.hasAttribute(CURRENT));
 }
 
+/** A link followed to a place of the page, as the browser follows it: the address moves to it, which the page hears. */
+async function followed(fragment: string): Promise<void> {
+  const heard = new Promise((resolve) => window.addEventListener(HASH_CHANGE, resolve, { once: true }));
+  location.hash = fragment;
+  await heard;
+}
+
 /** The outline of the golden page, started over a fake observer, which the test scrolls. */
 function started(): FakeObserver {
   const maker = new FakeObserverMaker();
@@ -150,33 +160,39 @@ test("a page scrolled to its end reads its last heading, which a short last sect
   expect(marked()).toEqual([false, true]);
 });
 
-test("a heading a followed link names is marked at once, where the page's end keeps it under the line", () => {
+test("a heading a followed link names is marked at once, where the page's end keeps it under the line", async () => {
   started();
   scrollPageToItsEnd();
   placeHeadings([NEAR_THE_END, NEARER_THE_END]);
-  history.replaceState(null, "", FIRST_HEADING);
-  window.dispatchEvent(new HashChangeEvent(HASH_CHANGE));
+  await followed(FIRST_HEADING);
   expect(marked()).toEqual([true, false]);
 });
 
-test("a heading a followed link names is read, though the next heading has passed the line too", () => {
+test("a heading a followed link names is read, though the next heading has passed the line too", async () => {
   started();
   placeHeadings([TOP, NEAR_THE_TOP]);
-  history.replaceState(null, "", FIRST_HEADING);
-  window.dispatchEvent(new HashChangeEvent(HASH_CHANGE));
+  await followed(FIRST_HEADING);
   expect(marked()).toEqual([true, false]);
 });
 
-test("a heading a followed link names counts no more once it has left the screen", () => {
+test("a heading a followed link names counts no more once it has left the screen", async () => {
   started();
   placeHeadings([ABOVE_THE_LINE, NEAR_THE_TOP]);
-  history.replaceState(null, "", FIRST_HEADING);
-  window.dispatchEvent(new HashChangeEvent(HASH_CHANGE));
+  await followed(FIRST_HEADING);
   expect(marked()).toEqual([false, true]);
 });
 
-test("a page opened at a heading marks it", () => {
-  history.replaceState(null, "", FIRST_HEADING);
+test("a heading under one the outline lists, which a followed link names, marks the heading over it", async () => {
+  started();
+  scrollPageToItsEnd();
+  placeHeadings([ABOVE_THE_LINE, NEARER_THE_END]);
+  vi.spyOn(found(INNER_HEADING), "getBoundingClientRect").mockReturnValue({ top: NEAR_THE_END } as DOMRect);
+  await followed(INNER_HEADING);
+  expect(marked()).toEqual([true, false]);
+});
+
+test("a page opened at a heading marks it", async () => {
+  await followed(FIRST_HEADING);
   scrollPageToItsEnd();
   placeHeadings([NEAR_THE_END, NEARER_THE_END]);
   started().scrolled();

@@ -1,18 +1,20 @@
 // The outline (DESIGN.md, Outline), over the markup internal/face/html draws: the headings of a post's top level,
 // each a link beside the article. As the article scrolls, the heading read, the last whose top has passed a line
 // across the screen's upper part, is marked as the reader's place, which the stylesheet draws bold, a bar before it;
-// a page read without the script marks none. The heading the address names, a link followed to it, is read while it
-// stands above the line, though the next has passed it too; and a page scrolled to its end, where a short last
-// section never brings its heading up to the line, reads that heading while it is in sight, or else its last. Every
-// heading is measured when one crosses the band above the line, which an observer says as the page
-// scrolls, when a scroll ends, since a jump past the whole band crosses nothing the observer watches, and when the
-// address names another heading.
+// a page read without the script marks none. The heading whose section holds the place the address names, a link
+// followed to it, is read while that place stands above the line, though the next has passed it too; and a page
+// scrolled to its end, where a short last section never brings its heading up to the line, reads that heading while it
+// is in sight, or else its last. Every heading is measured when one crosses the band above the line, which an observer
+// says as the page scrolls, when a scroll ends, since a jump past the whole band crosses nothing the observer watches,
+// and when the address names another place.
 
 // The outline's links and the headings they lead to, as the server draws them; what a link writes before the name
-// of its heading; and the attribute that marks the heading read, with its value
+// of its heading; the place the address names, as the browser marks it; and the attribute that marks the heading
+// read, with its value
 const OUTLINE_LINK = '[data-part="outline-link"]';
 const OUTLINE_HEADING = '[data-part="outline-heading"]';
 const FRAGMENT_MARK = "#";
+const TARGET = ":target";
 const CURRENT = "aria-current";
 const CURRENT_PLACE = "location";
 // The line a heading counts as read once its top has passed, in percent of the screen's height from its top: the
@@ -74,15 +76,18 @@ function placesOf(page: Document): OutlinePlace[] {
 }
 
 /**
- * Marks the link to the heading read, and no other: the one the address names while it stands between the screen's
- * top and the reading line, or anywhere on the screen once the page is scrolled to its end, so a link followed to a
- * short section marks its heading, not the next one the line has passed too; else at the page's end its last, and
- * anywhere else the last the line has passed, none where it has passed none.
+ * Marks the link to the heading read, and no other: the one whose section holds the place the address names, a
+ * heading or a paragraph under it, while that place stands between the screen's top and the reading line, or anywhere
+ * on the screen once the page is scrolled to its end, so a link followed to a short section marks its heading, not the
+ * next one the line has passed too; else at the page's end its last, and anywhere else the last the line has passed,
+ * none where it has passed none.
  */
 function markRead(places: OutlinePlace[], page: Document, view: ScrolledView): void {
   const atEnd = view.scrollY + view.innerHeight >= page.documentElement.scrollHeight - END_SLACK;
   const reach = atEnd ? view.innerHeight : readingLine(view);
-  const named = places.find((place) => place.link.hash === view.location.hash && standsAbove(place.heading, reach));
+  const target = namedPlace(page);
+  const named =
+    target !== null && standsAbove(target, reach) ? places.find((place) => holds(place, target)) : undefined;
   const read = named ?? (atEnd ? places.at(-1) : lastPassed(places, view));
   for (const place of places) {
     if (place === read) {
@@ -91,6 +96,16 @@ function markRead(places: OutlinePlace[], page: Document, view: ScrolledView): v
       place.link.removeAttribute(CURRENT);
     }
   }
+}
+
+/** The place of the page its address names, as the browser marks it; none where it names none. */
+function namedPlace(page: Document): HTMLElement | null {
+  return page.querySelector<HTMLElement>(TARGET);
+}
+
+/** Whether a place of the outline holds an element: its heading's section, the heading's parent, holds it. */
+function holds(place: OutlinePlace, element: HTMLElement): boolean {
+  return place.heading.parentElement?.contains(element) ?? false;
 }
 
 /** The last place whose heading's top stands above the screen's reading line; none where the line has passed none. */

@@ -81,12 +81,13 @@ left out, and a gap among written words stands marked as one.
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as
   JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
   its tabs; a post's comes with the site's SEO (`TODO.md`). A post's page is the post whole: its title the one `h1`,
-  its day in a `<time datetime>`, each paragraph a place `#p1` names and its number a link to it, each heading a place
-  named by its words, no two places of the page by one name; a note's number raised where a line cites it, the note
-  beside the line that first cites it, and every note once at the text's end, which a phone shows in their place.
-  The blog's list has the blog's name as its `h1`, each group's name an `h2`, each post a link to it with its day in a
-  `<time datetime>`, a part to come no link; it has no record until the site's SEO. Every page ends with the foot
-  line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.
+  its day in a `<time datetime>`, each paragraph a place `#_p1` names and its number a link to it, each heading a
+  place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
+  places of the page share one name; a note's number raised where a line cites it, the note beside the line that first
+  cites it, and every note once at the text's end, which a phone shows in their place. The blog's list has the blog's
+  name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it with its
+  day in a `<time datetime>`, a part to come no link; it has no record until the site's SEO. Every page ends with the
+  foot line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.
 
 ## Security headers
 

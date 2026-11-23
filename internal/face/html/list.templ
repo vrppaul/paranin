@@ -50,9 +50,14 @@ templ (writer PageWriter) blogHead(head document.Head, groupings []grouping) {
 }
 
 // postGroup is a group of the list (DESIGN.md, Group): its name, a series' line under it and how many posts it holds,
-// then its posts as tiles.
+// then its posts as tiles; a series' group at its anchor, which the series' place leads to.
 templ (writer PageWriter) postGroup(group document.Group) {
-	<section class="group">
+	<section
+		if group.Name != "" {
+			id={ group.Name }
+		}
+		class="group"
+	>
 		<div class="group-name">
 			<h2 class="group-title">
 				@writer.spans(group.Title)

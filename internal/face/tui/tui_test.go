@@ -226,11 +226,11 @@ func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 	facts := document.Facts{List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
 	project := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "a-tool", Tab: ""}, textOf("a-tool")),
+		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, textOf("tidy-tool")),
 		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
 	}
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
-	model := commanded(test, handModel(test, commonWidth, commonHeight, resume, project), "e a-tool")
+	model := commanded(test, handModel(test, commonWidth, commonHeight, resume, project), "e tidy-tool")
 	if footer := footerOf(screenOf(test, model)); !strings.Contains(footer, "2:facts") {
 		test.Errorf("on the project's page the footer = %q, want its tab of the facts", footer)
 	}

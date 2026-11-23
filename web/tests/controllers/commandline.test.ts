@@ -2,6 +2,9 @@
 // the colon.
 import { expect, test } from "vitest";
 import { found, input, press, started, type } from "./linepage";
+import listPage from "../../../internal/face/html/testdata/blog.html?raw";
+import postPage from "../../../internal/face/html/testdata/blog/reading-slowly.html?raw";
+import partPage from "../../../internal/face/html/testdata/blog/second.html?raw";
 
 // The parts as the server draws them: the switch and its box, the line, its field, each place on its menu with the
 // letters typed of its name, what the line says of a command that failed, and the key that goes round the places
@@ -119,11 +122,56 @@ test("the menu narrows to the places a letter starts, the letter typed apart", (
   expect({ places: seen().places, typed }).toEqual({ places: ["tidy-tool"], typed: ["t"] });
 });
 
-test("the menu lists every project's page after :e and a space", () => {
-  started();
+test.each([
+  { name: "a post's headings", golden: postPage, typed: "a", want: ["afterwards"] },
+  { name: "a post's other parts", golden: partPage, typed: "t", want: ["third", "tidy-tool"] },
+  { name: "the list's posts and its series", golden: listPage, typed: "r", want: ["reading-slowly", "reading"] },
+])("the menu offers $name among the places a letter starts", ({ golden, typed, want }) => {
+  started(true, () => undefined, golden);
+  press(":");
+  type(typed);
+  expect(seen().places).toEqual(want);
+});
+
+test.each([
+  {
+    name: "a heading, at its heading",
+    golden: postPage,
+    typed: "in-a-terminal",
+    want: ["/blog/reading-slowly#in-a-terminal"],
+  },
+  { name: "a post, at its page", golden: listPage, typed: "reading-slowly", want: ["/blog/reading-slowly"] },
+  { name: "another part, at its page", golden: partPage, typed: "first", want: ["/blog/first"] },
+  {
+    name: "a series, at its group on the list by series",
+    golden: listPage,
+    typed: "reading",
+    want: ["/blog/series#reading"],
+  },
+])("Enter goes to $name", ({ golden, typed, want }) => {
+  const { went } = started(true, () => undefined, golden);
+  press(":");
+  type(typed);
+  press("Enter");
+  expect(went).toEqual(want);
+});
+
+test.each([
+  {
+    name: "a page of the résumé, each project's and the blog's lists",
+    golden: undefined,
+    want: ["tidy-tool", "blog", "blog/series"],
+  },
+  {
+    name: "a page of the blog, the blog's posts too",
+    golden: listPage,
+    want: ["tidy-tool", "blog", "blog/series", "blog/reading-slowly"],
+  },
+])("the menu after :e and a space on $name", ({ golden, want }) => {
+  started(true, () => undefined, golden);
   press(":");
   type("e ");
-  expect(seen().places).toEqual(["tidy-tool"]);
+  expect(seen().places).toEqual(want);
 });
 
 test("the menu hides, with the key that goes round it, where no place fits", () => {
@@ -166,6 +214,7 @@ test.each([
 test.each([
   { name: "a place by its name", typed: "skills", want: ["/skills"] },
   { name: "the project's page :e names", typed: "e tidy-tool", want: ["/p/tidy-tool"] },
+  { name: "a post :e names by its number, in the blog's folder", typed: "e blog/1", want: ["/blog/1"] },
   { name: "nowhere on the tab shown", typed: "experience", want: [] },
 ])("Enter goes to $name and closes the line", ({ typed, want }) => {
   const { went } = started();
@@ -221,17 +270,20 @@ test("Esc hands the focus back where it was before the colon", () => {
   expect(document.activeElement === link).toBe(true);
 });
 
-/** The page with its one project's place named as a tab is, skills. */
+// The places of the page's one project, by its name and as :e opens it
+const PROJECT = `${PLACE}[data-place="project"]`;
+const EDITED_PROJECT = `${PROJECT}[data-edit]`;
+
+/** The page with its one project named as a tab is, skills, by its name and as :e opens it. */
 function projectNamedAsTab(page: Document): void {
-  const project = page.querySelector<HTMLElement>(`${PLACE}[data-place="project"]`);
-  project?.setAttribute("data-name", "skills");
+  page.querySelectorAll<HTMLElement>(PROJECT).forEach((project) => project.setAttribute("data-name", "skills"));
 }
 
 test("a press on a project's page :e lists goes to the project, though a tab takes its name", () => {
   const { went } = started(true, projectNamedAsTab);
   press(":");
   type("e ");
-  found(`${PLACE}[data-place="project"]`).click();
+  found(EDITED_PROJECT).click();
   expect(went).toEqual(["/p/tidy-tool"]);
 });
 

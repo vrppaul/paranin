@@ -4,15 +4,23 @@ import { expect, test } from "vitest";
 import { completionsOf, lineOf, placesOf, ran, stepped, type Outcome } from "../../src/domain/commandline";
 
 // The places of a page showing the experience tab: its tabs, and three projects' pages, one starting as a tab does
-// and one named as a tab is
-const PLACES = placesOf([
-  { name: "about", kind: "tab", address: "/", current: false },
-  { name: "experience", kind: "tab", address: "/experience", current: true },
-  { name: "skills", kind: "tab", address: "/skills", current: false },
-  { name: "sorted-list", kind: "project", address: "/p/sorted-list", current: false },
-  { name: "tidy-tool", kind: "project", address: "/p/tidy-tool", current: false },
-  { name: "skills", kind: "project", address: "/p/skills", current: false },
-]);
+// and one named as a tab is; then the pages :e opens, those three and the blog's list; and the blog's folder, where :e
+// opens any post
+const PLACES = placesOf(
+  [
+    { name: "about", kind: "tab", address: "/", current: false, edited: false },
+    { name: "experience", kind: "tab", address: "/experience", current: true, edited: false },
+    { name: "skills", kind: "tab", address: "/skills", current: false, edited: false },
+    { name: "sorted-list", kind: "project", address: "/p/sorted-list", current: false, edited: false },
+    { name: "tidy-tool", kind: "project", address: "/p/tidy-tool", current: false, edited: false },
+    { name: "skills", kind: "project", address: "/p/skills", current: false, edited: false },
+    { name: "sorted-list", kind: "project", address: "/p/sorted-list", current: false, edited: true },
+    { name: "tidy-tool", kind: "project", address: "/p/tidy-tool", current: false, edited: true },
+    { name: "skills", kind: "project", address: "/p/skills", current: false, edited: true },
+    { name: "blog", kind: "list", address: "/blog", current: false, edited: true },
+  ],
+  { name: "blog/", address: "/blog/" },
+);
 
 // Tab's step forward and Shift+Tab's back
 const FORWARD = 1;
@@ -26,12 +34,13 @@ test.each([
     want: ["skills", "sorted-list"],
   },
   { name: "never the tab shown, typed whole", typed: "experience", want: [] },
+  { name: "never a page :e alone opens", typed: "b", want: [] },
   {
-    name: "after :e and a space, every project's page, one named as a tab among them",
+    name: "after :e and a space, every page it opens, a project's named as a tab among them, and the blog's",
     typed: "e ",
-    want: ["sorted-list", "tidy-tool", "skills"],
+    want: ["sorted-list", "tidy-tool", "skills", "blog"],
   },
-  { name: "after :e, the projects' pages its argument starts", typed: "e ti", want: ["tidy-tool"] },
+  { name: "after :e, the pages its argument starts", typed: "e ti", want: ["tidy-tool"] },
   { name: "after a command that takes no page, nothing", typed: "x ", want: [] },
 ])("Tab goes round $name", ({ typed, want }) => {
   expect(completionsOf(PLACES, typed).listed.map((completion) => completion.place.name)).toEqual(want);
@@ -72,7 +81,18 @@ test.each<{ name: string; typed: string; want: Partial<Outcome> }>([
   { name: "does nothing with nothing typed", typed: "  ", want: { kind: "nothing" } },
   { name: "refuses a command it does not know", typed: "x", want: { kind: "failed", fault: "unknown" } },
   { name: "refuses :e with no page", typed: "e", want: { kind: "failed", fault: "argument" } },
-  { name: "refuses :e of a page that is no project's", typed: "e about", want: { kind: "failed", fault: "missing" } },
+  { name: "goes to the blog's page :e names", typed: "e blog", want: { kind: "go", address: "/blog" } },
+  {
+    name: "goes to a post :e names in the blog's folder",
+    typed: "e blog/12",
+    want: { kind: "go", address: "/blog/12" },
+  },
+  {
+    name: "refuses a page :e alone opens, by its name alone",
+    typed: "blog",
+    want: { kind: "failed", fault: "unknown" },
+  },
+  { name: "refuses :e of a page it does not open", typed: "e about", want: { kind: "failed", fault: "missing" } },
 ])("Enter $name", ({ typed, want }) => {
   expect(ran(PLACES, typed)).toMatchObject(want);
 });

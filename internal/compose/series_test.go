@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -79,8 +80,9 @@ type seenNeighbour struct {
 // A post of a series shows every part of it in order, numbered from one: itself as the part read, the part out after
 // it as the next, any other part out as out, and as to come each title the series names to come; a part not published,
 // a draft, a preview, unlisted or coming later than its reader, is listed nowhere, so the series leaves it out, and the
-// parts after it count on without it. A draft's own page, as its author reads it, shows it as the part it stands as
-// among the parts out. A post the series leaves out for good, unlisted, shows no series.
+// parts after it count on without it. A draft's own page, as its author reads it, and a preview's, read at its link,
+// show it as the part it stands as among the parts out. A post the series leaves out for good, unlisted, shows no
+// series.
 func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -103,6 +105,28 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 				{number: 1, title: "first", state: document.PartOut, page: "first"},
 				{number: 2, title: "drafted", state: document.PartReading, page: "drafted"},
 				{number: 3, title: fixturePostTitle, state: document.PartNext, page: fixturePostSlug},
+			},
+		},
+		{
+			name: "a preview read at its link, among the parts out",
+			posts: []writtenPost{
+				{slug: "first", id: 3, status: content.StatusPublished, published: earlier},
+				{slug: "previewed", id: 4, status: content.StatusPreview, published: later},
+			},
+			series: "first, previewed, reading-slowly", read: "previewed",
+			want: []seenPart{
+				{number: 1, title: "first", state: document.PartOut, page: "first"},
+				{number: 2, title: "previewed", state: document.PartReading, page: "previewed"},
+				{number: 3, title: fixturePostTitle, state: document.PartNext, page: fixturePostSlug},
+			},
+		},
+		{
+			name:   "a part coming later, read at its link",
+			posts:  []writtenPost{{slug: "coming", id: 3, status: content.StatusPublished, published: afterTheDay}},
+			series: "reading-slowly, coming", read: "coming",
+			want: []seenPart{
+				{number: 1, title: fixturePostTitle, state: document.PartOut, page: fixturePostSlug},
+				{number: 2, title: "coming", state: document.PartReading, page: "coming"},
 			},
 		},
 		{
@@ -154,7 +178,7 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			series := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: testCase.drafts}).Posts, testCase.read).Head.Post.Series
+			series := postNamed(test, postsAndPreviews(SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: testCase.drafts})), testCase.read).Head.Post.Series
 			if got := seenParts(series); !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the series of %q = %+v, want %+v", testCase.read, got, testCase.want)
 			}
@@ -179,7 +203,7 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
 		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
 	}
-	if got := document.PlacesOf(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
+	if got := document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
 		test.Errorf("the post's places = %+v, want %+v", got, want)
 	}
 }
@@ -209,7 +233,7 @@ func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, []writtenPost{testCase.part}, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
 			got := []string{}
-			for _, place := range document.PlacesOf(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, fixturePostSlug)) {
+			for _, place := range document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)) {
 				got = append(got, place.Name)
 			}
 			if !reflect.DeepEqual(got, testCase.want) {
@@ -224,7 +248,8 @@ func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 // the time they came out, each with its lead and that time, posts out at one moment by their slugs, so never a draft,
 // a preview or a post unlisted; none on a side with nothing there.
 // An unlisted post, in no list itself, leads to the posts listed before and after the time it came out; a draft, read
-// by its author, to those before and after the time it is dated, or the time it is read where it is dated none.
+// by its author, and a preview, read at its link, to those before and after the time it is dated, or the time it is
+// read where a draft is dated none.
 func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -303,6 +328,13 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 			after:  nil,
 		},
 		{
+			name:   "a preview read at its link, between the posts listed before and after its date",
+			posts:  []writtenPost{{slug: "previewed", id: 3, status: content.StatusPreview, published: later}, {slug: "newest", id: 4, status: content.StatusPublished, published: latest}},
+			series: "newest", read: "previewed",
+			before: &seenNeighbour{part: 0, title: fixturePostTitle, lead: "Why a page read twice is read once.", page: fixturePostSlug, published: "2026-11-10T09:00:00+01:00"},
+			after:  &seenNeighbour{part: 0, title: "newest", lead: "About newest.", page: "newest", published: "2026-11-21T09:00:00+01:00"},
+		},
+		{
 			name:   "an unlisted post, between the posts listed before and after it",
 			posts:  []writtenPost{{slug: "hidden", id: 3, status: content.StatusUnlisted, published: later}, {slug: "newest", id: 4, status: content.StatusPublished, published: latest}},
 			series: "newest", read: "hidden",
@@ -313,7 +345,7 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			neighbours := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: testCase.drafts}).Posts, testCase.read).Head.Post.Neighbours
+			neighbours := postNamed(test, postsAndPreviews(SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: testCase.drafts})), testCase.read).Head.Post.Neighbours
 			before, after := seenNeighbourOf(neighbours.Before), seenNeighbourOf(neighbours.After)
 			if !reflect.DeepEqual(before, testCase.before) || !reflect.DeepEqual(after, testCase.after) {
 				test.Errorf("the neighbours of %q = %+v and %+v, want %+v and %+v", testCase.read, before, after, testCase.before, testCase.after)
@@ -340,6 +372,15 @@ func withPostsAndSeries(test *testing.T, posts []writtenPost, series []writtenSe
 		test.Fatalf("load the fixture with the posts %+v and the series %+v: %v", posts, series, err)
 	}
 	return snapshot
+}
+
+// postsAndPreviews are the posts a site serves at their addresses, then those it serves at their preview links alone.
+func postsAndPreviews(site Site) []document.Document {
+	documents := slices.Clone(site.Posts)
+	for _, previewed := range site.Previews {
+		documents = append(documents, previewed.Post)
+	}
+	return documents
 }
 
 // fixtureSeriesOf is the fixture's series written over to hold the parts a case names, then the titles it names to

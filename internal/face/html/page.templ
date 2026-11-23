@@ -12,14 +12,17 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// page is a page of a document in its language: what it says of itself, its title, its description, the address it is
-// known by with Open Graph and its record as linked data, and its markdown, each where it has one; then its main part
-// and the foot line.
+// page is a page of a document in its language: what it says of itself, its title, that no search engine indexes it
+// where it may not, its description, the address it is known by with Open Graph and its record as linked data, and its
+// markdown, each where it has one; then its main part and the foot line.
 templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
 	<html lang={ language }>
 		<head>
 			@headOpening(metadata.title, writer.included)
+			if !metadata.indexed {
+				<meta name="robots" content="noindex"/>
+			}
 			if metadata.description != "" {
 				<meta name="description" content={ metadata.description }/>
 			}
@@ -210,7 +213,7 @@ templ themeMark() {
 // description, and the address it is known by. Its picture comes with the cards Typst draws (ADR-0005).
 templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:type" content={ openGraphType }/>
-	<meta property="og:site_name" content={ writer.site.Host() }/>
+	<meta property="og:site_name" content={ writer.frame.site.Host() }/>
 	<meta property="og:title" content={ metadata.title }/>
 	if metadata.description != "" {
 		<meta property="og:description" content={ metadata.description }/>
@@ -378,7 +381,7 @@ templ toast() {
 // to a mailbox.
 templ (writer PageWriter) mail(address []document.Span) {
 	if mail, isMail := document.MailOf(address); isMail {
-		@mailLink(mail, true)
+		@writer.mailLink(mail, true)
 	} else if len(address) > 0 {
 		<p>
 			@writer.spans(address)
@@ -389,8 +392,8 @@ templ (writer PageWriter) mail(address []document.Span) {
 // mailLink is a mail address (DESIGN.md, Mail): a link that writes to it, its mailbox, its at and its host each a part
 // the stylesheet colours, or the address whole where it holds no at; in the size of the heading it is, or of the text
 // it stands among.
-templ mailLink(mail document.Mail, heading bool) {
-	<a class={ "mail", templ.KV("mail-heading", heading) } href={ routes.Reference(mail, routes.FormatChosen) }>
+templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
+	<a class={ "mail", templ.KV("mail-heading", heading) } href={ writer.frame.site.Reference(mail, routes.FormatChosen) }>
 		if box, host, parted := mail.Parts(); parted {
 			<span class="mail-box">{ box }</span><span class="mail-at">{ document.MailAt }</span><span class="mail-host">{ host }</span>
 		} else {

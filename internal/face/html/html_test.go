@@ -796,11 +796,62 @@ func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
 
 // A draft's page, as its author reads it, says it is a draft where a post out says the day of the version read.
 func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
-	site := compose.SiteOf(fixtures.LoadedContent(test), compose.Audience{At: fixtures.Day(), Drafts: true})
+	site := compose.SiteOf(compose.Prepare(fixtures.LoadedContent(test)), compose.Audience{At: fixtures.Day(), Drafts: true})
 	draft := fixtures.DocumentOf(test, site.Posts, document.Page{Kind: document.PagePost, Slug: "notes-on-tools", Tab: ""})
 	const mark = "<dt>version</dt><dd>draft</dd>"
 	if page := fixtureWriter(test).Post(draft); !strings.Contains(page, mark) {
 		test.Errorf("the draft's page %q holds no %q", page, mark)
+	}
+}
+
+// The token a test's preview link holds, and the robots' tag that keeps a search engine from indexing a page
+const (
+	previewToken = "c2lnbmVk"
+	noIndexTag   = `<meta name="robots" content="noindex">`
+)
+
+// A post out names the address it is known by for a search engine to index; a preview's page, drawn for its link, asks
+// none to index it and names no address it is known by, since its own serves nothing yet, and leads to its markdown,
+// its pictures and its own places at its link, never at the post's own address.
+func TestAPreviewsPageLeadsToItsLinkAlone(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	previewing := NewPageWriter(fixtures.Site(snapshot).Previewing("reading-slowly", previewToken), fixtures.LoadedBuild(test),
+		siteOnTheDay(snapshot).Frame, fixtures.Day())
+	cases := []struct {
+		name  string
+		page  string
+		holds []string
+		lacks []string
+	}{
+		{
+			name:  "a post out",
+			page:  fixtureWriter(test).Post(fixturePost(test)),
+			holds: []string{`<link rel="canonical" href="https://example.test/blog/reading-slowly">`},
+			lacks: []string{noIndexTag},
+		},
+		{
+			name: "a preview",
+			page: previewing.Preview(fixturePost(test)),
+			holds: []string{
+				noIndexTag, `type="text/markdown" href="/preview/c2lnbmVk/reading-slowly.md"`, `src="/preview/c2lnbmVk/reading-slowly/margin.png"`,
+				`href="/preview/c2lnbmVk/reading-slowly#what-a-reader-keeps"`,
+			},
+			lacks: []string{`rel="canonical"`, `"/blog/reading-slowly`, `"https://example.test/blog/reading-slowly`},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, held := range testCase.holds {
+				if !strings.Contains(testCase.page, held) {
+					test.Errorf("the page %q holds no %q", testCase.page, held)
+				}
+			}
+			for _, lacked := range testCase.lacks {
+				if strings.Contains(testCase.page, lacked) {
+					test.Errorf("the page %q holds %q", testCase.page, lacked)
+				}
+			}
+		})
 	}
 }
 
@@ -1130,7 +1181,7 @@ func fixturePost(test *testing.T) document.Document {
 //
 //wrapper:names the one site every test of the page draws
 func siteOnTheDay(snapshot *content.Snapshot) compose.Site {
-	return compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: false})
+	return compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false})
 }
 
 // What lined breaks a line between, two tags that meet, and what it keeps whole, a pre, whose every letter shows

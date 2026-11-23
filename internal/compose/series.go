@@ -13,16 +13,17 @@ import (
 const firstPart = 1
 
 // blog is what each post's place in the blog and the blog's lists are read from, read once from a snapshot for an
-// audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order; the posts
-// the lists name, those published and out, in the order they came out; every series in their names' order; and each
-// series by the slug of every post it names.
+// audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order, and those
+// it serves them at their preview links alone; the posts the lists name, those published and out, in the order they
+// came out; every series in their names' order; and each series by the slug of every post it names.
 type blog struct {
-	audience Audience
-	posts    map[string]content.Post
-	served   []content.Post
-	listed   []content.Post
-	series   []content.Series
-	seriesOf map[string]content.Series
+	audience  Audience
+	posts     map[string]content.Post
+	served    []content.Post
+	previewed []content.Post
+	listed    []content.Post
+	series    []content.Series
+	seriesOf  map[string]content.Series
 }
 
 // listedPart is a part of a series as its reader holds it: its title, and its post where it is out or is the part
@@ -35,13 +36,16 @@ type listedPart struct {
 // blogOf is the blog of a snapshot's posts and series, as an audience reads it.
 func blogOf(snapshot *content.Snapshot, audience Audience) blog {
 	read := blog{
-		audience: audience, posts: map[string]content.Post{}, served: []content.Post{}, listed: []content.Post{}, series: snapshot.Series,
-		seriesOf: map[string]content.Series{},
+		audience: audience, posts: map[string]content.Post{}, served: []content.Post{}, previewed: []content.Post{}, listed: []content.Post{},
+		series: snapshot.Series, seriesOf: map[string]content.Series{},
 	}
 	for _, post := range snapshot.Posts {
 		read.posts[post.Slug] = post
 		if audience.serves(post) {
 			read.served = append(read.served, post)
+		}
+		if audience.previews(post) {
+			read.previewed = append(read.previewed, post)
 		}
 		if audience.lists(post) {
 			read.listed = append(read.listed, post)

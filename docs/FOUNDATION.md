@@ -384,7 +384,10 @@ preview or a post that comes out after the one linking it leads nowhere,
 one to a post out before it or with it leads somewhere. A draft's links
 are checked too, over the site as its author reads it under
 `paranin serve --drafts` once every post dated later is out, where
-another draft's page leads somewhere (2026-11-23).
+another draft's page leads somewhere (2026-11-23); and a preview's, over
+the site its link's reader reads then, where its own page and sections
+lead somewhere, as a post's link to itself does, and no draft's or other
+preview's page.
 It refuses as well what no face draws yet: a link's title; a table's row
 of more cells than its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
@@ -497,11 +500,66 @@ updated: 2026-11-12
 | `unlisted` | At its address, listed nowhere: a post taken off the lists without breaking links to it. |
 
 - **The preview link is not in git.** It is `/preview/<token>/<slug>`, the
-  token an HMAC of the slug under the server's secret. `paranin
-  preview-link <slug>` prints it on the owner's machine, which holds the
-  same secret. CI never sees the secret and never prints a link: the logs
-  of a public repository are public too. A new secret ends every old
-  preview link at once.
+  token an HMAC of the slug and the moment the link lapses under the
+  server's secret. `paranin preview-link [--lasts 720h] <content folder>
+  <slug>` prints it on the owner's machine, which holds the same secret,
+  for thirty days unless asked otherwise, ninety at most, so no link that
+  leaks lives for years (a longer one is written wrong), and refuses a post that is no
+  preview now, whose link would open nothing; the folder gives the site's
+  address. CI
+  never sees the secret and never prints a link: the logs of a public
+  repository are public too. A new secret ends every old preview link at
+  once.
+  - **The secret** is a file of at least 32 bytes, the spaces and line end
+    round it left out, which `PARANIN_PREVIEW_KEY` names, on the server and
+    on the owner's machine alike, as `PARANIN_SSH_HOST_KEY` names the host
+    key: `openssl rand -base64 32` writes one, and the owner keeps his at
+    `.paranin/preview_key`, a folder git ignores. Where hosting keeps it, a
+    systemd credential or a container's secret, both files, is hosting's to
+    say. Where no file is named, the server serves no preview and every
+    preview link answers as an address of no page; no secret is made where
+    none is found, since it would differ from the owner's and its links
+    would open nothing. The server reads it as it starts, so a new secret
+    takes a restart. Ways weighed: the secret's value in the variable,
+    which a child process, `/proc` and a container's inspection all read.
+  - **The token** is one segment, `<lapses>.<signature>`: the moment the
+    link lapses in seconds of Unix time, then HMAC-SHA256 over that moment
+    and the slug, in base64url with no padding. The server signs the slug
+    and the moment of the request's own path once and compares in constant
+    time; a link lapsed answers as no page, so a link that leaks lives as
+    long as it was asked to. The status is not signed: the server checks
+    each request against the post's status as it stands, and a link signed
+    over `preview` could not send its reader on once the post is out. Ways
+    weighed: one base64url token holding both, which hides a moment the
+    link's reader may as well see; the moment as a query, which a path's
+    own form drops on the way and two addresses would name one page.
+  - **One rule of addresses:** a preview's every face and file stands where
+    it would in the blog's folder, with `/blog/` swapped for
+    `/preview/<token>/`: its page at `/preview/<token>/<slug>`, its markdown
+    and its manual at `.md` and `.txt` beside it, its pictures in its
+    folder. Each face writes the post's own addresses at the link, its
+    sections, its pictures and its link to itself among them, so nothing
+    leads to its public address, which serves nothing yet; each link holds
+    a token of its own, so a preview's faces are drawn for the request that
+    opens one, from the post composed once.
+  - **What leaks nothing:** every answer in the preview's folder, a path
+    of it that is no page, a redirect to a path's clean form and a refusal
+    of a method among them, is sent with `X-Robots-Tag: noindex`,
+    `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`, so no
+    engine indexes it, no cache keeps its address, and no browser sends
+    the address on to a page it opens from it or a file it loads; the page
+    says `noindex` in its head too, and names no canonical address. The
+    server logs no request's path; a proxy before it, at hosting, must not
+    either.
+  - **Where it is listed:** nowhere. Its own page shows its series, itself
+    the part read, and its foot as a draft's does, by its date. A post's
+    link to a preview leads nowhere and is refused.
+  - **Once it is out** its address serves it, and its link sends the reader
+    on to the same face there, `302` with the headers above: a move for a
+    while, since a browser keeps a permanent one even were the post taken
+    back to a preview. A token not signed for its slug, one lapsed, or a
+    slug of no post served, answers as no page, so a link tells nothing of
+    which posts there are.
 - **Publishing on a date.** A `published` date in the future keeps the post,
   published or unlisted, a preview until then. The status is worked out
   from the time: a host composes the site once a snapshot, as it stands

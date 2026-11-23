@@ -21,6 +21,9 @@ type Site struct {
 	Posts []document.Document
 	// Pictures are the pictures of the posts the site serves, each at its file beside its post, in no order
 	Pictures []PostPicture
+	// Previews are the posts the site serves at their preview links alone, in the snapshot's order, each with its
+	// pictures: no list, page or session names them
+	Previews []Preview
 	// Frame is what a face lays round the pages, the pages :e opens among it
 	Frame Frame
 	// Until is when the site changes as the next post that comes later comes out, which a host keeps what it drew
@@ -34,17 +37,20 @@ type Site struct {
 	postsServed []content.Post
 }
 
-// SiteOf composes a snapshot's site as an audience reads it: its pages first, then its posts, whose links lead among
-// them by their paths.
-func SiteOf(snapshot *content.Snapshot, audience Audience) Site {
+// SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages first, then its posts and
+// its previews, whose links lead among them by their paths.
+func SiteOf(prepared *Prepared, audience Audience) Site {
+	snapshot := prepared.snapshot
 	read := blogOf(snapshot, audience)
 	site := Site{
 		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Posts: nil, Pictures: picturesOf(read),
-		Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil, postsServed: read.served,
+		Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil,
+		postsServed: read.served,
 	}
 	pages := site.pagesButPosts()
 	site.paths = pagesAt(append(headsOf(pages), postHeads(read, snapshot.Words)...))
-	site.Posts = composedPosts(snapshot, read, site.paths)
+	site.Posts = composedPosts(prepared, read, site.paths)
+	site.Previews = previewsOf(prepared, read, site.paths)
 	site.served = append(pages, site.Posts...)
 	return site
 }

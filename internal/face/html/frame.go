@@ -25,7 +25,8 @@ const (
 )
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
-// the site's name and where it begins, which the page of no address leads to; the theme button's name; the words of
+// the site, which writes every address a page leads to and names the site, and where it begins, which the page of no
+// address leads to; the theme button's name; the words of
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
 // that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
@@ -33,7 +34,7 @@ const (
 // the site's sessions, which the foot line names; the labels of a post's facts, the words of its series and of the
 // panes at its foot, the name of its outline, and the words round the blog's list.
 type frame struct {
-	siteName      string
+	site          routes.Site
 	start         string
 	darkTheme     string
 	copyWords     compose.CopyWords
@@ -103,8 +104,8 @@ type window struct {
 // frameOf is the frame of a site's pages.
 func frameOf(site routes.Site, composed compose.Frame) frame {
 	return frame{
-		siteName:      site.Host(),
-		start:         routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
+		site:          site,
+		start:         site.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
 		darkTheme:     composed.DarkTheme,
 		copyWords:     composed.CopyWords,
 		ssh:           composed.SSH,
@@ -128,7 +129,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 func (around frame) sessionsOf(page document.Page) []session {
 	sessions := make([]session, 0, len(around.sessions))
 	for _, held := range around.sessions {
-		sessions = append(sessions, session{name: held.Name, address: routes.Reference(held.Start, routes.FormatChosen), current: held.Holds(page)})
+		sessions = append(sessions, session{name: held.Name, address: around.site.Reference(held.Start, routes.FormatChosen), current: held.Holds(page)})
 	}
 	return sessions
 }
@@ -138,29 +139,30 @@ func (around frame) sessionsOf(page document.Page) []session {
 // places too.
 func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []document.Place) footLine {
 	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: ""}
-	windows := []window{windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
+	around := writer.frame
+	windows := []window{around.windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
 	for _, tab := range tabs.Rest {
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
-		windows = append(windows, windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
+		windows = append(windows, around.windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(whole), windows, whole, own)
+	return footLineOf(around, around.sessionsOf(whole), windows, whole, own)
 }
 
 // blogWindowsOf are the blog session's windows as the foot line shows them, numbered in their order, the one showing
 // the page shown current.
-func blogWindowsOf(windows []compose.Window, shown document.Page) []window {
+func (around frame) blogWindowsOf(windows []compose.Window, shown document.Page) []window {
 	shownWindows := make([]window, 0, len(windows))
 	for _, held := range windows {
-		shownWindows = append(shownWindows, windowOf(firstWindowNumber+len(shownWindows), held.Name, held.Page, shown))
+		shownWindows = append(shownWindows, around.windowOf(firstWindowNumber+len(shownWindows), held.Name, held.Page, shown))
 	}
 	return shownWindows
 }
 
 // footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl
 // at its address, and as markdown; its command line going to the page's own places too.
-func footLineOf(around frame, site routes.Site, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
-	markdown := routes.Reference(page, routes.FormatMarkdown)
-	reading := around.copyWords.Way(site.ReadCommand(page), around.readingGives)
+func footLineOf(around frame, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
+	markdown := around.site.Reference(page, routes.FormatMarkdown)
+	reading := around.copyWords.Way(around.site.ReadCommand(page), around.readingGives)
 	return footLine{
 		frame:        around,
 		sessions:     sessions,
@@ -194,11 +196,11 @@ func placesOf(windows []window, own []document.Place, around frame, shown docume
 		places = append(places, place{name: window.name, kind: document.PlaceTab, address: window.address, current: window.current, edited: false})
 	}
 	for _, named := range slices.Concat(own, around.projects) {
-		places = append(places, placeOf(named, windows, false))
+		places = append(places, around.placeOf(named, windows, false))
 	}
 	for _, opened := range around.pages {
 		if pageOffered(opened, shown) {
-			places = append(places, placeOf(opened.Place, windows, true))
+			places = append(places, around.placeOf(opened.Place, windows, true))
 		}
 	}
 	return places
@@ -213,8 +215,8 @@ func pageOffered(opened compose.OpenedPage, shown document.Page) bool {
 
 // placeOf is a place of a page as the command line offers it, by its name or by :e: at its address, inside its page
 // at its section's anchor where it names one; the page shown where a window at that address is.
-func placeOf(offered document.Place, windows []window, edited bool) place {
-	address := routes.Reference(offered.Page, routes.FormatChosen)
+func (around frame) placeOf(offered document.Place, windows []window, edited bool) place {
+	address := around.site.Reference(offered.Page, routes.FormatChosen)
 	if offered.Section != "" {
 		address += fragmentMark + offered.Section
 	}
@@ -224,11 +226,11 @@ func placeOf(offered document.Place, windows []window, edited bool) place {
 
 // windowOf is a tab as a window by its number and name, leading to the page that shows it, current where that page is
 // the one shown.
-func windowOf(number int, name string, page, shown document.Page) window {
+func (around frame) windowOf(number int, name string, page, shown document.Page) window {
 	return window{
 		number:  strconv.Itoa(number),
 		name:    name,
-		address: routes.Reference(page, routes.FormatChosen),
+		address: around.site.Reference(page, routes.FormatChosen),
 		current: page == shown,
 	}
 }

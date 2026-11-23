@@ -14,7 +14,7 @@ templ (notFound NotFound) page(quotedPath string) {
 				<div class="not-found">
 					@notFound.heading
 					<p><code>{ quotedPath }</code></p>
-					<p><a href={ notFound.foot.frame.start }>{ notFound.foot.frame.siteName }</a></p>
+					<p><a href={ notFound.foot.frame.start }>{ notFound.foot.frame.site.Host() }</a></p>
 				</div>
 			</main>
 			@footLineMarkup(notFound.foot)

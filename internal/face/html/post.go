@@ -47,8 +47,23 @@ const (
 // its window the post's slug, its command line going to its headings and its series' other parts too.
 func (writer PageWriter) Post(composed document.Document) string {
 	head := composed.Head
-	page := head.Page
-	foot := writer.postFoot(page, document.PlacesOf(composed))
+	return writer.postPage(composed, writer.metadataOf(head, head.Page, head.Title))
+}
+
+// Preview writes a post read at its preview link as Post writes one out (docs/FOUNDATION.md §5.4, Status), for no
+// search engine to index and known at no address, since its own serves nothing yet; the writer's site writes its
+// addresses at the link (routes.Site.Previewing).
+func (writer PageWriter) Preview(composed document.Document) string {
+	head := composed.Head
+	metadata := writer.metadataOf(head, head.Page, head.Title)
+	metadata.canonical, metadata.indexed = "", false
+	return writer.postPage(composed, metadata)
+}
+
+// postPage is a post's page, saying of itself what its metadata says.
+func (writer PageWriter) postPage(composed document.Document, metadata pageMetadata) string {
+	head := composed.Head
+	foot := writer.postFoot(head.Page, document.PlacesOf(composed))
 	drawn := writer.articleOf(composed.Blocks)
 	parts := postParts{
 		head:    head,
@@ -58,7 +73,7 @@ func (writer PageWriter) Post(composed document.Document) string {
 		panes:   writer.panesOf(head.Post),
 	}
 	// a post's record, the BlogPosting its linked data would write, comes with the site's SEO (TODO.md)
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, head.Title), nil, writer.postMain(parts), foot))
+	return rendered(writer.page(head.Language, metadata, nil, writer.postMain(parts), foot))
 }
 
 // postParts are the parts of a post's main part, drawn from its document: its head, the headings its outline lists,
@@ -127,7 +142,7 @@ func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 		return nil
 	}
 	words, seriesWords := writer.frame.paneWords, writer.frame.seriesWords
-	sides, heading, allPosts := words.Posts, words.OtherPosts, routes.Reference(document.PageOf(document.PageBlog), routes.FormatChosen)
+	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.site.Reference(document.PageOf(document.PageBlog), routes.FormatChosen)
 	var allParts *pick
 	if series := place.Series; series != nil {
 		sides, heading, allPosts = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title)), ""
@@ -153,8 +168,9 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 // page keeps no grouping a reader chose, and the post its second, and the post to read in a terminal and as markdown;
 // its command line going to the post's own places too.
 func (writer PageWriter) postFoot(page document.Page, own []document.Place) footLine {
-	windows := blogWindowsOf(writer.frame.listWords.BlogWindows(document.PageOf(document.PageBlog), page), page)
-	return footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page, own)
+	around := writer.frame
+	windows := around.blogWindowsOf(around.listWords.BlogWindows(document.PageOf(document.PageBlog), page), page)
+	return footLineOf(around, around.sessionsOf(page), windows, page, own)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from
@@ -234,7 +250,7 @@ func (drawing *article) block(block document.Block) templ.Component {
 	case document.Pause:
 		return pause()
 	case document.Figure:
-		return figure(typed)
+		return drawing.writer.figure(typed)
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; the

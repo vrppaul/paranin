@@ -152,7 +152,7 @@ templ (writer PageWriter) pickPart(part document.Part) {
 		}
 	>
 		if part.State == document.PartNext || part.State == document.PartOut {
-			<a class="pick-row" href={ routes.Reference(part.Page, routes.FormatChosen) }>
+			<a class="pick-row" href={ writer.frame.site.Reference(part.Page, routes.FormatChosen) }>
 				@writer.partRow(part)
 			</a>
 		} else {
@@ -219,7 +219,7 @@ templ (writer PageWriter) pane(side paneSide) {
 			</span>
 		</div>
 	} else {
-		<a class={ "pane", templ.KV("pane-after", side.after) } href={ routes.Reference(side.neighbour.Page, routes.FormatChosen) }>
+		<a class={ "pane", templ.KV("pane-after", side.after) } href={ writer.frame.site.Reference(side.neighbour.Page, routes.FormatChosen) }>
 			<span class="pane-name">{ side.name }</span>
 			<span class="pane-title">
 				@writer.spans(side.neighbour.Title)
@@ -334,9 +334,9 @@ templ pause() {
 // figure is a picture of a post (DESIGN.md, Article): the picture by its size, which the stylesheet narrows to the
 // text's column in its own shape, so its room is kept before it comes, fetched as it nears the screen; its caption
 // under it, where it has one.
-templ figure(shown document.Figure) {
+templ (writer PageWriter) figure(shown document.Figure) {
 	<figure>
-		<img src={ routes.Reference(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) } loading="lazy" decoding="async"/>
+		<img src={ writer.frame.site.Reference(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) } loading="lazy" decoding="async"/>
 		if shown.Caption != "" {
 			<figcaption>{ shown.Caption }</figcaption>
 		}

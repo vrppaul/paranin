@@ -27,7 +27,7 @@ ssh_host_*_key.pub
 # Contact messages written at runtime
 /data/
 
-# The server's own folder, which its host key is made in
+# The server's own folder, which its host key is made in and the owner's preview key kept in
 /.paranin/
 
 # Editor / OS

@@ -2,15 +2,16 @@ package compose
 
 import (
 	"cmp"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
 	extensionast "github.com/yuin/goldmark/extension/ast"
-	"github.com/yuin/goldmark/text"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // The level a post's body and a container's blocks stand at, above every heading's, so each heading opens a section;
@@ -32,10 +33,10 @@ const unnamedHeading = "heading"
 
 // composedPosts are the posts the blog serves its audience, each a document, in the snapshot's order; each link inside
 // the site read into the page at its path among pages.
-func composedPosts(snapshot *content.Snapshot, read blog, pages map[string]document.Page) []document.Document {
+func composedPosts(prepared *Prepared, read blog, pages map[string]document.Page) []document.Document {
 	documents := []document.Document{}
 	for _, post := range read.served {
-		documents = append(documents, postDocument(post, read, snapshot, pages))
+		documents = append(documents, postDocument(post, read, prepared, pages))
 	}
 	return documents
 }
@@ -51,11 +52,47 @@ type PostPicture struct {
 func picturesOf(read blog) []PostPicture {
 	pictures := []PostPicture{}
 	for _, post := range read.served {
-		for name, picture := range post.Pictures {
-			pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
-		}
+		pictures = append(pictures, postPictures(post)...)
 	}
 	return pictures
+}
+
+// postPictures are a post's pictures, each at its file beside it, in no order.
+func postPictures(post content.Post) []PostPicture {
+	pictures := make([]PostPicture, 0, len(post.Pictures))
+	for name, picture := range post.Pictures {
+		pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
+	}
+	return pictures
+}
+
+// Preview is a post the site serves its audience at its preview link alone (docs/FOUNDATION.md §5.4, Status): the post
+// as its link's reader reads it, and its pictures, each at its file beside it; and the post as the content holds it,
+// whose links Check reads.
+type Preview struct {
+	Post     document.Document
+	Pictures []PostPicture
+	written  content.Post
+}
+
+// previewsOf are the posts the blog serves its audience at their preview links, in the snapshot's order, each composed
+// as composedPosts composes a post, its links read among the pages served and its own page.
+func previewsOf(prepared *Prepared, read blog, pages map[string]document.Page) []Preview {
+	previews := []Preview{}
+	for _, post := range read.previewed {
+		previews = append(previews, Preview{
+			Post: postDocument(post, read, prepared, withOwnPage(pages, postPage(post))), Pictures: postPictures(post), written: post,
+		})
+	}
+	return previews
+}
+
+// withOwnPage are the pages served beside the page of a post read at its preview link: its link to a section of its
+// own leads there, though its own address serves nothing yet.
+func withOwnPage(pages map[string]document.Page, page document.Page) map[string]document.Page {
+	own := maps.Clone(pages)
+	own[routes.Path(page, routes.FormatChosen)] = page
+	return own
 }
 
 // postHeads are the heads of the posts composedPosts makes, their bodies left unread: where the site serves each post.
@@ -68,12 +105,13 @@ func postHeads(read blog, words content.Words) []document.Head {
 }
 
 // postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
-// tree the load parsed, which nothing here writes to, each heading named clear of the page's other places and each
-// link inside the site read into the page at its path among pages.
-func postDocument(post content.Post, read blog, snapshot *content.Snapshot, pages map[string]document.Page) document.Document {
+// tree the load parsed, which nothing here writes to, its code as Prepare split it, each heading named clear of the
+// page's other places and each link inside the site read into the page at its path among pages.
+func postDocument(post content.Post, read blog, prepared *Prepared, pages map[string]document.Page) document.Document {
+	snapshot := prepared.snapshot
 	head := postHead(post, read, snapshot.Words)
 	body := bodyReader{
-		body: post.Body, page: head.Page, pictures: post.Pictures, links: post.SiteLinks, pages: pages,
+		body: post.Body, page: head.Page, pictures: post.Pictures, links: post.SiteLinks, pages: pages, codes: prepared.codes,
 		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(post, read, snapshot)),
 	}
 	// readNote returns no error, so the walk ends with none
@@ -129,14 +167,16 @@ func versionOf(post content.Post, words content.Words) document.Version {
 
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
 // figures stand beside and are sized by; its links inside the site, as the load read them, by their nodes, and the
-// site's pages by the paths they name; the words of each footnote by its number, read first, which every citation of
-// it carries; and the names taken on the post's page, which each heading's is kept clear of.
+// site's pages by the paths they name; its code as Prepare split it, by its node; the words of each footnote by its
+// number, read first, which every citation of it carries; and the names taken on the post's page, which each heading's
+// is kept clear of.
 type bodyReader struct {
 	body     content.Markdown
 	page     document.Page
 	pictures map[string]content.Picture
 	links    map[*ast.Link]content.WrittenLink
 	pages    map[string]document.Page
+	codes    map[ast.Node]document.CodeBlock
 	notes    map[int][]document.Span
 	names    names
 }
@@ -198,10 +238,8 @@ func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 			return reader.figure(picture), true
 		}
 		return document.Paragraph{Spans: reader.spans(node)}, true
-	case *ast.FencedCodeBlock:
-		return codeBlock(reader.code(typed.Lines()), reader.body.Language(typed)), true
-	case *ast.CodeBlock:
-		return codeBlock(reader.code(typed.Lines()), noLanguage), true
+	case *ast.FencedCodeBlock, *ast.CodeBlock:
+		return reader.codes[node], true
 	case *ast.Blockquote:
 		return document.Quote{Blocks: reader.containedBlocks(node)}, true
 	case *ast.ThematicBreak:
@@ -257,16 +295,6 @@ func (reader bodyReader) row(row ast.Node) document.Row {
 		cells = append(cells, document.Cell{Kind: document.CellText, Spans: reader.spans(cell)})
 	}
 	return document.Row{Cells: cells}
-}
-
-// code is the text of a block of code, its lines as written, the last one's ending dropped.
-func (reader bodyReader) code(lines *text.Segments) string {
-	var builder strings.Builder
-	for index := range lines.Len() {
-		line := lines.At(index)
-		builder.Write(line.Value(reader.body.Source))
-	}
-	return strings.TrimSuffix(builder.String(), codeLineEnd)
 }
 
 // spans are the spans of the inline nodes a node holds, a run of text one span.

@@ -16,9 +16,9 @@
 // with; a panic in a command Bubble Tea runs reaches only those (TODO.md). The server alone ends its sessions: no
 // session's program answers the server's own signals, so a stop waits for the sessions open before it closes them.
 //
-// The documents are composed once for each snapshot the store holds (release.Derived), from its content alone, and
-// again as a post dated later comes out; each session draws the site as it stood when it opened, so a reload, or a
-// post coming out, reaches the sessions that open after it.
+// The documents are composed once for each snapshot the store holds (release.Derived), from its content alone, its
+// posts' code split once (compose.Prepare), and again as a post dated later comes out; each session draws the site as
+// it stood when it opened, so a reload, or a post coming out, reaches the sessions that open after it.
 package ssh
 
 import (
@@ -96,8 +96,12 @@ type guard struct {
 
 // New is a server of the site the store holds, logging through the logger.
 func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server, error) {
+	prepared := release.Derive(store, func(snapshot *release.Snapshot, _ time.Time) (*compose.Prepared, time.Time) {
+		// the zero time: it lapses with its snapshot alone (release.Work)
+		return compose.Prepare(snapshot.Content), time.Time{}
+	})
 	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (tui.Drawing, time.Time) {
-		return draw(snapshot, compose.Audience{At: moment, Drafts: settings.Drafts})
+		return draw(snapshot, prepared.Of(snapshot, moment), compose.Audience{At: moment, Drafts: settings.Drafts})
 	})
 	opening := sessions{logger: logger, drawn: drawn}
 	watching := guard{logger: logger}
@@ -149,10 +153,10 @@ func (server *Server) Shutdown(ctx context.Context) error {
 
 // draw is what the sessions of a snapshot draw as an audience reads it: the pages of its content, the extras the TUI
 // opens by a command, and the blog's lists and posts, with the site's words of the frame round them; and until when it
-// holds, as the next post dated later comes out.
-func draw(snapshot *release.Snapshot, audience compose.Audience) (tui.Drawing, time.Time) {
+// holds, as the next post dated later comes out. Prepare read the snapshot's content.
+func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
-	composition := compose.SiteOf(facts, audience)
+	composition := compose.SiteOf(prepared, audience)
 	documents := slices.Concat(composition.Documents(), compose.Extras(facts), composition.Lists, composition.Posts)
 	return tui.Drawing{Documents: documents, Frame: composition.Frame, Site: routes.New(facts.Profile.Site.BaseURL)}, composition.Until
 }

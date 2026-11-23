@@ -89,7 +89,7 @@ templ (writer PageWriter) tiles(posts document.Posts) {
 // tileOut is a post out as its tile (DESIGN.md, Tile), a pane, the whole of it a link to the post, its day set into its
 // top edge.
 templ (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut) {
-	<a class="pane tile" href={ routes.Reference(out.Page, routes.FormatChosen) }>
+	<a class="pane tile" href={ writer.frame.site.Reference(out.Page, routes.FormatChosen) }>
 		@writer.tileParts(post, day(out.Published))
 	</a>
 }

@@ -16,8 +16,15 @@ Three readers, three formats, from one document per page:
 A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé or a
 project's page is a tab, named by its title's letters and digits in small letters, a hyphen between each run of them
 (`Experience` is `experience`); a post and the list have no tabs. A post is served while it is published or unlisted
-and its `published` time has come, never as a preview, and as a draft only under `paranin serve --drafts`, to its
-author; the list names the posts published and out alone. A post dated later comes out at its time with no reload.
+and its `published` time has come, as a preview at its preview link alone, and as a draft only under
+`paranin serve --drafts`, to its author; the list names the posts published and out alone. A post dated later comes
+out at its time with no reload, and is a preview until then. A preview's every address is the one it would have in the
+blog's folder with `/blog/` swapped for `/preview/{token}/`, its token `{lapses}.{signature}`: the moment the link
+lapses in seconds of Unix time, then an HMAC-SHA256 of that moment and the slug under the server's key, in base64url
+(`docs/FOUNDATION.md` §5.4, Status). `paranin preview-link` signs a link for thirty days, or as long as `--lasts`
+asks, ninety days at most. A server that holds no key serves no preview; it reads its key as it starts, so a
+new key takes a restart. A preview's faces are drawn for each request that opens one, since each link writes its own
+token into them.
 
 | Method, path | Answer |
 | --- | --- |
@@ -28,6 +35,7 @@ author; the list names the posts published and out alone. A post dated later com
 | `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md` | The same in markdown, `text/markdown`. |
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt` | The same as the manual, `text/plain`. |
 | `GET /blog/{slug}/{picture}` | A picture the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. |
+| `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
@@ -45,6 +53,7 @@ How long a cache keeps an answer:
 | --- | --- |
 | A page in any format, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
+| Any answer in the preview's folder, `302`, `404` and what `net/http` writes there among them | `private, no-store`: its address may hold a link's token, which no cache keeps |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list
 
@@ -125,8 +134,22 @@ Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
 How the page's build keeps to it is `.claude/rules/page.md`. The page's face, JetBrains Mono, is a built file of the
 site like any other, from `design/fonts` (`design/tokens.yaml`, `face`), so every reader sees the copy the cells are
 counted in; a mono face of the reader's own shows the text until it has come. An article's words are set in iA
-Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent:
+Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent but in the preview's folder:
 `strict-origin-when-cross-origin` is every browser's own default.
+
+Every answer whose path opens with `/preview/` adds these, the handler's own and what `net/http` writes there alike: a
+path of no page, a `302` on to a post out, a redirect to a path's clean form, a refusal of a method. It names no
+canonical address, since the post's own serves nothing yet; a preview's page says `noindex` in its head too
+(`<meta name="robots">`):
+
+```
+X-Robots-Tag: noindex
+Referrer-Policy: no-referrer
+Cache-Control: private, no-store
+```
+
+The address may hold a link's token: `no-referrer` keeps a browser from sending it to a site the reader follows a link
+to, and to a proxy's log in the `Referer` of each file the page loads. The server logs no request's path.
 
 ## The page in a browser
 

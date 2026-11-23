@@ -22,17 +22,18 @@ type grouping struct {
 func (writer PageWriter) List(composed document.Document) string {
 	head := composed.Head
 	page := head.Page
-	windows := blogWindowsOf(writer.frame.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
-	foot := footLineOf(writer.frame, writer.site, writer.frame.sessionsOf(page), windows, page, document.PlacesOf(composed))
-	main := writer.listMain(head, groupingsOf(writer.frame.listWords.Groupings(), page), composed.Blocks)
+	around := writer.frame
+	windows := around.blogWindowsOf(around.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
+	foot := footLineOf(around, around.sessionsOf(page), windows, page, document.PlacesOf(composed))
+	main := writer.listMain(head, around.groupingsOf(around.listWords.Groupings(), page), composed.Blocks)
 	return rendered(writer.page(head.Language, writer.metadataOf(head, page, head.Title), nil, main, foot))
 }
 
 // groupingsOf are the ways the blog's list groups its posts as its head's Switch links them, the list shown current.
-func groupingsOf(groupings []compose.Grouping, shown document.Page) []grouping {
+func (around frame) groupingsOf(groupings []compose.Grouping, shown document.Page) []grouping {
 	linked := make([]grouping, 0, len(groupings))
 	for _, way := range groupings {
-		linked = append(linked, grouping{words: way.Words, address: routes.Reference(way.List, routes.FormatChosen), current: way.List == shown})
+		linked = append(linked, grouping{words: way.Words, address: around.site.Reference(way.List, routes.FormatChosen), current: way.List == shown})
 	}
 	return linked
 }

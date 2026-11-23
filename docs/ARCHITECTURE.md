@@ -133,7 +133,9 @@ names each anchor once, the kinds of place are `document`'s, and the page's own 
 2026-11-23, with a post's links inside the site: a link's anchor, a target of its own, and the site's check of them.
 Amended 2026-11-23, with statuses and dates: `compose` composes for an audience, a moment and whether drafts are read,
 the hosts keep what they draw until the next post dated later comes out, and the check runs over each moment the site
-changes.
+changes. Amended 2026-11-23, with preview links: `compose` composes each preview beside the site and splits a
+snapshot's code once (`Prepare`), `routes` writes a preview's addresses under its link's token, and the web host alone
+holds the key that signs it.
 
 ### Context
 
@@ -196,7 +198,12 @@ and web routes.
   every post dated later is out, where it holds the most pages. A link to
   a post that comes out after the one linking it is refused, naming when
   that post comes out, since it would lead nowhere until then; one to a
-  post out before it or with it passes. A heading's anchor holds over
+  post out before it or with it passes. A preview's links are checked over
+  the public site once every post dated later is out, beside its own page
+  and sections, so it may link to a post due before it comes out, and to
+  its own sections, and never to a draft or another preview; a preview's
+  page takes its address for the clash of addresses, since it takes it
+  once out (amended 2026-11-23). A heading's anchor holds over
   time, since it keeps clear of every part its series names, out or not.
   Ways weighed: the check over the site as it stands now alone, which
   sees neither a post dated later nor its links; every link to a post
@@ -220,6 +227,26 @@ and web routes.
   with every post; composing per snapshot and minute, as FOUNDATION
   planned, a composition each minute for the few moments the site
   changes, and a post up to a minute late.
+  Beside the site it composes each post its audience reads at a preview
+  link alone, a preview or a post dated later (amended 2026-11-23): its
+  series and foot as a draft's are, itself the part read, and its links
+  read among the pages served and its own page. `compose` knows nothing of
+  tokens: the web host checks a request's token against the slug and the
+  moment the link lapses, under the key it holds, compared in constant
+  time, and draws the preview's face asked for with the post's addresses
+  at that link, since each link holds a token of its own. Ways weighed:
+  the audience naming the one preview it reads, which composes the whole
+  site again for each preview; the token in `document`'s page, which
+  would carry a secret through every layer.
+  A composition reads its snapshot through `compose.Prepare`, which splits
+  every post's code into its kinds of word once a snapshot (amended
+  2026-11-23); each host keeps it beside its drawing (`release.Derived`,
+  `Of` the snapshot drawn), so a site composed again as a post comes out
+  lexes nothing. A lexer is slow, and chroma's regexps start a clock
+  goroutine of their own (regexp2's fastclock), which a test's bubble
+  would see outlive it. Ways weighed: splitting the code as `content`
+  loads, which takes chroma out of `compose`, against this ADR; the
+  prepared content held by `release`, which knows nothing of `compose`.
 - **A document is a head and its blocks.** The head holds the page it is,
   where it is one; the language it is written in; its title, a subtitle,
   a place and a lead (the résumé's are the name, the title, where the
@@ -465,7 +492,16 @@ and web routes.
   face (2026-11-23); the
   blog's list with its page and its text faces (2026-11-23), the TUI's with
   its blog session.
-- **`routes`** writes every address.
+- **`routes`** writes every address. Read at a post's preview link, a
+  site writes every address of that post, its faces, sections and
+  pictures, with the blog's folder swapped for the preview's folder and the
+  link's token, `/preview/<token>/<slug>`, and `PreviewPath` reads a path
+  back the same way, its token and its slug among it, so the one rule is
+  written once (amended 2026-11-23); `InPreviewFolder` says by the opening
+  alone whether a path is in the folder, so the host sends whatever it
+  answers there privately. A link inside a page is written by the site
+  too, `Site.Reference`, so a face drawing a preview leads nowhere near
+  its public address.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
   foundation, and on `routes`, through which it finds two pages at one
@@ -537,11 +573,13 @@ included (D8). Their widgets are code, built by the page's toolchain.
   blocks (a fenced ` ```widget Name ` block with its props as YAML, `alt`
   required). `paranin check` refuses anything else, raw HTML first.
 - **Status**: `draft` (never shipped), `preview` (a link signed by the
-  server's secret, `noindex`, listed nowhere), `published`, `unlisted`. A
+  server's secret over the slug and the moment it lapses, `noindex`,
+  listed nowhere), `published`, `unlisted`. A
   `published` date in the future keeps a post a preview until then, worked
   out from the time, the site composed again as the post comes out
   (ADR-0003; tests hold it in `testing/synctest`). The preview link is
-  printed on the owner's machine; CI never sees the secret.
+  printed on the owner's machine; CI never sees the secret, a file
+  `PARANIN_PREVIEW_KEY` names (FOUNDATION §5.4, Status).
 - **One front-end build**: one Vite build takes the site's entries and every
   post's widgets, and writes hashed files, one manifest and each widget's
   props as JSON Schema into the release folder. Go serves every front-end
@@ -777,6 +815,7 @@ MVP reads from env with sane defaults (12-factor):
 | `PARANIN_SSH_ADDR` | `localhost:23234` | SSH listen address |
 | `PARANIN_SSH_HOST_KEY` | `.paranin/ssh_host_ed25519_key` | host key path (persisted, gitignored; made when missing) |
 | `PARANIN_HTTP_ADDR` | `localhost:8080` | HTTP listen address |
+| `PARANIN_PREVIEW_KEY` | none: no preview is served | file of the secret preview links are signed with, read by `serve` and `preview-link` alike |
 | `PARANIN_MESSAGES_PATH` | `data/messages.jsonl` | where contact messages are appended |
 | `PARANIN_TRUST_PROXY` | off | `1` counts the rate limit by `X-Forwarded-For` |
 

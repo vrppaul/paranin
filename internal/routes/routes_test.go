@@ -92,10 +92,102 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 	}
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := Reference(testCase.target, testCase.format); got != testCase.want {
+			if got := site.Reference(testCase.target, testCase.format); got != testCase.want {
 				test.Errorf("Reference(%+v) = %q, want %q", testCase.target, got, testCase.want)
+			}
+		})
+	}
+}
+
+// The address a test's site is served at, and the token a test's preview link holds
+const (
+	testedBase   = "https://example.test"
+	previewToken = "c2lnbmVk"
+)
+
+// A post read at its preview link has every address of its own in the preview's folder, under its token, in each
+// format, its sections and its pictures among them, whole and as a path from the root alike; every other page keeps
+// its own address.
+func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
+	site := New(writtenAddress{written: testedBase, host: "example.test"}).Previewing("coming", previewToken)
+	previewed := document.Page{Kind: document.PagePost, Slug: "coming", Tab: ""}
+	cases := []struct {
+		name     string
+		target   document.Target
+		format   Format
+		wantPath string
+	}{
+		{name: "the post as the reader asks", target: previewed, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming"},
+		{name: "the post in markdown", target: previewed, format: FormatMarkdown, wantPath: "/preview/c2lnbmVk/coming.md"},
+		{name: "the post as a manual", target: previewed, format: FormatManual, wantPath: "/preview/c2lnbmVk/coming.txt"},
+		{name: "a heading of the post", target: document.Anchor{Page: previewed, Name: "why"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming#why"},
+		{name: "a picture of the post", target: document.File{Page: previewed, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming/margin.png"},
+		{name: "another post", target: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, format: FormatChosen, wantPath: "/blog/reading-slowly"},
+		{name: "the résumé", target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, wantPath: "/"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			address, reference := site.Address(testCase.target, testCase.format), site.Reference(testCase.target, testCase.format)
+			if address != testedBase+testCase.wantPath || reference != testCase.wantPath {
+				test.Errorf("Address and Reference of %+v = %q and %q, want %q and %q", testCase.target, address, reference,
+					testedBase+testCase.wantPath, testCase.wantPath)
+			}
+		})
+	}
+}
+
+// A path in the preview's folder reads back as the token it holds and the path the same face or file of its post has
+// in the blog's folder; a path anywhere else, or naming no token or no post, is no preview's.
+func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
+	none := PreviewLink{Token: "", Slug: "", PostPath: ""}
+	cases := []struct {
+		name     string
+		path     string
+		want     PreviewLink
+		wantRead bool
+	}{
+		{name: "the post", path: "/preview/c2lnbmVk/coming", want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming"}, wantRead: true},
+		{name: "its markdown", path: "/preview/c2lnbmVk/coming.md", want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming.md"}, wantRead: true},
+		{
+			name: "its picture", path: "/preview/c2lnbmVk/coming/margin.png",
+			want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming/margin.png"}, wantRead: true,
+		},
+		{name: "a post's own address", path: "/blog/coming", want: none, wantRead: false},
+		{name: "the folder with no post", path: "/preview/c2lnbmVk/", want: none, wantRead: false},
+		{name: "the folder with no token", path: "/preview//coming", want: none, wantRead: false},
+		{name: "a token alone", path: "/preview/c2lnbmVk", want: none, wantRead: false},
+		{name: "a picture with no post", path: "/preview/c2lnbmVk//margin.png", want: none, wantRead: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got, isRead := PreviewPath(testCase.path); got != testCase.want || isRead != testCase.wantRead {
+				test.Errorf("PreviewPath(%q) = %+v, read: %t; want %+v, read: %t", testCase.path, got, isRead, testCase.want, testCase.wantRead)
+			}
+		})
+	}
+}
+
+// A path is in the preview's folder by its opening alone, whatever follows, so every answer there is sent as a preview
+// link's is; the preview's name alone, or the blog's folder, is not.
+func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
+	cases := []struct {
+		path string
+		want bool
+	}{
+		{path: "/preview/c2lnbmVk/coming", want: true},
+		{path: "/preview/c2lnbmVk", want: true},
+		{path: "/preview/", want: true},
+		{path: "/preview", want: false},
+		{path: "/previews/coming", want: false},
+		{path: "/blog/coming", want: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.path, func(test *testing.T) {
+			if got := InPreviewFolder(testCase.path); got != testCase.want {
+				test.Errorf("InPreviewFolder(%q) = %t, want %t", testCase.path, got, testCase.want)
 			}
 		})
 	}

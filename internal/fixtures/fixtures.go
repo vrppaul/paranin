@@ -4,10 +4,13 @@
 package fixtures
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
@@ -119,6 +122,68 @@ func moduleRoot(test *testing.T) string {
 		}
 		folder = parent
 	}
+}
+
+// A preview the tests write into a copy of the fixture content: its slug, its file, its picture's and the fixture
+// post's picture it is a copy of, and its text, which shows the picture and leads to a heading of its own; and the
+// name of a preview key's file a test writes
+const (
+	PreviewSlug        = "previewed"
+	previewFile        = "posts/previewed/post.en.md"
+	previewPictureFile = "posts/previewed/margin.png"
+	fixturePictureFile = "posts/reading-slowly/margin.png"
+	previewText        = "---\nid: 3\ntitle: Previewed\ndescription: About what is previewed.\nstatus: preview\npublished: 2026-11-20T09:00+01:00\n---\n" +
+		"## Its heading\n\n![A page](margin.png)\n\n[Back up](/blog/previewed#its-heading)\n"
+	keyFileName = "preview_key"
+)
+
+// The header a request names the formats it takes in
+const acceptHeader = "Accept"
+
+// PreviewedFolder is a copy of the fixture content holding a preview, with a picture beside it, gone when the test
+// ends.
+func PreviewedFolder(test *testing.T) string {
+	test.Helper()
+	folder := Copy(test, ContentFolder(test))
+	picture, err := openFolder(test, folder).ReadFile(fixturePictureFile)
+	if err != nil {
+		test.Fatalf("read the fixture post's picture: %v", err)
+	}
+	WriteIn(test, folder, previewFile, previewText)
+	WriteIn(test, folder, previewPictureFile, string(picture))
+	return folder
+}
+
+// KeyFile is the path of a file of the test's own holding a text, as a preview key's file holds it, which its owner
+// alone may read.
+func KeyFile(test *testing.T, written string) string {
+	test.Helper()
+	path := filepath.Join(test.TempDir(), keyFileName)
+	if err := os.WriteFile(path, []byte(written), fileMode); err != nil {
+		test.Fatalf("write a preview key: %v", err)
+	}
+	return path
+}
+
+// ServedOnTheDay is a handler's answer to a request by a method at a path, with an Accept header, on the tests' day: in
+// a synctest bubble whose clock is moved on to that day, so a link's lapse is held to it and never to the real clock.
+// The handler has drawn what it draws outside the bubble: preparing a snapshot splits its posts' code by chroma
+// (compose.Prepare), whose regexps start a clock goroutine of their own (regexp2's fastclock) that no bubble outlives.
+func ServedOnTheDay(test *testing.T, handler http.Handler, method, path, accept string) *httptest.ResponseRecorder {
+	var response *httptest.ResponseRecorder
+	synctest.Test(test, func(*testing.T) { response = servedOnTheDay(handler, method, path, accept) })
+	return response
+}
+
+// servedOnTheDay waits until the tests' day, which a synctest bubble's clock reaches at once, and is the handler's
+// answer to a request then.
+func servedOnTheDay(handler http.Handler, method, path, accept string) *httptest.ResponseRecorder {
+	time.Sleep(time.Until(Day()))
+	request := httptest.NewRequest(method, path, nil)
+	request.Header.Set(acceptHeader, accept)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	return response
 }
 
 // Copy is a copy of a fixture's folder on disk, which a test may change, gone when the test ends.

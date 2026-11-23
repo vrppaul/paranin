@@ -163,13 +163,18 @@ Each part meets these when it is built ([FOUNDATION](FOUNDATION.md) §8).
 **Statuses and preview links.**
 - The repository is public: a preview hides a post's address, not its text.
   An embargo needs a store outside the repository.
-- A preview's token is HMAC-SHA256 over the slug, the status and the
-  expiry, compared with `hmac.Equal`. Its secret is at least 32 bytes, read
-  from a file or the environment and never logged; a new secret ends every
-  link.
-- A preview answers with `noindex`, `Cache-Control: private, no-store` and
-  `Referrer-Policy: no-referrer`, so its token reaches neither Cloudflare
-  nor a site it links to.
+- A preview's token is HMAC-SHA256 over the slug and the moment the link
+  lapses, which the token carries, compared with `hmac.Equal`; a link
+  lapsed answers as no page. Not over the status: the server checks each
+  request against the post's status as it stands, and a link signed over
+  `preview` could not send its reader on to the post once it is out. Its
+  secret is at least 32 bytes, read from a file alone, since a value in
+  the environment is read by every child process and through `/proc`, and
+  never logged; a new secret ends every link.
+- Every answer in the preview's folder, a refusal or a redirect `net/http`
+  writes among them, carries `X-Robots-Tag: noindex`,
+  `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`,
+  so its token reaches neither Cloudflare nor a site it links to.
 - A post before its date answers 404, not 403, and a status worked out for
   one request never reaches a cached feed.
 

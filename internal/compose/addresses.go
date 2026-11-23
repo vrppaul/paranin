@@ -34,17 +34,25 @@ const (
 )
 
 // Check holds a snapshot to what only its whole site knows, at each moment from now on it changes: no two pages at one
-// address, and no link inside it to nowhere, a draft's as its author reads the site.
+// address, a preview's among them, and no link inside it to nowhere, a draft's as its author reads the site, and a
+// preview's as its link's reader does once every post that comes later is out, so a preview may link to a post dated
+// later than now.
 func Check(snapshot *content.Snapshot, now time.Time) error {
 	public := Audience{At: now, Drafts: false}
 	changes, later := public.changes(snapshot.Posts), laterPosts(snapshot.Posts, public)
 	faults := content.Faults{}
+	prepared := Prepare(snapshot)
+	// the public's site once every post that comes later is out, the last the loop composes
+	var latest Site
 	for _, moment := range changes {
-		site := SiteOf(snapshot, Audience{At: moment, Drafts: false})
-		faults = append(faults, destinationsOf(site, later).linksLeadingNowhere(site.postsServed)...)
+		latest = SiteOf(prepared, Audience{At: moment, Drafts: false})
+		faults = append(faults, destinationsOf(latest, later).linksLeadingNowhere(latest.postsServed)...)
+	}
+	for _, previewed := range latest.Previews {
+		faults = append(faults, previewDestinations(latest, previewed, later).linksLeadingNowhere([]content.Post{previewed.written})...)
 	}
 	// the author's site once every post that comes later is out holds the most pages
-	authorsSite := SiteOf(snapshot, Audience{At: changes[len(changes)-1], Drafts: true})
+	authorsSite := SiteOf(prepared, Audience{At: changes[len(changes)-1], Drafts: true})
 	drafts := slices.DeleteFunc(slices.Clone(authorsSite.postsServed), func(post content.Post) bool { return post.Status != content.StatusDraft })
 	faults = append(faults, destinationsOf(authorsSite, later).linksLeadingNowhere(drafts)...)
 	var linkFaults error
@@ -52,7 +60,16 @@ func Check(snapshot *content.Snapshot, now time.Time) error {
 		slices.SortFunc(faults, byPlace)
 		linkFaults = slices.Compact(faults)
 	}
-	return errors.Join(sharedAddresses(headsOf(authorsSite.served)), linkFaults)
+	return errors.Join(sharedAddresses(append(headsOf(authorsSite.served), previewHeads(authorsSite.Previews)...)), linkFaults)
+}
+
+// previewHeads are the heads of the posts previewed, which take their addresses once out.
+func previewHeads(previews []Preview) []document.Head {
+	heads := make([]document.Head, 0, len(previews))
+	for _, previewed := range previews {
+		heads = append(heads, previewed.Post.Head)
+	}
+	return heads
 }
 
 // AddressClash is an address more than one page of the site takes, in any format, as routes writes it, and the title
@@ -84,7 +101,7 @@ func (clashes AddressClashes) Error() string {
 func sharedAddresses(heads []document.Head) error {
 	titlesAt := map[string][]string{}
 	for _, head := range heads {
-		for _, format := range servedFormats() {
+		for _, format := range routes.Formats() {
 			if path := routes.Path(head.Page, format); path != "" {
 				titlesAt[path] = append(titlesAt[path], document.PlainText(head.Title))
 			}
@@ -113,6 +130,16 @@ type destinations struct {
 // destinationsOf are where a site's links may lead, beside the posts that come later.
 func destinationsOf(site Site, later map[string]content.Moment) destinations {
 	return destinations{pages: site.paths, anchors: anchorsOf(site.served), later: later}
+}
+
+// previewDestinations are where a preview's links may lead, beside the posts that come later: where the site's do, and
+// to its own page and its sections.
+func previewDestinations(site Site, previewed Preview, later map[string]content.Moment) destinations {
+	return destinations{
+		pages:   withOwnPage(site.paths, previewed.Post.Head.Page),
+		anchors: anchorsOf(append(slices.Clone(site.served), previewed.Post)),
+		later:   later,
+	}
 }
 
 // laterPosts are the posts that come later than an audience's moment, by the path each is served at once out, each by
@@ -185,9 +212,4 @@ func sectionAnchors(blocks []document.Block) []string {
 		}
 	}
 	return anchors
-}
-
-// servedFormats are the formats a page is served in, each at an address of its own.
-func servedFormats() []routes.Format {
-	return []routes.Format{routes.FormatChosen, routes.FormatMarkdown, routes.FormatManual}
 }

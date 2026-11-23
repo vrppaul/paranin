@@ -176,7 +176,7 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
-			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -221,37 +221,49 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
-			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
 	}
 }
 
-// The site serves the pictures of the posts it serves, each at its file beside its post: a draft's never, and a
-// post's that comes later than its reader not yet.
+// The site serves the pictures of the posts it serves, each at its file beside its post, and a preview's beside it
+// alone: a draft's never, and a post's that comes later than its reader as a preview's until it is out.
 func TestThePicturesServedAreThePostsServed(test *testing.T) {
-	both := []document.File{fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)}
+	fixtureMargin, sampleMargin := fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)
 	cases := []struct {
-		name   string
-		status content.Status
-		at     time.Time
-		want   []document.File
+		name          string
+		status        content.Status
+		at            time.Time
+		wantServed    []document.File
+		wantPreviewed []document.File
 	}{
-		{name: "a published post's", status: content.StatusPublished, at: fixtures.Day(), want: both},
-		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), want: []document.File{fixtureFile(fixturePostSlug, "margin.png")}},
-		{name: "a published post's, read before both come out", status: content.StatusPublished, at: momentOf(test, sampleMoment).Add(-time.Minute), want: []document.File{}},
+		{name: "a published post's", status: content.StatusPublished, at: fixtures.Day(), wantServed: []document.File{fixtureMargin, sampleMargin}, wantPreviewed: []document.File{}},
+		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{}},
+		{name: "a preview's", status: content.StatusPreview, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{sampleMargin}},
+		{
+			name: "a published post's, read before both come out", status: content.StatusPublished, at: momentOf(test, sampleMoment).Add(-time.Minute),
+			wantServed: []document.File{}, wantPreviewed: []document.File{fixtureMargin, sampleMargin},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\n![A page](margin.svg)\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
-			files := []document.File{}
-			for _, served := range SiteOf(snapshot, Audience{At: testCase.at, Drafts: false}).Pictures {
-				files = append(files, served.File)
+			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: false})
+			served, previewed := []document.File{}, []document.File{}
+			for _, shown := range site.Pictures {
+				served = append(served, shown.File)
 			}
-			if !sameMembers(files, testCase.want) {
-				test.Errorf("the pictures served = %+v, want %+v", files, testCase.want)
+			for _, shown := range site.Previews {
+				for _, picture := range shown.Pictures {
+					previewed = append(previewed, picture.File)
+				}
+			}
+			if !sameMembers(served, testCase.wantServed) || !sameMembers(previewed, testCase.wantPreviewed) {
+				test.Errorf("the pictures served = %+v and previewed = %+v, want %+v and %+v", served, previewed, testCase.wantServed,
+					testCase.wantPreviewed)
 			}
 		})
 	}
@@ -402,7 +414,7 @@ func TestCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
 			want := []document.Block{testCase.want}
-			if got := postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, want)
 			}
 		})
@@ -449,7 +461,7 @@ func TestCodeRunsJoinToTheCodesTextWhole(test *testing.T) {
 		languages = append(languages, testCase.language)
 		test.Run(testCase.language, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n```"+testCase.language+"\n"+testCase.code+"\n```\n")
-			code := codeOf(test, postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug))
+			code := codeOf(test, postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug))
 			if got := code.Text(); got != testCase.code || len(kindsOfRuns(code.Runs)) < 2 {
 				test.Errorf("the code %q in %s = runs %+v, joined %q; want them joined to the code, of more than one kind",
 					testCase.code, testCase.language, code.Runs, got)
@@ -492,7 +504,7 @@ func kindsOfRuns(runs []document.CodeRun) map[document.CodeKind]bool {
 // Every word a post writes reaches its document as a phrase of its own, wherever it stands: a face that shows every
 // phrase shows the whole post.
 func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
-	phrases := document.Phrases(postNamed(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Posts, fixturePostSlug))
+	phrases := document.Phrases(postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Posts, fixturePostSlug))
 	cases := []struct {
 		name string
 		want string
@@ -565,7 +577,7 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		test.Run(testCase.kind.String(), func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n", testCase.pictures...)
 			post := snapshot.Posts[slices.IndexFunc(snapshot.Posts, func(post content.Post) bool { return post.Slug == samplePostSlug })]
-			phrases := document.Phrases(postNamed(test, SiteOf(snapshot, publicOnTheDay()).Posts, samplePostSlug))
+			phrases := document.Phrases(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug))
 			if !slices.Contains(kindsOf(post.Body.Tree), testCase.kind) || !slices.Contains(phrases, testCase.phrase) {
 				test.Errorf("the body %q = kinds %v, phrases %q; want a %v among the kinds and %q among the phrases",
 					testCase.body, kindsOf(post.Body.Tree), phrases, testCase.kind, testCase.phrase)
@@ -592,37 +604,43 @@ func kindsOf(node ast.Node) []ast.NodeKind {
 }
 
 // A post is served while it is published, and while it is unlisted, at its address though no list names it, each once
-// the moment it is dated has come, a preview until then; a draft only to its author, who reads the drafts; a preview
-// never, until its secret link comes.
+// the moment it is dated has come, and at its preview link alone until then; a draft only to its author, who reads
+// the drafts, and at no link; a preview at its link alone, to the public and its author alike.
 func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 	dated := momentOf(test, sampleMoment)
 	before := dated.Add(-time.Minute)
 	cases := []struct {
-		name   string
-		status content.Status
-		at     time.Time
-		drafts bool
-		served bool
+		name      string
+		status    content.Status
+		at        time.Time
+		drafts    bool
+		served    bool
+		previewed bool
 	}{
-		{name: "published, read at its moment", status: content.StatusPublished, at: dated, drafts: false, served: true},
-		{name: "unlisted, read at its moment", status: content.StatusUnlisted, at: dated, drafts: false, served: true},
-		{name: "published, read before its moment", status: content.StatusPublished, at: before, drafts: false, served: false},
-		{name: "unlisted, read before its moment", status: content.StatusUnlisted, at: before, drafts: false, served: false},
-		{name: "published, read before its moment by its author", status: content.StatusPublished, at: before, drafts: true, served: false},
-		{name: "a draft", status: content.StatusDraft, at: dated, drafts: false, served: false},
-		{name: "a draft, read by its author", status: content.StatusDraft, at: before, drafts: true, served: true},
-		{name: "a preview", status: content.StatusPreview, at: dated, drafts: false, served: false},
-		{name: "a preview, read by its author", status: content.StatusPreview, at: dated, drafts: true, served: false},
+		{name: "published, read at its moment", status: content.StatusPublished, at: dated, drafts: false, served: true, previewed: false},
+		{name: "unlisted, read at its moment", status: content.StatusUnlisted, at: dated, drafts: false, served: true, previewed: false},
+		{name: "published, read before its moment", status: content.StatusPublished, at: before, drafts: false, served: false, previewed: true},
+		{name: "unlisted, read before its moment", status: content.StatusUnlisted, at: before, drafts: false, served: false, previewed: true},
+		{name: "published, read before its moment by its author", status: content.StatusPublished, at: before, drafts: true, served: false, previewed: true},
+		{name: "a draft", status: content.StatusDraft, at: dated, drafts: false, served: false, previewed: false},
+		{name: "a draft, read by its author", status: content.StatusDraft, at: before, drafts: true, served: true, previewed: false},
+		{name: "a preview", status: content.StatusPreview, at: dated, drafts: false, served: false, previewed: true},
+		{name: "a preview, read by its author", status: content.StatusPreview, at: dated, drafts: true, served: false, previewed: true},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
-			slugs := []string{}
-			for _, post := range SiteOf(snapshot, Audience{At: testCase.at, Drafts: testCase.drafts}).Posts {
-				slugs = append(slugs, post.Head.Page.Slug)
+			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: testCase.drafts})
+			served, previewed := []string{}, []string{}
+			for _, post := range site.Posts {
+				served = append(served, post.Head.Page.Slug)
 			}
-			if slices.Contains(slugs, samplePostSlug) != testCase.served {
-				test.Errorf("the posts served = %q, want %q among them: %t", slugs, samplePostSlug, testCase.served)
+			for _, shown := range site.Previews {
+				previewed = append(previewed, shown.Post.Head.Page.Slug)
+			}
+			if slices.Contains(served, samplePostSlug) != testCase.served || slices.Contains(previewed, samplePostSlug) != testCase.previewed {
+				test.Errorf("the posts served = %q and previewed = %q, want %q among them: %t and %t", served, previewed, samplePostSlug,
+					testCase.served, testCase.previewed)
 			}
 		})
 	}
@@ -656,7 +674,7 @@ func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := SiteOf(withPostsAndSeries(test, testCase.posts, nil), publicOnTheDay()).Until; !got.Equal(testCase.want) {
+			if got := SiteOf(Prepare(withPostsAndSeries(test, testCase.posts, nil)), publicOnTheDay()).Until; !got.Equal(testCase.want) {
 				test.Errorf("the site with the posts %+v holds until %v, want %v", testCase.posts, got, testCase.want)
 			}
 		})
@@ -668,7 +686,7 @@ func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 // it came out, in the zone it was written in, and where it is discussed, each a link by its site's name; and its
 // series and the posts beside it.
 func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
-	head := postNamed(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Posts, fixturePostSlug).Head
+	head := postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Posts, fixturePostSlug).Head
 	version := fmt.Sprint(head.Version)
 	head.Version = nil
 	description := textSpans("Why a page read twice is read once.")
@@ -713,7 +731,7 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
-			head := postNamed(test, SiteOf(snapshot, Audience{At: fixtures.Day(), Drafts: true}).Posts, samplePostSlug).Head
+			head := postNamed(test, SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true}).Posts, samplePostSlug).Head
 			if got, want := fmt.Sprint(head.Version), fmt.Sprint(testCase.want); got != want {
 				test.Errorf("the version of %s = %s, want %s", testCase.name, got, want)
 			}
@@ -728,7 +746,7 @@ func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	composed := make([][]document.Document, 2)
 	var group sync.WaitGroup
 	for index := range composed {
-		group.Go(func() { composed[index] = SiteOf(snapshot, publicOnTheDay()).Posts })
+		group.Go(func() { composed[index] = SiteOf(Prepare(snapshot), publicOnTheDay()).Posts })
 	}
 	group.Wait()
 	if !reflect.DeepEqual(composed[0], composed[1]) {

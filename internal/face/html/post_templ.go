@@ -752,9 +752,9 @@ func (writer PageWriter) pickPart(part document.Part) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var33 string
-			templ_7745c5c3_Var33, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(part.Page, routes.FormatChosen)).ResolveURL(ctx)
+			templ_7745c5c3_Var33, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(part.Page, routes.FormatChosen)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 155, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 155, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var33)
 			if templ_7745c5c3_Err != nil {
@@ -1204,9 +1204,9 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var55 string
-				templ_7745c5c3_Var55, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(side.neighbour.Page, routes.FormatChosen)).ResolveURL(ctx)
+				templ_7745c5c3_Var55, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(side.neighbour.Page, routes.FormatChosen)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 222, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 222, Col: 134}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 				if templ_7745c5c3_Err != nil {
@@ -1769,7 +1769,7 @@ func pause() templ.Component {
 // figure is a picture of a post (DESIGN.md, Article): the picture by its size, which the stylesheet narrows to the
 // text's column in its own shape, so its room is kept before it comes, fetched as it nears the screen; its caption
 // under it, where it has one.
-func figure(shown document.Figure) templ.Component {
+func (writer PageWriter) figure(shown document.Figure) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1791,9 +1791,9 @@ func figure(shown document.Figure) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var76 string
-		templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(shown.Picture, routes.FormatChosen)).ResolveURL(ctx)
+		templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(shown.Picture, routes.FormatChosen)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 		if templ_7745c5c3_Err != nil {
@@ -1806,7 +1806,7 @@ func figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.Alt).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var77)
 		if templ_7745c5c3_Err != nil {
@@ -1819,7 +1819,7 @@ func figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var78 string
 		templ_7745c5c3_Var78, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(shown.Width)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 		if templ_7745c5c3_Err != nil {
@@ -1832,7 +1832,7 @@ func figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var79 string
 		templ_7745c5c3_Var79, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(shown.Height)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 157}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 339, Col: 168}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var79)
 		if templ_7745c5c3_Err != nil {

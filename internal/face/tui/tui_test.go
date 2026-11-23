@@ -884,7 +884,7 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // says, as their author reads them: its pages, the TUI's extras, the blog's lists and its posts, with the site's words
 // and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
-	site := compose.SiteOf(snapshot, compose.Audience{At: fixtures.Day(), Drafts: drafts})
+	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
 	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Posts)
 	return Drawing{Documents: documents, Frame: site.Frame, Site: fixtures.Site(snapshot)}
 }

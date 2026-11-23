@@ -129,10 +129,19 @@ func Derive[Value any](store *Store, work Work[Value]) *Derived[Value] {
 	return &Derived[Value]{store: store, work: work, last: atomic.Pointer[derivation[Value]]{}}
 }
 
-// Current is the value of the store's current snapshot at a moment; one kept is replaced only by a newer.
+// Current is the value of the store's current snapshot at a moment.
+//
+//wrapper:names the snapshot a reader meets, the store's current one, which Of is handed
 func (derived *Derived[Value]) Current(moment time.Time) Value {
+	return derived.Of(derived.store.Current(), moment)
+}
+
+// Of is the value of a snapshot at a moment, the one kept where it holds: a value worked out from a snapshot another
+// value is worked out from in turn reads the same snapshot, though the store swaps in another meanwhile. The value of
+// the snapshot asked for replaces the one kept, an older snapshot's too, so readers of two snapshots at once may work a
+// value out again; none is ever handed a value of another snapshot.
+func (derived *Derived[Value]) Of(snapshot *Snapshot, moment time.Time) Value {
 	found := derived.last.Load()
-	snapshot := derived.store.Current()
 	if found.holds(snapshot, moment) {
 		return found.value
 	}

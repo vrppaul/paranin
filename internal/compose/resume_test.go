@@ -163,7 +163,7 @@ func TestEachEntryTellsARoleFromASchool(test *testing.T) {
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
-	documents := SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Documents()
+	documents := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents()
 	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	projects := sectionTitled(test, resume, "Projects")
@@ -194,7 +194,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 // Every fact of a project the profile gives reaches its page, as a phrase of its own: a face that shows every phrase
 // shows every fact.
 func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
-	project := fixtures.DocumentOf(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	project := fixtures.DocumentOf(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	phrases := document.Phrases(project)
 	cases := []struct {
 		name string
@@ -233,7 +233,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := fixtures.DocumentOf(test, SiteOf(testCase.snapshot, publicOnTheDay()).Documents(), tidyTool).Head.Tags; !slices.Equal(got, testCase.want) {
+			if got := fixtures.DocumentOf(test, SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Documents(), tidyTool).Head.Tags; !slices.Equal(got, testCase.want) {
 				test.Errorf("the tags of tidy-tool's page = %q, want %q", got, testCase.want)
 			}
 		})
@@ -243,7 +243,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 // A project's page names where its code lives once, in its head, and its details hold the rest: who made it, the
 // profile's facts, how it is installed.
 func TestAProjectsPageNamesItsRepositoryOnce(test *testing.T) {
-	project := fixtures.DocumentOf(test, SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	project := fixtures.DocumentOf(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	cases := []struct {
 		name  string
 		facts []document.Fact
@@ -268,7 +268,7 @@ func TestAProjectsPageNamesItsRepositoryOnce(test *testing.T) {
 // The index lists each page under the site's word for its kind, by the title and the line its own page opens
 // with, so an agent finds each page by what it is called there.
 func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
-	index := SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Index
+	index := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Index
 	cases := []struct {
 		name    string
 		section string
@@ -298,7 +298,7 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 // added to the site is a page added to the index.
 func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	index := SiteOf(snapshot, publicOnTheDay()).Index
+	index := SiteOf(Prepare(snapshot), publicOnTheDay()).Index
 	got := []document.Page{}
 	for _, title := range []string{"Résumé", "Projects"} {
 		for _, listed := range contentsOf(test, sectionTitled(test, index, title)).Listings {
@@ -306,7 +306,7 @@ func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 		}
 	}
 	want := []document.Page{}
-	for _, page := range SiteOf(snapshot, publicOnTheDay()).Documents() {
+	for _, page := range SiteOf(Prepare(snapshot), publicOnTheDay()).Documents() {
 		want = append(want, page.Head.Page)
 	}
 	if !slices.Equal(got, want) {
@@ -333,7 +333,7 @@ func TestTheIndexListsTheBlogsListsThenEveryPostListedNewestFirst(test *testing.
 		{slug: "hidden", id: 7, status: "unlisted", published: later, tags: ""},
 		{slug: "coming", id: 8, status: "published", published: afterTheDay, tags: ""},
 	}
-	index := SiteOf(withPostsAndSeries(test, posts, nil), publicOnTheDay()).Index
+	index := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Index
 	want := []seenListing{
 		{page: document.PageOf(document.PageBlog), title: "blog by years", note: "What the writer reads, and how."},
 		{page: document.PageOf(document.PageBlogSeries), title: "blog by series", note: "What the writer reads, and how."},
@@ -358,7 +358,7 @@ func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 		withoutPages.Profile.Projects[index].Page = false
 	}
 	got := []string{}
-	for _, block := range SiteOf(&withoutPages, publicOnTheDay()).Index.Blocks {
+	for _, block := range SiteOf(Prepare(&withoutPages), publicOnTheDay()).Index.Blocks {
 		got = append(got, titleOf(test, as[document.Section](test, block)))
 	}
 	if want := []string{"Résumé", "blog"}; !slices.Equal(got, want) {
@@ -369,7 +369,7 @@ func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 // Whose site it is, the site's words and every listing's title and line reach the index as phrases of their own:
 // a face that shows every phrase lists every page.
 func TestEveryPageReachesTheIndex(test *testing.T) {
-	phrases := document.Phrases(SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Index)
+	phrases := document.Phrases(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Index)
 	cases := []struct {
 		name string
 		want string
@@ -392,7 +392,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 // name the language its reader reads.
 func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	site := SiteOf(snapshot, publicOnTheDay())
+	site := SiteOf(Prepare(snapshot), publicOnTheDay())
 	documents := slices.Concat(site.Documents(), tabDocumentsOf(snapshot), []document.Document{site.Index}, Extras(snapshot))
 	for _, composed := range documents {
 		if got, want := composed.Head.Language, "en"; got != want {
@@ -405,7 +405,7 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 // shared: the résumé's is its headline, a project's page's what the project does, a tab's its page's.
 func TestEachPageHasADescription(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := slices.Concat(SiteOf(snapshot, publicOnTheDay()).Documents(), tabDocumentsOf(snapshot))
+	documents := slices.Concat(SiteOf(Prepare(snapshot), publicOnTheDay()).Documents(), tabDocumentsOf(snapshot))
 	cases := []struct {
 		name string
 		page document.Page
@@ -427,7 +427,7 @@ func TestEachPageHasADescription(test *testing.T) {
 
 // The résumé's head greets the reader before the author's name, in the site's words; a project's page does not.
 func TestTheResumeHeadGreetsTheReader(test *testing.T) {
-	documents := SiteOf(fixtures.LoadedContent(test), publicOnTheDay()).Documents()
+	documents := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents()
 	cases := []struct {
 		name string
 		page document.Page
@@ -448,7 +448,7 @@ func TestTheResumeHeadGreetsTheReader(test *testing.T) {
 // tabDocumentsOf are the documents of every tab past an opening of the documents a snapshot makes.
 func tabDocumentsOf(snapshot *content.Snapshot) []document.Document {
 	documents := []document.Document{}
-	for _, composed := range SiteOf(snapshot, publicOnTheDay()).Pages {
+	for _, composed := range SiteOf(Prepare(snapshot), publicOnTheDay()).Pages {
 		documents = append(documents, composed.Tabs...)
 	}
 	return documents

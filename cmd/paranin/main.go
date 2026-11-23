@@ -4,6 +4,7 @@
 //	paranin check content build/web    loads a content folder and the page's build as one release, the same way
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //	paranin serve --drafts content build/web    the same, the drafts too, each marked, for their author to read
+//	paranin preview-link content <slug>         prints the link a post is previewed at, for thirty days or --lasts
 //
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
 // load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
@@ -11,15 +12,18 @@
 // among them, which the content alone cannot know, since routes writes the addresses and compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
-// made there when missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds
+// made there when missing). It serves each preview at the link a key signs, the key in the file PARANIN_PREVIEW_KEY
+// names, and none where it names none; preview-link signs a link with the same key, so the link it prints opens on a
+// server holding it. It loads both folders again, as one release, on SIGHUP and once a change in either holds
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
-// them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults or
-// the server failed, and 2 when the command itself is written wrong.
+// them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults, the
+// server failed or no link could be printed, and 2 when the command itself is written wrong.
 package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +32,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -38,6 +43,7 @@ import (
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What the program exits with
@@ -50,14 +56,28 @@ const (
 // How the command is written: the program, the command, the content folder, and the build folder a site is served
 // with
 const (
-	checkCommand     = "check"
-	serveCommand     = "serve"
-	usage            = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder>"
+	checkCommand       = "check"
+	serveCommand       = "serve"
+	previewLinkCommand = "preview-link"
+	usage              = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
+		"paranin preview-link [--lasts 720h, at most 2160h] <content folder> <slug>"
 	commandArgument  = 1
 	contentArgument  = 2
 	buildArgument    = 3
 	contentArguments = 3
 	releaseArguments = 4
+)
+
+// How preview-link is written after its command: the flag of how long the link lasts, thirty days where it is not
+// asked, a span a reader is sent a draft to read in, and ninety at most, so no link that leaks lives for years; then
+// the content folder and the post's slug, by their places among the words past the flags
+const (
+	lastsFlag       = "lasts"
+	lastsUsage      = "how long the link opens the preview, as Go writes a duration, at most 2160h"
+	defaultLinkLife = 30 * 24 * time.Hour
+	longestLinkLife = 90 * 24 * time.Hour
+	slugPlace       = 1
+	linkArguments   = 2
 )
 
 // How serve is written after its command: the flag that serves the drafts too, then the content folder and the build
@@ -83,6 +103,13 @@ const (
 	network            = "tcp"
 )
 
+// The file of the key preview links are signed with, which no default names: a key made where none is found would
+// differ from the one on the owner's machine, and its links would open nothing
+const previewKeyVariable = "PARANIN_PREVIEW_KEY"
+
+// errNoPreviewKey is a preview link asked for where the environment names no key to sign it with.
+var errNoPreviewKey = errors.New("no preview key: " + previewKeyVariable + " names none")
+
 // How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own
 const (
 	faultsFormat    = "%s:\n%v\n"
@@ -91,13 +118,14 @@ const (
 
 // The keys of what the log says
 const (
-	webKey     = "http"
-	sshKey     = "ssh"
-	contentKey = "content"
-	buildKey   = "build"
-	draftsKey  = "drafts"
-	errorKey   = "error"
-	faultsKey  = "faults"
+	webKey      = "http"
+	sshKey      = "ssh"
+	contentKey  = "content"
+	buildKey    = "build"
+	draftsKey   = "drafts"
+	previewsKey = "previews"
+	errorKey    = "error"
+	faultsKey   = "faults"
 )
 
 // How long the server waits on a slow reader, and on the requests in hand when it stops
@@ -145,6 +173,12 @@ func run(arguments []string) int {
 			return usageWrong()
 		}
 		return serve(asked)
+	case command == previewLinkCommand:
+		asked, isWritten := linkAskedOf(arguments[contentArgument:])
+		if !isWritten {
+			return usageWrong()
+		}
+		return previewLink(asked)
 	default:
 		return usageWrong()
 	}
@@ -204,6 +238,72 @@ func checkedNow(loaded *content.Snapshot) error {
 	return compose.Check(loaded, time.Now()) //nolint:wrapcheck // the content's faults, printed one a line as they come
 }
 
+// previewLink prints the link a post of a content folder is previewed at, signed with the key the environment names,
+// as a server holding the same key serves it; a failure where it names none or the post is no preview now.
+func previewLink(asked linkAsked) int {
+	key, err := readPreviewKey()
+	if err != nil {
+		return refused(err, previewKeyVariable)
+	}
+	if key == nil {
+		return refused(errNoPreviewKey, previewKeyVariable)
+	}
+	now := time.Now()
+	link, err := previewLinkOf(asked.folder, asked.slug, key, now, now.Add(asked.lasts))
+	if err != nil {
+		return refused(err, asked.folder)
+	}
+	fmt.Println(link)
+	return succeeded
+}
+
+// linkAsked is what preview-link is asked: the content folder, the slug of the post, and how long the link lasts.
+type linkAsked struct {
+	folder string
+	slug   string
+	lasts  time.Duration
+}
+
+// linkAskedOf reads what preview-link is asked from the words after its command, and whether they are written right:
+// a lifetime, where one is asked, of some time and no longer than the longest.
+func linkAskedOf(words []string) (linkAsked, bool) {
+	flags := flag.NewFlagSet(previewLinkCommand, flag.ContinueOnError)
+	// a mistake is told by the usage alone, as for any other command
+	flags.SetOutput(io.Discard)
+	lasts := flags.Duration(lastsFlag, defaultLinkLife, lastsUsage)
+	if err := flags.Parse(words); err != nil || flags.NArg() != linkArguments || *lasts <= 0 || *lasts > longestLinkLife {
+		return linkAsked{folder: "", slug: "", lasts: 0}, false
+	}
+	return linkAsked{folder: flags.Arg(contentPlace), slug: flags.Arg(slugPlace), lasts: *lasts}, true
+}
+
+// previewLinkOf is the link a post of a content folder is previewed at at a moment, whole, signed with a key until it
+// lapses: a fault where the folder does not load, or the post is then no preview, a draft, out, or none at all, since
+// its link would open nothing.
+func previewLinkOf(contentFolder, slug string, key *web.PreviewKey, moment, lapses time.Time) (string, error) {
+	loaded, err := release.ReadFolder(contentFolder, content.Load)
+	if err != nil {
+		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
+	}
+	previews := compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Previews
+	found := slices.IndexFunc(previews, func(previewed compose.Preview) bool { return previewed.Post.Head.Page.Slug == slug })
+	if found < 0 {
+		return "", fmt.Errorf("%q is no post previewed now: a preview, or a post dated later, of the folder %q", slug, contentFolder)
+	}
+	site := routes.New(loaded.Profile.Site.BaseURL).Previewing(slug, key.Token(slug, lapses))
+	return site.Address(previews[found].Post.Head.Page, routes.FormatChosen), nil
+}
+
+// readPreviewKey reads the key preview links are signed with from the file the environment names; none where it names
+// none, so a site serves no preview link and prints none.
+func readPreviewKey() (*web.PreviewKey, error) {
+	keyPath := os.Getenv(previewKeyVariable)
+	if keyPath == "" {
+		return nil, nil
+	}
+	return web.ReadPreviewKey(keyPath) //nolint:wrapcheck // the error names the key's file and what failed
+}
+
 // checked is what a check of folders exits with: success, or a failure once their faults are printed.
 func checked(err error, folders ...string) int {
 	if err != nil {
@@ -212,12 +312,12 @@ func checked(err error, folders ...string) int {
 	return succeeded
 }
 
-// refused prints the faults of folders that did not load, after the folders, quoted, and is what the program then
-// exits with.
-func refused(err error, folders ...string) int {
-	quoted := make([]string, 0, len(folders))
-	for _, folder := range folders {
-		quoted = append(quoted, strconv.Quote(folder))
+// refused prints the faults of what did not load, folders or the preview key's setting, after what it is, quoted, and
+// is what the program then exits with.
+func refused(err error, sources ...string) int {
+	quoted := make([]string, 0, len(sources))
+	for _, source := range sources {
+		quoted = append(quoted, strconv.Quote(source))
 	}
 	fmt.Fprintf(os.Stderr, faultsFormat, strings.Join(quoted, folderSeparator), err)
 	return failed
@@ -243,13 +343,18 @@ func serve(asked servingAsked) int {
 		logger.Error("the SSH server cannot be made", errorKey, err)
 		return failed
 	}
+	previewKey, err := readPreviewKey()
+	if err != nil {
+		logger.Error("the preview key cannot be read", errorKey, err)
+		return failed
+	}
 	webAddress, sshAddress := fromEnvironment(webAddressVariable, defaultWebAddress), fromEnvironment(sshAddressVariable, defaultSSHAddress)
 	webListener, sshListener, err := listenAt(webAddress, sshAddress)
 	if err != nil {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	webServer := newServer(web.New(store, asked.drafts), logger)
+	webServer := newServer(web.New(store, asked.drafts, previewKey), logger)
 	servers := []server{webServer, sshServer}
 	running := serving{
 		logger:      logger,
@@ -263,7 +368,8 @@ func serve(asked servingAsked) int {
 	signal.Notify(running.reloads, syscall.SIGHUP)
 	go func() { running.failures <- webServer.Serve(webListener) }()
 	go func() { running.failures <- sshServer.Serve(sshListener) }()
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts)
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts,
+		previewsKey, previewKey != nil)
 	return running.watch(stopping)
 }
 

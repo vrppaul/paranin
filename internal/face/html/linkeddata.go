@@ -97,7 +97,7 @@ func (writer PageWriter) profilePageOf(record compose.PersonRecord, address stri
 			AlternateName: record.AlternateNames,
 			JobTitle:      record.Title,
 			Email:         record.Email,
-			URL:           writer.site.Address(record.Page, routes.FormatChosen),
+			URL:           writer.frame.site.Address(record.Page, routes.FormatChosen),
 			WorksFor:      employerOf(record.Employer),
 			AlumniOf:      schoolsOf(record.Schools),
 			KnowsAbout:    record.Skills,
@@ -130,12 +130,12 @@ func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 		Name:                record.Name,
 		Description:         record.Description,
 		ProgrammingLanguage: record.Language,
-		URL:                 writer.site.Address(record.Page, routes.FormatChosen),
+		URL:                 writer.frame.site.Address(record.Page, routes.FormatChosen),
 		CodeRepository:      record.Repository,
 		Author: author{
 			Kind: personKind,
 			Name: record.Author,
-			URL:  writer.site.Address(record.AuthorPage, routes.FormatChosen),
+			URL:  writer.frame.site.Address(record.AuthorPage, routes.FormatChosen),
 		},
 	}
 }

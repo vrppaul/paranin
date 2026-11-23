@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -25,15 +26,19 @@ const (
 	scriptPath     = "/assets/site-fixture.js"
 )
 
-// The fixture post's picture: its file in the content's folder, and where the site serves it
+// The fixture post's slug, and its picture: its file in the content's folder, and where the site serves it
 const (
-	pictureFile = "posts/reading-slowly/margin.png"
-	picturePath = "/blog/reading-slowly/margin.png"
+	fixturePostSlug = "reading-slowly"
+	pictureFile     = "posts/reading-slowly/margin.png"
+	picturePath     = "/blog/reading-slowly/margin.png"
 )
+
+// How long a test's preview link lasts from the tests' day, which its links are opened on
+const linkLasts = 24 * time.Hour
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
 		name        string
 		path        string
@@ -68,7 +73,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 // A tab of a page is served alone at its own address in each format, and as the reader asks at the address it is
 // known by: what it holds, with none of the tabs beside it.
 func TestATabIsServedAlone(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const (
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
@@ -109,7 +114,7 @@ func TestATabIsServedAlone(test *testing.T) {
 // for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
 // cache keeps one copy for each Accept.
 func TestTheReaderChoosesTheFormat(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const (
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
@@ -172,7 +177,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 // Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code, a
 // tab its page's, the person and the code at their page's address whole.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
 		name  string
 		path  string
@@ -196,7 +201,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
 // its manual as that page; the index, which is no page a person reads, names none.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
 		name   string
 		path   string
@@ -229,7 +234,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 // A post's number sends the reader on for good to the post's own address, by its path from the root, and a cache asks
 // again, since the post's slug is its folder's name, which may change; the number of a post not served is no page.
 func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
 		name     string
 		path     string
@@ -255,7 +260,7 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 // the request decoded it: in plain text to a terminal, an agent and a request naming nothing, in HTML, in the
 // site's language, to a browser; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const (
 		plain   = "text/plain; charset=utf-8"
 		browsed = "text/html; charset=utf-8"
@@ -301,7 +306,7 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 // Every answer tells a browser not to guess its type, to load nothing and send no form but from and to the site,
 // and to let no site frame it: a page in each format, the page of no page, and a refusal net/http writes itself.
 func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const policy = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	cases := []struct {
 		name   string
@@ -329,7 +334,7 @@ func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
 
 // A page tells a cache to ask again each time, since a reload can change it.
 func TestAPageTellsCachesToAskAgain(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, "/index.md", "")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil), http.MethodGet, "/index.md", "")
 	if got := response.Header().Get("Cache-Control"); got != "no-cache" {
 		test.Errorf("GET /index.md: Cache-Control = %q, want %q", got, "no-cache")
 	}
@@ -338,7 +343,7 @@ func TestAPageTellsCachesToAskAgain(test *testing.T) {
 // A file of the build is served at its path as the type its name says, whatever the request asks for, and a cache
 // keeps it for good: a file changed is built under another name.
 func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, stylesheetPath, "*/*")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil), http.MethodGet, stylesheetPath, "*/*")
 	header := response.Header()
 	const (
 		wantType  = "text/css; charset=utf-8"
@@ -354,7 +359,7 @@ func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
 
 // A page a browser reads, and the page of no page, are drawn in the build's stylesheet and run its script.
 func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	wanted := []string{`<link rel="stylesheet" href="` + stylesheetPath + `">`, `<script type="module" src="` + scriptPath + `"`}
 	cases := []struct {
 		name string
@@ -379,7 +384,7 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 // screen and the one a browser asks for by name on a page with no head, as the manual, is served at its path as its
 // type, for a cache to ask for again, since a new build of the server may draw it anew under the same path.
 func TestABrowserFindsTheSiteIcon(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	page := serve(server, http.MethodGet, "/", "text/html").Body.String()
 	cases := []struct {
 		name        string
@@ -411,7 +416,7 @@ func TestABrowserFindsTheSiteIcon(test *testing.T) {
 // change it under the same name; under a policy that loads and runs nothing in it, so a drawing opened alone runs no
 // script.
 func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, picturePath, "image/*")
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil), http.MethodGet, picturePath, "image/*")
 	header := response.Header()
 	const (
 		wantType   = "image/png"
@@ -448,7 +453,7 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 			store := fixtureStore(test, folder)
-			server := New(store, false)
+			server := New(store, false, nil)
 			serve(server, http.MethodGet, testCase.path, "")
 			fixtures.ReplaceIn(test, folder, testCase.file, testCase.original, testCase.replacement)
 			if err := store.Reload(); err != nil {
@@ -475,9 +480,11 @@ type seenAnswer struct {
 	holds  bool
 }
 
-// A post dated later than the request is served nowhere until its moment: not at its address nor its number, nor in
-// the blog's list or llms.txt; from its moment on it is, with no reload.
+// A post dated later than the request is served at its preview link alone until its moment: not at its address nor its
+// number, nor in the blog's list or llms.txt; from its moment on it is, with no reload, and its link sends the reader
+// on to it.
 func TestAPostComesOutAtItsMoment(test *testing.T) {
+	key := keyOf(test, testSecret)
 	cases := []struct {
 		name   string
 		path   string
@@ -486,6 +493,10 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 		after  seenAnswer
 	}{
 		{name: "its page", path: "/blog/coming.md", holds: "# Coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
+		{
+			name: "its preview link", path: "/preview/" + key.Token("coming", fixtures.Day().Add(linkLasts)) + "/coming.md", holds: "# Coming",
+			before: seenAnswer{status: http.StatusOK, holds: true}, after: seenAnswer{status: http.StatusFound, holds: false},
+		},
 		{name: "its number", path: "/blog/3", holds: "/blog/coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusMovedPermanently, holds: true}},
 		{name: "the blog's list", path: "/blog.md", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
 		{name: "the index", path: "/llms.txt", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
@@ -495,7 +506,7 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 			synctest.Test(test, func(test *testing.T) {
 				folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 				fixtures.WriteIn(test, folder, comingPostFile, comingPostText)
-				server := New(fixtureStore(test, folder), false)
+				server := New(fixtureStore(test, folder), false, key)
 				before := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
 				time.Sleep(comingIn)
 				after := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
@@ -526,7 +537,7 @@ func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			server := New(fixtureStore(test, fixtures.ContentFolder(test)), testCase.drafts)
+			server := New(fixtureStore(test, fixtures.ContentFolder(test)), testCase.drafts, nil)
 			if got := seenAnswerOf(serve(server, http.MethodGet, "/blog/notes-on-tools.md", ""), "# Notes on tools"); got != testCase.want {
 				test.Errorf("GET /blog/notes-on-tools.md = %+v, want %+v", got, testCase.want)
 			}
@@ -534,9 +545,216 @@ func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
 	}
 }
 
+// The secrets the tests sign preview links with: the one the server holds, and one it held before
+const (
+	testSecret = "a secret the tests sign preview links with"
+	oldSecret  = "a secret the tests signed preview links with before"
+	// a token as a key writes one, lapsing in 2100, which no key the tests hold signs
+	wrongToken = "4102444800.c2lnbmVkIGJ5IG5vIGtleSB0aGUgdGVzdHMgaG9sZA"
+)
+
+// A preview is served at its link alone, under the key the server holds, until the link lapses: its page in each
+// format, each leading to its picture and its own sections at the link, and its picture; at its own address, at a link
+// of a wrong token, of another post's, signed with a key the server held before its own, lapsed, or whose lapse is
+// moved later under the same signature, and on a server that holds no key, it is no page. Each link is opened on the
+// tests' day.
+func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
+	store := fixtureStore(test, fixtures.PreviewedFolder(test))
+	key, oldKey := keyOf(test, testSecret), keyOf(test, oldSecret)
+	lapses := fixtures.Day().Add(linkLasts)
+	token := key.Token(fixtures.PreviewSlug, lapses)
+	link := "/preview/" + token + "/" + fixtures.PreviewSlug
+	lapsed := "/preview/" + key.Token(fixtures.PreviewSlug, fixtures.Day().Add(-linkLasts)) + "/previewed.md"
+	_, signature, _ := strings.Cut(token, tokenJoint)
+	movedLater := "/preview/" + strconv.FormatInt(lapses.Add(linkLasts).Unix(), decimal) + tokenJoint + signature + "/previewed.md"
+	opened, missing := seenAnswer{status: http.StatusOK, holds: true}, seenAnswer{status: http.StatusNotFound, holds: false}
+	cases := []struct {
+		name       string
+		previewKey *PreviewKey
+		path       string
+		accept     string
+		holds      string
+		want       seenAnswer
+	}{
+		{name: "its page", previewKey: key, path: link, accept: "text/html", holds: `<h1 class="post-title"`, want: opened},
+		{name: "its page, any format taken", previewKey: key, path: link, accept: "*/*", holds: "PREVIEWED(1)", want: opened},
+		{name: "its page, no format named", previewKey: key, path: link, accept: "", holds: "PREVIEWED(1)", want: opened},
+		{name: "its markdown", previewKey: key, path: link + ".md", accept: "", holds: "(https://example.test/preview/" + token + "/previewed/margin.png", want: opened},
+		{name: "its manual", previewKey: key, path: link + ".txt", accept: "", holds: "<https://example.test/preview/" + token + "/previewed.txt>", want: opened},
+		{name: "its picture", previewKey: key, path: link + "/margin.png", accept: "", holds: "PNG", want: opened},
+		{name: "its own address", previewKey: key, path: "/blog/previewed.md", accept: "", holds: "# Previewed", want: missing},
+		{name: "its picture at its own address", previewKey: key, path: "/blog/previewed/margin.png", accept: "", holds: "PNG", want: missing},
+		{name: "a wrong token", previewKey: key, path: "/preview/" + wrongToken + "/previewed.md", accept: "", holds: "# Previewed", want: missing},
+		{
+			name: "the token of another post", previewKey: key, path: "/preview/" + key.Token(fixturePostSlug, lapses) + "/previewed.md", accept: "",
+			holds: "# Previewed", want: missing,
+		},
+		{
+			name: "a token of an old key", previewKey: key, path: "/preview/" + oldKey.Token(fixtures.PreviewSlug, lapses) + "/previewed.md", accept: "",
+			holds: "# Previewed", want: missing,
+		},
+		{name: "a link lapsed", previewKey: key, path: lapsed, accept: "", holds: "# Previewed", want: missing},
+		{name: "a lapse moved later", previewKey: key, path: movedLater, accept: "", holds: "# Previewed", want: missing},
+		{name: "no key held", previewKey: nil, path: link + ".md", accept: "", holds: "# Previewed", want: missing},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			server := drawnServer(test, store, testCase.previewKey)
+			got := seenAnswerOf(fixtures.ServedOnTheDay(test, server, http.MethodGet, testCase.path, testCase.accept), testCase.holds)
+			if got != testCase.want {
+				test.Errorf("GET %s = %+v, want %+v", testCase.path, got, testCase.want)
+			}
+		})
+	}
+}
+
+// Every answer in the preview's folder asks no search engine to index it and no cache to keep it, tells a browser to
+// send its address, which may hold a token, on to nothing, and names no address it is known by: a preview's page in
+// each format and its picture, a path of the link that is no page, the token alone or cut short, the clean form
+// net/http sends a path of an empty segment on to, and a request by a method no page takes, alike.
+func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
+	key := keyOf(test, testSecret)
+	server := drawnServer(test, fixtureStore(test, fixtures.PreviewedFolder(test)), key)
+	token := key.Token(fixtures.PreviewSlug, fixtures.Day().Add(linkLasts))
+	link := "/preview/" + token + "/" + fixtures.PreviewSlug
+	want := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
+	cases := []struct {
+		name   string
+		method string
+		path   string
+		accept string
+	}{
+		{name: "its page", method: http.MethodGet, path: link, accept: "text/html"},
+		{name: "its markdown", method: http.MethodGet, path: link + ".md", accept: ""},
+		{name: "its manual", method: http.MethodGet, path: link + ".txt", accept: ""},
+		{name: "its picture", method: http.MethodGet, path: link + "/margin.png", accept: ""},
+		{name: "no page", method: http.MethodGet, path: link + "/no-such-picture.png", accept: ""},
+		{name: "the token alone", method: http.MethodGet, path: "/preview/" + token, accept: "text/html"},
+		{name: "the token and its folder's end", method: http.MethodGet, path: "/preview/" + token + "/", accept: "text/html"},
+		{name: "a path of an empty segment", method: http.MethodGet, path: "/preview/" + token + "//" + fixtures.PreviewSlug, accept: ""},
+		{name: "a method no page takes", method: http.MethodPost, path: link, accept: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			header := fixtures.ServedOnTheDay(test, server, testCase.method, testCase.path, testCase.accept).Header()
+			got := sentPrivately{robots: header.Get("X-Robots-Tag"), referrer: header.Get("Referrer-Policy"), cache: header.Get("Cache-Control"), link: header.Get("Link")}
+			if got != want {
+				test.Errorf("GET %s is sent %+v, want %+v", testCase.path, got, want)
+			}
+		})
+	}
+}
+
+// A post's preview link, once the post is out, sends its reader on for a while to the same face of it at its own
+// address, its page, its markdown, its manual or its picture, sent as any answer at a preview link is; a link of
+// another post's token, or of a draft or no post, answers as no page, so it tells nothing of which posts there are.
+func TestAPreviewLinkSendsItsReaderOnOnceThePostIsOut(test *testing.T) {
+	key, lapses := keyOf(test, testSecret), fixtures.Day().Add(linkLasts)
+	server := drawnServer(test, fixtureStore(test, fixtures.ContentFolder(test)), key)
+	link := "/preview/" + key.Token(fixturePostSlug, lapses) + "/" + fixturePostSlug
+	private := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
+	cases := []struct {
+		name string
+		path string
+		want sentOn
+	}{
+		{name: "its page", path: link, want: sentOn{status: http.StatusFound, location: "/blog/reading-slowly", sent: private}},
+		{name: "its markdown", path: link + ".md", want: sentOn{status: http.StatusFound, location: "/blog/reading-slowly.md", sent: private}},
+		{name: "its manual", path: link + ".txt", want: sentOn{status: http.StatusFound, location: "/blog/reading-slowly.txt", sent: private}},
+		{name: "its picture", path: link + "/margin.png", want: sentOn{status: http.StatusFound, location: picturePath, sent: private}},
+		{
+			name: "another post's token", path: "/preview/" + key.Token("notes-on-tools", lapses) + "/reading-slowly.md",
+			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
+		},
+		{
+			name: "a draft's link", path: "/preview/" + key.Token("notes-on-tools", lapses) + "/notes-on-tools.md",
+			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
+		},
+		{
+			name: "a lapsed link", path: "/preview/" + key.Token(fixturePostSlug, fixtures.Day().Add(-linkLasts)) + "/reading-slowly.md",
+			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
+		},
+		{
+			name: "no post's link", path: "/preview/" + key.Token("no-such-post", lapses) + "/no-such-post.md",
+			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := fixtures.ServedOnTheDay(test, server, http.MethodGet, testCase.path, "")
+			header := response.Header()
+			got := sentOn{
+				status: response.Code, location: header.Get("Location"),
+				sent: sentPrivately{robots: header.Get("X-Robots-Tag"), referrer: header.Get("Referrer-Policy"), cache: header.Get("Cache-Control"), link: header.Get("Link")},
+			}
+			if got != testCase.want {
+				test.Errorf("GET %s = %+v, want %+v", testCase.path, got, testCase.want)
+			}
+		})
+	}
+}
+
+// sentOn is an answer at a preview link as a test reads it: its status, where it sends the reader on to, and what its
+// headers tell a search engine, a browser and a cache.
+type sentOn struct {
+	status   int
+	location string
+	sent     sentPrivately
+}
+
+// sentPrivately is what an answer's headers tell a search engine, a browser and a cache, as a test reads them: whether
+// to index it, what of its address to send on, how long to keep it, and the address it is known by.
+type sentPrivately struct {
+	robots   string
+	referrer string
+	cache    string
+	link     string
+}
+
+// A preview key is read from its file; a file missing, or a key shorter than the hash it signs with, is refused.
+func TestAPreviewKeyIsReadFromItsFile(test *testing.T) {
+	cases := []struct {
+		name     string
+		file     string
+		wantRead bool
+	}{
+		{name: "a key long enough", file: fixtures.KeyFile(test, testSecret), wantRead: true},
+		{name: "a key too short", file: fixtures.KeyFile(test, "short\n"), wantRead: false},
+		{name: "no file", file: filepath.Join(test.TempDir(), "missing"), wantRead: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if _, err := ReadPreviewKey(testCase.file); (err == nil) != testCase.wantRead {
+				test.Errorf("ReadPreviewKey(%q) = %v, want it read: %t", testCase.file, err, testCase.wantRead)
+			}
+		})
+	}
+}
+
+// A preview key's file signs as the key alone, the spaces and line end round it left out, so a copy written with a line
+// end signs as one without.
+func TestAPreviewKeySignsAsItsCopyWithoutALineEnd(test *testing.T) {
+	lapses := fixtures.Day().Add(linkLasts)
+	bare := keyOf(test, testSecret).Token(fixtures.PreviewSlug, lapses)
+	cases := []struct {
+		name    string
+		written string
+	}{
+		{name: "a key ending a line", written: testSecret + "\n"},
+		{name: "a key between spaces", written: "  " + testSecret + "\r\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := keyOf(test, testCase.written).Token(fixtures.PreviewSlug, lapses); got != bare {
+				test.Errorf("the key %q signs %q, want %q as the key alone does", testCase.written, got, bare)
+			}
+		})
+	}
+}
+
 // A page is only read: a request to change it is refused.
 func TestAPageIsOnlyRead(test *testing.T) {
-	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	if response := serve(server, http.MethodPost, "/index.md", ""); response.Code != http.StatusMethodNotAllowed {
 		test.Errorf("POST /index.md = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
@@ -569,6 +787,25 @@ func pngOfTwoByOne(test *testing.T) []byte {
 		test.Fatalf("write a PNG: %v", err)
 	}
 	return written.Bytes()
+}
+
+// drawnServer is a server of a store, its previews opened under a key, none where there is none, that has drawn its
+// snapshot outside any synctest bubble, by a request answered before the test's (fixtures.ServedOnTheDay).
+func drawnServer(test *testing.T, store *release.Store, previewKey *PreviewKey) *Server {
+	test.Helper()
+	server := New(store, false, previewKey)
+	serve(server, http.MethodGet, "/", "")
+	return server
+}
+
+// keyOf is the preview key a file holding a secret is read as.
+func keyOf(test *testing.T, secret string) *PreviewKey {
+	test.Helper()
+	key, err := ReadPreviewKey(fixtures.KeyFile(test, secret))
+	if err != nil {
+		test.Fatalf("ReadPreviewKey = %v, want a key", err)
+	}
+	return key
 }
 
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.

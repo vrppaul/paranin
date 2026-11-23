@@ -6,12 +6,67 @@ import (
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 )
 
 // The language of code whose author names none: a project's recording, a post's code indented
 const noLanguage = ""
+
+// Prepared is a snapshot's content as every composition of it reads it: the snapshot, and the code of each of its posts
+// split into its kinds of word once, by its node. A lexer is slow, and its regexps run a clock goroutine of their own
+// (regexp2's fastclock), so a site composed again at a later moment, or a preview drawn for a request, lexes nothing.
+// Ways weighed: the code split as the content loads, which would take chroma into content; split each composition,
+// as each moment the site changes and each check composed it again.
+type Prepared struct {
+	snapshot *content.Snapshot
+	codes    map[ast.Node]document.CodeBlock
+}
+
+// Prepare reads a snapshot for every composition of it: each post's code split into its kinds of word.
+func Prepare(snapshot *content.Snapshot) *Prepared {
+	codes := map[ast.Node]document.CodeBlock{}
+	for _, post := range snapshot.Posts {
+		reader := codeReader{body: post.Body, codes: codes}
+		// readCode returns no error, so the walk ends with none
+		_ = ast.Walk(post.Body.Tree, reader.readCode)
+	}
+	return &Prepared{snapshot: snapshot, codes: codes}
+}
+
+// codeReader splits the code of a post's body into its kinds of word: the body, and the code split so far, by its node.
+type codeReader struct {
+	body  content.Markdown
+	codes map[ast.Node]document.CodeBlock
+}
+
+// readCode splits a block of code the walk meets, in the language its author names, or in none where the code is
+// indented.
+func (reader codeReader) readCode(node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	switch typed := node.(type) {
+	case *ast.FencedCodeBlock:
+		reader.codes[node] = codeBlock(codeText(reader.body, typed.Lines()), reader.body.Language(typed))
+	case *ast.CodeBlock:
+		reader.codes[node] = codeBlock(codeText(reader.body, typed.Lines()), noLanguage)
+	}
+	return ast.WalkContinue, nil
+}
+
+// codeText is the text of a block of code of a body, its lines as written, the last one's ending dropped.
+func codeText(body content.Markdown, lines *text.Segments) string {
+	var builder strings.Builder
+	for index := range lines.Len() {
+		line := lines.At(index)
+		builder.Write(line.Value(body.Source))
+	}
+	return strings.TrimSuffix(builder.String(), codeLineEnd)
+}
 
 // lexedLanguage is a language compose splits code into kinds of word in: chroma's lexer of it, by its name, and the
 // names a post's author writes the language by, in small letters.

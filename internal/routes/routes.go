@@ -1,5 +1,6 @@
 // Package routes writes every address of the site, from a document's link target and a format, or a picture of the
-// site, so no face and no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
+// site, and a post's at its preview link, so no face and no host writes a path of its own (docs/ARCHITECTURE.md,
+// ADR-0003). It reads document alone.
 package routes
 
 import (
@@ -22,6 +23,11 @@ const (
 	// FormatChosen is the page at the address where the reader's request chooses its format
 	FormatChosen
 )
+
+// Formats are the formats a page is served in, each at an address of its own.
+func Formats() []Format {
+	return []Format{FormatChosen, FormatMarkdown, FormatManual}
+}
 
 // Picture is a picture of the site a browser shows beside its pages.
 type Picture int
@@ -59,6 +65,8 @@ const (
 	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
+	// the folder a post's preview link opens it in, the link's token after it (docs/FOUNDATION.md §5.4, Status)
+	previewFolder = "/preview/"
 )
 
 // The program a terminal reads the site with, and what parts it from the address in a command
@@ -70,10 +78,19 @@ const (
 // The scheme of an address that writes to a mailbox
 const mailScheme = "mailto:"
 
-// Site writes the site's addresses whole, from the address it is served at, and knows the site's own name.
+// Site writes the site's addresses whole, from the address it is served at, and knows the site's own name; read at a
+// post's preview link, it writes that post's addresses under the link's token.
 type Site struct {
 	base string
 	host string
+	// previewed is the post read at its preview link, none where the site is read at its own addresses alone
+	previewed *preview
+}
+
+// preview is a post read at its preview link: its slug, and the token the link holds.
+type preview struct {
+	slug  string
+	token string
 }
 
 // BaseAddress is the address a site is served at, as New's caller hands it: as it is written, ending in no slash,
@@ -85,7 +102,15 @@ type BaseAddress interface {
 
 // New is the site served at a base address, and named by the address's host.
 func New(base BaseAddress) Site {
-	return Site{base: base.Written(), host: base.Host()}
+	return Site{base: base.Written(), host: base.Host(), previewed: nil}
+}
+
+// Previewing is the site as the reader of a post's preview link reads it (docs/FOUNDATION.md §5.4, Status): every
+// address of that post, its page in each format, its sections and its pictures, in the preview's folder under the
+// link's token, since its own serve nothing; every other page at its own.
+func (site Site) Previewing(slug, token string) Site {
+	site.previewed = &preview{slug: slug, token: token}
+	return site
 }
 
 // ReadCommand is the command a terminal reads a page of the site with: curl and the page's whole address, where the
@@ -98,21 +123,11 @@ func (site Site) ReadCommand(page document.Page) string {
 // site as it is, or a mailbox's under the scheme that writes to it. A target with no path leads nowhere, and its
 // address is empty.
 func (site Site) Address(target document.Target, format Format) string {
-	switch typed := target.(type) {
-	case document.Address:
-		return typed.URL
-	case document.Mail:
-		return mailScheme + typed.Address
-	case document.Page:
-		if path := Path(typed, format); path != "" {
-			return site.base + path
-		}
-	case document.Anchor:
-		if path := anchorPath(typed, format); path != "" {
-			return site.base + path
-		}
-	case document.File:
-		if path := FilePath(typed); path != "" {
+	switch target.(type) {
+	case document.Address, document.Mail:
+		return site.Reference(target, format)
+	case document.Page, document.Anchor, document.File:
+		if path := site.Reference(target, format); path != "" {
 			return site.base + path
 		}
 	}
@@ -123,18 +138,18 @@ func (site Site) Address(target document.Target, format Format) string {
 // path from the root, which a browser reads against the address the page came from, so a page served from this
 // machine or a staging host leads there and not to the live site; an address outside the site as it is; a mailbox
 // under the scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
-func Reference(target document.Target, format Format) string {
+func (site Site) Reference(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
 		return typed.URL
 	case document.Mail:
 		return mailScheme + typed.Address
 	case document.Page:
-		return Path(typed, format)
+		return site.path(typed, format)
 	case document.Anchor:
-		return anchorPath(typed, format)
+		return site.anchorPath(typed, format)
 	case document.File:
-		return FilePath(typed)
+		return site.filePath(typed)
 	}
 	return ""
 }
@@ -144,12 +159,76 @@ const anchorMark = "#"
 
 // anchorPath is where a section of a page is, in a format: its page's path, then the section's anchor; empty where the
 // page is served in none.
-func anchorPath(anchor document.Anchor, format Format) string {
-	path := Path(anchor.Page, format)
+func (site Site) anchorPath(anchor document.Anchor, format Format) string {
+	path := site.path(anchor.Page, format)
 	if path == "" {
 		return ""
 	}
 	return path + anchorMark + anchor.Name
+}
+
+// path is where the site's reader reaches a page in a format: the post previewed in the preview's folder, every other
+// page at its own path.
+func (site Site) path(page document.Page, format Format) string {
+	if site.previews(page) {
+		return site.previewed.paths().inFormat(format)
+	}
+	return Path(page, format)
+}
+
+// filePath is where the site's reader reaches a file beside its page: a picture of the post previewed in the preview's
+// folder, every other file at its own path.
+func (site Site) filePath(file document.File) string {
+	if site.previews(file.Page) {
+		return fileIn(site.previewed.paths(), file.Name)
+	}
+	return FilePath(file)
+}
+
+// previews is whether a page is the post the site's reader reads at its preview link.
+func (site Site) previews(page document.Page) bool {
+	return site.previewed != nil && page.Kind == document.PagePost && page.Slug == site.previewed.slug
+}
+
+// paths are where a post read at its preview link is served: in the preview's folder under the link's token, by its
+// slug, as it would be in the blog's folder, so its files and sections stand beside it as they would there.
+func (previewed preview) paths() paths {
+	path := previewFolder + previewed.token + folderEnd + previewed.slug
+	return paths{chosen: path, files: path}
+}
+
+// InPreviewFolder is whether a path is in the preview's folder, by its opening alone, whether or not it names a token
+// and a post: every answer there is sent as a preview link's is, since what follows may hold a token.
+//
+//wrapper:names the folder whose every answer goes out privately, which a host asks of a path no link is read from
+func InPreviewFolder(path string) bool {
+	return strings.HasPrefix(path, previewFolder)
+}
+
+// PreviewLink is a path in the preview's folder as PreviewPath reads it: the token it holds, the slug of the post it
+// names, and the path the same face or file of that post has in the blog's folder.
+type PreviewLink struct {
+	Token    string
+	Slug     string
+	PostPath string
+}
+
+// What ends a post's slug in a path: its folder's end, before a file of it, or the dot a format's ending opens with
+const slugEnds = folderEnd + "."
+
+// PreviewPath reads a path in the preview's folder as the preview link it is, the one rule paths keeps the other way
+// round, and whether it is one, naming a token and a post.
+func PreviewPath(path string) (PreviewLink, bool) {
+	inFolder, isInFolder := strings.CutPrefix(path, previewFolder)
+	token, inPost, namesPost := strings.Cut(inFolder, folderEnd)
+	slug := inPost
+	if end := strings.IndexAny(inPost, slugEnds); end >= 0 {
+		slug = inPost[:end]
+	}
+	if !isInFolder || !namesPost || token == "" || slug == "" {
+		return PreviewLink{Token: "", Slug: "", PostPath: ""}, false
+	}
+	return PreviewLink{Token: token, Slug: slug, PostPath: blogFolder + inPost}, true
 }
 
 // FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,
@@ -157,7 +236,7 @@ func anchorPath(anchor document.Anchor, format Format) string {
 func FilePath(file document.File) string {
 	switch file.Page.Kind {
 	case document.PagePost:
-		return postPaths(file.Page.Slug).chosen + folderEnd + file.Name
+		return fileIn(postPaths(file.Page.Slug), file.Name)
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
 		document.PageSkills, document.PageBlog, document.PageBlogSeries:
 	}
@@ -229,6 +308,11 @@ func postPaths(slug string) paths {
 type paths struct {
 	chosen string
 	files  string
+}
+
+// fileIn is where a file beside a page is served: in the page's own folder, by its name.
+func fileIn(served paths, name string) string {
+	return served.chosen + folderEnd + name
 }
 
 // resumePaths are where the résumé is served: whole at the site's root, its files under the name an index takes; a

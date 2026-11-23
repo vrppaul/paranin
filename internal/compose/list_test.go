@@ -77,7 +77,7 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 			posts: []seenListed{{readiness: outAt(test, "old-one", yearBefore), title: "old-one", part: "", series: "", seriesName: "", tags: ""}},
 		},
 	}
-	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
+	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
 	if got := seenGroups(lists[0]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by year = %+v, want %+v", got, want)
 	}
@@ -131,7 +131,7 @@ func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 			},
 		},
 	}
-	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
+	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
 	if got := seenGroups(lists[1]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by series = %+v, want %+v", got, want)
 	}
@@ -148,7 +148,7 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf(fixturePostSlug, ""))
 	want := []string{"terminals", "reading", "writing"}
 	pages := []document.PageKind{document.PageBlog, document.PageBlogSeries}
-	for index, list := range SiteOf(snapshot, publicOnTheDay()).Lists {
+	for index, list := range SiteOf(Prepare(snapshot), publicOnTheDay()).Lists {
 		head := list.Head
 		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.Tags, want) || document.PlainText(head.Title) != snapshot.Words.Text(content.WordBlog) ||
 			document.PlainText(head.Lead) != "What the writer reads, and how." || document.PlainText(head.Description) != "What the writer reads, and how." {
@@ -182,7 +182,7 @@ func TestBothListsPlacesAreItsPostsThenItsSeries(test *testing.T) {
 		{Name: "tools", Kind: document.PlaceSeries, Page: bySeries, Section: "tools"},
 		{Name: fixtureSeriesName, Kind: document.PlaceSeries, Page: bySeries, Section: fixtureSeriesName},
 	}
-	lists := SiteOf(withPostsAndSeries(test, posts, series), publicOnTheDay()).Lists
+	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
 	cases := []struct {
 		name string
 		list document.Document
@@ -224,7 +224,7 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/5", Kind: document.PlacePost, Page: hidden, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/1", Kind: document.PlacePost, Page: read, Section: ""}, Offered: false},
 	}
-	if got := SiteOf(withPostsAndSeries(test, posts, nil), publicOnTheDay()).Frame.Pages; !reflect.DeepEqual(got, want) {
+	if got := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Frame.Pages; !reflect.DeepEqual(got, want) {
 		test.Errorf("the pages :e opens = %+v, want %+v", got, want)
 	}
 }

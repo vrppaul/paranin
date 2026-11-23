@@ -197,29 +197,30 @@ const (
 	codeWordsPart = "code-words"
 )
 
-// PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: the site, which
-// writes their addresses, what each includes to run the site's script, the frame round each, and the day they are
-// drawn on, which the résumé's career line runs to.
+// PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: what each includes to
+// run the site's script, the frame round each, whose site writes their addresses, and the day they are drawn on, which
+// the résumé's career line runs to.
 type PageWriter struct {
-	site     routes.Site
 	included assets.Included
 	frame    frame
 	today    time.Time
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
-// as plain text, the address it is known by, whole, and the path of its markdown; each empty where it has none.
+// as plain text, the address it is known by, whole, and the path of its markdown, each empty where it has none; and
+// whether a search engine may index it.
 type pageMetadata struct {
 	title       string
 	description string
 	canonical   string
 	markdown    string
+	indexed     bool
 }
 
 // NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
 // round each, on a day the host reads off its clock.
 func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame, today time.Time) PageWriter {
-	return PageWriter{site: site, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today}
+	return PageWriter{included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today}
 }
 
 // Page writes a document as a page of HTML showing one of its tabs (document.TabsOf), parted as every face parts it, by
@@ -260,11 +261,13 @@ func rendered(component templ.Component) string {
 
 // metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab.
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
+	site := writer.frame.site
 	return pageMetadata{
 		title:       document.PlainText(title),
 		description: document.PlainText(head.Description),
-		canonical:   writer.site.Address(shown, routes.FormatChosen),
-		markdown:    routes.Reference(shown, routes.FormatMarkdown),
+		canonical:   site.Address(shown, routes.FormatChosen),
+		markdown:    site.Reference(shown, routes.FormatMarkdown),
+		indexed:     true,
 	}
 }
 
@@ -322,7 +325,7 @@ func (writer PageWriter) span(span document.Span) templ.Component {
 	case document.Highlight:
 		return writer.highlight(typed.Spans)
 	case document.Link:
-		if reference := routes.Reference(typed.Target, routes.FormatChosen); reference != "" {
+		if reference := writer.frame.site.Reference(typed.Target, routes.FormatChosen); reference != "" {
 			return writer.link(reference, typed.Spans)
 		}
 		return writer.spans(typed.Spans)
@@ -344,7 +347,7 @@ func (writer PageWriter) factValue(fact document.Fact) templ.Component {
 		return command(writer.frame.copyWords.Of(text))
 	}
 	if mail, isMail := document.MailOf(fact.Value); isMail {
-		return mailLink(mail, false)
+		return writer.mailLink(mail, false)
 	}
 	return writer.spans(fact.Value)
 }

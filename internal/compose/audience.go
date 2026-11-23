@@ -38,8 +38,8 @@ func (audience Audience) statusOf(post content.Post) content.Status {
 }
 
 // serves is whether the site serves a post at its address to the audience: published or unlisted once it is out, and
-// a draft to its author alone. A preview waits for its secret link (TODO.md). exhaustive holds the switch to every
-// status.
+// a draft to its author alone. A preview has no address, only its link (previews). exhaustive holds the switch to
+// every status.
 func (audience Audience) serves(post content.Post) bool {
 	switch audience.statusOf(post) {
 	case content.StatusPublished, content.StatusUnlisted:
@@ -49,6 +49,12 @@ func (audience Audience) serves(post content.Post) bool {
 	case content.StatusPreview:
 	}
 	return false
+}
+
+// previews is whether the site serves a post to the audience at its preview link alone: a preview, or a post published
+// or unlisted that comes later, until it is out; never a draft, which its author alone reads.
+func (audience Audience) previews(post content.Post) bool {
+	return audience.statusOf(post) == content.StatusPreview
 }
 
 // lists is whether the blog's lists and its series' parts name a post for the audience: one published and out alone.

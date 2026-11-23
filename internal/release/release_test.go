@@ -72,8 +72,8 @@ func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 	}
 }
 
-// A value derived from a release is worked out once for each snapshot: readers of one snapshot share it, and a
-// reload brings the next reader a value of the new one.
+// A value derived from a release is worked out once for each snapshot: readers of one snapshot share it, whether they
+// ask for the store's current one or hand that snapshot in, and a reload brings the next reader a value of the new one.
 func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
 	store, err := Open(folders, passes)
@@ -82,7 +82,7 @@ func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	}
 	counter := &workCounter{times: 0, lapses: time.Time{}}
 	names := Derive(store, counter.name)
-	first, again := names.Current(fixtures.Day()), names.Current(fixtures.Day())
+	first, again := names.Current(fixtures.Day()), names.Of(store.Current(), fixtures.Day())
 	fixtures.ReplaceIn(test, folders.Content, profileFile, authorName, "name: Mira Other")
 	if err := store.Reload(); err != nil {
 		test.Fatalf("Reload = %v, want no error", err)

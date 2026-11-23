@@ -92,14 +92,3 @@ func Palette(theme Theme) map[Colour]Shade {
 	}
 	return nil
 }
-
-// Background is the page itself, which every blend is laid over
-func Background(theme Theme) color.RGBA {
-	switch theme {
-	case ThemeLight:
-		return color.RGBA{R: 239, G: 241, B: 245, A: 255}
-	case ThemeDark:
-		return color.RGBA{R: 36, G: 39, B: 58, A: 255}
-	}
-	return color.RGBA{}
-}

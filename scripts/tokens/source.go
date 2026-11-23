@@ -35,15 +35,11 @@ const (
 // What stands for the terminal's own colour in the generated file
 const ownBasicConstant = "BasicOwn"
 
-// How the page's own colour is returned in a theme: the theme's constant, then the colour
-const backgroundCase = "\tcase %s:\n\t\treturn %s\n"
-
 // How the palette writes a colour: a literal of image/color's RGBA, its four channels named
 const rgbaLayout = "color.RGBA{R: %d, G: %d, B: %d, A: %d}"
 
-// source is the Go of the tokens' colours: a constant for each colour, the palette of each theme, then the page's own
-// colour in each theme, which no terminal takes, since it keeps a ground of its own. It is formatted as gofmt would,
-// so the file reads as if written by hand.
+// source is the Go of the tokens' colours: a constant for each colour and the palette of each theme. It is formatted
+// as gofmt would, so the file reads as if written by hand.
 func source(read tokens) ([]byte, error) {
 	palette := paletteOf(read)
 	var builder strings.Builder
@@ -61,12 +57,7 @@ func source(read tokens) ([]byte, error) {
 	builder.WriteString("func Palette(theme Theme) map[Colour]Shade {\n\tswitch theme {\n")
 	writeTheme(&builder, lightTheme, palette, func(shades themedShade) shade { return shades.light })
 	writeTheme(&builder, darkTheme, palette, func(shades themedShade) shade { return shades.dark })
-	builder.WriteString("\t}\n\treturn nil\n}\n\n")
-	fmt.Fprintf(&builder, "// Background is %s\n", read.backgroundAbout)
-	builder.WriteString("func Background(theme Theme) color.RGBA {\n\tswitch theme {\n")
-	fmt.Fprintf(&builder, backgroundCase, lightTheme, rgbaLiteral(read.background.Light))
-	fmt.Fprintf(&builder, backgroundCase, darkTheme, rgbaLiteral(read.background.Dark))
-	builder.WriteString("\t}\n\treturn color.RGBA{}\n}\n")
+	builder.WriteString("\t}\n\treturn nil\n}\n")
 	formatted, err := format.Source([]byte(builder.String()))
 	if err != nil {
 		return nil, fmt.Errorf("format the generated palette: %w", err)

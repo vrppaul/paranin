@@ -29,7 +29,7 @@ never as a draft or a preview; the list names the posts published alone.
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
-| `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon: a drawing in the reader's theme, a PNG of 180px and an icon file of 32px, both in the dark theme. |
+| `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
 | any other `GET` | `404`, the page of no page: the status, the path asked for, quoted, and where the site begins; text or HTML, chosen as a page is. |
 | any other method | `405`, `Allow: GET, HEAD`, from `net/http`. |
 | a request whose line and headers pass the server's bound, 16 KB and the 4 KB of slack `net/http` adds | `431`, from `net/http`, before the handler reads it. |
@@ -41,7 +41,7 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them, the icon keeps its path when the author's name changes, and a post's number its own when the post's slug does |
+| A page in any format, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list

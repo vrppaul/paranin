@@ -231,11 +231,10 @@ the host underline, `underline_hover` thick, `nudge` below.
 
 ### Favicon
 
-The first letter of the author's name in the name font, the P, its cells square, in the name's gradient, and a cursor
-beside it, a beam in `accent` as tall as the letter's lower three half rows, on the page's ground, a square. As SVG with
-crisp edges, in the reader's theme; a PNG of 180px for a phone's home screen, the letter a tenth of its side in from
-each edge so the phone's rounded corners cut none of it, and one of 32px at /favicon.ico, both in the dark theme. The
-picture a shared link shows is Typst's, drawn with the CV (ADR-0005).
+A square of the name's gradient and nothing more: `accent` at its left edge to `host` at its right, filling it edge to
+edge, in the light theme's colours for every reader, since they stand apart from a light tab and a dark one alike. One
+picture at every size: as SVG, a PNG of 180px for a phone's home screen, whose corners the phone rounds, and one of
+32px at /favicon.ico. The picture a shared link shows is Typst's, drawn with the CV (ADR-0005).
 
 ### Button
 

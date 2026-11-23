@@ -52,21 +52,6 @@ type letterDrawing struct {
 	height     int
 }
 
-// letterGrid is how a drawing lays a font's cells, in its own units: a cell's width, a half row's height, and where
-// the first cell stands.
-type letterGrid struct {
-	cellWidth     int
-	halfRowHeight int
-	left          int
-	top           int
-}
-
-// headingGrid is how a heading's block letters lay their cells: a cell three fifths as wide as its row is tall, as a
-// mono face's, from the drawing's corner.
-func headingGrid() letterGrid {
-	return letterGrid{cellWidth: cellUnits, halfRowHeight: halfRowUnits, left: 0, top: 0}
-}
-
 // letterRectangle is a run of filled cells of one half row, in the drawing's units.
 type letterRectangle struct {
 	left   int
@@ -127,15 +112,14 @@ func drawLetters(font look.Font, texts []string, words, class string) (letterDra
 	halves := look.HalfRows(banner)
 	for halfRow, filled := range halves {
 		drawing.width = max(drawing.width, len(filled)*cellUnits)
-		drawing.rectangles = append(drawing.rectangles, halfRowRectangles(filled, halfRow, headingGrid())...)
+		drawing.rectangles = append(drawing.rectangles, halfRowRectangles(filled, halfRow)...)
 	}
 	drawing.height = len(halves) * halfRowUnits
 	return drawing, true
 }
 
-// halfRowRectangles are the runs of a half row's filled cells, as rectangles of the half row they stand on, laid on
-// a grid.
-func halfRowRectangles(filled []bool, halfRow int, grid letterGrid) []letterRectangle {
+// halfRowRectangles are the runs of a half row's filled cells, as rectangles of the half row they stand on.
+func halfRowRectangles(filled []bool, halfRow int) []letterRectangle {
 	rectangles := []letterRectangle{}
 	start := -1
 	for column := 0; column <= len(filled); column++ {
@@ -145,8 +129,8 @@ func halfRowRectangles(filled []bool, halfRow int, grid letterGrid) []letterRect
 		}
 		if !on && start >= 0 {
 			rectangles = append(rectangles, letterRectangle{
-				left: grid.left + start*grid.cellWidth, top: grid.top + halfRow*grid.halfRowHeight,
-				width: (column - start) * grid.cellWidth, height: grid.halfRowHeight,
+				left: start * cellUnits, top: halfRow * halfRowUnits,
+				width: (column - start) * cellUnits, height: halfRowUnits,
 			})
 			start = -1
 		}

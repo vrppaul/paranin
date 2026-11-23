@@ -13,7 +13,6 @@ How the page is built is read in `web/vite.config.ts`; how the server reads the 
 - A colour, a size, a time or a weight with a meaning is a token of `design/tokens.yaml`, which `scripts/tokens` writes into `web/src/tokens/tokens.css`; every other stylesheet names a token, never a value.
 - A unit, a media query's width or a container query joins stylelint's lists with its first user, in the chunk that writes it; a kind of token the generator does not take yet, it learns with the token's first user.
 - The page's policy refuses an inline script, an inline style and a `data:` address (`docs/WEB.md`, "Security headers"): Vite inlines no file, and a template writes no `<style>` and no `style` attribute.
-- The site's icon (`internal/face/html/icon.templ`) is the one template with a `<style>`: a browser shows it as an image, which the page's policy does not reach, and the style holds no colour, only which theme's part shows.
 - The parts of `web/src/` build on each other in one direction, as `LAYERS` in `web/eslint.config.js` lists them; a part joins the list with its first module.
 - A value read by key or position may be missing (`noUncheckedIndexedAccess`): the code says what then.
 - The site's entry holds a page's first paint (`blocking="render"`): it runs only what a page must have done before it is seen, and anything else loads by a dynamic import.

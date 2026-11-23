@@ -597,7 +597,7 @@ sessions on a stop.
 - `face/html` draws each document with templ, in the build's stylesheet
   and running its script, with the frame round each page in the site's
   words (`compose.FrameOf`), and its record as JSON-LD, and the site's
-  icon its pages link, in SVG and in PNG, drawn from the author's initial;
+  icon its pages link, in SVG and in PNG, a square of the name's gradient;
   `face/text` draws the markdown, the manual, `llms.txt` and its own page
   of no page. `routes` writes every address, the icon's among them.
 - templ compiles the templates into Go, and no file is embedded. `web/`

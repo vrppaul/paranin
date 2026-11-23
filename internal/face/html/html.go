@@ -31,8 +31,8 @@
 // foot leading to the posts beside it, in the blog's session of the foot line. The blog's list (list.go) opens with
 // the blog's name in block letters, its line, the Switch of its groupings and its tags, then each group under its name,
 // its posts as tiles, each a link to its post.
-// Every page links the pictures of the site (icon.go), which it draws for its host to serve: the first letter of the
-// author's name in the name's font and a cursor beside it, as SVG in the reader's theme, and as pixels in one.
+// Every page links the pictures of the site (icon.go), which it draws for its host to serve: a square of the name's
+// gradient, as SVG and as pixels.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write

@@ -1,15 +1,14 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003, ADR-0004). It draws every page of a release's
 // snapshot once, the first time a request meets that snapshot (release.Derived), and serves the drawing until the
 // store holds another, so no request composes or draws a page; beside the pages it serves every file of the
-// snapshot's build at its path, from memory, for a cache to keep for good, and each picture of the site the HTML face
-// draws with them, which a cache asks for again. Each page, and each of its tabs alone, is served at the path routes
+// snapshot's build at its path, from memory, for a cache to keep for good, and each picture of the site, which the
+// HTML face draws once and a cache asks for again. Each page, and each of its tabs alone, is served at the path routes
 // writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
 // browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
 // llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn whole in every format, and
 // its number sends the reader on to its address; so is the blog's list, in each of its groupings. Each format of a page
-// names in
-// a Link header the address the page is known by, the one where the reader chooses, so a search engine counts its
-// markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
+// names in a Link header the address the page is known by, the one where the reader chooses, so a search engine counts
+// its markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
 // whichever the reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the
 // chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and
 // to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own.
@@ -105,11 +104,13 @@ const (
 	statusSeparator = " "
 )
 
-// Server serves the pages and the built files of the store's current snapshot.
+// Server serves the pages and the built files of the store's current snapshot, and the pictures of the site.
 type Server struct {
 	// drawn is every page of the store's current snapshot, drawn once for each snapshot
-	drawn   *release.Derived[*drawing]
-	handler http.Handler
+	drawn *release.Derived[*drawing]
+	// pictures are the pictures of the site, drawn once, since no snapshot changes them
+	pictures map[string]answer
+	handler  http.Handler
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, and every file of its build: in
@@ -173,10 +174,19 @@ func builtAs(file assets.File) answer {
 	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, body: file.Body}
 }
 
-// picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when the
-// author's name changes.
+// picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
+// new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
 	return answer{mediaType: "", contentType: icon.MediaType, link: "", cacheControl: askEveryTime, body: icon.Body}
+}
+
+// picturesOf are the pictures of the site, by the path each is served at.
+func picturesOf(icons []html.Icon) map[string]answer {
+	pictures := make(map[string]answer, len(icons))
+	for _, icon := range icons {
+		pictures[icon.Path] = picturedAs(icon)
+	}
+	return pictures
 }
 
 // knownAt is a page naming the address it is known by, as a Link header writes it (RFC 8288, RFC 6596).
@@ -188,7 +198,7 @@ func (sent answer) knownAt(address string) answer {
 // New is a server of the site the store holds.
 func New(store *release.Store) *Server {
 	mux := http.NewServeMux()
-	server := &Server{drawn: release.Derive(store, draw), handler: mux}
+	server := &Server{drawn: release.Derive(store, draw), pictures: picturesOf(html.Icons()), handler: mux}
 	mux.HandleFunc(pagePattern, server.servePage)
 	return server
 }
@@ -203,6 +213,10 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 }
 
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
+	if picture, isPicture := server.pictures[request.URL.Path]; isPicture {
+		send(writer, http.StatusOK, picture)
+		return
+	}
 	drawn := server.drawn.Current()
 	if found, isFixed := drawn.fixed[request.URL.Path]; isFixed {
 		send(writer, http.StatusOK, found)
@@ -309,9 +323,6 @@ func draw(snapshot *release.Snapshot) *drawing {
 	}
 	for path, file := range build.Files() {
 		fixed[path] = builtAs(file)
-	}
-	for _, icon := range html.Icons(facts.Profile.Person.Name) {
-		fixed[icon.Path] = picturedAs(icon)
 	}
 	chosen := map[string]choice{}
 	for _, composed := range readPages {

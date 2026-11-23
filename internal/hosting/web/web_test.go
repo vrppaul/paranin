@@ -356,7 +356,7 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 
 // A browser finds the site's icon: each picture of it a page's head links, among them the one a phone keeps on its home
 // screen and the one a browser asks for by name on a page with no head, as the manual, is served at its path as its
-// type, for a cache to ask for again, since the author's name it is drawn from may change under the same path.
+// type, for a cache to ask for again, since a new build of the server may draw it anew under the same path.
 func TestABrowserFindsTheSiteIcon(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)))
 	page := serve(server, http.MethodGet, "/", "text/html").Body.String()

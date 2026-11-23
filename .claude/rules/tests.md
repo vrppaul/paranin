@@ -16,6 +16,7 @@ paths:
 - A test rewritten is seen failing too: with the line of code it holds broken, then restored.
 - No test written to a change: that a line was edited, or that what the code did before it no longer does. A test holds what the code does.
 - Never how it looks: no colour, size or position read back. The text a text face writes is what a terminal reader gets, so a golden file of it is behaviour.
+- The drawings the HTML face writes in place of words, the block letters' rectangles and each role's share of the career line, are behaviour too: its goldens hold them.
 - The one position a test reads back is the terminal's cursor: it stands where the next letter typed goes. Its shape and colour are looks.
 - No test of how an error or a log line is worded: a test reads which fault came, not its words.
 - No test for a declaration, a library's own behaviour, internals or a test helper.

@@ -380,8 +380,7 @@ summary, its facts. An install line is a fact whose value is Code alone; the pag
 
 Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a length `muted`; cells
 `cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A
-post's table may name its columns: the page draws that row as the table's first, in `strong`, which waits on the
-owner's pick (`TODO.md`). A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
+post's table may name its columns: the page draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
 Whatever scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
 
 ### Code
@@ -421,8 +420,8 @@ sent: `error` words saying why and what to do, with the mail as the way that alw
 
 ### Dialog
 
-A window over the page, as tmux draws a popup: a `muted` hairline frame on the page's ground, the title set into its top
-edge on the left and the close cross into it on the right, both half above the frame. The page behind fades by `scrim`.
+A window over the page, as tmux draws a popup: on `sunk` with an `edge` hairline, as the Hint and all that lies over
+the page, the title set into its top edge on the left and the close cross into it on the right, both half above the frame. The page behind fades by `scrim`.
 A native `dialog` opened with `showModal()`: focus moves in, Esc or the cross closes it, focus goes back. The cross is
 named "Close"; its tooltip says Esc does the same. Never opens on its own.
 
@@ -498,7 +497,7 @@ A post's body, in the text's column.
 - Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
 - Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
   at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by
-  the button alone, so a reader selects the lines, which waits on the owner's pick (`TODO.md`). Its colours come from
+  the button alone, so a reader selects the lines. Its colours come from
   the tokens, chosen with the code blocks; never `accent` as small text.
 - A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
   hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.
@@ -513,7 +512,8 @@ A post's foot, after a `quiet` hairline: a heading in `strong` saying where the 
 the series' Pick, or `Other posts` with a link to the list; then two panes as tmux splits a window.
 
 - Each pane square, framed in a `muted` hairline, the two sharing the line between them; the whole pane is the link,
-  `sunk` under the pointer, its title's underline then `accent` and `underline_hover` thick.
+  `sunk` under the pointer, its title's underline then `accent` and `underline_hover` thick; the keyboard's ring parts
+  where the name is set in, as the frame does.
 - Its name set into its top edge, bold, `small`: `part 4`, `older`. Its title bold, underlined in `muted`; the side
   after's title, the next part's or the newer post's, in `heading`. Its lead `small` in `muted`; beside other posts, a
   post's date `caption` in `faint` at the pane's foot, since the blog orders them by date.
@@ -535,7 +535,8 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
   into its top edge, `small` in `muted`, or in a series' group its part, bold in `text`, then the date. Its title bold,
   balanced; its lead `small` in `muted`. At its foot, apart from the post, where it stands: its series where the
   group does not say it, `part 6 · stint`, the part bold in `text`, the dot `faint`, the name `text`, a long name
-  wrapping; then its Tags. The whole tile is the link, `sunk` under the pointer, its title underlined in `accent`. A
+  wrapping; then its Tags. The whole tile is the link, `sunk` under the pointer, its title underlined in `accent`; the keyboard's
+  ring parts where the date is set in, as the frame does. A
   part to come: framed in `quiet_half`, its date and title `faint`, not bold, no link.
 
 ## Pages

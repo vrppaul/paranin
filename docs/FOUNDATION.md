@@ -365,15 +365,17 @@ reference to no footnote, and the characters the content refuses
 everywhere but a tab inside code, which a face expands as it draws the
 code, written or as a reference (`&#27;`); each fault at its file and line.
 It refuses as well what no face draws yet: a picture, until the post's
-pictures are served from its folder; a thematic break, a heading parting a
-post; a line broken hard; a link's title; a link to anything but an
-absolute web address or `mailto:` a bare mail address, until a link inside
+pictures are served from its folder; a thematic break, a pause inside a
+part of a post, until its look is drawn; a link's title; a link to
+anything but an absolute web address or `mailto:` a bare mail address, until a link inside
 the site is read back into a page of it; a table's row of more cells than
 its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
 cites it (ADR-0003); and a footnote cited in a heading, which is no such
-line. Any kind of node outside the one list `content` keeps
-is refused, so a part of the format no face draws never passes unseen.
+line. A line broken hard it refuses for good: the two spaces that most
+often break one cannot be seen in the text (owner, 2026-11-23). Any kind of node outside
+the one list `content` keeps is refused, so a part of the format no face
+draws never passes unseen.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and
 quotes as text; code with its syntax colours from the tokens; tables laid
@@ -514,9 +516,11 @@ and SSH to the host: "without a new binary" does not mean without a build.
   renumbers nothing. A post is in one series at most. A post of a series
   shows "part 3 of 11" with the parts before and after; a part to come may
   stand in the list grouped by series.
-- **What a series and a post's foot list.** A part published is out; a
-  part not yet published, a draft or a preview, stands with the titles to
-  come, by its title alone. An unlisted part is listed nowhere, so its
+- **What a series and a post's foot list.** A part published is out; the
+  parts to come are the titles under `to_come`, which the author chose to
+  announce. A part not yet published, a draft or a preview, is listed
+  nowhere, as a preview is, so its working title stays in the repository
+  (owner, 2026-11-23). An unlisted part is listed nowhere, so its
   series leaves it out and counts on without it, and its own page shows
   no series. Outside a series a post's foot leads to the posts published
   before and after it, by the time they came out, so never to a draft, a
@@ -528,9 +532,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
   series and tags; `/blog/series`, the same posts by series. A tag or a
   series filters the list, the filter reversed in the list's head; a
   filtered list is sent with `noindex` and names `/blog` as canonical. Its
-  address is proposed, the site's first with a query, `/blog?tag=payments`
-  and `/blog?series=stint`, and settled with the filter, a chunk of its own
-  after the lists. The list is a
+  address is the site's first with a query, `/blog?tag=payments` and
+  `/blog?series=stint` (owner, 2026-11-23): a filter is a view of the
+  list, not a page to index. The list is a
   document every face draws: the TUI gives the blog a session of its own
   (DESIGN.md, The TUI), and its posts, tags and series stand in the `:`
   menu.
@@ -578,7 +582,9 @@ For every page of the site, the blog's among them:
   `BreadcrumbList`; the résumé's `ProfilePage` as it stands.
 - **Languages:** `hreflang` and `x-default` between a page and its
   translations.
-- **Crawling:** `robots.txt` naming `sitemap.xml`, the sitemap with every
+- **Crawling:** `robots.txt` naming `sitemap.xml`, and `llms.txt` in a
+  comment, since no page links it and no `rel` names it (owner,
+  2026-11-23); the sitemap with every
   page, tab and post and their `lastmod`, per language; `noindex` on
   previews, unlisted posts, older versions and the filtered list; `301` from
   `/blog/12` and from a path with a trailing slash.
@@ -597,7 +603,9 @@ For every page of the site, the blog's among them:
 #### Translations (Decided: later, D12; the model Proposed)
 
 - **One folder per post, one file per language**; widgets shared. English
-  is the main language and every post carries `lang` from the first one.
+  is the main language. A post's language is its file's name,
+  `post.en.md`, from the first one, and written nowhere else (owner,
+  2026-11-23).
 - **Addresses:** `/blog/page-cache` for English, `/ru/blog/page-cache` for
   Russian; the slug is the folder's name. Nothing redirects by
   `Accept-Language`: the address alone picks the language, so a crawler and

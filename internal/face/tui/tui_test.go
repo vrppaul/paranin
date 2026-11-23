@@ -743,7 +743,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	}{
 		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
 		{
-			name: "a project's page", shown: fixtures.DocumentOf(test, compose.Documents(snapshot), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
+			name: "a project's page", shown: fixtures.DocumentOf(test, compose.SiteOf(snapshot).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
 			byForm: []string{"repository", "https://github.test/mira/tidy", "Why"},
 		},
@@ -768,7 +768,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 			model: New(sessionDrawing(snapshot), "blog", commonWidth, tallHeight, fixtures.Day()), byForm: []string{"blog"},
 		},
 		{
-			name: "a post", shown: fixtures.DocumentOf(test, compose.Posts(snapshot), document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
+			name: "a post", shown: fixtures.DocumentOf(test, compose.SiteOf(snapshot).Posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
 			model:  New(sessionDrawing(snapshot), "blog/1", commonWidth, tallHeight, fixtures.Day()),
 			byForm: []string{"// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println(\"slowly\", page)\n\treturn len(page) * 2\n}"},
 		},
@@ -800,6 +800,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
 		{name: "a public profile on the contact tab", model: commanded(test, fixtureModel(test, commonWidth, commonHeight), "contact"), address: "https://github.test/mira"},
 		{name: "a post's picture", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly/margin.png"},
+		{name: "a post's link to a heading", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly#what-a-reader-keeps"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -881,7 +882,8 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // sessionDrawing is what the SSH server hands a session of a snapshot: its pages, the TUI's extras, the blog's lists
 // and its posts, with the site's words and its site.
 func sessionDrawing(snapshot *content.Snapshot) Drawing {
-	documents := slices.Concat(compose.Documents(snapshot), compose.Extras(snapshot), compose.Lists(snapshot), compose.Posts(snapshot))
+	site := compose.SiteOf(snapshot)
+	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Posts)
 	return Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
 }
 

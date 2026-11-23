@@ -1112,7 +1112,7 @@ func emptySection(title string) document.Block {
 
 // fixturePost is the fixture's post as compose makes it.
 func fixturePost(test *testing.T) document.Document {
-	posts := compose.Posts(fixtures.LoadedContent(test))
+	posts := compose.SiteOf(fixtures.LoadedContent(test)).Posts
 	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
 }
 
@@ -1157,7 +1157,7 @@ func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page)
 		}
 	}
 	test.Fatalf("compose made no page %+v", page)
-	return compose.Composed{Document: document.Document{Head: fixtures.HeadOf(page, nil), Blocks: nil}, Record: nil}
+	return compose.Composed{Document: document.Document{Head: fixtures.HeadOf(page, nil), Blocks: nil}, Tabs: nil, Record: nil}
 }
 
 // blankPerson is a record of a person with no facts, for a page a test builds by hand: every page a person reads

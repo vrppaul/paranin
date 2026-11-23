@@ -46,7 +46,8 @@ type Snapshot struct {
 }
 
 // Check is what the parts over a release hold its content to beyond its own load, which the composition root hands
-// in: that no two of the pages it makes share an address. It hands back the faults it finds, none where it finds none.
+// in: that no two of the pages it makes share an address, and that each link of a post inside the site leads to a page
+// and, where it names one, a section of it. It hands back the faults it finds, none where it finds none.
 type Check func(*content.Snapshot) error
 
 // Load reads both parts of a release and checks each whole, the content by the check too: a snapshot, or every fault

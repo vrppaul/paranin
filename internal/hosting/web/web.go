@@ -337,13 +337,12 @@ func statusLine(status int) string {
 // snapshot.
 func draw(snapshot *release.Snapshot) *drawing {
 	facts, build := snapshot.Content, snapshot.Build
-	site := routes.New(facts.Profile.Site.BaseURL)
-	readPages := compose.Pages(facts)
-	index := compose.Index(facts)
+	addresses := routes.New(facts.Profile.Site.BaseURL)
+	composition := compose.SiteOf(facts)
 	frame := compose.FrameOf(facts)
-	pageWriter := html.NewPageWriter(site, build, frame, time.Now())
+	pageWriter := html.NewPageWriter(addresses, build, frame, time.Now())
 	fixed := map[string]answer{
-		routes.Path(index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(index, site)),
+		routes.Path(composition.Index.Head.Page, routes.FormatMarkdown): drawnAs(plainMediaType, text.Markdown(composition.Index, addresses)),
 	}
 	for path, file := range build.Files() {
 		fixed[path] = builtAs(file)
@@ -352,25 +351,25 @@ func draw(snapshot *release.Snapshot) *drawing {
 		fixed[routes.FilePath(shown.File)] = postPicturedAs(shown.Picture)
 	}
 	chosen := map[string]choice{}
-	for _, composed := range readPages {
+	for _, composed := range composition.Pages {
 		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the
 		// tab an address shows inside its page
-		for _, shown := range slices.Concat([]document.Document{composed.Document}, compose.TabDocuments(composed.Document)) {
-			serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), fixed, chosen, site)
+		for _, shown := range slices.Concat([]document.Document{composed.Document}, composed.Tabs) {
+			serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), fixed, chosen, addresses)
 		}
 	}
 	moved := map[string]string{}
-	for _, post := range compose.Posts(facts) {
-		serveEveryFormat(post, pageWriter.Post(post), fixed, chosen, site)
+	for _, post := range composition.Posts {
+		serveEveryFormat(post, pageWriter.Post(post), fixed, chosen, addresses)
 		moved[routes.NumberPath(post.Head.Number)] = routes.Path(post.Head.Page, routes.FormatChosen)
 	}
-	for _, list := range compose.Lists(facts) {
-		serveEveryFormat(list, pageWriter.List(list), fixed, chosen, site)
+	for _, list := range composition.Lists {
+		serveEveryFormat(list, pageWriter.List(list), fixed, chosen, addresses)
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
-		{mediaType: plainMediaType, draw: text.NewNotFound(site, status).For},
-		{mediaType: htmlMediaType, draw: html.NewNotFound(site, status, facts.Words.Language(), build, frame).For},
+		{mediaType: plainMediaType, draw: text.NewNotFound(addresses, status).For},
+		{mediaType: htmlMediaType, draw: html.NewNotFound(addresses, status, facts.Words.Language(), build, frame).For},
 	}
 	return &drawing{fixed: fixed, chosen: chosen, moved: moved, notFound: notFound}
 }

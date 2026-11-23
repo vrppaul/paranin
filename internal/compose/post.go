@@ -30,13 +30,14 @@ const (
 // The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
 const unnamedHeading = "heading"
 
-// Posts are the posts a snapshot serves, each a document, in the snapshot's order: those published, and those
-// unlisted, whose address serves them though no list names them; never a draft or a preview.
-func Posts(snapshot *content.Snapshot) []document.Document {
+// composedPosts are the posts a snapshot serves, each a document, in the snapshot's order: those published, and those
+// unlisted, whose address serves them though no list names them, never a draft or a preview; each link inside the
+// site read into the page at its path among pages.
+func composedPosts(snapshot *content.Snapshot, pages map[string]document.Page) []document.Document {
 	read := blogOf(snapshot)
 	documents := []document.Document{}
 	for _, post := range servedPosts(snapshot) {
-		documents = append(documents, postDocument(post, read, snapshot))
+		documents = append(documents, postDocument(post, read, snapshot, pages))
 	}
 	return documents
 }
@@ -59,7 +60,7 @@ func Pictures(snapshot *content.Snapshot) []PostPicture {
 	return pictures
 }
 
-// postHeads are the heads of the posts Posts makes, their bodies left unread: where the site serves each post.
+// postHeads are the heads of the posts composedPosts makes, their bodies left unread: where the site serves each post.
 func postHeads(snapshot *content.Snapshot) []document.Head {
 	read := blogOf(snapshot)
 	heads := []document.Head{}
@@ -102,12 +103,13 @@ func listed(status content.Status) bool {
 }
 
 // postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
-// tree the load parsed, which nothing here writes to, each heading named clear of the page's other places.
-func postDocument(post content.Post, read blog, snapshot *content.Snapshot) document.Document {
+// tree the load parsed, which nothing here writes to, each heading named clear of the page's other places and each
+// link inside the site read into the page at its path among pages.
+func postDocument(post content.Post, read blog, snapshot *content.Snapshot, pages map[string]document.Page) document.Document {
 	head := postHead(post, read, snapshot.Words)
 	body := bodyReader{
-		body: post.Body, page: head.Page, pictures: post.Pictures, notes: map[int][]document.Span{},
-		names: namesHeld(namesBeside(head, snapshot)),
+		body: post.Body, page: head.Page, pictures: post.Pictures, links: post.SiteLinks, pages: pages,
+		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(head, snapshot)),
 	}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(post.Body.Tree, body.readNote)
@@ -154,12 +156,15 @@ func postHead(post content.Post, read blog, words content.Words) document.Head {
 }
 
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
-// figures stand beside and are sized by; the words of each footnote by its number, read first, which every citation of
+// figures stand beside and are sized by; its links inside the site, as the load read them, by their nodes, and the
+// site's pages by the paths they name; the words of each footnote by its number, read first, which every citation of
 // it carries; and the names taken on the post's page, which each heading's is kept clear of.
 type bodyReader struct {
 	body     content.Markdown
 	page     document.Page
 	pictures map[string]content.Picture
+	links    map[*ast.Link]content.WrittenLink
+	pages    map[string]document.Page
 	notes    map[int][]document.Span
 	names    names
 }
@@ -315,7 +320,7 @@ func (reader bodyReader) appendSpan(spans []document.Span, node ast.Node) []docu
 		}
 		return append(spans, document.Emphasis{Spans: reader.spans(typed)})
 	case *ast.Link:
-		return append(spans, document.Link{Target: addressTarget(content.ResolvedAddress(typed.Destination)), Spans: reader.spans(typed)})
+		return append(spans, document.Link{Target: reader.linkTarget(typed), Spans: reader.spans(typed)})
 	case *ast.AutoLink:
 		label := string(typed.Label(reader.body.Source))
 		return append(spans, document.Link{Target: autoLinkTarget(typed.AutoLinkType, label), Spans: textSpans(label)})
@@ -357,8 +362,21 @@ func appendJoined(spans []document.Span, text string) []document.Span {
 	return append(spans, document.Text{Text: text})
 }
 
-// addressTarget is where a link's address leads: a mailbox where it writes to one, an address of the web otherwise,
-// which the load holds a link's address to.
+// linkTarget is where a link leads: inside the site, its page or a section of it; else its address.
+func (reader bodyReader) linkTarget(link *ast.Link) document.Target {
+	written, isInside := reader.links[link]
+	// a path no page is served at reads as no page, which Check refuses
+	switch {
+	case !isInside:
+		return addressTarget(content.ResolvedAddress(link.Destination))
+	case written.Link.Anchor == "":
+		return reader.pages[written.Link.Path]
+	}
+	return document.Anchor{Page: reader.pages[written.Link.Path], Name: written.Link.Anchor}
+}
+
+// addressTarget is where a link's address outside the site leads: a mailbox where it writes to one, an address of the
+// web otherwise, which the load holds such an address to.
 func addressTarget(address string) document.Target {
 	if mailbox, isMail := content.Mailbox(address); isMail {
 		return document.Mail{Address: mailbox}

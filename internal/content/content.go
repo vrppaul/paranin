@@ -58,7 +58,7 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	faults = append(faults, wordFaults...)
 	faults = append(faults, inspectCharacters(wordsPath, wordsDocument)...)
 	faults = append(faults, misplacedPosts...)
-	checkedPosts, postFaults := inspectPosts(folder, posts)
+	checkedPosts, postFaults := inspectPosts(folder, profile.Site.BaseURL, posts)
 	faults = append(faults, postFaults...)
 	faults = append(faults, misplacedSeries...)
 	faults = append(faults, inspectSeries(series, posts)...)

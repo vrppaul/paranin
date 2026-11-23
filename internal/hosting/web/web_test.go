@@ -498,7 +498,7 @@ func pngOfTwoByOne(test *testing.T) []byte {
 
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.
 func fixtureStore(test *testing.T, folder string) *release.Store {
-	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.SharedAddresses)
+	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.Check)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

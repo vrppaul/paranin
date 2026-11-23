@@ -53,8 +53,8 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 		{name: "a reference escaped, read as written", body: `\&amp; and \&ouml;`, want: []document.Block{paragraphOf(document.Text{Text: "&amp; and &ouml;"})}},
 		{
 			name: "a link's address read as goldmark reads one, its escapes before its references",
-			body: `[query](https://example.test/?a=1\&amp;b=2)`,
-			want: []document.Block{paragraphOf(document.Link{Target: document.Address{URL: "https://example.test/?a=1&b=2"}, Spans: textSpans("query")})},
+			body: `[query](https://other.test/?a=1\&amp;b=2)`,
+			want: []document.Block{paragraphOf(document.Link{Target: document.Address{URL: "https://other.test/?a=1&b=2"}, Spans: textSpans("query")})},
 		},
 		{
 			name: "code fenced with words after its language",
@@ -66,12 +66,23 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 		{name: "a paragraph's lines joined", body: "Its text,\nand more.", want: []document.Block{paragraphOf(document.Text{Text: "Its text, and more."})}},
 		{
 			name: "links outside the site and to a mailbox",
-			body: "[notes](https://notes.example.test) [mail](mailto:mira@example.test) <https://example.test> <mira@example.test>",
+			body: "[notes](https://notes.example.test) [mail](mailto:mira@example.test) <https://other.test> <mira@example.test>",
 			want: []document.Block{paragraphOf(
 				document.Link{Target: document.Address{URL: "https://notes.example.test"}, Spans: textSpans("notes")}, document.Text{Text: " "},
 				document.Link{Target: document.Mail{Address: "mira@example.test"}, Spans: textSpans("mail")}, document.Text{Text: " "},
-				document.Link{Target: document.Address{URL: "https://example.test"}, Spans: textSpans("https://example.test")}, document.Text{Text: " "},
+				document.Link{Target: document.Address{URL: "https://other.test"}, Spans: textSpans("https://other.test")}, document.Text{Text: " "},
 				document.Link{Target: document.Mail{Address: "mira@example.test"}, Spans: textSpans("mira@example.test")},
+			)},
+		},
+		{
+			name: "links inside the site read back into the pages they lead to, and a section of one",
+			body: "[home](/) [roles](/experience) [tool](/p/tidy-tool) [list](/blog) [kept](/blog/reading-slowly#what-a-reader-keeps)",
+			want: []document.Block{paragraphOf(
+				document.Link{Target: document.PageOf(document.PageResume), Spans: textSpans("home")}, document.Text{Text: " "},
+				document.Link{Target: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, Spans: textSpans("roles")}, document.Text{Text: " "},
+				document.Link{Target: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, Spans: textSpans("tool")}, document.Text{Text: " "},
+				document.Link{Target: document.PageOf(document.PageBlog), Spans: textSpans("list")}, document.Text{Text: " "},
+				document.Link{Target: document.Anchor{Page: postPageOf(fixturePostSlug), Name: "what-a-reader-keeps"}, Spans: textSpans("kept")},
 			)},
 		},
 		{
@@ -162,7 +173,7 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
-			if got := postNamed(test, Posts(snapshot), samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -207,7 +218,7 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
-			if got := postNamed(test, Posts(snapshot), samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -384,7 +395,7 @@ func TestCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
 			want := []document.Block{testCase.want}
-			if got := postNamed(test, Posts(snapshot), samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
+			if got := postNamed(test, SiteOf(snapshot).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, want)
 			}
 		})
@@ -431,7 +442,7 @@ func TestCodeRunsJoinToTheCodesTextWhole(test *testing.T) {
 		languages = append(languages, testCase.language)
 		test.Run(testCase.language, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n```"+testCase.language+"\n"+testCase.code+"\n```\n")
-			code := codeOf(test, postNamed(test, Posts(snapshot), samplePostSlug))
+			code := codeOf(test, postNamed(test, SiteOf(snapshot).Posts, samplePostSlug))
 			if got := code.Text(); got != testCase.code || len(kindsOfRuns(code.Runs)) < 2 {
 				test.Errorf("the code %q in %s = runs %+v, joined %q; want them joined to the code, of more than one kind",
 					testCase.code, testCase.language, code.Runs, got)
@@ -474,7 +485,7 @@ func kindsOfRuns(runs []document.CodeRun) map[document.CodeKind]bool {
 // Every word a post writes reaches its document as a phrase of its own, wherever it stands: a face that shows every
 // phrase shows the whole post.
 func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
-	phrases := document.Phrases(postNamed(test, Posts(fixtures.LoadedContent(test)), fixturePostSlug))
+	phrases := document.Phrases(postNamed(test, SiteOf(fixtures.LoadedContent(test)).Posts, fixturePostSlug))
 	cases := []struct {
 		name string
 		want string
@@ -524,11 +535,11 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		{kind: ast.KindBlockquote, body: "> Quoted.", pictures: nil, phrase: "Quoted."},
 		// a break has no phrase of its own: its row keeps the kinds whole, and TestAPostsBodyBecomesItsBlocks holds its block
 		{kind: ast.KindThematicBreak, body: "Before.\n\n***\n\nAfter.", pictures: nil, phrase: "After."},
-		{kind: ast.KindLinkReferenceDefinition, body: "[defined][x]\n\n[x]: https://example.test", pictures: nil, phrase: "defined"},
+		{kind: ast.KindLinkReferenceDefinition, body: "[defined][x]\n\n[x]: https://other.test", pictures: nil, phrase: "defined"},
 		{kind: ast.KindCodeSpan, body: "A `span`.", pictures: nil, phrase: "span"},
 		{kind: ast.KindEmphasis, body: "*stressed*", pictures: nil, phrase: "stressed"},
-		{kind: ast.KindLink, body: "[linked](https://example.test)", pictures: nil, phrase: "linked"},
-		{kind: ast.KindAutoLink, body: "<https://example.test>", pictures: nil, phrase: "https://example.test"},
+		{kind: ast.KindLink, body: "[linked](https://other.test)", pictures: nil, phrase: "linked"},
+		{kind: ast.KindAutoLink, body: "<https://other.test>", pictures: nil, phrase: "https://other.test"},
 		{
 			kind: ast.KindImage, body: "![A page](margin.svg)", pictures: []samplePicture{{name: sampleDrawingName, text: sampleDrawing}},
 			phrase: "A page",
@@ -547,7 +558,7 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		test.Run(testCase.kind.String(), func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n", testCase.pictures...)
 			post := snapshot.Posts[slices.IndexFunc(snapshot.Posts, func(post content.Post) bool { return post.Slug == samplePostSlug })]
-			phrases := document.Phrases(postNamed(test, Posts(snapshot), samplePostSlug))
+			phrases := document.Phrases(postNamed(test, SiteOf(snapshot).Posts, samplePostSlug))
 			if !slices.Contains(kindsOf(post.Body.Tree), testCase.kind) || !slices.Contains(phrases, testCase.phrase) {
 				test.Errorf("the body %q = kinds %v, phrases %q; want a %v among the kinds and %q among the phrases",
 					testCase.body, kindsOf(post.Body.Tree), phrases, testCase.kind, testCase.phrase)
@@ -589,7 +600,7 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 		test.Run(string(testCase.status), func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
 			slugs := []string{}
-			for _, post := range Posts(snapshot) {
+			for _, post := range SiteOf(snapshot).Posts {
 				slugs = append(slugs, post.Head.Page.Slug)
 			}
 			if slices.Contains(slugs, samplePostSlug) != testCase.served {
@@ -604,7 +615,7 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 // it came out, in the zone it was written in, and where it is discussed, each a link by its site's name; and its
 // series and the posts beside it.
 func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
-	head := postNamed(test, Posts(fixtures.LoadedContent(test)), fixturePostSlug).Head
+	head := postNamed(test, SiteOf(fixtures.LoadedContent(test)).Posts, fixturePostSlug).Head
 	published := head.Published
 	head.Published = time.Time{}
 	description := textSpans("Why a page read twice is read once.")
@@ -642,7 +653,7 @@ func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	composed := make([][]document.Document, 2)
 	var group sync.WaitGroup
 	for index := range composed {
-		group.Go(func() { composed[index] = Posts(snapshot) })
+		group.Go(func() { composed[index] = SiteOf(snapshot).Posts })
 	}
 	group.Wait()
 	if !reflect.DeepEqual(composed[0], composed[1]) {

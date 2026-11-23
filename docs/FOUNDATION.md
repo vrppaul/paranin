@@ -368,10 +368,20 @@ after it but footnotes and links' definitions, it parts none), a footnote
 no reference cites and a reference to no footnote, and the characters the
 content refuses everywhere but a tab inside code, which a face expands as it draws the
 code, written or as a reference (`&#27;`); each fault at its file and line.
-It refuses as well what no face draws yet: a link's title; a link to
-anything but an absolute web address or `mailto:` a bare mail address, until a link inside
-the site is read back into a page of it; a table's row of more cells than
-its header, whose cells past it GFM drops; a footnote that is more than
+A link leads to an absolute web address of another site, to `mailto:` a
+bare mail address, or inside the site by a path from its root, as
+`/blog/<slug>#<heading>`, the one form a link inside it takes: the check
+refuses a relative path, an anchor alone and the site's own absolute
+address, which would lead from a staging host to the live site. A path
+must be the address of a page the site serves where the reader chooses
+the format, and its anchor, where it names one, the anchor of a section
+of that page, a heading of a post or a series' group of the list by
+series; each face writes the page's address in its own format. Only the
+whole site knows its pages, so this part of the check runs once the
+content loads (ADR-0003), and over the posts the site serves: a link to a
+draft leads nowhere, and a draft's own links wait until it is served.
+It refuses as well what no face draws yet: a link's title; a table's row
+of more cells than its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
 cites it (ADR-0003); and a footnote cited in a heading, which is no such
 line. A line broken hard it refuses for good: the two spaces that most

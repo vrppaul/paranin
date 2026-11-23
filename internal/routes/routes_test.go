@@ -52,6 +52,9 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
 		{name: "a post's picture, in any format", target: document.File{Page: post, Name: "margin.png"}, format: FormatManual, want: "https://example.test/blog/reading-slowly/margin.png"},
 		{name: "a file of a page that serves none", target: document.File{Page: project, Name: "margin.png"}, format: FormatChosen, want: ""},
+		{name: "a heading of a post in markdown", target: document.Anchor{Page: post, Name: "in-a-terminal"}, format: FormatMarkdown, want: "https://example.test/blog/reading-slowly.md#in-a-terminal"},
+		{name: "a heading of a post as the reader asks", target: document.Anchor{Page: post, Name: "in-a-terminal"}, format: FormatChosen, want: "https://example.test/blog/reading-slowly#in-a-terminal"},
+		{name: "a section of a page with no address", target: document.Anchor{Page: index, Name: "in-a-terminal"}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 	}
@@ -81,6 +84,11 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 			name: "a post's picture", target: document.File{Page: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, Name: "margin.png"},
 			format: FormatChosen, want: "/blog/reading-slowly/margin.png",
 		},
+		{
+			name: "a heading of a post", target: document.Anchor{Page: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, Name: "in-a-terminal"},
+			format: FormatChosen, want: "/blog/reading-slowly#in-a-terminal",
+		},
+		{name: "a section of a hidden page", target: document.Anchor{Page: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, Name: "go"}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 	}

@@ -47,7 +47,7 @@ See [the reader's notes](https://notes.example.test/slow), or write to [mira@exa
 
 ## Afterwards
 
-A page kept is a page read again.
+A page kept is a page read again, as [what a reader keeps](https://example.test/blog/reading-slowly.md#what-a-reader-keeps) says, and [the tool](https://example.test/p/tidy-tool.md) that tidies it.
 
 ***
 

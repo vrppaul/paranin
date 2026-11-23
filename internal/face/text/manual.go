@@ -543,6 +543,18 @@ func (writer manualWriter) words(spans []document.Span) []string {
 	return reader.done()
 }
 
+// siteAddress is the manual a link inside the site leads to, a section's its page's, since curl and man read no anchor.
+func (writer manualWriter) siteAddress(target document.Target) string {
+	switch typed := target.(type) {
+	case document.Page:
+		return writer.site.Address(typed, routes.FormatManual)
+	case document.Anchor:
+		return writer.site.Address(typed.Page, routes.FormatManual)
+	case document.Address, document.Mail, document.File:
+	}
+	return ""
+}
+
 func (writer manualWriter) readSpans(reader *wordReader, spans []document.Span) {
 	for _, span := range spans {
 		switch typed := span.(type) {
@@ -562,8 +574,8 @@ func (writer manualWriter) readSpans(reader *wordReader, spans []document.Span) 
 			reader.keep(noteMark(typed.Number))
 		case document.Link:
 			writer.readSpans(reader, typed.Spans)
-			if page, isPage := typed.Target.(document.Page); isPage {
-				reader.read(space + addressOpening + writer.site.Address(page, routes.FormatManual) + addressClosing)
+			if address := writer.siteAddress(typed.Target); address != "" {
+				reader.read(space + addressOpening + address + addressClosing)
 			}
 		}
 	}

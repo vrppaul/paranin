@@ -129,7 +129,8 @@ holding the posts they name. Amended 2026-11-23, on the owner's choice of its lo
 2026-11-23, with code coloured: a block of code holds its text in runs of the kinds of word a reader of code tells
 apart. Amended 2026-11-23, with the command line's places: a page's own places are read off its document, `compose`
 names each anchor once, the kinds of place are `document`'s, and the page's own ids take a form no anchor takes. Amended
-2026-11-23, with the post's pictures: the figure, a picture read from the post's folder into the snapshot.
+2026-11-23, with the post's pictures: the figure, a picture read from the post's folder into the snapshot. Amended
+2026-11-23, with a post's links inside the site: a link's anchor, a target of its own, and the site's check of them.
 
 ### Context
 
@@ -175,10 +176,16 @@ and web routes.
   their names', as their folders list them.
 - **`paranin check`** runs the same loader, of the content or of a whole
   release, so CI refuses what the server would refuse. Both hold the
-  content to one check more, which the composition root hands the release's
-  load since `release` knows nothing over it (amended 2026-11-23): no two
-  pages `compose` makes share an address `routes` writes, in any format, as
-  a post slugged `series` would share the list by series'.
+  content to the site's own check more, `compose.Check`, which the
+  composition root hands the release's load since `release` knows nothing
+  over it (amended 2026-11-23): no two pages `compose` makes share an
+  address `routes` writes, in any format, as a post slugged `series` would
+  share the list by series'; and each link inside the site of a post the
+  site serves leads to a page served at its path and, where it names an
+  anchor, to a section of that page, a fault at the post's file and line
+  where not. `content` reads a link's form and keeps those inside the site
+  with their lines; only `compose` knows which pages are served and the
+  anchors it named.
 - **One document, every face.** `compose` turns content into documents: the
   résumé, a page for each project that has one, each post, the blog's list
   in its two groupings, by year and by series, the index of the
@@ -320,11 +327,12 @@ and web routes.
   comment, punctuation or plain, so a face colours each kind from the tokens
   and none reads a language. `compose` splits the text by chroma's lexer of
   the language, the highlighter Hugo uses, for the languages one table of
-  `compose` names, each held by a test, since a lexer runs as the hosts
-  draw a snapshot's pages, on the first request after it, and some never
-  end on text they do not expect; code in any other language, or in none,
-  is one plain run. depguard keeps chroma out of
-  every part but `compose`, and lets `compose` take its lexers alone. Its
+  `compose` names, each held by a test, since a lexer runs whenever a
+  snapshot's posts are composed, at every load by `compose.Check`, in
+  `paranin check` and on a reload, and again as the hosts draw the
+  snapshot, and some never end on text they do not expect; code in any
+  other language, or in none, is one plain run. depguard keeps chroma out
+  of every part but `compose`, and lets `compose` take its lexers alone. Its
   cost: the binary grows from 18.4 MB to 22.2 MB, and `paranin check`'s
   peak memory from 13.2 MB to 19.5 MB. Ways weighed: Shiki in the browser,
   which a reader without script, the manual and the TUI would never get; a
@@ -372,12 +380,28 @@ and web routes.
   `mailto:`, a file served beside a page, a post's picture, by the page and
   its name, in any format (amended 2026-11-23), or a page of the site by its
   kind and slug, and the tab of it shown alone where it names one, with a format
-  where the link names one (the CV as PDF, `index.md`, `llms.txt`) and an
-  anchor where it names a place inside the page. A section's anchor is the
-  one a link names. The kinds of page are `document`'s type; `routes`
-  builds on `document` and writes a target's address in each format
-  (`/p/claude-review`, `/p/claude-review.md`,
-  `/p/claude-review/what-it-does.md`, `/experience`), so the markdown face
+  where the link names one (the CV as PDF, `index.md`, `llms.txt`), or a
+  section of a page, by the page and the section's anchor, its own target
+  beside the page (amended 2026-11-23), so a page stays the one value a
+  head and a link both name. A section's anchor is the one a link names.
+  A post's link inside the site, written as a path from the root, is read
+  back into the page served at that path, or into a section of it, by a
+  table of the served pages by their paths, which `compose` builds from
+  the addresses `routes` writes, so no reading of a path is kept in step
+  with `routes`. `content` reads each such link once, at the load, and
+  keeps it by its node. `compose.SiteOf` composes a snapshot's pages, its
+  lists and then its posts once, keeping the table, and both hosts and
+  `compose.Check` draw on that one composition. Ways weighed: the anchor
+  a field of the page, which every comparison of a page with a head's
+  would have to leave out; `routes` parsing a path back into a page, a
+  second copy of its paths; a list of the served pages made apart from
+  their composition, a second account of which tabs a page has; the
+  table built on its own and handed beside the documents, which composed
+  the pages once for it and again for the hosts. The kinds
+  of page are `document`'s type; `routes` builds on `document` and writes
+  a target's address in each format (`/p/claude-review`,
+  `/p/claude-review.md`, `/p/claude-review/what-it-does.md`,
+  `/experience`, `/blog/<slug>#<heading>`), so the markdown face
   links to markdown and the TUI can open the page in a buffer. A tab is
   named by its title (`document.SlugOf`).
 - **The islands' text is a document's too.** The extras of the TUI and the
@@ -392,11 +416,12 @@ and web routes.
   site's word catalogue with them, since `compose` writes the first word of
   the site. The head's page lands with `routes`, its language (the tag of
   the words' catalogue, which a page's `lang` names) and its description
-  with `face/html`, the CV among the ways with `face/print`; a section's
-  anchor and a link's format and anchor with the first link that names
-  one; project pages and the index with `face/text`, the first face to
-  serve them; the extras with `face/tui`, and the head's greeting with its
-  redesign (2026-11-06), a project's tags and repository with its page
+  with `face/html`, the CV among the ways with `face/print`; a link's
+  format with the first link that names one, and a section of a page as a
+  link's target with a post's links inside the site (2026-11-23); project
+  pages and the index with `face/text`, the first face to serve them; the
+  extras with `face/tui`, and the head's greeting with its redesign
+  (2026-11-06), a project's tags and repository with its page
   there (2026-11-07), the entry's and the facts' kinds and the five
   sections with the owner's word (2026-11-15); the records for JSON-LD,
   the person's and a project's, with `face/html`, and the sitemap's dates
@@ -413,7 +438,8 @@ and web routes.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
   foundation, and on `routes`, through which it finds two pages at one
-  address, and will read a post's links back into targets; `inbox` on the foot alone, beside both; `release`, which holds the
+  address and reads a post's links inside the site back into targets;
+  `inbox` on the foot alone, beside both; `release`, which holds the
   content and the build as one snapshot, on the foot beside them; the faces
   and `brain` side by side on those, no face on another nor on `release`;
   `hosting` over everything but the composition root. depguard holds each

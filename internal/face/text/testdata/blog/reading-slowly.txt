@@ -44,7 +44,9 @@ WHAT A READER KEEPS
               See the reader's notes, or write to mira@example.test.[1]
 
 AFTERWARDS
-       A page kept is a page read again.
+       A page kept is a page read again, as what a reader keeps
+       <https://example.test/blog/reading-slowly.txt> says, and the tool
+       <https://example.test/p/tidy-tool.txt> that tidies it.
 
 
                                       *   *   *

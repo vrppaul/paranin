@@ -1,6 +1,8 @@
 package compose
 
 import (
+	"cmp"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -18,6 +20,21 @@ const (
 	titleJoint  = " and "
 	clashJoint  = "\n"
 )
+
+// What is said of a post's link inside the site that leads nowhere: to no page the site serves, by its path; to a
+// section of a page that has none, by the anchor and the path; or to none of its sections, naming those it has
+const (
+	noPageProblem     = "%q leads to no page the site serves: a link inside it is a page's path from the root, as /blog/<slug>"
+	noSectionsProblem = "%q names a section of %q, which has none: link to the page alone"
+	noSectionProblem  = "%q names no section of %q, whose sections are %s"
+	anchorJoint       = ", "
+)
+
+// Check holds a snapshot to what only its whole site knows: no two pages at one address, no link inside it to nowhere.
+func Check(snapshot *content.Snapshot) error {
+	site := SiteOf(snapshot)
+	return errors.Join(sharedAddresses(headsOf(site.served)), linksLeadingNowhere(servedPosts(snapshot), site.paths, anchorsOf(site.served)))
+}
 
 // AddressClash is an address more than one page of the site takes, in any format, as routes writes it, and the title
 // of each of those pages.
@@ -42,12 +59,12 @@ func (clashes AddressClashes) Error() string {
 	return strings.Join(lines, clashJoint)
 }
 
-// SharedAddresses are the addresses more than one page of a snapshot takes, as AddressClashes; none where every page
-// has addresses of its own. It reads the heads of the pages compose makes through the addresses routes writes, so a
-// tab of the résumé titled as the blog, or a post slugged as its list by series, is found as any other clash.
-func SharedAddresses(snapshot *content.Snapshot) error {
+// sharedAddresses are the addresses more than one of the served pages' heads takes, as AddressClashes; none where
+// every page has addresses of its own. It reads them through the addresses routes writes, so a tab of the résumé
+// titled as the blog, or a post slugged as its list by series, is found as any other clash.
+func sharedAddresses(heads []document.Head) error {
 	titlesAt := map[string][]string{}
-	for _, head := range servedHeads(snapshot) {
+	for _, head := range heads {
 		for _, format := range servedFormats() {
 			if path := routes.Path(head.Page, format); path != "" {
 				titlesAt[path] = append(titlesAt[path], document.PlainText(head.Title))
@@ -66,18 +83,64 @@ func SharedAddresses(snapshot *content.Snapshot) error {
 	return clashes
 }
 
-// servedHeads are the heads of every page a snapshot's site serves: the index, the résumé and each project's page with
-// each of their tabs alone, the blog's list in each grouping, and each post, whose body a head needs none of.
-func servedHeads(snapshot *content.Snapshot) []document.Head {
-	pages := []document.Document{Index(snapshot)}
-	for _, page := range Documents(snapshot) {
-		pages = append(append(pages, page), TabDocuments(page)...)
+// linksLeadingNowhere are the faults of the served posts' links inside the site, in the order of their files' lines.
+func linksLeadingNowhere(posts []content.Post, pages map[string]document.Page, anchors map[document.Page][]string) error {
+	faults := content.Faults{}
+	for _, post := range posts {
+		for _, written := range post.SiteLinks {
+			if problem, nowhere := leadsNowhere(written.Link, pages, anchors); nowhere {
+				faults = append(faults, content.Fault{File: written.File, Field: "", Line: written.Line, Problem: problem})
+			}
+		}
 	}
-	heads := []document.Head{}
-	for _, page := range append(pages, Lists(snapshot)...) {
-		heads = append(heads, page.Head)
+	if len(faults) == 0 {
+		return nil
 	}
-	return append(heads, postHeads(snapshot)...)
+	slices.SortFunc(faults, byPlace)
+	return faults
+}
+
+// leadsNowhere is what is wrong with a link inside the site, where it leads to no page served or no section of one.
+func leadsNowhere(link content.SiteLink, pages map[string]document.Page, anchors map[document.Page][]string) (string, bool) {
+	page, found := pages[link.Path]
+	taken := anchors[page]
+	switch {
+	case !found:
+		return fmt.Sprintf(noPageProblem, link.Path), true
+	case link.Anchor == "" || slices.Contains(taken, link.Anchor):
+		return "", false
+	case len(taken) == 0:
+		return fmt.Sprintf(noSectionsProblem, link.Anchor, link.Path), true
+	}
+	return fmt.Sprintf(noSectionProblem, link.Anchor, link.Path, strings.Join(taken, anchorJoint)), true
+}
+
+// byPlace orders faults by their files, then their lines, then their words, as a reader goes through them.
+func byPlace(first, second content.Fault) int {
+	return cmp.Or(cmp.Compare(first.File, second.File), cmp.Compare(first.Line, second.Line), cmp.Compare(first.Problem, second.Problem))
+}
+
+// anchorsOf are the anchors of each document's sections, in reading order, by its page.
+func anchorsOf(documents []document.Document) map[document.Page][]string {
+	anchors := make(map[document.Page][]string, len(documents))
+	for _, composed := range documents {
+		anchors[composed.Head.Page] = sectionAnchors(composed.Blocks)
+	}
+	return anchors
+}
+
+// sectionAnchors are the anchors of the sections among blocks that have one, each followed by those inside it.
+func sectionAnchors(blocks []document.Block) []string {
+	anchors := []string{}
+	for _, block := range blocks {
+		if section, isSection := block.(document.Section); isSection {
+			if section.Name != "" {
+				anchors = append(anchors, section.Name)
+			}
+			anchors = append(anchors, sectionAnchors(section.Blocks)...)
+		}
+	}
+	return anchors
 }
 
 // servedFormats are the formats a page is served in, each at an address of its own.

@@ -144,7 +144,8 @@ func (server *Server) Shutdown(ctx context.Context) error {
 // the blog's lists and posts, with the site's words of the frame round them.
 func draw(snapshot *release.Snapshot) tui.Drawing {
 	facts := snapshot.Content
-	documents := slices.Concat(compose.Documents(facts), compose.Extras(facts), compose.Lists(facts), compose.Posts(facts))
+	composition := compose.SiteOf(facts)
+	documents := slices.Concat(composition.Documents(), compose.Extras(facts), composition.Lists, composition.Posts)
 	return tui.Drawing{Documents: documents, Frame: compose.FrameOf(facts), Site: routes.New(facts.Profile.Site.BaseURL)}
 }
 

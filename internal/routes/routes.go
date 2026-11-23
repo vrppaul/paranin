@@ -94,8 +94,9 @@ func (site Site) ReadCommand(page document.Page) string {
 	return readingCommand + commandSpace + site.Address(page, FormatChosen)
 }
 
-// Address is where a target leads, written whole: a page's in a format, an address outside the site as it is, or a
-// mailbox's under the scheme that writes to it. A target with no path leads nowhere, and its address is empty.
+// Address is where a target leads, written whole: a page's or a section's of one in a format, an address outside the
+// site as it is, or a mailbox's under the scheme that writes to it. A target with no path leads nowhere, and its
+// address is empty.
 func (site Site) Address(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
@@ -106,6 +107,10 @@ func (site Site) Address(target document.Target, format Format) string {
 		if path := Path(typed, format); path != "" {
 			return site.base + path
 		}
+	case document.Anchor:
+		if path := anchorPath(typed, format); path != "" {
+			return site.base + path
+		}
 	case document.File:
 		if path := FilePath(typed); path != "" {
 			return site.base + path
@@ -114,10 +119,10 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
-// Reference is where a link inside one of the site's own pages leads: a page of the site by its path from the
-// root, which a browser reads against the address the page came from, so a page served from this machine or a
-// staging host leads there and not to the live site; an address outside the site as it is; a mailbox under the
-// scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
+// Reference is where a link inside one of the site's own pages leads: a page of the site, or a section of one, by its
+// path from the root, which a browser reads against the address the page came from, so a page served from this
+// machine or a staging host leads there and not to the live site; an address outside the site as it is; a mailbox
+// under the scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
 func Reference(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
@@ -126,10 +131,25 @@ func Reference(target document.Target, format Format) string {
 		return mailScheme + typed.Address
 	case document.Page:
 		return Path(typed, format)
+	case document.Anchor:
+		return anchorPath(typed, format)
 	case document.File:
 		return FilePath(typed)
 	}
 	return ""
+}
+
+// What parts a section's anchor from its page's path
+const anchorMark = "#"
+
+// anchorPath is where a section of a page is, in a format: its page's path, then the section's anchor; empty where the
+// page is served in none.
+func anchorPath(anchor document.Anchor, format Format) string {
+	path := Path(anchor.Page, format)
+	if path == "" {
+		return ""
+	}
+	return path + anchorMark + anchor.Name
 }
 
 // FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,

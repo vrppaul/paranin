@@ -708,7 +708,7 @@ func drawnServer(test *testing.T) *Server {
 
 // newServer is a server of the fixture, not yet serving.
 func newServer(test *testing.T, logger *slog.Logger) *Server {
-	store, err := release.Open(release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test)}, compose.SharedAddresses)
+	store, err := release.Open(release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test)}, compose.Check)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

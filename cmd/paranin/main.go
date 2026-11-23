@@ -5,8 +5,9 @@
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
-// load, check's and serve's, holds the content to no two of the site's pages sharing an address, which the content
-// alone cannot know, since routes writes the addresses.
+// load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
+// inside the site leading to no page or no section of one, which the content alone cannot know, since routes writes
+// the addresses and compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). It loads both folders again, as one release, on SIGHUP and once a change in either holds
@@ -145,13 +146,13 @@ func commandOf(arguments []string) string {
 func check(contentFolder string) int {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err == nil {
-		err = compose.SharedAddresses(loaded)
+		err = compose.Check(loaded)
 	}
 	return checked(err, contentFolder)
 }
 
 func checkRelease(contentFolder, buildFolder string) int {
-	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, compose.SharedAddresses)
+	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, compose.Check)
 	return checked(err, contentFolder, buildFolder)
 }
 
@@ -180,7 +181,7 @@ func serve(contentFolder, buildFolder string) int {
 	folders := release.Folders{Content: contentFolder, Build: buildFolder}
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
 	changes := release.Watch(stopping, folders, lookInterval)
-	store, err := release.Open(folders, compose.SharedAddresses)
+	store, err := release.Open(folders, compose.Check)
 	if err != nil {
 		return refused(err, contentFolder, buildFolder)
 	}

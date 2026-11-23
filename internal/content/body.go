@@ -38,18 +38,21 @@ const (
 	space = ' '
 )
 
-// writtenBody is a post's body where its file writes it: the body, the file's line it starts on, and the post's
-// folder, its place in the content's folder, whose pictures it shows.
+// writtenBody is a post's body where its file writes it: the body, the file's line it starts on, the post's folder,
+// its place in the content's folder, whose pictures it shows, and the site's own address, which a link inside the site
+// leaves to its path.
 type writtenBody struct {
 	body      Markdown
 	firstLine int
 	folder    fs.FS
 	place     string
+	site      WebAddress
 }
 
 // bodyInspection checks a post's body as goldmark parsed it, node by node, each fault at the file's line of its node,
-// and reads the pictures it shows from the post's folder, by their names. It keeps the level of the heading before,
-// which the next may go below by one level alone, and the code it met, where a tab may stand.
+// reads the pictures it shows from the post's folder, by their names, and keeps its links inside the site. It keeps
+// the level of the heading before, which the next may go below by one level alone, and the code it met, where a tab
+// may stand.
 type bodyInspection struct {
 	writtenBody
 	inspection   *inspection
@@ -57,6 +60,7 @@ type bodyInspection struct {
 	reference    *regexp.Regexp
 	code         []text.Segment
 	pictures     shownPictures
+	links        map[*ast.Link]WrittenLink
 }
 
 // shownPictures are the pictures a post's body shows: those read, by their names, and every name a picture's address
@@ -70,18 +74,19 @@ type shownPictures struct {
 // among them, a heading of the title's level or one that skips a level, a widget, a pause between no two of the post's
 // own blocks, a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph
 // or cites another, a reference to no footnote and one in a heading; what no face draws, a line broken hard, a link's
-// title and a picture that is no paragraph of its own; a link to neither the web nor a mailbox; a picture with no alt
-// text, or none of the post's folder; and characters no value may hold, written or referenced. It hands back the
-// pictures the body shows.
-func inspectBody(inspection *inspection, written writtenBody) shownPictures {
+// title and a picture that is no paragraph of its own; a link to neither the web, nor a path from the site's root, nor
+// a mailbox, and one to the site's own address; a picture with no alt text, or none of the post's folder; and
+// characters no value may hold, written or referenced. It hands back the pictures the body shows and its links inside
+// the site, which only the whole site can hold to a page.
+func inspectBody(inspection *inspection, written writtenBody) (shownPictures, map[*ast.Link]WrittenLink) {
 	checked := &bodyInspection{
 		writtenBody: written, inspection: inspection, headingLevel: titleLevel, reference: regexp.MustCompile(referencePattern),
-		code: nil, pictures: shownPictures{read: map[string]Picture{}, named: map[string]bool{}},
+		code: nil, pictures: shownPictures{read: map[string]Picture{}, named: map[string]bool{}}, links: map[*ast.Link]WrittenLink{},
 	}
 	// visit returns no error, so the walk ends with none
 	_ = ast.Walk(written.body.Tree, checked.visit)
 	checked.inspectCharacters()
-	return checked.pictures
+	return checked.pictures, checked.links
 }
 
 func (checked *bodyInspection) visit(node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -138,9 +143,7 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 	case *ast.Image:
 		checked.inspectPicture(typed)
 	case *ast.AutoLink:
-		if address := string(typed.URL(checked.body.Source)); typed.AutoLinkType == ast.AutoLinkURL && !readWebAddress(address).absolute() {
-			checked.inspection.addAtLine(checked.lineOf(node), linkProblem, address)
-		}
+		checked.inspectAutoLink(typed)
 	case *extensionast.TableRow:
 		checked.inspectRow(typed)
 	case *extensionast.Footnote:
@@ -211,21 +214,40 @@ func (checked *bodyInspection) inspectText(written *ast.Text) {
 	}
 }
 
-// inspectLink holds a link to an absolute web address or a mailbox, its address to characters a value may hold once
-// its references read, and to no title, which no face shows.
+// inspectLink keeps a link inside the site and holds any other to a mailbox or another site, with no title.
 func (checked *bodyInspection) inspectLink(link *ast.Link) {
 	line := checked.lineOf(link)
 	if link.Title != nil {
 		checked.inspection.addAtLine(line, linkTitleProblem, link.Title)
 	}
 	address := ResolvedAddress(link.Destination)
-	refused := referencedCharacters(link.Destination, address)
 	_, isMail := Mailbox(address)
+	inside, isInside := siteLinkOf(address)
+	web := readWebAddress(address)
 	switch {
-	case refused:
+	case referencedCharacters(link.Destination, address):
 		checked.inspection.addAtLine(line, characterProblem, address)
-	case !isMail && !readWebAddress(address).absolute():
+	case isMail:
+	case isInside:
+		checked.links[link] = WrittenLink{Link: inside, File: checked.inspection.file, Line: line}
+	case !web.absolute():
 		checked.inspection.addAtLine(line, linkProblem, address)
+	case web.sameMachine(checked.site):
+		checked.inspection.addAtLine(line, ownAddressProblem, address)
+	}
+}
+
+// inspectAutoLink holds an address written between angle brackets to an absolute web address of another site.
+func (checked *bodyInspection) inspectAutoLink(link *ast.AutoLink) {
+	if link.AutoLinkType != ast.AutoLinkURL {
+		return
+	}
+	web := readWebAddress(string(link.URL(checked.body.Source)))
+	switch {
+	case !web.absolute():
+		checked.inspection.addAtLine(checked.lineOf(link), addressProblem, web.Written())
+	case web.sameMachine(checked.site):
+		checked.inspection.addAtLine(checked.lineOf(link), ownAddressProblem, web.Written())
 	}
 }
 

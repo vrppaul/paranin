@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"go.yaml.in/yaml/v3"
@@ -51,6 +52,8 @@ type Post struct {
 	Body        Markdown     `yaml:"-"`
 	// Pictures are the pictures the body shows, files of the post's folder, by their names
 	Pictures map[string]Picture `yaml:"-"`
+	// SiteLinks are the body's links inside the site, by their nodes, which compose reads into pages and checks
+	SiteLinks map[*ast.Link]WrittenLink `yaml:"-"`
 }
 
 // Status is who may read a post (D7): a draft, its author alone; a preview, whoever holds its secret link;
@@ -149,8 +152,9 @@ func partFaults(folder fs.FS, place string, shown map[string]bool) Faults {
 }
 
 // inspectPosts checks every post by itself, and that no two share a number, reading the pictures each shows from the
-// folder: the posts as the snapshot keeps them, and the faults found.
-func inspectPosts(folder fs.FS, posts []writtenPost) ([]Post, Faults) {
+// folder and holding its links to the site by the site's own address: the posts as the snapshot keeps them, and the
+// faults found.
+func inspectPosts(folder fs.FS, site WebAddress, posts []writtenPost) ([]Post, Faults) {
 	checked := make([]Post, 0, len(posts))
 	faults := Faults{}
 	numbered := map[int]bool{}
@@ -164,8 +168,8 @@ func inspectPosts(folder fs.FS, posts []writtenPost) ([]Post, Faults) {
 			inspection.add(idField, sharedNumberProblem, post.ID)
 		}
 		numbered[post.ID] = true
-		shown := inspectBody(inspection, writtenBody{body: post.Body, firstLine: written.bodyLine, folder: folder, place: place})
-		post.Pictures = shown.read
+		shown, links := inspectBody(inspection, writtenBody{body: post.Body, firstLine: written.bodyLine, folder: folder, place: place, site: site})
+		post.Pictures, post.SiteLinks = shown.read, links
 		faults = slices.Concat(faults, folderInspection.faults, inspection.faults, inspectCharacters(written.file, written.frontMatter),
 			partFaults(folder, place, shown.named))
 		checked = append(checked, post)

@@ -163,7 +163,7 @@ type siteUnderTest struct {
 // testSite is a site on a folder of content and the build's fixture that listens nowhere, its reloads and changes
 // unbuffered so a test knows when one is taken.
 func testSite(test *testing.T, folder string) siteUnderTest {
-	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.SharedAddresses)
+	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.Check)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

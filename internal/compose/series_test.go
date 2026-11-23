@@ -129,7 +129,7 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			series := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Series
+			series := postNamed(test, SiteOf(snapshot).Posts, testCase.read).Head.Post.Series
 			if got := seenParts(series); !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the series of %q = %+v, want %+v", testCase.read, got, testCase.want)
 			}
@@ -154,7 +154,7 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
 		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
 	}
-	if got := document.PlacesOf(postNamed(test, Posts(snapshot), fixturePostSlug)); !reflect.DeepEqual(got, want) {
+	if got := document.PlacesOf(postNamed(test, SiteOf(snapshot).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
 		test.Errorf("the post's places = %+v, want %+v", got, want)
 	}
 }
@@ -163,7 +163,7 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 	posts := []writtenPost{{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier}}
 	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
-	places := document.PlacesOf(postNamed(test, Posts(snapshot), fixturePostSlug))
+	places := document.PlacesOf(postNamed(test, SiteOf(snapshot).Posts, fixturePostSlug))
 	want := []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps"}
 	got := []string{}
 	for _, place := range places {
@@ -252,7 +252,7 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, testCase.posts, fixtureSeriesOf(testCase.series, testCase.toCome))
-			neighbours := postNamed(test, Posts(snapshot), testCase.read).Head.Post.Neighbours
+			neighbours := postNamed(test, SiteOf(snapshot).Posts, testCase.read).Head.Post.Neighbours
 			before, after := seenNeighbourOf(neighbours.Before), seenNeighbourOf(neighbours.After)
 			if !reflect.DeepEqual(before, testCase.before) || !reflect.DeepEqual(after, testCase.after) {
 				test.Errorf("the neighbours of %q = %+v and %+v, want %+v and %+v", testCase.read, before, after, testCase.before, testCase.after)

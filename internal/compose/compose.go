@@ -19,10 +19,11 @@ import (
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
-// Composed is a page a person reads, as compose makes it: its document, and its record, made together so neither
-// is ever without the other.
+// Composed is a page a person reads, as compose makes it: its document, its tabs past the opening, each a document
+// alone, and its record, made together so none is ever without the others.
 type Composed struct {
 	Document document.Document
+	Tabs     []document.Document
 	Record   Record
 }
 
@@ -30,17 +31,21 @@ type Composed struct {
 // each project that has one. Index lists them.
 func Pages(snapshot *content.Snapshot) []Composed {
 	profile := snapshot.Profile
-	pages := []Composed{{Document: Resume(snapshot), Record: personRecord(profile)}}
+	pages := []Composed{composedPage(Resume(snapshot), personRecord(profile))}
 	for _, project := range projectsWithPages(profile.Projects) {
-		page := Composed{Document: projectDocument(project, profile.Person, snapshot.Words), Record: workRecord(project, profile.Person)}
-		pages = append(pages, page)
+		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Words), workRecord(project, profile.Person)))
 	}
 	return pages
 }
 
-// TabDocuments are a document's tabs past its opening (document.TabsOf), in their order, each a document of the tab
+// composedPage is a page of a document and its record, with the document's tabs.
+func composedPage(composed document.Document, record Record) Composed {
+	return Composed{Document: composed, Tabs: tabDocuments(composed), Record: record}
+}
+
+// tabDocuments are a document's tabs past its opening (document.TabsOf), in their order, each a document of the tab
 // alone, for a face that draws a document whole.
-func TabDocuments(composed document.Document) []document.Document {
+func tabDocuments(composed document.Document) []document.Document {
 	rest := document.TabsOf(composed).Rest
 	documents := make([]document.Document, 0, len(rest))
 	for _, tab := range rest {
@@ -67,16 +72,6 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Post:        nil,
 		Description: head.Description,
 	}
-}
-
-// Documents are the documents of the pages a person reads, in their order, for a face that draws no record.
-func Documents(snapshot *content.Snapshot) []document.Document {
-	pages := Pages(snapshot)
-	documents := make([]document.Document, 0, len(pages))
-	for _, page := range pages {
-		documents = append(documents, page.Document)
-	}
-	return documents
 }
 
 // projectsWithPages are the projects that have a page of their own, in their order.

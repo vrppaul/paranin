@@ -79,7 +79,7 @@ func TestANameFromOutsideReachesTheScreenAsLetters(test *testing.T) {
 // says it finds none.
 func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := []document.Document{compose.Resume(snapshot), fixtures.DocumentOf(test, compose.Posts(snapshot), document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
+	documents := []document.Document{compose.Resume(snapshot), fixtures.DocumentOf(test, compose.SiteOf(snapshot).Posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
 	drawing := Drawing{Documents: documents, Frame: compose.FrameOf(snapshot), Site: fixtures.Site(snapshot)}
 	cases := []struct {
 		name  string

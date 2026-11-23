@@ -1717,6 +1717,13 @@ a.session:hover {
   line-height: var(--type-strong-line);
 }
 
+/* a heading, or a group of the list, reached by its anchor stands a row clear of the screen's top, as the Outline's
+ * mark of it and a group's sticking name stand */
+.post .article :is(h2, h3, h4, h5, h6),
+.group {
+  scroll-margin-top: var(--row);
+}
+
 /* a paragraph's number in the margin, faint, on its paragraph's first line, a link to it that turns the text's colour
  * under the pointer, underlined in the accent */
 .article .paragraph-number {
@@ -2412,6 +2419,7 @@ a.pane:active .pane-name {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
+  margin-top: var(--row-4);
 }
 
 .group-name {
@@ -2420,7 +2428,6 @@ a.pane:active .pane-name {
   display: grid;
   align-self: start;
   gap: var(--row-half);
-  margin-top: var(--row-4);
 }
 
 .group-line,
@@ -2441,7 +2448,7 @@ a.pane:active .pane-name {
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr));
-  margin: var(--row-4) 0 0;
+  margin: 0;
   padding: var(--row-half) 0 0;
   list-style: none;
 }
@@ -2574,9 +2581,12 @@ a.tile:hover .tile-title {
     margin-left: 0;
   }
 
+  .group {
+    margin-top: var(--row-3);
+  }
+
   .group-name {
     position: static;
-    margin-top: var(--row-3);
   }
 
   .group-title {

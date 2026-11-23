@@ -65,12 +65,13 @@ left out, and a gap among written words stands marked as one.
 
 - **The manual** opens with `NAME` and `DESCRIPTION`, then a section for each of the page's, as `man(1)` lays a page
   out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds a post's day in the
-  middle, as `2026-11-10`, where `man(1)` writes a page's date. A link to a page of the site is its text and its
-  address between `<` and `>`; a card's page, its address on a line of its own. A post's table stands in columns
-  under its header where it fits the 78 columns, a bullet a row where not; a quote behind `│`; a picture its alt text,
-  its address between `<` and `>` and its caption, a line each; a tab in code as the
-  spaces to its stop, every eight columns. The blog's list stands a section a group, each post its title with its
-  day at the right, then its lead, its part and series, its tags and its address.
+  middle, as `2026-11-10`, where `man(1)` writes a page's date. A link to a page of the site, or to a section of
+  one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an anchor; a card's
+  page, its address on a line of its own. A post's table stands in columns under its header where it fits the 78
+  columns, a bullet a row where not; a quote behind `│`; a picture its alt text, its address between `<` and `>` and
+  its caption, a line each; a tab in code as the spaces to its stop, every eight columns. The blog's list stands a
+  section a group, each post its title with its day at the right, then its lead, its part and series, its tags and
+  its address.
 - **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, its
   tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
   `![alt](address "caption")`, its address whole. The blog's list

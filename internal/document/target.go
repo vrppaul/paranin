@@ -2,8 +2,8 @@ package document
 
 import "strings"
 
-// Target is where a link leads: an address outside the site, a page of it, or a mailbox, whose address routes
-// writes in each face's format.
+// Target is where a link leads: an address outside the site, a page of it, a file served beside a page, or a mailbox,
+// whose address routes writes in each face's format.
 //
 //sumtype:decl
 type Target interface {
@@ -64,6 +64,12 @@ func (page Page) InBlog() bool {
 	return false
 }
 
+// File is a file the site serves beside a page, by the page and the file's name: a post's picture.
+type File struct {
+	Page Page
+	Name string
+}
+
 // Mail is a mailbox a link writes to, by its address as the content writes it.
 type Mail struct {
 	Address string
@@ -100,4 +106,5 @@ func MailOf(spans []Span) (Mail, bool) {
 
 func (Address) target() {}
 func (Page) target()    {}
+func (File) target()    {}
 func (Mail) target()    {}

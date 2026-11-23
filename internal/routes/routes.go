@@ -106,6 +106,10 @@ func (site Site) Address(target document.Target, format Format) string {
 		if path := Path(typed, format); path != "" {
 			return site.base + path
 		}
+	case document.File:
+		if path := FilePath(typed); path != "" {
+			return site.base + path
+		}
 	}
 	return ""
 }
@@ -122,6 +126,20 @@ func Reference(target document.Target, format Format) string {
 		return mailScheme + typed.Address
 	case document.Page:
 		return Path(typed, format)
+	case document.File:
+		return FilePath(typed)
+	}
+	return ""
+}
+
+// FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,
+// by its name; empty for a page of any other kind, which serves none.
+func FilePath(file document.File) string {
+	switch file.Page.Kind {
+	case document.PagePost:
+		return postPaths(file.Page.Slug).chosen + folderEnd + file.Name
+	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
+		document.PageSkills, document.PageBlog, document.PageBlogSeries:
 	}
 	return ""
 }

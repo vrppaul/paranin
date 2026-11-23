@@ -539,8 +539,10 @@ A post's body, in the text's column.
   string green, a number or a constant teal, a function's name and a YAML key blue, a type yellow, a builtin red, an
   operator sky, a shell's variable maroon, a comment `muted`, punctuation `faint`, every other word `text`. Code in a
   language the site does not colour, or in none, stands in `text`.
-- A picture: its caption under it, `small` in `muted`. A diagram is an SVG in `face`: boxes on `sunk` in an `edge`
-  hairline, the one that is ours in `accent`, lines in `edge`; on a phone it scrolls inside itself.
+- A picture: a block of its own in the text's column, as wide as its file and never wider than the column, its shape
+  kept and its room held before it comes; its caption under it, half a row below, `small` in `muted`. A diagram is an
+  SVG in `face`: boxes on `sunk` in an `edge` hairline, the one that is ours in `accent`, lines in `edge`; on a phone it
+  scrolls inside itself.
 - A widget: a window as tmux draws a popup, a `muted` hairline on the page's ground, `radius`; its name bold, `small`,
   set into its top edge at the left, `● live` at the right, the dot in `passed`, the word `muted`; live inside. A pick
   among a few is a Choice; an answer stands on `sunk`, its verdict in a state's colour, always with its words. Where
@@ -631,6 +633,8 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   in sight as the post scrolls, the heading read marked `▌` in `accent` hanging before it in the page's margin, as the
   page marks it (Outline). The panes side by side, filling the text's and the sources' columns, on a page 106 cells
   wide, one under the other narrower, the next first.
+- A picture, which a cell cannot hold, is a line each: its alt text in `text`, its address in `faint`, both links to
+  the picture, and its caption in `muted`, as the page sets it.
 - A widget is its frame, its name and `● live` in the edge, and inside its alt text and the address of the live one. A
   diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
 - A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,

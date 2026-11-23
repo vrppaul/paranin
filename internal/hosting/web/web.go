@@ -1,8 +1,9 @@
 // Package web serves the site over HTTP (docs/ARCHITECTURE.md, ADR-0003, ADR-0004). It draws every page of a release's
 // snapshot once, the first time a request meets that snapshot (release.Derived), and serves the drawing until the
 // store holds another, so no request composes or draws a page; beside the pages it serves every file of the
-// snapshot's build at its path, from memory, for a cache to keep for good, and each picture of the site, which the
-// HTML face draws once and a cache asks for again. Each page, and each of its tabs alone, is served at the path routes
+// snapshot's build at its path, from memory, for a cache to keep for good, each picture of a post served, beside it,
+// for a cache to ask for again, and each picture of the site, which the HTML face draws once and a cache asks for
+// again. Each page, and each of its tabs alone, is served at the path routes
 // writes for it in each format, and at its own address in the format the reader's request asks for: HTML for a
 // browser, markdown for an agent that asks for it, and the manual for `curl` and everyone else; the index at
 // llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn whole in every format, and
@@ -11,7 +12,8 @@
 // its markdown and its manual as the page. Any other path is answered with the page of no page, in text or in HTML,
 // whichever the reader's request ranks higher: drawn for each request, since it quotes the path asked for, in the
 // chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type and
-// to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own.
+// to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own; a post's
+// picture, to load and run nothing at all.
 package web
 
 import (
@@ -24,6 +26,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/face/html"
 	"github.com/vrppaul/paranin/internal/face/text"
@@ -56,6 +59,10 @@ const (
 // address; take no other base for the page's relative addresses; send a form to the site alone; and be framed by
 // no site at all. The last three are named, since default-src does not reach them
 const ownSiteAlone = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+// What a browser may do with a post's picture opened by itself, a drawing above all, which could hold a script: load
+// nothing and run nothing, as a document of no site; its own styles stay, which a drawing is drawn by
+const pictureAlone = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
 
 // How the header a page names its address in is written: <address>; rel="canonical"
 const (
@@ -113,7 +120,8 @@ type Server struct {
 	handler  http.Handler
 }
 
-// drawing is every page of one snapshot, drawn, by the path it is served at, and every file of its build: in
+// drawing is every page of one snapshot, drawn, by the path it is served at, every file of its build and every picture
+// of its posts served: in
 // each format at its own path, and each file, the same whatever the request asks; in every format at the address
 // where the reader chooses; the path a post's number sends the reader on to, by the number's path; and the page of
 // an address of no page.
@@ -152,32 +160,44 @@ func (format missingFormat) servedAs() string {
 	return format.mediaType
 }
 
-// answer is a page or a built file as it is sent: the media type a page is, which an Accept header ranks, empty for
-// a built file, which no reader chooses; the header that says what it is; the Link header naming the address a page
-// is known by, empty where it is none a person reads; how long a cache keeps it; and what it holds.
+// answer is a page or a file as it is sent: the media type a page is, which an Accept header ranks, empty for a file,
+// which no reader chooses; the header that says what it is; the Link header naming the address a page is known by,
+// empty where it is none a person reads; how long a cache keeps it; the policy a browser holds it to, empty where it
+// is the site's own; and what it holds.
 type answer struct {
 	mediaType    string
 	contentType  string
 	link         string
 	cacheControl string
+	policy       string
 	body         []byte
 }
 
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
 func drawnAs(mediaType, text string) answer {
-	return answer{mediaType: mediaType, contentType: mediaType + utf8Text, link: "", cacheControl: askEveryTime, body: []byte(text)}
+	return answer{
+		mediaType: mediaType, contentType: mediaType + utf8Text, link: "", cacheControl: askEveryTime, policy: "", body: []byte(text),
+	}
 }
 
 // builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
 // another name.
 func builtAs(file assets.File) answer {
-	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, body: file.Body}
+	return answer{mediaType: "", contentType: file.ContentType, link: "", cacheControl: keptForGood, policy: "", body: file.Body}
 }
 
 // picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
 // new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
-	return answer{mediaType: "", contentType: icon.MediaType, link: "", cacheControl: askEveryTime, body: icon.Body}
+	return answer{mediaType: "", contentType: icon.MediaType, link: "", cacheControl: askEveryTime, policy: "", body: icon.Body}
+}
+
+// postPicturedAs is a post's picture as it is served, which a cache asks for again, since a reload may change it
+// under the same name, and which a browser opening it by itself runs nothing in.
+func postPicturedAs(picture content.Picture) answer {
+	return answer{
+		mediaType: "", contentType: picture.MediaType, link: "", cacheControl: askEveryTime, policy: pictureAlone, body: picture.Body,
+	}
 }
 
 // picturesOf are the pictures of the site, by the path each is served at.
@@ -298,6 +318,9 @@ func send(writer http.ResponseWriter, status int, sent answer) {
 	if sent.link != "" {
 		header.Set(linkHeader, sent.link)
 	}
+	if sent.policy != "" {
+		header.Set(securityPolicy, sent.policy)
+	}
 	header.Set(cacheControl, sent.cacheControl)
 	writer.WriteHeader(status)
 	// A write fails only when the reader has gone, and nobody is left to tell
@@ -309,8 +332,9 @@ func statusLine(status int) string {
 	return strconv.Itoa(status) + statusSeparator + http.StatusText(status)
 }
 
-// draw draws every page of a snapshot, at the address it is served at, beside every file of its build, on the day it
-// is drawn: the résumé's career line runs to it until the store holds another snapshot.
+// draw draws every page of a snapshot, at the address it is served at, beside every file of its build and every picture
+// of its posts served, on the day it is drawn: the résumé's career line runs to it until the store holds another
+// snapshot.
 func draw(snapshot *release.Snapshot) *drawing {
 	facts, build := snapshot.Content, snapshot.Build
 	site := routes.New(facts.Profile.Site.BaseURL)
@@ -323,6 +347,9 @@ func draw(snapshot *release.Snapshot) *drawing {
 	}
 	for path, file := range build.Files() {
 		fixed[path] = builtAs(file)
+	}
+	for _, shown := range compose.Pictures(facts) {
+		fixed[routes.FilePath(shown.File)] = postPicturedAs(shown.Picture)
 	}
 	chosen := map[string]choice{}
 	for _, composed := range readPages {

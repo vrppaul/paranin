@@ -53,8 +53,8 @@ export default {
     // stylesheet names, and a value written here in any unit would be a second source of the design. A unit joins
     // the list with its first user, a cell's ch or a grid's fr, in the chunk that writes it
     "declaration-property-unit-allowed-list": {
-      // a drawing is at most as wide as its column: the block letters. The rule takes the first key that matches a
-      // property, so each property's own key stands above the catch-all
+      // a drawing is at most as wide as its column: the block letters, a post's picture. The rule takes the first key
+      // that matches a property, so each property's own key stands above the catch-all
 
       "/^max-width$/": ["%"],
       // the main part and a section's blocks are as wide as their column, and the page at least as tall as the screen,

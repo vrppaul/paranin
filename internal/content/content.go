@@ -58,13 +58,14 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	faults = append(faults, wordFaults...)
 	faults = append(faults, inspectCharacters(wordsPath, wordsDocument)...)
 	faults = append(faults, misplacedPosts...)
-	faults = append(faults, inspectPosts(posts)...)
+	checkedPosts, postFaults := inspectPosts(folder, posts)
+	faults = append(faults, postFaults...)
 	faults = append(faults, misplacedSeries...)
 	faults = append(faults, inspectSeries(series, posts)...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	return &Snapshot{Profile: profile, Words: words, Posts: postsOf(posts), Series: seriesOf(series)}, nil
+	return &Snapshot{Profile: profile, Words: words, Posts: checkedPosts, Series: seriesOf(series)}, nil
 }
 
 // readFile reads a file of the folder and decodes it strictly, as decodeStrictly does.
@@ -122,13 +123,18 @@ func lineFault(file string, line int, problem string) Fault {
 	return Fault{File: file, Field: "", Line: line, Problem: problem}
 }
 
-// unreadFault is the fault of a file that could not be read. The fault names the file already, so where the error
-// names its path as well, only the cause is kept.
+// unreadFault is the fault of a file that could not be read, which names the file already.
 func unreadFault(file string, err error) Fault {
+	return fileFault(file, causeOf(err).Error())
+}
+
+// causeOf is why a file could not be read: where the error names the file's path as well, its cause alone, since
+// whoever reports it names the file.
+func causeOf(err error) error {
 	if pathError, isPathError := errors.AsType[*fs.PathError](err); isPathError {
-		return fileFault(file, pathError.Err.Error())
+		return pathError.Err
 	}
-	return fileFault(file, err.Error())
+	return err
 }
 
 // readFolder lists a folder of the content that may be left out, as the posts' and the series' are: none listed

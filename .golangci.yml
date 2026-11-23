@@ -320,6 +320,24 @@ linters:
           deny:
             - pkg: github.com/alecthomas/chroma
               desc: compose takes chroma's lexers and their token types alone; drawing code is a face's, from the tokens
+        # content alone reads a picture's size as a post loads, WebP's by x/image's webp (ADR-0003), whose init
+        # registers WebP with image.Decode for the whole program; every other part takes the size content read
+        image-in-content-alone:
+          files:
+            - "**/internal/**"
+            - "!**/internal/content/**"
+          deny:
+            - pkg: golang.org/x/image
+              desc: content alone reads a picture's size as the post loads; every other part takes the size it read
+        content-reads-webp-alone:
+          list-mode: lax
+          files:
+            - "**/internal/content/**"
+          allow:
+            - golang.org/x/image/webp$
+          deny:
+            - pkg: golang.org/x/image
+              desc: content takes x/image's WebP reader alone, for a WebP's size
         routes-read-documents-alone:
           files:
             - "**/internal/routes/**"

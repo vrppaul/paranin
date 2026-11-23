@@ -1677,7 +1677,7 @@ a.session:hover {
 }
 
 /* the words read, in the reading face, on lines taller than a row: the paragraphs, the lists and the quotes; code among
- * them stays in the page's own face, which counts its cells */
+ * them stays in the page's own face, which counts its cells, and so does a picture's caption, a note on it */
 .post .article > p,
 .post .article-section > p,
 .article .post-list,
@@ -1690,6 +1690,7 @@ a.session:hover {
 
 .article code,
 .article sup,
+.article figcaption,
 .post-list .point-mark,
 .post-list li::marker {
   font-family: var(--face);
@@ -1813,6 +1814,22 @@ a.session:hover {
 .post .article hr::after {
   content: attr(data-mark) / "";
   white-space: pre;
+}
+
+/* a picture (DESIGN.md, Article): no wider than the text's column, its height following its width, so the room its
+ * width and height hold is the room it takes as it comes; its caption under it, small, muted */
+.article figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.article figcaption {
+  margin-top: var(--row-half);
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
 }
 
 /* a block of code (DESIGN.md, Article and Code): the block, in the small style, a row clear at its top for its bar,

@@ -368,8 +368,7 @@ after it but footnotes and links' definitions, it parts none), a footnote
 no reference cites and a reference to no footnote, and the characters the
 content refuses everywhere but a tab inside code, which a face expands as it draws the
 code, written or as a reference (`&#27;`); each fault at its file and line.
-It refuses as well what no face draws yet: a picture, until the post's
-pictures are served from its folder; a link's title; a link to
+It refuses as well what no face draws yet: a link's title; a link to
 anything but an absolute web address or `mailto:` a bare mail address, until a link inside
 the site is read back into a page of it; a table's row of more cells than
 its header, whose cells past it GFM drops; a footnote that is more than
@@ -380,13 +379,28 @@ often break one cannot be seen in the text (owner, 2026-11-23). Any kind of node
 the one list `content` keeps is refused, so a part of the format no face
 draws never passes unseen.
 
+A picture, `![alt](margin.png "caption")`, is a figure: it stands as a
+paragraph of its own among the post's blocks, in a quote too, or in a
+list's item after its words, its title the caption under it, none where
+it has none. The load reads it from the post's own folder, a file named
+by a slug and the ending of PNG, JPEG, WebP or SVG, and refuses a
+picture with no alt text, or alt text holding a mark; one among words,
+inside a link, in a footnote or first in a list's item, whose mark every
+face sets on the line of the item's words; an address of another site,
+or of any folder but the post's; a file missing, named otherwise, of
+another type, that does not read as its type, or over 1 MiB, since each
+picture is held in memory with its snapshot and sent whole to a phone;
+an SVG that names no size; and a picture of the folder no line shows.
+AVIF is left out: Go reads no size of one. Each picture's size is read as
+it loads, so the page keeps its room before it comes.
+
 How the TUI draws each kind of block: headings, paragraphs, lists and
 quotes as text; a thematic break, a pause inside a part, as the page's
 three stars in the middle of the text; code with its syntax colours from
 the tokens; tables laid out to the terminal's width; links as OSC 8
-hyperlinks with the address beside them; an image as its alt text and its
-address; a widget as its caption, its alt text and a link to the live
-version. A post opens with `:e blog/<slug>` or `:e blog/<number>`
+hyperlinks with the address beside them; an image as its alt text, its
+address and its caption, a line each, the first two links to it; a widget
+as its caption, its alt text and a link to the live version. A post opens with `:e blog/<slug>` or `:e blog/<number>`
 (Addresses, below).
 
 #### Layout of a post
@@ -395,6 +409,7 @@ version. A post opens with `:e blog/<slug>` or `:e blog/<number>`
 content/posts/2026-11-page-cache/
   post.en.md
   post.ru.md
+  page-cache.svg
   revisions/2026-11-10.en.md
   widgets/PageCache.svelte
   widgets/PageCache.messages.ts

@@ -212,7 +212,8 @@ func (drawing *article) part(block document.Block) templ.Component {
 }
 
 // block is a block of a post as its article draws it, inside a list's item or a quote as at the body's top: a list and
-// a quote holding blocks drawn so too, code numbered, with its language and the button that copies it.
+// a quote holding blocks drawn so too, code numbered, with its language and the button that copies it, a picture
+// under its caption.
 func (drawing *article) block(block document.Block) templ.Component {
 	switch typed := block.(type) {
 	case document.Paragraph:
@@ -232,6 +233,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return postQuote(drawing.blocks(typed.Blocks))
 	case document.Pause:
 		return pause()
+	case document.Figure:
+		return figure(typed)
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; the

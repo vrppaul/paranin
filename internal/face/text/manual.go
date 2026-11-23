@@ -1,6 +1,7 @@
 package text
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -167,6 +168,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.quote(indent, typed)
 	case document.Pause:
 		return pause(indent)
+	case document.Figure:
+		return writer.figure(indent, typed)
 	case document.Facts:
 		return writer.pairs(indent, typed.List)
 	case document.Entry:
@@ -396,6 +399,14 @@ func (writer manualWriter) quote(indent int, quote document.Quote) []string {
 func pause(indent int) []string {
 	room := pageWidth - indent - textWidth(look.PauseMark)
 	return []string{"", strings.Repeat(space, indent+room/sides) + look.PauseMark, ""}
+}
+
+// figure writes a picture as a terminal reads one, each part from a line of its own: its alt text, its address as a
+// link to a page of the site writes one, and its caption.
+func (writer manualWriter) figure(indent int, figure document.Figure) []string {
+	address := addressOpening + writer.site.Address(figure.Picture, routes.FormatManual) + addressClosing
+	lines := slices.Concat(paragraph(indent, 0, strings.Fields(figure.Alt)), paragraph(indent, 0, []string{address}))
+	return append(lines, paragraph(indent, 0, strings.Fields(figure.Caption))...)
 }
 
 // notes writes the notes the page's blocks cite, in a section of their own at its end, each its number and then

@@ -143,7 +143,7 @@ func commandOf(arguments []string) string {
 // check loads a content folder as the site would, and holds what it loads to the site's own check, as a release's
 // load does.
 func check(contentFolder string) int {
-	loaded, err := content.Load(os.DirFS(contentFolder))
+	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err == nil {
 		err = compose.SharedAddresses(loaded)
 	}
@@ -151,7 +151,7 @@ func check(contentFolder string) int {
 }
 
 func checkRelease(contentFolder, buildFolder string) int {
-	_, err := release.Load(release.FoldersAt(contentFolder, buildFolder), compose.SharedAddresses)
+	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, compose.SharedAddresses)
 	return checked(err, contentFolder, buildFolder)
 }
 
@@ -177,7 +177,7 @@ func refused(err error, folders ...string) int {
 func serve(contentFolder, buildFolder string) int {
 	stopping, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	folders := release.FoldersAt(contentFolder, buildFolder)
+	folders := release.Folders{Content: contentFolder, Build: buildFolder}
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
 	changes := release.Watch(stopping, folders, lookInterval)
 	store, err := release.Open(folders, compose.SharedAddresses)

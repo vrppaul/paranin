@@ -25,6 +25,10 @@ WHAT A READER KEEPS
        │
        │ Twice, with a pen.
 
+       A noted margin
+       <https://example.test/blog/reading-slowly/margin.png>
+       The margin, where a slow reader writes back.
+
        In a terminal
               3. open the file
               4. read it with less

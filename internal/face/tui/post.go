@@ -9,6 +9,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/look"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // A post's columns (DESIGN.md, The TUI), beside its Outline's and its sources', look.Rail and look.Aside wide: the gap
@@ -256,7 +257,7 @@ func (writing *article) blocks(blocks []document.Block, column int) []line {
 }
 
 // block lays out a block of a post that is no section from a column (DESIGN.md, Article): a paragraph numbered where
-// it is numbered, a table, code in a frame, a list, a quote and a pause.
+// it is numbered, a table, code in a frame, a list, a quote, a pause and a picture.
 func (writing *article) block(block document.Block, column int, numbered bool) []line {
 	layout := writing.layout
 	switch typed := block.(type) {
@@ -279,6 +280,8 @@ func (writing *article) block(block document.Block, column int, numbered bool) [
 		return writing.quote(typed, column)
 	case document.Pause:
 		return layout.pause(column)
+	case document.Figure:
+		return layout.figure(typed, column)
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// body lays out the body's sections, and the load refuses a heading inside a list's item or a quote; a post's
@@ -363,6 +366,21 @@ func (writing *article) quote(quote document.Quote, column int) []line {
 func (layout layout) pause(column int) []line {
 	stars := line{gapRun(column + (layout.width-column-textWidth(look.PauseMark))/sides), plainRun(look.PauseMark, kindFaint)}
 	return slices.Concat(make([]line, pauseAir), []line{stars}, make([]line, pauseAir))
+}
+
+// figure lays out a picture from a column as a terminal, which draws none, shows it (docs/FOUNDATION.md §5.4), each
+// part from a line of its own: its alt text, then its address, faint, each a link to the picture, so an address broken
+// across lines leads there from each; its caption muted, as the page sets it.
+func (layout layout) figure(figure document.Figure, column int) []line {
+	address := layout.site.Address(figure.Picture, routes.FormatChosen)
+	lines := layout.fill(layout.words(pictureLink(figure, figure.Alt), kindText), column)
+	lines = append(lines, layout.fill(layout.words(pictureLink(figure, address), kindFaint), column)...)
+	return append(lines, layout.fill(textWords(figure.Caption, kindMuted), column)...)
+}
+
+// pictureLink is words as a link to a figure's picture.
+func pictureLink(figure document.Figure, words string) []document.Span {
+	return []document.Span{document.Link{Target: figure.Picture, Spans: []document.Span{document.Text{Text: words}}}}
 }
 
 // codeFrame lays out a block of code from a column in a quiet frame across the text's column (DESIGN.md, The TUI): its

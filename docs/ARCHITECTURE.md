@@ -128,7 +128,8 @@ it, and the post's head. Amended 2026-11-23, with the blog's list: a document in
 holding the posts they name. Amended 2026-11-23, on the owner's choice of its look: a post's pause. Amended
 2026-11-23, with code coloured: a block of code holds its text in runs of the kinds of word a reader of code tells
 apart. Amended 2026-11-23, with the command line's places: a page's own places are read off its document, `compose`
-names each anchor once, the kinds of place are `document`'s, and the page's own ids take a form no anchor takes.
+names each anchor once, the kinds of place are `document`'s, and the page's own ids take a form no anchor takes. Amended
+2026-11-23, with the post's pictures: the figure, a picture read from the post's folder into the snapshot.
 
 ### Context
 
@@ -163,7 +164,7 @@ and web routes.
   goroutines may compose one snapshot (`release.Derived`), and `compose`'s
   tests run under `-race` in a hook of their own. One table in `content`
   (`PostKinds`) names the kinds of node a post may hold: the load refuses
-  any other (FOUNDATION §5.4), a picture among them, and `compose`'s walk
+  any other (FOUNDATION §5.4), raw HTML among them, and `compose`'s walk
   has a case for each, a test holding the two to one list, so a kind an
   extension brings is refused, never dropped. Ways weighed: `content`
   keeping the text alone for `compose` to parse, two parses of one text
@@ -273,7 +274,26 @@ and web routes.
     language, its text in runs of the kinds of word (below); a pause, a
     thematic break standing between two of the post's own blocks, never
     inside a quote or a list nor at the body's start or end (amended
-    2026-11-23); and a figure, which comes with the post's pictures (TODO).
+    2026-11-23); and a figure (amended 2026-11-23), a picture standing as a
+    paragraph of its own: its file beside the post, by the page and its
+    name, its alt text, its caption, which is the picture's title, none
+    where it has none, and its size in pixels. `content` reads each picture
+    a post shows from the post's folder as it loads, its bytes, its type and
+    its size, into the snapshot with the post, so a reload swaps a picture
+    with the text and a page names only pictures its snapshot serves; the
+    web host alone serves them, at the post's address. A release's folders
+    are read through `os.Root`, opened afresh for each read, so no read
+    leaves them, by a link inside among others, and a release switched in
+    by a link is read once switched. Ways weighed: a picture as a
+    span, which no face draws among words; a caption from the paragraph
+    after the picture, a convention of no format, where the title is
+    CommonMark's own and markdown writes it back as it was; the pictures
+    read from disk as a request asks, which a reload would not swap with
+    the text. A WebP's size is read by `golang.org/x/image/webp`, which
+    depguard keeps to `content`; its cost: the binary grows by 170 KB, and
+    its init registers WebP with `image.Decode` for the whole program. Ways
+    weighed: reading WebP's head by hand, three forms of it to write and
+    keep; leaving WebP out, as AVIF is, whose size Go reads by no package.
     A table gains a header row, and a post's headings nest into sections, each
     holding what follows it up to the next heading of its level or above;
   - the blog's list's (amended 2026-11-23): posts, the block a group of the
@@ -349,8 +369,9 @@ and web routes.
   months across.
 - **A link names its target**: an address outside the site, a mailbox by
   its address, which a face may part at its at and `routes` writes under
-  `mailto:`, or a page of the site by its kind and slug, and the tab of it
-  shown alone where it names one, with a format
+  `mailto:`, a file served beside a page, a post's picture, by the page and
+  its name, in any format (amended 2026-11-23), or a page of the site by its
+  kind and slug, and the tab of it shown alone where it names one, with a format
   where the link names one (the CV as PDF, `index.md`, `llms.txt`) and an
   anchor where it names a place inside the page. A section's anchor is the
   one a link names. The kinds of page are `document`'s type; `routes`
@@ -384,7 +405,8 @@ and web routes.
   range (step 10), since `face/html` came without one; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
   in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
-  them with each face's post, a figure with the post's pictures (D18); the
+  them with each face's post, the figure with the post's pictures, in every
+  face (2026-11-23); the
   blog's list with its page and its text faces (2026-11-23), the TUI's with
   its blog session.
 - **`routes`** writes every address.

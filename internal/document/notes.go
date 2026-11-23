@@ -39,8 +39,9 @@ func (gathering *noteGathering) block(block Block) {
 		}
 	case Quote:
 		gathering.blocks(typed.Blocks)
-	case CodeBlock, Pause, Facts, Entry, Card, Contents, Checks, Skills, Posts:
-		// a post's body alone cites notes, and it is made of none of these but code and pauses, which hold no spans
+	case CodeBlock, Pause, Figure, Facts, Entry, Card, Contents, Checks, Skills, Posts:
+		// a post's body alone cites notes, and it is made of none of these but code, pauses and figures, which hold no
+		// spans
 	}
 }
 

@@ -4,11 +4,13 @@
 // fails in either keeps both as they were. The content is held, beside its own load, to a check the composition root
 // hands in from the parts over a release, which it knows nothing of. What a host draws from a snapshot is worked out
 // once for each (Derived). Watch looks at the folders in a goroutine of its own, until its context ends, and says when
-// they changed and held still, for whoever reloads (watch.go).
+// they changed and held still, for whoever reloads (watch.go). A folder on disk is read so no read leaves it
+// (ReadFolder).
 package release
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"sync"
@@ -18,15 +20,23 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 )
 
-// Folders are where a release is read from: its content, and its front-end build.
+// Folders are where a release is read from on disk, by their paths: its content, and its front-end build.
 type Folders struct {
-	Content fs.FS
-	Build   fs.FS
+	Content string
+	Build   string
 }
 
-// FoldersAt are the folders of a release at their paths on disk.
-func FoldersAt(contentPath, buildPath string) Folders {
-	return Folders{Content: os.DirFS(contentPath), Build: os.DirFS(buildPath)}
+// ReadFolder reads a folder on disk through one root (os.Root), opened for the read and closed after it: no read
+// leaves the folder, by a link inside it among others, and every file of the read comes from the folder its path
+// named as the read began, so a release switched in by a link while one is read is read whole at the next.
+func ReadFolder[Value any](folderPath string, read func(fs.FS) (Value, error)) (Value, error) {
+	root, err := os.OpenRoot(folderPath)
+	if err != nil {
+		var none Value
+		return none, fmt.Errorf("open the folder %q: %w", folderPath, err)
+	}
+	value, err := read(root.FS())
+	return value, errors.Join(err, root.Close())
 }
 
 // Snapshot is a release as one load read it.
@@ -42,11 +52,11 @@ type Check func(*content.Snapshot) error
 // Load reads both parts of a release and checks each whole, the content by the check too: a snapshot, or every fault
 // of either part.
 func Load(folders Folders, check Check) (*Snapshot, error) {
-	loaded, contentErr := content.Load(folders.Content)
+	loaded, contentErr := ReadFolder(folders.Content, content.Load)
 	if contentErr == nil {
 		contentErr = check(loaded)
 	}
-	build, buildErr := assets.Load(folders.Build)
+	build, buildErr := ReadFolder(folders.Build, assets.Load)
 	if err := errors.Join(contentErr, buildErr); err != nil {
 		return nil, err
 	}

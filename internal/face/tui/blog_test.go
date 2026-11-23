@@ -548,6 +548,10 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 		{name: "a point nested", want: "- in pencil²"},
 		{name: "a list in order", want: "3. open the file"},
 		{name: "a quote", want: "▎ A book is read with a pencil."},
+		{
+			name: "a picture, its alt text, its address and its caption a line each",
+			want: "\nA noted margin\nhttps://example.test/blog/reading-slowly/margin.png\nThe margin, where a slow reader writes back.\n",
+		},
 		{name: "code under its language", want: "┌── go ─"},
 		{name: "a pause", want: "* * *"},
 		{name: "a source", want: "1 Mira Example, on her own reading."},

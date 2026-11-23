@@ -2,6 +2,7 @@ package content
 
 import (
 	"bytes"
+	"io/fs"
 	"regexp"
 	"slices"
 	"strings"
@@ -37,32 +38,50 @@ const (
 	space = ' '
 )
 
-// bodyInspection checks a post's body as goldmark parsed it, node by node, each fault at the file's line of its node.
-// It keeps the level of the heading before, which the next may go below by one level alone, and the code it met,
-// where a tab may stand.
+// writtenBody is a post's body where its file writes it: the body, the file's line it starts on, and the post's
+// folder, its place in the content's folder, whose pictures it shows.
+type writtenBody struct {
+	body      Markdown
+	firstLine int
+	folder    fs.FS
+	place     string
+}
+
+// bodyInspection checks a post's body as goldmark parsed it, node by node, each fault at the file's line of its node,
+// and reads the pictures it shows from the post's folder, by their names. It keeps the level of the heading before,
+// which the next may go below by one level alone, and the code it met, where a tab may stand.
 type bodyInspection struct {
+	writtenBody
 	inspection   *inspection
-	body         Markdown
-	firstLine    int
 	headingLevel int
 	reference    *regexp.Regexp
 	code         []text.Segment
+	pictures     shownPictures
 }
 
-// inspectBody finds in a post's body, which starts at a line of its file, what the format refuses: a node of a kind
-// no post holds (PostKinds), raw HTML among them, a heading of the title's level or one that skips a level, a widget,
-// a pause between no two of the post's own blocks, a table's row of more cells than its header, a footnote no
-// reference cites, one that is no one paragraph or cites another, a reference to no footnote and one in a heading;
-// what no face draws, a line broken hard and a link's title; a link to neither the web nor a mailbox; and characters
-// no value may hold, written or referenced.
-func inspectBody(inspection *inspection, body Markdown, firstLine int) {
+// shownPictures are the pictures a post's body shows: those read, by their names, and every name a picture's address
+// gives, read or refused, which the check of the post's folder takes for a part of the post.
+type shownPictures struct {
+	read  map[string]Picture
+	named map[string]bool
+}
+
+// inspectBody finds in a post's body what the format refuses: a node of a kind no post holds (PostKinds), raw HTML
+// among them, a heading of the title's level or one that skips a level, a widget, a pause between no two of the post's
+// own blocks, a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph
+// or cites another, a reference to no footnote and one in a heading; what no face draws, a line broken hard, a link's
+// title and a picture that is no paragraph of its own; a link to neither the web nor a mailbox; a picture with no alt
+// text, or none of the post's folder; and characters no value may hold, written or referenced. It hands back the
+// pictures the body shows.
+func inspectBody(inspection *inspection, written writtenBody) shownPictures {
 	checked := &bodyInspection{
-		inspection: inspection, body: body, firstLine: firstLine, headingLevel: titleLevel,
-		reference: regexp.MustCompile(referencePattern), code: nil,
+		writtenBody: written, inspection: inspection, headingLevel: titleLevel, reference: regexp.MustCompile(referencePattern),
+		code: nil, pictures: shownPictures{read: map[string]Picture{}, named: map[string]bool{}},
 	}
 	// visit returns no error, so the walk ends with none
-	_ = ast.Walk(body.Tree, checked.visit)
+	_ = ast.Walk(written.body.Tree, checked.visit)
 	checked.inspectCharacters()
+	return checked.pictures
 }
 
 func (checked *bodyInspection) visit(node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -89,8 +108,6 @@ func (checked *bodyInspection) refuseKind(node ast.Node) {
 		checked.addRawHTML(node, typed.Lines().Value(checked.body.Source))
 	case *ast.RawHTML:
 		checked.addRawHTML(node, typed.Segments.Value(checked.body.Source))
-	case *ast.Image:
-		checked.inspection.addAtLine(checked.lineOf(node), pictureProblem)
 	default:
 		checked.inspection.addAtLine(checked.lineOf(node), kindProblem, node.Kind())
 	}
@@ -118,6 +135,8 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 		checked.inspectText(typed)
 	case *ast.Link:
 		checked.inspectLink(typed)
+	case *ast.Image:
+		checked.inspectPicture(typed)
 	case *ast.AutoLink:
 		if address := string(typed.URL(checked.body.Source)); typed.AutoLinkType == ast.AutoLinkURL && !readWebAddress(address).absolute() {
 			checked.inspection.addAtLine(checked.lineOf(node), linkProblem, address)

@@ -27,6 +27,8 @@ A page read twice is read once, if the first reading was *slow*.[^source]
 >
 > Twice, with a pen.
 
+![A noted margin](margin.png "The margin, where a slow reader writes back.")
+
 ### In a terminal
 
 3. open the file

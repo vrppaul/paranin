@@ -50,6 +50,8 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "the list by series as a manual", target: listBySeries, format: FormatManual, want: "https://example.test/blog/series.txt"},
 		{name: "the list by series as the reader asks", target: listBySeries, format: FormatChosen, want: "https://example.test/blog/series"},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
+		{name: "a post's picture, in any format", target: document.File{Page: post, Name: "margin.png"}, format: FormatManual, want: "https://example.test/blog/reading-slowly/margin.png"},
+		{name: "a file of a page that serves none", target: document.File{Page: project, Name: "margin.png"}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 	}
@@ -75,6 +77,10 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "the résumé as the reader asks", target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, want: "/"},
 		{name: "a project's page in markdown", target: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, format: FormatMarkdown, want: "/p/tidy-tool.md"},
 		{name: "a hidden page", target: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, format: FormatChosen, want: ""},
+		{
+			name: "a post's picture", target: document.File{Page: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, Name: "margin.png"},
+			format: FormatChosen, want: "/blog/reading-slowly/margin.png",
+		},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 	}

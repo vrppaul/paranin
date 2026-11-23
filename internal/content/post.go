@@ -49,6 +49,8 @@ type Post struct {
 	Tags        []string     `yaml:"tags"`
 	Discussions []Discussion `yaml:"discussions"`
 	Body        Markdown     `yaml:"-"`
+	// Pictures are the pictures the body shows, files of the post's folder, by their names
+	Pictures map[string]Picture `yaml:"-"`
 }
 
 // Status is who may read a post (D7): a draft, its author alone; a preview, whoever holds its secret link;
@@ -85,23 +87,21 @@ type writtenPost struct {
 
 // readPosts reads every post's folder, in their slugs' order, with the faults that kept a post from being read.
 //
-// The faults of what the folders hold besides the posts come apart: they keep no post from being read, so a load
-// reports them with the faults of what the posts say.
+// The faults of the files beside the posts' folders come apart: they keep no post from being read, so a load reports
+// them with the faults of what the posts say.
 func readPosts(folder fs.FS) ([]writtenPost, Faults, Faults) {
 	entries, unreadable := readFolder(folder, postsFolder)
 	postParser := parser.NewParser(postFormat()...)
 	posts := make([]writtenPost, 0, len(entries))
 	misplaced := Faults{}
 	for _, entry := range entries {
-		place := path.Join(postsFolder, entry.Name())
 		if !entry.IsDir() {
-			misplaced = append(misplaced, fileFault(place, strayPostProblem))
+			misplaced = append(misplaced, fileFault(path.Join(postsFolder, entry.Name()), strayPostProblem))
 			continue
 		}
 		post, postFaults := readPost(folder, postParser, entry.Name())
 		posts = append(posts, post)
 		unreadable = append(unreadable, postFaults...)
-		misplaced = append(misplaced, partFaults(folder, place)...)
 	}
 	return posts, unreadable, misplaced
 }
@@ -126,14 +126,15 @@ func readPost(folder fs.FS, postParser parser.Parser, slug string) (writtenPost,
 	return writtenPost{file: file, post: post, frontMatter: frontMatter, bodyLine: parts.bodyLine}, decodingFaults
 }
 
-// partFaults find every part of a post's folder but its file in English, and say why it is not read yet.
-func partFaults(folder fs.FS, place string) Faults {
+// partFaults find every part of a post's folder but its file in English and the pictures it shows, and say why it is
+// not read.
+func partFaults(folder fs.FS, place string, shown map[string]bool) Faults {
 	entries, faults := readFolder(folder, place)
 	for _, entry := range entries {
 		file := path.Join(place, entry.Name())
 		switch name := entry.Name(); {
-		case name == englishPostFile:
-			// the post itself, which readPost reads
+		case name == englishPostFile || shown[name]:
+			// the post itself, which readPost reads, and a picture its body shows, which its inspection reads
 		case name == revisionsFolder:
 			faults = append(faults, fileFault(file, revisionsProblem))
 		case name == widgetsFolder:
@@ -147,13 +148,15 @@ func partFaults(folder fs.FS, place string) Faults {
 	return faults
 }
 
-// inspectPosts checks every post by itself, and that no two share a number.
-func inspectPosts(posts []writtenPost) Faults {
+// inspectPosts checks every post by itself, and that no two share a number, reading the pictures each shows from the
+// folder: the posts as the snapshot keeps them, and the faults found.
+func inspectPosts(folder fs.FS, posts []writtenPost) ([]Post, Faults) {
+	checked := make([]Post, 0, len(posts))
 	faults := Faults{}
 	numbered := map[int]bool{}
 	for _, written := range posts {
-		post := written.post
-		folderInspection := &inspection{file: path.Dir(written.file), faults: nil}
+		post, place := written.post, path.Dir(written.file)
+		folderInspection := &inspection{file: place, faults: nil}
 		folderInspection.requireName(post.Slug)
 		inspection := &inspection{file: written.file, faults: nil}
 		inspectPostFields(inspection, post)
@@ -161,10 +164,13 @@ func inspectPosts(posts []writtenPost) Faults {
 			inspection.add(idField, sharedNumberProblem, post.ID)
 		}
 		numbered[post.ID] = true
-		inspectBody(inspection, post.Body, written.bodyLine)
-		faults = slices.Concat(faults, folderInspection.faults, inspection.faults, inspectCharacters(written.file, written.frontMatter))
+		shown := inspectBody(inspection, writtenBody{body: post.Body, firstLine: written.bodyLine, folder: folder, place: place})
+		post.Pictures = shown.read
+		faults = slices.Concat(faults, folderInspection.faults, inspection.faults, inspectCharacters(written.file, written.frontMatter),
+			partFaults(folder, place, shown.named))
+		checked = append(checked, post)
 	}
-	return faults
+	return checked, faults
 }
 
 // inspectPostFields checks what a post's front matter says, field by field.
@@ -221,13 +227,4 @@ func inspectTags(inspection *inspection, tags []string) {
 		}
 		seen[tag] = true
 	}
-}
-
-// postsOf are the posts a load read, as the snapshot keeps them.
-func postsOf(written []writtenPost) []Post {
-	posts := make([]Post, 0, len(written))
-	for _, entry := range written {
-		posts = append(posts, entry.post)
-	}
-	return posts
 }

@@ -62,6 +62,22 @@ func TestAListItemNeverOpensABlock(test *testing.T) {
 	}
 }
 
+// A picture's alt text and its caption read as the text they are: a bracket never closes the alt text, nor a quote the
+// caption, and a reference to a character in either stays as written.
+func TestAPicturesWordsNeverReadAsMarkup(test *testing.T) {
+	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
+	composed := document.Document{
+		Head: fixtures.HeadOf(post, nil),
+		Blocks: []document.Block{document.Figure{
+			Picture: document.File{Page: post, Name: "margin.png"}, Alt: "a ]*page* &amp;", Caption: `a "slow" \ page &copy;`, Width: 16, Height: 8,
+		}},
+	}
+	want := `![a \]\*page\* \&amp;](https://example.test/blog/reading-slowly/margin.png "a \"slow\" \\ page \&copy;")`
+	if got := Markdown(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, want) {
+		test.Errorf("Markdown = %q, want it to hold %q", got, want)
+	}
+}
+
 // A document's lead reads as one quote of the text it is, every paragraph of it inside, never opening a block
 // inside the quote; a document with no lead has no quote.
 func TestALeadReadsAsAQuoteOfItsText(test *testing.T) {

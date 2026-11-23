@@ -54,7 +54,9 @@ const (
 	definitionMark = ":"
 )
 
-// How a link is written: [text](address), the address between brackets where it holds a space or a parenthesis
+// How a link is written: [text](address), the address between brackets where it holds a space or a parenthesis; and a
+// picture as a link after its mark, its title, the caption, after the address between quotes, which an escape keeps
+// from closing it and from opening a reference to a character
 const (
 	linkTextOpening        = "["
 	linkTextClosing        = "]"
@@ -63,6 +65,9 @@ const (
 	enclosedOpening        = "<"
 	enclosedClosing        = ">"
 	addressBreakingLetters = " ()"
+	pictureMark            = "!"
+	titleQuote             = `"`
+	titleMarkup            = `\"&`
 )
 
 // What CommonMark reads as markup inside a line: an escape, emphasis, code, a link, HTML, an entity. A gap is
@@ -96,18 +101,21 @@ const (
 // What an escaper replaces each letter with: the letter, and the letter after its escape
 const replacementWidth = 2
 
-// markdownWriter writes one document: the site writes its addresses, and the escapers keep text and gaps from
-// reading as markup.
+// markdownWriter writes one document: the site writes its addresses, and the escapers keep text, gaps and a picture's
+// title from reading as markup.
 type markdownWriter struct {
-	site       routes.Site
-	textEscape *strings.Replacer
-	gapEscape  *strings.Replacer
+	site        routes.Site
+	textEscape  *strings.Replacer
+	gapEscape   *strings.Replacer
+	titleEscape *strings.Replacer
 }
 
 // Markdown writes a document as CommonMark: its head, then each block, a blank line between them, and the notes its
 // blocks cite at the end.
 func Markdown(composed document.Document, site routes.Site) string {
-	writer := markdownWriter{site: site, textEscape: escaperOf(inlineMarkup), gapEscape: escaperOf(gapMarkup)}
+	writer := markdownWriter{
+		site: site, textEscape: escaperOf(inlineMarkup), gapEscape: escaperOf(gapMarkup), titleEscape: escaperOf(titleMarkup),
+	}
 	chunks := writer.head(composed.Head)
 	chunks = writer.blocks(chunks, composed.Blocks, sectionDepth)
 	chunks = appendChunk(chunks, writer.notes(document.NotesOf(composed.Blocks)))
@@ -166,6 +174,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return appendChunk(chunks, quote(strings.Join(writer.blocks(nil, typed.Blocks, depth), blankLine)))
 	case document.Pause:
 		return appendChunk(chunks, breakMark)
+	case document.Figure:
+		return appendChunk(chunks, writer.figure(typed))
 	case document.Facts:
 		return appendChunk(chunks, writer.facts(typed.List))
 	case document.Entry:
@@ -387,7 +397,7 @@ func (writer markdownWriter) spans(spans []document.Span) string {
 		case document.Strong:
 			builder.WriteString(strongMark + writer.spans(typed.Spans) + strongMark)
 		case document.Link:
-			builder.WriteString(link(writer.spans(typed.Spans), writer.site.Address(typed.Target, routes.FormatMarkdown)))
+			builder.WriteString(link(writer.spans(typed.Spans), linkAddress(writer.site.Address(typed.Target, routes.FormatMarkdown))))
 		case document.Note:
 			builder.WriteString(noteReference(typed.Number))
 		}
@@ -412,12 +422,28 @@ func heading(depth int, title string) string {
 	return strings.Repeat(headingMark, depth) + space + title
 }
 
-// link writes a link, its address between brackets where a space or a parenthesis would end it.
-func link(text, address string) string {
-	if strings.ContainsAny(address, addressBreakingLetters) {
-		address = enclosedOpening + address + enclosedClosing
+// link writes a link: its words, then its target, the address and what follows it, between parentheses.
+func link(text, target string) string {
+	return linkTextOpening + text + linkTextClosing + linkAddressOpening + target + linkAddressClosing
+}
+
+// figure writes a picture as markdown shows one, a link after the picture's mark: its alt text as the link's words,
+// its address whole, and its caption, where it has one, as its title.
+func (writer markdownWriter) figure(figure document.Figure) string {
+	target := linkAddress(writer.site.Address(figure.Picture, routes.FormatMarkdown))
+	if figure.Caption != "" {
+		target += space + titleQuote + writer.titleEscape.Replace(figure.Caption) + titleQuote
 	}
-	return linkTextOpening + text + linkTextClosing + linkAddressOpening + address + linkAddressClosing
+	return pictureMark + link(writer.text(figure.Alt), target)
+}
+
+// linkAddress is an address as a link or a picture writes it: between brackets where a space or a parenthesis would
+// end it.
+func linkAddress(address string) string {
+	if strings.ContainsAny(address, addressBreakingLetters) {
+		return enclosedOpening + address + enclosedClosing
+	}
+	return address
 }
 
 // codeSpan writes code between runs of backticks one longer than any run inside it, so none of its own closes

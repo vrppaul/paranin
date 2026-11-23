@@ -1,8 +1,13 @@
 package web
 
 import (
+	"bytes"
+	"image"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,6 +20,12 @@ import (
 const (
 	stylesheetPath = "/assets/site-fixture.css"
 	scriptPath     = "/assets/site-fixture.js"
+)
+
+// The fixture post's picture: its file in the content's folder, and where the site serves it
+const (
+	pictureFile = "posts/reading-slowly/margin.png"
+	picturePath = "/blog/reading-slowly/margin.png"
 )
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
@@ -258,6 +269,14 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 		{name: "a project with no page", path: "/p/other-tool.md", accept: "", contentType: plain, holds: `404 Not Found: "/p/other-tool.md"`},
 		{name: "no page at all", path: "/nothing", accept: "", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "a path written escaped", path: "/no%20thing", accept: "", contentType: plain, holds: `404 Not Found: "/no thing"`},
+		{
+			name: "a post's own text beside its picture", path: "/blog/reading-slowly/post.en.md", accept: "",
+			contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/post.en.md"`,
+		},
+		{
+			name: "a path out of a post's folder, its slashes escaped", path: "/blog/reading-slowly/..%2F..%2Fprofile.yaml", accept: "",
+			contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/../../profile.yaml"`,
+		},
 		{name: "curl, taking anything", path: "/nothing", accept: "*/*", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
@@ -386,18 +405,57 @@ func TestABrowserFindsTheSiteIcon(test *testing.T) {
 	}
 }
 
-// A page is drawn again once the store holds new content: a reload reaches the next request.
-func TestAReloadReachesTheNextRequest(test *testing.T) {
-	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
-	store := fixtureStore(test, folder)
-	server := New(store)
-	serve(server, http.MethodGet, "/index.md", "")
-	fixtures.ReplaceIn(test, folder, "profile.yaml", "name: Mira Example", "name: Mira Other")
-	if err := store.Reload(); err != nil {
-		test.Fatalf("Reload = %v, want no error", err)
+// A post's picture is served at its file beside the post as its type, for a cache to ask for again, since a reload may
+// change it under the same name; under a policy that loads and runs nothing in it, so a drawing opened alone runs no
+// script.
+func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
+	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test))), http.MethodGet, picturePath, "image/*")
+	header := response.Header()
+	const (
+		wantType   = "image/png"
+		wantCache  = "no-cache"
+		wantPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+	)
+	picture := fixturePicture(test)
+	if response.Code != http.StatusOK || header.Get("Content-Type") != wantType || header.Get("Cache-Control") != wantCache ||
+		header.Get("X-Content-Type-Options") != "nosniff" || header.Get("Content-Security-Policy") != wantPolicy ||
+		!bytes.Equal(response.Body.Bytes(), picture) {
+		test.Errorf("GET %s = %d %q, Cache-Control %q, X-Content-Type-Options %q, Content-Security-Policy %q, of %d bytes; "+
+			"want %d %q, %q, %q, %q, the %d bytes of the fixture's picture", picturePath, response.Code, header.Get("Content-Type"),
+			header.Get("Cache-Control"), header.Get("X-Content-Type-Options"), header.Get("Content-Security-Policy"),
+			response.Body.Len(), http.StatusOK, wantType, wantCache, "nosniff", wantPolicy, len(picture))
 	}
-	if body := serve(server, http.MethodGet, "/index.md", "").Body.String(); !strings.Contains(body, "# Mira Other") {
-		test.Errorf("GET /index.md after a reload = %q, want the new name", body)
+}
+
+// What the store holds is drawn again once it holds new content: a reload reaches the next request, for a page and for
+// a post's picture alike.
+func TestAReloadReachesTheNextRequest(test *testing.T) {
+	newPicture := string(pngOfTwoByOne(test))
+	cases := []struct {
+		name        string
+		file        string
+		path        string
+		original    string
+		replacement string
+		want        string
+	}{
+		{name: "a page", file: "profile.yaml", path: "/index.md", original: "name: Mira Example", replacement: "name: Mira Other", want: "# Mira Other"},
+		{name: "a post's picture", file: pictureFile, path: picturePath, original: string(fixturePicture(test)), replacement: newPicture, want: newPicture},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+			store := fixtureStore(test, folder)
+			server := New(store)
+			serve(server, http.MethodGet, testCase.path, "")
+			fixtures.ReplaceIn(test, folder, testCase.file, testCase.original, testCase.replacement)
+			if err := store.Reload(); err != nil {
+				test.Fatalf("Reload = %v, want no error", err)
+			}
+			if body := serve(server, http.MethodGet, testCase.path, "").Body.String(); !strings.Contains(body, testCase.want) {
+				test.Errorf("GET %s after a reload = %q, want it to hold %q", testCase.path, body, testCase.want)
+			}
+		})
 	}
 }
 
@@ -418,9 +476,29 @@ func serve(server http.Handler, method, path, accept string) *httptest.ResponseR
 	return response
 }
 
+// fixturePicture is what the fixture post's picture holds.
+func fixturePicture(test *testing.T) []byte {
+	test.Helper()
+	picture, err := os.ReadFile(filepath.Join(fixtures.ContentFolder(test), pictureFile))
+	if err != nil {
+		test.Fatalf("read the fixture's picture: %v", err)
+	}
+	return picture
+}
+
+// pngOfTwoByOne is a PNG two pixels by one.
+func pngOfTwoByOne(test *testing.T) []byte {
+	test.Helper()
+	var written bytes.Buffer
+	if err := png.Encode(&written, image.NewGray(image.Rect(0, 0, 2, 1))); err != nil {
+		test.Fatalf("write a PNG: %v", err)
+	}
+	return written.Bytes()
+}
+
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.
 func fixtureStore(test *testing.T, folder string) *release.Store {
-	store, err := release.Open(release.FoldersAt(folder, fixtures.BuildFolder(test)), compose.SharedAddresses)
+	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, compose.SharedAddresses)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

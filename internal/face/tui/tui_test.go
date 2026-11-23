@@ -799,6 +799,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 	}{
 		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
 		{name: "a public profile on the contact tab", model: commanded(test, fixtureModel(test, commonWidth, commonHeight), "contact"), address: "https://github.test/mira"},
+		{name: "a post's picture", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly/margin.png"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -806,6 +807,26 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 				test.Errorf("the screen links no %q", testCase.address)
 			}
 		})
+	}
+}
+
+// A post's picture's address, broken across lines on a narrow page, leads to the picture from each of them in a
+// terminal that follows links: the row its end stands on carries it too.
+func TestAPicturesAddressLeadsToThePictureFromEachOfItsLines(test *testing.T) {
+	const (
+		address = "https://example.test/blog/reading-slowly/margin.png"
+		// the address's end, which a page of the narrow width breaks onto a row of its own
+		addressEnd = "margin.png"
+	)
+	screen := openedModel(test, "blog/1", narrowWidth, tallHeight).View().Content
+	rows := strings.Split(screen, lineEnd)
+	found := slices.IndexFunc(rows, func(row string) bool { return strings.HasSuffix(strings.TrimSpace(ansi.Strip(row)), addressEnd) })
+	if found < 0 {
+		test.Fatalf("the post at %d cells =\n%s\nwant a row ending in %q", narrowWidth, ansi.Strip(screen), addressEnd)
+	}
+	ending := rows[found]
+	if strings.Contains(ansi.Strip(ending), address) || !strings.Contains(ending, ansi.SetHyperlink(address)) {
+		test.Errorf("the row ending the picture's address = %q, want a piece of %q, a link to it", ending, address)
 	}
 }
 

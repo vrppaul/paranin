@@ -78,13 +78,21 @@ func look(folders Folders) sight {
 	return sight{content: stamped(folders.Content), build: stamped(folders.Build)}
 }
 
-// stamped is every file of a folder but the hidden ones, stamped. A file that goes while the walk passes it is left
-// out: the look after sees the folder as it is then.
-func stamped(folder fs.FS) []stamp {
+// stamped is every file of a folder on disk but the hidden ones, stamped, read as a load reads it (ReadFolder). A file
+// that goes while the walk passes it is left out, and a folder that cannot be opened looks empty: the look after sees
+// the folder as it is then.
+func stamped(folderPath string) []stamp {
+	// the walk reports no error, so the read hands back none but the folder's, which the look leaves to the next
+	stamps, _ := ReadFolder(folderPath, walkedStamps)
+	return stamps
+}
+
+// walkedStamps are the stamps of every file a walk of a folder finds. A walk that cannot read an entry passes over it,
+// so it has no error to report.
+func walkedStamps(folder fs.FS) ([]stamp, error) {
 	gathered := &collector{stamps: nil}
-	// A walk that cannot read an entry passes over it, so its error has nothing to report
 	_ = fs.WalkDir(folder, ".", gathered.visit)
-	return gathered.stamps
+	return gathered.stamps, nil
 }
 
 // collector gathers the stamps of the files a walk finds.

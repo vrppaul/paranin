@@ -290,7 +290,7 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	case document.Checks, document.Skills:
 		// only the hidden pages hold checks and the list of skills, and no host hands them to a page: one served
 		// with them would fail TestEveryPhraseReachesThePage
-	case document.List, document.Quote, document.Pause:
+	case document.List, document.Quote, document.Pause, document.Figure:
 		// a post's alone, which its article draws (post.go)
 	case document.Posts:
 		return writer.tiles(typed)

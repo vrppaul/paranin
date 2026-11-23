@@ -129,6 +129,17 @@ type Quote struct {
 // Pause is a turn a post takes inside a part, which no heading names: a thematic break.
 type Pause struct{}
 
+// Figure is a picture a post shows as a block of its own: its file, served beside the post; its alt text, which stands
+// for it wherever it is not seen; its caption, none where it has none; and its size in pixels, by which a page keeps
+// its room before it comes.
+type Figure struct {
+	Picture File
+	Alt     string
+	Caption string
+	Width   int
+	Height  int
+}
+
 // Facts is a list of labels and their values, of a kind a face finds them by, not by their place.
 type Facts struct {
 	Kind FactsKind
@@ -253,6 +264,7 @@ func (CodeBlock) block() {}
 func (List) block()      {}
 func (Quote) block()     {}
 func (Pause) block()     {}
+func (Figure) block()    {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}

@@ -41,6 +41,24 @@ func Posts(snapshot *content.Snapshot) []document.Document {
 	return documents
 }
 
+// PostPicture is a picture of a post the site serves: its file beside the post, and the picture.
+type PostPicture struct {
+	File    document.File
+	Picture content.Picture
+}
+
+// Pictures are the pictures of the posts a snapshot serves, each at its file beside its post, in no order: never a
+// draft's or a preview's.
+func Pictures(snapshot *content.Snapshot) []PostPicture {
+	pictures := []PostPicture{}
+	for _, post := range servedPosts(snapshot) {
+		for name, picture := range post.Pictures {
+			pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
+		}
+	}
+	return pictures
+}
+
 // postHeads are the heads of the posts Posts makes, their bodies left unread: where the site serves each post.
 func postHeads(snapshot *content.Snapshot) []document.Head {
 	read := blogOf(snapshot)
@@ -87,7 +105,10 @@ func listed(status content.Status) bool {
 // tree the load parsed, which nothing here writes to, each heading named clear of the page's other places.
 func postDocument(post content.Post, read blog, snapshot *content.Snapshot) document.Document {
 	head := postHead(post, read, snapshot.Words)
-	body := bodyReader{body: post.Body, notes: map[int][]document.Span{}, names: namesHeld(namesBeside(head, snapshot))}
+	body := bodyReader{
+		body: post.Body, page: head.Page, pictures: post.Pictures, notes: map[int][]document.Span{},
+		names: namesHeld(namesBeside(head, snapshot)),
+	}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(post.Body.Tree, body.readNote)
 	return document.Document{Head: head, Blocks: body.containedBlocks(post.Body.Tree)}
@@ -132,12 +153,15 @@ func postHead(post content.Post, read blog, words content.Words) document.Head {
 	}
 }
 
-// bodyReader reads a post's body into blocks: the body; the words of each footnote by its number, read first, which
-// every citation of it carries; and the names taken on the post's page, which each heading's is kept clear of.
+// bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
+// figures stand beside and are sized by; the words of each footnote by its number, read first, which every citation of
+// it carries; and the names taken on the post's page, which each heading's is kept clear of.
 type bodyReader struct {
-	body  content.Markdown
-	notes map[int][]document.Span
-	names names
+	body     content.Markdown
+	page     document.Page
+	pictures map[string]content.Picture
+	notes    map[int][]document.Span
+	names    names
 }
 
 // readNote keeps the words of a footnote the walk meets, by its number; the load holds a footnote to one paragraph.
@@ -188,10 +212,14 @@ func (reader bodyReader) nested(nodes []ast.Node, level int) ([]document.Block, 
 
 // block is the block a node of the body is, of each block kind content.PostKinds names; none for the list of
 // footnotes, whose words stand where a line cites them, and a link's definition, which the links it names carry. A
-// heading the nesting reads, and the parts of a list or a table their own block.
+// heading the nesting reads, and the parts of a list or a table their own block. A paragraph that opens with a picture
+// is a figure: the load holds a picture to a paragraph of its own.
 func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 	switch typed := node.(type) {
 	case *ast.Paragraph, *ast.TextBlock:
+		if picture, isPicture := node.FirstChild().(*ast.Image); isPicture {
+			return reader.figure(picture), true
+		}
 		return document.Paragraph{Spans: reader.spans(node)}, true
 	case *ast.FencedCodeBlock:
 		return codeBlock(reader.code(typed.Lines()), reader.body.Language(typed)), true
@@ -208,6 +236,20 @@ func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 	case *extensionast.FootnoteList, *ast.LinkReferenceDefinition:
 	}
 	return nil, false
+}
+
+// figure is a picture of the body: its file beside the post, by the name its address gives it, its alt text and its
+// caption as a reader reads them, and the size of the picture the load read.
+func (reader bodyReader) figure(picture *ast.Image) document.Figure {
+	name := content.ResolvedAddress(picture.Destination)
+	shown := reader.pictures[name]
+	return document.Figure{
+		Picture: document.File{Page: reader.page, Name: name},
+		Alt:     reader.body.AltText(picture),
+		Caption: content.Resolved(picture.Title),
+		Width:   shown.Width,
+		Height:  shown.Height,
+	}
 }
 
 // list is a list of the body, its items each holding blocks, numbered from its start where it is in order.

@@ -2,6 +2,7 @@ package compose
 
 import (
 	"os"
+	"path"
 	"reflect"
 	"slices"
 	"sync"
@@ -22,6 +23,12 @@ const (
 	samplePostSlug   = "notes-on-tools"
 	samplePostFile   = "posts/notes-on-tools/post.en.md"
 	samplePostFields = "---\nid: 2\ntitle: Notes on tools\ndescription: The tools a writer keeps.\npublished: 2026-11-10T09:00+01:00\n"
+)
+
+// A drawing a case writes beside the sample post, by its name, four pixels by two
+const (
+	sampleDrawingName = "margin.svg"
+	sampleDrawing     = `<svg xmlns="http://www.w3.org/2000/svg" width="4" height="2"/>`
 )
 
 // A post's body becomes the document's blocks kind by kind: its marks spans, its escapes and references read, its
@@ -160,6 +167,81 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			}
 		})
 	}
+}
+
+// A picture standing alone in a post's body is a figure, wherever it stands: at its file beside the post, its alt text
+// and its caption read as a reader reads them, its size its file's.
+func TestAPictureStandingAloneIsAFigure(test *testing.T) {
+	file := fixtureFile(samplePostSlug, sampleDrawingName)
+	cases := []struct {
+		name string
+		body string
+		want []document.Block
+	}{
+		{
+			name: "a picture under its caption", body: `![A page, read](margin.svg "The margin")`,
+			want: []document.Block{document.Figure{Picture: file, Alt: "A page, read", Caption: "The margin", Width: 4, Height: 2}},
+		},
+		{
+			name: "a picture with no caption, its alt text's lines joined", body: "![A page\nread twice](margin.svg)",
+			want: []document.Block{document.Figure{Picture: file, Alt: "A page read twice", Caption: "", Width: 4, Height: 2}},
+		},
+		{
+			name: "escapes and references read", body: `![A &amp; B](margin.svg "C &amp; \"D\"")`,
+			want: []document.Block{document.Figure{Picture: file, Alt: "A & B", Caption: `C & "D"`, Width: 4, Height: 2}},
+		},
+		{
+			name: "a picture in a list's item, after its words", body: "- One:\n\n  ![A page](margin.svg)",
+			want: []document.Block{document.List{Ordered: false, Start: 0, Items: []document.Item{
+				{Blocks: []document.Block{
+					paragraphOf(document.Text{Text: "One:"}), document.Figure{Picture: file, Alt: "A page", Caption: "", Width: 4, Height: 2},
+				}},
+			}}},
+		},
+		{
+			name: "a picture in a quote", body: "> ![A page](margin.svg)",
+			want: []document.Block{document.Quote{Blocks: []document.Block{document.Figure{Picture: file, Alt: "A page", Caption: "", Width: 4, Height: 2}}}},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n",
+				samplePicture{name: sampleDrawingName, text: sampleDrawing})
+			if got := postNamed(test, Posts(snapshot), samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
+			}
+		})
+	}
+}
+
+// The site serves the pictures of the posts it serves, each at its file beside its post, and a draft's never.
+func TestThePicturesServedAreThePostsServed(test *testing.T) {
+	cases := []struct {
+		name   string
+		status content.Status
+		want   []document.File
+	}{
+		{name: "a published post's", status: content.StatusPublished, want: []document.File{fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)}},
+		{name: "a draft's", status: content.StatusDraft, want: []document.File{fixtureFile(fixturePostSlug, "margin.png")}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\n![A page](margin.svg)\n",
+				samplePicture{name: sampleDrawingName, text: sampleDrawing})
+			files := []document.File{}
+			for _, served := range Pictures(snapshot) {
+				files = append(files, served.File)
+			}
+			if !sameMembers(files, testCase.want) {
+				test.Errorf("the pictures served = %+v, want %+v", files, testCase.want)
+			}
+		})
+	}
+}
+
+// fixtureFile is the file of a name beside the post of a slug.
+func fixtureFile(slug, name string) document.File {
+	return document.File{Page: document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}, Name: name}
 }
 
 // A post's code is split into runs of the kinds of word a reader of code tells apart, by the language its author
@@ -408,6 +490,8 @@ func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
 		{name: "code", want: `less "$HOME/notes"`},
 		{name: "a link's words", want: "the reader's notes"},
 		{name: "a note's words", want: "A soft one, which rubs out."},
+		{name: "a picture's alt text", want: "A noted margin"},
+		{name: "a picture's caption", want: "The margin, where a slow reader writes back."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -423,40 +507,45 @@ func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
 // before any post holds it.
 func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 	cases := []struct {
-		kind   ast.NodeKind
-		body   string
-		phrase string
+		kind     ast.NodeKind
+		body     string
+		pictures []samplePicture
+		phrase   string
 	}{
-		{kind: ast.KindDocument, body: "A word.", phrase: "A word."},
-		{kind: ast.KindParagraph, body: "A word.", phrase: "A word."},
-		{kind: ast.KindText, body: "A word.", phrase: "A word."},
-		{kind: ast.KindTextBlock, body: "- an item", phrase: "an item"},
-		{kind: ast.KindList, body: "- an item", phrase: "an item"},
-		{kind: ast.KindListItem, body: "- an item", phrase: "an item"},
-		{kind: ast.KindHeading, body: "## A heading", phrase: "A heading"},
-		{kind: ast.KindFencedCodeBlock, body: "```go\nfenced()\n```", phrase: "fenced()"},
-		{kind: ast.KindCodeBlock, body: "    indented()", phrase: "indented()"},
-		{kind: ast.KindBlockquote, body: "> Quoted.", phrase: "Quoted."},
+		{kind: ast.KindDocument, body: "A word.", pictures: nil, phrase: "A word."},
+		{kind: ast.KindParagraph, body: "A word.", pictures: nil, phrase: "A word."},
+		{kind: ast.KindText, body: "A word.", pictures: nil, phrase: "A word."},
+		{kind: ast.KindTextBlock, body: "- an item", pictures: nil, phrase: "an item"},
+		{kind: ast.KindList, body: "- an item", pictures: nil, phrase: "an item"},
+		{kind: ast.KindListItem, body: "- an item", pictures: nil, phrase: "an item"},
+		{kind: ast.KindHeading, body: "## A heading", pictures: nil, phrase: "A heading"},
+		{kind: ast.KindFencedCodeBlock, body: "```go\nfenced()\n```", pictures: nil, phrase: "fenced()"},
+		{kind: ast.KindCodeBlock, body: "    indented()", pictures: nil, phrase: "indented()"},
+		{kind: ast.KindBlockquote, body: "> Quoted.", pictures: nil, phrase: "Quoted."},
 		// a break has no phrase of its own: its row keeps the kinds whole, and TestAPostsBodyBecomesItsBlocks holds its block
-		{kind: ast.KindThematicBreak, body: "Before.\n\n***\n\nAfter.", phrase: "After."},
-		{kind: ast.KindLinkReferenceDefinition, body: "[defined][x]\n\n[x]: https://example.test", phrase: "defined"},
-		{kind: ast.KindCodeSpan, body: "A `span`.", phrase: "span"},
-		{kind: ast.KindEmphasis, body: "*stressed*", phrase: "stressed"},
-		{kind: ast.KindLink, body: "[linked](https://example.test)", phrase: "linked"},
-		{kind: ast.KindAutoLink, body: "<https://example.test>", phrase: "https://example.test"},
-		{kind: extensionast.KindTable, body: "| Head |\n| --- |\n| Cell |", phrase: "Cell"},
-		{kind: extensionast.KindTableHeader, body: "| Head |\n| --- |\n| Cell |", phrase: "Head"},
-		{kind: extensionast.KindTableRow, body: "| Head |\n| --- |\n| Cell |", phrase: "Cell"},
-		{kind: extensionast.KindTableCell, body: "| Head |\n| --- |\n| Cell |", phrase: "Cell"},
-		{kind: extensionast.KindFootnoteList, body: "Cited.[^a]\n\n[^a]: A note.", phrase: "A note."},
-		{kind: extensionast.KindFootnote, body: "Cited.[^a]\n\n[^a]: A note.", phrase: "A note."},
-		{kind: extensionast.KindFootnoteLink, body: "Cited.[^a]\n\n[^a]: A note.", phrase: "A note."},
+		{kind: ast.KindThematicBreak, body: "Before.\n\n***\n\nAfter.", pictures: nil, phrase: "After."},
+		{kind: ast.KindLinkReferenceDefinition, body: "[defined][x]\n\n[x]: https://example.test", pictures: nil, phrase: "defined"},
+		{kind: ast.KindCodeSpan, body: "A `span`.", pictures: nil, phrase: "span"},
+		{kind: ast.KindEmphasis, body: "*stressed*", pictures: nil, phrase: "stressed"},
+		{kind: ast.KindLink, body: "[linked](https://example.test)", pictures: nil, phrase: "linked"},
+		{kind: ast.KindAutoLink, body: "<https://example.test>", pictures: nil, phrase: "https://example.test"},
+		{
+			kind: ast.KindImage, body: "![A page](margin.svg)", pictures: []samplePicture{{name: sampleDrawingName, text: sampleDrawing}},
+			phrase: "A page",
+		},
+		{kind: extensionast.KindTable, body: "| Head |\n| --- |\n| Cell |", pictures: nil, phrase: "Cell"},
+		{kind: extensionast.KindTableHeader, body: "| Head |\n| --- |\n| Cell |", pictures: nil, phrase: "Head"},
+		{kind: extensionast.KindTableRow, body: "| Head |\n| --- |\n| Cell |", pictures: nil, phrase: "Cell"},
+		{kind: extensionast.KindTableCell, body: "| Head |\n| --- |\n| Cell |", pictures: nil, phrase: "Cell"},
+		{kind: extensionast.KindFootnoteList, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
+		{kind: extensionast.KindFootnote, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
+		{kind: extensionast.KindFootnoteLink, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
 	}
 	kinds := []ast.NodeKind{}
 	for _, testCase := range cases {
 		kinds = append(kinds, testCase.kind)
 		test.Run(testCase.kind.String(), func(test *testing.T) {
-			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
+			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n", testCase.pictures...)
 			post := snapshot.Posts[slices.IndexFunc(snapshot.Posts, func(post content.Post) bool { return post.Slug == samplePostSlug })]
 			phrases := document.Phrases(postNamed(test, Posts(snapshot), samplePostSlug))
 			if !slices.Contains(kindsOf(post.Body.Tree), testCase.kind) || !slices.Contains(phrases, testCase.phrase) {
@@ -561,11 +650,21 @@ func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	}
 }
 
-// withSamplePost is the fixture content with the draft's file written over by a post's text, loaded.
-func withSamplePost(test *testing.T, text string) *content.Snapshot {
+// samplePicture is a picture a test writes into the sample post's folder: its file's name, and what it holds.
+type samplePicture struct {
+	name string
+	text string
+}
+
+// withSamplePost is the fixture content with the draft's file written over by a post's text, and the pictures beside
+// it, loaded.
+func withSamplePost(test *testing.T, text string, pictures ...samplePicture) *content.Snapshot {
 	test.Helper()
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	fixtures.WriteIn(test, folder, samplePostFile, text)
+	for _, picture := range pictures {
+		fixtures.WriteIn(test, folder, path.Join(path.Dir(samplePostFile), picture.name), picture.text)
+	}
 	snapshot, err := content.Load(os.DirFS(folder))
 	if err != nil {
 		test.Fatalf("load the fixture with the post %q: %v", text, err)

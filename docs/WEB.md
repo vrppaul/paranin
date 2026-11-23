@@ -26,6 +26,7 @@ never as a draft or a preview; the list names the posts published alone.
 | `GET /blog`, `GET /blog/series` | The blog's list, every post published, by year, newest first, and by series, the posts in no series last, chosen the same way. No two pages share an address: content where two would, as a post slugged `series`, is refused as it loads. |
 | `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md` | The same in markdown, `text/markdown`. |
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt` | The same as the manual, `text/plain`. |
+| `GET /blog/{slug}/{picture}` | A picture the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
@@ -41,7 +42,7 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
+| A page in any format, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list
@@ -66,11 +67,13 @@ left out, and a gap among written words stands marked as one.
   out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds a post's day in the
   middle, as `2026-11-10`, where `man(1)` writes a page's date. A link to a page of the site is its text and its
   address between `<` and `>`; a card's page, its address on a line of its own. A post's table stands in columns
-  under its header where it fits the 78 columns, a bullet a row where not; a quote behind `│`; a tab in code as the
+  under its header where it fits the 78 columns, a bullet a row where not; a quote behind `│`; a picture its alt text,
+  its address between `<` and `>` and its caption, a line each; a tab in code as the
   spaces to its stop, every eight columns. The blog's list stands a section a group, each post its title with its
   day at the right, then its lead, its part and series, its tags and its address.
 - **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, its
-  tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end. The blog's list
+  tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
+  `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
@@ -84,7 +87,9 @@ left out, and a gap among written words stands marked as one.
   its day in a `<time datetime>`, each paragraph a place `#_p1` names and its number a link to it, each heading a
   place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first
-  cites it, and every note once at the text's end, which a phone shows in their place. The blog's list has the blog's
+  cites it, and every note once at the text's end, which a phone shows in their place; a picture a `<figure>`, its
+  `<img>` holding its alt text and its size, so the page keeps its room before it comes, fetched as it nears the
+  screen, and its caption a `<figcaption>`. The blog's list has the blog's
   name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it with its
   day in a `<time datetime>`, a part to come no link; it has no record until the site's SEO. Every page ends with the
   foot line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.
@@ -106,6 +111,14 @@ an inline script or handler, an inline style (a `style` attribute, a `<style>` e
 `default-src` does not reach them. What the policy lets be: JSON blocks (`application/ld+json`, `application/json`),
 which are data, not scripts; module scripts of the site and their preloads; a style a script sets through
 `element.style`, and `element.animate()`.
+
+A post's picture is sent under a policy of its own in place of that one, so a drawing opened by itself, which may hold
+a script, loads and runs nothing and stands as a document of no site; its own styles stay, which a drawing is drawn by.
+A page shows it with `<img>`, where a browser runs nothing in a drawing either:
+
+```
+Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
+```
 
 How the page's build keeps to it is `.claude/rules/page.md`. The page's face, JetBrains Mono, is a built file of the
 site like any other, from `design/fonts` (`design/tokens.yaml`, `face`), so every reader sees the copy the cells are

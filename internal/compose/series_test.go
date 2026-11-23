@@ -74,9 +74,9 @@ type seenNeighbour struct {
 }
 
 // A post of a series shows every part of it in order, numbered from one: itself as the part read, the part out after
-// it as the next, any other part out as out, and as to come a part not published yet, a draft or a preview, and each
-// title the series names to come; a part unlisted is listed nowhere, so the series leaves it out, and the parts after
-// it count on without it. A post the series leaves out, unlisted, shows no series.
+// it as the next, any other part out as out, and as to come each title the series names to come; a part not published,
+// a draft, a preview or unlisted, is listed nowhere, so the series leaves it out, and the parts after it count on
+// without it. A post the series leaves out, unlisted, shows no series.
 func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -105,13 +105,12 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 			},
 		},
 		{
-			name:   "a part not published yet, to come though written",
+			name:   "a part not published yet, left out",
 			posts:  []writtenPost{{slug: "drafted", id: 3, status: content.StatusDraft, published: later}, {slug: "previewed", id: 4, status: content.StatusPreview, published: later}},
-			series: "reading-slowly, drafted, previewed", read: fixturePostSlug,
+			series: "reading-slowly, drafted, previewed", toCome: "Reading aloud", read: fixturePostSlug,
 			want: []seenPart{
 				{number: 1, title: fixturePostTitle, state: document.PartReading, page: fixturePostSlug},
-				{number: 2, title: "drafted", state: document.PartToCome, page: ""},
-				{number: 3, title: "previewed", state: document.PartToCome, page: ""},
+				{number: 2, title: "Reading aloud", state: document.PartToCome, page: ""},
 			},
 		},
 		{
@@ -139,9 +138,9 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 }
 
 // A post leads at its foot to the posts beside it: in a series the parts before and after it, a part to come by its
-// title alone, with no page; outside one the posts the blog lists before and after it by the time they came out,
-// each with its lead and that time, posts out at one moment by their slugs, so never a draft, a preview or a post
-// unlisted; none on a side with nothing there.
+// title alone, with no page, past any part not published; outside one the posts the blog lists before and after it by
+// the time they came out, each with its lead and that time, posts out at one moment by their slugs, so never a draft,
+// a preview or a post unlisted; none on a side with nothing there.
 // An unlisted post, in no list itself, leads to the posts listed before and after the time it came out.
 func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	cases := []struct {
@@ -155,6 +154,12 @@ func TestAPostLeadsToThePostsBesideThePost(test *testing.T) {
 	}{
 		{
 			name: "the first part, the next to come", series: fixturePostSlug, toCome: "Reading aloud", read: fixturePostSlug,
+			before: nil, after: &seenNeighbour{part: 2, title: "Reading aloud", lead: "", page: "", published: noTime},
+		},
+		{
+			name:   "the part before a draft, the next to come past it",
+			posts:  []writtenPost{{slug: "drafted", id: 3, status: content.StatusDraft, published: later}},
+			series: "reading-slowly, drafted", toCome: "Reading aloud", read: fixturePostSlug,
 			before: nil, after: &seenNeighbour{part: 2, title: "Reading aloud", lead: "", page: "", published: noTime},
 		},
 		{

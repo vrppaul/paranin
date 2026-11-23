@@ -77,9 +77,9 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 }
 
 // The blog's list by series holds a group a series with a part out, the series whose latest part came out last first,
-// each with its line, how many of its parts are out, and every part in order by its number, a part not published yet
-// or named to come saying it comes, with no page; a part unlisted is left out, as its series leaves it. The posts in
-// no series come last, newest first.
+// each with its line, how many of its parts, out and to come, are out, and each of them in order by its number, a part
+// named to come saying it comes, with no page; a part not published, a draft, a preview or unlisted, is left out, as
+// its series leaves it. The posts in no series come last, newest first.
 func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
@@ -98,16 +98,15 @@ func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 	toCome := fmt.Sprint(document.ComingPart{Coming: textSpans("soon")})
 	want := []seenGroup{
 		{
-			title: "Tools", line: "About Tools.", count: "1 of 1 parts out",
+			title: "Tools", line: "About Tools.", count: "1 of 1 out",
 			posts: []seenListed{{readiness: outAt(test, "toolbox", latest), title: "toolbox", part: "part 1", series: "", tags: "tools"}},
 		},
 		{
-			title: fixtureSeriesTitle, line: "About Reading.", count: "2 of 4 parts out",
+			title: fixtureSeriesTitle, line: "About Reading.", count: "2 of 3 out",
 			posts: []seenListed{
 				{readiness: outAt(test, "first", earlier), title: "first", part: "part 1", series: "", tags: ""},
 				{readiness: outAt(test, fixturePostSlug, fixturePostMoment), title: fixturePostTitle, part: "part 2", series: "", tags: "reading,terminals"},
-				{readiness: toCome, title: "drafted", part: "part 3", series: "", tags: ""},
-				{readiness: toCome, title: "Reading aloud", part: "part 4", series: "", tags: ""},
+				{readiness: toCome, title: "Reading aloud", part: "part 3", series: "", tags: ""},
 			},
 		},
 		{

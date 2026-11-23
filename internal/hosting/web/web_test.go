@@ -37,7 +37,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "a draft", path: "/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: "404"},
 		{name: "the blog's list", path: "/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
 		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
-		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 parts out"},
+		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
 		{name: "the list by series as a manual", path: "/blog/series.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG-SERIES(1)"},
 	}
 	for _, testCase := range cases {

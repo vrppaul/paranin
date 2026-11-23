@@ -49,6 +49,17 @@ func served(status content.Status) bool {
 	return false
 }
 
+// listed is whether a post of a status is named by the blog's lists and its series' parts. exhaustive holds the switch
+// to every status.
+func listed(status content.Status) bool {
+	switch status {
+	case content.StatusPublished:
+		return true
+	case content.StatusDraft, content.StatusPreview, content.StatusUnlisted:
+	}
+	return false
+}
+
 // postDocument is a post as every face draws it, where it stands in the blog: its head, then its body walked from the
 // tree the load parsed, which nothing here writes to.
 func postDocument(post content.Post, read blog, words content.Words) document.Document {

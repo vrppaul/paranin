@@ -521,8 +521,8 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 - Its name set into its top edge, bold, `small`: `part 4`, `older`. Its title bold, underlined in `muted`; the side
   after's title, the next part's or the newer post's, in `heading`. Its lead `small` in `muted`; beside other posts, a
   post's date `caption` in `faint` at the pane's foot, since the blog orders them by date.
-- A part not out yet: its title `muted`, `soon` after it, no link. A side with none: framed in `quiet_half`, its name
-  and its words `faint`, `none: this is the first part`.
+- A part to come, a title its series names under `to_come`: its title `muted`, `soon` after it, no link. A side with
+  none: framed in `quiet_half`, its name and its words `faint`, `none: this is the first part`.
 - Under them where the post is discussed: `discuss` in `muted`, then the links.
 - On a phone one pane under the other, the next first, the empty side last.
 
@@ -533,7 +533,7 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
   of their own.
 - Group: its name in `title_text_mid` (`title_text` from `wide`), `title_soft`, staying in sight at the top while its
   own tiles scroll, but on a phone, where it stands over them; under it what it
-  holds, `small` in `muted`: `6 posts`, or a series' line and `6 of 11 parts out`. By year, newest first, at `/blog`;
+  holds, `small` in `muted`: `6 posts`, or a series' line and `6 of 11 out`. By year, newest first, at `/blog`;
   by series at `/blog/series`, the posts in no series last, as `other posts`.
 - Tile: a post as a pane, square, framed in a `muted` hairline, the tiles sharing their lines, no gap. Its date set
   into its top edge, `small` in `muted`, or in a series' group its part, bold in `text`, then the date. Its title bold,

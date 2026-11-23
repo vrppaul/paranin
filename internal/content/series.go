@@ -21,7 +21,7 @@ type Series struct {
 	Line string `yaml:"line"`
 	// Posts are its posts' slugs in their order, written once, so a part put in the middle renumbers nothing
 	Posts []string `yaml:"posts"`
-	// ToCome are the titles of the parts planned and not yet written
+	// ToCome are the titles of the parts announced and not yet out, a drafted part's among them until it is out
 	ToCome []string `yaml:"to_come"`
 }
 

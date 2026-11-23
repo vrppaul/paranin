@@ -511,8 +511,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
 
 - **A series is one file**, `content/series/<name>.yaml`, its name a slug
   as a post's is: its `title`, a `line` about it, its `posts`' slugs in
-  order, one at least, and under `to_come` the titles of parts planned and
-  not yet written. The order is written once, so a post put in the middle
+  order, one at least, and under `to_come` the titles of parts announced
+  and not yet out, so an author who wants a drafted part's title on the
+  site keeps it there until the part is out. The order is written once, so a post put in the middle
   renumbers nothing. A post is in one series at most. A post of a series
   shows "part 3 of 11" with the parts before and after; a part to come may
   stand in the list grouped by series.

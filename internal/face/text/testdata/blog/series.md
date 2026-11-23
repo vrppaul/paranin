@@ -8,7 +8,7 @@ reading · terminals
 
 How a reader keeps what they read.
 
-1 of 2 parts out
+1 of 2 out
 
 ### [Reading slowly](https://example.test/blog/reading-slowly.md)
 

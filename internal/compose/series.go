@@ -33,7 +33,7 @@ func blogOf(snapshot *content.Snapshot) blog {
 	read := blog{posts: map[string]content.Post{}, listed: []content.Post{}, series: snapshot.Series, seriesOf: map[string]content.Series{}}
 	for _, post := range snapshot.Posts {
 		read.posts[post.Slug] = post
-		if post.Status == content.StatusPublished {
+		if listed(post.Status) {
 			read.listed = append(read.listed, post)
 		}
 	}
@@ -76,19 +76,14 @@ func (read blog) seriesAndNeighbours(post content.Post) (*document.Series, docum
 	return &document.Series{Title: textSpans(series.Title), Parts: documentParts}, neighbours
 }
 
-// partsOf are a series' parts in their order, as its list holds them: each post it names that is out, and as a part
-// to come each not published yet, a draft or a preview, then each title it names to come. A part unlisted is listed
-// nowhere, so the series leaves it out. exhaustive holds the switch to every status.
+// partsOf are a series' parts in their order, as its list holds them: each post it names that is out, then each title
+// it names to come. A part not published, a draft, a preview or unlisted, is listed nowhere, so the series leaves it
+// out and keeps its working title off the site.
 func (read blog) partsOf(series content.Series) []listedPart {
 	parts := []listedPart{}
 	for _, slug := range series.Posts {
-		post := read.posts[slug]
-		switch post.Status {
-		case content.StatusPublished:
+		if post := read.posts[slug]; listed(post.Status) {
 			parts = append(parts, listedPart{title: post.Title, post: &post})
-		case content.StatusDraft, content.StatusPreview:
-			parts = append(parts, listedPart{title: post.Title, post: nil})
-		case content.StatusUnlisted:
 		}
 	}
 	for _, title := range series.ToCome {

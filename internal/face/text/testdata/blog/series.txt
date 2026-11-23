@@ -10,7 +10,7 @@ DESCRIPTION
 
 READING
        How a reader keeps what they read.
-       1 of 2 parts out
+       1 of 2 out
 
        Reading slowly                                               2026-11-10
               Why a page read twice is read once.

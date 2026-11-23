@@ -7,8 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
@@ -193,21 +192,22 @@ func TestEditFindsOnlyAProjectsPage(test *testing.T) {
 	}
 }
 
-// After :e and a space Tab goes through the projects with a page whose slugs start with what follows, in the order of
-// their letters; after a command that takes no argument it leaves the line as typed. The session holds a second
-// project's page, which sorts first.
-func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
+// Tab goes round the projects' pages in the profile's order: after :e and a space those whose slugs start with what
+// follows, and among the places a start typed with no command names; after a command that takes no argument it leaves
+// the line as typed.
+func TestTabGoesRoundTheProjectsPagesInTheProfilesOrder(test *testing.T) {
 	cases := []struct {
 		name string
 		text string
 		keys []string
 		line string
 	}{
-		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: ":e another-tool"},
-		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: ":e tidy-tool"},
+		{name: "the first page after :e", text: "e ", keys: []string{"tab"}, line: ":e tidy-tool"},
+		{name: "the second page after it", text: "e ", keys: []string{"tab", "tab"}, line: ":e tame-tool"},
 		{name: "the pages a start names", text: "e ti", keys: []string{"tab"}, line: ":e tidy-tool"},
 		{name: "what was typed after the one page a start names", text: "e ti", keys: []string{"tab", "tab"}, line: ":e ti"},
 		{name: "spaces around", text: " e  ti", keys: []string{"tab"}, line: ":e tidy-tool"},
+		{name: "the second place a start names", text: "t", keys: []string{"tab", "tab"}, line: ":tame-tool"},
 		{name: "a project of no page", text: "e other", keys: []string{"tab"}, line: ":e other"},
 		{name: "none after :q", text: "q ", keys: []string{"tab"}, line: ":q"},
 	}
@@ -221,15 +221,16 @@ func TestTabGoesRoundThePagesAfterEdit(test *testing.T) {
 	}
 }
 
-// twoPagesModel is a session on the fixture's documents and a second project's page, another-tool, of a title alone.
+// twoPagesModel is a session on the fixture's content with a second project of a page, tame-tool, of a name alone,
+// after tidy-tool in the profile though its slug sorts before it.
 func twoPagesModel(test *testing.T) Model {
-	another := document.Document{
-		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "another-tool", Tab: ""}, textOf("another-tool")),
-		Blocks: nil,
+	tame := content.Project{
+		Slug: "tame-tool", Name: "tame-tool", Tagline: "", Description: "", Language: "", Stack: nil, Repo: "", Install: "",
+		Recording: "", Page: true, Facts: nil, Sections: nil,
 	}
-	snapshot := fixtures.LoadedContent(test)
-	documents := append(compose.Documents(snapshot), another)
-	return New(documents, fixtures.Site(snapshot), commonWidth, commonHeight, fixtures.Day())
+	snapshot := *fixtures.LoadedContent(test)
+	snapshot.Profile.Projects = slices.Concat(snapshot.Profile.Projects, []content.Project{tame})
+	return sessionModel(&snapshot, commonWidth, commonHeight)
 }
 
 // Tab after :e and a space writes the first page whose slug fits, which Enter opens.

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"maps"
-	"slices"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -36,15 +35,15 @@ func buffersOf(documents []document.Document) map[document.Page][]tab {
 	return buffers
 }
 
-// projectSlugs are the slugs of the projects' pages among the buffers, in the order of their letters.
-func projectSlugs(buffers map[document.Page][]tab) []string {
+// projectSlugs are the slugs of the projects' pages among the documents, in the order compose hands them, the
+// profile's.
+func projectSlugs(documents []document.Document) []string {
 	slugs := []string{}
-	for page := range buffers {
-		if page.Kind == document.PageProject {
-			slugs = append(slugs, page.Slug)
+	for _, held := range documents {
+		if held.Head.Page.Kind == document.PageProject {
+			slugs = append(slugs, held.Head.Page.Slug)
 		}
 	}
-	slices.Sort(slugs)
 	return slugs
 }
 

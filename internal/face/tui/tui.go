@@ -32,7 +32,7 @@ type Model struct {
 	shown   document.Page
 	tabs    []tab
 	left    map[document.Page]readerPlace
-	// slugs are the slugs of the projects' pages the session holds, in order, as Tab goes round them
+	// slugs are the slugs of the projects' pages the session holds, in the documents' order, as Tab goes round them
 	slugs []string
 	// site writes the addresses links lead to, and names the session in the footer
 	site     routes.Site
@@ -77,7 +77,7 @@ func New(documents []document.Document, site routes.Site, width, height int, tod
 		width, height = assumedWidth, assumedHeight
 	}
 	buffers, shown := buffersOf(documents), resumePage()
-	slugs := projectSlugs(buffers)
+	slugs := projectSlugs(documents)
 	model := Model{
 		buffers:  buffers,
 		shown:    shown,

@@ -282,8 +282,8 @@ func TestTabGoesRoundThePlaces(test *testing.T) {
 
 // Over the command line a menu names what Tab goes round for what is typed, each by its kind, as Neovim's popup menu
 // does: from the colon on, the places offered before anything is typed; a letter on, the places it starts, the
-// projects' pages among them; after :e and a space, every project's page; and where the screen is too narrow for the
-// kinds, the names alone, whole.
+// projects' pages among them; after :e and a space, only the projects' pages; and where the screen is too narrow for
+// the kinds, the names alone, whole.
 func TestTheMenuNamesWhatTabGoesRound(test *testing.T) {
 	// a screen narrower than a project's slug, its kind and the room round them, wide enough for the slug alone
 	const narrowerThanTheKinds = 16
@@ -296,7 +296,7 @@ func TestTheMenuNamesWhatTabGoesRound(test *testing.T) {
 	}{
 		{name: "a colon alone", width: commonWidth, text: "", holds: []string{`experience +tab`, `contact +tab`, `help +keys`}, lacks: []string{`tidy-tool`}},
 		{name: "a letter typed", width: commonWidth, text: "t", holds: []string{`tidy-tool +project`}, lacks: []string{`experience +tab`, `help +keys`}},
-		{name: "an edit and a space", width: commonWidth, text: "e ", holds: []string{`tidy-tool +project`}, lacks: []string{`help +keys`}},
+		{name: "an edit and a space", width: commonWidth, text: "e ", holds: []string{`tidy-tool +project`}, lacks: []string{`help +keys`, `(?m)^ +project *$`}},
 		{name: "a screen too narrow for the kinds", width: narrowerThanTheKinds, text: "e ", holds: []string{`tidy-tool`}, lacks: []string{`tidy-tool +pr`}},
 	}
 	for _, testCase := range cases {

@@ -68,6 +68,9 @@ type Post struct {
 	SiteLinks map[*ast.Link]WrittenLink `yaml:"-"`
 	// Revisions are the post's older versions, oldest first
 	Revisions []Revision `yaml:"-"`
+	// Stale is whether a translation was made from a text of its original other than the one that stands; never the
+	// original's own
+	Stale bool `yaml:"-"`
 }
 
 // Status is who may read a post (D7): a draft, its author alone; a preview, whoever holds its secret link;
@@ -100,19 +103,23 @@ func fileLanguage(translation string) string {
 	return cmp.Or(translation, english)
 }
 
-// translatedFields are a translation's front matter: its own text and dates; its number and tags are its original's.
+// translatedFields are a translation's front matter: its own text and dates, and the text of its original it was made
+// from; its number and tags are its original's.
 type translatedFields struct {
 	Title       string `yaml:"title"`
 	Description string `yaml:"description"`
 	Status      Status `yaml:"status"`
 	Published   Moment `yaml:"published"`
 	Updated     Day    `yaml:"updated"`
+	Source      string `yaml:"source"`
 }
 
-// writtenPost is a post's text in one language as its file writes it, the line its body starts on, and its revisions.
+// writtenPost is a post's text in one language as its file writes it, the text of its original a translation names as
+// its source, none for the original, the line its body starts on, and its revisions.
 type writtenPost struct {
 	file        string
 	post        Post
+	source      string
 	frontMatter *yaml.Node
 	bodyLine    int
 	revisions   []writtenRevision
@@ -182,23 +189,27 @@ func readText(folder fs.FS, postParser parser.Parser, slug, translation string) 
 	if len(splitFaults) > 0 {
 		return unread, splitFaults
 	}
-	post, frontMatter, decodingFaults := decodePost(file, parts.frontMatter, translation)
-	post.Slug, post.Translation = slug, translation
-	post.Body = Markdown{Source: parts.body, Tree: postParser.Parse(text.NewReader(parts.body))}
-	return writtenPost{file: file, post: post, frontMatter: frontMatter, bodyLine: parts.bodyLine, revisions: nil}, decodingFaults
+	written, decodingFaults := decodePost(file, parts.frontMatter, translation)
+	written.post.Slug, written.post.Translation = slug, translation
+	written.post.Body = Markdown{Source: parts.body, Tree: postParser.Parse(text.NewReader(parts.body))}
+	written.bodyLine = parts.bodyLine
+	return written, decodingFaults
 }
 
-// decodePost decodes a post's front matter strictly: the original's whole, a translation's own fields alone.
-func decodePost(file string, frontMatter []byte, translation string) (Post, *yaml.Node, Faults) {
+// decodePost decodes a post's front matter in its file strictly: the original's whole, a translation's own fields
+// alone, with the source it names.
+func decodePost(file string, frontMatter []byte, translation string) (writtenPost, Faults) {
 	if translation == "" {
-		return decodeStrictly[Post](file, frontMatter)
+		post, document, faults := decodeStrictly[Post](file, frontMatter)
+		return writtenPost{file: file, post: post, source: "", frontMatter: document, bodyLine: 0, revisions: nil}, faults
 	}
 	fields, document, faults := decodeStrictly[translatedFields](file, frontMatter)
-	return Post{
+	post := Post{
 		Slug: "", Translation: translation, ID: 0, Title: fields.Title, Description: fields.Description, Status: fields.Status,
 		Published: fields.Published, Updated: fields.Updated, Tags: nil, Discussions: nil, Body: Markdown{Source: nil, Tree: nil},
-		Pictures: nil, SiteLinks: nil, Revisions: nil,
-	}, document, faults
+		Pictures: nil, SiteLinks: nil, Revisions: nil, Stale: false,
+	}
+	return writtenPost{file: file, post: post, source: fields.Source, frontMatter: document, bodyLine: 0, revisions: nil}, faults
 }
 
 // partFaults say why each part of a post's folder but its texts, revisions and pictures shown is not read.
@@ -226,12 +237,18 @@ func partFaults(folder fs.FS, written writtenFolder, shown map[string]bool) Faul
 	return faults
 }
 
-// inspectPosts checks every post and each translation of it, and that no two posts share a number: the originals, the
-// translations by their language, and the faults found.
-func inspectPosts(folder fs.FS, site WebAddress, folders []writtenFolder) ([]Post, map[string][]Post, Faults) {
-	originals := make([]Post, 0, len(folders))
-	translations := map[string][]Post{}
-	faults := Faults{}
+// inspectedPosts are the posts a load inspected: the originals, the translations by their language, the faults found,
+// and the warnings, each a translation older than its original.
+type inspectedPosts struct {
+	originals    []Post
+	translations map[string][]Post
+	faults       Faults
+	warnings     Faults
+}
+
+// inspectPosts checks every post and each translation of it, and that no two posts share a number.
+func inspectPosts(folder fs.FS, site WebAddress, folders []writtenFolder) inspectedPosts {
+	inspected := inspectedPosts{originals: make([]Post, 0, len(folders)), translations: map[string][]Post{}, faults: Faults{}, warnings: Faults{}}
 	numbered := map[int]bool{}
 	for _, written := range folders {
 		original := written.original
@@ -244,25 +261,40 @@ func inspectPosts(folder fs.FS, site WebAddress, folders []writtenFolder) ([]Pos
 		}
 		numbered[original.post.ID] = true
 		post, shown, textFaults := inspectText(folder, site, originalInspection, original)
-		faults = slices.Concat(faults, folderInspection.faults, textFaults)
-		originals = append(originals, post)
+		inspected.faults = slices.Concat(inspected.faults, folderInspection.faults, textFaults)
+		inspected.originals = append(inspected.originals, post)
 		for _, translation := range written.translations {
-			translated, translationShown, translationFaults := inspectTranslation(folder, site, post, translation)
-			translations[translated.Translation] = append(translations[translated.Translation], translated)
-			shown.add(translationShown)
-			faults = append(faults, translationFaults...)
+			translated := inspectTranslation(folder, site, post, translation)
+			language := translated.post.Translation
+			inspected.translations[language] = append(inspected.translations[language], translated.post)
+			shown.add(translated.shown)
+			inspected.faults = append(inspected.faults, translated.faults...)
+			inspected.warnings = append(inspected.warnings, translated.warnings...)
 		}
-		faults = slices.Concat(faults, written.strayRevisions, partFaults(folder, written, shown.named))
+		inspected.faults = slices.Concat(inspected.faults, written.strayRevisions, partFaults(folder, written, shown.named))
 	}
-	return originals, translations, faults
+	return inspected
 }
 
-// inspectTranslation checks a translation as inspectText does, with its original's number, tags and discussions.
-func inspectTranslation(folder fs.FS, site WebAddress, original Post, written writtenPost) (Post, shownPictures, Faults) {
+// inspectedTranslation is a translation a load inspected: the translation, the pictures it shows, its faults, and its
+// warning, where it is older than its original.
+type inspectedTranslation struct {
+	post     Post
+	shown    shownPictures
+	faults   Faults
+	warnings Faults
+}
+
+// inspectTranslation checks a translation as inspectText does, with its original's number, tags and discussions, and
+// the source it names, which finds it stale or not.
+func inspectTranslation(folder fs.FS, site WebAddress, original Post, written writtenPost) inspectedTranslation {
 	written.post.ID, written.post.Tags, written.post.Discussions = original.ID, original.Tags, original.Discussions
 	translationInspection := &inspection{file: written.file, faults: nil}
+	warnings := &inspection{file: written.file, faults: nil}
 	inspectTextFields(translationInspection, written.post)
-	return inspectText(folder, site, translationInspection, written)
+	written.post.Stale = inspectSource(translationInspection, warnings, original, written.source)
+	post, shown, faults := inspectText(folder, site, translationInspection, written)
+	return inspectedTranslation{post: post, shown: shown, faults: faults, warnings: warnings.faults}
 }
 
 // inspectText checks a post's text in one language and its revisions, its fields inspected already.

@@ -27,14 +27,21 @@ func versionText(head document.Head) string {
 	return ""
 }
 
-// newerSpans are what an older version of a post says of the newer one that stands over it, each face writing the link
-// in its own format: the site's words round the current version's day, a link to it; none on any other page.
-func newerSpans(head document.Head) []document.Span {
-	older, isOlder := head.Version.(document.VersionOlder)
-	if !isOlder {
-		return nil
+// versionNote is what the version a page's head says is read says under its day, each face writing the link in its own
+// format: an older version, of the newer one that stands over it, the site's words round the current version's day, a
+// link to it; a translation older than its original, the site's words, a link to the original; none on any other
+// page.
+func versionNote(head document.Head) []document.Span {
+	switch version := head.Version.(type) {
+	case document.VersionOlder:
+		return version.NewerSpans(dayText(version.Newer.Day))
+	case document.VersionOut:
+		if version.Outdated != nil {
+			return version.Outdated.Spans()
+		}
+	case document.VersionDraft:
 	}
-	return older.NewerSpans(dayText(older.Newer.Day))
+	return nil
 }
 
 // dayText writes the day a moment falls on, in the zone it holds; nothing for the zero time, which is none.

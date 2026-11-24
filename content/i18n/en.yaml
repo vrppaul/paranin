@@ -18,7 +18,8 @@
 # language_TERRITORY; and the list's grouping by series, after the word before how it groups its posts, apart from the
 # series' label among a post's facts, since a language may write the two otherwise; the months' names as a day writes
 # them, 21 Nov 2026; the manual's own words, the section of the manual its pages stand in, the names of the sections
-# each opens with and of its notes, which it writes in capitals. A phrase holds a place, {}, for each value it takes, in the order the site hands them: the command, the code
+# each opens with and of its notes, which it writes in capitals; and what a translation older than its original says
+# of it. A phrase holds a place, {}, for each value it takes, in the order the site hands them: the command, the code
 # block's number on its page, a part's number and the count of parts, the series' title, the list's title and the
 # grouping's word, the tag, the filter's words, the newer version's day, the author's name, the series' title and the
 # blog's feed's title. A count, how many posts, all the parts of a series and those out, is written in each form the
@@ -108,3 +109,4 @@ manual_section: User Commands
 manual_name: Name
 manual_description: Description
 manual_notes: Notes
+outdated: older than the original

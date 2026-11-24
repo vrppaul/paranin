@@ -52,10 +52,12 @@ const (
 )
 
 // A translation a case writes, the fixture's and one beside a post of its own; the line its body opens on, after its
-// front matter; and a path no page takes
+// front matter; the source it names, of a source's form and of no text of its original, so it loads stale; and a path
+// no page takes
 const (
 	sharedTranslationFile = "posts/series/post.ru.md"
-	translationBodyLine   = 7
+	translationBodyLine   = 8
+	unknownSource         = "en@000000000000"
 	nowhere               = "/nowhere"
 )
 
@@ -243,7 +245,7 @@ func translationPreviewSluggedSeries(test *testing.T, folder string) {
 
 // translationLinkingTo is a translation's text of a status whose body is a link to a path, on translationBodyLine.
 func translationLinkingTo(status, path string) string {
-	return "---\ntitle: Перевод\ndescription: О нём.\n" + status + "\npublished: 2026-11-15T10:00+03:00\n---\n[a](" + path + ")\n"
+	return "---\ntitle: Перевод\ndescription: О нём.\n" + status + "\npublished: 2026-11-15T10:00+03:00\nsource: " + unknownSource + "\n---\n[a](" + path + ")\n"
 }
 
 // draftSluggedSeries writes a draft whose folder bears the name the list by series takes in the blog's folder.

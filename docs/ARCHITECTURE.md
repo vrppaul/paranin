@@ -150,6 +150,8 @@ folder, `compose` composes a blog in each language, its frame in its words, whos
 language, and a post's head lists the languages it is read in. Amended 2026-11-24, with the site's words in every
 language: an edition holds its series in its language, a catalogue writes a count in each plural form and the months,
 read by x/text's CLDR rules, and the frame carries how a day and the manual's headings are written in its language.
+Amended 2026-11-24, with a translation's source: `content` holds a translation to the text of its original it was made
+from and keeps what it warns of beside a snapshot, and a translation older than its original says so under its day.
 
 ### Context
 
@@ -500,6 +502,21 @@ and web routes.
   which read `/de/blog` as a language the site has not; the
   faces reading the words of a document's language off it, which would
   carry the frame's words into every head.
+  A translation names the text of its original it was made from (amended
+  2026-11-24, FOUNDATION §5.4, A stale translation shows), `source:
+  en@<hash>`, the hash of the original's version's text, its title, lead
+  and body, the text a revision keeps (`Revision.text`), which `content`
+  holds the source to: one of no form is a fault, and one that names any
+  other text a warning, a fault of the content that refuses nothing, kept
+  in the snapshot (`Snapshot.Warnings`), which `paranin check` prints and
+  `paranin serve` logs, and the translation stale (`Post.Stale`). `compose`
+  says so in the current version's head (`VersionOut.Outdated`), the site's
+  words and the original's page and language, where the Switch offers the
+  original, and each face writes it under the day, as it writes an older
+  version's way to the newer. Ways weighed: the source as a hash of the
+  file whole, which a status or a day changes; the note a version of its
+  own kind, which every switch over the versions would name again for what
+  is a version out.
   A series is read in each language (amended 2026-11-24, `Edition.Series`), its own
   words where its translation's file writes them, its original's where
   none does, so `compose` reads a blog's series as it reads its posts. The

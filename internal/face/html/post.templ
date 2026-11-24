@@ -61,7 +61,8 @@ templ (writer PageWriter) outline(headings []outlined) {
 
 // postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
 // style, in one column; beside them, in the sources' column, its facts: the version read, by its day, the pick of its
-// versions, an older one saying under it that a newer stands, or a draft's by the site's word for one, its series'
+// versions, an older one saying under it that a newer stands, a translation older than its original that the original
+// changed since, or a draft's by the site's word for one, its series'
 // pick, the Switch of the languages it is read in, and its tags; the corners' crosses round it, as round the résumé's
 // first screen.
 templ (writer PageWriter) postHead(head document.Head) {
@@ -82,6 +83,9 @@ templ (writer PageWriter) postHead(head document.Head) {
 					<dt>{ writer.frame.postLabels.Version }</dt>
 					<dd>
 						@writer.versionPick(version.Day, version.Versions)
+						if version.Outdated != nil {
+							@writer.outdated(*version.Outdated)
+						}
 					</dd>
 				case document.VersionOlder:
 					<dt>{ writer.frame.postLabels.Version }</dt>
@@ -189,14 +193,23 @@ templ (writer PageWriter) versionRow(version document.PostVersion) {
 	}
 }
 
-// newer is what an older version of a post says under its day (DESIGN.md, PostHead): that a newer stands, the arrow,
-// then the site's words round the current version's day, the whole a link to it.
+// newer is what an older version of a post says under its day (DESIGN.md, PostHead), as a version's note: that a newer
+// stands, the arrow, then the site's words round the current version's day, the whole a link to it.
 templ (writer PageWriter) newer(older document.VersionOlder) {
-	<a class="newer" href={ writer.frame.site.Reference(older.Newer.Page, routes.FormatChosen) }>
-		<span class="newer-mark" aria-hidden="true">{ look.NewerMark }</span>
+	<a class="version-note" href={ writer.frame.site.Reference(older.Newer.Page, routes.FormatChosen) }>
+		<span class="version-note-mark" aria-hidden="true">{ look.VersionNoteMark }</span>
 		{ older.NewerWords.Before }
 		@writer.day(older.Newer.Day)
 		{ older.NewerWords.After }
+	</a>
+}
+
+// outdated is what a translation older than its original says under its day (DESIGN.md, PostHead), as a version's
+// note: the arrow, then the site's words, the whole a link to the original, in the original's language.
+templ (writer PageWriter) outdated(note document.Outdated) {
+	<a class="version-note" href={ writer.frame.site.Reference(note.Original, routes.FormatChosen) } hreflang={ note.Language }>
+		<span class="version-note-mark" aria-hidden="true">{ look.VersionNoteMark }</span>
+		{ note.Words }
 	</a>
 }
 

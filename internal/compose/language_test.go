@@ -18,6 +18,10 @@ const (
 	translationStatus   = "status: published"
 	translationOutLater = "published: 2026-12-01T10:00+03:00"
 	translationOut      = "published: 2026-11-15T10:00+03:00"
+	// the sources the translation names the fixture post's text by: as its revision of the 10th keeps it, the
+	// fixture's, and as it stands
+	fixtureRevisionSource = "en@59b3c768ccba"
+	fixtureCurrentSource  = "en@520f97557153"
 	// the Russian blog's place among the site's translations, the fixture's one
 	russianBlog = 0
 )
@@ -137,6 +141,40 @@ func translationWith(test *testing.T, original, replacement string) *content.Sna
 		test.Fatalf("load the fixture with %q: %v", replacement, err)
 	}
 	return snapshot
+}
+
+// A translation older than its original says so under its day, leading to the original as its Switch does; one made
+// from the original as it stands says nothing, nor one whose original no list names, which the Switch leads nowhere.
+func TestATranslationOlderThanItsOriginalLeadsToTheOriginal(test *testing.T) {
+	cases := []struct {
+		name     string
+		snapshot *content.Snapshot
+		want     *document.Outdated
+	}{
+		{
+			name: "made from an older version", snapshot: fixtures.LoadedContent(test),
+			want: &document.Outdated{Original: document.PostPage(fixturePostSlug), Language: "en", Words: "старше оригинала"},
+		},
+		{name: "made from the original as it stands", snapshot: translationWith(test, fixtureRevisionSource, fixtureCurrentSource), want: nil},
+		{name: "of an original no list names", snapshot: changedFixture(test, fixturePostUnlisted), want: nil},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			site := SiteOf(Prepare(testCase.snapshot), publicOnTheDay())
+			read := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, document.PostPage(fixturePostSlug).InLanguage(russian))
+			version, isOut := read.Head.Version.(document.VersionOut)
+			if !isOut || !reflect.DeepEqual(version.Outdated, testCase.want) {
+				test.Errorf("the translation's version, %s = %+v, want one out saying %+v", testCase.name, read.Head.Version, testCase.want)
+			}
+		})
+	}
+}
+
+// fixturePostUnlisted makes the fixture's post unlisted, which its address serves and no list names.
+//
+//wrapper:a case of the table names the change it writes
+func fixturePostUnlisted(test *testing.T, folder string) {
+	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedStatus, "status: unlisted")
 }
 
 // A blog in a language writes a day in its language's months, and a series in the words its translation of it writes.

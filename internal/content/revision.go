@@ -170,7 +170,7 @@ func RevisionOf(post Post, now time.Time) (RevisionFile, error) {
 	if !taken.Day.start.Before(post.Published.dayAt(now)) {
 		return RevisionFile{Path: "", Text: nil}, errSameDay
 	}
-	if newest := len(post.Revisions) - 1; newest >= 0 && sameText(post.Revisions[newest], post) {
+	if newest := len(post.Revisions) - 1; newest >= 0 && bytes.Equal(post.Revisions[newest].text(), taken.text()) {
 		return RevisionFile{Path: "", Text: nil}, errNoChange
 	}
 	// its front matter is its two strings alone, which always encode
@@ -182,7 +182,11 @@ func RevisionOf(post Post, now time.Time) (RevisionFile, error) {
 	}, nil
 }
 
-// sameText is whether a revision holds a post's title, lead and body as they stand.
-func sameText(revision Revision, post Post) bool {
-	return revision.Title == post.Title && revision.Description == post.Description && bytes.Equal(revision.Body.Source, post.Body.Source)
+// What parts a version's title, its lead and its body in its text: neither a title nor a lead holds a line feed
+const textJoint = string(lineFeed)
+
+// text is a version's text, the words a revision keeps and a translation translates: its title, its lead and its body
+// as its file writes them, each parted from the next. Its post's facts, a status, a day or a tag, are none of it.
+func (revision Revision) text() []byte {
+	return slices.Concat([]byte(revision.Title+textJoint+revision.Description+textJoint), revision.Body.Source)
 }

@@ -666,7 +666,7 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 // day of the current version after the site's word for it.
 func TestAnOlderVersionSaysANewerStands(test *testing.T) {
 	read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog/reading-slowly/2026-11-10", commonWidth, tallHeight))))
-	for _, want := range []string{"Slow reading", "Why a page read twice is read once, first said.", "version 10 Nov 2026", look.NewerMark + " newer: 12 Nov 2026"} {
+	for _, want := range []string{"Slow reading", "Why a page read twice is read once, first said.", "version 10 Nov 2026", look.VersionNoteMark + " newer: 12 Nov 2026"} {
 		if !strings.Contains(read, want) {
 			test.Errorf("the older version =\n%s\nwant %q on it", read, want)
 		}

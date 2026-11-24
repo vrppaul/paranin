@@ -251,7 +251,7 @@ func TestASessionsRefusedRequestsAreLoggedOnce(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			records := make(chan slog.Record, logLines)
-			session := clientSession(test, serving(test, slog.New(recordedLog{records: records})), "reader")
+			session := clientSession(test, serving(test, slog.New(fixtures.RecordedLog{Records: records})), "reader")
 			for _, payload := range testCase.payloads {
 				if _, err := session.SendRequest(environmentType, true, payload); err != nil {
 					test.Fatalf("an env request of %q = %v, want it answered", payload, err)
@@ -508,7 +508,7 @@ func TestAnOrdinaryPasteReachesTheTUIAtOnce(test *testing.T) {
 // bubble sees blocked.
 func TestASessionClosedOnAnOpenConnectionEnds(test *testing.T) {
 	records := make(chan slog.Record, logLines)
-	address := serving(test, slog.New(recordedLog{records: records}))
+	address := serving(test, slog.New(fixtures.RecordedLog{Records: records}))
 	session := clientSession(test, address, "reader")
 	output, _ := openTerminal(test, session, commonTerminal())
 	readUntil(test, output, "contact")
@@ -605,7 +605,7 @@ func TestASessionIsLoggedOpeningAndClosing(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			records := make(chan slog.Record, logLines)
-			address := serving(test, slog.New(recordedLog{records: records}))
+			address := serving(test, slog.New(fixtures.RecordedLog{Records: records}))
 			_, _ = clientSession(test, address, testCase.user).CombinedOutput("")
 			opened, closed := nextRecord(test, records), nextRecord(test, records)
 			_, openedLasted := valueOf(opened, lastedKey)
@@ -844,23 +844,6 @@ func nextLine(test *testing.T, lines <-chan string) string {
 		return ""
 	}
 }
-
-// recordedLog hands each record a logger writes to a channel, so a test reads what the server logs by its values,
-// not by its words. The server's loggers add no attribute or group of their own, so neither is kept.
-type recordedLog struct {
-	records chan<- slog.Record
-}
-
-func (recordedLog) Enabled(context.Context, slog.Level) bool { return true }
-
-func (recorded recordedLog) Handle(_ context.Context, record slog.Record) error {
-	recorded.records <- record.Clone()
-	return nil
-}
-
-func (recorded recordedLog) WithAttrs([]slog.Attr) slog.Handler { return recorded }
-
-func (recorded recordedLog) WithGroup(string) slog.Handler { return recorded }
 
 // nextRecord is the next record the server logs, or the test's end once the server has logged nothing for too long.
 func nextRecord(test *testing.T, records <-chan slog.Record) slog.Record {

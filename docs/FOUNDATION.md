@@ -796,7 +796,7 @@ For every page of the site, the blog's among them:
   rank HTML first unless `text/plain` is named, which gives a bare `curl`
   the HTML.
 
-#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the stale translation, the TUI's language and the résumé's)
+#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the TUI's language and the résumé's)
 
 - **One folder per post, one file per language**; widgets shared. English
   is the main language. A post's language is its file's name,
@@ -804,8 +804,9 @@ For every page of the site, the blog's among them:
   2026-11-23). A translation, `post.ru.md`, is in a language the site has
   words for, `content/i18n/ru.yaml`, a tag of two or three small letters;
   its front matter writes its own `title`, `description`, `status`,
-  `published` and `updated`, and its number, tags and discussions are its
-  original's, so the check refuses them there. A post's folder with no
+  `published` and `updated`, and the `source` it was made from, and its
+  number, tags and discussions are its original's, so the check refuses
+  them there. A post's folder with no
   `post.en.md` is refused, a translation's among them.
 - **Addresses:** `/blog/page-cache` for English, `/ru/blog/page-cache` for
   Russian; the slug is the folder's name. Nothing redirects by
@@ -842,10 +843,35 @@ For every page of the site, the blog's among them:
   preview, unlisted or a draft shows on no other language's page, and a
   preview's link, signed over the post's address in its language, opens
   that language alone.
-- **A stale translation shows.** Its front matter names the original it was
-  made from, `source: en@<hash of the file>`. When the original changes,
-  `paranin check` warns, and the page says the translation is older than the
-  original.
+- **A stale translation shows** (built 2026-11-24). Its front matter names
+  the text of its original it was made from, `source: en@3f9a1c0b2d4e`: the
+  original's language, then SHA-256 of the original's title, lead and body
+  as its file writes them, each parted by a line feed, cut to twelve
+  hexadecimal digits, as git abbreviates a commit. The hash takes the words
+  a translation translates alone, the text a revision keeps, so a status, a
+  day, a tag or a discussion changed changes none; a typo fixed in place
+  does, as gettext marks an original edited by a letter fuzzy. A
+  translation with no `source`, or one not of that form, is refused. Where
+  the source is not the original's text as it stands, the translation is
+  stale: `paranin check` warns, naming the version it was made from where a
+  revision keeps it, and the hash that stands, and exits 0, so a commit and
+  CI pass and print it (the hook runs `verbose`), and `paranin serve` logs
+  it at each load. The translation's current version says under its day
+  that it is older than the original, a link to the original: on the page
+  in the form an older version's way to the newer takes, in markdown and in
+  the manual; the TUI shows no translation yet. The note leads where the
+  Switch does, so a translation whose original no list names says nothing;
+  an older version of a translation says a newer stands already, and
+  nothing of its original. The author refreshes the hash by hand, writing
+  the one the warning names once the translation follows the original; a
+  new translation's is the one the check's refusal names. Ways weighed: the
+  file's bytes whole, which marks a translation stale when the original's
+  status, day or discussions change; the body alone, which misses a title
+  rewritten; a command beside `revise` that rewrites the front matter, a
+  second writer of a file its author edits, for a line the warning writes
+  out already; the warning a fault, which blocks a typo fixed in the
+  original until the translation follows; the warning a log line alone,
+  which `check` never prints.
 - **Markup:** `<link rel="alternate" hreflang>` with `x-default`, the
   English original, on each language's page of a post, the same alternates
   in the sitemap, a feed per language, `og:locale` from each catalogue's

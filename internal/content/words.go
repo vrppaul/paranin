@@ -28,7 +28,7 @@ import (
 // them, and the words that mark the current one and the one read; and the language: the label of a post's language,
 // the language's own name for itself, which a post's Switch shows, and the locale Open Graph marks a page in; the
 // manual's own words, the section of the manual its pages stand in and the names of the sections each opens with and
-// of the notes it ends with.
+// of the notes it ends with; and what a translation older than its original says of it.
 type Word int
 
 const (
@@ -94,6 +94,7 @@ const (
 	WordManualName
 	WordManualDescription
 	WordManualNotes
+	WordOutdated
 )
 
 // Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
@@ -223,6 +224,7 @@ func wordKeys() map[Word]string {
 		WordManualName:        "manual_name",
 		WordManualDescription: "manual_description",
 		WordManualNotes:       "manual_notes",
+		WordOutdated:          "outdated",
 	}
 }
 

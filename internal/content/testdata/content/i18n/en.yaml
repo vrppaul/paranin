@@ -83,3 +83,4 @@ manual_section: User Commands
 manual_name: Name
 manual_description: Description
 manual_notes: Notes
+outdated: older than the original

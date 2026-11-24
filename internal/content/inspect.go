@@ -100,6 +100,17 @@ const (
 	otherSeriesProblem        = "%q is a part of another series, %q"
 	untranslatedSeriesProblem = "translates no series: its original, %s, comes first"
 	englishSeriesProblem      = "translates a series into English, which its original, <name>" + yamlEnding + ", is written in"
+	noSourceProblem           = "is empty: a translation names the text of its original it was made from, now %s"
+	sourceProblem             = "%q names no text of the original: its language, " + sourceJoint + " and its hash, now %s"
+	staleProblem              = "%q names %s, older than the original's text as it stands, %s: once the translation " +
+		"follows that, write it as its source"
+)
+
+// What a stale translation's warning says its source names: a version of its original a revision keeps, by its day,
+// or a text none keeps, edited since
+const (
+	olderVersionSource = "the original's version of "
+	editedSource       = "a text of the original no revision keeps"
 )
 
 // What separates the kinds a fault lists where a value is none of them

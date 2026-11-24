@@ -200,7 +200,7 @@ blends:
 
 page_blends:
   - name: tint_strong
-    about: the tint under the pointer, where it is a link, as the way from an older version of a post to the newer
+    about: the tint under the pointer, where it is a link, as a version's note, an older version's way to the newer and a translation's to its original
     over: accent
     light: 0.28
     dark: 0.36

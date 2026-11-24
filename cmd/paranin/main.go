@@ -9,10 +9,12 @@
 //
 // preview-link and revise take --language and a language's tag, as ru, for a post's translation into it.
 //
-// check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
-// load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
-// inside the site leading to no page or no section of one, now or as each post dated later comes out, the drafts'
-// among them, which the content alone cannot know, since routes writes the addresses and compose names the anchors.
+// check prints the faults, one a line, and where there are none what the content warns of, a translation older than its
+// original, which refuses nothing; serve logs it at each load. The commit's hook checks the content alone, and CI the
+// release it builds. Every load, check's and serve's, holds the content to no two of the site's pages sharing an
+// address, and to no post's link inside the site leading to no page or no section of one, now or as each post dated
+// later comes out, the drafts' among them, which the content alone cannot know, since routes writes the addresses and
+// compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). It serves each preview at the link a key signs, the key in the file PARANIN_PREVIEW_KEY
@@ -139,9 +141,11 @@ const previewKeyVariable = "PARANIN_PREVIEW_KEY"
 // errNoPreviewKey is a preview link asked for where the environment names no key to sign it with.
 var errNoPreviewKey = errors.New("no preview key: " + previewKeyVariable + " names none")
 
-// How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own
+// How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own;
+// and how warnings are, after the content folder, quoted
 const (
 	faultsFormat    = "%s:\n%v\n"
+	warningsFormat  = "%s warns, refusing nothing:\n%v\n"
 	folderSeparator = " and "
 )
 
@@ -155,6 +159,7 @@ const (
 	previewsKey = "previews"
 	errorKey    = "error"
 	faultsKey   = "faults"
+	warningsKey = "warnings"
 )
 
 // How long the server waits on a slow reader, and on the requests in hand when it stops
@@ -193,9 +198,9 @@ func main() {
 func run(arguments []string) int {
 	switch command := commandOf(arguments); {
 	case command == checkCommand && len(arguments) == contentArguments:
-		return check(arguments[contentArgument])
+		return check(arguments[contentArgument], os.Stderr)
 	case command == checkCommand && len(arguments) == releaseArguments:
-		return checkRelease(arguments[contentArgument], arguments[buildArgument])
+		return checkRelease(arguments[contentArgument], arguments[buildArgument], os.Stderr)
 	case command == serveCommand:
 		asked, isWritten := servingOf(arguments[contentArgument:])
 		if !isWritten {
@@ -252,18 +257,33 @@ func commandOf(arguments []string) string {
 }
 
 // check loads a content folder as the site would, and holds what it loads to the site's own check, as a release's
-// load does.
-func check(contentFolder string) int {
+// load does, printing to warned what it warns of where it loads.
+func check(contentFolder string, warned io.Writer) int {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err == nil {
 		err = checkedNow(loaded)
 	}
+	if err == nil {
+		warn(warned, loaded.Warnings, contentFolder)
+	}
 	return checked(err, contentFolder)
 }
 
-func checkRelease(contentFolder, buildFolder string) int {
-	_, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, checkedNow)
+func checkRelease(contentFolder, buildFolder string, warned io.Writer) int {
+	loaded, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, checkedNow)
+	if err == nil {
+		warn(warned, loaded.Content.Warnings, contentFolder)
+	}
 	return checked(err, contentFolder, buildFolder)
+}
+
+// warn prints what a content folder holds wrong that refuses nothing, after the folder, quoted, one a line; nothing
+// where it holds none. The check succeeds all the same, so a commit and CI pass, and print it.
+func warn(warned io.Writer, warnings content.Faults, contentFolder string) {
+	if len(warnings) > 0 {
+		// a warning that cannot be printed changes nothing the check decides
+		_, _ = fmt.Fprintf(warned, warningsFormat, strconv.Quote(contentFolder), warnings)
+	}
 }
 
 // checkedNow holds content to the site's own check, from the moment it is loaded on.
@@ -506,6 +526,13 @@ func serve(asked servingAsked) int {
 	return running.watch(stopping)
 }
 
+// logWarnings logs what the content served holds wrong that refuses nothing, where it holds any.
+func (running serving) logWarnings() {
+	if warnings := running.store.Current().Content.Warnings; len(warnings) > 0 {
+		running.logger.Warn("the content warns, refusing nothing", warningsKey, warnings.Error())
+	}
+}
+
 // fromEnvironment is the value of an environment variable, or a fallback where it is unset or empty.
 func fromEnvironment(variable, fallback string) string {
 	if value := os.Getenv(variable); value != "" {
@@ -562,8 +589,10 @@ type serving struct {
 	stopSignals context.CancelFunc
 }
 
-// watch answers each signal until the site stops: a reload, a change in the folders, a stop, or the server failing.
+// watch answers each signal until the site stops: a reload, a change in the folders, a stop, or the server failing;
+// first it logs what the release it starts with warns of.
 func (running serving) watch(stopping context.Context) int {
+	running.logWarnings()
 	for {
 		select {
 		case <-stopping.Done():
@@ -588,6 +617,7 @@ func (running serving) reload() {
 		return
 	}
 	running.logger.Info("the release is loaded again")
+	running.logWarnings()
 }
 
 // shutDown stops every server at once, so none takes new work while another finishes its own, and waits for

@@ -50,10 +50,11 @@ func listedVersion(version postVersion, shown document.Page) document.PostVersio
 	return document.PostVersion{Page: version.page, Day: day.Start(), Name: day.Written(), Current: version.page.Revision == "", Read: version.page == shown}
 }
 
-// versionOf is the version of a post its reader reads: a draft, by the site's word for one; or a version out, by the
-// day it came out, with every version its reader may go to, an older one with the current one it says stands over it,
-// in the site's words round that version's day. exhaustive holds the switch to every status.
-func (read blog) versionOf(version postVersion, words content.Words) document.Version {
+// versionOf is the version of a post its reader reads, among the languages it is read in: a draft, by the site's word
+// for one; or a version out, by the day it came out, with every version its reader may go to, the current one of a
+// translation older than its original saying so, an older one with the current one it says stands over it, in the
+// site's words round that version's day. exhaustive holds the switch to every status.
+func (read blog) versionOf(version postVersion, words content.Words, languages []document.Language) document.Version {
 	switch version.post.Status {
 	case content.StatusDraft:
 		return document.VersionDraft{Word: words.Text(content.WordDraft)}
@@ -61,11 +62,25 @@ func (read blog) versionOf(version postVersion, words content.Words) document.Ve
 	}
 	day, versions := version.text.Day.Start(), read.versionsOf(version.post, version.page)
 	if version.page.Revision == "" {
-		return document.VersionOut{Day: day, Versions: versions}
+		return document.VersionOut{Day: day, Versions: versions, Outdated: outdatedOf(version.post, words, languages)}
 	}
 	newer := listedVersion(currentOf(version.post), version.page)
 	before, after := words.Around(content.PhraseNewerVersion)
 	return document.VersionOlder{Day: day, Newer: newer, NewerWords: document.Around{Before: before, After: after}, Versions: versions}
+}
+
+// outdatedOf is what a translation older than its original says, leading to the original where its Switch offers the
+// original, among the languages it is read in; none where it is no stale translation, or its Switch leads nowhere.
+func outdatedOf(post content.Post, words content.Words, languages []document.Language) *document.Outdated {
+	if !post.Stale {
+		return nil
+	}
+	for _, offered := range languages {
+		if offered.Page.Translation == "" {
+			return &document.Outdated{Original: offered.Page, Language: offered.Tag, Words: words.Text(content.WordOutdated)}
+		}
+	}
+	return nil
 }
 
 // olderDocuments are the older versions of the posts the blog serves its audience, each a page of its own, the posts in

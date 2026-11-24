@@ -943,7 +943,7 @@ func TestAnOlderVersionReadsAsItsGoldenMarkupIndexedByNone(test *testing.T) {
 	older := fixtures.DocumentOf(test, siteOnTheDay(fixtures.LoadedContent(test)).Own.Versions, document.PostPage("reading-slowly").OlderVersion("2026-11-10"))
 	page := fixtureWriter(test).Post(older)
 	golden.Match(test, "blog/reading-slowly/2026-11-10.html", lined(page))
-	for _, want := range []string{noIndexTag, `<a class="newer" href="/blog/reading-slowly">`} {
+	for _, want := range []string{noIndexTag, `<a class="version-note" href="/blog/reading-slowly">`} {
 		if !strings.Contains(page, want) {
 			test.Errorf("the older version's page %q holds no %q", page, want)
 		}

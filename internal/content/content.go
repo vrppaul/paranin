@@ -37,6 +37,8 @@ type Snapshot struct {
 	Own Edition
 	// Translations are the content in each other language the site has words for, in their tags' order
 	Translations []Edition
+	// Warnings are what the content holds wrong that refuses nothing: each translation older than its original
+	Warnings Faults
 }
 
 // Edition is the content in one language: the site's words in it, the posts written in it, in the order of their
@@ -94,8 +96,8 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	faults = append(faults, wordFaults...)
 	faults = append(faults, misplacedWords...)
 	faults = append(faults, misplacedPosts...)
-	originals, translations, postFaults := inspectPosts(folder, profile.Site.BaseURL, posts)
-	faults = append(faults, postFaults...)
+	inspected := inspectPosts(folder, profile.Site.BaseURL, posts)
+	faults = append(faults, inspected.faults...)
 	faults = append(faults, misplacedSeries...)
 	faults = append(faults, inspectSeries(series, posts)...)
 	if len(faults) > 0 {
@@ -103,10 +105,10 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	}
 	editions := []Edition{}
 	for _, language := range translated {
-		editions = append(editions, Edition{Words: words[language], Posts: translations[language], Series: series.seriesIn(language)})
+		editions = append(editions, Edition{Words: words[language], Posts: inspected.translations[language], Series: series.seriesIn(language)})
 	}
-	own := Edition{Words: words[english], Posts: originals, Series: series.seriesIn(english)}
-	return &Snapshot{Profile: profile, Own: own, Translations: editions}, nil
+	own := Edition{Words: words[english], Posts: inspected.originals, Series: series.seriesIn(english)}
+	return &Snapshot{Profile: profile, Own: own, Translations: editions, Warnings: inspected.warnings}, nil
 }
 
 // readFile reads a file of the folder and decodes it strictly, as decodeStrictly does.

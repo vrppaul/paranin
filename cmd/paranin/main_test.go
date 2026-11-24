@@ -1,11 +1,13 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +38,8 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		arguments []string
 		want      int
 	}{
-		{name: "content that loads", arguments: []string{"paranin", "check", fixtures.ContentFolder(test)}, want: succeeded},
+		// the fixture's translation was made from an older version of its original, which the check warns of alone
+		{name: "content that loads, a translation older than its original", arguments: []string{"paranin", "check", fixtures.ContentFolder(test)}, want: succeeded},
 		{name: "content with faults", arguments: []string{"paranin", "check", faulty}, want: failed},
 		{name: "content whose pages share an address", arguments: []string{"paranin", "check", sharing}, want: failed},
 		{name: "a release whose pages share an address", arguments: []string{"paranin", "check", sharing, fixtures.BuildFolder(test)}, want: failed},
@@ -44,7 +47,7 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		{name: "a release whose post links to no page", arguments: []string{"paranin", "check", leading, fixtures.BuildFolder(test)}, want: failed},
 		{name: "content whose draft links to no page", arguments: []string{"paranin", "check", drafting}, want: failed},
 		{name: "no folder named", arguments: []string{"paranin", "check"}, want: usageMistaken},
-		{name: "a release that loads", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test)}, want: succeeded},
+		{name: "a release that loads, a translation older than its original", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test)}, want: succeeded},
 		{name: "a release whose build has faults", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), faulty}, want: failed},
 		{name: "a check of three folders", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test), faulty}, want: usageMistaken},
 		{name: "a site on content with faults", arguments: []string{"paranin", "serve", faulty, fixtures.BuildFolder(test)}, want: failed},
@@ -60,6 +63,31 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			if got := run(testCase.arguments); got != testCase.want {
 				test.Errorf("run(%q) = %d, want %d", testCase.arguments, got, testCase.want)
+			}
+		})
+	}
+}
+
+// Where check warns the fixture's translation, made from an older version of its original, stands: its file and field
+const staleTranslationPlace = "posts/reading-slowly/post.ru.md: source "
+
+// check of the content alone and of a release prints what the content warns of, at its place, and passes.
+func TestACheckPrintsWhatTheContentWarnsOfAndPasses(test *testing.T) {
+	cases := []struct {
+		name  string
+		check func(warned io.Writer) int
+	}{
+		{name: "the content alone", check: func(warned io.Writer) int { return check(fixtures.ContentFolder(test), warned) }},
+		{name: "a release", check: func(warned io.Writer) int {
+			return checkRelease(fixtures.ContentFolder(test), fixtures.BuildFolder(test), warned)
+		}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			warned := &strings.Builder{}
+			if code := testCase.check(warned); code != succeeded || !strings.Contains(warned.String(), staleTranslationPlace) {
+				test.Errorf("check of %s = %d, printing %q; want %d, warning at %q", testCase.name, code, warned.String(), succeeded,
+					staleTranslationPlace)
 			}
 		})
 	}
@@ -228,7 +256,7 @@ func TestAFolderRevisedLoadsOnceThePostIsUpdated(test *testing.T) {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	revisedOnTheDay(test, folder)
 	fixtures.ReplaceIn(test, folder, postOutFile, versionDayUpdate, laterVersionUpdate)
-	if code := check(folder); code != succeeded {
+	if code := check(folder, io.Discard); code != succeeded {
 		test.Errorf("check of the folder with %s once the post is updated = %d, want %d", revisionTaken, code, succeeded)
 	}
 }

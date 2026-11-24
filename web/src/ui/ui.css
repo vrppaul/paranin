@@ -2007,16 +2007,17 @@ a.tag[aria-current]:hover {
   color: var(--faint);
 }
 
-/* an older version's way to the newer (DESIGN.md, PostHead): under its day, the arrow in the accent, then the words
- * bold in the text's colour on the tint, at a line's size, the tint stronger under the pointer */
-.newer {
+/* a version's note (DESIGN.md, PostHead), an older version's way to the newer and a translation older than its
+ * original's way to the original: under its day, the arrow in the accent, then the words bold in the text's colour on
+ * the tint, a line's size at the least, growing with words longer than a line, the tint stronger under the pointer */
+.version-note {
   display: flex;
   align-items: center;
   gap: var(--cell);
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
-  height: calc(var(--row) - 2 * var(--nudge));
+  min-height: calc(var(--row) - 2 * var(--nudge));
   margin-top: var(--nudge);
   padding: 0 var(--cell);
   border-radius: var(--radius);
@@ -2029,11 +2030,11 @@ a.tag[aria-current]:hover {
   transition: background var(--quick);
 }
 
-.newer:hover {
+.version-note:hover {
   background: var(--tint-strong);
 }
 
-.newer-mark {
+.version-note-mark {
   color: var(--accent);
 }
 
@@ -2060,7 +2061,8 @@ a.tag[aria-current]:hover {
     position-area: bottom span-right;
   }
 
-  /* the versions' window opens under their whole fact, so it leaves an older version's way to the newer in sight */
+  /* the versions' window opens under their whole fact, so it leaves the version's note in sight: an older version's way
+   * to the newer, or a translation's to its original */
   .post-facts dd:has(> .version-pick) {
     anchor-name: --version-fact;
   }
@@ -2316,7 +2318,7 @@ a.pane:hover .pane-title {
   .outline a,
   a.pick-row,
   .version-pick time,
-  .newer,
+  .version-note,
   .pane {
     transition: none;
   }

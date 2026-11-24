@@ -514,10 +514,14 @@ A post's first screen, as the résumé's. Left, over the Outline and the text, i
 a few words a line, balanced) and its lead, `post_lead` at most. Right, in the sources' column, its Facts `row_half`
 apart: version (the Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date
 that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the
-whole a link, `tint_strong` under the pointer. On a phone one column, the facts under the lead, a `quiet`
-hairline under the head. A draft, which its author alone reads under `paranin serve --drafts`, gives the word `draft`
-as its version, a fact's value like any other, where a post out gives its day; the TUI and the text faces write it
-there too. A preview, read at its link, gives its date as a post out does. It is the plainest mark the tokens give, standing until the owner draws one.
+whole a link, `tint_strong` under the pointer; the tint grows with words longer than its line. A translation older
+than its original says so under its date in the same form, a version's note as the way to the newer is, `↑` then the
+site's words, `older than the original`, the whole a link to the original: the plainest form the tokens give,
+standing until the owner draws one; the text faces write it as they write the way to the newer. On a phone one
+column, the facts under the lead, a `quiet` hairline under the head. A draft, which its author alone reads under
+`paranin serve --drafts`, gives the word `draft` as its version, a fact's value like any other, where a post out gives
+its day; the TUI and the text faces write it there too. A preview, read at its link, gives its date as a post out
+does. It is the plainest mark the tokens give, standing until the owner draws one.
 
 ### Outline
 

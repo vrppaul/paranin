@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -53,6 +54,41 @@ func TestTheSiteAnswersItsSignals(test *testing.T) {
 			})
 		})
 	}
+}
+
+// How many records a test of the site's log keeps, more than a start, a reload and a stop write
+const recordsKept = 16
+
+// seenRecord is a record of the site's log as a test reads it: its level, and how many values it names.
+type seenRecord struct {
+	level  slog.Level
+	values int
+}
+
+// The site logs what its content warns of, the fixture's translation older than its original, as it starts and again
+// at each load, among what else it logs.
+func TestTheSiteLogsWhatItsContentWarnsOfAtEachLoad(test *testing.T) {
+	synctest.Test(test, func(test *testing.T) {
+		tested := testSite(test, fixtures.Copy(test, fixtures.ContentFolder(test)))
+		records := make(chan slog.Record, recordsKept)
+		tested.running.logger = slog.New(fixtures.RecordedLog{Records: records})
+		stopping, stop := context.WithCancel(context.Background())
+		exits := make(chan int, 1)
+		go func() { exits <- tested.running.watch(stopping) }()
+		askBySignal(tested)
+		stop()
+		<-exits
+		close(records)
+		seen := []seenRecord{}
+		for record := range records {
+			seen = append(seen, seenRecord{level: record.Level, values: record.NumAttrs()})
+		}
+		// the warnings as it starts, the reload and its warnings, and the stop
+		want := []seenRecord{{level: slog.LevelWarn, values: 1}, {level: slog.LevelInfo, values: 0}, {level: slog.LevelWarn, values: 1}, {level: slog.LevelInfo, values: 0}}
+		if !slices.Equal(seen, want) {
+			test.Errorf("the site's log = %+v, want %+v", seen, want)
+		}
+	})
 }
 
 // askBySignal asks a site to load its release again by SIGHUP.

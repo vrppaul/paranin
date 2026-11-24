@@ -72,13 +72,15 @@ repos:
         language: system
         files: (\.templ$|_templ\.go$|^scripts/templates/|^go\.mod$)
         pass_filenames: false
-      # The content loads as the site would load it
+      # The content loads as the site would load it; what it warns of, a translation older than its original, refuses
+      # nothing, so the hook prints its output when it passes too
       - id: content-check
         name: paranin check (the content)
         entry: go run ./cmd/paranin check content
         language: system
         files: (^content/|\.go$)
         pass_filenames: false
+        verbose: true
       # The whole suite takes seconds
       - id: go-test
         name: go test (the tests)

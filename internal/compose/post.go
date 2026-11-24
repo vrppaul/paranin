@@ -147,6 +147,7 @@ func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []str
 // the languages it is read in.
 func postHead(version postVersion, read blog) document.Head {
 	post, description, words := version.post, textSpans(version.text.Description), read.words
+	languages := read.languagesOf(version)
 	return document.Head{
 		Page:        version.page,
 		Number:      post.ID,
@@ -158,12 +159,12 @@ func postHead(version postVersion, read blog) document.Head {
 		Filters:     read.postFilters(post),
 		MadeOf:      nil,
 		Lead:        description,
-		Version:     read.versionOf(version, words),
+		Version:     read.versionOf(version, words, languages),
 		Repository:  nil,
 		Post:        read.placeOf(post),
 		Description: description,
 		Feeds:       read.feedLinks(read.seriesShownOn(post)),
-		Languages:   read.languagesOf(version),
+		Languages:   languages,
 	}
 }
 

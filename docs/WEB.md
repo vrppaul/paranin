@@ -96,7 +96,8 @@ left out, and a gap among written words stands marked as one.
   `User Commands`, each in the page's language, as its catalogue writes them, `ИМЯ` and `Команды пользователя` in
   Russian; its last line holds the day of a post's version read in the middle, as `2026-11-10`, or `draft` for a
   draft, where `man(1)` writes a page's date. An older
-  version's `DESCRIPTION` opens with the newer that stands over it, `newer: 2026-11-21` and its address. A post read in
+  version's `DESCRIPTION` opens with the newer that stands over it, `newer: 2026-11-21` and its address, and a
+  translation older than its original's with the site's words saying so and the original's address. A post read in
   more than one language lists them under its lead, each by its own name, the others with their addresses,
   `English · Русский <…/ru/blog/{slug}.txt>`. A link to a page of the site,
   or to a section of one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an
@@ -107,7 +108,8 @@ left out, and a gap among written words stands marked as one.
   its address; a filtered list is named as the list, `BLOG(1)`, its filter in `NAME` after the blog's,
   `blog — posts tagged go`.
 - **Markdown** is CommonMark, the page's sections as headings; a post's head gives its version's day under its title,
-  `draft` for a draft, and an older version's the newer beside it, `newer: [2026-11-21](address)`; under it the
+  `draft` for a draft, and an older version's the newer beside it, `newer: [2026-11-21](address)`, a translation older
+  than its original the site's words saying so, a link to the original's markdown; under it the
   languages it is read in, the one read strong and the others links, `**English** · [Русский](address)`; its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
   `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
@@ -141,7 +143,8 @@ left out, and a gap among written words stands marked as one.
   reader handed the page, or the site's address, to find them. A post's page is the post whole: its title the one
   `h1`, its version's day in a `<time datetime>`, a draft's version the word `draft`; a post out its version's day a button
   opening, as a popover, the list of its versions, each a link to it but the one read, and an older version under it a
-  link to the newer; its day in its language's words, `15 нояб. 2026`; its languages a Switch, each a link by its own name with `hreflang` and `lang`, the one read
+  link to the newer, a translation older than its original a link to the original, `hreflang` its language; its day
+  in its language's words, `15 нояб. 2026`; its languages a Switch, each a link by its own name with `hreflang` and `lang`, the one read
   `aria-current="page"`; each paragraph a place `#_p1` names and its
   number a link to it, each heading a place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first

@@ -4,6 +4,8 @@ READING-SLOWLY(1)            Команды пользователя            
        Медленное чтение
 
 ОПИСАНИЕ
+       старше оригинала <https://example.test/blog/reading-slowly.txt>
+
        Почему страницу, прочитанную дважды, читают один раз.
 
        English <https://example.test/blog/reading-slowly.txt> · Русский

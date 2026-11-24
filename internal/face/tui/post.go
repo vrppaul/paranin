@@ -240,7 +240,7 @@ func (layout layout) languageWords(languages []document.Language) []word {
 func (layout layout) newerWords(older document.VersionOlder) []word {
 	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation}
 	spans := older.NewerSpans(layout.siteWords.Days.Of(older.Newer.Day))
-	return append([]word{wordOf(look.NewerMark, kindLookMark)}, layout.formWords(spans, form)...)
+	return append([]word{wordOf(look.VersionNoteMark, kindLookMark)}, layout.formWords(spans, form)...)
 }
 
 // article lays out a post's body: its layout, how many of its paragraphs it has numbered so far, and the line of the

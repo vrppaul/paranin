@@ -119,14 +119,14 @@ func (writer manualWriter) name(head document.Head) []string {
 	return append([]string{"", strings.ToUpper(writer.own.Name)}, paragraph(sectionIndent, 0, name)...)
 }
 
-// description writes the description section: where an older version of a post says a newer stands, that first, then
-// the lead, the languages a post is read in, each other than the one read with the address of its manual, what a
-// project is made of or a post's or the list's tags, where a project's code lives, then the blocks that are no
-// section; none where there is nothing to describe.
+// description writes the description section: what the version read says under its day, that a newer version stands
+// or that the original changed since a translation, first, then the lead, the languages a post is read in, each other
+// than the one read with the address of its manual, what a project is made of or a post's or the list's tags, where a
+// project's code lives, then the blocks that are no section; none where there is nothing to describe.
 func (writer manualWriter) description(head document.Head, others []document.Block) []string {
 	lines := paragraph(sectionIndent, 0, writer.words(head.Lead))
-	if newer := newerSpans(head); len(newer) > 0 {
-		lines = append(append(paragraph(sectionIndent, 0, writer.words(newer)), ""), lines...)
+	if note := versionNote(head); len(note) > 0 {
+		lines = append(append(paragraph(sectionIndent, 0, writer.words(note)), ""), lines...)
 	}
 	if len(head.Languages) > 0 {
 		languages := make([][]string, 0, len(head.Languages))

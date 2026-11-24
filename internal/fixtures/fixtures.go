@@ -4,6 +4,8 @@
 package fixtures
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -145,7 +147,9 @@ const (
 	previewText        = "---\nid: 3\ntitle: Previewed\ndescription: About what is previewed.\nstatus: preview\npublished: 2026-11-20T09:00+01:00\n---\n" +
 		"## Its heading\n\n![A page](margin.png)\n\n[Back up](/blog/previewed#its-heading)\n"
 	previewTranslationFile = "posts/previewed/post.ru.md"
-	previewTranslationText = "---\ntitle: Предпросмотр\ndescription: О том, что смотрят заранее.\nstatus: preview\npublished: 2026-11-21T09:00+03:00\n---\n" +
+	// made from the preview's text as previewText writes it
+	previewTranslationText = "---\ntitle: Предпросмотр\ndescription: О том, что смотрят заранее.\nstatus: preview\npublished: 2026-11-21T09:00+03:00\n" +
+		"source: en@1e23fa227637\n---\n" +
 		"## Его заголовок\n\n![Страница](margin.png)\n\n[Наверх](/ru/blog/previewed#его-заголовок)\n"
 	keyFileName = "preview_key"
 )
@@ -290,3 +294,20 @@ func closeFolder(test *testing.T, root *os.Root) {
 		test.Errorf("close %s: %v", root.Name(), err)
 	}
 }
+
+// RecordedLog hands each record a logger writes to a channel, so a test reads what a server or the site logs by its
+// values, not by its words. Their loggers add no attribute or group of their own, so neither is kept.
+type RecordedLog struct {
+	Records chan<- slog.Record
+}
+
+func (RecordedLog) Enabled(context.Context, slog.Level) bool { return true }
+
+func (recorded RecordedLog) Handle(_ context.Context, record slog.Record) error {
+	recorded.Records <- record.Clone()
+	return nil
+}
+
+func (recorded RecordedLog) WithAttrs([]slog.Attr) slog.Handler { return recorded }
+
+func (recorded RecordedLog) WithGroup(string) slog.Handler { return recorded }

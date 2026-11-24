@@ -44,12 +44,13 @@ line: Как читатель удерживает прочитанное.
 const fixtureSeriesTranslation = "series/reading.ru.yaml"
 
 // A translation that loads in place of the fixture post's own in Russian, which a case writes changed: its body's lines
-// are the file's 7th to 11th
+// are the file's 8th to 12th
 const sampleTranslation = `---
 title: Пример
 description: Что говорит пример.
 status: published
 published: 2026-11-16T09:00+01:00
+` + sourceLine + `
 ---
 Абзац.
 
@@ -58,10 +59,16 @@ published: 2026-11-16T09:00+01:00
 Его текст.
 `
 
-// Where a case writes the sample translation, and the language it is in
+// The line of the sample translation that names the original's text it was made from, as it stands
+const sourceLine = "source: " + currentSource
+
+// Where a case writes the sample translation, and the language it is in; and the sources a translation names the
+// fixture post's text by, as it stands and as its revision of the 10th keeps it
 const (
 	translationFile = "posts/reading-slowly/post.ru.md"
 	russian         = "ru"
+	currentSource   = "en@520f97557153"
+	revisionSource  = "en@59b3c768ccba"
 )
 
 // Where a case writes a sample unless it names another place, and the fixture's post of every kind of block
@@ -162,6 +169,40 @@ func TestATranslationLoadsWithItsOwnTextAndItsOriginalsFacts(test *testing.T) {
 	}
 	if !bytes.HasPrefix(post.Body.Source, []byte("Страницу")) || len(translated.Posts) != 1 {
 		test.Errorf("the Russian content = %d posts, the first's body %q; want 1, its own", len(translated.Posts), post.Body.Source)
+	}
+}
+
+// A translation names the text of its original it was made from, by its hash: where that is the original's text as it
+// stands, it is current; where it is an older version, a revision's or one edited since, it is stale, which the load
+// warns of at its source and refuses nothing for.
+func TestATranslationMadeFromAnOlderTextIsStale(test *testing.T) {
+	cases := []struct {
+		name     string
+		source   string
+		stale    bool
+		warnings []faultPlace
+	}{
+		{name: "made from the original as it stands", source: currentSource, stale: false, warnings: []faultPlace{}},
+		{name: "made from a version a revision keeps", source: revisionSource, stale: true, warnings: []faultPlace{{file: translationFile, field: "source", line: 0}}},
+		{name: "made from a text kept nowhere", source: "en@000000000000", stale: true, warnings: []faultPlace{{file: translationFile, field: "source", line: 0}}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			written := sampleWith(test, sampleTranslation, currentSource, testCase.source)
+			snapshot, err := Load(writtenFile(fixtureFolder(test), translationFile, written))
+			if err != nil {
+				test.Fatalf("Load = %v, want no error", err)
+			}
+			warnings := []faultPlace{}
+			for _, warning := range snapshot.Warnings {
+				warnings = append(warnings, placeOf(warning))
+			}
+			stale := postNamed(test, snapshot, russian, fixturePostSlug).Stale
+			if stale != testCase.stale || !slices.Equal(warnings, testCase.warnings) {
+				test.Errorf("a translation of source %q is stale: %t, warned at %+v; want %t, at %+v", testCase.source, stale, warnings, testCase.stale,
+					testCase.warnings)
+			}
+		})
 	}
 }
 
@@ -407,9 +448,23 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a translation's number, the post's own", sample: sampleTranslation, file: translationFile, original: "title:", replacement: "id: 1\ntitle:", want: faultPlace{file: translationFile, field: "", line: 0}},
 		{name: "a translation with no title", sample: sampleTranslation, file: translationFile, original: "title: Пример", replacement: `title: ""`, want: faultPlace{file: translationFile, field: "title", line: 0}},
 		{name: "a translation with no status", sample: sampleTranslation, file: translationFile, original: "status: published\n", replacement: "", want: faultPlace{file: translationFile, field: "status", line: 0}},
-		{name: "a translation's heading of the title's level", sample: sampleTranslation, file: translationFile, original: "## Раздел", replacement: "# Раздел", want: faultPlace{file: translationFile, field: "", line: 9}},
-		{name: "raw HTML in a translation", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "<b>Его</b> текст.", want: faultPlace{file: translationFile, field: "", line: 11}},
-		{name: "a translation's picture of no file", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "![Страница](missing.png)", want: faultPlace{file: translationFile, field: "", line: 11}},
+		{name: "a translation's heading of the title's level", sample: sampleTranslation, file: translationFile, original: "## Раздел", replacement: "# Раздел", want: faultPlace{file: translationFile, field: "", line: 10}},
+		{name: "raw HTML in a translation", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "<b>Его</b> текст.", want: faultPlace{file: translationFile, field: "", line: 12}},
+		{name: "a translation's picture of no file", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "![Страница](missing.png)", want: faultPlace{file: translationFile, field: "", line: 12}},
+		{name: "a translation with no source", sample: sampleTranslation, file: translationFile, original: sourceLine + "\n", replacement: "", want: faultPlace{file: translationFile, field: "source", line: 0}},
+		{
+			name: "a translation's source in its own language", sample: sampleTranslation, file: translationFile, original: "source: en@", replacement: "source: ru@",
+			want: faultPlace{file: translationFile, field: "source", line: 0},
+		},
+		{
+			name: "a translation's source of a short hash", sample: sampleTranslation, file: translationFile, original: currentSource, replacement: "en@520f975",
+			want: faultPlace{file: translationFile, field: "source", line: 0},
+		},
+		{
+			name: "a translation's source of no hash", sample: sampleTranslation, file: translationFile, original: currentSource, replacement: "520f97557153",
+			want: faultPlace{file: translationFile, field: "source", line: 0},
+		},
+		{name: "an original naming a source", sample: samplePost, file: samplePostFile, original: "id: 3", replacement: "id: 3\n" + sourceLine, want: faultPlace{file: samplePostFile, field: "", line: 0}},
 		{name: "a widget's file", sample: samplePost, file: "posts/reading-slowly/widgets/Cache.svelte", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/widgets", field: "", line: 0}},
 		{name: "a file of no part of a post", sample: samplePost, file: "posts/reading-slowly/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/notes.txt", field: "", line: 0}},
 		{name: "a post's folder with no post", sample: samplePost, file: "posts/empty-post/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/empty-post/post.en.md", field: "", line: 0}},

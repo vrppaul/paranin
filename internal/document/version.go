@@ -11,10 +11,26 @@ type Version interface {
 }
 
 // VersionOut is a post's current version, out: the day it came out, the day its text last changed, in the zone it was
-// written in; and every version of the post, newest first, itself first, alone where it has no older one.
+// written in; every version of the post, newest first, itself first, alone where it has no older one; and, on a
+// translation older than its original, what it says of that, none on any other.
 type VersionOut struct {
 	Day      time.Time
 	Versions []PostVersion
+	Outdated *Outdated
+}
+
+// Outdated is what a translation older than its original says under its day (docs/FOUNDATION.md §5.4, Translations):
+// the original's page and the tag of its language, and the site's words that say the translation is older.
+type Outdated struct {
+	Original Page
+	Language string
+	Words    string
+}
+
+// Spans are what a translation older than its original says, each face writing the link in its own format: the site's
+// words, a link to the original.
+func (outdated Outdated) Spans() []Span {
+	return []Span{Link{Target: outdated.Original, Spans: []Span{Text{Text: outdated.Words}}}}
 }
 
 // VersionOlder is an older version of a post, over which a newer stands (docs/FOUNDATION.md §5.4, Revisions): the day

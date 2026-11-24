@@ -110,7 +110,8 @@ its own address (`document.Page`'s `OwnAddress`) and whether a post is listed. E
   ```
 
 - **`sitemap.xml`** is one file: every page indexed, by its address, with its `lastmod` where the text has a day
-  (owner, 2026-11-24): a post's is its current version's day, a list's the day its newest post came out. The résumé and the
+  (owner, 2026-11-24): a post's is its current version's day; a list's the latest of those among the posts it names,
+  since a post's new version changes the title and lead the list shows. The résumé and the
   projects have none: a wrong day is worse than none, and Google reads `lastmod` only where it is
   [true](https://developers.google.com/search/blog/2023/06/sitemaps-lastmod-ping). No `priority` or `changefreq`,
   which Google reads not at all, and no `hreflang`, which the pages carry and Yandex reads from none.
@@ -151,6 +152,7 @@ Stands: the formats of D21; each page's title, a tab's and the list by series' a
 canonical address; Open Graph, a post as an `article`, with the site's name, and `twitter:card` `summary`; a post's
 languages; every record naming the one `Person`, the résumé's `ProfilePage` beside `WebSite`, a tab's `WebPage`, a
 project's `SoftwareSourceCode` and a post's `BlogPosting`; `noindex` on a filtered list, an older version and an
-unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; the feeds; `llms.txt`.
+unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; `robots.txt` and `sitemap.xml`;
+the feeds; `llms.txt`.
 
 The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.

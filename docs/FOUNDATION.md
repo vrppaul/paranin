@@ -257,7 +257,7 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
     brain              phases 3, 4, 6: Claude API, cost caps; takes a Grounding, streams markdown
     face/html          templ pages and the component library
     face/text          markdown, the man page for curl, llms.txt; also the brain's Grounding
-    face/feed          Atom, sitemap
+    face/feed          Atom, sitemap, robots.txt
     face/tui           Bubble Tea
     face/print         Typst: cv.pdf, the tailored CV, social cards as PNG
       compose          content → documents, and the records no person reads (ADR-0003)
@@ -798,8 +798,8 @@ and D21 as crawlers made it (owner, 2026-11-24).
   original until the translation follows; the warning a log line alone,
   which `check` never prints.
 - **Markup:** `<link rel="alternate" hreflang>` with `x-default`, the
-  English original, on each language's page of a post, the same alternates
-  in the sitemap, a feed per language, `og:locale` from each catalogue's
+  English original, on each language's page of a post, and none in the
+  sitemap (`docs/SEO.md`, Crawling), a feed per language, `og:locale` from each catalogue's
   `locale`, `<html lang>` the page's own. The language switch lists only
   the translations that exist, each by its tag, `en` and `ru`, on the page
   and in the line the other faces write (owner, 2026-11-24).

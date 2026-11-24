@@ -681,8 +681,8 @@ and web routes.
   there (2026-11-07), the entry's and the facts' kinds and the five
   sections with the owner's word (2026-11-15); the records for JSON-LD,
   the person's and a project's, with `face/html`, the feeds with
-  `face/feed` (2026-11-24), and the sitemap's dates with the sitemap, the
-  `dateModified` of the résumé's `ProfilePage` with them; a widget with
+  `face/feed` (2026-11-24), and the sitemap's dates with the sitemap, a
+  post's and a list's alone (`docs/SEO.md`, Crawling); a widget with
   the blog's first (FOUNDATION §8, step 8), drawn by every face with no
   script (2026-11-24), its props with the first island; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
@@ -1003,7 +1003,7 @@ internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
 internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page, the icon
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
-internal/face/feed/      # the blog's feeds in Atom
+internal/face/feed/      # what a machine polls: the blog's feeds in Atom, the sitemap, robots.txt
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
 internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch

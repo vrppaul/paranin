@@ -3,11 +3,11 @@
 //	paranin check content              loads a content folder as the site would and lists every fault in it
 //	paranin check content build/web    loads a content folder and the page's build as one release, the same way
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
-//	paranin serve --drafts content build/web    the same, the drafts too, each marked, for their author to read
-//	paranin preview-link content <slug>         prints the link a post is previewed at, until it is out
+//	paranin serve --drafts content build/web    the same, the drafts and posts dated later too, for their author
+//	                                            to read, a draft marked as one and a post dated later by its day
 //	paranin revise content <slug>               takes a revision of a post out, its current version, beside it
 //
-// preview-link and revise take --language and a language's tag, as ru, for a post's translation into it.
+// revise takes --language and a language's tag, as ru, for a post's translation into it.
 //
 // check prints the faults, one a line, and where there are none what the content warns of, a translation older than its
 // original, which refuses nothing; serve logs it at each load. The commit's hook checks the content alone, and CI the
@@ -17,16 +17,14 @@
 // compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
-// made there when missing). It serves each preview at the link a key signs, the key in the file PARANIN_PREVIEW_KEY
-// names, and none where it names none; preview-link signs a link with the same key, so the link it prints opens on a
-// server holding it. serve loads both folders again, as one release, on SIGHUP and once a change in either holds
+// made there when missing). serve loads both folders again, as one release, on SIGHUP and once a change in either holds
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
 // them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.<language>.md beside
 // it, the day its current version came out, dates the post as updated on the day it runs, and prints the file's path:
 // its author then rewrites the post, which loads as its new version. The program exits 0 when it did what it was
-// asked, 1 when the content or the build has faults, the server failed, or no link could be printed or revision taken,
-// and 2 when the command itself is written wrong.
+// asked, 1 when the content or the build has faults, the server failed, or no revision could be taken, and 2 when the
+// command itself is written wrong.
 package main
 
 import (
@@ -53,7 +51,6 @@ import (
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What the program exits with
@@ -66,12 +63,10 @@ const (
 // How the command is written: the program, the command, the content folder, and the build folder a site is served
 // with
 const (
-	checkCommand       = "check"
-	serveCommand       = "serve"
-	previewLinkCommand = "preview-link"
-	reviseCommand      = "revise"
-	usage              = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
-		"paranin preview-link [--language ru] <content folder> <slug> | " +
+	checkCommand  = "check"
+	serveCommand  = "serve"
+	reviseCommand = "revise"
+	usage         = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
 		"paranin revise [--language ru] <content folder> <slug>"
 	commandArgument  = 1
 	contentArgument  = 2
@@ -80,8 +75,7 @@ const (
 	releaseArguments = 4
 )
 
-// How preview-link and revise name a post's translation, by the flag of its language; the original, in English,
-// where none is asked
+// How revise names a post's translation, by the flag of its language; the original, in English, where none is asked
 const (
 	languageFlag  = "language"
 	languageUsage = "the language of the post's translation, by its tag, as ru; none for the original"
@@ -99,8 +93,8 @@ const (
 // How revise writes its revision's file: once, and only where none is there yet
 const newFileOnly = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 
-// How preview-link and revise are written after their command: the content folder and the post's slug, by their places
-// among the words past the flags
+// How revise is written after its command: the content folder and the post's slug, by their places among the words
+// past the flags
 const (
 	slugPlace     = 1
 	postArguments = 2
@@ -129,13 +123,6 @@ const (
 	network            = "tcp"
 )
 
-// The file of the key preview links are signed with, which no default names: a key made where none is found would
-// differ from the one on the owner's machine, and its links would open nothing
-const previewKeyVariable = "PARANIN_PREVIEW_KEY"
-
-// errNoPreviewKey is a preview link asked for where the environment names no key to sign it with.
-var errNoPreviewKey = errors.New("no preview key: " + previewKeyVariable + " names none")
-
 // How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own;
 // and how warnings are, after the content folder, quoted
 const (
@@ -151,7 +138,6 @@ const (
 	contentKey  = "content"
 	buildKey    = "build"
 	draftsKey   = "drafts"
-	previewsKey = "previews"
 	errorKey    = "error"
 	faultsKey   = "faults"
 	warningsKey = "warnings"
@@ -202,14 +188,8 @@ func run(arguments []string) int {
 			return usageWrong()
 		}
 		return serve(asked)
-	case command == previewLinkCommand:
-		asked, isWritten := postAskedOf(previewLinkCommand, arguments[contentArgument:])
-		if !isWritten {
-			return usageWrong()
-		}
-		return previewLink(asked)
 	case command == reviseCommand:
-		asked, isWritten := postAskedOf(reviseCommand, arguments[contentArgument:])
+		asked, isWritten := postAskedOf(arguments[contentArgument:])
 		if !isWritten {
 			return usageWrong()
 		}
@@ -288,59 +268,23 @@ func checkedNow(loaded *content.Snapshot) error {
 	return compose.Check(loaded, time.Now()) //nolint:wrapcheck // the content's faults, printed one a line as they come
 }
 
-// previewLink prints the link a post of a content folder is previewed at, signed with the key the environment names,
-// as a server holding the same key serves it; a failure where it names none or the post is no preview now.
-func previewLink(asked postAsked) int {
-	key, err := readPreviewKey()
-	if err != nil {
-		return refused(err, previewKeyVariable)
-	}
-	if key == nil {
-		return refused(errNoPreviewKey, previewKeyVariable)
-	}
-	link, err := previewLinkOf(asked.folder, asked.page, key, time.Now())
-	if err != nil {
-		return refused(err, asked.folder)
-	}
-	fmt.Println(link)
-	return succeeded
-}
-
-// postAsked is a post a command is asked of: the content folder, and the post's page, in the language asked.
+// postAsked is the post revise is asked of: the content folder, and the post's page, in the language asked.
 type postAsked struct {
 	folder string
 	page   document.Page
 }
 
-// postAskedOf reads the post a command is asked of from the words after its command, and whether they are written
-// right: the flag of its language, where one is asked, then the content folder and the post's slug. A mistake is told
-// of by the usage alone, as for any other command.
-func postAskedOf(command string, words []string) (postAsked, bool) {
-	flags := flag.NewFlagSet(command, flag.ContinueOnError)
+// postAskedOf reads the post revise is asked of from the words after its command, and whether they are written right:
+// the flag of its language, where one is asked, then the content folder and the post's slug. A mistake is told of by
+// the usage alone, as for any other command.
+func postAskedOf(words []string) (postAsked, bool) {
+	flags := flag.NewFlagSet(reviseCommand, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	language := flags.String(languageFlag, "", languageUsage)
 	if err := flags.Parse(words); err != nil || flags.NArg() != postArguments {
 		return postAsked{folder: "", page: document.PageOf(document.PageNone)}, false
 	}
 	return postAsked{folder: flags.Arg(contentPlace), page: document.PostPage(flags.Arg(slugPlace)).InLanguage(*language)}, true
-}
-
-// previewLinkOf is the link a post of a content folder is previewed at at a moment, whole, signed with a key: a fault
-// where the folder does not load, or the post is then no preview, a draft, out, or none at all.
-func previewLinkOf(contentFolder string, post document.Page, key *web.PreviewKey, moment time.Time) (string, error) {
-	loaded, err := release.ReadFolder(contentFolder, content.Load)
-	if err != nil {
-		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
-	}
-	previewed := false
-	for _, blog := range compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Blogs() {
-		previewed = previewed || slices.ContainsFunc(blog.Previews, func(preview compose.Preview) bool { return preview.Post.Head.Page == post })
-	}
-	if !previewed {
-		return "", fmt.Errorf("%s is no post previewed now: a preview, or a post dated later, of the folder %q", postName(post), contentFolder)
-	}
-	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority, loaded.TranslatedInto()).Previewing(post, key.Token(post))
-	return site.Address(post, routes.FormatChosen), nil
 }
 
 // postName is how a fault names a post: its slug, quoted, and the language of a translation after it.
@@ -363,9 +307,9 @@ func revise(asked postAsked) int {
 
 // reviseAt takes a revision of the current version of a post of a content folder out at a moment, beside the post,
 // and dates the post as updated on the moment's day (docs/FOUNDATION.md §5.4, Revisions): the path it wrote, in the
-// folder; a fault where the folder does not load, where the post is then no post out, a draft, a preview or none at
-// all, whose version no reader read, its version came out that day or later, a revision taken that day among them, or
-// its text is its newest revision's already.
+// folder; a fault where the folder does not load, where the post is then no post out, a draft, one dated later or none
+// at all, whose version no reader read, its version came out that day or later, a revision taken that day among them,
+// or its text is its newest revision's already.
 func reviseAt(contentFolder string, page document.Page, moment time.Time) (string, error) {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err != nil {
@@ -465,16 +409,6 @@ func replaceIn(root *os.Root, file string, text []byte, mode os.FileMode) error 
 	return nil
 }
 
-// readPreviewKey reads the key preview links are signed with from the file the environment names; none where it names
-// none, so a site serves no preview link and prints none.
-func readPreviewKey() (*web.PreviewKey, error) {
-	keyPath := os.Getenv(previewKeyVariable)
-	if keyPath == "" {
-		return nil, nil
-	}
-	return web.ReadPreviewKey(keyPath) //nolint:wrapcheck // the error names the key's file and what failed
-}
-
 // checked is what a check of folders exits with: success, or a failure once their faults are printed.
 func checked(err error, folders ...string) int {
 	if err != nil {
@@ -483,12 +417,12 @@ func checked(err error, folders ...string) int {
 	return succeeded
 }
 
-// refused prints the faults of what did not load, folders or the preview key's setting, after what it is, quoted, and
-// is what the program then exits with.
-func refused(err error, sources ...string) int {
-	quoted := make([]string, 0, len(sources))
-	for _, source := range sources {
-		quoted = append(quoted, strconv.Quote(source))
+// refused prints the faults of folders that did not load, after the folders, quoted, and is what the program then
+// exits with.
+func refused(err error, folders ...string) int {
+	quoted := make([]string, 0, len(folders))
+	for _, folder := range folders {
+		quoted = append(quoted, strconv.Quote(folder))
 	}
 	fmt.Fprintf(os.Stderr, faultsFormat, strings.Join(quoted, folderSeparator), err)
 	return failed
@@ -516,18 +450,13 @@ func serve(asked servingAsked) int {
 		logger.Error("the SSH server cannot be made", errorKey, err)
 		return failed
 	}
-	previewKey, err := readPreviewKey()
-	if err != nil {
-		logger.Error("the preview key cannot be read", errorKey, err)
-		return failed
-	}
 	webAddress, sshAddress := fromEnvironment(webAddressVariable, defaultWebAddress), fromEnvironment(sshAddressVariable, defaultSSHAddress)
 	webListener, sshListener, err := listenAt(webAddress, sshAddress)
 	if err != nil {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	webServer := newServer(web.New(store, prepared, asked.drafts, previewKey), logger)
+	webServer := newServer(web.New(store, prepared, asked.drafts), logger)
 	servers := []server{webServer, sshServer}
 	running := serving{
 		logger:      logger,
@@ -541,8 +470,7 @@ func serve(asked servingAsked) int {
 	signal.Notify(running.reloads, syscall.SIGHUP)
 	go func() { running.failures <- webServer.Serve(webListener) }()
 	go func() { running.failures <- sshServer.Serve(sshListener) }()
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts,
-		previewsKey, previewKey != nil)
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts)
 	return running.watch(stopping)
 }
 

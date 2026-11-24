@@ -44,9 +44,6 @@ type Blog struct {
 	Versions []document.Document
 	// Pictures are the pictures of the posts the blog serves, each at its file beside its post, in no order
 	Pictures []PostPicture
-	// Previews are the posts the blog serves at their preview links alone, in the snapshot's order, each with its
-	// pictures: no list, page or session names them
-	Previews []Preview
 	// Feeds are the blog's feeds, its own and then each series', each holding its newest posts the lists name; none
 	// where the lists name none
 	Feeds []Feed
@@ -59,7 +56,7 @@ type Blog struct {
 }
 
 // SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages and each blog's but their
-// posts first, then the posts, their older versions and the previews, whose links lead among them all.
+// posts first, then the posts and their older versions, whose links lead among them all.
 func SiteOf(prepared *Prepared, audience Audience) Site {
 	snapshot := prepared.snapshot
 	own, translations := blogsOf(snapshot, audience)
@@ -104,8 +101,8 @@ func (site Site) Blogs() []Blog {
 // pictures and its frame, with the pages :e opens in every language.
 func blogPagesOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Blog {
 	return Blog{
-		Lists: blogLists(read), Filtered: filteredLists(read), Posts: nil, Versions: nil, Pictures: picturesOf(read), Previews: nil,
-		Feeds: nil, Frame: frameOf(snapshot, read, edited), served: nil, postsServed: read.served,
+		Lists: blogLists(read), Filtered: filteredLists(read), Posts: nil, Versions: nil, Pictures: picturesOf(read), Feeds: nil,
+		Frame: frameOf(snapshot, read, edited), served: nil, postsServed: read.served,
 	}
 }
 
@@ -115,12 +112,11 @@ func (composed Blog) Served() []document.Document {
 	return composed.served
 }
 
-// composePosts composes a blog's posts, their feeds and older versions, and its previews, their links read among paths.
+// composePosts composes a blog's posts, their feeds and older versions, their links read among paths.
 func (composed *Blog) composePosts(prepared *Prepared, read blog, paths map[string]document.Target) {
 	composed.Posts = composedPosts(prepared, read, paths)
 	composed.Feeds = read.withPosts(composed.Posts)
 	composed.Versions = olderDocuments(prepared, read, paths)
-	composed.Previews = previewsOf(prepared, read, paths)
 	composed.served = slices.Concat(composed.lists(), composed.Posts, composed.Versions)
 }
 

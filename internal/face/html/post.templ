@@ -127,7 +127,7 @@ templ (writer PageWriter) languageSwitch(languages []document.Language) {
 		for _, language := range languages {
 			<a
 				class="switch-way"
-				href={ writer.frame.site.Reference(language.Page, routes.FormatChosen) }
+				href={ routes.Reference(language.Page, routes.FormatChosen) }
 				hreflang={ language.Tag }
 				if language.Read {
 					aria-current={ currentPage }
@@ -176,7 +176,7 @@ templ (writer PageWriter) pickVersion(version document.PostVersion) {
 				@writer.versionRow(version)
 			</span>
 		} else {
-			<a class="pick-row version-row" href={ writer.frame.site.Reference(version.Page, routes.FormatChosen) }>
+			<a class="pick-row version-row" href={ routes.Reference(version.Page, routes.FormatChosen) }>
 				@writer.versionRow(version)
 			</a>
 		}
@@ -195,7 +195,7 @@ templ (writer PageWriter) versionRow(version document.PostVersion) {
 // newer is what an older version of a post says under its day (DESIGN.md, PostHead), as a version's note: that a newer
 // stands, the arrow, then the site's words round the current version's day, the whole a link to it.
 templ (writer PageWriter) newer(older document.VersionOlder) {
-	<a class="version-note" href={ writer.frame.site.Reference(older.Newer.Page, routes.FormatChosen) }>
+	<a class="version-note" href={ routes.Reference(older.Newer.Page, routes.FormatChosen) }>
 		<span class="version-note-mark" aria-hidden="true">{ look.VersionNoteMark }</span>
 		{ older.NewerWords.Before }
 		@writer.day(older.Newer.Day)
@@ -206,7 +206,7 @@ templ (writer PageWriter) newer(older document.VersionOlder) {
 // outdated is what a translation older than its original says under its day (DESIGN.md, PostHead), as a version's
 // note: the arrow, then the site's words, the whole a link to the original, in the original's language.
 templ (writer PageWriter) outdated(note document.Outdated) {
-	<a class="version-note" href={ writer.frame.site.Reference(note.Original, routes.FormatChosen) } hreflang={ note.Language }>
+	<a class="version-note" href={ routes.Reference(note.Original, routes.FormatChosen) } hreflang={ note.Language }>
 		<span class="version-note-mark" aria-hidden="true">{ look.VersionNoteMark }</span>
 		{ note.Words }
 	</a>
@@ -235,7 +235,7 @@ templ (writer PageWriter) filters(filters []document.Filter) {
 	<ul class="tags">
 		for _, filter := range filters {
 			<li>
-				if address := writer.frame.site.Reference(filter.Page, routes.FormatChosen); address == "" {
+				if address := routes.Reference(filter.Page, routes.FormatChosen); address == "" {
 					@tagWords(filter.Tag)
 				} else if filter.Current {
 					<a class="tag" href={ address } aria-current={ currentWay } aria-label={ filter.WayOut }>
@@ -290,7 +290,7 @@ templ (writer PageWriter) pickPart(part document.Part) {
 		}
 	>
 		if part.State == document.PartNext || part.State == document.PartOut {
-			<a class="pick-row" href={ writer.frame.site.Reference(part.Page, routes.FormatChosen) }>
+			<a class="pick-row" href={ routes.Reference(part.Page, routes.FormatChosen) }>
 				@writer.partRow(part)
 			</a>
 		} else {
@@ -357,7 +357,7 @@ templ (writer PageWriter) pane(side paneSide) {
 			</span>
 		</div>
 	} else {
-		<a class={ "pane", templ.KV("pane-after", side.after) } href={ writer.frame.site.Reference(side.neighbour.Page, routes.FormatChosen) }>
+		<a class={ "pane", templ.KV("pane-after", side.after) } href={ routes.Reference(side.neighbour.Page, routes.FormatChosen) }>
 			<span class="pane-name">{ side.name }</span>
 			<span class="pane-title">
 				@writer.spans(side.neighbour.Title)
@@ -469,7 +469,7 @@ templ pause() {
 // under it, where it has one.
 templ (writer PageWriter) figure(shown document.Figure) {
 	<figure>
-		<img src={ writer.frame.site.Reference(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) } loading="lazy" decoding="async"/>
+		<img src={ routes.Reference(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) } loading="lazy" decoding="async"/>
 		if shown.Caption != "" {
 			<figcaption>{ shown.Caption }</figcaption>
 		}

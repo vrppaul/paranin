@@ -277,7 +277,7 @@ func otherLocalesOf(languages []document.Language) []string {
 // round each, on a day the host reads off its clock.
 func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame, today time.Time) PageWriter {
 	return PageWriter{
-		spanWriter: spanWriter{addressOf: site.Reference}, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today,
+		spanWriter: spanWriter{addressOf: routes.Reference}, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today,
 	}
 }
 
@@ -318,22 +318,22 @@ func rendered(component templ.Component) string {
 }
 
 // metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab. A
-// page no search engine indexes, a filtered list or an older version of a post, is known at no address, as a preview
-// is (document.Page's Indexed).
+// page no search engine indexes, a filtered list or an older version of a post, is known at no address
+// (document.Page's Indexed).
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	site := writer.frame.site
 	metadata := pageMetadata{
 		title:        document.PlainText(title),
 		description:  document.PlainText(head.Description),
 		canonical:    site.Address(shown, routes.FormatChosen),
-		markdown:     site.Reference(shown, routes.FormatMarkdown),
+		markdown:     routes.Reference(shown, routes.FormatMarkdown),
 		indexed:      true,
 		feeds:        make([]headFeed, 0, len(head.Feeds)),
 		alternates:   alternatesOf(head.Languages, site),
 		otherLocales: otherLocalesOf(head.Languages),
 	}
 	for _, feed := range head.Feeds {
-		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: site.Reference(feed.Target, routes.FormatChosen)})
+		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: routes.Reference(feed.Target, routes.FormatChosen)})
 	}
 	if !shown.Indexed() {
 		metadata.canonical, metadata.indexed = "", false

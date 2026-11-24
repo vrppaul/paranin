@@ -26,7 +26,7 @@ Each decision carries one of three marks:
 | D4 | The plan looks ahead to every phase of `docs/ROADMAP.md`, not only to the next step. | 2026-11-01 |
 | D5 | Posts are published without rebuilding or redeploying the binary. | 2026-11-01 |
 | D6 | Posts live in this repository, which is public. Drafts and edits being visible there is fine. | 2026-11-01 |
-| D7 | A post is `draft`, `preview`, `published` or `unlisted` (§5.4). | 2026-11-01 |
+| D7 | A post is `draft`, `published` or `unlisted` (§5.4). | 2026-11-24 |
 | D8 | A post is written once, in one format, and every face draws that same text, the SSH TUI included (§5.4). | 2026-11-01 |
 | D9 | Go draws every page with templ; the interactive parts are Svelte 5 islands (option A, §5.1). | 2026-11-01 |
 | D10 | Typst makes `cv.pdf`, the tailored CV and the social cards, in place of headless Chrome (§5.2). | 2026-11-01 |
@@ -379,15 +379,12 @@ of that page, a heading of a post or a series' group of the list by
 series; each face writes the page's address in its own format. Only the
 whole site knows its pages, so this part of the check runs once the
 content loads (ADR-0003), each post's links over the site as it stands
-when the post comes out, now or at its later date: a link to a draft, a
-preview or a post that comes out after the one linking it leads nowhere,
-one to a post out before it or with it leads somewhere. A draft's links
-are checked too, over the site as its author reads it under
+when the post comes out, now or at its later date: a link to a draft or
+a post that comes out after the one linking it leads nowhere, one to a
+post out before it or with it leads somewhere. A draft's links are
+checked too, over the site as its author reads it under
 `paranin serve --drafts` once every post dated later is out, where
-another draft's page leads somewhere (2026-11-23); and a preview's, over
-the site its link's reader reads then, where its own page and sections
-lead somewhere, as a post's link to itself does, and no draft's or other
-preview's page.
+another draft's page leads somewhere (2026-11-23).
 It refuses as well what no face draws yet: a link's title; a table's row
 of more cells than its header, whose cells past it GFM drops; a footnote that is more than
 one paragraph or cites another, since a note stands beside the line that
@@ -493,94 +490,31 @@ others.
 #### Status (Decided, D7)
 
 ```yaml
-status: draft | preview | published | unlisted
+status: draft | published | unlisted
 published: 2026-11-10T09:00+01:00
 updated: 2026-11-12
 ```
 
 | Status | Seen where |
 | --- | --- |
-| `draft` | Locally alone: `paranin serve --drafts` serves it at its address, listed nowhere, its page marked as a draft, for now by its version reading `draft` where a post's day stands, until the owner picks a mark (DESIGN.md, PostHead). Never served otherwise. |
-| `preview` | On the server, at a secret link alone. Not in the feed, the sitemap, `llms.txt`, the lists or the TUI; sent with `noindex`. |
+| `draft` | Locally alone: `paranin serve --drafts` serves it at its address, listed nowhere, its page marked as a draft, for now by its version reading `draft` where a post's day stands, until the owner picks a mark (DESIGN.md, PostHead); a post dated later is served so too, but marked by its day. Never served otherwise. |
 | `published` | Everywhere: the page, the feed, the sitemap, `llms.txt`, the TUI, its card. |
 | `unlisted` | At its address, listed nowhere: a post taken off the lists without breaking links to it. |
 
-- **The preview link is not in git.** It is `/preview/<token>/<slug>`, the
-  token an HMAC of the post's address under the server's secret, which
-  opens the preview until the post is out or the secret changes (owner,
-  2026-11-24). `paranin preview-link <content folder> <slug>` prints it on
-  the owner's machine, which holds the same secret, and refuses a post
-  that is no preview now, whose link would open nothing; the folder gives
-  the site's address. CI
-  never sees the secret and never prints a link: the logs of a public
-  repository are public too. A new secret ends every old preview link at
-  once.
-  - **The secret** is a file of at least 32 bytes, the spaces and line end
-    round it left out, which `PARANIN_PREVIEW_KEY` names, on the server and
-    on the owner's machine alike, as `PARANIN_SSH_HOST_KEY` names the host
-    key: `openssl rand -base64 32` writes one, and the owner keeps his at
-    `.paranin/preview_key`, a folder git ignores. Where hosting keeps it, a
-    systemd credential or a container's secret, both files, is hosting's to
-    say. Where no file is named, the server serves no preview and every
-    preview link answers as an address of no page; no secret is made where
-    none is found, since it would differ from the owner's and its links
-    would open nothing. The server reads it as it starts, so a new secret
-    takes a restart. Ways weighed: the secret's value in the variable,
-    which a child process, `/proc` and a container's inspection all read.
-  - **The token** is one segment: HMAC-SHA256 over the post's address
-    once out, `/blog/<slug>` or a translation's `/ru/blog/<slug>`, in
-    base64url with no padding, so a link opens the post in its own
-    language alone (2026-11-24). The server signs the address of the
-    request's own path once and compares in constant time. No link lapses
-    (owner, 2026-11-24): a link that leaks opens the preview until the post
-    is out, then sends its reader on to the post for good. Since it signs
-    the address alone, it opens the post again if it is taken back to a
-    preview, and any later post given the same slug while that one is a
-    preview: it opens every preview at its address until the secret
-    changes, and a new secret ends every other link too. The status is not
-    signed: the server checks each request against the post's status as it
-    stands, and a link signed over `preview` could not send its reader on
-    once the post is out.
-  - **One rule of addresses:** a preview's every face and file stands where
-    it would in the blog's folder, with `/blog/` swapped for
-    `/preview/<token>/`: its page at `/preview/<token>/<slug>`, its markdown
-    and its manual at `.md` and `.txt` beside it, its pictures in its
-    folder. Each face writes the post's own addresses at the link, its
-    sections, its pictures and its link to itself among them, so nothing
-    leads to its public address, which serves nothing yet; each link holds
-    a token of its own, so a preview's faces are drawn for the request that
-    opens one, from the post composed once. A translation's preview stands
-    in the preview's folder, its language's folder after it,
-    `/preview/ru/<token>/<slug>`, so every token is under `/preview/`
-    alone; `paranin preview-link --language ru` signs its link (owner,
-    2026-11-24). Way weighed: the preview's folder in the language's,
-    `/ru/preview/`, as the post stands once out, which made every path one
-    segment down a preview's and refused a post or a project slugged
-    `preview`.
-  - **What leaks nothing:** every answer in the preview's folder, a path
-    of it that is no page, a redirect to a path's clean form and a refusal
-    of a method among them, is sent with `X-Robots-Tag: noindex`,
-    `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`, so no
-    engine indexes it, no cache keeps its address, and no browser sends
-    the address on to a page it opens from it or a file it loads; the page
-    says `noindex` in its head too, and names no canonical address. The
-    server logs no request's path; a proxy before it, at hosting, must not
-    either.
-  - **Where it is listed:** nowhere. Its own page shows its series, itself
-    the part read, and its foot as a draft's does, by its date. A post's
-    link to a preview leads nowhere and is refused.
-  - **Once it is out** its address serves it, and its link sends the reader
-    on to the same face there, `302` with the headers above: a move for a
-    while, since a browser keeps a permanent one even were the post taken
-    back to a preview. A token not signed for its slug, or a
-    slug of no post served, answers as no page, so a link tells nothing of
-    which posts there are.
-- **Publishing on a date.** A `published` date in the future keeps the post,
-  published or unlisted, a preview until then. The status is worked out
-  from the time: a host composes the site once a snapshot, as it stands
-  when a reader first meets it, and again as the next post dated later
-  comes out, so the post comes out on time with no push and no request
-  composes the site (ADR-0003, 2026-11-23).
+- **No preview** (owner, 2026-11-24): the repository is public, so a
+  post's text is public before it is out, and a secret link would hide
+  its address alone. A post shown to someone before it is announced is
+  `unlisted`; its author reads a post not out under
+  `paranin serve --drafts`.
+- **Publishing on a date.** A `published` date in the future keeps the
+  post, published or unlisted, a draft until then in who reads it and
+  where it is listed: served to its author alone, at its address, listed
+  nowhere. Its page is marked by its day, as it will be once out, not by
+  the word `draft`, which a post written as a draft alone reads. The
+  status is worked out from the time: a host composes the site once a
+  snapshot, as it stands when a reader first meets it, and again as the
+  next post dated later comes out, so the post comes out on time with no
+  push and no request composes the site (ADR-0003, 2026-11-23).
 
 #### Editing and publishing (Decided, D5; the rest Proposed)
 
@@ -648,7 +582,7 @@ and SSH to the host: "without a new binary" does not mean without a build.
   `compose.Check` its links inside the site over the site as the post's
   are, so a frozen copy never serves a dead link. A picture a revision
   alone shows stays in the post's folder and is served with the post's.
-  `revise` refuses a post not out, a draft, a preview or one dated later,
+  `revise` refuses a post not out, a draft or one dated later,
   whose version no reader read, and a text that is its newest revision's
   already. Ways weighed: the file copied whole, front matter and all, whose
   number, status and tags would be read and do nothing; the body alone,
@@ -666,10 +600,11 @@ and SSH to the host: "without a new binary" does not mean without a build.
 - **Where versions show.** A post out, published or unlisted, lists its
   versions, newest first, its current one alone where it has no older,
   and serves each older one, the same page, its head saying under its day
-  that a newer stands, the current one; a preview, which no reader read
-  yet, lists its current version alone and a draft none, and neither
-  serves an older one, though their revisions stay for when they are out. An older version is in no list,
-  the sitemap or `llms.txt`, and sends no canonical address, as a filtered
+  that a newer stands, the current one; a post dated later, which no
+  reader read yet, lists its current version alone to its author and a
+  draft none, and neither serves an older one, though their revisions
+  stay for when they are out. An older version is in no list, the
+  sitemap or `llms.txt`, and sends no canonical address, as a filtered
   list sends none; a link inside the site may lead to it. Its markdown
   and manual stand beside it at `.md` and `.txt`, and write that a newer
   stands; the TUI opens it by `:e blog/<slug>/<date>` and the `:` menu's
@@ -687,15 +622,15 @@ and SSH to the host: "without a new binary" does not mean without a build.
   stand in the list grouped by series.
 - **What a series and a post's foot list.** A part published is out; the
   parts to come are the titles under `to_come`, which the author chose to
-  announce. A part not yet published, a draft or a preview, is listed
-  nowhere, as a preview is, so its working title stays in the repository
-  (owner, 2026-11-23); its own page, a draft's as its author reads it,
-  shows its series, itself the part read among the parts out, so a
-  preview link of part 3 says it is part 3. An unlisted part is listed
+  announce. A part not yet published, a draft or one dated later, is
+  listed nowhere, so its working title stays in the repository (owner,
+  2026-11-23); its own page, a draft's as its author reads it, shows its
+  series, itself the part read among the parts out, so a draft of part 3
+  says it is part 3. An unlisted part is listed
   nowhere, so its series leaves it out and counts on without it, and its
   own page shows no series. Outside a series a post's foot leads to the
   posts published before and after it, by the time they came out, so
-  never to a draft, a preview or an unlisted post; an unlisted post's own
+  never to a draft or an unlisted post; an unlisted post's own
   foot leads to those published either side of its time, a draft's to
   those either side of its date, or of the moment it is read where it
   has none.
@@ -704,8 +639,8 @@ and SSH to the host: "without a new binary" does not mean without a build.
   2026-11-22): `/blog`, every post by year, newest first, with its date,
   series and tags; `/blog/series`, the same posts by series. A tag
   filters the list, the filter reversed in the list's head; a filtered
-  list is sent with `noindex` and names no canonical address, as a
-  preview names none (2026-11-24): a part of the list is no copy of
+  list is sent with `noindex` and names no canonical address
+  (2026-11-24): a part of the list is no copy of
   `/blog`, and a search engine reads `noindex` beside a canonical address
   as two signs that disagree. Its address is the site's first with a
   query, `/blog?tag=payments` (owner, 2026-11-23): a filter is a view of
@@ -726,7 +661,7 @@ and SSH to the host: "without a new binary" does not mean without a build.
   composes in a request; a series filtering the list too, which nothing
   led to and which repeated the series' group on `/blog/series` (owner,
   2026-11-24). The head's tags and a post's lead to the list
-  they filter, but a draft's, a preview's and an unlisted post's, which
+  they filter, but a draft's and an unlisted post's, which
   the lists name nowhere and whose tag may filter none; on a filtered
   list the filter leads back to the list; a tile's series leads to its
   group on the list by series. A tag and a series named alike each stand
@@ -738,8 +673,8 @@ and SSH to the host: "without a new binary" does not mean without a build.
   (built 2026-11-24): the blog's at `/blog.atom`, a series' at
   `/blog/series/<name>.atom`, where no post stands, a language's in its
   folder, `/ru/blog.atom`, each holding the twenty
-  newest posts the lists name, published and out, never a draft, a preview
-  or an unlisted post, each with its lead and its body whole, so a feed
+  newest posts the lists name, published and out, never a draft or an
+  unlisted post, each with its lead and its body whole, so a feed
   stands in for a newsletter; a blog that lists none has no feed. A feed
   changes as the lists do, when a post comes out. A feed and each post keep
   one name for good, a tag URI under `site.tag_authority`, a post by its
@@ -764,10 +699,7 @@ and SSH to the host: "without a new binary" does not mean without a build.
   matter, `id: 12`, given once and never changed. `paranin check` refuses a
   number two posts share, a slug of digits alone, which `blog/12` would
   read as a number, and content of which two pages share an address, as a
-  post slugged `series` would share the list by series', or of which a
-  page's folder is the preview's, as a tab of the résumé titled `preview`
-  would be (2026-11-24): every answer there is sent privately, which would
-  drop the page out of search.
+  post slugged `series` would share the list by series'.
 - **On the web** `/blog/12` answers `301` to `/blog/<slug>`, and
   `/blog/<slug>` the post as the project pages answer, its markdown and its
   manual at `.md` and `.txt` beside it (`docs/WEB.md`).
@@ -798,7 +730,7 @@ For every page of the site, the blog's among them:
   comment, since no page links it and no `rel` names it (owner,
   2026-11-23); the sitemap with every
   page, tab and post and their `lastmod`, per language; `noindex` on
-  previews, unlisted posts, older versions and the filtered list; `301` from
+  unlisted posts, older versions and the filtered list; `301` from
   `/blog/12` and from a path with a trailing slash.
 - **The markup:** one `h1`, `<article>`, `<time datetime>`, alt text
   required of every picture.
@@ -829,9 +761,7 @@ For every page of the site, the blog's among them:
   `Accept-Language`: the address alone picks the language, so a crawler and
   `curl` get one text per address. Every address of the blog has its
   language's folder before it, `/ru/blog/12`, `/ru/blog.md?tag=go`,
-  `/ru/blog/page-cache/2026-11-10`, but a preview's, whose language's
-  folder stands after the preview's, `/preview/ru/<token>/<slug>`; a post
-  may link to a translation, which the check holds as it holds any
+  `/ru/blog/page-cache/2026-11-10`; a post may link to a translation, which the check holds as it holds any
   link inside the site.
 - **The blog in a language is a blog of its own** (2026-11-24): its list
   at `/ru/blog`, by year and by series, filtered by its tags,
@@ -855,11 +785,9 @@ For every page of the site, the blog's among them:
   language would name no page of its own; one list of every post, each in
   the language it is read in, which a feed per language could not follow.
 - **Each translation has its own status**: the English can be published
-  while the Russian is still a preview. A post's Switch offers the
+  while the Russian is still a draft. A post's Switch offers the
   languages the lists name it in, and its own; so a translation still a
-  preview, unlisted or a draft shows on no other language's page, and a
-  preview's link, signed over the post's address in its language, opens
-  that language alone.
+  draft, dated later or unlisted shows on no other language's page.
 - **A stale translation shows** (built 2026-11-24). Its front matter names
   the text of its original it was made from, `source: en@3f9a1c0b2d4e`: the
   original's language, then SHA-256 of the original's title, lead and body
@@ -974,7 +902,6 @@ For every page of the site, the blog's among them:
 | `releases/<id>` and a `current` link | Capistrano, Deployer |
 | Reload on SIGHUP, the old state kept when the new one fails | nginx, HAProxy, Prometheus |
 | `draft` and a publish date in front matter | Hugo, Jekyll |
-| A preview link with a signed token | Ghost, Next.js draft mode, headless CMSs |
 | `unlisted` | Ghost, Medium, dev.to, YouTube |
 | A language per subpath, `hreflang`, `x-default`, no redirect by `Accept-Language` | Google's own guidance |
 | A file per language beside the original (`post.ru.md`) | Hugo's translation by file name |
@@ -1214,8 +1141,8 @@ moves it out first.
 6. `web/`: `domain`, `ui`, then the islands one at a time.
 7. A security audit of the whole site, before anything is served.
 8. The blog, agreed with Pavel first, how it works and what it holds, then
-   built before hosting: posts in the one format, their status and preview
-   links, publishing on a date, `kit`, the first widget from study, the
+   built before hosting: posts in the one format, their status, publishing
+   on a date, `kit`, the first widget from study, the
    feed, the cards, posts in the TUI. The site's word catalogue arrives
    with `compose` in step 4; a second language is an addition, not a step.
 9. The content, changed together with Pavel, the profile's placeholders

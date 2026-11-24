@@ -343,7 +343,7 @@ func (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.tileParts(post, writer.day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.tileParts(post, writer.day(out.Published), routes.Reference(out.Page, routes.FormatChosen)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -514,9 +514,9 @@ func (writer PageWriter) tileParts(post document.ListedPost, when templ.Componen
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(post.SeriesGroup, routes.FormatChosen)).ResolveURL(ctx)
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(post.SeriesGroup, routes.FormatChosen)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/list.templ`, Line: 133, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/list.templ`, Line: 133, Col: 95}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {

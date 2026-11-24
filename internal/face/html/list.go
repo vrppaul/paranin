@@ -56,7 +56,7 @@ func (around frame) groupingsOf(groupings []compose.Grouping, shown document.Pag
 		case way.List == grouped && isFilter:
 			current = currentWay
 		}
-		linked = append(linked, grouping{words: way.Words, address: around.site.Reference(way.List, routes.FormatChosen), current: current})
+		linked = append(linked, grouping{words: way.Words, address: routes.Reference(way.List, routes.FormatChosen), current: current})
 	}
 	return linked
 }

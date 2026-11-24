@@ -85,7 +85,7 @@ func (filter listFilter) offered(shown document.Page, words content.Words) docum
 }
 
 // postFilters are the filters a post's head offers: each of its tags, leading to the list it filters where the lists
-// name the post; a draft's, a preview's and an unlisted post's lead nowhere, since a tag of theirs may filter none.
+// name the post; a draft's and an unlisted post's lead nowhere, since a tag of theirs may filter none.
 func (read blog) postFilters(post content.Post) []document.Filter {
 	filters := make([]document.Filter, 0, len(post.Tags))
 	for _, tag := range post.Tags {

@@ -91,7 +91,7 @@ templ (writer PageWriter) tiles(posts document.Posts) {
 // a link holds no other.
 templ (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut) {
 	<div class="pane tile">
-		@writer.tileParts(post, writer.day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen))
+		@writer.tileParts(post, writer.day(out.Published), routes.Reference(out.Page, routes.FormatChosen))
 	</div>
 }
 
@@ -130,7 +130,7 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 			if len(post.Series) > 0 {
 				<span class="tile-series">
 					<span class="tile-part">{ document.PlainText(post.Part) }</span><span class="tile-dot">{ dot }</span>
-					<a class="tile-series-link" href={ writer.frame.site.Reference(post.SeriesGroup, routes.FormatChosen) }>
+					<a class="tile-series-link" href={ routes.Reference(post.SeriesGroup, routes.FormatChosen) }>
 						@writer.spans(post.Series)
 					</a>
 				</span>

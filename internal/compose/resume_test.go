@@ -323,13 +323,12 @@ type seenListing struct {
 
 // The index lists the blog under the site's word for it: the blog's list in each grouping, by its title naming the
 // grouping and by the blog's line, then each post the list names, newest first, by its title and its description;
-// never a draft, a preview, a post unlisted or one that comes later than its reader.
+// never a draft, a post unlisted or one that comes later than its reader.
 func TestTheIndexListsTheBlogsListsThenEveryPostListedNewestFirst(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
 		{slug: "toolbox", id: 4, status: "published", published: latest, tags: ""},
 		{slug: "drafted", id: 5, status: "draft", published: later, tags: ""},
-		{slug: "previewed", id: 6, status: "preview", published: later, tags: ""},
 		{slug: "hidden", id: 7, status: "unlisted", published: later, tags: ""},
 		{slug: "coming", id: 8, status: "published", published: afterTheDay, tags: ""},
 	}

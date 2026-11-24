@@ -118,122 +118,17 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 		{name: "a series' feed", target: document.Feed{Series: "stint"}, format: FormatChosen, want: "/blog/series/stint.atom"},
 	}
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority, testedTranslations())
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := site.Reference(testCase.target, testCase.format); got != testCase.want {
+			if got := Reference(testCase.target, testCase.format); got != testCase.want {
 				test.Errorf("Reference(%+v) = %q, want %q", testCase.target, got, testCase.want)
 			}
 		})
 	}
 }
 
-// The address a test's site is served at, and the token a test's preview link holds
-const (
-	testedBase   = "https://example.test"
-	previewToken = "c2lnbmVk"
-)
-
-// A post read at its preview link has every address of its own in the preview's folder, under its token, in each
-// format, its sections and its pictures among them, whole and as a path from the root alike; every other page keeps
-// its own address.
-func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
-	previewed := document.PostPage("coming")
-	translated := previewed.InLanguage("ru")
-	cases := []struct {
-		name      string
-		previewed document.Page
-		target    document.Target
-		format    Format
-		wantPath  string
-	}{
-		{name: "the post as the reader asks", previewed: previewed, target: previewed, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming"},
-		{name: "the post in markdown", previewed: previewed, target: previewed, format: FormatMarkdown, wantPath: "/preview/c2lnbmVk/coming.md"},
-		{name: "the post as a manual", previewed: previewed, target: previewed, format: FormatManual, wantPath: "/preview/c2lnbmVk/coming.txt"},
-		{name: "a heading of the post", previewed: previewed, target: document.Anchor{Page: previewed, Name: "why"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming#why"},
-		{name: "a picture of the post", previewed: previewed, target: document.File{Page: previewed, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming/margin.png"},
-		{name: "another post", previewed: previewed, target: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, format: FormatChosen, wantPath: "/blog/reading-slowly"},
-		{name: "the post in another language", previewed: previewed, target: translated, format: FormatChosen, wantPath: "/ru/blog/coming"},
-		{name: "the résumé", previewed: previewed, target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, wantPath: "/"},
-		{name: "a translation as the reader asks", previewed: translated, target: translated, format: FormatChosen, wantPath: "/preview/ru/c2lnbmVk/coming"},
-		{name: "a translation in markdown", previewed: translated, target: translated, format: FormatMarkdown, wantPath: "/preview/ru/c2lnbmVk/coming.md"},
-		{name: "a translation's picture", previewed: translated, target: document.File{Page: translated, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/ru/c2lnbmVk/coming/margin.png"},
-		{name: "the original of a translation", previewed: translated, target: previewed, format: FormatChosen, wantPath: "/blog/coming"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			site := New(writtenAddress{written: testedBase, host: "example.test"}, testedAuthority, testedTranslations()).Previewing(testCase.previewed, previewToken)
-			address, reference := site.Address(testCase.target, testCase.format), site.Reference(testCase.target, testCase.format)
-			if address != testedBase+testCase.wantPath || reference != testCase.wantPath {
-				test.Errorf("Address and Reference of %+v = %q and %q, want %q and %q", testCase.target, address, reference,
-					testedBase+testCase.wantPath, testCase.wantPath)
-			}
-		})
-	}
-}
-
-// A path in the preview's folder reads back as the token it holds and the path the same face or file of its post has
-// in the blog's folder; a path anywhere else, or naming no token or no post, is no preview's.
-func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
-	none := PreviewLink{Token: "", Post: document.PageOf(document.PageNone), PostPath: ""}
-	post := document.PostPage("coming")
-	cases := []struct {
-		name     string
-		path     string
-		want     PreviewLink
-		wantRead bool
-	}{
-		{name: "the post", path: "/preview/c2lnbmVk/coming", want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming"}, wantRead: true},
-		{name: "its markdown", path: "/preview/c2lnbmVk/coming.md", want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming.md"}, wantRead: true},
-		{
-			name: "its picture", path: "/preview/c2lnbmVk/coming/margin.png",
-			want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming/margin.png"}, wantRead: true,
-		},
-		{
-			name: "a translation's markdown", path: "/preview/ru/c2lnbmVk/coming.md",
-			want: PreviewLink{Token: previewToken, Post: post.InLanguage("ru"), PostPath: "/ru/blog/coming.md"}, wantRead: true,
-		},
-		{name: "a translation's token alone", path: "/preview/ru/c2lnbmVk", want: none, wantRead: false},
-		{name: "a post's own address", path: "/blog/coming", want: none, wantRead: false},
-		{name: "the folder with no post", path: "/preview/c2lnbmVk/", want: none, wantRead: false},
-		{name: "the folder with no token", path: "/preview//coming", want: none, wantRead: false},
-		{name: "a token alone", path: "/preview/c2lnbmVk", want: none, wantRead: false},
-		{name: "a picture with no post", path: "/preview/c2lnbmVk//margin.png", want: none, wantRead: false},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if got, isRead := testedSite().PreviewPath(testCase.path); got != testCase.want || isRead != testCase.wantRead {
-				test.Errorf("PreviewPath(%q) = %+v, read: %t; want %+v, read: %t", testCase.path, got, isRead, testCase.want, testCase.wantRead)
-			}
-		})
-	}
-}
-
-// A path is in the preview's folder by its opening alone, a translation's in it too, which no page takes since the
-// check refuses one, so every answer there is sent as a preview link's is; the name alone, or below the root, is not.
-func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
-	cases := []struct {
-		path string
-		want bool
-	}{
-		{path: "/preview/c2lnbmVk/coming", want: true},
-		{path: "/preview/c2lnbmVk", want: true},
-		{path: "/preview/", want: true},
-		{path: "/preview/ru/c2lnbmVk/coming", want: true},
-		{path: "/preview", want: false},
-		{path: "/previews/coming", want: false},
-		{path: "/blog/coming", want: false},
-		{path: "/blog/preview/margin.png", want: false},
-		{path: "/p/preview/why", want: false},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.path, func(test *testing.T) {
-			if got := InPreviewFolder(testCase.path); got != testCase.want {
-				test.Errorf("InPreviewFolder(%q) = %t, want %t", testCase.path, got, testCase.want)
-			}
-		})
-	}
-}
+// The address a test's site is served at
+const testedBase = "https://example.test"
 
 // A page of the site is read in a terminal with curl and its whole address, which answers a terminal with the manual.
 func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {

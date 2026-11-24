@@ -19,8 +19,6 @@ const (
 	wordsFile           = "i18n/en.yaml"
 	experienceWord      = "experience: Experience"
 	experienceAsTheBlog = "experience: Blog"
-	// the experience retitled as the preview's folder is named
-	experienceAsThePreview = "experience: Preview"
 )
 
 // The fixture's published post's file, its revision, and its status, which a case turns to a draft's; the field a case
@@ -31,7 +29,6 @@ const (
 	fixtureRevisionFile = "posts/reading-slowly/revisions/2026-11-10.en.md"
 	publishedStatus     = "status: published"
 	draftStatus         = "status: draft"
-	previewStatus       = "status: preview"
 	publishedField      = "published: "
 	fixturePostUpdated  = "\nupdated: 2026-11-12"
 	samplePostBodyLine  = 8
@@ -48,9 +45,8 @@ const (
 )
 
 // No two pages of the site share an address in any format: a post slugged as the address the blog's list by series
-// takes, a draft, a preview or one out later among them, a tab of the résumé titled as the blog, whose address the
-// list by year takes, or one titled as the preview's folder, is found at every address it shares; content whose pages
-// each have their own is found to share none.
+// takes, a draft or one out later among them, or a tab of the résumé titled as the blog, whose address the list by
+// year takes, is found at every address it shares; content whose pages each have their own is found to share none.
 func TestNoTwoPagesShareAnAddress(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -64,14 +60,8 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 			name: "a translation slugged as the list by series", change: translationSluggedSeries,
 			want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt", "/ru/blog/series", "/ru/blog/series.md", "/ru/blog/series.txt"},
 		},
-		{
-			name: "a translation previewed, slugged as the list by series", change: translationPreviewSluggedSeries,
-			want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt", "/ru/blog/series", "/ru/blog/series.md", "/ru/blog/series.txt"},
-		},
 		{name: "a post out later slugged as the list by series", change: laterPostSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
-		{name: "a preview slugged as the list by series", change: previewSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a tab of the résumé titled as the blog", change: tabTitledBlog, want: []string{"/blog", "/blog.md", "/blog.txt"}},
-		{name: "a tab of the résumé titled as the preview's folder", change: tabTitledPreview, want: []string{"/preview/"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -102,12 +92,11 @@ type faultSpot struct {
 
 // A post's link inside the site leads to a page the site serves by the path it is served at, and to a section of that
 // page where it names one: a path no page takes, a post's number, which only sends the reader on, a page's markdown, a
-// draft's page, a preview's, a post out after the post linking it, or an anchor no section of its page takes, a feed's
-// among them, is a fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's
-// lists, a heading, a series' group and a feed lead somewhere, and to a post out before the post linking it, or with
-// it. A draft's links are held to the site as its author reads it once every post dated later is out, where a draft's
-// page leads somewhere; a preview's, to the site its link's reader reads then, where its own page leads somewhere and
-// no draft's or other preview's does.
+// draft's page, a post out after the post linking it, or an anchor no section of its page takes, a feed's among them,
+// is a fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's lists, a heading,
+// a series' group and a feed lead somewhere, and to a post out before the post linking it, or with it. A draft's links
+// are held to the site as its author reads it once every post dated later is out, where a draft's page leads
+// somewhere.
 func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -131,7 +120,6 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "a post in a language it has no translation in", body: "[a](/ru/blog/notes-on-tools)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a translation's link to no page", body: "[a](/)", change: translationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
 		{name: "a draft translation's link to no page", body: "[a](/)", change: draftTranslationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
-		{name: "a translation preview's link to no page", body: "[a](/)", change: previewTranslationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
 		{name: "a section of a feed", body: "[a](/blog.atom#reading)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a revision's link to no page", body: "Its text.", change: revisionLinkingNowhere, want: []faultSpot{{file: sampleRevisionFile, line: sampleRevisionLine}}},
 		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
@@ -143,12 +131,6 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "a post out after the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostSooner, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out before the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostLater, want: []faultSpot{}},
 		{name: "a post out with the post linking it, both later", body: "[a](/blog/reading-slowly)", change: bothPostsLaterTogether, want: []faultSpot{}},
-		{name: "a post's link to a preview", body: "[a](/blog/reading-slowly)", change: fixturePostPreviewed, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a preview's link to its own section", body: "## Its heading\n\n[a](/blog/notes-on-tools#its-heading)", change: samplePostPreviewed, want: []faultSpot{}},
-		{name: "a preview's link to no page", body: "[a](/nowhere)", change: samplePostPreviewed, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a preview's link to a draft", body: "[a](/blog/reading-slowly)", change: previewLinkingADraft, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a preview's link to another preview", body: "[a](/blog/reading-slowly)", change: bothPreviewed, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a preview's link to a post out later", body: "[a](/blog/reading-slowly)", change: previewLinkingALaterPost, want: []faultSpot{}},
 		{name: "a draft's link to no page", body: "[a](/nowhere)", change: samplePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's link to a draft", body: "[a](/blog/reading-slowly)", change: bothDrafted, want: []faultSpot{}},
 		{name: "a draft's link to a post out later", body: "[a](/blog/reading-slowly)", change: draftLinkingALaterPost, want: []faultSpot{}},
@@ -209,20 +191,6 @@ func draftTranslationLinkingNowhere(test *testing.T, folder string) {
 	fixtures.WriteIn(test, folder, translationFile, translationLinkingTo(draftStatus, nowhere))
 }
 
-// previewTranslationLinkingNowhere writes the fixture's translation, a preview, with a link to no page.
-//
-//wrapper:a case of the table names the change it writes
-func previewTranslationLinkingNowhere(test *testing.T, folder string) {
-	fixtures.WriteIn(test, folder, translationFile, translationLinkingTo(previewStatus, nowhere))
-}
-
-// translationPreviewSluggedSeries writes a post and its translation, a preview, whose folder bears the name the list by
-// series takes.
-func translationPreviewSluggedSeries(test *testing.T, folder string) {
-	postSluggedSeries(test, folder)
-	fixtures.WriteIn(test, folder, sharedTranslationFile, translationLinkingTo(previewStatus, "/"))
-}
-
 // translationLinkingTo is a translation's text of a status whose body is a link to a path, on translationBodyLine.
 func translationLinkingTo(status, path string) string {
 	return "---\ntitle: Перевод\ndescription: О нём.\n" + status + "\npublished: 2026-11-15T10:00+03:00\nsource: " + unknownSource + "\n---\n[a](" + path + ")\n"
@@ -246,13 +214,6 @@ func laterPostSluggedSeries(test *testing.T, folder string) {
 //wrapper:a case of the table names the change it writes
 func tabTitledBlog(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, wordsFile, experienceWord, experienceAsTheBlog)
-}
-
-// tabTitledPreview titles the résumé's experience as the preview's folder, so its tab's folder would be one.
-//
-//wrapper:a case of the table names the change it writes
-func tabTitledPreview(test *testing.T, folder string) {
-	fixtures.ReplaceIn(test, folder, wordsFile, experienceWord, experienceAsThePreview)
 }
 
 // fixturePostDrafted turns the fixture's published post to a draft, which the site serves at no address.
@@ -305,44 +266,6 @@ func bothPostsLaterTogether(test *testing.T, folder string) {
 func fixturePostDated(test *testing.T, folder, moment string) {
 	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedField+fixturePostMoment+fixturePostUpdated, publishedField+moment)
 	fixtures.RemoveIn(test, folder, fixtureRevisionFile)
-}
-
-// fixturePostPreviewed turns the fixture's published post to a preview, which its link alone opens.
-//
-//wrapper:a case of the table names the change it writes
-func fixturePostPreviewed(test *testing.T, folder string) {
-	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedStatus, previewStatus)
-}
-
-// samplePostPreviewed turns the sample post to a preview, whose links its link's reader follows.
-//
-//wrapper:a case of the table names the change it writes
-func samplePostPreviewed(test *testing.T, folder string) {
-	fixtures.ReplaceIn(test, folder, samplePostFile, publishedStatus, previewStatus)
-}
-
-// previewLinkingADraft turns the sample post to a preview, and the fixture's post to a draft.
-func previewLinkingADraft(test *testing.T, folder string) {
-	samplePostPreviewed(test, folder)
-	fixturePostDrafted(test, folder)
-}
-
-// bothPreviewed turns the sample post and the fixture's post to previews.
-func bothPreviewed(test *testing.T, folder string) {
-	samplePostPreviewed(test, folder)
-	fixturePostPreviewed(test, folder)
-}
-
-// previewLinkingALaterPost turns the sample post to a preview, and dates the fixture's post after the tests' day.
-func previewLinkingALaterPost(test *testing.T, folder string) {
-	samplePostPreviewed(test, folder)
-	fixturePostLater(test, folder)
-}
-
-// previewSluggedSeries writes a preview whose folder bears the name the list by series takes in the blog's folder.
-func previewSluggedSeries(test *testing.T, folder string) {
-	postSluggedSeries(test, folder)
-	fixtures.ReplaceIn(test, folder, sharedPostFile, publishedStatus, previewStatus)
 }
 
 // draftLinkingALaterPost turns the sample post to a draft, and dates the fixture's post after the tests' day.

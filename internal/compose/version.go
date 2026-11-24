@@ -55,10 +55,11 @@ func listedVersion(version postVersion, shown document.Page) document.PostVersio
 // translation older than its original saying so, an older one with the current one it says stands over it, in the
 // site's words round that version's day. exhaustive holds the switch to every status.
 func (read blog) versionOf(version postVersion, words content.Words, languages []document.Language) document.Version {
+	// the post's own status, not statusOf's: a post dated later, a draft to its author, shows the day it comes out
 	switch version.post.Status {
 	case content.StatusDraft:
 		return document.VersionDraft{Word: words.Text(content.WordDraft)}
-	case content.StatusPreview, content.StatusPublished, content.StatusUnlisted:
+	case content.StatusPublished, content.StatusUnlisted:
 	}
 	day, versions := version.text.Day.Start(), read.versionsOf(version.post, version.page)
 	if version.page.Revision == "" {

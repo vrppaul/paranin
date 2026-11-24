@@ -10,7 +10,7 @@ paths:
 ## When a test is written
 
 - A test holds a behaviour someone can name: it does one thing — a call, a request, a key, a command — and checks what came of it.
-- Its name states that behaviour: `TestPreviewLinkDiesWithItsSecret`, never `TestStore2`.
+- Its name states that behaviour: `TestAPostComesOutAtItsMoment`, never `TestStore2`.
 - First find the test that already holds the behaviour and extend it. A new test only where none does.
 - It is written before its code and seen failing. A refactor gets no new test: the old ones pass unchanged.
 - A test rewritten is seen failing too: with the line of code it holds broken, then restored.

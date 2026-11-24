@@ -2,7 +2,6 @@ package compose
 
 import (
 	"cmp"
-	"maps"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // The level a post's body and a container's blocks stand at, above every heading's, so each heading opens a section;
@@ -51,47 +49,11 @@ type PostPicture struct {
 func picturesOf(read blog) []PostPicture {
 	pictures := []PostPicture{}
 	for _, post := range read.served {
-		pictures = append(pictures, postPictures(post)...)
+		for name, picture := range post.Pictures {
+			pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
+		}
 	}
 	return pictures
-}
-
-// postPictures are a post's pictures, each at its file beside it, in no order.
-func postPictures(post content.Post) []PostPicture {
-	pictures := make([]PostPicture, 0, len(post.Pictures))
-	for name, picture := range post.Pictures {
-		pictures = append(pictures, PostPicture{File: document.File{Page: postPage(post), Name: name}, Picture: picture})
-	}
-	return pictures
-}
-
-// Preview is a post the site serves its audience at its preview link alone (docs/FOUNDATION.md §5.4, Status): the post
-// as its link's reader reads it, and its pictures, each at its file beside it; and the post as the content holds it,
-// whose links Check reads.
-type Preview struct {
-	Post     document.Document
-	Pictures []PostPicture
-	written  content.Post
-}
-
-// previewsOf are the posts the blog serves its audience at their preview links, in the snapshot's order, each composed
-// as composedPosts composes a post, its links read among the pages served and its own page.
-func previewsOf(prepared *Prepared, read blog, paths map[string]document.Target) []Preview {
-	previews := []Preview{}
-	for _, post := range read.previewed {
-		previews = append(previews, Preview{
-			Post: postDocument(currentOf(post), read, prepared, withOwnPage(paths, postPage(post))), Pictures: postPictures(post), written: post,
-		})
-	}
-	return previews
-}
-
-// withOwnPage are the pages served and the feeds beside the page of a post read at its preview link: its link to a
-// section of its own leads there, though its own address serves nothing yet.
-func withOwnPage(paths map[string]document.Target, page document.Page) map[string]document.Target {
-	own := maps.Clone(paths)
-	own[routes.Path(page, routes.FormatChosen)] = page
-	return own
 }
 
 // postHeads are the heads of the posts composedPosts makes and of their older versions olderDocuments makes, their

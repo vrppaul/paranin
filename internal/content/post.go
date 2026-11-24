@@ -79,20 +79,19 @@ type Post struct {
 	Stale bool `yaml:"-"`
 }
 
-// Status is who may read a post (D7): a draft, its author alone; a preview, whoever holds its secret link;
-// published, everyone, wherever the site lists posts; unlisted, whoever has its address, listed nowhere.
+// Status is who may read a post (D7): a draft, its author alone; published, everyone, wherever the site lists posts;
+// unlisted, whoever has its address, listed nowhere.
 type Status string
 
 const (
 	StatusDraft     Status = "draft"
-	StatusPreview   Status = "preview"
 	StatusPublished Status = "published"
 	StatusUnlisted  Status = "unlisted"
 )
 
 // statuses are the statuses a post may have, each named once, as levels names a check's.
 func statuses() map[Status]bool {
-	return map[Status]bool{StatusDraft: true, StatusPreview: true, StatusPublished: true, StatusUnlisted: true}
+	return map[Status]bool{StatusDraft: true, StatusPublished: true, StatusUnlisted: true}
 }
 
 // Discussion is a place a post is discussed, which stands in for comments the site has none of (D13): the site, by

@@ -1,11 +1,10 @@
 // Package routes writes every address of the site, from a document's link target and a format, or a picture of the
-// site, and a post's at its preview link, and reads a request's query into the address of the filtered list it names,
-// so no face and no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
+// site, and reads a request's query into the address of the filtered list it names, so no face and no host writes a
+// path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
 package routes
 
 import (
 	"net/url"
-	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -77,10 +76,6 @@ const (
 	folderEnd      = "/"
 	markdownEnding = ".md"
 	manualEnding   = ".txt"
-	// the folder a post's preview link opens it in, its language's folder and the link's token after it
-	// (docs/FOUNDATION.md §5.4, Status)
-	previewRoot   = "/preview"
-	previewFolder = previewRoot + folderEnd
 )
 
 // The program a terminal reads the site with, and what parts it from the address in a command
@@ -92,8 +87,7 @@ const (
 // The scheme of an address that writes to a mailbox
 const mailScheme = "mailto:"
 
-// Site writes the site's addresses whole, from the address it is served at, and knows the site's own name; read at a
-// post's preview link, it writes that post's addresses under the link's token.
+// Site writes the site's addresses whole, from the address it is served at, and knows the site's own name.
 type Site struct {
 	base string
 	host string
@@ -101,14 +95,6 @@ type Site struct {
 	tagAuthority string
 	// translations are the languages the site is translated into, by their tags, each a folder of its own
 	translations []string
-	// previewed is the post read at its preview link, none where the site is read at its own addresses alone
-	previewed *preview
-}
-
-// preview is a post read at its preview link: its page, in the language it is read in, and the token the link holds.
-type preview struct {
-	post  document.Page
-	token string
 }
 
 // inLanguage is a page's path in the site's own language as its translation has it, in the language's folder.
@@ -119,9 +105,9 @@ func inLanguage(translation, path string) string {
 	return pathStart + translation + path
 }
 
-// languageFolderOf parts a path into the language the site is translated into whose folder opens it, and the path
+// LanguageFolderOf parts a path into the language the site is translated into whose folder opens it, and the path
 // after; none and the path whole where no such folder does.
-func (site Site) languageFolderOf(path string) (string, string) {
+func (site Site) LanguageFolderOf(path string) (string, string) {
 	inside, _ := strings.CutPrefix(path, pathStart)
 	language, rest, parted := strings.Cut(inside, folderEnd)
 	if !parted || !slices.Contains(site.translations, language) {
@@ -140,7 +126,7 @@ type BaseAddress interface {
 // New is the site served at a base address, and named by the address's host; what it serves is named for good under a
 // tag authority, as the profile gives it; it is translated into languages, by their tags, each read from a folder.
 func New(base BaseAddress, tagAuthority string, translations []string) Site {
-	return Site{base: base.Written(), host: base.Host(), tagAuthority: tagAuthority, translations: translations, previewed: nil}
+	return Site{base: base.Written(), host: base.Host(), tagAuthority: tagAuthority, translations: translations}
 }
 
 // How a path of the site is named for good (RFC 4151, and RFC 4287's atom:id): the scheme, the site's tag authority,
@@ -156,14 +142,6 @@ func (site Site) TagURI(path string) string {
 	return tagScheme + site.tagAuthority + tagSeparator + strings.TrimPrefix(path, pathStart)
 }
 
-// Previewing is the site as the reader of a post's preview link reads it (docs/FOUNDATION.md §5.4, Status): every
-// address of that post, in the language it is read in, in the preview's folder under the link's token; every other
-// page at its own.
-func (site Site) Previewing(post document.Page, token string) Site {
-	site.previewed = &preview{post: post, token: token}
-	return site
-}
-
 // ReadCommand is the command a terminal reads a page of the site with: curl and the page's whole address, where the
 // site answers a terminal with the manual.
 func (site Site) ReadCommand(page document.Page) string {
@@ -176,9 +154,9 @@ func (site Site) ReadCommand(page document.Page) string {
 func (site Site) Address(target document.Target, format Format) string {
 	switch target.(type) {
 	case document.Address, document.Mail:
-		return site.Reference(target, format)
+		return Reference(target, format)
 	case document.Page, document.Anchor, document.File, document.Feed:
-		if path := site.Reference(target, format); path != "" {
+		if path := Reference(target, format); path != "" {
 			return site.base + path
 		}
 	}
@@ -189,18 +167,18 @@ func (site Site) Address(target document.Target, format Format) string {
 // feed, by its path from the root, which a browser reads against the address the page came from, so a page served
 // from this machine or a staging host leads there and not to the live site; an address outside the site as it is; a
 // mailbox under the scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
-func (site Site) Reference(target document.Target, format Format) string {
+func Reference(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
 		return typed.URL
 	case document.Mail:
 		return mailScheme + typed.Address
 	case document.Page:
-		return site.path(typed, format)
+		return Path(typed, format)
 	case document.Anchor:
-		return site.anchorPath(typed, format)
+		return anchorPath(typed, format)
 	case document.File:
-		return site.filePath(typed)
+		return FilePath(typed)
 	case document.Feed:
 		return FeedPath(typed)
 	}
@@ -227,117 +205,12 @@ const anchorMark = "#"
 
 // anchorPath is where a section of a page is, in a format: its page's path, then the section's anchor; empty where the
 // page is served in none.
-func (site Site) anchorPath(anchor document.Anchor, format Format) string {
-	path := site.path(anchor.Page, format)
+func anchorPath(anchor document.Anchor, format Format) string {
+	path := Path(anchor.Page, format)
 	if path == "" {
 		return ""
 	}
 	return path + anchorMark + anchor.Name
-}
-
-// path is where the site's reader reaches a page in a format: the post previewed in the preview's folder, every other
-// page at its own path.
-func (site Site) path(page document.Page, format Format) string {
-	if site.previews(page) {
-		return site.previewed.paths().inFormat(format)
-	}
-	return Path(page, format)
-}
-
-// filePath is where the site's reader reaches a file beside its page: a picture of the post previewed in the preview's
-// folder, every other file at its own path.
-func (site Site) filePath(file document.File) string {
-	if site.previews(file.Page) {
-		return fileIn(site.previewed.paths(), file.Name)
-	}
-	return FilePath(file)
-}
-
-// previews is whether a page is the post the site's reader reads at its preview link, in the language they read it in.
-func (site Site) previews(page document.Page) bool {
-	return site.previewed != nil && page.Kind == document.PagePost && page.Slug == site.previewed.post.Slug &&
-		page.Translation == site.previewed.post.Translation
-}
-
-// paths are where a post read at its preview link is served: in the preview's folder, its language's folder in it, as
-// in the blog's folder.
-func (previewed preview) paths() paths {
-	path := previewRoot + inLanguage(previewed.post.Translation, folderEnd+previewed.token+folderEnd+previewed.post.Slug)
-	return paths{chosen: path, files: path}
-}
-
-// InPreviewFolder is whether a path is in the preview's folder by the opening of its clean form, whether or not it
-// names a language, a token and a post: every answer there is sent as a preview link's is, since what follows may hold
-// a token, the redirect net/http's ServeMux sends a path not in clean form on to its clean form among them. No page
-// stands there, since the check refuses one whose folder would (PreviewFolderTaken).
-func InPreviewFolder(written string) bool {
-	return strings.HasPrefix(cleanPath(written), previewFolder)
-}
-
-// cleanPath is a path in the clean form net/http's ServeMux sends a request on to: rooted, with no empty segment, no
-// dot and no segment leading out, and its final slash kept.
-func cleanPath(written string) string {
-	rooted := pathStart + strings.TrimPrefix(written, pathStart)
-	clean := path.Clean(rooted)
-	if strings.HasSuffix(rooted, folderEnd) && clean != pathStart {
-		clean += folderEnd
-	}
-	return clean
-}
-
-// PreviewFolderTaken is the folder of a page, where its files and older versions stand, and whether it is the
-// preview's folder, as a tab of the résumé titled preview would take: the check refuses such a page, so
-// InPreviewFolder never names one.
-func PreviewFolderTaken(page document.Page) (string, bool) {
-	path := Path(page, FormatChosen)
-	folder := path + folderEnd
-	return folder, path != "" && InPreviewFolder(folder)
-}
-
-// previewFolderOf parts a path in the preview's folder into the language the site is translated into whose folder
-// opens what follows, and the path after it, from its slash; and whether the path is in the preview's folder at all.
-func (site Site) previewFolderOf(path string) (string, string, bool) {
-	inFolder, isInFolder := strings.CutPrefix(path, previewFolder)
-	if !isInFolder {
-		return document.Untranslated, path, false
-	}
-	language, rest := site.languageFolderOf(folderEnd + inFolder)
-	return language, rest, true
-}
-
-// LanguageOf is the language a path is read in: the one whose folder opens it, or, in the preview's folder, the one
-// whose folder opens what follows; the site's own where no language's folder does.
-func (site Site) LanguageOf(path string) string {
-	if language, _, inPreview := site.previewFolderOf(path); inPreview {
-		return language
-	}
-	language, _ := site.languageFolderOf(path)
-	return language
-}
-
-// PreviewLink is a path in the preview's folder as PreviewPath reads it: its token, its post, and that post's path.
-type PreviewLink struct {
-	Token    string
-	Post     document.Page
-	PostPath string
-}
-
-// What ends a post's slug in a path: its folder's end, before a file of it, or the dot a format's ending opens with
-const slugEnds = folderEnd + "."
-
-// PreviewPath reads a path in the preview's folder as the preview link it is, the one rule paths keeps the other way
-// round, and whether it is one, naming a token and a post.
-func (site Site) PreviewPath(path string) (PreviewLink, bool) {
-	language, inFolder, isInFolder := site.previewFolderOf(path)
-	token, inPost, namesPost := strings.Cut(strings.TrimPrefix(inFolder, folderEnd), folderEnd)
-	slug := inPost
-	if end := strings.IndexAny(inPost, slugEnds); end >= 0 {
-		slug = inPost[:end]
-	}
-	if !isInFolder || !namesPost || token == "" || slug == "" {
-		return PreviewLink{Token: "", Post: document.PageOf(document.PageNone), PostPath: ""}, false
-	}
-	return PreviewLink{Token: token, Post: document.PostPage(slug).InLanguage(language), PostPath: inLanguage(language, blogFolder+inPost)}, true
 }
 
 // FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,
@@ -418,7 +291,7 @@ func Asked(path, rawQuery string) string {
 // its tags alone, an address Path never writes, so it reaches no page.
 func (site Site) Requested(path string, query url.Values) string {
 	tags, isNamed := query[tagKey]
-	_, own := site.languageFolderOf(path)
+	_, own := site.LanguageFolderOf(path)
 	if !isNamed || !slices.ContainsFunc(Formats(), func(format Format) bool { return ownPath(document.PageOf(document.PageBlog), format) == own }) {
 		return path
 	}
@@ -456,7 +329,7 @@ func (site Site) BlogFolders() []string {
 // is a blog's: its list's, with a query or none, as blog?tag=go is, or one in its folder, as blog/99 is, whether or not
 // a page goes by it, in the site's own language or in the folder of one the site is translated into, as ru/blog is.
 func (site Site) BlogNamed(name string) (string, bool) {
-	translation, rest := site.languageFolderOf(pathStart + name)
+	translation, rest := site.LanguageFolderOf(pathStart + name)
 	path, _, _ := strings.Cut(rest, queryStart)
 	if path != blogList && !strings.HasPrefix(path, blogFolder) {
 		return document.Untranslated, false

@@ -218,42 +218,31 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 	}
 }
 
-// The site serves the pictures of the posts it serves, each at its file beside its post, and a preview's beside it
-// alone: a draft's never, and a post's that comes later than its reader as a preview's until it is out.
+// The site serves the pictures of the posts it serves, each at its file beside its post: a draft's never, nor a post's
+// that comes later than its reader until it is out.
 func TestThePicturesServedAreThePostsServed(test *testing.T) {
 	fixtureMargin, sampleMargin := fixtureFile(fixturePostSlug, "margin.png"), fixtureFile(samplePostSlug, sampleDrawingName)
 	cases := []struct {
-		name          string
-		status        content.Status
-		at            time.Time
-		wantServed    []document.File
-		wantPreviewed []document.File
+		name   string
+		status content.Status
+		at     time.Time
+		want   []document.File
 	}{
-		{name: "a published post's", status: content.StatusPublished, at: fixtures.Day(), wantServed: []document.File{fixtureMargin, sampleMargin}, wantPreviewed: []document.File{}},
-		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{}},
-		{name: "a preview's", status: content.StatusPreview, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{sampleMargin}},
-		{
-			name: "a published post's, read before both come out", status: content.StatusPublished, at: fixtures.MomentOf(test, sampleMoment).Add(-time.Minute),
-			wantServed: []document.File{}, wantPreviewed: []document.File{fixtureMargin, sampleMargin},
-		},
+		{name: "a published post's", status: content.StatusPublished, at: fixtures.Day(), want: []document.File{fixtureMargin, sampleMargin}},
+		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), want: []document.File{fixtureMargin}},
+		{name: "a published post's, read before both come out", status: content.StatusPublished, at: fixtures.MomentOf(test, sampleMoment).Add(-time.Minute), want: []document.File{}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\n![A page](margin.svg)\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
 			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: false})
-			served, previewed := []document.File{}, []document.File{}
+			served := []document.File{}
 			for _, shown := range site.Own.Pictures {
 				served = append(served, shown.File)
 			}
-			for _, shown := range site.Own.Previews {
-				for _, picture := range shown.Pictures {
-					previewed = append(previewed, picture.File)
-				}
-			}
-			if !sameMembers(served, testCase.wantServed) || !sameMembers(previewed, testCase.wantPreviewed) {
-				test.Errorf("the pictures served = %+v and previewed = %+v, want %+v and %+v", served, previewed, testCase.wantServed,
-					testCase.wantPreviewed)
+			if !sameMembers(served, testCase.want) {
+				test.Errorf("the pictures served = %+v, want %+v", served, testCase.want)
 			}
 		})
 	}
@@ -594,50 +583,43 @@ func kindsOf(node ast.Node) []ast.NodeKind {
 }
 
 // A post is served while it is published, and while it is unlisted, at its address though no list names it, each once
-// the moment it is dated has come, and at its preview link alone until then; a draft only to its author, who reads
-// the drafts, and at no link; a preview at its link alone, to the public and its author alike.
+// the moment it is dated has come, and as a draft until then; a draft only to its author, who reads the drafts.
 func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 	dated := fixtures.MomentOf(test, sampleMoment)
 	before := dated.Add(-time.Minute)
 	cases := []struct {
-		name      string
-		status    content.Status
-		at        time.Time
-		drafts    bool
-		served    bool
-		previewed bool
+		name   string
+		status content.Status
+		at     time.Time
+		drafts bool
+		served bool
 	}{
-		{name: "published, read at its moment", status: content.StatusPublished, at: dated, drafts: false, served: true, previewed: false},
-		{name: "unlisted, read at its moment", status: content.StatusUnlisted, at: dated, drafts: false, served: true, previewed: false},
-		{name: "published, read before its moment", status: content.StatusPublished, at: before, drafts: false, served: false, previewed: true},
-		{name: "unlisted, read before its moment", status: content.StatusUnlisted, at: before, drafts: false, served: false, previewed: true},
-		{name: "published, read before its moment by its author", status: content.StatusPublished, at: before, drafts: true, served: false, previewed: true},
-		{name: "a draft", status: content.StatusDraft, at: dated, drafts: false, served: false, previewed: false},
-		{name: "a draft, read by its author", status: content.StatusDraft, at: before, drafts: true, served: true, previewed: false},
-		{name: "a preview", status: content.StatusPreview, at: dated, drafts: false, served: false, previewed: true},
-		{name: "a preview, read by its author", status: content.StatusPreview, at: dated, drafts: true, served: false, previewed: true},
+		{name: "published, read at its moment", status: content.StatusPublished, at: dated, drafts: false, served: true},
+		{name: "unlisted, read at its moment", status: content.StatusUnlisted, at: dated, drafts: false, served: true},
+		{name: "published, read before its moment", status: content.StatusPublished, at: before, drafts: false, served: false},
+		{name: "unlisted, read before its moment", status: content.StatusUnlisted, at: before, drafts: false, served: false},
+		{name: "published, read before its moment by its author", status: content.StatusPublished, at: before, drafts: true, served: true},
+		{name: "unlisted, read before its moment by its author", status: content.StatusUnlisted, at: before, drafts: true, served: true},
+		{name: "a draft", status: content.StatusDraft, at: dated, drafts: false, served: false},
+		{name: "a draft, read by its author", status: content.StatusDraft, at: before, drafts: true, served: true},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
 			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: testCase.drafts})
-			served, previewed := []string{}, []string{}
+			served := []string{}
 			for _, post := range site.Own.Posts {
 				served = append(served, post.Head.Page.Slug)
 			}
-			for _, shown := range site.Own.Previews {
-				previewed = append(previewed, shown.Post.Head.Page.Slug)
-			}
-			if slices.Contains(served, samplePostSlug) != testCase.served || slices.Contains(previewed, samplePostSlug) != testCase.previewed {
-				test.Errorf("the posts served = %q and previewed = %q, want %q among them: %t and %t", served, previewed, samplePostSlug,
-					testCase.served, testCase.previewed)
+			if slices.Contains(served, samplePostSlug) != testCase.served {
+				test.Errorf("the posts served = %q, want %q among them: %t", served, samplePostSlug, testCase.served)
 			}
 		})
 	}
 }
 
 // A site holds until the first post that comes later than its reader comes out, published or unlisted alike, and as
-// long as its snapshot where none comes later: a draft and a preview change nothing at their date.
+// long as its snapshot where none comes later: a draft changes nothing at its date.
 func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -654,12 +636,9 @@ func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 			want: fixtures.MomentOf(test, soonAfterTheDay),
 		},
 		{
-			name: "a draft and a preview dated later",
-			posts: []writtenPost{
-				{slug: "drafted", id: 3, status: content.StatusDraft, published: soonAfterTheDay},
-				{slug: "previewed", id: 4, status: content.StatusPreview, published: soonAfterTheDay},
-			},
-			want: time.Time{},
+			name:  "a draft dated later",
+			posts: []writtenPost{{slug: "drafted", id: 3, status: content.StatusDraft, published: soonAfterTheDay}},
+			want:  time.Time{},
 		},
 	}
 	for _, testCase := range cases {
@@ -747,8 +726,8 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 }
 
 // A post's head offers each of its tags as a filter of the blog's list, leading to the list it filters where the lists
-// name the post: a post published and out; a tag of an unlisted post, a draft as its author reads it or a preview,
-// which the lists name nowhere and whose tag may filter none, leads nowhere.
+// name the post: a post published and out; a tag of an unlisted post or a draft as its author reads it, which the
+// lists name nowhere and whose tag may filter none, leads nowhere.
 func TestAPostsTagsLeadToTheListWhereTheListsNameThePost(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -758,12 +737,11 @@ func TestAPostsTagsLeadToTheListWhereTheListsNameThePost(test *testing.T) {
 		{name: "published", status: content.StatusPublished, leads: document.TagFilter("tools")},
 		{name: "unlisted", status: content.StatusUnlisted, leads: document.PageOf(document.PageNone)},
 		{name: "a draft", status: content.StatusDraft, leads: document.PageOf(document.PageNone)},
-		{name: "a preview", status: content.StatusPreview, leads: document.PageOf(document.PageNone)},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"tags: [tools]\nstatus: "+string(testCase.status)+"\n---\nIts text.\n")
-			head := postNamed(test, postsAndPreviews(SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true})), samplePostSlug).Head
+			head := postNamed(test, SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true}).Own.Posts, samplePostSlug).Head
 			want := []document.Filter{{Tag: "tools", Page: testCase.leads, Current: false, WayOut: ""}}
 			if !reflect.DeepEqual(head.Filters, want) {
 				test.Errorf("the filters of %s = %+v, want %+v", testCase.name, head.Filters, want)

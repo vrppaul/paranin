@@ -43,8 +43,8 @@ type seenFeedPost struct {
 	updated   string
 }
 
-// The blog's feed holds the posts its list names, newest first, never a draft, a preview, a post unlisted or one that
-// comes later than its reader; a series' holds its parts out, and a series with no part out has none. A feed changed
+// The blog's feed holds the posts its list names, newest first, never a draft, a post unlisted or one that comes later
+// than its reader; a series' holds its parts out, and a series with no part out has none. A feed changed
 // last when the newest version among its posts came out, which may be an older post's.
 func TestEachFeedHoldsTheListedPostsNewestFirst(test *testing.T) {
 	posts := []writtenPost{
@@ -52,12 +52,11 @@ func TestEachFeedHoldsTheListedPostsNewestFirst(test *testing.T) {
 		{slug: "old-one", id: 4, status: "published", published: yearBefore, tags: ""},
 		{slug: "fresh", id: 9, status: "published", published: "2026-11-11T09:00+01:00", tags: ""},
 		{slug: "hidden", id: 5, status: "unlisted", published: later, tags: ""},
-		{slug: "previewed", id: 6, status: "preview", published: later, tags: ""},
 		{slug: "coming", id: 7, status: "published", published: afterTheDay, tags: ""},
 		{slug: "drafted", id: 8, status: "draft", published: later, tags: ""},
 	}
 	series := []writtenSeries{
-		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, hidden, reading-slowly, previewed, coming", toCome: ""},
+		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, hidden, reading-slowly, coming", toCome: ""},
 		{name: "quiet", title: "Quiet", parts: "drafted", toCome: ""},
 	}
 	fresh := seenFeedPost{slug: "fresh", published: "2026-11-11T09:00:00+01:00", updated: "2026-11-11T09:00:00+01:00"}

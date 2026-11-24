@@ -50,22 +50,6 @@ const (
 // its window the post's slug, its command line going to its headings and its series' other parts too.
 func (writer PageWriter) Post(composed document.Document) string {
 	head := composed.Head
-	return writer.postPage(composed, writer.metadataOf(head, head.Page, head.Title))
-}
-
-// Preview writes a post read at its preview link as Post writes one out (docs/FOUNDATION.md §5.4, Status), for no
-// search engine to index and known at no address, since its own serves nothing yet; the writer's site writes its
-// addresses at the link (routes.Site.Previewing).
-func (writer PageWriter) Preview(composed document.Document) string {
-	head := composed.Head
-	metadata := writer.metadataOf(head, head.Page, head.Title)
-	metadata.canonical, metadata.indexed = "", false
-	return writer.postPage(composed, metadata)
-}
-
-// postPage is a post's page, saying of itself what its metadata says.
-func (writer PageWriter) postPage(composed document.Document, metadata pageMetadata) string {
-	head := composed.Head
 	foot := writer.postFoot(head.Page, document.PlacesOf(composed))
 	drawn := writer.articleOf(composed.Blocks)
 	parts := postParts{
@@ -76,7 +60,7 @@ func (writer PageWriter) postPage(composed document.Document, metadata pageMetad
 		panes:   writer.panesOf(head.Post),
 	}
 	// a post's record, the BlogPosting its linked data would write, comes with the site's SEO (TODO.md)
-	return rendered(writer.page(head.Language, metadata, nil, writer.postMain(parts), foot))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, head.Page, head.Title), nil, writer.postMain(parts), foot))
 }
 
 // postParts are the parts of a post's main part, drawn from its document: its head, the headings its outline lists,
@@ -145,7 +129,7 @@ func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 		return nil
 	}
 	words, seriesWords := writer.frame.paneWords, writer.frame.seriesWords
-	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.site.Reference(writer.frame.blogList, routes.FormatChosen)
+	sides, heading, allPosts := words.Posts, words.OtherPosts, routes.Reference(writer.frame.blogList, routes.FormatChosen)
 	var allParts *pick
 	if series := place.Series; series != nil {
 		sides, heading, allPosts = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title)), ""

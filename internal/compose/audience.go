@@ -18,43 +18,35 @@ type Audience struct {
 	Drafts bool
 }
 
-// comesLater is whether a post published or unlisted is dated after the audience's moment, which keeps it a preview
+// comesLater is whether a post published or unlisted is dated after the audience's moment, which keeps it a draft
 // until then. exhaustive holds the switch to every status.
 func (audience Audience) comesLater(post content.Post) bool {
 	switch post.Status {
 	case content.StatusPublished, content.StatusUnlisted:
 		return post.Published.At().After(audience.At)
-	case content.StatusDraft, content.StatusPreview:
+	case content.StatusDraft:
 	}
 	return false
 }
 
-// statusOf is a post's status as the audience meets it: its own, but a preview while it comes later.
+// statusOf is a post's status as the audience meets it: its own, but a draft while it comes later.
 func (audience Audience) statusOf(post content.Post) content.Status {
 	if audience.comesLater(post) {
-		return content.StatusPreview
+		return content.StatusDraft
 	}
 	return post.Status
 }
 
 // serves is whether the site serves a post at its address to the audience: published or unlisted once it is out, and
-// a draft to its author alone. A preview has no address, only its link (previews). exhaustive holds the switch to
-// every status.
+// a draft to its author alone. exhaustive holds the switch to every status.
 func (audience Audience) serves(post content.Post) bool {
 	switch audience.statusOf(post) {
 	case content.StatusPublished, content.StatusUnlisted:
 		return true
 	case content.StatusDraft:
 		return audience.Drafts
-	case content.StatusPreview:
 	}
 	return false
-}
-
-// previews is whether the site serves a post to the audience at its preview link alone: a preview, or a post published
-// or unlisted that comes later, until it is out; never a draft, which its author alone reads.
-func (audience Audience) previews(post content.Post) bool {
-	return audience.statusOf(post) == content.StatusPreview
 }
 
 // lists is whether the blog's lists and its series' parts name a post for the audience: one published and out alone.
@@ -63,29 +55,29 @@ func (audience Audience) lists(post content.Post) bool {
 	switch audience.statusOf(post) {
 	case content.StatusPublished:
 		return true
-	case content.StatusDraft, content.StatusPreview, content.StatusUnlisted:
+	case content.StatusDraft, content.StatusUnlisted:
 	}
 	return false
 }
 
 // readsVersions is whether the audience reads a post's older versions: of a post published or unlisted and out, whose
-// versions a reader read; a draft's and a preview's none, which no reader read yet, though their revisions stay for
-// when they are out. exhaustive holds the switch to every status.
+// versions a reader read; a draft's none, which no reader read yet, though its revisions stay for when it is out.
+// exhaustive holds the switch to every status.
 func (audience Audience) readsVersions(post content.Post) bool {
 	switch audience.statusOf(post) {
 	case content.StatusPublished, content.StatusUnlisted:
 		return true
-	case content.StatusDraft, content.StatusPreview:
+	case content.StatusDraft:
 	}
 	return false
 }
 
 // showsItsSeries is whether a post's own page shows its series, itself the part read, though no list names it: a
-// draft's and a preview's do, so their reader knows which part they read; an unlisted post's never, since its series
-// leaves it out for good. exhaustive holds the switch to every status.
+// draft's does, so its author knows which part they read; an unlisted post's never, since its series leaves it out for
+// good. exhaustive holds the switch to every status.
 func (audience Audience) showsItsSeries(post content.Post) bool {
 	switch audience.statusOf(post) {
-	case content.StatusPublished, content.StatusDraft, content.StatusPreview:
+	case content.StatusPublished, content.StatusDraft:
 		return true
 	case content.StatusUnlisted:
 	}

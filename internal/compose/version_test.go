@@ -113,9 +113,9 @@ func TestAnOlderVersionIsAPageOfItsOwnSayingANewerStands(test *testing.T) {
 	}
 }
 
-// Only a post out has older versions a reader reads: a post that comes later than its reader, a preview until then,
-// lists its current version alone, and a draft as its author reads it none; neither serves an older one, though their
-// revisions stay for when they are out.
+// Only a post out has older versions a reader reads: a post that comes later than its reader, as its author reads it
+// until then, lists its current version alone, and a draft as its author reads it none; neither serves an older one,
+// though their revisions stay for when they are out.
 func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
 	current := document.PostVersion{Page: document.PostPage(fixturePostSlug), Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: true}
 	cases := []struct {
@@ -124,13 +124,13 @@ func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
 		change   func(test *testing.T, folder string)
 		want     []document.PostVersion
 	}{
-		{name: "a post that comes later", audience: Audience{At: fixtures.MomentOf(test, "2026-11-09T09:00+01:00"), Drafts: false}, change: fixtures.KeepFolder, want: []document.PostVersion{current}},
+		{name: "a post that comes later", audience: Audience{At: fixtures.MomentOf(test, "2026-11-09T09:00+01:00"), Drafts: true}, change: fixtures.KeepFolder, want: []document.PostVersion{current}},
 		{name: "a draft", audience: Audience{At: fixtures.Day(), Drafts: true}, change: fixturePostDrafted, want: nil},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			site := SiteOf(Prepare(changedFixture(test, testCase.change)), testCase.audience)
-			read := postNamed(test, postsAndPreviews(site), fixturePostSlug).Head.Version
+			read := postNamed(test, site.Own.Posts, fixturePostSlug).Head.Version
 			if versions := document.VersionsOf(read); len(site.Own.Versions) > 0 || !reflect.DeepEqual(versions, testCase.want) {
 				test.Errorf("%s serves %d older versions and lists %+v, want none and %+v", testCase.name, len(site.Own.Versions), versions, testCase.want)
 			}

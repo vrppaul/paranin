@@ -479,8 +479,9 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 link that filters the list, told by its hash, not an underline: under the pointer its ground goes `sunk` a `nudge`
 past its word and the word turns `text`; the tag the list is filtered by is reversed and bold, its hash too, and leads
 back to the list, which a screen reader hears it named as; under the pointer it takes the Link's underline, `accent`
-and `underline_hover` thick, until the owner draws its way out (`TODO.md`). A post the lists name nowhere, a draft, a preview or one unlisted, keeps its tags as words. On a
-tile the tags are words of the tile, `caption`, all `faint`. Only posts have tags.
+and `underline_hover` thick, until the owner draws its way out (`TODO.md`). A post the lists name nowhere, a draft or
+one unlisted, keeps its tags as words. On a tile the tags are words of the tile, `caption`, all `faint`. Only posts
+have tags.
 
 ### Switch
 
@@ -520,8 +521,9 @@ site's words, `older than the original`, the whole a link to the original: the p
 standing until the owner draws one; the text faces write it as they write the way to the newer. On a phone one
 column, the facts under the lead, a `quiet` hairline under the head. A draft, which its author alone reads under
 `paranin serve --drafts`, gives the word `draft` as its version, a fact's value like any other, where a post out gives
-its day; the TUI and the text faces write it there too. A preview, read at its link, gives its date as a post out
-does. It is the plainest mark the tokens give, standing until the owner draws one.
+its day; the TUI and the text faces write it there too. A post dated later, which its author alone reads until it
+comes out, gives its date as a post out does. It is the plainest mark the tokens give, standing until the owner draws
+one.
 
 ### Outline
 

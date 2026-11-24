@@ -104,13 +104,12 @@ func TestAPostsSwitchOffersEachLanguageTheListsNameThePostIn(test *testing.T) {
 	}{
 		{name: "published and updated", status: translationStatus + "\nupdated: 2026-11-16", audience: publicOnTheDay(), wantOriginal: bothFromEnglish, wantOwn: []document.Language{english, russianRead}},
 		{name: "unlisted", status: "status: unlisted", audience: publicOnTheDay(), wantOriginal: nil, wantOwn: []document.Language{english, russianRead}},
-		{name: "a preview", status: "status: preview", audience: publicOnTheDay(), wantOriginal: nil, wantOwn: []document.Language{english, russianRead}},
 		{name: "a draft its author reads", status: "status: draft", audience: Audience{At: fixtures.Day(), Drafts: true}, wantOriginal: nil, wantOwn: []document.Language{english, russianRead}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			site := SiteOf(Prepare(translationWith(test, translationStatus, testCase.status)), testCase.audience)
-			own := translationRead(test, site.Translations[russianBlog], translated)
+			own := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, translated)
 			if got := postNamed(test, site.Own.Posts, fixturePostSlug).Head.Languages; !reflect.DeepEqual(got, testCase.wantOriginal) {
 				test.Errorf("the original's Switch with the translation %s = %+v, want %+v", testCase.name, got, testCase.wantOriginal)
 			}
@@ -119,17 +118,6 @@ func TestAPostsSwitchOffersEachLanguageTheListsNameThePostIn(test *testing.T) {
 			}
 		})
 	}
-}
-
-// translationRead is the document of a translation as its reader reads it: among the posts served in its language, or
-// among its previews.
-func translationRead(test *testing.T, composed Blog, page document.Page) document.Document {
-	test.Helper()
-	documents := slices.Clone(composed.Posts)
-	for _, previewed := range composed.Previews {
-		documents = append(documents, previewed.Post)
-	}
-	return fixtures.DocumentOf(test, documents, page)
 }
 
 // translationWith is the fixture content with a piece of its Russian translation written otherwise.

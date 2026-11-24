@@ -12,7 +12,7 @@ const spacedClosing = "<br />" // want `markup lives in a template or a componen
 
 // Angle brackets round a bare word are words, not markup, whatever the word; so is markdown's autolink.
 const (
-	usage      = "paranin preview-link <slug> <source>"
+	usage      = "paranin revise <folder> <slug>"
 	comparison = "a < b and b > a"
 	arrow      = "<- done"
 	autolink   = "<https://paran.in/>"

@@ -717,8 +717,8 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 }
 
 // A filtered list is a view of the list and no page of its own: its page tells a search engine not to index it, names
-// no address it is known by, as a preview's names none, since a part of the list is no copy of it, and is called by
-// the blog's name and its filter; the list itself is indexed and known at its own address.
+// no address it is known by, since a part of the list is no copy of it, and is called by the blog's name and its
+// filter; the list itself is indexed and known at its own address.
 func TestAFilteredListIsIndexedByNoSearchEngine(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
 	cases := []struct {
@@ -1000,56 +1000,8 @@ func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
 	}
 }
 
-// The token a test's preview link holds, and the robots' tag that keeps a search engine from indexing a page
-const (
-	previewToken = "c2lnbmVk"
-	noIndexTag   = `<meta name="robots" content="noindex">`
-)
-
-// A post out names the address it is known by for a search engine to index; a preview's page, drawn for its link, asks
-// none to index it and names no address it is known by, since its own serves nothing yet, and leads to its markdown,
-// its pictures and its own places at its link, never at the post's own address.
-func TestAPreviewsPageLeadsToItsLinkAlone(test *testing.T) {
-	snapshot := fixtures.LoadedContent(test)
-	previewing := NewPageWriter(fixtures.Site(snapshot).Previewing(document.PostPage("reading-slowly"), previewToken), fixtures.LoadedBuild(test),
-		siteOnTheDay(snapshot).Own.Frame, fixtures.Day())
-	cases := []struct {
-		name  string
-		page  string
-		holds []string
-		lacks []string
-	}{
-		{
-			name:  "a post out",
-			page:  fixtureWriter(test).Post(fixturePost(test)),
-			holds: []string{`<link rel="canonical" href="https://example.test/blog/reading-slowly">`},
-			lacks: []string{noIndexTag},
-		},
-		{
-			name: "a preview",
-			page: previewing.Preview(fixturePost(test)),
-			holds: []string{
-				noIndexTag, `type="text/markdown" href="/preview/c2lnbmVk/reading-slowly.md"`, `src="/preview/c2lnbmVk/reading-slowly/margin.png"`,
-				`href="/preview/c2lnbmVk/reading-slowly#what-a-reader-keeps"`,
-			},
-			lacks: []string{`rel="canonical"`, `"/blog/reading-slowly`, `"https://example.test/blog/reading-slowly`},
-		},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			for _, held := range testCase.holds {
-				if !strings.Contains(testCase.page, held) {
-					test.Errorf("the page %q holds no %q", testCase.page, held)
-				}
-			}
-			for _, lacked := range testCase.lacks {
-				if strings.Contains(testCase.page, lacked) {
-					test.Errorf("the page %q holds %q", testCase.page, lacked)
-				}
-			}
-		})
-	}
-}
+// The robots' tag that keeps a search engine from indexing a page
+const noIndexTag = `<meta name="robots" content="noindex">`
 
 // A pre whole, and a tag of markup, which a browser shows none of
 const (

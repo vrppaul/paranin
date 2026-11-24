@@ -414,7 +414,7 @@ templ (writer PageWriter) mail(address []document.Span) {
 // the stylesheet colours, or the address whole where it holds no at; in the size of the heading it is, or of the text
 // it stands among.
 templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
-	<a class={ "mail", templ.KV("mail-heading", heading) } href={ writer.frame.site.Reference(mail, routes.FormatChosen) }>
+	<a class={ "mail", templ.KV("mail-heading", heading) } href={ routes.Reference(mail, routes.FormatChosen) }>
 		if box, host, parted := mail.Parts(); parted {
 			<span class="mail-box">{ box }</span><span class="mail-at">{ document.MailAt }</span><span class="mail-host">{ host }</span>
 		} else {

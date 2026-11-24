@@ -17,13 +17,11 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// How a clash of addresses is written: the address, then the title of each page that takes it; one clash a line; and
-// what takes a preview's folder, which a page's folder clashes with
+// How a clash of addresses is written: the address, then the title of each page that takes it; one clash a line
 const (
-	clashFormat  = "%s is the address of more than one page: %s"
-	titleJoint   = " and "
-	clashJoint   = "\n"
-	previewLinks = "the preview links"
+	clashFormat = "%s is the address of more than one page: %s"
+	titleJoint  = " and "
+	clashJoint  = "\n"
 )
 
 // What is said of a post's link inside the site that leads nowhere: to a post that comes out after the post linking
@@ -38,32 +36,27 @@ const (
 )
 
 // Check holds a snapshot to what only its whole site knows, in every language, at each moment from now on it changes:
-// no two pages at one address, a preview's among them, and no link inside it to nowhere, a draft's as its author reads
-// the site, and a preview's as its link's reader does once every post that comes later is out, so a preview may link
-// to a post dated later than now.
+// no two pages at one address, and no link inside it to nowhere, a draft's as its author reads the site once every
+// post that comes later is out.
 func Check(snapshot *content.Snapshot, now time.Time) error {
 	public := Audience{At: now, Drafts: false}
 	posts := allPosts(snapshot)
 	changes, later := public.changes(posts), laterPosts(posts, public)
 	faults := content.Faults{}
 	prepared := Prepare(snapshot)
-	// the public's site once every post that comes later is out, the last the loop composes
-	var latest Site
 	for _, moment := range changes {
-		latest = SiteOf(prepared, Audience{At: moment, Drafts: false})
-		reached := destinationsOf(latest, later)
-		for _, blog := range latest.Blogs() {
+		site := SiteOf(prepared, Audience{At: moment, Drafts: false})
+		reached := destinationsOf(site, later)
+		for _, blog := range site.Blogs() {
 			faults = append(faults, reached.linksLeadingNowhere(blog.postsServed)...)
 		}
 	}
-	faults = append(faults, previewFaults(latest, later)...)
 	// the author's site once every post that comes later is out holds the most pages
 	authorsSite := SiteOf(prepared, Audience{At: changes[len(changes)-1], Drafts: true})
 	heads, authorReaches := headsOf(authorsSite.served), destinationsOf(authorsSite, later)
 	for _, blog := range authorsSite.Blogs() {
 		drafts := slices.DeleteFunc(slices.Clone(blog.postsServed), func(post content.Post) bool { return post.Status != content.StatusDraft })
 		faults = append(faults, authorReaches.linksLeadingNowhere(drafts)...)
-		heads = append(heads, previewHeads(blog.Previews)...)
 	}
 	var linkFaults error
 	if len(faults) > 0 {
@@ -71,26 +64,6 @@ func Check(snapshot *content.Snapshot, now time.Time) error {
 		linkFaults = slices.Compact(faults)
 	}
 	return errors.Join(sharedAddresses(heads), linkFaults)
-}
-
-// previewFaults are the faults of the links of each preview of a site, read as its link's reader reads them.
-func previewFaults(site Site, later map[string]content.Moment) content.Faults {
-	faults := content.Faults{}
-	for _, blog := range site.Blogs() {
-		for _, previewed := range blog.Previews {
-			faults = append(faults, previewDestinations(site, previewed, later).linksLeadingNowhere([]content.Post{previewed.written})...)
-		}
-	}
-	return faults
-}
-
-// previewHeads are the heads of the posts previewed, which take their addresses once out.
-func previewHeads(previews []Preview) []document.Head {
-	heads := make([]document.Head, 0, len(previews))
-	for _, previewed := range previews {
-		heads = append(heads, previewed.Post.Head)
-	}
-	return heads
 }
 
 // AddressClash is an address more than one page of the site takes, in any format, as routes writes it, and the title
@@ -118,17 +91,13 @@ func (clashes AddressClashes) Error() string {
 
 // sharedAddresses are the addresses more than one of the served pages' heads takes, as AddressClashes; none where
 // every page has addresses of its own. It reads them through the addresses routes writes, so a tab of the résumé
-// titled as the blog, or a post slugged as its list by series, is found as any other clash; and a page whose folder is
-// the preview's, which the preview links take, as a tab of the résumé titled preview.
+// titled as the blog, or a post slugged as its list by series, is found as any other clash.
 func sharedAddresses(heads []document.Head) error {
 	titlesAt := map[string][]string{}
 	for _, head := range heads {
 		title := document.PlainText(head.Title)
 		for _, path := range addressesOf(head.Page) {
 			titlesAt[path] = append(titlesAt[path], title)
-		}
-		if folder, taken := routes.PreviewFolderTaken(head.Page); taken {
-			titlesAt[folder] = append(titlesAt[folder], title, previewLinks)
 		}
 	}
 	clashes := AddressClashes{}
@@ -165,16 +134,6 @@ type destinations struct {
 // destinationsOf are where a site's links may lead, in every language, beside the posts that come later.
 func destinationsOf(site Site, later map[string]content.Moment) destinations {
 	return destinations{paths: site.paths, anchors: anchorsOf(site.served), later: later}
-}
-
-// previewDestinations are where a preview's links may lead, beside the posts that come later: where the site's do, and
-// to its own page and its sections.
-func previewDestinations(site Site, previewed Preview, later map[string]content.Moment) destinations {
-	return destinations{
-		paths:   withOwnPage(site.paths, previewed.Post.Head.Page),
-		anchors: anchorsOf(append(slices.Clone(site.served), previewed.Post)),
-		later:   later,
-	}
 }
 
 // laterPosts are the posts that come later than an audience's moment, by the path each is served at once out, each by

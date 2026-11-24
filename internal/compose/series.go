@@ -13,10 +13,10 @@ import (
 const firstPart = 1
 
 // blog is what each post's place in the blog and the blog's lists are read from, read once from a snapshot for an
-// audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order, and those
-// it serves them at their preview links alone; the posts the lists name, those published and out, in the order they
-// came out and newest first, and their tags; every series in their names' order; each series by the slug of every post
-// it names; the filters of the list; and its feeds, and the posts each holds.
+// audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order; the posts
+// the lists name, those published and out, in the order they came out and newest first, and their tags; every series
+// in their names' order; each series by the slug of every post it names; the filters of the list; and its feeds, and
+// the posts each holds.
 type blog struct {
 	audience Audience
 	// words are the site's words in the blog's language, and languages every language the blog is read in
@@ -24,7 +24,6 @@ type blog struct {
 	languages []language
 	posts     map[string]content.Post
 	served    []content.Post
-	previewed []content.Post
 	listed    []content.Post
 	newest    []content.Post
 	tags      []string
@@ -46,16 +45,13 @@ type listedPart struct {
 func blogOf(snapshot *content.Snapshot, edition content.Edition, audience Audience) blog {
 	read := blog{
 		audience: audience, words: edition.Words, languages: nil, posts: map[string]content.Post{}, served: []content.Post{},
-		previewed: []content.Post{}, listed: []content.Post{}, newest: nil, tags: nil, series: edition.Series,
-		seriesOf: map[string]content.Series{}, filters: nil, feeds: nil, feedPosts: nil,
+		listed: []content.Post{}, newest: nil, tags: nil, series: edition.Series, seriesOf: map[string]content.Series{},
+		filters: nil, feeds: nil, feedPosts: nil,
 	}
 	for _, post := range edition.Posts {
 		read.posts[post.Slug] = post
 		if audience.serves(post) {
 			read.served = append(read.served, post)
-		}
-		if audience.previews(post) {
-			read.previewed = append(read.previewed, post)
 		}
 		if audience.lists(post) {
 			read.listed = append(read.listed, post)
@@ -107,7 +103,7 @@ func (read blog) seriesAndNeighbours(post content.Post) (*document.Series, docum
 
 // partsOf are a series' parts in their order, as its list or the reader of one of its posts holds them: each post it
 // names that shows, then each title it names to come. A list shows the posts it names; a post's page those and itself.
-// Any other part not published, a draft, a preview or unlisted, is listed nowhere, so the series leaves it out and
+// Any other part not published, a draft or unlisted, is listed nowhere, so the series leaves it out and
 // keeps its working title off the site.
 func (read blog) partsOf(series content.Series, shows func(content.Post) bool) []listedPart {
 	parts := []listedPart{}

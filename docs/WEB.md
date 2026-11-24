@@ -18,23 +18,16 @@ Beside them a feed reader polls the blog's feeds, in **Atom**, each at an addres
 A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé or a
 project's page is a tab, named by its title's letters and digits in small letters, a hyphen between each run of them
 (`Experience` is `experience`); a post and the list have no tabs. A post is served while it is published or unlisted
-and its `published` time has come, as a preview at its preview link alone, and as a draft only under
-`paranin serve --drafts`, to its author; the list names the posts published and out alone. A post dated later comes
-out at its time with no reload, and is a preview until then. A preview's every address is the one it would have in the
-blog's folder with `/blog/` swapped for `/preview/{token}/`, a translation's `/{language}/blog/` for
-`/preview/{language}/{token}/`, its token an HMAC-SHA256 of the post's address once out, `/blog/{slug}` or
-`/ru/blog/{slug}`, under the server's key, in base64url (`docs/FOUNDATION.md` §5.4, Status), so a link opens the post
-in its own language alone, until the post is out or the key changes. `paranin preview-link` signs a link, and a
-translation's where `--language` names its language. A server that holds no key serves no preview;
-it reads its key as it starts, so a new key takes a restart. A preview's faces are drawn for each request that opens
-one, since each link writes its own token into them.
+and its `published` time has come, and as a draft only under `paranin serve --drafts`, to its author; the list names
+the posts published and out alone. A post dated later comes out at its time with no reload, and is a draft until then
+in who reads it and where it is listed, its version marked by its day, never the word `draft`, which a post written
+as a draft alone reads (`docs/FOUNDATION.md` §5.4, Status).
 
 A post's translation, and the blog in its language, stand in the language's folder, for each language the content
 has words for (`content/i18n/`), its tag two or three small letters: every address of the blog below with
-`/{language}` before it, as `/ru/blog/{slug}`, `/ru/blog.md?tag={tag}` and `/ru/blog.atom`, and a preview's in the
-preview's folder with the language's after it, `/preview/ru/{token}/{slug}`, so the preview's folder alone holds every
-token. The blog in a language lists the posts out in it alone, in its words; English, the site's own language, has no
-folder. Nothing answers by `Accept-Language`: the address alone picks the language.
+`/{language}` before it, as `/ru/blog/{slug}`, `/ru/blog.md?tag={tag}` and `/ru/blog.atom`. The blog in a language
+lists the posts out in it alone, in its words; English, the site's own language, has no folder. Nothing answers by
+`Accept-Language`: the address alone picks the language.
 
 | Method, path | Answer |
 | --- | --- |
@@ -45,12 +38,11 @@ folder. Nothing answers by `Accept-Language`: the address alone picks the langua
 | `GET /blog?tag={tag}` | The list by year filtered to the posts of a tag, chosen the same way, for each tag of a post the list names. On the list by year the query names one tag; any other key, and the query of any other path, is passed over. A tag named twice, or one no list has, is `404`. Each is drawn the first time a request asks for it, and kept. |
 | `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md`, `/blog.md?tag={tag}` | The same in markdown, `text/markdown`. |
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}` | The same as the manual, `text/plain`. |
-| `GET /blog/{slug}/{date}`, `.md`, `.txt` | An older version of a post out, published or unlisted, by the day it came out (`2026-11-10`), its revision's name (`docs/FOUNDATION.md` §5.4, Revisions), chosen and in each format as the post is; drawn the first time a request asks for it, and kept. A draft's and a preview's are served nowhere. The current version's day, the name the post's versions list it by, is `302` to the same face at `/blog/{slug}`, with `Cache-Control: no-cache`, since that day names an older version once the post is updated. |
+| `GET /blog/{slug}/{date}`, `.md`, `.txt` | An older version of a post out, published or unlisted, by the day it came out (`2026-11-10`), its revision's name (`docs/FOUNDATION.md` §5.4, Revisions), chosen and in each format as the post is; drawn the first time a request asks for it, and kept. A draft's, a post's dated later among them, are served nowhere. The current version's day, the name the post's versions list it by, is `302` to the same face at `/blog/{slug}`, with `Cache-Control: no-cache`, since that day names an older version once the post is updated. |
 | `GET /blog/{slug}/{picture}` | A picture a version of the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. A picture's name ends in its type's ending, which no day and no format's ending is, so a version and a picture never share a path. |
-| `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
-| `GET /{language}/blog…`, `GET /preview/{language}/…` | The same in a language, for each address above in the blog's folder, the preview's and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
+| `GET /{language}/blog…` | The same in a language, for each address above in the blog's folder and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
@@ -67,7 +59,6 @@ How long a cache keeps an answer:
 | --- | --- |
 | A page in any format, a feed, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
-| Any answer in the preview's folder, `302`, `404` and what `net/http` writes there among them | `private, no-store`: its address may hold a link's token, which no cache keeps |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list, filtered or not
 
@@ -80,10 +71,10 @@ Every negotiated response sets `Vary: Accept` alone, the page of no page among t
 address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
 `Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses; the HTML names it in its head too, with
 `rel="alternate"` to its markdown. A filtered list, a view of the list and no page of its own (`docs/FOUNDATION.md`
-§5.4), and an older version of a post, which a newer stands over, name no canonical URL, as a preview names none,
-since a part of the list is no copy of `/blog` nor an older version of its post, and send `X-Robots-Tag: noindex` in
-every format, which their HTML says in its head too (`<meta name="robots">`), with no Open Graph tags. Links inside the HTML lead to the
-site's pages by their path from the root; the canonical URL and the text formats' links are whole.
+§5.4), and an older version of a post, which a newer stands over, name no canonical URL, since a part of the list is no
+copy of `/blog` nor an older version of its post, and send `X-Robots-Tag: noindex` in every format, which their HTML
+says in its head too (`<meta name="robots">`), with no Open Graph tags. Links inside the HTML lead to the site's pages
+by their path from the root; the canonical URL and the text formats' links are whole.
 
 ## What each format holds
 
@@ -126,7 +117,7 @@ left out, and a gap among written words stands marked as one.
   reader would show as stray words or run nothing for.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
-  names, newest first, by its description; never a draft, a preview, a post unlisted, one not yet out or an older
+  names, newest first, by its description; never a draft, a post unlisted, one not yet out or an older
   version.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script; `<html lang>` is its language's tag, and the frame's own words, Neovim's and tmux's
@@ -187,25 +178,8 @@ Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox
 How the page's build keeps to it is `.claude/rules/page.md`. The page's face, JetBrains Mono, is a built file of the
 site like any other, from `design/fonts` (`design/tokens.yaml`, `face`), so every reader sees the copy the cells are
 counted in; a mono face of the reader's own shows the text until it has come. An article's words are set in iA
-Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent but in the preview's folder:
+Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent:
 `strict-origin-when-cross-origin` is every browser's own default.
-
-Every answer whose path opens with `/preview/` once cleaned as `net/http` cleans it, a translation's preview at
-`/preview/ru/` and `//preview/…` or `/blog/../preview/…` among them, adds these; no page stands there, since content
-whose page's folder would, a tab of the résumé titled `preview`, is refused as it loads. It adds them, the handler's
-own and what `net/http` writes there alike: a path of no page, a `302` on to a post out, a redirect to a path's clean
-form, a refusal of a method. It names no
-canonical address, since the post's own serves nothing yet; a preview's page says `noindex` in its head too
-(`<meta name="robots">`):
-
-```
-X-Robots-Tag: noindex
-Referrer-Policy: no-referrer
-Cache-Control: private, no-store
-```
-
-The address may hold a link's token: `no-referrer` keeps a browser from sending it to a site the reader follows a link
-to, and to a proxy's log in the `Referer` of each file the page loads. The server logs no request's path.
 
 ## The page in a browser
 

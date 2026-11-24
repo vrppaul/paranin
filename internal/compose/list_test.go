@@ -43,8 +43,8 @@ type seenListed struct {
 	tags       string
 }
 
-// The blog's list by year holds every post the blog lists, never a draft, a preview, a post unlisted or one that comes
-// later than its reader, a group a year, the newest year first and the newest post first in each, a post's year the
+// The blog's list by year holds every post the blog lists, never a draft, a post unlisted or one that comes later than
+// its reader, a group a year, the newest year first and the newest post first in each, a post's year the
 // one it came out in by its own zone; each says how many posts it holds, one post apart from more, and each post its
 // page and when it came out, and its part and its series where it is a part of one.
 func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
@@ -53,10 +53,9 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 		{slug: "old-one", id: 4, status: "published", published: yearBefore, tags: ""},
 		{slug: "new-year", id: 5, status: "published", published: newYearsNight, tags: ""},
 		{slug: "hidden", id: 6, status: "unlisted", published: later, tags: ""},
-		{slug: "previewed", id: 7, status: "preview", published: later, tags: ""},
 		{slug: "coming", id: 8, status: "published", published: afterTheDay, tags: ""},
 	}
-	series := fixtureSeriesOf("first, hidden, reading-slowly, previewed, coming", "")
+	series := fixtureSeriesOf("first, hidden, reading-slowly, coming", "")
 	want := []seenGroup{
 		{
 			title: "2026", name: "", line: "", count: "3 posts",
@@ -83,7 +82,7 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 // The blog's list by series holds a group a series with a part out, the series whose latest part came out last first,
 // each named by the series' name, as a place reaches it, with its line, how many of its parts, out and to come, are
 // out, and each of them in order by its number, a part named to come saying it comes, with no page; a part not
-// published, a draft, a preview, unlisted or coming later than its reader, is left out, as its series leaves it, and a
+// published, a draft, unlisted or coming later than its reader, is left out, as its series leaves it, and a
 // series with no part out yet is in no list. The posts in no series come last, newest first.
 func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 	posts := []writtenPost{
@@ -302,8 +301,8 @@ func TestAListsPlacesAreItsPostsThenItsTagsThenItsSeries(test *testing.T) {
 
 // Every face's :e opens each project's page by its slug, then the blog's list in each grouping and each post the list
 // names, newest first, which Tab offers; then a post served and no list names, by its slug, and every post served by
-// its number, and the list filtered by each tag, which Tab never offers; never a draft, a preview or a
-// post that comes later than its reader, each by the name a terminal reaches it by; then the same of the blog in each
+// its number, and the list filtered by each tag, which Tab never offers; never a draft or a post that comes later
+// than its reader, each by the name a terminal reaches it by; then the same of the blog in each
 // other language, in its folder. Every language's frame holds that one list.
 func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 	posts := []writtenPost{

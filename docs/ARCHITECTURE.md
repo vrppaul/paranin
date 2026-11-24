@@ -133,11 +133,10 @@ names each anchor once, the kinds of place are `document`'s, and the page's own 
 2026-11-23, with a post's links inside the site: a link's anchor, a target of its own, and the site's check of them.
 Amended 2026-11-23, with statuses and dates: `compose` composes for an audience, a moment and whether drafts are read,
 the hosts keep what they draw until the next post dated later comes out, and the check runs over each moment the site
-changes. Amended 2026-11-23, with preview links: `compose` composes each preview beside the site and splits a
-snapshot's code once (`Prepare`), `routes` writes a preview's addresses under its link's token, and the web host alone
-holds the key that signs it. Amended 2026-11-24, with the list's filters: a filtered list is a page of two kinds of its
-own, which `compose` composes with the site and the web host draws when first asked for, a head holds the filters it
-offers, and `routes` reads a request's query into its address. Amended 2026-11-24, with revisions: `content` reads a
+changes. Amended 2026-11-23: `compose` splits a snapshot's code once (`Prepare`). Amended 2026-11-24, with the list's
+filters: a filtered list is a page of two kinds of its own, which `compose` composes with the site and the web host
+draws when first asked for, a head holds the filters it offers, and `routes` reads a request's query into its address.
+Amended 2026-11-24, with revisions: `content` reads a
 post's revisions with it, the version read is one of three kinds and lists the post's versions, an older version is a
 page of its own a post's page names by its revision, which `compose` composes with the site and the web host draws when
 first asked for, and a page says whether a search engine indexes it. Amended 2026-11-24, with the feeds: `compose`
@@ -156,10 +155,9 @@ Amended 2026-11-24, on the owner's word: a heading's anchor is its words, whatev
 Amended 2026-11-24, on the owner's word: a tag alone filters the list, a filtered list a page of one kind.
 Amended 2026-11-24, on the owner's word: `paranin revise` dates the post as updated on its day, `content` writing its
 file so.
-Amended 2026-11-24, on the owner's word: the preview's folder holds a translation's language, `/preview/ru/`.
 Amended 2026-11-24, on the owner's word: the composition root prepares a snapshot once for both hosts.
-Amended 2026-11-24, on the owner's word: a preview link never lapses, its token signing the post's address alone.
 Amended 2026-11-24, on the owner's word: a widget lands with the blog's first, before the form's salary range.
+Amended 2026-11-24, on the owner's word: no preview status; a post dated later is a draft until it comes out.
 
 ### Context
 
@@ -232,12 +230,7 @@ and web routes.
   every post dated later is out, where it holds the most pages. A link to
   a post that comes out after the one linking it is refused, naming when
   that post comes out, since it would lead nowhere until then; one to a
-  post out before it or with it passes. A preview's links are checked over
-  the public site once every post dated later is out, beside its own page
-  and sections, so it may link to a post due before it comes out, and to
-  its own sections, and never to a draft or another preview; a preview's
-  page takes its address for the clash of addresses, since it takes it
-  once out (amended 2026-11-23). Ways weighed: the check over the site
+  post out before it or with it passes. Ways weighed: the check over the site
   as it stands now alone, which sees neither a post dated later nor its
   links; every link to a post dated later let pass, which serves a dead
   link until that post comes out.
@@ -248,7 +241,7 @@ and web routes.
   Every face draws them, the HTML page included, each part in a layout of its
   own; no face picks the facts or their order again. `compose` is a function
   of a snapshot and of its audience (amended 2026-11-23): the moment they
-  read at, which a post dated later stays out until, a preview, and
+  read at, which a post dated later stays out until, a draft, and
   whether they read the drafts, as the author does under
   `paranin serve --drafts`; the hosts read the clock and hand the moment
   in. It says until when what it makes holds, the moment the next post
@@ -259,18 +252,6 @@ and web routes.
   with every post; composing per snapshot and minute, as FOUNDATION
   planned, a composition each minute for the few moments the site
   changes, and a post up to a minute late.
-  Beside the site it composes each post its audience reads at a preview
-  link alone, a preview or a post dated later (amended 2026-11-23): its
-  series and foot as a draft's are, itself the part read, and its links
-  read among the pages served and its own page. `compose` knows nothing of
-  tokens: the web host checks a request's token against the post's
-  address alone, under the key it holds, compared in constant time, so a
-  link opens until the post is out or the key changes (amended 2026-11-24,
-  the owner's word), and draws the preview's face asked for with the post's addresses
-  at that link, since each link holds a token of its own. Ways weighed:
-  the audience naming the one preview it reads, which composes the whole
-  site again for each preview; the token in `document`'s page, which
-  would carry a secret through every layer.
   A composition reads its snapshot through `compose.Prepare`, which splits
   every post's code into its kinds of word once a snapshot (amended
   2026-11-23). The composition root prepares each snapshot once for both
@@ -428,21 +409,21 @@ and web routes.
     face draws it as the list. The page says it filters the list
     (`Page.Unfiltered`), and so that no search engine indexes it
     (`Page.Indexed`), which a face and the web host read to send it with
-    `noindex` and name no canonical address, as a preview names none,
-    since a part of the list is no copy of it. The head of a list and of
+    `noindex` and name no canonical address, since a part of the list is
+    no copy of it. The head of a list and of
     a post holds its filters (`Head.Filters`), which `compose` works out
     once: each tag, where it leads and whether it is the filter shown,
     then named to a screen reader as the way to the whole list; a tag of a
-    post the lists name nowhere, a draft's, a preview's or an unlisted
-    post's, leads nowhere, since it may filter none. The faces draw the
+    post the lists name nowhere, a draft's or an unlisted post's, leads
+    nowhere, since it may filter none. The faces draw the
     filters in that order and the list's places are its tags among them,
     so no face works out where a tag leads. `compose` composes one for
     each tag, with the site, so no request composes; the web host draws
     each filter's formats the first time a request asks for one, once a
-    drawing however many ask at once (`sync.OnceValue`), as it draws a
-    preview's: on 72 posts, 45 tags and 2 series, drawing them all with
-    the site took 52 ms and 53 MB of allocations a snapshot, not 23 ms and
-    27 MB, where drawing them when asked takes 22 ms and 30 MB. Ways
+    drawing however many ask at once (`sync.OnceValue`): on 72 posts, 45
+    tags and 2 series, drawing them all with the site took 52 ms and 53 MB
+    of allocations a snapshot, not 23 ms and 27 MB, where drawing them
+    when asked takes 22 ms and 30 MB. Ways
     weighed: the filter a field of every page, which every page written by
     hand would carry; a filter composed per request, a request that
     composes; the TUI filtering the list's buffer in place, a list no
@@ -488,22 +469,12 @@ and web routes.
   names an older version (`Page.Revision`), so a target, a head and a link
   name a page in any language by one value; `routes` writes every address
   of a translated page in its language's folder, `/ru/blog/<slug>` and a
-  feed's `/ru/blog.atom`, a preview's in the preview's folder with its
-  language's folder after it, `/preview/ru/<token>/<slug>` (amended
-  2026-11-24, the owner's word), and reads a folder back only for a
-  language the site is translated into, which `routes.New` takes from the
-  snapshot; whether a path is in the preview's folder, which a host's
-  private headers ask of every request before any drawing, is its opening
-  alone, `/preview/`, so every token stands under one folder whatever
-  follows it. No page stands there: `Check` refuses a page whose folder
-  would (`routes.PreviewFolderTaken`), a tab of the résumé titled
-  `preview`, as an address the preview links take. Way weighed: the
-  preview's folder in the language's, `/ru/preview/`, which asked of every
-  path one segment down and refused a post or a project slugged `preview`.
+  feed's `/ru/blog.atom`, and reads a folder back only for a language the
+  site is translated into, which `routes.New` takes from the snapshot.
   `compose.SiteOf` composes one site, its index and pages
   once, and a blog in each language (`Site.Own`, `Site.Translations`) by the code that composes
   the English, each with its frame in its words and its own lists, filters,
-  posts, versions, previews and feeds, all their links read among the pages
+  posts, versions and feeds, all their links read among the pages
   of every language, so a post may link to a translation; `Check` holds
   every blog's links and addresses together. A post's head lists the
   languages its reader may go to (`Head.Languages`), the one read and each
@@ -692,19 +663,8 @@ and web routes.
   face (2026-11-23); the
   blog's list with its page and its text faces (2026-11-23), the TUI's with
   its blog session.
-- **`routes`** writes every address. Read at a post's preview link, a
-  site writes every address of that post, its faces, sections and
-  pictures, with the blog's folder swapped for the preview's folder and the
-  link's token, `/preview/<token>/<slug>`, a translation's language's
-  folder between the two, `/preview/ru/<token>/<slug>`, and `PreviewPath`
-  reads a path back the same way, its token and its slug among it, so the
-  one rule is written once (amended 2026-11-23); `InPreviewFolder` says by
-  the opening of a path's clean form alone, as `net/http` cleans it,
-  whether it is in the folder, so the host sends whatever it answers there
-  privately, a redirect to that clean form among them. A link inside a page is written by the site
-  too, `Site.Reference`, so a face drawing a preview leads nowhere near
-  its public address. A filtered list is the site's one address with a
-  query, `/blog?tag=go` (amended 2026-11-24), and `Requested` reads a
+- **`routes`** writes every address. A filtered list is the site's one
+  address with a query, `/blog?tag=go` (amended 2026-11-24), and `Requested` reads a
   request's path and query into the address `Path` writes, by the one
   encoding both use, so the host only looks the address up: on the list
   by year the tag the query names, every other key passed over; a tag
@@ -788,14 +748,11 @@ included (D8). Their widgets are code, built by the page's toolchain.
 - **One format**: CommonMark with GFM tables, YAML front matter and widget
   blocks (a fenced ` ```widget Name ` block with its props as YAML, `alt`
   required). `paranin check` refuses anything else, raw HTML first.
-- **Status**: `draft` (never shipped), `preview` (a link signed by the
-  server's secret over the post's address, `noindex`,
-  listed nowhere), `published`, `unlisted`. A
-  `published` date in the future keeps a post a preview until then, worked
+- **Status**: `draft` (never shipped), `published`, `unlisted`. A
+  `published` date in the future keeps a post a draft until then, worked
   out from the time, the site composed again as the post comes out
-  (ADR-0003; tests hold it in `testing/synctest`). The preview link is
-  printed on the owner's machine; CI never sees the secret, a file
-  `PARANIN_PREVIEW_KEY` names (FOUNDATION §5.4, Status).
+  (ADR-0003; tests hold it in `testing/synctest`; FOUNDATION §5.4,
+  Status).
 - **One front-end build**: one Vite build takes the site's entries and every
   post's widgets, and writes hashed files, one manifest and each widget's
   props as JSON Schema into the release folder. Go serves every front-end
@@ -815,8 +772,8 @@ included (D8). Their widgets are code, built by the page's toolchain.
 ### Rationale
 
 - Files in git published by CI, release folders behind a link, reload on
-  SIGHUP keeping the old state, signed preview links and a language per
-  subpath are each common practice ([FOUNDATION](FOUNDATION.md) §5.4 names
+  SIGHUP keeping the old state and a language per subpath are each common
+  practice ([FOUNDATION](FOUNDATION.md) §5.4 names
   where). What is ours is one post drawn in a browser, `curl` and SSH.
 - One build and one manifest, so Svelte and the widget kit are built once,
   and a change to the islands ships like a post.
@@ -1032,7 +989,6 @@ MVP reads from env with sane defaults (12-factor):
 | `PARANIN_SSH_ADDR` | `localhost:23234` | SSH listen address |
 | `PARANIN_SSH_HOST_KEY` | `.paranin/ssh_host_ed25519_key` | host key path (persisted, gitignored; made when missing) |
 | `PARANIN_HTTP_ADDR` | `localhost:8080` | HTTP listen address |
-| `PARANIN_PREVIEW_KEY` | none: no preview is served | file of the secret preview links are signed with, read by `serve` and `preview-link` alike |
 | `PARANIN_MESSAGES_PATH` | `data/messages.jsonl` | where contact messages are appended |
 | `PARANIN_TRUST_PROXY` | off | `1` counts the rate limit by `X-Forwarded-For` |
 

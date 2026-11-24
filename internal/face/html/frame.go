@@ -25,7 +25,7 @@ const (
 )
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
-// the site, which writes every address a page leads to and names the site, and where it begins, which the page of no
+// the site, which writes a page's addresses whole and names the site, and where it begins, which the page of no
 // address leads to; the theme button's name; the locale Open Graph marks a page in; the words of
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
@@ -117,7 +117,7 @@ type window struct {
 func frameOf(site routes.Site, composed compose.Frame) frame {
 	return frame{
 		site:         site,
-		start:        site.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
+		start:        routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
 		darkTheme:    composed.DarkTheme,
 		locale:       composed.Locale,
 		copyWords:    composed.CopyWords,
@@ -154,7 +154,7 @@ func foldersOf(site routes.Site) []folder {
 func (around frame) sessionsOf(page document.Page) []session {
 	sessions := make([]session, 0, len(around.sessions))
 	for _, held := range around.sessions {
-		sessions = append(sessions, session{name: held.Name, address: around.site.Reference(held.Start, routes.FormatChosen), current: held.Holds(page)})
+		sessions = append(sessions, session{name: held.Name, address: routes.Reference(held.Start, routes.FormatChosen), current: held.Holds(page)})
 	}
 	return sessions
 }
@@ -186,7 +186,7 @@ func (around frame) blogWindowsOf(windows []compose.Window, shown document.Page)
 // footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl
 // at its address, and as markdown; its command line going to the page's own places too.
 func footLineOf(around frame, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
-	markdown := around.site.Reference(page, routes.FormatMarkdown)
+	markdown := routes.Reference(page, routes.FormatMarkdown)
 	reading := around.copyWords.Way(around.site.ReadCommand(page), around.readingGives)
 	return footLine{
 		frame:        around,
@@ -241,7 +241,7 @@ func pageOffered(opened compose.OpenedPage, shown document.Page) bool {
 // placeOf is a place of a page as the command line offers it, by its name or by :e: at its address, inside its page
 // at its section's anchor where it names one; the page shown where a window at that address is.
 func (around frame) placeOf(offered document.Place, windows []window, edited bool) place {
-	address := around.site.Reference(offered.Page, routes.FormatChosen)
+	address := routes.Reference(offered.Page, routes.FormatChosen)
 	if offered.Section != "" {
 		address += fragmentMark + offered.Section
 	}
@@ -255,7 +255,7 @@ func (around frame) windowOf(number int, name string, page, shown document.Page)
 	return window{
 		number:  strconv.Itoa(number),
 		name:    name,
-		address: around.site.Reference(page, routes.FormatChosen),
+		address: routes.Reference(page, routes.FormatChosen),
 		current: page == shown,
 	}
 }

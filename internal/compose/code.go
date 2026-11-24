@@ -18,7 +18,7 @@ const noLanguage = ""
 
 // Prepared is a snapshot's content as every composition of it reads it: the snapshot, and the code of each of its posts
 // split into its kinds of word once, by its node. A lexer is slow, and its regexps run a clock goroutine of their own
-// (regexp2's fastclock), so a site composed again at a later moment, or a preview drawn for a request, lexes nothing.
+// (regexp2's fastclock), so a site composed again at a later moment lexes nothing.
 // Ways weighed: the code split as the content loads, which would take chroma into content; split each composition,
 // as each moment the site changes and each check composed it again.
 type Prepared struct {

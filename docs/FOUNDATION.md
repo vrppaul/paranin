@@ -315,7 +315,7 @@ and `exactOptionalPropertyTypes`, Svelte 5.
 
 ```
 web/src/
-  tokens/        tokens.ts, tokens.css: generated from one source
+  tokens/        colours.ts, tokens.css: generated from one source
   domain/        pure TS, no DOM: vim motions and counts, the :command parser, search, the salary range
   dom/           what the page does to the document: find by data-part, focus, scroll
   ui/            the Svelte library: Button, Field, Range, Chip, Statusline…
@@ -918,7 +918,7 @@ For every page of the site, the blog's among them:
 ### 5.5 Design tokens — **Proposed**
 
 One file, `design/tokens.yaml`. A Go generator writes `tokens.css`,
-`look/palette.go` and `tokens.ts` (canvas widgets cannot read CSS custom
+`look/palette.go` and `colours.ts` (canvas widgets cannot read CSS custom
 properties cheaply, and study's slides hard-code colours). A hook checks the
 generated files against the source. The rules at the top of `ui.css` move to
 `DESIGN.md` (2026-11-17: the design approved that day is a document of tables

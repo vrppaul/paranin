@@ -328,6 +328,32 @@ func TestEachTimeReachesThePagesScriptInMilliseconds(test *testing.T) {
 	}
 }
 
+// Each colour reaches the page's script, which draws on a canvas, in an object of each theme, the page's own colour
+// first: its value #rrggbb under what it is for, named as a script names a property.
+func TestEachColourReachesThePagesScriptInEachTheme(test *testing.T) {
+	cases := []struct {
+		name   string
+		tokens string
+		want   string
+	}{
+		{name: "the light theme, the page's own colour first", tokens: fixtureTokens, want: "  light: {\n    /** the page itself */\n    background: \"#000000\",\n"},
+		{name: "a colour in the light theme", tokens: fixtureTokens, want: "    /** what the eye goes to first */\n    accent: \"#ffffff\",\n"},
+		{name: "a colour in the dark theme", tokens: fixtureTokens, want: "  dark: {\n    /** the page itself */\n    background: \"#000000\",\n    /** what a reader reads */\n    text: \"#000000\",\n    /** what the eye goes to first */\n    accent: \"#ff8700\",\n  },\n"},
+		{name: "a colour of two words", tokens: strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n"), want: "    onAccent: \"#ff8700\",\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			read, err := readTokens([]byte(testCase.tokens))
+			if err != nil {
+				test.Fatalf("readTokens = %v, want no fault", err)
+			}
+			if got := string(coloursScript(read)); !strings.Contains(got, testCase.want) {
+				test.Errorf("the colours' script = %q, want it to hold %q", got, testCase.want)
+			}
+		})
+	}
+}
+
 // A share of the screen's height reaches both the faces' Go and the page's script as its whole percent, under what it
 // is for, each named as its language names a constant.
 func TestAShareOfTheScreenReachesTheTerminalAndThePagesScript(test *testing.T) {
@@ -666,6 +692,7 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 		{name: "the terminal's lengths edited by hand", path: cellsPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the terminal's shares edited by hand", path: sharesPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the script's shares edited by hand", path: sharesScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the script's colours edited by hand", path: coloursScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

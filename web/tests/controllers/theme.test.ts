@@ -3,7 +3,8 @@
 // controller runs over fails here too.
 import { beforeEach, expect, test } from "vitest";
 import type { ChoiceStore } from "../../src/controllers/choice";
-import { startTheme, type SystemScheme } from "../../src/controllers/theme";
+import { startTheme } from "../../src/controllers/theme";
+import { FakeSystem } from "../browser";
 import resumePage from "../../../internal/face/html/testdata/index.html?raw";
 import missingPage from "../../../internal/face/html/testdata/notfound.html?raw";
 
@@ -15,21 +16,6 @@ const STORAGE_KEY = "theme";
 // The button's markup as the server draws it: the part it stands in, and the button
 const SWITCH = '[data-part="theme"]';
 const BUTTON = `${SWITCH} button`;
-
-/** The system's theme, dark or not, which a test turns as a reader turns their system's. */
-class FakeSystem extends EventTarget implements SystemScheme {
-  matches: boolean;
-
-  constructor(dark: boolean) {
-    super();
-    this.matches = dark;
-  }
-
-  turn(dark: boolean): void {
-    this.matches = dark;
-    this.dispatchEvent(new Event("change"));
-  }
-}
 
 /** A browser that keeps nothing: its storage refuses to be reached, as it does where a reader blocks it. */
 function refusedStorage(): ChoiceStore {

@@ -16,12 +16,16 @@ const LAYERS = {
   // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, the islands, and
   // the design's times they wait and shares of the screen they measure by
   entries: ["controllers", "islands", "ui", "tokens"],
-  // Behaviour over the markup the server draws, each over one part of it, on the logic of the page
-  controllers: ["domain"],
+  // Behaviour over the markup the server draws, each over one part of it, on the logic of the page and the design's
+  // themes
+  controllers: ["domain", "tokens"],
   // The page's logic, with no page to touch: the command line's
   domain: [],
-  // What runs a component in the markup the server draws: each post's widget, its code handed in by the entry
-  islands: [],
+  // What runs a component in the markup the server draws: each post's widget, its code handed in by the entry, told the
+  // page it is shown in, in the theme the page's rule decides
+  islands: ["controllers", "kit", "tokens"],
+  // What a widget draws by and the page tells it, in the design's colours: it knows nothing of how the page decides
+  kit: ["tokens"],
 };
 // Every part of src/, those that hold no script among them: a stylesheet is reached by an import as a module is
 const PARTS = [...Object.keys(LAYERS), "ui", "tokens"];
@@ -34,10 +38,19 @@ function outOfReach(part) {
 
 // A part is named one way, `../entries/site`: `./../entries/site`, `../controllers/../entries/site` and
 // `.//../tokens` reach another part by a spelling no pattern of a part would refuse, so a path with an empty, `.`
-// or `..` step past its first is refused everywhere
+// or `..` step past the `./` or the `../` steps it opens with is refused everywhere. Those it opens with are taken
+// whole, by a lookahead's capture no later step gives back, so the tests' widget's `../../src/kit` passes
 const PLAINLY_NAMED = {
-  regex: String.raw`^\./\.\.|//|/\.\.?(/|$)`,
-  message: "Name a module plainly, with no empty, . or .. step past the path's first",
+  regex: String.raw`//|^(?=(\./|(?:\.\./)*))\1(?:.*/)?\.\.?(?:/|$)`,
+  message: "Name a module plainly, with no empty, . or .. step past the ./ or ../ steps it opens with",
+};
+
+// The parts of src/ a post's widget builds on (docs/FOUNDATION.md §5.3): the tests' widget stands with the tests and
+// builds on them alone, so any path climbing out of its folder reaches one of them, or is refused
+const WIDGET_PARTS = ["kit", "ui"];
+const TESTS_WIDGET_REACH = {
+  regex: String.raw`^\.\./(?!\.\./src/(?:${WIDGET_PARTS.join("|")})/)`,
+  message: `a widget builds only on ${WIDGET_PARTS.join(", ")}`,
 };
 
 const layerRules = Object.keys(LAYERS).map((part) => ({
@@ -128,6 +141,9 @@ const NO_STYLE_IN_MARKUP = [
   },
 ];
 
+// The syntax the rules for any code refuse in every script, the page-wide id's lookups aside
+const REFUSED_SYNTAX = [...NO_NESTED_HELPERS, ...NO_STYLED_SCHEME, ...NO_MODULE_STATE, ...NO_STYLE_IN_MARKUP];
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
@@ -145,8 +161,8 @@ export default tseslint.config(
     },
   },
   {
-    // A component's script is TypeScript, compiled as svelte.config.js says
-    files: ["**/*.svelte"],
+    // A component's script is TypeScript, compiled as svelte.config.js says, and so is a module of runes
+    files: ["**/*.svelte", "**/*.svelte.ts"],
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
@@ -168,6 +184,12 @@ export default tseslint.config(
   },
   ...layerRules,
   {
+    files: ["tests/widgets/**"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [TESTS_WIDGET_REACH, PLAINLY_NAMED] }],
+    },
+  },
+  {
     files: ["**/*.svelte"],
     rules: {
       // Svelte's recommended rules refuse markup handed to the page whole, {@html}, so a widget's props reach it as
@@ -180,19 +202,20 @@ export default tseslint.config(
     files: ["src/**/*.ts", "tests/**/*.ts", "plugins/**/*.ts", "src/**/*.svelte", "tests/**/*.svelte"],
     rules: {
       "id-length": ["error", { min: WHOLE_WORD_LETTERS, properties: "never" }],
-      "no-restricted-syntax": [
-        "error",
-        ...NO_NESTED_HELPERS,
-        ...NO_PAGE_WIDE_ID_LOOKUPS,
-        ...NO_STYLED_SCHEME,
-        ...NO_MODULE_STATE,
-        ...NO_STYLE_IN_MARKUP,
-      ],
+      "no-restricted-syntax": ["error", ...REFUSED_SYNTAX, ...NO_PAGE_WIDE_ID_LOOKUPS],
       // A handler is one expression here, a body of statements being a helper of its own, and what it hands back is
       // nobody's to read
       "@typescript-eslint/no-confusing-void-expression": ["error", { ignoreArrowShorthand: true }],
       // No number with a meaning in an expression: it is a named constant, with a comment saying what it is
       "@typescript-eslint/no-magic-numbers": ["error", { ignore: [0, 1, -1], ignoreArrayIndexes: true }],
+    },
+  },
+  {
+    // The tokens' modules are written by scripts/tokens, whose hook holds them to design/tokens.yaml: a colour there,
+    // #rrggbb, names no id, and every other rule holds
+    files: ["src/tokens/**"],
+    rules: {
+      "no-restricted-syntax": ["error", ...REFUSED_SYNTAX],
     },
   },
   {

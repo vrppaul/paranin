@@ -16,7 +16,9 @@
 //   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
 //     since the build writes the stylesheet's times the shortest way;
 //   - web/src/tokens/shares.ts, for the page's script too: each share of the screen's height in percent, which no
-//     stylesheet lays out by, so tokens.css holds none.
+//     stylesheet lays out by, so tokens.css holds none;
+//   - web/src/tokens/colours.ts, for a widget drawing on a canvas, which reads no custom property: the page's own
+//     colour and each colour in each theme, #rrggbb.
 //
 // Its usage:
 //
@@ -48,15 +50,16 @@ const (
 
 // How the command is written, and the files it reads and writes, from the repository's root
 const (
-	writeFlag        = "-write"
-	usage            = "usage: go run ./scripts/tokens [-write]"
-	tokensPath       = "design/tokens.yaml"
-	palettePath      = "internal/look/palette.go"
-	cellsPath        = "internal/look/cells.go"
-	sharesPath       = "internal/look/shares.go"
-	stylesheetPath   = "web/src/tokens/tokens.css"
-	timesPath        = "web/src/tokens/times.ts"
-	sharesScriptPath = "web/src/tokens/shares.ts"
+	writeFlag         = "-write"
+	usage             = "usage: go run ./scripts/tokens [-write]"
+	tokensPath        = "design/tokens.yaml"
+	palettePath       = "internal/look/palette.go"
+	cellsPath         = "internal/look/cells.go"
+	sharesPath        = "internal/look/shares.go"
+	stylesheetPath    = "web/src/tokens/tokens.css"
+	timesPath         = "web/src/tokens/times.ts"
+	sharesScriptPath  = "web/src/tokens/shares.ts"
+	coloursScriptPath = "web/src/tokens/colours.ts"
 	// a generated file may be read by anyone, as the rest of the tree
 	generatedMode = 0o644
 )
@@ -142,6 +145,7 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 		{path: stylesheetPath, body: stylesheet(read)},
 		{path: timesPath, body: timesScript(read)},
 		{path: sharesScriptPath, body: sharesScript(read)},
+		{path: coloursScriptPath, body: coloursScript(read)},
 	}, nil
 }
 

@@ -22,7 +22,9 @@ const OPEN_WINDOW = ":popover-open";
 // widget's code in the manifest by
 const WIDGETS = import.meta.glob<Component<WidgetProps>>("../widgets/*.svelte", { import: "default" });
 
-startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
+// the system's scheme, which the theme and the widgets both follow
+const systemScheme = matchMedia(SYSTEM_DARK);
+startTheme(document, () => localStorage, systemScheme);
 startVimSwitch(document, () => localStorage);
 // what stands over the page, which the tooltips and the command line ask before they answer Esc
 const loadedOverlay = Promise.all([import("../controllers/tooltip"), import("../controllers/overlay")]).then(
@@ -48,7 +50,9 @@ void import("../controllers/copy").then(({ startCopying }) => startCopying(docum
 const shownComponents = islandNames(document);
 if (shownComponents.length > 0) {
   const loading = new Map(shownComponents.map((name) => [name, WIDGETS[`../widgets/${name}.svelte`]?.()]));
-  void import("../islands/widgets").then(({ startWidgets }) => startWidgets(document, (name) => loading.get(name)));
+  void import("../islands/widgets").then(({ startWidgets }) =>
+    startWidgets(document, (name) => loading.get(name), systemScheme),
+  );
 }
 void import("../controllers/outline").then(({ startOutline }) =>
   startOutline(

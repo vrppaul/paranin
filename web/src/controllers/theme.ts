@@ -6,19 +6,17 @@
 // first paint until it has run, so a page is first seen in the theme chosen; a browser that knows no such hold
 // (Firefox) may show it in the system's theme for a moment first. The colour scheme is never set as a style: the
 // build writes each token's light-dark() pair as variables the stylesheet's rules switch, and a style set by script
-// would pass them by.
+// would pass them by. Which theme a page is shown in is decided here alone: a post's widgets follow it too.
+import type { Theme } from "../tokens/colours";
 import { forgetChoice, keepChoice, storedChoice, type ChoiceStore } from "./choice";
 
-/** The themes a page is shown in, each as the stylesheet names it. */
-const THEMES = ["light", "dark"] as const;
-type Theme = (typeof THEMES)[number];
-
-/** The theme a press turns each theme to. */
+/** The theme a press turns each theme to: every theme a page is shown in, each once. */
 const OTHER_THEME: Record<Theme, Theme> = { light: "dark", dark: "light" };
 
-// Where a theme chosen is kept between pages, and the attribute on the page's root the stylesheet reads it from
+// Where a theme chosen is kept between pages
 const STORAGE_KEY = "theme";
-const THEME_ATTRIBUTE = "data-theme";
+/** The attribute on the page's root that names the theme chosen, which the stylesheet reads. */
+export const THEME_ATTRIBUTE = "data-theme";
 // The button as the server draws it: the part it stands in, hidden until this script shows it, and the button
 const SWITCH = '[data-part="theme"]';
 const BUTTON = "button";
@@ -27,8 +25,8 @@ const BUTTON = "button";
 const PRESSED = "aria-pressed";
 const PRESSED_THEME: Theme = "dark";
 
-/** The system's theme as a page asks it: whether it is dark, and a word whenever that changes. */
-export type SystemScheme = Pick<MediaQueryList, "matches" | "addEventListener">;
+/** The system's theme as a page asks it: whether it is dark, and a word whenever that changes, until no longer asked. */
+export type SystemScheme = Pick<MediaQueryList, "matches" | "addEventListener" | "removeEventListener">;
 
 /**
  * Sets a page in the theme its reader chose, where they chose one, and runs the page's theme button where it has
@@ -38,8 +36,8 @@ export type SystemScheme = Pick<MediaQueryList, "matches" | "addEventListener">;
  */
 export function startTheme(page: Document, storage: () => ChoiceStore, system: SystemScheme): void {
   const root = page.documentElement;
-  const chosen = themeNamed(storedChoice(storage, STORAGE_KEY));
-  if (chosen !== undefined) {
+  const chosen = storedChoice(storage, STORAGE_KEY);
+  if (isTheme(chosen)) {
     root.setAttribute(THEME_ATTRIBUTE, chosen);
   }
   const themeSwitch = page.querySelector<HTMLElement>(SWITCH);
@@ -77,16 +75,17 @@ function pressShown(root: HTMLElement, button: HTMLButtonElement, system: System
   button.setAttribute(PRESSED, String(shownTheme(root, system) === PRESSED_THEME));
 }
 
-/** The theme a page is shown in: the one chosen, or else the system's. */
-function shownTheme(root: HTMLElement, system: SystemScheme): Theme {
-  return themeNamed(root.getAttribute(THEME_ATTRIBUTE)) ?? systemTheme(system);
+/** The theme a page is shown in: the one chosen on its root, or else the system's. */
+export function shownTheme(root: Element, system: SystemScheme): Theme {
+  const chosen = root.getAttribute(THEME_ATTRIBUTE);
+  return isTheme(chosen) ? chosen : systemTheme(system);
 }
 
 function systemTheme(system: SystemScheme): Theme {
   return system.matches ? "dark" : "light";
 }
 
-/** The theme a word names, if it names one. */
-function themeNamed(word: string | null): Theme | undefined {
-  return THEMES.find((theme) => theme === word);
+/** Whether a word names a theme. */
+function isTheme(word: string | null): word is Theme {
+  return word !== null && Object.hasOwn(OTHER_THEME, word);
 }

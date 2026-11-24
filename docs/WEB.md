@@ -193,7 +193,9 @@ ThemeSwitch, Command and a post's code that copies as it does, Hint, Tooltip and
 page that shows a widget loads Svelte and the widget's component at once, each a built file of its own that no other
 page loads, and runs the component in the widget's window with the props the page holds as data, read by
 `JSON.parse` and taken as they stand, since the release the page was drawn from held them to the widget's schema;
-`● live` then shows, and the alt text stands aside, still the figure's description to a screen reader.
+`● live` then shows, and the alt text stands aside, still the figure's description to a screen reader. The widget
+follows the theme the page is shown in as the reader or their system turns it, and whether the reader asks for reduced
+motion; one that draws on a canvas, the kit's stage, draws in that theme's colours (owner, 2026-11-24).
 With no script the page reads whole, a widget its alt text, and the controls the script runs stay hidden.
 
 What the script keeps in the browser; where the browser keeps nothing, a choice holds for its page alone:

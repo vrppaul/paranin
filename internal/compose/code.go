@@ -26,17 +26,26 @@ type Prepared struct {
 	codes    map[ast.Node]document.CodeBlock
 }
 
-// Prepare reads a snapshot for every composition of it: the code of each post and of each of its revisions split into
-// its kinds of word.
+// Prepare reads a snapshot for every composition of it: the code of each post in every language and of each of its
+// revisions split into its kinds of word.
 func Prepare(snapshot *content.Snapshot) *Prepared {
 	codes := map[ast.Node]document.CodeBlock{}
-	for _, post := range snapshot.Posts {
+	for _, post := range allPosts(snapshot) {
 		splitCode(post.Body, codes)
 		for _, revision := range post.Revisions {
 			splitCode(revision.Body, codes)
 		}
 	}
 	return &Prepared{snapshot: snapshot, codes: codes}
+}
+
+// allPosts are a snapshot's posts in every edition: the originals, then the translations into each language in turn.
+func allPosts(snapshot *content.Snapshot) []content.Post {
+	posts := []content.Post{}
+	for _, edition := range snapshot.Editions() {
+		posts = append(posts, edition.Posts...)
+	}
+	return posts
 }
 
 // splitCode splits the code of a body into its kinds of word, each block by its node among codes.

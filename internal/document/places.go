@@ -137,7 +137,7 @@ func postsOut(blocks []Block) []postOut {
 		group, _ := GroupOf(block)
 		for _, listed := range group.Posts.List {
 			if out, isOut := listed.Readiness.(PostOut); isOut {
-				posts = append(posts, postOut{page: out.Page, seriesName: listed.SeriesName})
+				posts = append(posts, postOut{page: out.Page, seriesName: listed.SeriesGroup.Name})
 			}
 		}
 	}

@@ -28,7 +28,7 @@ func (read blog) olderVersionsOf(post content.Post) []postVersion {
 	}
 	versions := make([]postVersion, 0, len(post.Revisions))
 	for _, revision := range slices.Backward(post.Revisions) {
-		versions = append(versions, postVersion{post: post, text: revision, page: document.OlderVersion(post.Slug, revision.Day.Written())})
+		versions = append(versions, postVersion{post: post, text: revision, page: postPage(post).OlderVersion(revision.Day.Written())})
 	}
 	return versions
 }

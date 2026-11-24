@@ -475,9 +475,10 @@ discussions:
   where it says none (Revisions).
 - `tags` are slugs, none twice; each discussion is a site's name and the
   thread's `https` address (D13).
-- Until their steps land, a post's folder holds `post.en.md`, its
-  `revisions/` and its pictures alone: a translation and `widgets/` are
-  faults that say so.
+- Until its step lands, a post's folder holds `post.en.md`, its
+  translations, its `revisions/` and its pictures alone: `widgets/` is a
+  fault that says so, and so is a translation into a language the site has
+  no words for.
 
 #### Where posts live (Decided, D6)
 
@@ -527,8 +528,10 @@ updated: 2026-11-12
     which a child process, `/proc` and a container's inspection all read.
   - **The token** is one segment, `<lapses>.<signature>`: the moment the
     link lapses in seconds of Unix time, then HMAC-SHA256 over that moment
-    and the slug, in base64url with no padding. The server signs the slug
-    and the moment of the request's own path once and compares in constant
+    and the post's address once out, `/blog/<slug>` or a translation's
+    `/ru/blog/<slug>`, in base64url with no padding, so a link opens the
+    post in its own language alone (2026-11-24). The server signs the
+    address and the moment of the request's own path once and compares in constant
     time; a link lapsed answers as no page, so a link that leaks lives as
     long as it was asked to. The status is not signed: the server checks
     each request against the post's status as it stands, and a link signed
@@ -544,7 +547,9 @@ updated: 2026-11-12
     sections, its pictures and its link to itself among them, so nothing
     leads to its public address, which serves nothing yet; each link holds
     a token of its own, so a preview's faces are drawn for the request that
-    opens one, from the post composed once.
+    opens one, from the post composed once. A translation's preview stands
+    in its language's folder, `/ru/preview/<token>/<slug>`, as its post
+    does once out; `paranin preview-link --language ru` signs its link.
   - **What leaks nothing:** every answer in the preview's folder, a path
     of it that is no page, a redirect to a path's clean form and a refusal
     of a method among them, is sent with `X-Robots-Tag: noindex`,
@@ -608,7 +613,11 @@ and SSH to the host: "without a new binary" does not mean without a build.
   `/blog/<slug>/<its date>`, sends its reader on to `/blog/<slug>` in the
   same face, `302`, since that day names an older version once the post
   is updated.
-- **Each language has its own revisions**, as it has its own status.
+- **Each language has its own revisions**, as it has its own status:
+  `revisions/<date>.ru.md` is a version of `post.ru.md`, which
+  `paranin revise --language ru` takes, at `/ru/blog/<slug>/<date>` (built
+  2026-11-24); a revision in a language the post has no text in is
+  refused.
 - **The model** (2026-11-24). A version is dated by the day its text last
   changed: the current one by `updated:`, or by the day the post was
   published where it says none; an older one by its file's name, the day
@@ -711,7 +720,8 @@ and SSH to the host: "without a new binary" does not mean without a build.
   menu.
 - **Feeds:** Atom for the blog in each language, and one for each series
   (built 2026-11-24): the blog's at `/blog.atom`, a series' at
-  `/blog/series/<name>.atom`, where no post stands, each holding the twenty
+  `/blog/series/<name>.atom`, where no post stands, a language's in its
+  folder, `/ru/blog.atom`, each holding the twenty
   newest posts the lists name, published and out, never a draft, a preview
   or an unlisted post, each with its lead and its body whole, so a feed
   stands in for a newsletter; a blog that lists none has no feed. A feed
@@ -738,7 +748,10 @@ and SSH to the host: "without a new binary" does not mean without a build.
   matter, `id: 12`, given once and never changed. `paranin check` refuses a
   number two posts share, a slug of digits alone, which `blog/12` would
   read as a number, and content of which two pages share an address, as a
-  post slugged `series` would share the list by series'.
+  post slugged `series` would share the list by series', or of which a
+  page's folder is a preview's, as a post or a project slugged `preview`, or
+  a tab of the résumé titled so, would be (2026-11-24): every answer there is
+  sent privately, which would drop the page out of search.
 - **On the web** `/blog/12` answers `301` to `/blog/<slug>`, and
   `/blog/<slug>` the post as the project pages answer, its markdown and its
   manual at `.md` and `.txt` beside it (`docs/WEB.md`).
@@ -783,25 +796,59 @@ For every page of the site, the blog's among them:
   rank HTML first unless `text/plain` is named, which gives a bare `curl`
   the HTML.
 
-#### Translations (Decided: later, D12; the model Proposed)
+#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; its first half built)
 
 - **One folder per post, one file per language**; widgets shared. English
   is the main language. A post's language is its file's name,
   `post.en.md`, from the first one, and written nowhere else (owner,
-  2026-11-23).
+  2026-11-23). A translation, `post.ru.md`, is in a language the site has
+  words for, `content/i18n/ru.yaml`, a tag of two or three small letters;
+  its front matter writes its own `title`, `description`, `status`,
+  `published` and `updated`, and its number, tags and discussions are its
+  original's, so the check refuses them there. A post's folder with no
+  `post.en.md` is refused, a translation's among them.
 - **Addresses:** `/blog/page-cache` for English, `/ru/blog/page-cache` for
   Russian; the slug is the folder's name. Nothing redirects by
   `Accept-Language`: the address alone picks the language, so a crawler and
-  `curl` get one text per address.
+  `curl` get one text per address. Every address of the blog has its
+  language's folder before it, `/ru/blog/12`, `/ru/blog.md?tag=go`,
+  `/ru/blog/page-cache/2026-11-10`, a preview's `/ru/preview/<token>/<slug>`;
+  a post may link to a translation, which the check holds as it holds any
+  link inside the site.
+- **The blog in a language is a blog of its own** (2026-11-24): its list
+  at `/ru/blog`, by year and by series, filtered by its tags and series,
+  names the posts out in that language alone, in its words, with its
+  feeds; a translation's series and neighbours are the posts translated
+  beside it, counted among themselves. The simplest rule that holds
+  everywhere: every face, a feed and a filter included, reads the blog in
+  one language as it reads the English one, by the same code, and a reader
+  of Russian stays in Russian. A series' title, line and parts to come
+  stand as their file writes them, in English, until a series has words of
+  its own in another language. Ways weighed: no `/ru/blog`, a translation's
+  page leading to the English list, its tags to English filters and its
+  feed to an English page, so a feed per language would name no page of
+  its own; one list of every post, each in the language it is read in,
+  which a feed per language could not follow.
 - **Each translation has its own status**: the English can be published
-  while the Russian is still a preview.
+  while the Russian is still a preview. A post's Switch offers the
+  languages the lists name it in, and its own; so a translation still a
+  preview, unlisted or a draft shows on no other language's page, and a
+  preview's link, signed over the post's address in its language, opens
+  that language alone.
 - **A stale translation shows.** Its front matter names the original it was
   made from, `source: en@<hash of the file>`. When the original changes,
   `paranin check` warns, and the page says the translation is older than the
   original.
-- **Markup:** `<link rel="alternate" hreflang>` with `x-default`, the same
-  alternates in the sitemap, a feed per language, `og:locale`. The language
-  switch lists only the translations that exist.
+- **Markup:** `<link rel="alternate" hreflang>` with `x-default`, the
+  English original, on each language's page of a post, the same alternates
+  in the sitemap, a feed per language, `og:locale` from each catalogue's
+  `locale`, `<html lang>` the page's own. The language switch lists only
+  the translations that exist, each by its own name for itself.
+- **What the TUI and `llms.txt` show, until the TUI reads a language:**
+  a session reads the site in English; a post's head lists its languages
+  as the page does, a translation a link to its address on the web, which
+  a terminal opens in a browser. `llms.txt` lists the English site, whose
+  posts' markdown leads to their translations.
 - **Words inside widgets** live in a typed table,
   `PageCache.messages.ts` (`satisfies Record<Lang, Messages>`): a missing
   translation of a label fails to compile.
@@ -811,7 +858,9 @@ For every page of the site, the blog's among them:
   `curl paran.in/ru/…` included. `paranin check` requires every key in
   every language. The catalogue arrives with `compose`, the first part that
   writes a word of the site, not with the first translation, so no template
-  is written twice.
+  is written twice. The repository's content holds `en.yaml` alone until
+  the owner's first Russian post brings `ru.yaml`; the tests' fixture holds
+  both.
 - **The résumé in another language later**: `profile.ru.yaml` beside
   `profile.yaml`, holding the words that translate; the check refuses a key
   the main file lacks.

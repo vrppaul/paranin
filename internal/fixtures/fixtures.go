@@ -60,7 +60,7 @@ func Day() time.Time {
 //
 //wrapper:names the site every face's test writes its pages and sessions for
 func Site(snapshot *content.Snapshot) routes.Site {
-	return routes.New(snapshot.Profile.Site.BaseURL, snapshot.Profile.Site.TagAuthority)
+	return routes.New(snapshot.Profile.Site.BaseURL, snapshot.Profile.Site.TagAuthority, snapshot.TranslatedInto())
 }
 
 // HeadOf is the head of a page a test builds by hand: the page and its title, nothing else, so a field the head gains
@@ -68,7 +68,7 @@ func Site(snapshot *content.Snapshot) routes.Site {
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
 		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Filters: nil, MadeOf: nil, Lead: nil,
-		Version: nil, Repository: nil, Post: nil, Description: nil, Feeds: nil,
+		Version: nil, Repository: nil, Post: nil, Description: nil, Feeds: nil, Languages: nil,
 	}
 }
 
@@ -133,23 +133,28 @@ func moduleRoot(test *testing.T) string {
 }
 
 // A preview the tests write into a copy of the fixture content: its slug, its file, its picture's and the fixture
-// post's picture it is a copy of, and its text, which shows the picture and leads to a heading of its own; and the
-// name of a preview key's file a test writes
+// post's picture it is a copy of, and its text, which shows the picture and leads to a heading of its own; its
+// translation, a preview too, in the fixture's other language, by its file and its text; and the name of a preview
+// key's file a test writes
 const (
 	PreviewSlug        = "previewed"
+	PreviewLanguage    = "ru"
 	previewFile        = "posts/previewed/post.en.md"
 	previewPictureFile = "posts/previewed/margin.png"
 	fixturePictureFile = "posts/reading-slowly/margin.png"
 	previewText        = "---\nid: 3\ntitle: Previewed\ndescription: About what is previewed.\nstatus: preview\npublished: 2026-11-20T09:00+01:00\n---\n" +
 		"## Its heading\n\n![A page](margin.png)\n\n[Back up](/blog/previewed#its-heading)\n"
+	previewTranslationFile = "posts/previewed/post.ru.md"
+	previewTranslationText = "---\ntitle: Предпросмотр\ndescription: О том, что смотрят заранее.\nstatus: preview\npublished: 2026-11-21T09:00+03:00\n---\n" +
+		"## Его заголовок\n\n![Страница](margin.png)\n\n[Наверх](/ru/blog/previewed#его-заголовок)\n"
 	keyFileName = "preview_key"
 )
 
 // The header a request names the formats it takes in
 const acceptHeader = "Accept"
 
-// PreviewedFolder is a copy of the fixture content holding a preview, with a picture beside it, gone when the test
-// ends.
+// PreviewedFolder is a copy of the fixture content holding a preview and its translation, a preview too, with a picture
+// beside them, gone when the test ends.
 func PreviewedFolder(test *testing.T) string {
 	test.Helper()
 	folder := Copy(test, ContentFolder(test))
@@ -158,6 +163,7 @@ func PreviewedFolder(test *testing.T) string {
 		test.Fatalf("read the fixture post's picture: %v", err)
 	}
 	WriteIn(test, folder, previewFile, previewText)
+	WriteIn(test, folder, previewTranslationFile, previewTranslationText)
 	WriteIn(test, folder, previewPictureFile, string(picture))
 	return folder
 }

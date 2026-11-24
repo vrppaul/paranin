@@ -20,9 +20,9 @@ func Skills(snapshot *content.Snapshot) document.Document {
 		Head: document.Head{
 			Page:        document.PageOf(document.PageSkills),
 			Number:      0,
-			Language:    snapshot.Words.Language(),
+			Language:    snapshot.Own.Words.Language(),
 			Greeting:    "",
-			Title:       textSpans(snapshot.Words.Text(content.WordSkills)),
+			Title:       textSpans(snapshot.Own.Words.Text(content.WordSkills)),
 			Subtitle:    nil,
 			Place:       "",
 			Filters:     nil,
@@ -33,8 +33,9 @@ func Skills(snapshot *content.Snapshot) document.Document {
 			Post:        nil,
 			Description: nil,
 			Feeds:       nil,
+			Languages:   nil,
 		},
-		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups, snapshot.Words)}},
+		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups, snapshot.Own.Words)}},
 	}
 }
 
@@ -60,9 +61,9 @@ func Health(snapshot *content.Snapshot) document.Document {
 		Head: document.Head{
 			Page:        document.PageOf(document.PageHealth),
 			Number:      0,
-			Language:    snapshot.Words.Language(),
+			Language:    snapshot.Own.Words.Language(),
 			Greeting:    "",
-			Title:       textSpans(snapshot.Words.Text(content.WordHealth)),
+			Title:       textSpans(snapshot.Own.Words.Text(content.WordHealth)),
 			Subtitle:    nil,
 			Place:       "",
 			Filters:     nil,
@@ -73,6 +74,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 			Post:        nil,
 			Description: nil,
 			Feeds:       nil,
+			Languages:   nil,
 		},
 		Blocks: checkGroups(snapshot.Profile.Health),
 	}

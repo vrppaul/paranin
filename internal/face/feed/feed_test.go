@@ -131,7 +131,7 @@ func TestAFeedAndItsPostsKeepTheirNamesWhereverTheyMove(test *testing.T) {
 
 // feedsOf are the feeds of a snapshot's site as the public reads it on the tests' day: the blog's, and its series'.
 func feedsOf(snapshot *content.Snapshot) []compose.Feed {
-	return compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Feeds
+	return compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Own.Feeds
 }
 
 // namesOf are the ids of the blog's feed of a snapshot's site, its own and then its posts'.

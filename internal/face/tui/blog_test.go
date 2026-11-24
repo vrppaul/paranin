@@ -327,6 +327,7 @@ func handSeriesModel(test *testing.T, height int) Model {
 	seriesOf := map[string]string{"first": "early", "second": "early", "third": "early", "fourth": "late", "fifth": "late"}
 	documents := []document.Document{resume}
 	listed := []document.ListedPost{}
+	bySeries := document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}
 	for index, slug := range slices.Backward(handPostSlugs()) {
 		page := document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}
 		head := fixtures.HeadOf(page, textOf("The "+slug+" post"))
@@ -334,10 +335,10 @@ func handSeriesModel(test *testing.T, height int) Model {
 		documents = append(documents, document.Document{Head: head, Blocks: nil})
 		out := document.PostOut{Page: page, Published: time.Date(2026, time.November, len(handPostSlugs())-index, 0, 0, 0, 0, time.UTC)}
 		listed = append(listed, document.ListedPost{
-			Readiness: out, Title: textOf("The " + slug + " post"), Lead: nil, Part: nil, Series: nil, SeriesName: seriesOf[slug], Tags: nil,
+			Readiness: out, Title: textOf("The " + slug + " post"), Lead: nil, Part: nil, Series: nil,
+			SeriesGroup: document.Anchor{Page: bySeries, Name: seriesOf[slug]}, Tags: nil,
 		})
 	}
-	bySeries := document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}
 	byYear := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, textOf("blog")), Blocks: []document.Block{
 		document.Section{Title: textOf(olderYear), Name: "", Blocks: []document.Block{document.Posts{Line: nil, Count: textOf("five"), List: listed}}},
 	}}
@@ -631,6 +632,7 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 	}{
 		{name: "the day", want: "version 12 Nov 2026"},
 		{name: "the series", want: "series Reading 1 of 2"},
+		{name: "the languages it is read in", want: "language English · Русский"},
 		{name: "the tags", want: "tags #reading #terminals"},
 		{name: "a numbered paragraph citing a note", want: "1 A page read twice is read once, if the first reading was slow.¹"},
 		{name: "a paragraph of a section, numbered on", want: "2 See the reader's notes"},
@@ -733,7 +735,7 @@ func TestScrollingAPostMovesTheHeadingItsOutlineMarksRead(test *testing.T) {
 	const (
 		shortPage          = 16
 		tallPage           = 40
-		toTheReadingLine   = 4
+		toTheReadingLine   = 5
 		pastTheReadingLine = toTheReadingLine + 1
 	)
 	// no heading marked read anywhere on the screen

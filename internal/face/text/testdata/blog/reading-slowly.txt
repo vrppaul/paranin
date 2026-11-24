@@ -6,6 +6,8 @@ NAME
 DESCRIPTION
        Why a page read twice is read once.
 
+       English · Русский <https://example.test/ru/blog/reading-slowly.txt>
+
        reading · terminals
 
        A page read twice is read once, if the first reading was slow.[1]

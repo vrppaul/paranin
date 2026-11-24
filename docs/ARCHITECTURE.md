@@ -143,7 +143,11 @@ page of its own a post's page names by its revision, which `compose` composes wi
 first asked for, and a page says whether a search engine indexes it. Amended 2026-11-24, with the feeds: `compose`
 composes the blog's feed and each series' with the site, a head names the feeds that follow its page, a feed is a link's
 target of its own, `routes` names what the site serves for good and each format's media type, and `face/feed` writes
-Atom, each post's body as `face/html` draws it for a feed reader.
+Atom, each post's body as `face/html` draws it for a feed reader. Amended 2026-11-24, with translations, the model the
+author's choice, ways weighed below, for the owner to confirm: a snapshot holds an edition in each language, its words
+and its posts, a page names the language it is translated into, `routes` writes its every address in that language's
+folder, `compose` composes a blog in each language, its frame in its words, whose links read the pages of every
+language, and a post's head lists the languages it is read in.
 
 ### Context
 
@@ -453,6 +457,47 @@ and web routes.
   with the site; the page's article as the body, whose notes stand twice
   and whose buttons and numbers show in a reader as stray words; the
   summary alone, which a feed standing in for a newsletter cannot be.
+- **Translations** (amended 2026-11-24, FOUNDATION §5.4, Translations; the
+  author's choice, for the owner to confirm). `content` loads one profile,
+  one set of series, and an edition in each language it has words for,
+  English's apart from the rest (`Snapshot.Own`, `Snapshot.Translations`),
+  so no place in a list says which is English: that language's words and the posts
+  written in it, a translation with its original's number, tags and
+  discussions and its own text, status, dates and revisions
+  (`Post.Translation`). A language's tag is stored once, in its words;
+  `Words.Translation` reads it as a page names it, none for English. A page
+  names the language it is translated into (`Page.Translation`), as it
+  names an older version (`Page.Revision`), so a target, a head and a link
+  name a page in any language by one value; `routes` writes every address
+  of a translated page in its language's folder, `/ru/blog/<slug>`, a
+  preview's `/ru/preview/<token>/<slug>` and a feed's `/ru/blog.atom`, and
+  reads a folder back only for a language the site is translated into,
+  which `routes.New` takes from the snapshot; only whether a path is in a
+  preview folder, which a host's private headers ask of every request
+  before any drawing, it reads by the path's form alone, `/preview/` at
+  the root or one segment down, so `/de/preview/` goes out privately too;
+  the tag's form is `content`'s alone, which `routes` cannot read. No page
+  stands there: `Check` refuses a page whose folder would
+  (`routes.PreviewFolderTaken`), a post or a project slugged `preview` or a
+  tab of the résumé titled so, as an address the preview links take. `compose.SiteOf` composes one site, its index and pages
+  once, and a blog in each language (`Site.Own`, `Site.Translations`) by the code that composes
+  the English, each with its frame in its words and its own lists, filters,
+  posts, versions, previews and feeds, all their links read among the pages
+  of every language, so a post may link to a translation; `Check` holds
+  every blog's links and addresses together. A post's head lists the
+  languages its reader may go to (`Head.Languages`), the one read and each
+  the lists name it in, which the page draws as its Switch, its `hreflang`
+  alternates and `og:locale:alternate`, and the other faces as a line of
+  links. The hosts draw each blog in its own frame; the TUI shows the site
+  in English, a translation a link to its address. Ways weighed: the
+  language as a kind of page, which every switch over the kinds would name
+  again for each kind; a `routes.Site` for each language, whose targets
+  could name no page in another, so no Switch; a site and a snapshot per
+  language, each carrying a copy of the profile, the series, an index and
+  pages none but English has; every language read off a path by its form,
+  which read `/de/blog` as a language the site has not; the
+  faces reading the words of a document's language off it, which would
+  carry the frame's words into every head.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
   strong, a link, a highlight (`==result==`) and a note hold spans; text,
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a

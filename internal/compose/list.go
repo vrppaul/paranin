@@ -16,10 +16,11 @@ const onePost = 1
 
 // blogLists are the blog's list, a document every face draws (D25), in its two groupings: every post the blog lists
 // by year, newest first, and the same posts by series, the posts in no series last. Each opens with the blog's head.
-func blogLists(read blog, words content.Words) []document.Document {
+func blogLists(read blog) []document.Document {
+	words, translation := read.words, read.words.Translation()
 	return []document.Document{
-		{Head: read.listHead(document.PageOf(document.PageBlog), nil, words), Blocks: read.byYear(read.newest, words)},
-		{Head: read.listHead(document.PageOf(document.PageBlogSeries), nil, words), Blocks: read.bySeries(words)},
+		{Head: read.listHead(document.PageOf(document.PageBlog).InLanguage(translation), nil, words), Blocks: read.byYear(read.newest, words)},
+		{Head: read.listHead(document.PageOf(document.PageBlogSeries).InLanguage(translation), nil, words), Blocks: read.bySeries(words)},
 	}
 }
 
@@ -39,16 +40,18 @@ type listFilter struct {
 // with a part out, the one whose latest part came out last first; each keeping the posts the list names that carry the
 // tag or are parts of the series.
 func (read blog) filtersOf() []listFilter {
+	translation := read.words.Translation()
 	filters := make([]listFilter, 0, len(read.tags))
 	for _, tag := range read.tags {
 		kept := slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return !slices.Contains(post.Tags, tag) })
 		filters = append(filters, listFilter{
-			page: document.TagFilter(tag), kind: document.FilterTag, name: tag, phrase: content.PhraseTagFilter, title: tag, posts: kept,
+			page: document.TagFilter(tag).InLanguage(translation), kind: document.FilterTag, name: tag, phrase: content.PhraseTagFilter, title: tag,
+			posts: kept,
 		})
 	}
 	for _, series := range read.seriesNewestFirst() {
 		filters = append(filters, listFilter{
-			page: document.SeriesFilter(series.Name), kind: document.FilterSeries, name: series.Name, phrase: content.PhraseSeriesFilter,
+			page: document.SeriesFilter(series.Name).InLanguage(translation), kind: document.FilterSeries, name: series.Name, phrase: content.PhraseSeriesFilter,
 			title: series.Title, posts: read.partsOut(series),
 		})
 	}
@@ -62,7 +65,8 @@ func (read blog) partsOut(series content.Series) []content.Post {
 
 // filteredLists are the blog's list by year filtered by each of its filters, a view of the list each, not a page of its
 // own (docs/FOUNDATION.md §5.4): its head the list's, with the filter in the site's words beside the blog's name.
-func filteredLists(read blog, words content.Words) []document.Document {
+func filteredLists(read blog) []document.Document {
+	words := read.words
 	lists := make([]document.Document, 0, len(read.filters))
 	for _, filter := range read.filters {
 		lists = append(lists, document.Document{Head: read.listHead(filter.page, filter.words(words), words), Blocks: read.byYear(filter.posts, words)})
@@ -111,7 +115,7 @@ func (read blog) postFilters(post content.Post) []document.Filter {
 	for _, tag := range post.Tags {
 		leads := document.PageOf(document.PageNone)
 		if read.audience.lists(post) {
-			leads = document.TagFilter(tag)
+			leads = document.TagFilter(tag).InLanguage(read.words.Translation())
 		}
 		filters = append(filters, document.Filter{Kind: document.FilterTag, Name: tag, Words: textSpans(tag), Page: leads, Current: false, WayOut: ""})
 	}
@@ -123,7 +127,7 @@ func (read blog) postFilters(post content.Post) []document.Filter {
 // first, by its title and its description.
 func blogListings(read blog, words content.Words) []document.Listing {
 	listings := []document.Listing{}
-	for _, grouping := range listWordsOf(words).Groupings() {
+	for _, grouping := range read.listWords().Groupings() {
 		head := read.listHead(grouping.List, nil, words)
 		title := words.Phrase(content.PhraseGroupedList, document.PlainText(head.Title), grouping.Words)
 		listings = append(listings, document.Listing{Page: head.Page, Title: textSpans(title), Note: head.Description})
@@ -155,6 +159,7 @@ func (read blog) listHead(page document.Page, filter []document.Span, words cont
 		Post:        nil,
 		Description: line,
 		Feeds:       read.feedLinks(seriesShownBy(page)),
+		Languages:   nil,
 	}
 }
 
@@ -201,7 +206,7 @@ func (read blog) bySeries(words content.Words) []document.Block {
 		posts := make([]document.ListedPost, 0, len(parts))
 		out := 0
 		for index, part := range parts {
-			posts = append(posts, partInItsGroup(part, partNumber(index), series.Name, words))
+			posts = append(posts, partInItsGroup(part, partNumber(index), read.seriesGroup(series), words))
 			if part.post != nil {
 				out++
 			}
@@ -268,30 +273,36 @@ func (read blog) listedOutside(post content.Post, words content.Words) document.
 	parts := read.partsOf(series, read.audience.lists)
 	index := slices.IndexFunc(parts, func(part listedPart) bool { return part.post != nil && part.post.Slug == post.Slug })
 	listed.Part = textSpans(words.Phrase(content.PhrasePart, strconv.Itoa(partNumber(index))))
-	listed.Series, listed.SeriesName = textSpans(series.Title), series.Name
+	listed.Series, listed.SeriesGroup = textSpans(series.Title), read.seriesGroup(series)
 	return listed
 }
 
-// partInItsGroup is a part of a series of a name as its own group names it, by its number: a part out as the post it
-// is, a part to come by its title alone, saying it comes.
-func partInItsGroup(part listedPart, number int, seriesName string, words content.Words) document.ListedPost {
+// seriesGroup is the group of a series on the blog's list by series, in the blog's language.
+func (read blog) seriesGroup(series content.Series) document.Anchor {
+	return document.Anchor{Page: document.PageOf(document.PageBlogSeries).InLanguage(read.words.Translation()), Name: series.Name}
+}
+
+// partInItsGroup is a part of a series as its own group names it, by its number: a part out as the post it is, a part
+// to come by its title alone, saying it comes.
+func partInItsGroup(part listedPart, number int, group document.Anchor, words content.Words) document.ListedPost {
 	partWords := textSpans(words.Phrase(content.PhrasePart, strconv.Itoa(number)))
 	if part.post == nil {
 		return document.ListedPost{
 			Readiness: document.ComingPart{Coming: textSpans(words.Text(content.WordSoon))},
-			Title:     textSpans(part.title), Lead: nil, Part: partWords, Series: nil, SeriesName: seriesName, Tags: nil,
+			Title:     textSpans(part.title), Lead: nil, Part: partWords, Series: nil, SeriesGroup: group, Tags: nil,
 		}
 	}
 	listed := listedPost(*part.post)
-	listed.Part, listed.SeriesName = partWords, seriesName
+	listed.Part, listed.SeriesGroup = partWords, group
 	return listed
 }
 
 // listedPost is a post out as a list names it, in no series: its page, when it came out, its title, its lead and its
 // tags.
 func listedPost(post content.Post) document.ListedPost {
+	outside := document.Anchor{Page: document.PageOf(document.PageNone), Name: ""}
 	return document.ListedPost{
 		Readiness: document.PostOut{Page: postPage(post), Published: post.Published.At()},
-		Title:     textSpans(post.Title), Lead: textSpans(post.Description), Part: nil, Series: nil, SeriesName: "", Tags: slices.Clone(post.Tags),
+		Title:     textSpans(post.Title), Lead: textSpans(post.Description), Part: nil, Series: nil, SeriesGroup: outside, Tags: slices.Clone(post.Tags),
 	}
 }

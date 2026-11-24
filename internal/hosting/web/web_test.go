@@ -17,6 +17,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/release"
 )
@@ -85,6 +86,17 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 			contentType: "application/atom+xml; charset=utf-8", holds: "&lt;p&gt;A page read twice is read once",
 		},
 		{name: "the feed of no series", path: "/blog/series/aloud.atom", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
+		{name: "a translation", path: "/ru/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Медленное чтение"},
+		{name: "a translation as a manual", path: "/ru/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "Медленное чтение"},
+		{name: "a translation's picture", path: "/ru/blog/reading-slowly/margin.png", status: http.StatusOK, contentType: "image/png", holds: ""},
+		{name: "the list in a language", path: "/ru/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# блог"},
+		{name: "the list in a language, filtered", path: "/ru/blog.md?tag=reading", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "посты с тегом reading"},
+		{
+			name: "the blog's feed in a language", path: "/ru/blog.atom", status: http.StatusOK, contentType: "application/atom+xml; charset=utf-8",
+			holds: `<id>tag:example.test,2026:ru/blog/1</id>`,
+		},
+		{name: "a post in a language it has no translation in", path: "/ru/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
+		{name: "the list in a language the site has no words for", path: "/de/blog.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -247,6 +259,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a post in markdown", path: "/blog/reading-slowly.md", accept: "", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post, chosen", path: "/blog/reading-slowly", accept: "*/*", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
+		{name: "a translation in markdown", path: "/ru/blog/reading-slowly.md", accept: "", want: `<https://example.test/ru/blog/reading-slowly>; rel="canonical"`},
 		{name: "a filtered list in markdown, a part of the list and no copy of it", path: "/blog.md?tag=reading", accept: "", want: ""},
 		{name: "a filtered list as a manual", path: "/blog.txt?series=reading", accept: "", want: ""},
 		{name: "a filtered list in a browser", path: "/blog?tag=terminals", accept: "text/html", want: ""},
@@ -346,6 +359,7 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 		location string
 	}{
 		{name: "a post published", path: "/blog/1", status: http.StatusMovedPermanently, location: "/blog/reading-slowly"},
+		{name: "a translation published", path: "/ru/blog/1", status: http.StatusMovedPermanently, location: "/ru/blog/reading-slowly"},
 		{name: "a draft", path: "/blog/2", status: http.StatusNotFound, location: ""},
 		{name: "the current version by its day", path: "/blog/reading-slowly/2026-11-12", status: http.StatusFound, location: "/blog/reading-slowly"},
 		{name: "the current version by its day, in markdown", path: "/blog/reading-slowly/2026-11-12.md", status: http.StatusFound, location: "/blog/reading-slowly.md"},
@@ -616,7 +630,7 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 	}{
 		{name: "its page", path: "/blog/coming.md", holds: "# Coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
 		{
-			name: "its preview link", path: "/preview/" + key.Token("coming", fixtures.Day().Add(linkLasts)) + "/coming.md", holds: "# Coming",
+			name: "its preview link", path: "/preview/" + key.Token(document.PostPage("coming"), fixtures.Day().Add(linkLasts)) + "/coming.md", holds: "# Coming",
 			before: seenAnswer{status: http.StatusOK, holds: true}, after: seenAnswer{status: http.StatusFound, holds: false},
 		},
 		{name: "its number", path: "/blog/3", holds: "/blog/coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusMovedPermanently, holds: true}},
@@ -686,11 +700,13 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 	store := fixtureStore(test, fixtures.PreviewedFolder(test))
 	key, oldKey := keyOf(test, testSecret), keyOf(test, oldSecret)
 	lapses := fixtures.Day().Add(linkLasts)
-	token := key.Token(fixtures.PreviewSlug, lapses)
+	token := key.Token(document.PostPage(fixtures.PreviewSlug), lapses)
 	link := "/preview/" + token + "/" + fixtures.PreviewSlug
-	lapsed := "/preview/" + key.Token(fixtures.PreviewSlug, fixtures.Day().Add(-linkLasts)) + "/previewed.md"
+	lapsed := "/preview/" + key.Token(document.PostPage(fixtures.PreviewSlug), fixtures.Day().Add(-linkLasts)) + "/previewed.md"
 	_, signature, _ := strings.Cut(token, tokenJoint)
 	movedLater := "/preview/" + strconv.FormatInt(lapses.Add(linkLasts).Unix(), decimal) + tokenJoint + signature + "/previewed.md"
+	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), lapses)
+	translationLink := "/ru/preview/" + translationToken + "/" + fixtures.PreviewSlug
 	opened, missing := seenAnswer{status: http.StatusOK, holds: true}, seenAnswer{status: http.StatusNotFound, holds: false}
 	cases := []struct {
 		name       string
@@ -710,16 +726,24 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 		{name: "its picture at its own address", previewKey: key, path: "/blog/previewed/margin.png", accept: "", holds: "PNG", want: missing},
 		{name: "a wrong token", previewKey: key, path: "/preview/" + wrongToken + "/previewed.md", accept: "", holds: "# Previewed", want: missing},
 		{
-			name: "the token of another post", previewKey: key, path: "/preview/" + key.Token(fixturePostSlug, lapses) + "/previewed.md", accept: "",
+			name: "the token of another post", previewKey: key, path: "/preview/" + key.Token(document.PostPage(fixturePostSlug), lapses) + "/previewed.md", accept: "",
 			holds: "# Previewed", want: missing,
 		},
 		{
-			name: "a token of an old key", previewKey: key, path: "/preview/" + oldKey.Token(fixtures.PreviewSlug, lapses) + "/previewed.md", accept: "",
+			name: "a token of an old key", previewKey: key, path: "/preview/" + oldKey.Token(document.PostPage(fixtures.PreviewSlug), lapses) + "/previewed.md", accept: "",
 			holds: "# Previewed", want: missing,
 		},
 		{name: "a link lapsed", previewKey: key, path: lapsed, accept: "", holds: "# Previewed", want: missing},
 		{name: "a lapse moved later", previewKey: key, path: movedLater, accept: "", holds: "# Previewed", want: missing},
 		{name: "no key held", previewKey: nil, path: link + ".md", accept: "", holds: "# Previewed", want: missing},
+		{name: "its translation's page", previewKey: key, path: translationLink, accept: "text/html", holds: `<html lang="ru">`, want: opened},
+		{
+			name: "its translation's markdown, leading to its picture at the link", previewKey: key, path: translationLink + ".md", accept: "",
+			holds: "(https://example.test/ru/preview/" + translationToken + "/previewed/margin.png", want: opened,
+		},
+		{name: "its translation's picture", previewKey: key, path: translationLink + "/margin.png", accept: "", holds: "PNG", want: opened},
+		{name: "its translation at the original's link", previewKey: key, path: "/ru/preview/" + token + "/previewed.md", accept: "", holds: "# Предпросмотр", want: missing},
+		{name: "the original at its translation's link", previewKey: key, path: "/preview/" + translationToken + "/previewed.md", accept: "", holds: "# Previewed", want: missing},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -739,7 +763,8 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 	key := keyOf(test, testSecret)
 	server := drawnServer(test, fixtureStore(test, fixtures.PreviewedFolder(test)), key)
-	token := key.Token(fixtures.PreviewSlug, fixtures.Day().Add(linkLasts))
+	token := key.Token(document.PostPage(fixtures.PreviewSlug), fixtures.Day().Add(linkLasts))
+	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), fixtures.Day().Add(linkLasts))
 	link := "/preview/" + token + "/" + fixtures.PreviewSlug
 	want := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
 	cases := []struct {
@@ -757,6 +782,8 @@ func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 		{name: "the token and its folder's end", method: http.MethodGet, path: "/preview/" + token + "/", accept: "text/html"},
 		{name: "a path of an empty segment", method: http.MethodGet, path: "/preview/" + token + "//" + fixtures.PreviewSlug, accept: ""},
 		{name: "a method no page takes", method: http.MethodPost, path: link, accept: ""},
+		{name: "its translation's page", method: http.MethodGet, path: "/ru/preview/" + translationToken + "/" + fixtures.PreviewSlug, accept: "text/html"},
+		{name: "the token alone in a language's folder", method: http.MethodGet, path: "/ru/preview/" + token, accept: "text/html"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -775,7 +802,7 @@ func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 func TestAPreviewLinkSendsItsReaderOnOnceThePostIsOut(test *testing.T) {
 	key, lapses := keyOf(test, testSecret), fixtures.Day().Add(linkLasts)
 	server := drawnServer(test, fixtureStore(test, fixtures.ContentFolder(test)), key)
-	link := "/preview/" + key.Token(fixturePostSlug, lapses) + "/" + fixturePostSlug
+	link := "/preview/" + key.Token(document.PostPage(fixturePostSlug), lapses) + "/" + fixturePostSlug
 	private := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
 	cases := []struct {
 		name string
@@ -787,19 +814,19 @@ func TestAPreviewLinkSendsItsReaderOnOnceThePostIsOut(test *testing.T) {
 		{name: "its manual", path: link + ".txt", want: sentOn{status: http.StatusFound, location: "/blog/reading-slowly.txt", sent: private}},
 		{name: "its picture", path: link + "/margin.png", want: sentOn{status: http.StatusFound, location: picturePath, sent: private}},
 		{
-			name: "another post's token", path: "/preview/" + key.Token("notes-on-tools", lapses) + "/reading-slowly.md",
+			name: "another post's token", path: "/preview/" + key.Token(document.PostPage("notes-on-tools"), lapses) + "/reading-slowly.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 		{
-			name: "a draft's link", path: "/preview/" + key.Token("notes-on-tools", lapses) + "/notes-on-tools.md",
+			name: "a draft's link", path: "/preview/" + key.Token(document.PostPage("notes-on-tools"), lapses) + "/notes-on-tools.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 		{
-			name: "a lapsed link", path: "/preview/" + key.Token(fixturePostSlug, fixtures.Day().Add(-linkLasts)) + "/reading-slowly.md",
+			name: "a lapsed link", path: "/preview/" + key.Token(document.PostPage(fixturePostSlug), fixtures.Day().Add(-linkLasts)) + "/reading-slowly.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 		{
-			name: "no post's link", path: "/preview/" + key.Token("no-such-post", lapses) + "/no-such-post.md",
+			name: "no post's link", path: "/preview/" + key.Token(document.PostPage("no-such-post"), lapses) + "/no-such-post.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 	}
@@ -859,7 +886,7 @@ func TestAPreviewKeyIsReadFromItsFile(test *testing.T) {
 // end signs as one without.
 func TestAPreviewKeySignsAsItsCopyWithoutALineEnd(test *testing.T) {
 	lapses := fixtures.Day().Add(linkLasts)
-	bare := keyOf(test, testSecret).Token(fixtures.PreviewSlug, lapses)
+	bare := keyOf(test, testSecret).Token(document.PostPage(fixtures.PreviewSlug), lapses)
 	cases := []struct {
 		name    string
 		written string
@@ -869,7 +896,7 @@ func TestAPreviewKeySignsAsItsCopyWithoutALineEnd(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := keyOf(test, testCase.written).Token(fixtures.PreviewSlug, lapses); got != bare {
+			if got := keyOf(test, testCase.written).Token(document.PostPage(fixtures.PreviewSlug), lapses); got != bare {
 				test.Errorf("the key %q signs %q, want %q as the key alone does", testCase.written, got, bare)
 			}
 		})

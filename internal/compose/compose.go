@@ -33,7 +33,7 @@ func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	profile := snapshot.Profile
 	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks("")), personRecord(profile))}
 	for _, project := range projectsWithPages(profile.Projects) {
-		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Words), workRecord(project, profile.Person)))
+		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Own.Words), workRecord(project, profile.Person)))
 	}
 	return pages
 }
@@ -58,7 +58,7 @@ func tabDocuments(composed document.Document) []document.Document {
 // description and feeds of its page's head.
 func tabHead(head document.Head, tab document.Tab) document.Head {
 	return document.Head{
-		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: ""},
+		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: "", Translation: head.Page.Translation},
 		Number:      0,
 		Language:    head.Language,
 		Greeting:    "",
@@ -73,6 +73,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Post:        nil,
 		Description: head.Description,
 		Feeds:       head.Feeds,
+		Languages:   nil,
 	}
 }
 
@@ -85,7 +86,7 @@ func projectsWithPages(projects []content.Project) []content.Project {
 // sections, each under the site's word for it, as a reader asks of an author: about them, their experience, their
 // projects, their skills, and how to reach them.
 func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document {
-	profile, words := snapshot.Profile, snapshot.Words
+	profile, words := snapshot.Profile, snapshot.Own.Words
 	return document.Document{
 		Head: resumeHead(profile, words, feeds),
 		Blocks: []document.Block{
@@ -115,7 +116,7 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 // site's word for it, the projects' word only where a project has a page. The résumé and a project's page are
 // listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
 func indexOf(snapshot *content.Snapshot, read blog) document.Document {
-	words := snapshot.Words
+	words := snapshot.Own.Words
 	resume := resumeHead(snapshot.Profile, words, nil)
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
@@ -143,6 +144,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 			Post:        nil,
 			Description: nil,
 			Feeds:       nil,
+			Languages:   nil,
 		},
 		Blocks: blocks,
 	}
@@ -174,6 +176,7 @@ func resumeHead(profile content.Profile, words content.Words, feeds []document.L
 		Post:        nil,
 		Description: headline,
 		Feeds:       feeds,
+		Languages:   nil,
 	}
 }
 
@@ -272,6 +275,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Post:        nil,
 		Description: description,
 		Feeds:       nil,
+		Languages:   nil,
 	}
 }
 
@@ -289,7 +293,7 @@ func projectPage(project content.Project) document.Page {
 	if !project.Page {
 		return document.PageOf(document.PageNone)
 	}
-	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: "", Revision: ""}
+	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: "", Revision: "", Translation: ""}
 }
 
 // projectRepository is where a project's code lives, under the site's word for it; none where the project names no

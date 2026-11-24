@@ -514,9 +514,9 @@ func (writer PageWriter) tileParts(post document.ListedPost, when templ.Componen
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
-				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(post.SeriesGroup(), routes.FormatChosen)).ResolveURL(ctx)
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(writer.frame.site.Reference(post.SeriesGroup, routes.FormatChosen)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/list.templ`, Line: 133, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/list.templ`, Line: 133, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {

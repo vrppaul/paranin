@@ -11,14 +11,15 @@ import (
 // address in each format, the address a reader's request chooses the format at among them, the index at the address
 // agents look for it, llms.txt, and in markdown alone; and an address outside the site is left as it is.
 func TestEveryTargetHasItsAddress(test *testing.T) {
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority, testedTranslations())
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	resumeTab := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
 	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
 	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
 	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
-	older := document.OlderVersion("reading-slowly", "2026-11-10")
+	older := post.OlderVersion("2026-11-10")
+	translated := post.InLanguage("ru")
 	list := document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}
 	listBySeries := document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}
 	cases := []struct {
@@ -76,6 +77,17 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
 		{name: "the blog's feed, in any format", target: document.Feed{Series: ""}, format: FormatMarkdown, want: "https://example.test/blog.atom"},
 		{name: "a series' feed, in any format", target: document.Feed{Series: "stint"}, format: FormatChosen, want: "https://example.test/blog/series/stint.atom"},
+		{name: "a translation as the reader asks", target: translated, format: FormatChosen, want: "https://example.test/ru/blog/reading-slowly"},
+		{name: "a translation in markdown", target: translated, format: FormatMarkdown, want: "https://example.test/ru/blog/reading-slowly.md"},
+		{name: "a translation as a manual", target: translated, format: FormatManual, want: "https://example.test/ru/blog/reading-slowly.txt"},
+		{name: "a translation's older version", target: translated.OlderVersion("2026-11-16"), format: FormatChosen, want: "https://example.test/ru/blog/reading-slowly/2026-11-16"},
+		{name: "a translation's heading", target: document.Anchor{Page: translated, Name: "потом"}, format: FormatChosen, want: "https://example.test/ru/blog/reading-slowly#потом"},
+		{name: "a translation's picture", target: document.File{Page: translated, Name: "margin.png"}, format: FormatChosen, want: "https://example.test/ru/blog/reading-slowly/margin.png"},
+		{name: "the blog's list in a language", target: list.InLanguage("ru"), format: FormatChosen, want: "https://example.test/ru/blog"},
+		{name: "the list by series in a language, in markdown", target: listBySeries.InLanguage("ru"), format: FormatMarkdown, want: "https://example.test/ru/blog/series.md"},
+		{name: "the list in a language filtered by a tag", target: document.TagFilter("go").InLanguage("ru"), format: FormatChosen, want: "https://example.test/ru/blog?tag=go"},
+		{name: "the blog's feed in a language", target: document.Feed{Series: "", Translation: "ru"}, format: FormatChosen, want: "https://example.test/ru/blog.atom"},
+		{name: "a series' feed in a language", target: document.Feed{Series: "stint", Translation: "ru"}, format: FormatChosen, want: "https://example.test/ru/blog/series/stint.atom"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -112,7 +124,7 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
 		{name: "a series' feed", target: document.Feed{Series: "stint"}, format: FormatChosen, want: "/blog/series/stint.atom"},
 	}
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority, testedTranslations())
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			if got := site.Reference(testCase.target, testCase.format); got != testCase.want {
@@ -132,24 +144,31 @@ const (
 // format, its sections and its pictures among them, whole and as a path from the root alike; every other page keeps
 // its own address.
 func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
-	site := New(writtenAddress{written: testedBase, host: "example.test"}, testedAuthority).Previewing("coming", previewToken)
-	previewed := document.Page{Kind: document.PagePost, Slug: "coming", Tab: ""}
+	previewed := document.PostPage("coming")
+	translated := previewed.InLanguage("ru")
 	cases := []struct {
-		name     string
-		target   document.Target
-		format   Format
-		wantPath string
+		name      string
+		previewed document.Page
+		target    document.Target
+		format    Format
+		wantPath  string
 	}{
-		{name: "the post as the reader asks", target: previewed, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming"},
-		{name: "the post in markdown", target: previewed, format: FormatMarkdown, wantPath: "/preview/c2lnbmVk/coming.md"},
-		{name: "the post as a manual", target: previewed, format: FormatManual, wantPath: "/preview/c2lnbmVk/coming.txt"},
-		{name: "a heading of the post", target: document.Anchor{Page: previewed, Name: "why"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming#why"},
-		{name: "a picture of the post", target: document.File{Page: previewed, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming/margin.png"},
-		{name: "another post", target: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, format: FormatChosen, wantPath: "/blog/reading-slowly"},
-		{name: "the résumé", target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, wantPath: "/"},
+		{name: "the post as the reader asks", previewed: previewed, target: previewed, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming"},
+		{name: "the post in markdown", previewed: previewed, target: previewed, format: FormatMarkdown, wantPath: "/preview/c2lnbmVk/coming.md"},
+		{name: "the post as a manual", previewed: previewed, target: previewed, format: FormatManual, wantPath: "/preview/c2lnbmVk/coming.txt"},
+		{name: "a heading of the post", previewed: previewed, target: document.Anchor{Page: previewed, Name: "why"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming#why"},
+		{name: "a picture of the post", previewed: previewed, target: document.File{Page: previewed, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/c2lnbmVk/coming/margin.png"},
+		{name: "another post", previewed: previewed, target: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, format: FormatChosen, wantPath: "/blog/reading-slowly"},
+		{name: "the post in another language", previewed: previewed, target: translated, format: FormatChosen, wantPath: "/ru/blog/coming"},
+		{name: "the résumé", previewed: previewed, target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, wantPath: "/"},
+		{name: "a translation as the reader asks", previewed: translated, target: translated, format: FormatChosen, wantPath: "/ru/preview/c2lnbmVk/coming"},
+		{name: "a translation in markdown", previewed: translated, target: translated, format: FormatMarkdown, wantPath: "/ru/preview/c2lnbmVk/coming.md"},
+		{name: "a translation's picture", previewed: translated, target: document.File{Page: translated, Name: "margin.png"}, format: FormatChosen, wantPath: "/ru/preview/c2lnbmVk/coming/margin.png"},
+		{name: "the original of a translation", previewed: translated, target: previewed, format: FormatChosen, wantPath: "/blog/coming"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			site := New(writtenAddress{written: testedBase, host: "example.test"}, testedAuthority, testedTranslations()).Previewing(testCase.previewed, previewToken)
 			address, reference := site.Address(testCase.target, testCase.format), site.Reference(testCase.target, testCase.format)
 			if address != testedBase+testCase.wantPath || reference != testCase.wantPath {
 				test.Errorf("Address and Reference of %+v = %q and %q, want %q and %q", testCase.target, address, reference,
@@ -162,19 +181,26 @@ func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
 // A path in the preview's folder reads back as the token it holds and the path the same face or file of its post has
 // in the blog's folder; a path anywhere else, or naming no token or no post, is no preview's.
 func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
-	none := PreviewLink{Token: "", Slug: "", PostPath: ""}
+	none := PreviewLink{Token: "", Post: document.PageOf(document.PageNone), PostPath: ""}
+	post := document.PostPage("coming")
 	cases := []struct {
 		name     string
 		path     string
 		want     PreviewLink
 		wantRead bool
 	}{
-		{name: "the post", path: "/preview/c2lnbmVk/coming", want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming"}, wantRead: true},
-		{name: "its markdown", path: "/preview/c2lnbmVk/coming.md", want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming.md"}, wantRead: true},
+		{name: "the post", path: "/preview/c2lnbmVk/coming", want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming"}, wantRead: true},
+		{name: "its markdown", path: "/preview/c2lnbmVk/coming.md", want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming.md"}, wantRead: true},
 		{
 			name: "its picture", path: "/preview/c2lnbmVk/coming/margin.png",
-			want: PreviewLink{Token: previewToken, Slug: "coming", PostPath: "/blog/coming/margin.png"}, wantRead: true,
+			want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming/margin.png"}, wantRead: true,
 		},
+		{
+			name: "a translation's markdown", path: "/ru/preview/c2lnbmVk/coming.md",
+			want: PreviewLink{Token: previewToken, Post: post.InLanguage("ru"), PostPath: "/ru/blog/coming.md"}, wantRead: true,
+		},
+		{name: "a folder of no language", path: "/russian/preview/c2lnbmVk/coming", want: none, wantRead: false},
+		{name: "a language the site is not translated into", path: "/de/preview/c2lnbmVk/coming", want: none, wantRead: false},
 		{name: "a post's own address", path: "/blog/coming", want: none, wantRead: false},
 		{name: "the folder with no post", path: "/preview/c2lnbmVk/", want: none, wantRead: false},
 		{name: "the folder with no token", path: "/preview//coming", want: none, wantRead: false},
@@ -183,15 +209,15 @@ func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got, isRead := PreviewPath(testCase.path); got != testCase.want || isRead != testCase.wantRead {
+			if got, isRead := testedSite().PreviewPath(testCase.path); got != testCase.want || isRead != testCase.wantRead {
 				test.Errorf("PreviewPath(%q) = %+v, read: %t; want %+v, read: %t", testCase.path, got, isRead, testCase.want, testCase.wantRead)
 			}
 		})
 	}
 }
 
-// A path is in the preview's folder by its opening alone, whatever follows, so every answer there is sent as a preview
-// link's is; the preview's name alone, or the blog's folder, is not.
+// A path is in a preview's folder by its opening alone, at the root or one segment down, which no page takes since the
+// check refuses one, so every answer there is sent as a preview link's is; the name alone, or deeper, is not.
 func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 	cases := []struct {
 		path string
@@ -200,9 +226,15 @@ func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 		{path: "/preview/c2lnbmVk/coming", want: true},
 		{path: "/preview/c2lnbmVk", want: true},
 		{path: "/preview/", want: true},
+		{path: "/ru/preview/c2lnbmVk/coming", want: true},
+		{path: "/ru/preview/", want: true},
 		{path: "/preview", want: false},
+		{path: "/ru/preview", want: false},
 		{path: "/previews/coming", want: false},
 		{path: "/blog/coming", want: false},
+		{path: "/de/preview/c2lnbmVk/coming", want: true},
+		{path: "/p/preview/why", want: true},
+		{path: "/p/tidy-tool/preview/why", want: false},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.path, func(test *testing.T) {
@@ -215,7 +247,7 @@ func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 
 // A page of the site is read in a terminal with curl and its whole address, which answers a terminal with the manual.
 func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority, testedTranslations())
 	cases := []struct {
 		name string
 		page document.Page
@@ -243,7 +275,7 @@ func TestATerminalNamesAPageByItsPath(test *testing.T) {
 	}{
 		{name: "the blog's list", path: Path(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, FormatChosen), want: "blog"},
 		{name: "a post by its slug", path: Path(document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, FormatChosen), want: "blog/reading-slowly"},
-		{name: "a post by its number", path: NumberPath(12), want: "blog/12"},
+		{name: "a post by its number", path: NumberPath("", 12), want: "blog/12"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -298,11 +330,14 @@ func TestARequestsQueryNamesTheFilterOfTheList(test *testing.T) {
 		{name: "a tag twice", path: "/blog", query: url.Values{"tag": {"go", "rust"}}, want: "/blog?tag=go&tag=rust"},
 		{name: "a tag and a series", path: "/blog", query: url.Values{"tag": {"go"}, "series": {"stint"}}, want: "/blog?series=stint&tag=go"},
 		{name: "a tag of the list by series", path: "/blog/series", query: url.Values{"tag": {"go"}}, want: "/blog/series"},
+		{name: "a tag of the list in a language", path: "/ru/blog", query: url.Values{"tag": {"go"}}, want: Path(document.TagFilter("go").InLanguage("ru"), FormatChosen)},
+		{name: "a series of the list in a language, in markdown", path: "/ru/blog.md", query: url.Values{"series": {"stint"}}, want: "/ru/blog.md?series=stint"},
+		{name: "a tag in a language the site is not translated into", path: "/de/blog", query: url.Values{"tag": {"go"}}, want: "/de/blog"},
 		{name: "a tag of the résumé", path: "/", query: url.Values{"tag": {"go"}}, want: "/"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := Requested(testCase.path, testCase.query); got != testCase.want {
+			if got := testedSite().Requested(testCase.path, testCase.query); got != testCase.want {
 				test.Errorf("Requested(%q, %v) = %q, want %q", testCase.path, testCase.query, got, testCase.want)
 			}
 		})
@@ -333,6 +368,16 @@ func TestTheAddressAskedForReadsAsWritten(test *testing.T) {
 // The tag authority a test's site names what it serves under
 const testedAuthority = "example.test,2026"
 
+// testedTranslations are the languages a test's site is translated into.
+func testedTranslations() []string {
+	return []string{"ru"}
+}
+
+// testedSite is a test's site, served at its base address.
+func testedSite() Site {
+	return New(writtenAddress{written: testedBase, host: "example.test"}, testedAuthority, testedTranslations())
+}
+
 // A feed and a post are named for good by their paths under the site's tag authority, a post by the path its number
 // reaches it at, and keep the name wherever the site is served.
 func TestAFeedAndAPostAreNamedForGoodWhereverTheSiteIs(test *testing.T) {
@@ -343,12 +388,14 @@ func TestAFeedAndAPostAreNamedForGoodWhereverTheSiteIs(test *testing.T) {
 	}{
 		{name: "the blog's feed", path: FeedPath(document.Feed{Series: ""}), want: "tag:example.test,2026:blog.atom"},
 		{name: "a series' feed", path: FeedPath(document.Feed{Series: "stint"}), want: "tag:example.test,2026:blog/series/stint.atom"},
-		{name: "a post, by its number", path: NumberPath(12), want: "tag:example.test,2026:blog/12"},
+		{name: "a post, by its number", path: NumberPath("", 12), want: "tag:example.test,2026:blog/12"},
+		{name: "the blog's feed in a language", path: FeedPath(document.Feed{Series: "", Translation: "ru"}), want: "tag:example.test,2026:ru/blog.atom"},
+		{name: "a translation, by its post's number", path: NumberPath("ru", 12), want: "tag:example.test,2026:ru/blog/12"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			for _, base := range []writtenAddress{{written: testedBase, host: "example.test"}, {written: "https://moved.test", host: "moved.test"}} {
-				if got := New(base, testedAuthority).TagURI(testCase.path); got != testCase.want {
+				if got := New(base, testedAuthority, testedTranslations()).TagURI(testCase.path); got != testCase.want {
 					test.Errorf("TagURI(%q) served at %s = %q, want %q", testCase.path, base.written, got, testCase.want)
 				}
 			}

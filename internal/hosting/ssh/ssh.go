@@ -153,14 +153,15 @@ func (server *Server) Shutdown(ctx context.Context) error {
 
 // draw is what the sessions of a snapshot draw as an audience reads it: the pages of its content, the extras the TUI
 // opens by a command, and the blog's lists, filtered or not, posts and their older versions, with the site's words of
-// the frame round them; and until when it holds, as the next post dated later comes out. Prepare read the snapshot's
-// content.
+// the frame round them, all in the site's own language; and until when it holds, as the next post dated later comes
+// out. Prepare read the snapshot's content.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
 	composition := compose.SiteOf(prepared, audience)
-	documents := slices.Concat(composition.Documents(), compose.Extras(facts), composition.Lists, composition.Filtered, composition.Posts,
-		composition.Versions)
-	return tui.Drawing{Documents: documents, Frame: composition.Frame, Site: routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority)}, composition.Until
+	own := composition.Own
+	documents := slices.Concat(composition.Documents(), compose.Extras(facts), own.Lists, own.Filtered, own.Posts, own.Versions)
+	site := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority, facts.TranslatedInto())
+	return tui.Drawing{Documents: documents, Frame: own.Frame, Site: site}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).

@@ -144,7 +144,7 @@ func (writer PageWriter) panesOf(place *document.PostPlace) *panesFoot {
 		return nil
 	}
 	words, seriesWords := writer.frame.paneWords, writer.frame.seriesWords
-	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.site.Reference(document.PageOf(document.PageBlog), routes.FormatChosen)
+	sides, heading, allPosts := words.Posts, words.OtherPosts, writer.frame.site.Reference(writer.frame.listWords.List, routes.FormatChosen)
 	var allParts *pick
 	if series := place.Series; series != nil {
 		sides, heading, allPosts = words.Parts, seriesWords.OtherParts(document.PlainText(series.Title)), ""
@@ -171,7 +171,7 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 // its command line going to the post's own places too.
 func (writer PageWriter) postFoot(page document.Page, own []document.Place) footLine {
 	around := writer.frame
-	windows := around.blogWindowsOf(around.listWords.BlogWindows(document.PageOf(document.PageBlog), page), page)
+	windows := around.blogWindowsOf(around.listWords.BlogWindows(around.listWords.List, page), page)
 	return footLineOf(around, around.sessionsOf(page), windows, page, own)
 }
 

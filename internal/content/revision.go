@@ -41,24 +41,24 @@ type writtenRevision struct {
 	bodyLine    int
 }
 
-// readRevisions reads the revisions of the post of a slug, oldest first, as their names order them, with the faults
-// that kept one from being read and those of the folder's other files, which keep none from being read; none where
-// the post has no revisions folder.
-func readRevisions(folder fs.FS, postParser parser.Parser, slug string) ([]writtenRevision, Faults, Faults) {
+// readRevisions reads the revisions of the post of a slug by the language each is in, English or one of the languages
+// it may be translated into, oldest first, as their names order them, with the faults that kept one from being read
+// and those of the folder's other files, which keep none from being read; none where the post has no revisions folder.
+func readRevisions(folder fs.FS, postParser parser.Parser, slug string, languages []string) (map[string][]writtenRevision, Faults, Faults) {
 	place := path.Join(postsFolder, slug, revisionsFolder)
 	entries, unreadable := readFolder(folder, place)
-	revisions, misplaced := []writtenRevision{}, Faults{}
+	revisions, misplaced := map[string][]writtenRevision{}, Faults{}
 	for _, entry := range entries {
 		file := path.Join(place, entry.Name())
 		day, language, named := revisionName(entry.Name())
 		switch {
 		case entry.IsDir() || !named:
 			misplaced = append(misplaced, fileFault(file, strayRevisionProblem))
-		case language != english:
-			misplaced = append(misplaced, fileFault(file, translationProblem))
+		case language != english && !slices.Contains(languages, language):
+			misplaced = append(misplaced, fileFault(file, noWordsProblem))
 		default:
 			revision, faults := readRevision(folder, postParser, file, day)
-			revisions = append(revisions, revision)
+			revisions[language] = append(revisions[language], revision)
 			unreadable = append(unreadable, faults...)
 		}
 	}
@@ -175,7 +175,7 @@ func RevisionOf(post Post, now time.Time) (RevisionFile, error) {
 	}
 	// its front matter is its two strings alone, which always encode
 	fields, _ := yaml.Marshal(taken)
-	name := taken.Day.written + revisionNameJoint + english + markdownEnding
+	name := taken.Day.written + revisionNameJoint + fileLanguage(post.Translation) + markdownEnding
 	return RevisionFile{
 		Path: path.Join(postsFolder, post.Slug, revisionsFolder, name),
 		Text: slices.Concat([]byte(frontMatterLine), fields, []byte(frontMatterLine), taken.Body.Source),

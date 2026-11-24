@@ -7,6 +7,8 @@
 //	paranin preview-link content <slug>         prints the link a post is previewed at, for thirty days or --lasts
 //	paranin revise content <slug>               takes a revision of a post out, its current version, beside it
 //
+// preview-link and revise take --language and a language's tag, as ru, for a post's translation into it.
+//
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
 // load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
 // inside the site leading to no page or no section of one, now or as each post dated later comes out, the drafts'
@@ -18,11 +20,11 @@
 // server holding it. serve loads both folders again, as one release, on SIGHUP and once a change in either holds
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
-// them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.en.md beside it, the
-// day its current version came out, and prints the file's path: its author then rewrites the post and dates the new
-// version by its updated:, which the content's check asks for. The program exits 0 when it did what it was asked, 1
-// when the content or the build has faults, the server failed, or no link could be printed or revision taken, and 2
-// when the command itself is written wrong.
+// them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.<language>.md beside
+// it, the day its current version came out, and prints the file's path: its author then rewrites the post and dates
+// the new version by its updated:, which the content's check asks for. The program exits 0 when it did what it was
+// asked, 1 when the content or the build has faults, the server failed, or no link could be printed or revision taken,
+// and 2 when the command itself is written wrong.
 package main
 
 import (
@@ -67,15 +69,22 @@ const (
 	previewLinkCommand = "preview-link"
 	reviseCommand      = "revise"
 	usage              = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
-		"paranin preview-link [--lasts 720h, at most 2160h] <content folder> <slug> | paranin revise <content folder> <slug>"
+		"paranin preview-link [--lasts 720h, at most 2160h] [--language ru] <content folder> <slug> | " +
+		"paranin revise [--language ru] <content folder> <slug>"
 	commandArgument  = 1
 	contentArgument  = 2
 	buildArgument    = 3
 	contentArguments = 3
 	releaseArguments = 4
-	// revise's post's slug follows the content folder where a release's build folder would
-	reviseSlugArgument = 3
-	reviseArguments    = 4
+)
+
+// How preview-link and revise name a post's translation, by the flag of its language; the original, in English,
+// where none is asked
+const (
+	languageFlag  = "language"
+	languageUsage = "the language of the post's translation, by its tag, as ru; none for the original"
+	// how a fault names a translation: its slug, then its language
+	translationName = "%q in %q"
 )
 
 // Who may read and write what revise writes in the content folder, as git checks a file of the repository out: its
@@ -199,8 +208,12 @@ func run(arguments []string) int {
 			return usageWrong()
 		}
 		return previewLink(asked)
-	case command == reviseCommand && len(arguments) == reviseArguments:
-		return revise(arguments[contentArgument], arguments[reviseSlugArgument])
+	case command == reviseCommand:
+		asked, isWritten := postAskedOf(reviseCommand, arguments[contentArgument:])
+		if !isWritten {
+			return usageWrong()
+		}
+		return revise(asked)
 	default:
 		return usageWrong()
 	}
@@ -271,56 +284,91 @@ func previewLink(asked linkAsked) int {
 		return refused(errNoPreviewKey, previewKeyVariable)
 	}
 	now := time.Now()
-	link, err := previewLinkOf(asked.folder, asked.slug, key, now, now.Add(asked.lasts))
+	link, err := previewLinkOf(asked.post.folder, asked.post.page, key, now, now.Add(asked.lasts))
 	if err != nil {
-		return refused(err, asked.folder)
+		return refused(err, asked.post.folder)
 	}
 	fmt.Println(link)
 	return succeeded
 }
 
-// linkAsked is what preview-link is asked: the content folder, the slug of the post, and how long the link lasts.
-type linkAsked struct {
+// postAsked is a post a command is asked of: the content folder, and the post's page, in the language asked.
+type postAsked struct {
 	folder string
-	slug   string
-	lasts  time.Duration
+	page   document.Page
+}
+
+// linkAsked is what preview-link is asked: the post, and how long the link lasts.
+type linkAsked struct {
+	post  postAsked
+	lasts time.Duration
+}
+
+// postFlags are the flags of a command asked of a post, which mistakes are told of by the usage alone, as for any
+// other command, with the flag of the post's language among them, whose value it hands back to read once parsed.
+func postFlags(command string) (*flag.FlagSet, *string) {
+	flags := flag.NewFlagSet(command, flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	return flags, flags.String(languageFlag, "", languageUsage)
+}
+
+// postAskedOf reads the post a command is asked of from the words after its command, and whether they are written
+// right: the flag of its language, where one is asked, then the content folder and the post's slug.
+func postAskedOf(command string, words []string) (postAsked, bool) {
+	flags, language := postFlags(command)
+	if err := flags.Parse(words); err != nil || flags.NArg() != linkArguments {
+		return postAsked{folder: "", page: document.PageOf(document.PageNone)}, false
+	}
+	return postAskedIn(flags, *language), true
+}
+
+// postAskedIn is the post a command's flags, parsed, ask of in a language: its content folder and slug.
+func postAskedIn(flags *flag.FlagSet, language string) postAsked {
+	return postAsked{folder: flags.Arg(contentPlace), page: document.PostPage(flags.Arg(slugPlace)).InLanguage(language)}
 }
 
 // linkAskedOf reads what preview-link is asked from the words after its command, and whether they are written right:
-// a lifetime, where one is asked, of some time and no longer than the longest.
+// a lifetime, where one is asked, of some time and no longer than the longest, and the post asked of.
 func linkAskedOf(words []string) (linkAsked, bool) {
-	flags := flag.NewFlagSet(previewLinkCommand, flag.ContinueOnError)
-	// a mistake is told by the usage alone, as for any other command
-	flags.SetOutput(io.Discard)
+	flags, language := postFlags(previewLinkCommand)
 	lasts := flags.Duration(lastsFlag, defaultLinkLife, lastsUsage)
 	if err := flags.Parse(words); err != nil || flags.NArg() != linkArguments || *lasts <= 0 || *lasts > longestLinkLife {
-		return linkAsked{folder: "", slug: "", lasts: 0}, false
+		return linkAsked{post: postAsked{folder: "", page: document.PageOf(document.PageNone)}, lasts: 0}, false
 	}
-	return linkAsked{folder: flags.Arg(contentPlace), slug: flags.Arg(slugPlace), lasts: *lasts}, true
+	return linkAsked{post: postAskedIn(flags, *language), lasts: *lasts}, true
 }
 
 // previewLinkOf is the link a post of a content folder is previewed at at a moment, whole, signed with a key until it
-// lapses: a fault where the folder does not load, or the post is then no preview, a draft, out, or none at all, since
-// its link would open nothing.
-func previewLinkOf(contentFolder, slug string, key *web.PreviewKey, moment, lapses time.Time) (string, error) {
+// lapses: a fault where the folder does not load, or the post is then no preview, a draft, out, or none at all.
+func previewLinkOf(contentFolder string, post document.Page, key *web.PreviewKey, moment, lapses time.Time) (string, error) {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err != nil {
 		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
 	}
-	previews := compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Previews
-	found := slices.IndexFunc(previews, func(previewed compose.Preview) bool { return previewed.Post.Head.Page.Slug == slug })
-	if found < 0 {
-		return "", fmt.Errorf("%q is no post previewed now: a preview, or a post dated later, of the folder %q", slug, contentFolder)
+	previewed := false
+	for _, blog := range compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Blogs() {
+		previewed = previewed || slices.ContainsFunc(blog.Previews, func(preview compose.Preview) bool { return preview.Post.Head.Page == post })
 	}
-	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority).Previewing(slug, key.Token(slug, lapses))
-	return site.Address(previews[found].Post.Head.Page, routes.FormatChosen), nil
+	if !previewed {
+		return "", fmt.Errorf("%s is no post previewed now: a preview, or a post dated later, of the folder %q", postName(post), contentFolder)
+	}
+	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority, loaded.TranslatedInto()).Previewing(post, key.Token(post, lapses))
+	return site.Address(post, routes.FormatChosen), nil
+}
+
+// postName is how a fault names a post: its slug, quoted, and the language of a translation after it.
+func postName(post document.Page) string {
+	if post.Translation == "" {
+		return strconv.Quote(post.Slug)
+	}
+	return fmt.Sprintf(translationName, post.Slug, post.Translation)
 }
 
 // revise takes a revision of a post of a content folder out now, and prints the path it wrote it at.
-func revise(contentFolder, slug string) int {
-	written, err := reviseAt(contentFolder, slug, time.Now())
+func revise(asked postAsked) int {
+	written, err := reviseAt(asked.folder, asked.page, time.Now())
 	if err != nil {
-		return refused(err, contentFolder)
+		return refused(err, asked.folder)
 	}
 	fmt.Println(written)
 	return succeeded
@@ -331,20 +379,22 @@ func revise(contentFolder, slug string) int {
 // does not once a version is taken until the post is dated by a later update, where the post is then no post out, a
 // draft, a preview or none at all, whose version no reader read, its version came out that day or later, or its text is
 // its newest revision's already.
-func reviseAt(contentFolder, slug string, moment time.Time) (string, error) {
+func reviseAt(contentFolder string, page document.Page, moment time.Time) (string, error) {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err != nil {
 		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
 	}
-	served := compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Posts
-	found := slices.IndexFunc(loaded.Posts, func(post content.Post) bool { return post.Slug == slug })
-	out := slices.ContainsFunc(served, func(post document.Document) bool { return post.Head.Page.Slug == slug })
-	if found < 0 || !out {
-		return "", fmt.Errorf("%q is no post out now of the folder %q: a revision is taken of a version a reader read", slug, contentFolder)
+	out := false
+	for _, blog := range compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Blogs() {
+		out = out || slices.ContainsFunc(blog.Posts, func(post document.Document) bool { return post.Head.Page == page })
 	}
-	taken, err := content.RevisionOf(loaded.Posts[found], moment)
+	post, found := loaded.Post(page.Translation, page.Slug)
+	if !found || !out {
+		return "", fmt.Errorf("%s is no post out now of the folder %q: a revision is taken of a version a reader read", postName(page), contentFolder)
+	}
+	taken, err := content.RevisionOf(post, moment)
 	if err != nil {
-		return "", fmt.Errorf("revise %q: %w", slug, err)
+		return "", fmt.Errorf("revise %s: %w", postName(page), err)
 	}
 	return taken.Path, writeRevision(contentFolder, taken)
 }

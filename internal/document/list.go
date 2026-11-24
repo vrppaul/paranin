@@ -26,9 +26,9 @@ type ListedPost struct {
 	// Series is its series' title where the group it stands in is no series' own; none in its series' group or
 	// outside a series
 	Series []Span
-	// SeriesName is its series' name, its group's anchor, which a place of the list goes to; none outside a series
-	SeriesName string
-	Tags       []string
+	// SeriesGroup is its series' group on the list by series (DESIGN.md, Tile); the zero anchor outside a series
+	SeriesGroup Anchor
+	Tags        []string
 }
 
 // Group is a group of the blog's list: its title, what a place reaches it by, a series' name and none for another
@@ -95,11 +95,6 @@ func (filter Filter) MarkedAsTag() bool {
 	case FilterSeries:
 	}
 	return false
-}
-
-// SeriesGroup is where a post's series leads (DESIGN.md, Tile): its group on the list by series, by the series' name.
-func (post ListedPost) SeriesGroup() Anchor {
-	return Anchor{Page: PageOf(PageBlogSeries), Name: post.SeriesName}
 }
 
 // InItsSeriesGroup is whether a post stands in its own series' group, which names the series, so its part alone says

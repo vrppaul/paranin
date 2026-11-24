@@ -885,8 +885,9 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // the site's words and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
-	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), site.Lists, site.Filtered, site.Posts, site.Versions)
-	return Drawing{Documents: documents, Frame: site.Frame, Site: fixtures.Site(snapshot)}
+	own := site.Own
+	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), own.Lists, own.Filtered, own.Posts, own.Versions)
+	return Drawing{Documents: documents, Frame: own.Frame, Site: fixtures.Site(snapshot)}
 }
 
 // handModel is a session on documents a test builds by hand, the résumé among them, with the fixture's words and site,

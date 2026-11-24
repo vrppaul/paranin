@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
@@ -108,15 +109,21 @@ func TestAPreviewLinkIsPrintedForAPreviewAlone(test *testing.T) {
 	}
 }
 
-// preview-link's link lasts thirty days where no lifetime is asked, and as long as one asked.
+// preview-link's link lasts thirty days where no lifetime is asked, and as long as one asked; it opens the post in
+// the language asked, the original where none is.
 func TestAPreviewLinkLastsAsAsked(test *testing.T) {
+	coming := document.Page{Kind: document.PagePost, Slug: "coming", Tab: ""}
 	cases := []struct {
 		name  string
 		words []string
 		want  linkAsked
 	}{
-		{name: "no lifetime asked", words: []string{"content", "coming"}, want: linkAsked{folder: "content", slug: "coming", lasts: 30 * 24 * time.Hour}},
-		{name: "an hour asked", words: []string{"--lasts", "1h", "content", "coming"}, want: linkAsked{folder: "content", slug: "coming", lasts: time.Hour}},
+		{name: "no lifetime asked", words: []string{"content", "coming"}, want: linkAsked{post: postAsked{folder: "content", page: coming}, lasts: 30 * 24 * time.Hour}},
+		{name: "an hour asked", words: []string{"--lasts", "1h", "content", "coming"}, want: linkAsked{post: postAsked{folder: "content", page: coming}, lasts: time.Hour}},
+		{
+			name: "a translation's", words: []string{"--language", "ru", "content", "coming"},
+			want: linkAsked{post: postAsked{folder: "content", page: coming.InLanguage("ru")}, lasts: 30 * 24 * time.Hour},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -142,19 +149,22 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 	server := web.New(store, false, key)
 	server.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 	day := fixtures.Day()
+	previewed := document.Page{Kind: document.PagePost, Slug: fixtures.PreviewSlug, Tab: ""}
 	cases := []struct {
 		name   string
+		post   document.Page
 		lapses time.Time
 		want   int
 	}{
-		{name: "before it lapses", lapses: day.Add(linkLasts), want: http.StatusOK},
-		{name: "once it has lapsed", lapses: day.Add(-linkLasts), want: http.StatusNotFound},
+		{name: "before it lapses", post: previewed, lapses: day.Add(linkLasts), want: http.StatusOK},
+		{name: "once it has lapsed", post: previewed, lapses: day.Add(-linkLasts), want: http.StatusNotFound},
+		{name: "a translation's, before it lapses", post: previewed.InLanguage(fixtures.PreviewLanguage), lapses: day.Add(linkLasts), want: http.StatusOK},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			link, err := previewLinkOf(folder, fixtures.PreviewSlug, key, day, testCase.lapses)
+			link, err := previewLinkOf(folder, testCase.post, key, day, testCase.lapses)
 			if err != nil {
-				test.Fatalf("previewLinkOf(%q) = %v, want a link", fixtures.PreviewSlug, err)
+				test.Fatalf("previewLinkOf(%+v) = %v, want a link", testCase.post, err)
 			}
 			address, err := url.Parse(link)
 			if err != nil {
@@ -184,26 +194,30 @@ const (
 // loads, and a version on the day it came out, a change of which is an edit of it. Each case runs on a folder of its
 // own.
 func TestARevisionIsTakenOfAPostOutAlone(test *testing.T) {
+	out := document.PostPage(postOut)
 	cases := []struct {
 		name    string
-		slug    string
+		post    document.Page
 		before  func(test *testing.T, folder string)
 		moment  time.Time
 		written bool
 	}{
-		{name: "a post out", slug: postOut, before: fixtures.KeepFolder, moment: fixtures.Day(), written: true},
-		{name: "a draft", slug: "notes-on-tools", before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
-		{name: "a preview", slug: fixtures.PreviewSlug, before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
-		{name: "no post", slug: "no-such-post", before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
-		{name: "its version taken already", slug: postOut, before: revisedOnTheDay, moment: fixtures.Day(), written: false},
-		{name: "on its version's day", slug: postOut, before: fixtures.KeepFolder, moment: fixtures.MomentOf(test, onTheVersionsDay), written: false},
+		{name: "a post out", post: out, before: fixtures.KeepFolder, moment: fixtures.Day(), written: true},
+		{name: "a translation out", post: out.InLanguage(fixtures.PreviewLanguage), before: fixtures.KeepFolder, moment: fixtures.Day(), written: true},
+		{name: "a draft", post: document.PostPage("notes-on-tools"), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "a preview", post: document.PostPage(fixtures.PreviewSlug), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "a translation previewed", post: document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "no post", post: document.PostPage("no-such-post"), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "a post in a language it has no translation in", post: document.PostPage("notes-on-tools").InLanguage(fixtures.PreviewLanguage), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "its version taken already", post: out, before: revisedOnTheDay, moment: fixtures.Day(), written: false},
+		{name: "on its version's day", post: out, before: fixtures.KeepFolder, moment: fixtures.MomentOf(test, onTheVersionsDay), written: false},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			folder := fixtures.PreviewedFolder(test)
 			testCase.before(test, folder)
-			if _, err := reviseAt(folder, testCase.slug, testCase.moment); (err == nil) != testCase.written {
-				test.Errorf("reviseAt(%q) at %s = %v, want a revision written: %t", testCase.slug, testCase.moment, err, testCase.written)
+			if _, err := reviseAt(folder, testCase.post, testCase.moment); (err == nil) != testCase.written {
+				test.Errorf("reviseAt(%+v) at %s = %v, want a revision written: %t", testCase.post, testCase.moment, err, testCase.written)
 			}
 		})
 	}
@@ -235,12 +249,12 @@ func TestARevisionThereAlreadyIsKept(test *testing.T) {
 // revisedOnTheDay takes a revision of the fixture's post out on the tests' day.
 func revisedOnTheDay(test *testing.T, folder string) {
 	test.Helper()
-	if written, err := reviseAt(folder, postOut, fixtures.Day()); err != nil || written != revisionTaken {
+	if written, err := reviseAt(folder, document.PostPage(postOut), fixtures.Day()); err != nil || written != revisionTaken {
 		test.Fatalf("reviseAt(%q) = %q, %v; want %q", postOut, written, err, revisionTaken)
 	}
 }
 
-// revise is written with the content folder and the post's slug, and nothing else.
+// revise is written with the content folder and the post's slug, and nothing else but the language of a translation.
 func TestReviseTakesAFolderAndASlugAlone(test *testing.T) {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	cases := []struct {
@@ -249,6 +263,8 @@ func TestReviseTakesAFolderAndASlugAlone(test *testing.T) {
 	}{
 		{name: "no slug", words: []string{folder}},
 		{name: "two slugs", words: []string{folder, postOut, postOut}},
+		{name: "a language with no tag", words: []string{folder, postOut, "--language"}},
+		{name: "a flag revise takes not", words: []string{"--lasts", "1h", folder, postOut}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

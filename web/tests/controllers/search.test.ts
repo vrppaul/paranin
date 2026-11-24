@@ -10,6 +10,9 @@ const FIELD = '[data-part="command-field"]';
 const COLON_MARK = '[data-part="command-mark"]';
 const SLASH_MARK = '[data-part="search-mark"]';
 const SAID = '[data-part="command-said"]';
+// words a page marks as English, whatever its own language, and the names the field is labelled by in each mode
+const ENGLISH = '[lang="en"]';
+const FIELD_NAMES = '[data-part="command-name"], [data-part="search-name"]';
 const COMMAND_KEYS = '[data-part="command-keys"]';
 const SEARCH_KEYS = '[data-part="search-keys"]';
 const COUNT = '[data-part="search-count"]';
@@ -63,6 +66,12 @@ function said(): string | null {
   return found(LINE).hidden || found(SAID).hidden ? null : found(SAID).textContent;
 }
 
+/** The name a screen reader gives a field: the words of the element that labels it, among the field's names. */
+function nameOf(field: HTMLElement): string | null | undefined {
+  const label = field.getAttribute("aria-labelledby");
+  return [...document.querySelectorAll(FIELD_NAMES)].find((name) => name.id === label)?.textContent;
+}
+
 test("the slash opens the line for a search: its mark and its keys, the field named for it and holding the keys", () => {
   started();
   // a place chosen on the colon's menu first, which the search's field must not go on naming
@@ -78,7 +87,7 @@ test("the slash opens the line for a search: its mark and its keys, the field na
     searchKeys: !found(SEARCH_KEYS).hidden,
     commandKeys: !found(COMMAND_KEYS).hidden,
     role: field.getAttribute("role"),
-    name: field.getAttribute("aria-label"),
+    name: nameOf(field),
     describedBy: field.getAttribute("aria-describedby"),
     menu: [
       field.getAttribute("aria-activedescendant"),
@@ -152,6 +161,16 @@ test("a search never joins the words of two blocks, however close the markup set
   started(true, (page) => found(ROLE_HEADING, page).append(found(ROLE_PLACE, page)));
   searched(ACROSS_BLOCKS);
   expect(said()).toBe(`E486: Pattern not found: ${ACROSS_BLOCKS}`);
+});
+
+test("the line says Neovim's own words in English, and what the reader typed in the page's own language", () => {
+  started();
+  searched(NOWHERE);
+  const english = [...found(SAID).querySelectorAll(ENGLISH)].map((words) => words.textContent).join("");
+  expect({ english, whole: said() }).toEqual({
+    english: "E486: Pattern not found: ",
+    whole: `E486: Pattern not found: ${NOWHERE}`,
+  });
 });
 
 test("Enter keeps the search, the line saying which match the page shows until the next key, the marks staying", () => {
@@ -374,6 +393,6 @@ test("the colon after a search opens the line for a place, its own mark, keys an
     commandKeys: !found(COMMAND_KEYS).hidden,
     searchKeys: !found(SEARCH_KEYS).hidden,
     role: field.getAttribute("role"),
-    name: field.getAttribute("aria-label"),
+    name: nameOf(field),
   }).toEqual({ colon: true, slash: false, commandKeys: true, searchKeys: false, role: "combobox", name: "command" });
 });

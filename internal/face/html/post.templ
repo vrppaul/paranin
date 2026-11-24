@@ -62,7 +62,8 @@ templ (writer PageWriter) outline(headings []outlined) {
 // postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
 // style, in one column; beside them, in the sources' column, its facts: the version read, by its day, the pick of its
 // versions, an older one saying under it that a newer stands, or a draft's by the site's word for one, its series'
-// pick, and its tags; the corners' crosses round it, as round the résumé's first screen.
+// pick, the Switch of the languages it is read in, and its tags; the corners' crosses round it, as round the résumé's
+// first screen.
 templ (writer PageWriter) postHead(head document.Head) {
 	<header class="post-head">
 		<div class="post-intro">
@@ -98,6 +99,12 @@ templ (writer PageWriter) postHead(head document.Head) {
 					@writer.seriesPick(writer.headPick(*head.Post.Series))
 				</dd>
 			}
+			if len(head.Languages) > 0 {
+				<dt>{ writer.frame.postLabels.Language }</dt>
+				<dd>
+					@writer.languageSwitch(head.Languages)
+				</dd>
+			}
 			if len(head.Filters) > 0 {
 				<dt>{ writer.frame.postLabels.Tags }</dt>
 				<dd>
@@ -107,6 +114,24 @@ templ (writer PageWriter) postHead(head document.Head) {
 		</dl>
 		@corners()
 	</header>
+}
+
+// languageSwitch is the Switch of the languages a post is read in (DESIGN.md, Switch): each language by its name for
+// itself, written in it, a link to the post in it, the one read current.
+templ (writer PageWriter) languageSwitch(languages []document.Language) {
+	<span class="switch">
+		for _, language := range languages {
+			<a
+				class="switch-way"
+				href={ writer.frame.site.Reference(language.Page, routes.FormatChosen) }
+				hreflang={ language.Tag }
+				lang={ language.Tag }
+				if language.Read {
+					aria-current={ currentPage }
+				}
+			>{ language.Name }</a>
+		}
+	</span>
 }
 
 // day is a post's day as a time: as a reader reads it, and as a machine does.
@@ -177,7 +202,7 @@ templ (writer PageWriter) newer(older document.VersionOlder) {
 
 // pickClose is the button that closes a pick's window, by the window's id: Esc's cap, then the word.
 templ pickClose(window string) {
-	<button type="button" class="hint-close" popovertarget={ window } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
+	<button type="button" class="hint-close" lang={ frameLanguage } popovertarget={ window } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
 }
 
 // tags are a tile's tags, words of the tile (DESIGN.md, Tag), each its word after a hash a screen reader skips.

@@ -204,6 +204,9 @@ func (layout layout) postFacts(head document.Head) []line {
 		partOf := layout.siteWords.SeriesWords.PartOf(series.Reading(), len(series.Parts))
 		facts = append(facts, postFact{label: labels.Series, value: append(layout.words(series.Title, kindText), textWords(partOf, kindMuted)...)})
 	}
+	if len(head.Languages) > 0 {
+		facts = append(facts, postFact{label: labels.Language, value: layout.languageWords(head.Languages)})
+	}
 	if len(head.Filters) > 0 {
 		tags := []word{}
 		for _, filter := range head.Filters {
@@ -220,6 +223,15 @@ func (layout layout) postFacts(head document.Head) []line {
 		lines = append(lines, layout.continued(line{gapRun(0), plainRun(padded(fact.label, column), kindMuted)}, fact.value, column)...)
 	}
 	return lines
+}
+
+// languageWords are a post's languages as its head lists them, a dot between two, each other a link to its web page.
+func (layout layout) languageWords(languages []document.Language) []word {
+	words := []word{}
+	for _, language := range languages {
+		words = markedWords(words, layout.words(language.Spans(), kindText), placeMark)
+	}
+	return words
 }
 
 // newerWords are what an older version of a post says under its day of the newer one that stands over it (DESIGN.md,

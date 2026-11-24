@@ -19,6 +19,12 @@ const (
 	wordsFile           = "i18n/en.yaml"
 	experienceWord      = "experience: Experience"
 	experienceAsTheBlog = "experience: Blog"
+	// a post slugged, the experience retitled and the project slugged, as the preview's folder is named
+	previewSluggedPostFile = "posts/preview/post.en.md"
+	experienceAsThePreview = "experience: Preview"
+	profileFile            = "profile.yaml"
+	projectSlug            = "slug: tidy-tool"
+	projectAsThePreview    = "slug: preview"
 )
 
 // A part slugged as a heading of the fixture's post, dated after the tests' day: its file and its text; and how the
@@ -45,6 +51,14 @@ const (
 	samplePostBodyLine  = 8
 )
 
+// A translation a case writes, the fixture's and one beside a post of its own; the line its body opens on, after its
+// front matter; and a path no page takes
+const (
+	sharedTranslationFile = "posts/series/post.ru.md"
+	translationBodyLine   = 7
+	nowhere               = "/nowhere"
+)
+
 // No two pages of the site share an address in any format: a post slugged as the address the blog's list by series
 // takes, a draft, a preview or one out later among them, or a tab of the résumé titled as the blog, whose address the
 // list by year takes, is found at every address it shares; content whose pages each have their own is found to share
@@ -58,9 +72,20 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 		{name: "the fixture", change: fixtures.KeepFolder, want: []string{}},
 		{name: "a post slugged as the list by series", change: postSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a draft slugged as the list by series", change: draftSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
+		{
+			name: "a translation slugged as the list by series", change: translationSluggedSeries,
+			want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt", "/ru/blog/series", "/ru/blog/series.md", "/ru/blog/series.txt"},
+		},
+		{
+			name: "a translation previewed, slugged as the list by series", change: translationPreviewSluggedSeries,
+			want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt", "/ru/blog/series", "/ru/blog/series.md", "/ru/blog/series.txt"},
+		},
 		{name: "a post out later slugged as the list by series", change: laterPostSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a preview slugged as the list by series", change: previewSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a tab of the résumé titled as the blog", change: tabTitledBlog, want: []string{"/blog", "/blog.md", "/blog.txt"}},
+		{name: "a post slugged as the preview's folder", change: postSluggedPreview, want: []string{"/blog/preview/"}},
+		{name: "a project slugged as the preview's folder", change: projectSluggedPreview, want: []string{"/p/preview/", "/p/preview/why/"}},
+		{name: "a tab of the résumé titled as the preview's folder", change: tabTitledPreview, want: []string{"/preview/"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -112,6 +137,15 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "an older version and its heading", body: "[a](/blog/reading-slowly/2026-11-10) [b](/blog/reading-slowly/2026-11-10#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "the blog's feed and a series'", body: "[a](/blog.atom) [b](/blog/series/reading.atom)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{
+			name: "a translation, its heading, and its language's list and feed", body: "[a](/ru/blog/reading-slowly) [b](/ru/blog/reading-slowly#потом) [c](/ru/blog) [d](/ru/blog.atom)",
+			change: fixtures.KeepFolder, want: []faultSpot{},
+		},
+		{name: "a heading of the original its translation has not", body: "[a](/ru/blog/reading-slowly#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a post in a language it has no translation in", body: "[a](/ru/blog/notes-on-tools)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a translation's link to no page", body: "[a](/)", change: translationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
+		{name: "a draft translation's link to no page", body: "[a](/)", change: draftTranslationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
+		{name: "a translation preview's link to no page", body: "[a](/)", change: previewTranslationLinkingNowhere, want: []faultSpot{{file: translationFile, line: translationBodyLine}}},
 		{name: "a section of a feed", body: "[a](/blog.atom#reading)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a revision's link to no page", body: "Its text.", change: revisionLinkingNowhere, want: []faultSpot{{file: sampleRevisionFile, line: sampleRevisionLine}}},
 		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
@@ -173,6 +207,45 @@ func postSluggedSeries(test *testing.T, folder string) {
 	fixtures.WriteIn(test, folder, sharedPostFile, sharedPostText)
 }
 
+// translationSluggedSeries writes a post and its translation whose folder bears the name the list by series takes.
+func translationSluggedSeries(test *testing.T, folder string) {
+	postSluggedSeries(test, folder)
+	fixtures.WriteIn(test, folder, sharedTranslationFile, translationLinkingTo(publishedStatus, "/"))
+}
+
+// translationLinkingNowhere writes the fixture's translation, published, with a link to no page.
+//
+//wrapper:a case of the table names the change it writes
+func translationLinkingNowhere(test *testing.T, folder string) {
+	fixtures.WriteIn(test, folder, translationFile, translationLinkingTo(publishedStatus, nowhere))
+}
+
+// draftTranslationLinkingNowhere writes the fixture's translation, a draft, with a link to no page.
+//
+//wrapper:a case of the table names the change it writes
+func draftTranslationLinkingNowhere(test *testing.T, folder string) {
+	fixtures.WriteIn(test, folder, translationFile, translationLinkingTo(draftStatus, nowhere))
+}
+
+// previewTranslationLinkingNowhere writes the fixture's translation, a preview, with a link to no page.
+//
+//wrapper:a case of the table names the change it writes
+func previewTranslationLinkingNowhere(test *testing.T, folder string) {
+	fixtures.WriteIn(test, folder, translationFile, translationLinkingTo(previewStatus, nowhere))
+}
+
+// translationPreviewSluggedSeries writes a post and its translation, a preview, whose folder bears the name the list by
+// series takes.
+func translationPreviewSluggedSeries(test *testing.T, folder string) {
+	postSluggedSeries(test, folder)
+	fixtures.WriteIn(test, folder, sharedTranslationFile, translationLinkingTo(previewStatus, "/"))
+}
+
+// translationLinkingTo is a translation's text of a status whose body is a link to a path, on translationBodyLine.
+func translationLinkingTo(status, path string) string {
+	return "---\ntitle: Перевод\ndescription: О нём.\n" + status + "\npublished: 2026-11-15T10:00+03:00\n---\n[a](" + path + ")\n"
+}
+
 // draftSluggedSeries writes a draft whose folder bears the name the list by series takes in the blog's folder.
 func draftSluggedSeries(test *testing.T, folder string) {
 	postSluggedSeries(test, folder)
@@ -191,6 +264,27 @@ func laterPostSluggedSeries(test *testing.T, folder string) {
 //wrapper:a case of the table names the change it writes
 func tabTitledBlog(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, wordsFile, experienceWord, experienceAsTheBlog)
+}
+
+// postSluggedPreview writes a post whose folder, where its pictures and versions stand, bears the preview's name.
+//
+//wrapper:a case of the table names the change it writes
+func postSluggedPreview(test *testing.T, folder string) {
+	fixtures.WriteIn(test, folder, previewSluggedPostFile, sharedPostText)
+}
+
+// projectSluggedPreview slugs the fixture's project as the preview's folder is named, so its tabs would stand in one.
+//
+//wrapper:a case of the table names the change it writes
+func projectSluggedPreview(test *testing.T, folder string) {
+	fixtures.ReplaceIn(test, folder, profileFile, projectSlug, projectAsThePreview)
+}
+
+// tabTitledPreview titles the résumé's experience as the preview's folder, so its tab's folder would be one.
+//
+//wrapper:a case of the table names the change it writes
+func tabTitledPreview(test *testing.T, folder string) {
+	fixtures.ReplaceIn(test, folder, wordsFile, experienceWord, experienceAsThePreview)
 }
 
 // fixturePostDrafted turns the fixture's published post to a draft, which the site serves at no address.

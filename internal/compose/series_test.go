@@ -203,9 +203,9 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 		{Name: "afterwards", Kind: document.PlaceHeading, Page: read, Section: "afterwards"},
 		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
 		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
-		{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: document.OlderVersion(fixturePostSlug, fixtureRevisionDay), Section: ""},
+		{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay), Section: ""},
 	}
-	if got := document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
+	if got := document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
 		test.Errorf("the post's places = %+v, want %+v", got, want)
 	}
 }
@@ -235,7 +235,7 @@ func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withPostsAndSeries(test, []writtenPost{testCase.part}, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
 			got := []string{}
-			for _, place := range document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)) {
+			for _, place := range document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug)) {
 				got = append(got, place.Name)
 			}
 			if !reflect.DeepEqual(got, testCase.want) {
@@ -378,8 +378,8 @@ func withPostsAndSeries(test *testing.T, posts []writtenPost, series []writtenSe
 
 // postsAndPreviews are the posts a site serves at their addresses, then those it serves at their preview links alone.
 func postsAndPreviews(site Site) []document.Document {
-	documents := slices.Clone(site.Posts)
-	for _, previewed := range site.Previews {
+	documents := slices.Clone(site.Own.Posts)
+	for _, previewed := range site.Own.Previews {
 		documents = append(documents, previewed.Post)
 	}
 	return documents

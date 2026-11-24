@@ -85,7 +85,7 @@ func Atom(feed compose.Feed, site routes.Site, bodies BodyWriter) string {
 	for _, post := range feed.Posts {
 		head := post.Document.Head
 		entries = append(entries, atomEntry{
-			ID:        site.TagURI(routes.NumberPath(head.Number)),
+			ID:        site.TagURI(routes.NumberPath(head.Page.Translation, head.Number)),
 			Title:     document.PlainText(head.Title),
 			Link:      atomLink{Relation: alternateRelation, MediaType: routes.PageType, Address: site.Address(head.Page, routes.FormatChosen)},
 			Published: post.Published.Format(momentLayout),

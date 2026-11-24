@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Медленное чтение</title>
+<link rel="icon" href="/favicon.ico" type="image/vnd.microsoft.icon" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" type="image/png">
+<link rel="stylesheet" href="/assets/site-fixture.css">
+<link rel="stylesheet" href="/assets/base-fixture.css">
+<link rel="stylesheet" href="/assets/shared-fixture.css">
+<script type="module" src="/assets/site-fixture.js" blocking="render">
+</script>
+<link rel="modulepreload" href="/assets/base-fixture.js">
+<link rel="modulepreload" href="/assets/shared-fixture.js">
+<meta name="description" content="Почему страницу, прочитанную дважды, читают один раз.">
+<link rel="canonical" href="https://example.test/ru/blog/reading-slowly">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="example.test">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="Медленное чтение">
+<meta property="og:description" content="Почему страницу, прочитанную дважды, читают один раз.">
+<meta property="og:url" content="https://example.test/ru/blog/reading-slowly">
+<link rel="alternate" hreflang="en" href="https://example.test/blog/reading-slowly">
+<link rel="alternate" hreflang="ru" href="https://example.test/ru/blog/reading-slowly">
+<link rel="alternate" hreflang="x-default" href="https://example.test/blog/reading-slowly">
+<link rel="alternate" type="text/markdown" href="/ru/blog/reading-slowly.md">
+<link rel="alternate" type="application/atom+xml" title="Reading — Блог: Mira Example" href="/ru/blog/series/reading.atom">
+<link rel="alternate" type="application/atom+xml" title="Блог: Mira Example" href="/ru/blog.atom">
+</head>
+<body>
+<main class="content-width">
+<article class="post">
+<header class="post-head">
+<div class="post-intro">
+<h1 class="post-title">Медленное чтение</h1>
+<p class="lead">Почему страницу, прочитанную дважды, читают один раз.</p>
+</div>
+<dl class="facts post-facts">
+<dt>версия</dt>
+<dd>
+<button type="button" class="version-pick" popovertarget="_versions">
+<time datetime="2026-11-15">15 Nov 2026</time> <span class="pick-mark" aria-hidden="true">▾</span>
+</button>
+<div id="_versions" class="pick" popover role="dialog" aria-labelledby="_versions-title">
+<p id="_versions-title" class="pick-title">версии</p>
+<ol class="pick-parts">
+<li class="pick-part version-read" aria-current="page">
+<span class="pick-row version-row">
+<time datetime="2026-11-15">15 Nov 2026</time> <span class="version-state">текущая</span>
+</span>
+</li>
+</ol>
+<button type="button" class="hint-close" lang="en" popovertarget="_versions" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+</dd>
+<dt>серия</dt>
+<dd>
+<button type="button" class="way-chip series-pick" popovertarget="_parts">Reading <span class="series-count">1 из 2</span> <span class="pick-mark" aria-hidden="true">▾</span>
+</button>
+<div id="_parts" class="pick" popover role="dialog" aria-labelledby="_parts-title">
+<p id="_parts-title" class="pick-title">Reading</p>
+<ol class="pick-parts">
+<li class="pick-part part-reading" aria-current="page">
+<span class="pick-row">
+<span class="part-number">1</span> <span class="part-title">Медленное чтение</span> <span class="part-state">читаете</span>
+</span>
+</li>
+<li class="pick-part part-to-come">
+<span class="pick-row">
+<span class="part-number">2</span> <span class="part-title">Reading aloud</span> <span class="part-state">скоро</span>
+</span>
+</li>
+</ol>
+<button type="button" class="hint-close" lang="en" popovertarget="_parts" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+</dd>
+<dt>язык</dt>
+<dd>
+<span class="switch">
+<a class="switch-way" href="/blog/reading-slowly" hreflang="en" lang="en">English</a>
+<a class="switch-way" href="/ru/blog/reading-slowly" hreflang="ru" lang="ru" aria-current="page">Русский</a>
+</span>
+</dd>
+<dt>теги</dt>
+<dd>
+<ul class="tags">
+<li>
+<a class="tag" href="/ru/blog?tag=reading">
+<span class="tag-mark" aria-hidden="true">#</span>reading</a>
+</li>
+<li>
+<a class="tag" href="/ru/blog?tag=terminals">
+<span class="tag-mark" aria-hidden="true">#</span>terminals</a>
+</li>
+</ul>
+</dd>
+</dl>
+<svg class="cross cross-top cross-left" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-top cross-right" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-bottom cross-left" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+<svg class="cross cross-bottom cross-right" viewBox="0 0 16 16" aria-hidden="true">
+<path class="mark-line" d="M8 0V16M0 8H16">
+</path>
+</svg>
+</header>
+<nav class="outline" aria-label="содержание" data-part="outline">
+<ol class="outline-headings">
+<li>
+<a href="#что-остаётся-у-читателя" data-part="outline-link">Что остаётся у читателя</a>
+</li>
+<li>
+<a href="#потом" data-part="outline-link">Потом</a>
+</li>
+</ol>
+</nav>
+<div class="article">
+<a class="paragraph-number" href="#_p1">1</a>
+<p id="_p1">Страницу, прочитанную дважды, читают один раз, если в первый раз читали <em>медленно</em>.</p>
+<section class="article-section">
+<h2 data-part="outline-heading" id="что-остаётся-у-читателя">Что остаётся у читателя</h2>
+<a class="paragraph-number" href="#_p2">2</a>
+<p id="_p2">Поля и заметки на них.</p>
+<figure>
+<img src="/ru/blog/reading-slowly/margin.png" alt="Поля с пометками" width="16" height="8" loading="lazy" decoding="async"> <figcaption>Поля, где медленный читатель отвечает.</figcaption>
+</figure>
+</section>
+<section class="article-section">
+<h2 data-part="outline-heading" id="потом">Потом</h2>
+<a class="paragraph-number" href="#_p3">3</a>
+<p id="_p3">Страница, которую сохранили, <a href="/ru/blog/reading-slowly#что-остаётся-у-читателя">читают снова</a>.</p>
+</section>
+</div>
+<footer class="panes-foot">
+<div class="panes-heading">
+<h2 id="_more" class="panes-title">Другие части: Reading</h2>
+<button type="button" class="way-chip series-pick" popovertarget="_parts-foot">все 2 частей <span class="pick-mark" aria-hidden="true">▾</span>
+</button>
+<div id="_parts-foot" class="pick" popover role="dialog" aria-labelledby="_parts-foot-title">
+<p id="_parts-foot-title" class="pick-title">Reading</p>
+<ol class="pick-parts">
+<li class="pick-part part-reading" aria-current="page">
+<span class="pick-row">
+<span class="part-number">1</span> <span class="part-title">Медленное чтение</span> <span class="part-state">читаете</span>
+</span>
+</li>
+<li class="pick-part part-to-come">
+<span class="pick-row">
+<span class="part-number">2</span> <span class="part-title">Reading aloud</span> <span class="part-state">скоро</span>
+</span>
+</li>
+</ol>
+<button type="button" class="hint-close" lang="en" popovertarget="_parts-foot" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+</div>
+<nav class="panes" aria-labelledby="_more">
+<div class="pane pane-none">
+<span class="pane-name">раньше</span> <span class="pane-words">нет: это первая часть</span>
+</div>
+<div class="pane pane-after">
+<span class="pane-name">часть 2</span> <span class="pane-title pane-to-come">Reading aloud <span class="pane-soon">скоро</span>
+</span>
+</div>
+</nav>
+<p class="discussions">
+<span class="discuss">обсуждение</span> <a href="https://lobsters.example.test/s/slow">Lobsters</a>
+</p>
+</footer>
+</article>
+</main>
+<div class="foot" data-part="foot">
+<div class="command-line content-width" data-part="command-line" hidden>
+<div class="command-entry" data-part="command-entry">
+<span id="_places-name" lang="en" hidden>places</span>
+<ul id="_places" class="places-menu" role="listbox" aria-labelledby="_places-name" data-part="places" hidden>
+<li id="_place-1" class="places-item" role="option" aria-selected="false" data-part="place" data-place="tab" data-name="посты" data-address="/ru/blog" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">посты</span>
+</span> <span class="places-kind" lang="en">tab</span>
+</li>
+<li id="_place-2" class="places-item" role="option" aria-selected="false" data-part="place" data-place="tab" data-name="reading-slowly" data-address="/ru/blog/reading-slowly" data-current hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">reading-slowly</span>
+</span> <span class="places-kind" lang="en">tab</span>
+</li>
+<li id="_place-3" class="places-item" role="option" aria-selected="false" data-part="place" data-place="heading" data-name="что-остаётся-у-читателя" data-address="/ru/blog/reading-slowly#что-остаётся-у-читателя" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">что-остаётся-у-читателя</span>
+</span> <span class="places-kind" lang="en">heading</span>
+</li>
+<li id="_place-4" class="places-item" role="option" aria-selected="false" data-part="place" data-place="heading" data-name="потом" data-address="/ru/blog/reading-slowly#потом" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">потом</span>
+</span> <span class="places-kind" lang="en">heading</span>
+</li>
+<li id="_place-5" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">tidy-tool</span>
+</span> <span class="places-kind" lang="en">project</span>
+</li>
+<li id="_place-6" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" data-edit hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">tidy-tool</span>
+</span> <span class="places-kind" lang="en">project</span>
+</li>
+<li id="_place-7" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="ru/blog" data-address="/ru/blog" data-edit hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">ru/blog</span>
+</span> <span class="places-kind" lang="en">list</span>
+</li>
+<li id="_place-8" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="ru/blog/series" data-address="/ru/blog/series" data-edit hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">ru/blog/series</span>
+</span> <span class="places-kind" lang="en">list</span>
+</li>
+<li id="_place-9" class="places-item" role="option" aria-selected="false" data-part="place" data-place="post" data-name="ru/blog/reading-slowly" data-address="/ru/blog/reading-slowly" data-current data-edit hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">ru/blog/reading-slowly</span>
+</span> <span class="places-kind" lang="en">post</span>
+</li>
+</ul>
+<span class="command-mark" aria-hidden="true" data-part="command-mark">:</span>
+<span class="command-mark" aria-hidden="true" data-part="search-mark" hidden>/</span>
+<span id="_command-name" lang="en" data-part="command-name" hidden>command</span>
+<span id="_search-name" lang="en" data-part="search-name" hidden>search</span>
+<input id="_command-field" class="command-field" type="text" role="combobox" aria-labelledby="_command-name" aria-controls="_places" aria-expanded="false" aria-autocomplete="list" aria-describedby="_command-keys" autocomplete="off" autocapitalize="off" spellcheck="false" data-part="command-field" data-search-label="_search-name" data-folder="blog/" data-folder-address="/blog/">
+</div>
+<p class="command-said" role="alert" data-part="command-said" hidden>
+</p>
+<span id="_command-keys" class="command-keys" lang="en" data-part="command-keys">
+<span class="command-hint" data-part="command-next">
+<kbd class="command-key">tab</kbd> next</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> go</span>
+<span class="command-hint">
+<kbd class="command-key">esc</kbd> cancel</span>
+</span> <span id="_search-keys" class="command-keys" lang="en" data-part="search-keys" hidden>
+<span class="command-count" data-part="search-count">
+</span>
+<span class="command-hint">
+<kbd class="command-key">↵</kbd> find</span>
+<span class="command-hint">
+<kbd class="command-key">esc</kbd> cancel</span>
+</span>
+</div>
+<nav class="foot-row content-width">
+<span class="sessions">
+<a class="session session-other" href="/">
+<span aria-hidden="true">[</span>example.test<span aria-hidden="true">]</span>
+</a>
+<a class="session" href="/ru/blog">
+<span aria-hidden="true">[</span>блог<span aria-hidden="true">]</span>
+</a>
+</span> <ul class="windows">
+<li>
+<a class="window" href="/ru/blog">
+<span class="window-number">1:</span>посты</a>
+</li>
+<li>
+<a class="window" href="/ru/blog/reading-slowly" aria-current="page">
+<span class="window-number">2:</span>reading-slowly</a>
+</li>
+</ul>
+<div class="ways">
+<button type="button" class="way-chip" popovertarget="_hint-ssh">
+<span class="way-mark" aria-hidden="true">❯</span>ssh</button>
+<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint">
+<p id="_hint-ssh-title" class="hint-title">ssh</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code> <button type="button" class="command-copy" data-part="copy" aria-label="копировать ssh example.test" data-copied="скопировано" data-toast="Скопировано: ssh example.test" hidden>копировать</button>
+</div>
+<p class="hint-gives">Резюме как приложение в терминале.</p>
+<button type="button" class="hint-close" lang="en" popovertarget="_hint-ssh" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+<button type="button" class="way-chip" popovertarget="_hint-curl">
+<span class="way-mark" aria-hidden="true">❯</span>curl</button>
+<div id="_hint-curl" class="hint" popover role="dialog" aria-labelledby="_hint-curl-title" data-part="hint">
+<p id="_hint-curl-title" class="hint-title">curl</p>
+<div class="command" data-part="command">
+<span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">curl https://example.test/ru/blog/reading-slowly</code> <button type="button" class="command-copy" data-part="copy" aria-label="копировать curl https://example.test/ru/blog/reading-slowly" data-copied="скопировано" data-toast="Скопировано: curl https://example.test/ru/blog/reading-slowly" hidden>копировать</button>
+</div>
+<p class="hint-gives">Страница как справка в терминале.</p>
+<button type="button" class="hint-close" lang="en" popovertarget="_hint-curl" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
+<a class="way-chip" href="/ru/blog/reading-slowly.md">reading-slowly.md</a>
+</div>
+<label class="vim-keys" lang="en" data-part="vim-keys" hidden>
+<input type="checkbox" class="vim-keys-box">
+<span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick">
+</span>]</span>vim keys</label>
+<span class="theme" data-part="theme" hidden>
+<button type="button" class="theme-button" aria-pressed="false" aria-labelledby="_theme-name">
+<svg class="mark" viewBox="0 0 16 16" aria-hidden="true">
+<circle class="mark-line" cx="8" cy="8" r="6.5" stroke-width="1.5">
+</circle> <path class="mark-fill" d="M8 1.5a6.5 6.5 0 0 1 0 13z">
+</path>
+</svg>
+</button> <span id="_theme-name" class="tooltip" data-part="tooltip">Тёмная тема</span>
+</span>
+</nav>
+<div role="status">
+<p class="toast" data-part="toast" hidden>
+<span class="toast-mark" aria-hidden="true">✓</span>
+<span data-part="toast-words">
+</span>
+<template data-part="toast-word">
+<span class="toast-word">
+</span>
+</template>
+</p>
+</div>
+</div>
+</body>
+</html>

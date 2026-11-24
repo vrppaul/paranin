@@ -1,0 +1,27 @@
+READING-SLOWLY(1)               User Commands                READING-SLOWLY(1)
+
+NAME
+       Медленное чтение
+
+DESCRIPTION
+       Почему страницу, прочитанную дважды, читают один раз.
+
+       English <https://example.test/blog/reading-slowly.txt> · Русский
+
+       reading · terminals
+
+       Страницу, прочитанную дважды, читают один раз, если в первый раз читали
+       медленно.
+
+ЧТО ОСТАЁТСЯ У ЧИТАТЕЛЯ
+       Поля и заметки на них.
+
+       Поля с пометками
+       <https://example.test/ru/blog/reading-slowly/margin.png>
+       Поля, где медленный читатель отвечает.
+
+ПОТОМ
+       Страница, которую сохранили, читают снова
+       <https://example.test/ru/blog/reading-slowly.txt>.
+
+example.test                      2026-11-15                 READING-SLOWLY(1)

@@ -56,10 +56,10 @@ func readSeries(folder fs.FS) ([]writtenSeries, Faults, Faults) {
 }
 
 // inspectSeries checks every series by itself, and that its parts are posts, each in one series alone.
-func inspectSeries(series []writtenSeries, posts []writtenPost) Faults {
+func inspectSeries(series []writtenSeries, posts []writtenFolder) Faults {
 	slugs := map[string]bool{}
 	for _, written := range posts {
-		slugs[written.post.Slug] = true
+		slugs[written.slug] = true
 	}
 	seriesOfPost := map[string]string{}
 	faults := Faults{}

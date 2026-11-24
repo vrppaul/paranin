@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestAPostsRevisionsLoadOldestFirstWithTheirOwnText(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Load = %v, want no error", err)
 	}
-	post := postNamed(test, snapshot, fixturePostSlug)
+	post := postNamed(test, snapshot, "", fixturePostSlug)
 	got := []revisionFields{}
 	for _, revision := range post.Revisions {
 		got = append(got, revisionFields{
@@ -80,7 +81,9 @@ func TestEveryFaultOfARevisionStandsAtItsPlace(test *testing.T) {
 		{name: "a day after the current version's", file: "posts/reading-slowly/revisions/2026-11-13.en.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/2026-11-13.en.md", field: "", line: 0}},
 		{name: "a name of no day", file: "posts/reading-slowly/revisions/first.en.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/first.en.md", field: "", line: 0}},
 		{name: "a day of no calendar", file: "posts/reading-slowly/revisions/2026-11-31.en.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/2026-11-31.en.md", field: "", line: 0}},
-		{name: "a translation's revision", file: "posts/reading-slowly/revisions/2026-11-11.ru.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/2026-11-11.ru.md", field: "", line: 0}},
+		{name: "a revision in a language of no words", file: "posts/reading-slowly/revisions/2026-11-11.de.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/2026-11-11.de.md", field: "", line: 0}},
+		{name: "a revision in a language the post is not in", file: "posts/notes-on-tools/revisions/2026-11-11.ru.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/notes-on-tools/revisions/2026-11-11.ru.md", field: "", line: 0}},
+		{name: "a translation's revision before the translation", file: "posts/reading-slowly/revisions/2026-11-11.ru.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/2026-11-11.ru.md", field: "", line: 0}},
 		{name: "a folder among the revisions", file: "posts/reading-slowly/revisions/old/2026-11-11.en.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/reading-slowly/revisions/old", field: "", line: 0}},
 	}
 	for _, testCase := range cases {
@@ -112,7 +115,7 @@ func TestAPictureARevisionAloneShowsIsAPartOfItsPost(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Load with a picture a revision alone shows = %v, want no error", err)
 	}
-	if _, isShown := postNamed(test, snapshot, fixturePostSlug).Pictures["earlier.png"]; !isShown {
+	if _, isShown := postNamed(test, snapshot, "", fixturePostSlug).Pictures["earlier.png"]; !isShown {
 		test.Errorf("the pictures of %s hold no earlier.png, which its revision shows", fixturePostSlug)
 	}
 }
@@ -135,7 +138,7 @@ func TestAPostsVersionIsDatedByItsLastChange(test *testing.T) {
 			if err != nil {
 				test.Fatalf("Load = %v, want no error", err)
 			}
-			day := postNamed(test, snapshot, samplePostSlug).VersionDay()
+			day := postNamed(test, snapshot, "", samplePostSlug).VersionDay()
 			if got := []string{day.Written(), day.Start().Format(time.DateOnly)}; !slices.Equal(got, []string{testCase.want, testCase.want}) {
 				test.Errorf("the version's day with %q = %q, want %q", testCase.dates, got, testCase.want)
 			}
@@ -171,7 +174,7 @@ func TestARevisionTakenHoldsThePostsVersion(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Load = %v, want no error", err)
 	}
-	taken, err := RevisionOf(postNamed(test, snapshot, fixturePostSlug), momentOf(test, dayAfterTheVersion))
+	taken, err := RevisionOf(postNamed(test, snapshot, "", fixturePostSlug), momentOf(test, dayAfterTheVersion))
 	if err != nil {
 		test.Fatalf("RevisionOf(%s) = %v, want a revision", fixturePostSlug, err)
 	}
@@ -183,7 +186,7 @@ func TestARevisionTakenHoldsThePostsVersion(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Load with the revision taken = %v, want no error", err)
 	}
-	post := postNamed(test, revised, fixturePostSlug)
+	post := postNamed(test, revised, "", fixturePostSlug)
 	newest := post.Revisions[len(post.Revisions)-1]
 	got := revisionFields{Name: newest.Day.Written(), Day: newest.Day.Start().Format(time.DateOnly), Title: newest.Title, Description: newest.Description}
 	want := revisionFields{Name: "2026-11-12", Day: "2026-11-12", Title: post.Title, Description: post.Description}
@@ -212,6 +215,34 @@ func TestARevisionTakenHoldsThePostsVersion(test *testing.T) {
 	}
 }
 
+// A translation keeps revisions of its own, taken under its language's name and loaded with it alone, as the original
+// keeps its.
+func TestATranslationKeepsRevisionsOfItsOwn(test *testing.T) {
+	folder := fixtureFolder(test)
+	snapshot, err := Load(folder)
+	if err != nil {
+		test.Fatalf("Load = %v, want no error", err)
+	}
+	taken, err := RevisionOf(postNamed(test, snapshot, russian, fixturePostSlug), momentOf(test, dayAfterTheRewrite))
+	if want := "posts/reading-slowly/revisions/2026-11-15.ru.md"; err != nil || taken.Path != want {
+		test.Fatalf("RevisionOf the Russian %s = %q, %v; want it written at %q", fixturePostSlug, taken.Path, err, want)
+	}
+	folder = changedFile(test, writtenFile(folder, taken.Path, string(taken.Text)), translationFile, "status: published", "status: published\nupdated: 2026-11-18")
+	revised, err := Load(folder)
+	if err != nil {
+		test.Fatalf("Load with the Russian revision taken = %v, want no error", err)
+	}
+	names := map[string][]string{}
+	for _, translation := range []string{"", russian} {
+		for _, revision := range postNamed(test, revised, translation, fixturePostSlug).Revisions {
+			names[translation] = append(names[translation], revision.Day.Written())
+		}
+	}
+	if want := map[string][]string{"": {fixtureRevisionName}, russian: {"2026-11-15"}}; !reflect.DeepEqual(names, want) {
+		test.Errorf("the revisions of %s by language = %q, want %q", fixturePostSlug, names, want)
+	}
+}
+
 // A post's version is taken the day after it came out at the soonest, as the post's own zone counts the day: one
 // version a day, and a change on the version's own day an edit of it.
 func TestARevisionIsTakenTheDayAfterItsVersionAtTheSoonest(test *testing.T) {
@@ -230,7 +261,7 @@ func TestARevisionIsTakenTheDayAfterItsVersionAtTheSoonest(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if _, err := RevisionOf(postNamed(test, snapshot, fixturePostSlug), momentOf(test, testCase.moment)); !errors.Is(err, testCase.want) {
+			if _, err := RevisionOf(postNamed(test, snapshot, "", fixturePostSlug), momentOf(test, testCase.moment)); !errors.Is(err, testCase.want) {
 				test.Errorf("RevisionOf at %s = %v, want %v", testCase.moment, err, testCase.want)
 			}
 		})

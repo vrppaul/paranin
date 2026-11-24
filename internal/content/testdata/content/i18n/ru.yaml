@@ -1,0 +1,75 @@
+# The site's own words in Russian, for the tests: what every face shows beside a translated post's facts.
+
+about: Обо мне
+greeting: Привет, меня зовут
+experience: Опыт
+projects: Проекты
+skills: Навыки
+education: Образование
+languages: Языки
+contact: Контакты
+mail: почта
+ssh: ssh
+repository: репозиторий
+install: установка
+present: сейчас
+side: между делом
+learning: ещё учусь
+author: автор
+resume: Резюме
+health: здоровье
+dark_theme: Тёмная тема
+copy: копировать
+copied: скопировано
+copy_command: "копировать {}"
+copied_command: "Скопировано: {}"
+write_to: Написать мне
+ssh_gives: Резюме как приложение в терминале.
+reading_gives: Страница как справка в терминале.
+blog: блог
+version: версия
+draft: черновик
+tags: теги
+copy_code: "копировать блок кода {}"
+copied_code: Код скопирован
+series: серия
+part_of: "{} из {}"
+reading: читаете
+next: дальше
+soon: скоро
+other_parts: "Другие части: {}"
+all_parts: "все {} частей"
+part: "часть {}"
+previous: раньше
+older: старше
+newer: новее
+first_part: "нет: это первая часть"
+last_part: "нет: это последняя часть"
+first_post: "нет: это первый пост"
+newest_post: "нет: это самый новый пост"
+other_posts: Другие посты
+discuss: обсуждение
+contents: содержание
+blog_line: Что читает автор, и как.
+list_window: посты
+all_posts: все посты
+by: по
+years: годам
+outside_series: другие посты
+one_post: "{} пост"
+posts_count: "постов: {}"
+parts_out: "вышло {} из {}"
+grouped_list: "{} по {}"
+tag_filter: "посты с тегом {}"
+series_filter: "части серии {}"
+filter_way_out: "{}, показать все посты"
+versions: версии
+current: текущая
+version_read: читаете
+newer_version: "новее: {}"
+blog_feed: "Блог: {}"
+series_feed: "{} — {}"
+language: язык
+language_name: Русский
+locale: ru_RU
+series_grouping: сериям

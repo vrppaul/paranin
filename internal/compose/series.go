@@ -18,7 +18,10 @@ const firstPart = 1
 // came out and newest first, and their tags; every series in their names' order; each series by the slug of every post
 // it names; the filters of the list; and its feeds, and the posts each holds.
 type blog struct {
-	audience  Audience
+	audience Audience
+	// words are the site's words in the blog's language, and languages every language the blog is read in
+	words     content.Words
+	languages []language
 	posts     map[string]content.Post
 	served    []content.Post
 	previewed []content.Post
@@ -39,14 +42,14 @@ type listedPart struct {
 	post  *content.Post
 }
 
-// blogOf is the blog of a snapshot's posts and series, as an audience reads it.
-func blogOf(snapshot *content.Snapshot, audience Audience) blog {
+// blogOf is the blog of an edition's posts and the snapshot's series, as an audience reads it.
+func blogOf(snapshot *content.Snapshot, edition content.Edition, audience Audience) blog {
 	read := blog{
-		audience: audience, posts: map[string]content.Post{}, served: []content.Post{}, previewed: []content.Post{}, listed: []content.Post{},
-		newest: nil, tags: nil, series: snapshot.Series, seriesOf: map[string]content.Series{}, filters: nil, feeds: nil,
-		feedPosts: nil,
+		audience: audience, words: edition.Words, languages: nil, posts: map[string]content.Post{}, served: []content.Post{},
+		previewed: []content.Post{}, listed: []content.Post{}, newest: nil, tags: nil, series: snapshot.Series,
+		seriesOf: map[string]content.Series{}, filters: nil, feeds: nil, feedPosts: nil,
 	}
-	for _, post := range snapshot.Posts {
+	for _, post := range edition.Posts {
 		read.posts[post.Slug] = post
 		if audience.serves(post) {
 			read.served = append(read.served, post)
@@ -195,9 +198,9 @@ func partNumber(index int) int {
 	return index + firstPart
 }
 
-// postPage is a post's page, its current version's, by its slug.
+// postPage is a post's page, its current version's, by its slug, in the language it is written in.
 func postPage(post content.Post) document.Page {
-	return document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: "", Revision: ""}
+	return document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: "", Revision: "", Translation: post.Translation}
 }
 
 // discussionLinks are where a post is discussed, each a link to the thread by its site's name.

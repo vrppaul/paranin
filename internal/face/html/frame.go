@@ -26,17 +26,19 @@ const (
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
 // the site, which writes every address a page leads to and names the site, and where it begins, which the page of no
-// address leads to; the theme button's name; the words of
+// address leads to; the theme button's name; the locale Open Graph marks a page in; the words of
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
 // that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
 // blog's folder, by the name a terminal writes and by its address, where :e opens a post a page does not list;
 // the site's sessions, which the foot line names; the labels of a post's facts, the words of its versions, of its
-// series and of the panes at its foot, the name of its outline, and the words round the blog's list.
+// series and of the panes at its foot, the name of its outline, and the words round the blog's list. Each is in the
+// language of the pages it frames.
 type frame struct {
 	site          routes.Site
 	start         string
 	darkTheme     string
+	locale        string
 	copyWords     compose.CopyWords
 	ssh           compose.Way
 	readingGives  string
@@ -108,6 +110,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		site:          site,
 		start:         site.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
 		darkTheme:     composed.DarkTheme,
+		locale:        composed.Locale,
 		copyWords:     composed.CopyWords,
 		ssh:           composed.SSH,
 		readingGives:  composed.ReadingGives,
@@ -140,11 +143,11 @@ func (around frame) sessionsOf(page document.Page) []session {
 // own address, the page whole to read in a terminal and as markdown, and its command line going to the page's own
 // places too.
 func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []document.Place) footLine {
-	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: "", Revision: ""}
+	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: "", Revision: "", Translation: shown.Translation}
 	around := writer.frame
 	windows := []window{around.windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
 	for _, tab := range tabs.Rest {
-		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug, Revision: ""}
+		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug, Revision: "", Translation: shown.Translation}
 		windows = append(windows, around.windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
 	return footLineOf(around, around.sessionsOf(whole), windows, whole, own)

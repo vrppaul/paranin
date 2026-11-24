@@ -96,12 +96,12 @@ func withOwnPage(paths map[string]document.Target, page document.Page) map[strin
 
 // postHeads are the heads of the posts composedPosts makes and of their older versions olderDocuments makes, their
 // bodies left unread: where the site serves each version of each post.
-func postHeads(read blog, words content.Words) []document.Head {
+func postHeads(read blog) []document.Head {
 	heads := []document.Head{}
 	for _, post := range read.served {
-		heads = append(heads, postHead(currentOf(post), read, words))
+		heads = append(heads, postHead(currentOf(post), read))
 		for _, version := range read.olderVersionsOf(post) {
-			heads = append(heads, postHead(version, read, words))
+			heads = append(heads, postHead(version, read))
 		}
 	}
 	return heads
@@ -113,7 +113,7 @@ func postHeads(read blog, words content.Words) []document.Head {
 // the feed at its path among paths.
 func postDocument(version postVersion, read blog, prepared *Prepared, paths map[string]document.Target) document.Document {
 	snapshot, text := prepared.snapshot, version.text
-	head := postHead(version, read, snapshot.Words)
+	head := postHead(version, read)
 	body := bodyReader{
 		body: text.Body, page: head.Page, pictures: version.post.Pictures, links: text.SiteLinks, paths: paths, codes: prepared.codes,
 		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(version.post, read, snapshot)),
@@ -128,7 +128,8 @@ func postDocument(version postVersion, read blog, prepared *Prepared, paths map[
 // part's its series names, out or not, so a heading's anchor holds as a part comes out, and each of its versions'.
 func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []string {
 	taken := []string{KeysPlace}
-	for _, window := range listWordsOf(snapshot.Words).BlogWindows(document.PageOf(document.PageBlog), postPage(post)) {
+	listWords := read.listWords()
+	for _, window := range listWords.BlogWindows(listWords.List, postPage(post)) {
 		taken = append(taken, window.Name)
 	}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
@@ -141,10 +142,11 @@ func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []str
 }
 
 // postHead is the head of a version of a post: its page, the post's own or its revision's, its number, the language of
-// the site's words, the version's title, its description as its lead and its page's description, the post's tags as
-// the filters of the list they are, the version read, where the post stands in the blog, and the feeds that follow it.
-func postHead(version postVersion, read blog, words content.Words) document.Head {
-	post, description := version.post, textSpans(version.text.Description)
+// the blog's words, the version's title, its description as its lead and its page's description, the post's tags as
+// the filters of the list they are, the version read, where the post stands in the blog, the feeds that follow it, and
+// the languages it is read in.
+func postHead(version postVersion, read blog) document.Head {
+	post, description, words := version.post, textSpans(version.text.Description), read.words
 	return document.Head{
 		Page:        version.page,
 		Number:      post.ID,
@@ -161,6 +163,7 @@ func postHead(version postVersion, read blog, words content.Words) document.Head
 		Post:        read.placeOf(post),
 		Description: description,
 		Feeds:       read.feedLinks(read.seriesShownOn(post)),
+		Languages:   read.languagesOf(version),
 	}
 }
 

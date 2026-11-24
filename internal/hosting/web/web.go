@@ -152,13 +152,14 @@ type Server struct {
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, every file of its build and every picture
 // of its posts served; where a path sends the reader on to, by the path: a post's number, and its current version's
-// day; the page of an address of no page; and each post served at its preview link alone, which a request opening one
-// draws.
+// day; the page of an address of no page; each post served at its preview link alone, which a request opening one
+// draws; and the site's addresses, which read a request's path.
 type drawing struct {
 	served   answers
 	moved    map[string]move
 	notFound missingChoice
 	previews previewing
+	site     routes.Site
 }
 
 // move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's
@@ -186,14 +187,18 @@ func answersOf() answers {
 }
 
 // previewing is what a preview's faces are drawn from as a request opens its link, which holds a token of its own, so
-// each link's faces lead to its own address: each post served at its preview link alone, by its slug; the site's
-// addresses, the build each page is drawn in, the frame round it, and the day it is drawn on.
+// each link's faces lead to its own address: each post served at its preview link alone, by its page; the build each
+// page is drawn in, and the day it is drawn on.
 type previewing struct {
-	posts map[string]compose.Preview
-	site  routes.Site
+	posts map[document.Page]framedPreview
 	build *assets.Build
-	frame compose.Frame
 	today time.Time
+}
+
+// framedPreview is a post served at its preview link, and the frame round it, in the post's language.
+type framedPreview struct {
+	preview compose.Preview
+	frame   compose.Frame
 }
 
 // choice is one page in each format a reader may choose, never none, in the order a tie between two goes (inTieOrder).
@@ -364,7 +369,7 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		http.Redirect(writer, request, moved.location, moved.status)
 		return
 	}
-	status, sent := drawn.served.answerTo(writer.Header(), request, routes.Requested(path, request.URL.Query()), drawn.notFound)
+	status, sent := drawn.served.answerTo(writer.Header(), request, drawn.site.Requested(path, request.URL.Query()), drawn.notFound)
 	send(writer, status, sent)
 }
 
@@ -391,17 +396,17 @@ func (served answers) answerTo(header http.Header, request *http.Request, path s
 	return missingStatus, drawnAs(missing.mediaType, missing.draw(routes.Asked(request.URL.Path, request.URL.RawQuery)))
 }
 
-// atLink is the status and the answer to a request in the preview's folder at a moment: where its path is a preview
-// link whose token the key signed for its slug and has not lapsed, the post's face or picture there while it is a
-// preview, drawn for that link, or the reader sent on to the same at its own address once the post is out; else, a
-// path of no post among them, as no page, so a link tells nothing of which posts there are.
+// atLink is the status and the answer to a request in a preview's folder at a moment: where its path is a preview link
+// whose token the key signed for its post and has not lapsed, the post's face or picture there while it is a preview,
+// drawn for that link, or the reader sent on to the same at its own address once the post is out; else, a path of no
+// post among them, as no page, so a link tells nothing of which posts there are.
 func (server *Server) atLink(drawn *drawing, header http.Header, request *http.Request, moment time.Time) (int, answer) {
-	link, isLink := routes.PreviewPath(request.URL.Path)
-	if !isLink || !server.previewKey.admits(link.Token, link.Slug, moment) {
+	link, isLink := drawn.site.PreviewPath(request.URL.Path)
+	if !isLink || !server.previewKey.admits(link.Token, link.Post, moment) {
 		return answersOf().answerTo(header, request, link.PostPath, drawn.notFound)
 	}
-	if previewed, isPreview := drawn.previews.posts[link.Slug]; isPreview {
-		return drawn.previews.at(previewed, link.Token).answerTo(header, request, link.PostPath, drawn.notFound)
+	if previewed, isPreview := drawn.previews.posts[link.Post]; isPreview {
+		return drawn.previews.at(previewed, drawn.site.Previewing(link.Post, link.Token)).answerTo(header, request, link.PostPath, drawn.notFound)
 	}
 	if drawn.served.holds(link.PostPath) {
 		return sentOnForAWhile, sentOnTo(link.PostPath)
@@ -418,15 +423,14 @@ func (served answers) holds(path string) bool {
 	return isFixed || isChosen || isFixedLater || isChosenLater
 }
 
-// at are a preview's answers at a link holding a token, as its post would be served in the blog's folder: its faces,
-// each drawn once asked for, leading to the others at that link, and its pictures.
-func (previews previewing) at(previewed compose.Preview, token string) answers {
-	post := previewed.Post
-	site := previews.site.Previewing(post.Head.Page.Slug, token)
-	writer := html.NewPageWriter(site, previews.build, previews.frame, previews.today)
+// at are a preview's answers as a site read at its link writes them, as its post would be served in its blog's folder:
+// its faces, each drawn once asked for, leading to the others at that link, and its pictures.
+func (previews previewing) at(previewed framedPreview, site routes.Site) answers {
+	post := previewed.preview.Post
+	writer := html.NewPageWriter(site, previews.build, previewed.frame, previews.today)
 	served := answersOf()
 	served.serveLater(laterPageOf(post, site, func() string { return writer.Preview(post) }))
-	served.servePictures(previewed.Pictures)
+	served.servePictures(previewed.preview.Pictures)
 	return served
 }
 
@@ -558,16 +562,15 @@ func statusLine(status int) string {
 // to the audience's day until then, or the store holds another snapshot.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (*drawing, time.Time) {
 	facts, build := snapshot.Content, snapshot.Build
-	addresses := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority)
+	addresses := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority, facts.TranslatedInto())
 	composition := compose.SiteOf(prepared, audience)
-	frame := composition.Frame
+	frame := composition.Own.Frame
 	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
 	served := answersOf()
 	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(routes.PlainType, text.Markdown(composition.Index, addresses))
 	for path, file := range build.Files() {
 		served.fixed[path] = builtAs(file)
 	}
-	served.servePictures(composition.Pictures)
 	for _, composed := range composition.Pages {
 		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the
 		// tab an address shows inside its page
@@ -575,37 +578,57 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), addresses)
 		}
 	}
-	moved := map[string]move{}
-	for _, post := range composition.Posts {
-		served.serveEveryFormat(post, pageWriter.Post(post), addresses)
-		moved[routes.NumberPath(post.Head.Number)] = move{location: routes.Path(post.Head.Page, routes.FormatChosen), status: http.StatusMovedPermanently}
-		currentDayMoves(moved, post)
-	}
-	for _, list := range composition.Lists {
-		served.serveEveryFormat(list, pageWriter.List(list), addresses)
-	}
-	// a filtered list and an older version of a post are drawn as a request first asks for them: there is one for each
-	// tag and series and each revision, and few are read
-	for _, list := range composition.Filtered {
-		served.serveLater(laterPageOf(list, addresses, func() string { return pageWriter.List(list) }))
-	}
-	for _, older := range composition.Versions {
-		served.serveLater(laterPageOf(older, addresses, func() string { return pageWriter.Post(older) }))
-	}
-	bodies := html.NewFeedWriter(addresses)
-	for _, composedFeed := range composition.Feeds {
-		served.fixed[routes.FeedPath(composedFeed.Target)] = drawnAs(routes.FeedType, feed.Atom(composedFeed, addresses, bodies))
+	drawn := blogDrawing{served: served, moved: map[string]move{}, previews: previewing{
+		posts: map[document.Page]framedPreview{}, build: build, today: audience.At,
+	}}
+	for _, blog := range composition.Blogs() {
+		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), addresses)
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
 		{mediaType: routes.PlainType, draw: text.NewNotFound(addresses, status).For},
-		{mediaType: routes.PageType, draw: html.NewNotFound(addresses, status, facts.Words.Language(), build, frame).For},
+		{mediaType: routes.PageType, draw: html.NewNotFound(addresses, status, facts.Own.Words.Language(), build, frame).For},
 	}
-	previews := previewing{posts: map[string]compose.Preview{}, site: addresses, build: build, frame: frame, today: audience.At}
-	for _, previewed := range composition.Previews {
-		previews.posts[previewed.Post.Head.Page.Slug] = previewed
+	return &drawing{served: served, moved: drawn.moved, notFound: notFound, previews: drawn.previews, site: addresses}, composition.Until
+}
+
+// blogDrawing is every blog as draw serves it: the answers it adds its pages to, where its paths send the reader on to,
+// and its previews, to draw for their links.
+type blogDrawing struct {
+	served   answers
+	moved    map[string]move
+	previews previewing
+}
+
+// draw serves a blog in its language's frame: each post, its number sending the reader on to it, and its pictures; the
+// lists, the filtered ones and the older versions drawn when first asked for; the feeds; and keeps each preview.
+func (drawn blogDrawing) draw(blog compose.Blog, pageWriter html.PageWriter, addresses routes.Site) {
+	served := drawn.served
+	served.servePictures(blog.Pictures)
+	for _, post := range blog.Posts {
+		page := post.Head.Page
+		served.serveEveryFormat(post, pageWriter.Post(post), addresses)
+		drawn.moved[routes.NumberPath(page.Translation, post.Head.Number)] = move{location: routes.Path(page, routes.FormatChosen), status: http.StatusMovedPermanently}
+		currentDayMoves(drawn.moved, post)
 	}
-	return &drawing{served: served, moved: moved, notFound: notFound, previews: previews}, composition.Until
+	for _, list := range blog.Lists {
+		served.serveEveryFormat(list, pageWriter.List(list), addresses)
+	}
+	// a filtered list and an older version of a post are drawn as a request first asks for them: there is one for each
+	// tag and series and each revision, and few are read
+	for _, list := range blog.Filtered {
+		served.serveLater(laterPageOf(list, addresses, func() string { return pageWriter.List(list) }))
+	}
+	for _, older := range blog.Versions {
+		served.serveLater(laterPageOf(older, addresses, func() string { return pageWriter.Post(older) }))
+	}
+	bodies := html.NewFeedWriter(addresses)
+	for _, composedFeed := range blog.Feeds {
+		served.fixed[routes.FeedPath(composedFeed.Target)] = drawnAs(routes.FeedType, feed.Atom(composedFeed, addresses, bodies))
+	}
+	for _, previewed := range blog.Previews {
+		drawn.previews.posts[previewed.Post.Head.Page] = framedPreview{preview: previewed, frame: blog.Frame}
+	}
 }
 
 // currentDayMoves sends the reader of a post's current version by its day, the name its versions list it by, on to the
@@ -615,7 +638,7 @@ func currentDayMoves(moved map[string]move, post document.Document) {
 	for _, version := range document.VersionsOf(post.Head.Version) {
 		if version.Current {
 			for _, format := range routes.Formats() {
-				moved[routes.Path(document.OlderVersion(page.Slug, version.Name), format)] = move{location: routes.Path(page, format), status: sentOnForAWhile}
+				moved[routes.Path(page.OlderVersion(version.Name), format)] = move{location: routes.Path(page, format), status: sentOnForAWhile}
 			}
 		}
 	}

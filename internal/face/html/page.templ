@@ -13,8 +13,9 @@ import (
 )
 
 // page is a page of a document in its language: what it says of itself, its title, that no search engine indexes it
-// where it may not, its description, the address it is known by with Open Graph and its record as linked data, its
-// markdown, each where it has one, and each feed that follows it; then its main part and the foot line.
+// where it may not, its description, the address it is known by with Open Graph, its record as linked data and the
+// page in each language it is read in, its markdown, each where it has one, and each feed that follows it; then its
+// main part and the foot line.
 templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
 	<html lang={ language }>
@@ -30,6 +31,9 @@ templ (writer PageWriter) page(language string, metadata pageMetadata, record co
 				<link rel="canonical" href={ metadata.canonical }/>
 				@writer.openGraph(metadata)
 				@writer.linkedData(record, metadata.canonical)
+				for _, alternate := range metadata.alternates {
+					<link rel="alternate" hreflang={ alternate.language } href={ alternate.address }/>
+				}
 			}
 			if metadata.markdown != "" {
 				<link rel="alternate" type={ routes.MarkdownType } href={ metadata.markdown }/>
@@ -115,7 +119,7 @@ templ sessionMark(shown session) {
 // its box drawn in brackets, the stylesheet ticking it, and the whole label its target. The site's script shows it and
 // keeps the reader's choice; a page read without the script has no keys to turn on, and hides it.
 templ vimKeysSwitch() {
-	<label class="vim-keys" data-part={ vimKeysPart } hidden><input type="checkbox" class="vim-keys-box"/><span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick"></span>]</span>{ vimKeysWords }</label>
+	<label class="vim-keys" lang={ frameLanguage } data-part={ vimKeysPart } hidden><input type="checkbox" class="vim-keys-box"/><span class="vim-keys-mark" aria-hidden="true">[<span class="vim-keys-tick"></span>]</span>{ vimKeysWords }</label>
 }
 
 // commandLineMarkup is the command line the vim keys open over the foot line (DESIGN.md, CommandLine), as Neovim's
@@ -127,20 +131,21 @@ templ vimKeysSwitch() {
 templ commandLineMarkup(foot footLine) {
 	<div class="command-line content-width" data-part={ commandLinePart } hidden>
 		<div class="command-entry" data-part={ commandEntryPart }>
-			<ul id={ ownID(placesPart) } class="places-menu" role="listbox" aria-label={ placesName } data-part={ placesPart } hidden>
+			<span id={ ownID(placesNamePart) } lang={ frameLanguage } hidden>{ placesName }</span>
+			<ul id={ ownID(placesPart) } class="places-menu" role="listbox" aria-labelledby={ ownID(placesNamePart) } data-part={ placesPart } hidden>
 				for index, shown := range foot.places {
 					@placeItem(index, shown)
 				}
 			</ul>
-			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><input id={ ownID(commandFieldPart) } class="command-field" type="text" role="combobox" aria-label={ commandName } aria-controls={ ownID(placesPart) } aria-expanded="false" aria-autocomplete="list" aria-describedby={ ownID(commandKeysPart) } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-name={ searchName } data-folder={ foot.frame.folder } data-folder-address={ foot.frame.folderAddress }/>
+			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><span id={ ownID(commandNamePart) } lang={ frameLanguage } data-part={ commandNamePart } hidden>{ commandName }</span><span id={ ownID(searchNamePart) } lang={ frameLanguage } data-part={ searchNamePart } hidden>{ searchName }</span><input id={ ownID(commandFieldPart) } class="command-field" type="text" role="combobox" aria-labelledby={ ownID(commandNamePart) } aria-controls={ ownID(placesPart) } aria-expanded="false" aria-autocomplete="list" aria-describedby={ ownID(commandKeysPart) } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-label={ ownID(searchNamePart) } data-folder={ foot.frame.folder } data-folder-address={ foot.frame.folderAddress }/>
 		</div>
 		<p class="command-said" role="alert" data-part={ commandSaidPart } hidden></p>
-		<span id={ ownID(commandKeysPart) } class="command-keys" data-part={ commandKeysPart }>
+		<span id={ ownID(commandKeysPart) } class="command-keys" lang={ frameLanguage } data-part={ commandKeysPart }>
 			@keyHint(tabKey, nextHint, nextKeyPart)
 			@keyHint(enterMark, goHint, "")
 			@keyHint(escapeKey, cancelHint, "")
 		</span>
-		<span id={ ownID(searchKeysPart) } class="command-keys" data-part={ searchKeysPart } hidden>
+		<span id={ ownID(searchKeysPart) } class="command-keys" lang={ frameLanguage } data-part={ searchKeysPart } hidden>
 			<span class="command-count" data-part={ searchCountPart }></span>
 			@keyHint(enterMark, findHint, "")
 			@keyHint(escapeKey, cancelHint, "")
@@ -163,7 +168,7 @@ templ keyHint(key, does, part string) {
 // it apart from the rest, and what it is; it carries what the site's script reads of it, its name and the address it
 // leads to, its kind, whether it is the page shown, and whether :e opens it.
 templ placeItem(index int, shown place) {
-	<li id={ placeID(index) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } data-edit?={ shown.edited } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind">{ string(shown.kind) }</span></li>
+	<li id={ placeID(index) } class="places-item" role="option" aria-selected="false" data-part={ placePart } data-place={ string(shown.kind) } data-name={ shown.name } data-address={ shown.address } data-current?={ shown.current } data-edit?={ shown.edited } hidden><span class="places-name"><span class="places-typed" data-part={ placeTypedPart }></span><span data-part={ placeRestPart }>{ shown.name }</span></span> <span class="places-kind" lang={ frameLanguage }>{ string(shown.kind) }</span></li>
 }
 
 // windowLink is a tab as tmux writes a window, its number, a colon and its name, leading to its page; the current one
@@ -186,7 +191,7 @@ templ wayWithHint(offered hint) {
 		<p id={ offered.titleID } class="hint-title">{ offered.way.Program }</p>
 		@command(offered.way.Command)
 		<p class="hint-gives">{ offered.way.Gives }</p>
-		<button type="button" class="hint-close" popovertarget={ offered.id } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
+		<button type="button" class="hint-close" lang={ frameLanguage } popovertarget={ offered.id } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
 	</div>
 }
 
@@ -212,11 +217,16 @@ templ themeMark() {
 	</svg>
 }
 
-// openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, its title and
-// description, and the address it is known by. Its picture comes with the cards Typst draws (ADR-0005).
+// openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, the locale it is marked up
+// in and a post's others, its title and description, and the address it is known by. Its picture comes with the cards
+// Typst draws (ADR-0005).
 templ (writer PageWriter) openGraph(metadata pageMetadata) {
 	<meta property="og:type" content={ openGraphType }/>
 	<meta property="og:site_name" content={ writer.frame.site.Host() }/>
+	<meta property="og:locale" content={ writer.frame.locale }/>
+	for _, locale := range metadata.otherLocales {
+		<meta property="og:locale:alternate" content={ locale }/>
+	}
 	<meta property="og:title" content={ metadata.title }/>
 	if metadata.description != "" {
 		<meta property="og:description" content={ metadata.description }/>

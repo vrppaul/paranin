@@ -69,3 +69,7 @@ version_read: reading
 newer_version: "newer: {}"
 blog_feed: "{}'s blog"
 series_feed: "{} — {}"
+language: language
+language_name: English
+locale: en_US
+series_grouping: series

@@ -40,10 +40,15 @@ func manualHolds(text, phrase string) bool {
 }
 
 // textPages are the pages a text face writes of a snapshot as its author reads it on the tests' day: the pages of the
-// résumé and its projects, the posts, its draft among them, their older versions, and the blog's list in each grouping.
+// résumé and its projects, the posts, its draft among them, their older versions, and the blog's list in each
+// grouping, in every language.
 func textPages(snapshot *content.Snapshot) []document.Document {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: true})
-	return slices.Concat(site.Documents(), site.Posts, site.Versions, site.Lists)
+	pages := site.Documents()
+	for _, blog := range site.Blogs() {
+		pages = slices.Concat(pages, blog.Posts, blog.Versions, blog.Lists)
+	}
+	return pages
 }
 
 // The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the
@@ -67,7 +72,7 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 // its golden file, named by the filter, since the list's path holds a query.
 func TestAFilteredListReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Filtered
+	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Own.Filtered
 	cases := []struct {
 		page document.Page
 		name string
@@ -98,7 +103,7 @@ func TestTheIndexReadsAsItsGoldenText(test *testing.T) {
 // document holds, found as each format writes them.
 func TestEveryPhraseReachesEveryFormat(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Filtered
+	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Own.Filtered
 	documents, site := slices.Concat(textPages(snapshot), filtered), fixtures.Site(snapshot)
 	for _, written := range formats() {
 		for _, composed := range documents {

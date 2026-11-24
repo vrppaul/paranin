@@ -2,6 +2,8 @@
 // page to touch: where a search matches the words of a passage, which match the page goes to by where it stands, a
 // step round the matches, and what the line says of it in Neovim's words.
 
+import type { SaidPiece } from "./said";
+
 /** A piece of a passage: a text of the page, its words as they stand. */
 interface Worded {
   readonly data: string;
@@ -104,11 +106,18 @@ export function matchCount(place: number, count: number): string {
 }
 
 /** What the line says once a search shows a match: the search, then which of how many. */
-export function foundSaid(query: string, place: number, count: number): string {
-  return `/${query} ${matchCount(place, count)}`;
+export function foundSaid(query: string, place: number, count: number): SaidPiece[] {
+  return [
+    { text: "/", echoed: false },
+    { text: query, echoed: true },
+    { text: ` ${matchCount(place, count)}`, echoed: false },
+  ];
 }
 
 /** What the line says of a search that found nothing, as Neovim says it. */
-export function notFoundSaid(query: string): string {
-  return `E486: Pattern not found: ${query}`;
+export function notFoundSaid(query: string): SaidPiece[] {
+  return [
+    { text: "E486: Pattern not found: ", echoed: false },
+    { text: query, echoed: true },
+  ];
 }

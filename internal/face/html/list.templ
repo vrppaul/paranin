@@ -130,7 +130,7 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 			if len(post.Series) > 0 {
 				<span class="tile-series">
 					<span class="tile-part">{ document.PlainText(post.Part) }</span><span class="tile-dot">{ dot }</span>
-					<a class="tile-series-link" href={ writer.frame.site.Reference(post.SeriesGroup(), routes.FormatChosen) }>
+					<a class="tile-series-link" href={ writer.frame.site.Reference(post.SeriesGroup, routes.FormatChosen) }>
 						@writer.spans(post.Series)
 					</a>
 				</span>

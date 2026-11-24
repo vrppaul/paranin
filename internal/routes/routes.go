@@ -96,14 +96,34 @@ type Site struct {
 	host string
 	// tagAuthority is what the site's feeds and posts are named under for good, wherever the site moves (RFC 4151)
 	tagAuthority string
+	// translations are the languages the site is translated into, by their tags, each a folder of its own
+	translations []string
 	// previewed is the post read at its preview link, none where the site is read at its own addresses alone
 	previewed *preview
 }
 
-// preview is a post read at its preview link: its slug, and the token the link holds.
+// preview is a post read at its preview link: its page, in the language it is read in, and the token the link holds.
 type preview struct {
-	slug  string
+	post  document.Page
 	token string
+}
+
+// inLanguage is a page's path in the site's own language as its translation has it, in the language's folder.
+func inLanguage(translation, path string) string {
+	if translation == "" || path == "" {
+		return path
+	}
+	return pathStart + translation + path
+}
+
+// languageFolderOf parts a path into the language whose folder opens it and the path after; none and the path whole.
+func (site Site) languageFolderOf(path string) (string, string) {
+	inside, _ := strings.CutPrefix(path, pathStart)
+	language, rest, parted := strings.Cut(inside, folderEnd)
+	if !parted || !slices.Contains(site.translations, language) {
+		return "", path
+	}
+	return language, folderEnd + rest
 }
 
 // BaseAddress is the address a site is served at, as New's caller hands it: as it is written, ending in no slash,
@@ -114,9 +134,9 @@ type BaseAddress interface {
 }
 
 // New is the site served at a base address, and named by the address's host; what it serves is named for good under a
-// tag authority, as the profile gives it.
-func New(base BaseAddress, tagAuthority string) Site {
-	return Site{base: base.Written(), host: base.Host(), tagAuthority: tagAuthority, previewed: nil}
+// tag authority, as the profile gives it; it is translated into languages, by their tags, each read from a folder.
+func New(base BaseAddress, tagAuthority string, translations []string) Site {
+	return Site{base: base.Written(), host: base.Host(), tagAuthority: tagAuthority, translations: translations, previewed: nil}
 }
 
 // How a path of the site is named for good (RFC 4151, and RFC 4287's atom:id): the scheme, the site's tag authority,
@@ -133,10 +153,10 @@ func (site Site) TagURI(path string) string {
 }
 
 // Previewing is the site as the reader of a post's preview link reads it (docs/FOUNDATION.md §5.4, Status): every
-// address of that post, its page in each format, its sections and its pictures, in the preview's folder under the
-// link's token, since its own serve nothing; every other page at its own.
-func (site Site) Previewing(slug, token string) Site {
-	site.previewed = &preview{slug: slug, token: token}
+// address of that post, in the language it is read in, in the preview's folder under the link's token; every other
+// page at its own.
+func (site Site) Previewing(post document.Page, token string) Site {
+	site.previewed = &preview{post: post, token: token}
 	return site
 }
 
@@ -189,12 +209,13 @@ const feedEnding = ".atom"
 
 // FeedPath is where a feed is served, in Atom alone, whatever the format a link names (docs/FOUNDATION.md §5.4,
 // Feeds): the blog's beside its list by year, /blog.atom, and a series' in the list by series' folder by the series'
-// name, /blog/series/stint.atom, where no post stands, since the check refuses a post slugged as that list.
+// name, /blog/series/stint.atom, where no post stands, since the check refuses a post slugged as that list; in its
+// language's folder, as that language's list is.
 func FeedPath(feed document.Feed) string {
 	if feed.Series == "" {
-		return blogList + feedEnding
+		return inLanguage(feed.Translation, blogList+feedEnding)
 	}
-	return seriesList + folderEnd + feed.Series + feedEnding
+	return inLanguage(feed.Translation, seriesList+folderEnd+feed.Series+feedEnding)
 }
 
 // What parts a section's anchor from its page's path
@@ -228,31 +249,41 @@ func (site Site) filePath(file document.File) string {
 	return FilePath(file)
 }
 
-// previews is whether a page is the post the site's reader reads at its preview link.
+// previews is whether a page is the post the site's reader reads at its preview link, in the language they read it in.
 func (site Site) previews(page document.Page) bool {
-	return site.previewed != nil && page.Kind == document.PagePost && page.Slug == site.previewed.slug
+	return site.previewed != nil && page.Kind == document.PagePost && page.Slug == site.previewed.post.Slug &&
+		page.Translation == site.previewed.post.Translation
 }
 
-// paths are where a post read at its preview link is served: in the preview's folder under the link's token, by its
-// slug, as it would be in the blog's folder, so its files and sections stand beside it as they would there.
+// paths are where a post read at its preview link is served: in its language's preview folder, as in the blog's folder.
 func (previewed preview) paths() paths {
-	path := previewFolder + previewed.token + folderEnd + previewed.slug
+	path := inLanguage(previewed.post.Translation, previewFolder+previewed.token+folderEnd+previewed.post.Slug)
 	return paths{chosen: path, files: path}
 }
 
-// InPreviewFolder is whether a path is in the preview's folder, by its opening alone, whether or not it names a token
-// and a post: every answer there is sent as a preview link's is, since what follows may hold a token.
-//
-//wrapper:names the folder whose every answer goes out privately, which a host asks of a path no link is read from
+// InPreviewFolder is whether a path is in a preview folder by its form alone, at its root or after one segment of any
+// name, whether or not the segment is a language the site has or the path names a token and a post: every answer there
+// is sent as a preview link's is, since what follows may hold a token. No page stands there, since the check refuses
+// one whose folder would (PreviewFolderTaken). Way weighed: the segment held to a language's form, which content owns
+// and routes cannot read.
 func InPreviewFolder(path string) bool {
-	return strings.HasPrefix(path, previewFolder)
+	_, rest, parted := strings.Cut(strings.TrimPrefix(path, pathStart), folderEnd)
+	return strings.HasPrefix(path, previewFolder) || parted && strings.HasPrefix(folderEnd+rest, previewFolder)
 }
 
-// PreviewLink is a path in the preview's folder as PreviewPath reads it: the token it holds, the slug of the post it
-// names, and the path the same face or file of that post has in the blog's folder.
+// PreviewFolderTaken is the folder of a page, where its files and older versions stand, and whether it is a preview
+// folder by its form, as a post or a project slugged preview, or a tab of the résumé titled so, would take: the check
+// refuses such a page, so InPreviewFolder never names one.
+func PreviewFolderTaken(page document.Page) (string, bool) {
+	path := Path(page, FormatChosen)
+	folder := path + folderEnd
+	return folder, path != "" && InPreviewFolder(folder)
+}
+
+// PreviewLink is a path in the preview's folder as PreviewPath reads it: its token, its post, and that post's path.
 type PreviewLink struct {
 	Token    string
-	Slug     string
+	Post     document.Page
 	PostPath string
 }
 
@@ -261,35 +292,41 @@ const slugEnds = folderEnd + "."
 
 // PreviewPath reads a path in the preview's folder as the preview link it is, the one rule paths keeps the other way
 // round, and whether it is one, naming a token and a post.
-func PreviewPath(path string) (PreviewLink, bool) {
-	inFolder, isInFolder := strings.CutPrefix(path, previewFolder)
+func (site Site) PreviewPath(path string) (PreviewLink, bool) {
+	language, own := site.languageFolderOf(path)
+	inFolder, isInFolder := strings.CutPrefix(own, previewFolder)
 	token, inPost, namesPost := strings.Cut(inFolder, folderEnd)
 	slug := inPost
 	if end := strings.IndexAny(inPost, slugEnds); end >= 0 {
 		slug = inPost[:end]
 	}
 	if !isInFolder || !namesPost || token == "" || slug == "" {
-		return PreviewLink{Token: "", Slug: "", PostPath: ""}, false
+		return PreviewLink{Token: "", Post: document.PageOf(document.PageNone), PostPath: ""}, false
 	}
-	return PreviewLink{Token: token, Slug: slug, PostPath: blogFolder + inPost}, true
+	return PreviewLink{Token: token, Post: document.PostPage(slug).InLanguage(language), PostPath: inLanguage(language, blogFolder+inPost)}, true
 }
 
 // FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,
-// by its name; empty for a page of any other kind, which serves none.
+// by its name, in its language's folder; empty for a page of any other kind, which serves none.
 func FilePath(file document.File) string {
 	switch file.Page.Kind {
 	case document.PagePost:
-		return fileIn(postPaths(file.Page.Slug), file.Name)
+		return inLanguage(file.Page.Translation, fileIn(postPaths(file.Page.Slug), file.Name))
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
 		document.PageSkills, document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
 	}
 	return ""
 }
 
-// Path is where a page, or a tab of it shown alone, is served in a format, empty where it is served in none:
-// PageNone, the hidden pages (the health report and the list of skills), the index in any format but markdown, or no
-// format.
+// Path is where a page, or a tab of it shown alone, is served in a format, in its language's folder where it is
+// translated (docs/FOUNDATION.md §5.4, Translations); empty where it is served in none: PageNone, the hidden pages (the
+// health report and the list of skills), the index in any format but markdown, or no format.
 func Path(page document.Page, format Format) string {
+	return inLanguage(page.Translation, ownPath(page, format))
+}
+
+// ownPath is where a page is served in a format in the site's own language, as Path has it.
+func ownPath(page document.Page, format Format) string {
 	switch page.Kind {
 	case document.PageNone, document.PageHealth, document.PageSkills:
 		return ""
@@ -350,26 +387,27 @@ func Asked(path, rawQuery string) string {
 }
 
 // Requested is the address a request for a path with a query reaches its page by, as Path writes it: on the blog's
-// list by year, in any format, the list filtered by the one filter its query names, by tag or by series; every other
-// key, and the query of any other path, passed over, as a link's tracking words are. A query that names a filter
-// twice, or both, is read with its filters alone, an address Path never writes, so it reaches no page.
-func Requested(path string, query url.Values) string {
+// list by year, in any language and format, the list filtered by the one filter its query names, by tag or by series;
+// every other key, and the query of any other path, passed over, as a link's tracking words are. A query that names a
+// filter twice, or both, is read with its filters alone, an address Path never writes, so it reaches no page.
+func (site Site) Requested(path string, query url.Values) string {
 	named := url.Values{}
 	for _, key := range filterKeys() {
 		if values, isNamed := query[key]; isNamed {
 			named[key] = values
 		}
 	}
-	if len(named) == 0 || !slices.ContainsFunc(Formats(), func(format Format) bool { return Path(document.PageOf(document.PageBlog), format) == path }) {
+	_, own := site.languageFolderOf(path)
+	if len(named) == 0 || !slices.ContainsFunc(Formats(), func(format Format) bool { return ownPath(document.PageOf(document.PageBlog), format) == own }) {
 		return path
 	}
 	return path + queryStart + named.Encode()
 }
 
-// NumberPath is where a post's number reaches it (D26), which answers by sending the reader on to the post's own
-// address: in the blog's folder, as its slug is, since a slug is never digits alone.
-func NumberPath(number int) string {
-	return blogFolder + strconv.Itoa(number)
+// NumberPath is where a post's number reaches it in a language (D26), which answers by sending the reader on to the
+// post's own address there: in the blog's folder, as its slug is, since a slug is never digits alone.
+func NumberPath(translation string, number int) string {
+	return inLanguage(translation, blogFolder+strconv.Itoa(number))
 }
 
 // The slash every path opens with, which a name a terminal writes for a path leaves out

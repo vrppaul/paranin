@@ -68,7 +68,7 @@ func TestEachFeedHoldsTheListedPostsNewestFirst(test *testing.T) {
 		{feed: document.Feed{Series: ""}, title: "Mira Example's blog", updated: fixtureVersionOut, posts: []seenFeedPost{fresh, fixturePost, first, oldOne}},
 		{feed: document.Feed{Series: fixtureSeriesName}, title: "Reading — Mira Example's blog", updated: fixtureVersionOut, posts: []seenFeedPost{fixturePost, first}},
 	}
-	feeds := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Feeds
+	feeds := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Own.Feeds
 	if got := seenFeeds(feeds); !reflect.DeepEqual(got, want) {
 		test.Errorf("the feeds = %+v, want %+v", got, want)
 	}
@@ -80,7 +80,7 @@ func TestAFeedHoldsItsNewestPostsAlone(test *testing.T) {
 	newest := slices.Clone(posts)
 	slices.Reverse(newest)
 	want := writtenSlugs(newest[:feedLength])
-	feeds := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Feeds
+	feeds := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Own.Feeds
 	if got := feedSlugs(feeds[0]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the blog's feed holds %q, want %q", got, want)
 	}
@@ -103,7 +103,7 @@ func TestAPostInAFeedIsUpdatedWhenItsCurrentVersionCameOut(test *testing.T) {
 			folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 			fixtures.ReplaceIn(test, folder, fixturePostFile, fixturePostUpdated, testCase.updated)
 			fixtures.RemoveIn(test, folder, fixtureRevisionFile)
-			feeds := SiteOf(Prepare(fixtures.LoadedFrom(test, folder)), publicOnTheDay()).Feeds
+			feeds := SiteOf(Prepare(fixtures.LoadedFrom(test, folder)), publicOnTheDay()).Own.Feeds
 			if got := feeds[0].Posts[0].Updated.Format(time.RFC3339); got != testCase.want {
 				test.Errorf("the fixture post, %s, is updated in its feed at %s, want %s", testCase.name, got, testCase.want)
 			}
@@ -116,9 +116,9 @@ func TestABlogListingNothingHasNoFeed(test *testing.T) {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	fixturePostDrafted(test, folder)
 	site := SiteOf(Prepare(fixtures.LoadedFrom(test, folder)), publicOnTheDay())
-	if len(site.Feeds) != 0 || len(site.Lists[0].Head.Feeds) != 0 || len(site.Pages[0].Document.Head.Feeds) != 0 {
-		test.Errorf("a blog listing nothing has the feeds %+v, its list names %+v and the résumé %+v, want none", site.Feeds,
-			site.Lists[0].Head.Feeds, site.Pages[0].Document.Head.Feeds)
+	if len(site.Own.Feeds) != 0 || len(site.Own.Lists[0].Head.Feeds) != 0 || len(site.Pages[0].Document.Head.Feeds) != 0 {
+		test.Errorf("a blog listing nothing has the feeds %+v, its list names %+v and the résumé %+v, want none", site.Own.Feeds,
+			site.Own.Lists[0].Head.Feeds, site.Pages[0].Document.Head.Feeds)
 	}
 }
 
@@ -128,8 +128,8 @@ func TestABlogListingNothingHasNoFeed(test *testing.T) {
 func TestEachPageNamesTheFeedsThatFollowThePage(test *testing.T) {
 	posts := []writtenPost{{slug: "hidden", id: 5, status: "unlisted", published: later, tags: ""}}
 	series := fixtureSeriesOf("reading-slowly, hidden", "")
-	blogFeed := "Mira Example's blog at {Series:}"
-	readingFeed := "Reading — Mira Example's blog at {Series:reading}"
+	blogFeed := "Mira Example's blog at {Series: Translation:}"
+	readingFeed := "Reading — Mira Example's blog at {Series:reading Translation:}"
 	cases := []struct {
 		name string
 		page document.Page
@@ -139,8 +139,8 @@ func TestEachPageNamesTheFeedsThatFollowThePage(test *testing.T) {
 		{name: "the list by series", page: document.PageOf(document.PageBlogSeries), want: []string{blogFeed}},
 		{name: "the list filtered by a tag", page: document.TagFilter("reading"), want: []string{blogFeed}},
 		{name: "the list filtered by a series", page: document.SeriesFilter(fixtureSeriesName), want: []string{readingFeed, blogFeed}},
-		{name: "a part of a series", page: postPageOf(fixturePostSlug), want: []string{readingFeed, blogFeed}},
-		{name: "an unlisted part, whose page shows no series", page: postPageOf("hidden"), want: []string{blogFeed}},
+		{name: "a part of a series", page: document.PostPage(fixturePostSlug), want: []string{readingFeed, blogFeed}},
+		{name: "an unlisted part, whose page shows no series", page: document.PostPage("hidden"), want: []string{blogFeed}},
 		{name: "the résumé", page: document.PageOf(document.PageResume), want: []string{blogFeed}},
 		{name: "a tab of the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience", Revision: ""}, want: []string{blogFeed}},
 		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "", Revision: ""}, want: []string{}},

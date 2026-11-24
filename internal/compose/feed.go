@@ -38,32 +38,31 @@ type FeedPost struct {
 
 // feedsOf are the blog's feeds (docs/FOUNDATION.md §5.4, Feeds), their posts still to compose, and the posts each
 // holds, its newest the lists name: the blog's, where its list names a post, then each series' with a part out, in the
-// order its filter stands, holding its parts out; titled in the site's words by the author's name.
+// order its filter stands, holding its parts out; titled in the blog's words by the author's name.
 func (read blog) feedsOf(snapshot *content.Snapshot) ([]Feed, map[document.Feed][]content.Post) {
 	if len(read.newest) == 0 {
 		return nil, nil
 	}
-	words := snapshot.Words
-	blogTitle := words.Phrase(content.PhraseBlogFeed, plainText(snapshot.Profile.Person.Name))
-	ofBlog := document.Feed{Series: ""}
-	feeds := []Feed{feedOf(ofBlog, blogTitle, words.Text(content.WordBlogLine), document.PageOf(document.PageBlog), snapshot)}
+	words, translation, author := read.words, read.words.Translation(), plainText(snapshot.Profile.Person.Name)
+	blogTitle := words.Phrase(content.PhraseBlogFeed, author)
+	ofBlog := document.Feed{Series: "", Translation: translation}
+	feeds := []Feed{feedOf(ofBlog, blogTitle, words.Text(content.WordBlogLine), document.PageOf(document.PageBlog).InLanguage(translation), read.words, author)}
 	posts := map[document.Feed][]content.Post{ofBlog: newestOf(read.newest)}
 	for _, series := range read.seriesNewestFirst() {
-		ofSeries := document.Feed{Series: series.Name}
-		shown := document.Anchor{Page: document.PageOf(document.PageBlogSeries), Name: series.Name}
-		feeds = append(feeds, feedOf(ofSeries, words.Phrase(content.PhraseSeriesFeed, series.Title, blogTitle), series.Line, shown, snapshot))
+		ofSeries := document.Feed{Series: series.Name, Translation: translation}
+		title := words.Phrase(content.PhraseSeriesFeed, series.Title, blogTitle)
+		feeds = append(feeds, feedOf(ofSeries, title, series.Line, read.seriesGroup(series), read.words, author))
 		posts[ofSeries] = newestOf(read.partsOut(series))
 	}
 	return feeds, posts
 }
 
-// feedOf is a feed by its title, its line and where a person reads what it holds, written by the snapshot's author in
-// its language, holding no post yet.
-func feedOf(target document.Feed, title, line string, shown document.Target, snapshot *content.Snapshot) Feed {
+// feedOf is a feed by its title, its line and where a person reads what it holds, written by its author in the words'
+// language, holding no post yet.
+func feedOf(target document.Feed, title, line string, shown document.Target, words content.Words, author string) Feed {
 	return Feed{
-		Target: target, Language: snapshot.Words.Language(), Title: textSpans(title), Subtitle: textSpans(line),
-		Author: plainText(snapshot.Profile.Person.Name), AuthorPage: document.PageOf(document.PageResume), Shown: shown,
-		Updated: time.Time{}, Posts: nil,
+		Target: target, Language: words.Language(), Title: textSpans(title), Subtitle: textSpans(line),
+		Author: author, AuthorPage: document.PageOf(document.PageResume), Shown: shown, Updated: time.Time{}, Posts: nil,
 	}
 }
 

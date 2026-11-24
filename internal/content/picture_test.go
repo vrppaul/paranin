@@ -103,7 +103,7 @@ func TestAPostsPictureLoadsWithItsTypeAndSize(test *testing.T) {
 			if err != nil {
 				test.Fatalf("Load with %q beside %q = %v, want no error", testCase.file, testCase.body, err)
 			}
-			pictures := postNamed(test, snapshot, samplePostSlug).Pictures
+			pictures := postNamed(test, snapshot, "", samplePostSlug).Pictures
 			picture, found := pictures[testCase.file]
 			got := pictureFields{MediaType: picture.MediaType, Width: picture.Width, Height: picture.Height}
 			if !found || got != testCase.want || !bytes.Equal(picture.Body, testCase.picture) || len(pictures) != 1 {

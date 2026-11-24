@@ -34,6 +34,27 @@ line: On the tools a writer keeps.
 posts: [notes-on-tools]
 `
 
+// A translation that loads in place of the fixture post's own in Russian, which a case writes changed: its body's lines
+// are the file's 7th to 11th
+const sampleTranslation = `---
+title: Пример
+description: Что говорит пример.
+status: published
+published: 2026-11-16T09:00+01:00
+---
+Абзац.
+
+## Раздел
+
+Его текст.
+`
+
+// Where a case writes the sample translation, and the language it is in
+const (
+	translationFile = "posts/reading-slowly/post.ru.md"
+	russian         = "ru"
+)
+
 // Where a case writes a sample unless it names another place, and the fixture's post of every kind of block
 const (
 	samplePostFile   = "posts/sample-post/post.en.md"
@@ -71,7 +92,7 @@ func TestAPostLoadsWithItsFieldsAndItsBodyParsed(test *testing.T) {
 	if err != nil {
 		test.Fatalf("Load of the fixture = %v, want no error", err)
 	}
-	post := postNamed(test, snapshot, fixturePostSlug)
+	post := postNamed(test, snapshot, "", fixturePostSlug)
 	got := postFields{
 		ID: post.ID, Title: post.Title, Description: post.Description, Status: post.Status,
 		Published: post.Published.at.Format(time.RFC3339), Updated: post.Updated.start.Format(time.DateOnly),
@@ -99,6 +120,42 @@ func TestAPostLoadsWithItsFieldsAndItsBodyParsed(test *testing.T) {
 	}
 }
 
+// A translation loads as the content in its language: the language's words, and each post translated into it, its own
+// title, lead, status, dates and body, and its original's number, tags and discussions, which are the post's alone.
+func TestATranslationLoadsWithItsOwnTextAndItsOriginalsFacts(test *testing.T) {
+	snapshot, err := Load(fixtureFolder(test))
+	if err != nil {
+		test.Fatalf("Load of the fixture = %v, want no error", err)
+	}
+	languages := []string{}
+	for _, edition := range snapshot.Editions() {
+		languages = append(languages, edition.Words.Language()+":"+edition.Words.Translation())
+	}
+	if want := []string{"en:", "ru:ru"}; !slices.Equal(languages, want) {
+		test.Fatalf("the editions' languages = %q, want %q", languages, want)
+	}
+	translated := snapshot.Translations[0]
+	post := postNamed(test, snapshot, russian, fixturePostSlug)
+	got := postFields{
+		ID: post.ID, Title: post.Title, Description: post.Description, Status: post.Status,
+		Published: post.Published.at.Format(time.RFC3339), Updated: post.Updated.written, Tags: post.Tags, Discussions: nil,
+	}
+	for _, discussion := range post.Discussions {
+		got.Discussions = append(got.Discussions, discussionFields{Site: discussion.Site, Address: discussion.Address.Written()})
+	}
+	want := postFields{
+		ID: 1, Title: "Медленное чтение", Description: "Почему страницу, прочитанную дважды, читают один раз.", Status: StatusPublished,
+		Published: "2026-11-15T10:00:00+03:00", Updated: "", Tags: []string{"reading", "terminals"},
+		Discussions: []discussionFields{{Site: "Lobsters", Address: "https://lobsters.example.test/s/slow"}},
+	}
+	if !reflect.DeepEqual(got, want) || post.Translation != "ru" {
+		test.Errorf("%s in Russian loads as %+v in %q, want %+v in %q", fixturePostSlug, got, post.Translation, want, "ru")
+	}
+	if !bytes.HasPrefix(post.Body.Source, []byte("Страницу")) || len(translated.Posts) != 1 {
+		test.Errorf("the Russian content = %d posts, the first's body %q; want 1, its own", len(translated.Posts), post.Body.Source)
+	}
+}
+
 // The snapshot keeps the posts in the order of their slugs, which no edit of a post's fields changes.
 func TestThePostsComeInTheOrderOfTheirSlugs(test *testing.T) {
 	snapshot, err := Load(writtenFile(fixtureFolder(test), "posts/a-first/post.en.md", samplePost))
@@ -106,7 +163,7 @@ func TestThePostsComeInTheOrderOfTheirSlugs(test *testing.T) {
 		test.Fatalf("Load = %v, want no error", err)
 	}
 	slugs := []string{}
-	for _, post := range snapshot.Posts {
+	for _, post := range snapshot.Own.Posts {
 		slugs = append(slugs, post.Slug)
 	}
 	if want := []string{"a-first", "notes-on-tools", fixturePostSlug}; !slices.Equal(slugs, want) {
@@ -151,7 +208,7 @@ func TestAPostsBodyReadsAsCommonMarkWithTablesAndFootnotes(test *testing.T) {
 			if err != nil {
 				test.Fatalf("Load with the body %q = %v, want no error", testCase.body, err)
 			}
-			kinds := kindsOf(postNamed(test, snapshot, samplePostSlug).Body.Tree)
+			kinds := kindsOf(postNamed(test, snapshot, "", samplePostSlug).Body.Tree)
 			if slices.Contains(kinds, testCase.kind) != testCase.present {
 				test.Errorf("the body %q reads as %v, want a %v among them: %t", testCase.body, kinds, testCase.kind, testCase.present)
 			}
@@ -310,7 +367,14 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a discussion at no site", sample: samplePost, file: samplePostFile, original: "status: published", replacement: "status: published\ndiscussions: [{site: \"\", address: \"https://lobsters.example.test/s/x\"}]", want: faultPlace{file: samplePostFile, field: "discussions[0].site", line: 0}},
 		{name: "a slug in capitals", sample: samplePost, file: "posts/Sample-Post/post.en.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/Sample-Post", field: "", line: 0}},
 		{name: "a slug of digits alone", sample: samplePost, file: "posts/12/post.en.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/12", field: "", line: 0}},
-		{name: "a translation", sample: samplePost, file: "posts/reading-slowly/post.ru.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/post.ru.md", field: "", line: 0}},
+		{name: "a translation into a language of no words", sample: samplePost, file: "posts/reading-slowly/post.de.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/post.de.md", field: "", line: 0}},
+		{name: "a translation of no original", sample: sampleTranslation, file: "posts/empty-post/post.ru.md", original: "title:", replacement: "title:", want: faultPlace{file: "posts/empty-post/post.en.md", field: "", line: 0}},
+		{name: "a translation's number, the post's own", sample: sampleTranslation, file: translationFile, original: "title:", replacement: "id: 1\ntitle:", want: faultPlace{file: translationFile, field: "", line: 0}},
+		{name: "a translation with no title", sample: sampleTranslation, file: translationFile, original: "title: Пример", replacement: `title: ""`, want: faultPlace{file: translationFile, field: "title", line: 0}},
+		{name: "a translation with no status", sample: sampleTranslation, file: translationFile, original: "status: published\n", replacement: "", want: faultPlace{file: translationFile, field: "status", line: 0}},
+		{name: "a translation's heading of the title's level", sample: sampleTranslation, file: translationFile, original: "## Раздел", replacement: "# Раздел", want: faultPlace{file: translationFile, field: "", line: 9}},
+		{name: "raw HTML in a translation", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "<b>Его</b> текст.", want: faultPlace{file: translationFile, field: "", line: 11}},
+		{name: "a translation's picture of no file", sample: sampleTranslation, file: translationFile, original: "Его текст.", replacement: "![Страница](missing.png)", want: faultPlace{file: translationFile, field: "", line: 11}},
 		{name: "a widget's file", sample: samplePost, file: "posts/reading-slowly/widgets/Cache.svelte", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/widgets", field: "", line: 0}},
 		{name: "a file of no part of a post", sample: samplePost, file: "posts/reading-slowly/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/notes.txt", field: "", line: 0}},
 		{name: "a post's folder with no post", sample: samplePost, file: "posts/empty-post/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/empty-post/post.en.md", field: "", line: 0}},
@@ -358,7 +422,7 @@ func TestAFileBesideThePostsHoldsBackNoFaultOfWhatTheySay(test *testing.T) {
 		file  string
 		stray faultPlace
 	}{
-		{name: "a translation", file: "posts/sample-post/post.ru.md", stray: faultPlace{file: "posts/sample-post/post.ru.md", field: "", line: 0}},
+		{name: "a translation into a language of no words", file: "posts/sample-post/post.de.md", stray: faultPlace{file: "posts/sample-post/post.de.md", field: "", line: 0}},
 		{name: "a file among the posts' folders", file: "posts/README.md", stray: faultPlace{file: "posts/README.md", field: "", line: 0}},
 		{name: "a file of no series", file: "series/notes.txt", stray: faultPlace{file: "series/notes.txt", field: "", line: 0}},
 	}
@@ -392,14 +456,14 @@ func sampleWith(test *testing.T, sample, original, replacement string) string {
 	return strings.Replace(sample, original, replacement, 1)
 }
 
-// postNamed is the post of a slug in a snapshot.
-func postNamed(test *testing.T, snapshot *Snapshot, slug string) Post {
+// postNamed is the post of a slug in a snapshot, in the language it is translated into, the original where none.
+func postNamed(test *testing.T, snapshot *Snapshot, translation, slug string) Post {
 	test.Helper()
-	index := slices.IndexFunc(snapshot.Posts, func(post Post) bool { return post.Slug == slug })
-	if index < 0 {
-		test.Fatalf("the snapshot holds no post %q", slug)
+	post, isHeld := snapshot.Post(translation, slug)
+	if !isHeld {
+		test.Fatalf("the snapshot holds no post %q in %q", slug, translation)
 	}
-	return snapshot.Posts[index]
+	return post
 }
 
 // kindsOf are the kinds of a tree's nodes, the root's first and then its children's, each in turn.

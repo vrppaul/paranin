@@ -1,9 +1,14 @@
 package content
 
 import (
+	"io/fs"
 	"maps"
+	"path"
+	"regexp"
 	"slices"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
@@ -16,9 +21,10 @@ import (
 // code block is copied, and the words of a post's series and the panes at its foot: where a part stands for the
 // reader, each side's name, what a side with none says, the panes' heading outside a series, the word before where
 // the post is discussed, and the name of its outline; and the blog's list: the line it opens with, its window in the
-// foot line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year,
-// and its group of the posts in no series; and a post's versions: the title of the window that lists them, and the
-// words that mark the current one and the one read.
+// foot line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year
+// and by series, and its group of the posts in no series; and a post's versions: the title of the window that lists
+// them, and the words that mark the current one and the one read; and the language: the label of a post's language,
+// the language's own name for itself, which a post's Switch shows, and the locale Open Graph marks a page in.
 type Word int
 
 const (
@@ -76,6 +82,10 @@ const (
 	WordVersions
 	WordCurrent
 	WordVersionRead
+	WordLanguage
+	WordLanguageName
+	WordLocale
+	WordSeriesGrouping
 )
 
 // Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
@@ -155,58 +165,62 @@ func phraseForms() map[Phrase]phraseForm {
 // every Word, so a word added to the constants has its key here too.
 func wordKeys() map[Word]string {
 	return map[Word]string{
-		WordAbout:         "about",
-		WordGreeting:      "greeting",
-		WordExperience:    "experience",
-		WordProjects:      "projects",
-		WordSkills:        "skills",
-		WordEducation:     "education",
-		WordLanguages:     "languages",
-		WordContact:       "contact",
-		WordMail:          "mail",
-		WordSSH:           "ssh",
-		WordRepository:    "repository",
-		WordInstall:       "install",
-		WordPresent:       "present",
-		WordSide:          "side",
-		WordLearning:      "learning",
-		WordAuthor:        "author",
-		WordResume:        "resume",
-		WordHealth:        "health",
-		WordDarkTheme:     "dark_theme",
-		WordCopy:          "copy",
-		WordCopied:        "copied",
-		WordWriteTo:       "write_to",
-		WordSSHGives:      "ssh_gives",
-		WordReadingGives:  "reading_gives",
-		WordBlog:          "blog",
-		WordVersion:       "version",
-		WordDraft:         "draft",
-		WordTags:          "tags",
-		WordCopiedCode:    "copied_code",
-		WordSeries:        "series",
-		WordReading:       "reading",
-		WordNext:          "next",
-		WordSoon:          "soon",
-		WordPrevious:      "previous",
-		WordOlder:         "older",
-		WordNewer:         "newer",
-		WordFirstPart:     "first_part",
-		WordLastPart:      "last_part",
-		WordFirstPost:     "first_post",
-		WordNewestPost:    "newest_post",
-		WordOtherPosts:    "other_posts",
-		WordDiscuss:       "discuss",
-		WordContents:      "contents",
-		WordBlogLine:      "blog_line",
-		WordListWindow:    "list_window",
-		WordAllPosts:      "all_posts",
-		WordBy:            "by",
-		WordYears:         "years",
-		WordOutsideSeries: "outside_series",
-		WordVersions:      "versions",
-		WordCurrent:       "current",
-		WordVersionRead:   "version_read",
+		WordAbout:          "about",
+		WordGreeting:       "greeting",
+		WordExperience:     "experience",
+		WordProjects:       "projects",
+		WordSkills:         "skills",
+		WordEducation:      "education",
+		WordLanguages:      "languages",
+		WordContact:        "contact",
+		WordMail:           "mail",
+		WordSSH:            "ssh",
+		WordRepository:     "repository",
+		WordInstall:        "install",
+		WordPresent:        "present",
+		WordSide:           "side",
+		WordLearning:       "learning",
+		WordAuthor:         "author",
+		WordResume:         "resume",
+		WordHealth:         "health",
+		WordDarkTheme:      "dark_theme",
+		WordCopy:           "copy",
+		WordCopied:         "copied",
+		WordWriteTo:        "write_to",
+		WordSSHGives:       "ssh_gives",
+		WordReadingGives:   "reading_gives",
+		WordBlog:           "blog",
+		WordVersion:        "version",
+		WordDraft:          "draft",
+		WordTags:           "tags",
+		WordCopiedCode:     "copied_code",
+		WordSeries:         "series",
+		WordReading:        "reading",
+		WordNext:           "next",
+		WordSoon:           "soon",
+		WordPrevious:       "previous",
+		WordOlder:          "older",
+		WordNewer:          "newer",
+		WordFirstPart:      "first_part",
+		WordLastPart:       "last_part",
+		WordFirstPost:      "first_post",
+		WordNewestPost:     "newest_post",
+		WordOtherPosts:     "other_posts",
+		WordDiscuss:        "discuss",
+		WordContents:       "contents",
+		WordBlogLine:       "blog_line",
+		WordListWindow:     "list_window",
+		WordAllPosts:       "all_posts",
+		WordBy:             "by",
+		WordYears:          "years",
+		WordOutsideSeries:  "outside_series",
+		WordVersions:       "versions",
+		WordCurrent:        "current",
+		WordVersionRead:    "version_read",
+		WordLanguage:       "language",
+		WordLanguageName:   "language_name",
+		WordLocale:         "locale",
+		WordSeriesGrouping: "series_grouping",
 	}
 }
 
@@ -246,6 +260,78 @@ func (words Words) Around(phrase Phrase) (before, after string) {
 // Language is the tag of the language the words are written in, as BCP 47 writes it: "en".
 func (words Words) Language() string {
 	return words.language
+}
+
+// Translation is the language a page in these words is translated into: their tag, none for English, the site's own.
+func (words Words) Translation() string {
+	if words.language == english {
+		return ""
+	}
+	return words.language
+}
+
+// How a language's tag is written, as ISO 639 writes a language: two or three small letters
+const languagePattern = `^[a-z]{2,3}$`
+
+// writtenCatalogue is a catalogue as its file writes it: its language, its words by their keys, and its document.
+type writtenCatalogue struct {
+	language string
+	written  map[string]string
+	document *yaml.Node
+}
+
+// catalogues are the site's words as their files write them: in English, its own language, and in each other.
+type catalogues struct {
+	own          writtenCatalogue
+	translations []writtenCatalogue
+}
+
+// all are the catalogues in every language, English first.
+func (written catalogues) all() []writtenCatalogue {
+	return append([]writtenCatalogue{written.own}, written.translations...)
+}
+
+// readCatalogues reads the site's words in English, then in each other language, with their faults and the strays'.
+func readCatalogues(folder fs.FS) (catalogues, Faults, Faults) {
+	written, document, unreadable := readFile[map[string]string](folder, wordsFile(english))
+	read := catalogues{own: writtenCatalogue{language: english, written: written, document: document}, translations: nil}
+	entries, unreadFolder := readFolder(folder, wordsFolder)
+	unreadable = append(unreadable, unreadFolder...)
+	languageForm := regexp.MustCompile(languagePattern)
+	misplaced := Faults{}
+	for _, entry := range entries {
+		language, isYAML := strings.CutSuffix(entry.Name(), yamlEnding)
+		switch {
+		case entry.IsDir() || !isYAML || !languageForm.MatchString(language):
+			misplaced = append(misplaced, fileFault(path.Join(wordsFolder, entry.Name()), strayWordsProblem))
+		case language != english:
+			written, document, faults := readFile[map[string]string](folder, wordsFile(language))
+			read.translations = append(read.translations, writtenCatalogue{language: language, written: written, document: document})
+			unreadable = append(unreadable, faults...)
+		}
+	}
+	return read, unreadable, misplaced
+}
+
+// translatedLanguages are the languages of the catalogues but English: those a post may be translated into.
+func (written catalogues) translatedLanguages() []string {
+	languages := []string{}
+	for _, catalogue := range written.translations {
+		languages = append(languages, catalogue.language)
+	}
+	return languages
+}
+
+// inspectCatalogues takes each catalogue as readWords does: the words by their language, and the faults found.
+func inspectCatalogues(written catalogues) (map[string]Words, Faults) {
+	words := map[string]Words{}
+	faults := Faults{}
+	for _, catalogue := range written.all() {
+		read, wordFaults := readWords(catalogue.language, catalogue.written)
+		words[catalogue.language] = read
+		faults = slices.Concat(faults, wordFaults, inspectCharacters(wordsFile(catalogue.language), catalogue.document))
+	}
+	return words, faults
 }
 
 // readWords takes a catalogue in a language as the file writes it: every word and phrase under its key and none

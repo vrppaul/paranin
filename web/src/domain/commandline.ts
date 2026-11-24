@@ -4,6 +4,8 @@
 // project's page; Neovim's :e opens a page by its name, a project's or one of the blog's. What the line says of a
 // command it refuses is Neovim's own words.
 
+import type { SaidPiece } from "./said";
+
 // The kind of a tab of the page shown, which Tab offers before a letter is typed; every other kind the line shows as
 // the server names it (document.PlaceKind), and treats alike
 const TAB_KIND = "tab";
@@ -64,7 +66,7 @@ export type Outcome =
   | { kind: "go"; address: string }
   | { kind: "stay" }
   | { kind: "nothing" }
-  | { kind: "failed"; fault: Fault; message: string };
+  | { kind: "failed"; fault: Fault; message: SaidPiece[] };
 
 // The place of the item chosen where none is, the line holding what the reader typed
 const NONE_CHOSEN = -1;
@@ -79,10 +81,17 @@ const SPACE = " ";
 const EDIT_NAMES: readonly string[] = ["e", "edit"];
 
 // What the line says of a command it refuses, as Neovim says it
-const SAID: Record<Fault, (typed: string) => string> = {
-  unknown: (typed) => `E492: Not an editor command: ${typed}`,
-  argument: () => "E471: Argument required",
-  missing: (typed) => `E447: Can't find file "${typed}" in path`,
+const SAID: Record<Fault, (typed: string) => SaidPiece[]> = {
+  unknown: (typed) => [
+    { text: "E492: Not an editor command: ", echoed: false },
+    { text: typed, echoed: true },
+  ],
+  argument: () => [{ text: "E471: Argument required", echoed: false }],
+  missing: (typed) => [
+    { text: "E447: Can't find file \"", echoed: false },
+    { text: typed, echoed: true },
+    { text: '" in path', echoed: false },
+  ],
 };
 
 /**

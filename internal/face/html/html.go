@@ -114,9 +114,11 @@ const (
 	commandEntryPart = "command-entry"
 	commandFieldPart = "command-field"
 	commandName      = "command"
+	commandNamePart  = "command-name"
 	commandMark      = ":"
 	placesPart       = "places"
 	placesName       = "places"
+	placesNamePart   = "places-name"
 	placePart        = "place"
 	placeTypedPart   = "place-typed"
 	placeRestPart    = "place-rest"
@@ -135,6 +137,7 @@ const (
 	searchMarkPart  = "search-mark"
 	searchMark      = "/"
 	searchName      = "search"
+	searchNamePart  = "search-name"
 	searchKeysPart  = "search-keys"
 	searchCountPart = "search-count"
 )
@@ -150,6 +153,9 @@ const ownIDMark = "_"
 func ownID(name string) string {
 	return ownIDMark + name
 }
+
+// The language the frame's own words are written in on every page, Neovim's and tmux's, which no translation changes
+const frameLanguage = "en"
 
 // The keys the command line names, each with what it does, as the TUI's names them; Esc closes a hint's window too
 const (
@@ -207,7 +213,8 @@ type PageWriter struct {
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
 // as plain text, the address it is known by, whole, and the path of its markdown, each empty where it has none;
-// whether a search engine may index it; and the feeds that follow it, which a feed reader finds it by.
+// whether a search engine may index it; the feeds that follow it, which a feed reader finds it by; and the page in
+// each language it is read in, which a search engine reads beside its own address.
 type pageMetadata struct {
 	title       string
 	description string
@@ -215,12 +222,49 @@ type pageMetadata struct {
 	markdown    string
 	indexed     bool
 	feeds       []headFeed
+	alternates  []alternate
+	// otherLocales are the locales of the languages a post is read in but the one read, which Open Graph names too
+	otherLocales []string
 }
 
 // headFeed is a feed a page names in its head: its title, as plain text, and its path from the root.
 type headFeed struct {
 	title string
 	path  string
+}
+
+// alternate is the page in a language for a search engine: the language's tag, or defaultLanguage, and its address.
+type alternate struct {
+	language string
+	address  string
+}
+
+// What a head names the page in the site's own language as, for a reader of a language the site offers no page in
+const defaultLanguage = "x-default"
+
+// alternatesOf are the page in each language a post is read in, then the site's own language's again as the default.
+func alternatesOf(languages []document.Language, site routes.Site) []alternate {
+	alternates := make([]alternate, 0, len(languages))
+	for _, language := range languages {
+		alternates = append(alternates, alternate{language: language.Tag, address: site.Address(language.Page, routes.FormatChosen)})
+	}
+	for _, language := range languages {
+		if language.Page.Translation == "" {
+			alternates = append(alternates, alternate{language: defaultLanguage, address: site.Address(language.Page, routes.FormatChosen)})
+		}
+	}
+	return alternates
+}
+
+// otherLocalesOf are the locales of the languages a post is read in but the one read.
+func otherLocalesOf(languages []document.Language) []string {
+	locales := []string{}
+	for _, language := range languages {
+		if !language.Read {
+			locales = append(locales, language.Locale)
+		}
+	}
+	return locales
 }
 
 // NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
@@ -241,7 +285,7 @@ func (writer PageWriter) Page(composed document.Document, record compose.Record,
 	page, title := head.Page, head.Title
 	var main templ.Component
 	if tab, isTab := tabNamed(tabs.Rest, shown); isTab {
-		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: ""}, tab.Title
+		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: "", Translation: head.Page.Translation}, tab.Title
 		main = writer.tabPart(head.Page.Kind, tab.Title, document.WrittenBlocks(tab.Blocks))
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
@@ -273,12 +317,14 @@ func rendered(component templ.Component) string {
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	site := writer.frame.site
 	metadata := pageMetadata{
-		title:       document.PlainText(title),
-		description: document.PlainText(head.Description),
-		canonical:   site.Address(shown, routes.FormatChosen),
-		markdown:    site.Reference(shown, routes.FormatMarkdown),
-		indexed:     true,
-		feeds:       make([]headFeed, 0, len(head.Feeds)),
+		title:        document.PlainText(title),
+		description:  document.PlainText(head.Description),
+		canonical:    site.Address(shown, routes.FormatChosen),
+		markdown:     site.Reference(shown, routes.FormatMarkdown),
+		indexed:      true,
+		feeds:        make([]headFeed, 0, len(head.Feeds)),
+		alternates:   alternatesOf(head.Languages, site),
+		otherLocales: otherLocalesOf(head.Languages),
 	}
 	for _, feed := range head.Feeds {
 		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: site.Reference(feed.Target, routes.FormatChosen)})

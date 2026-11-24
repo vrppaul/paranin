@@ -100,5 +100,9 @@ test.each([
 
 test("the line says the search and which match of how many the page shows, as Neovim counts them", () => {
   const second = 1;
-  expect(foundSaid("Python", second, MATCH_COUNT)).toBe("/Python [2/4]");
+  expect(foundSaid("Python", second, MATCH_COUNT)).toEqual([
+    { text: "/", echoed: false },
+    { text: "Python", echoed: true },
+    { text: " [2/4]", echoed: false },
+  ]);
 });

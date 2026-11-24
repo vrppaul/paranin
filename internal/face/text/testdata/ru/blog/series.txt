@@ -1,0 +1,24 @@
+RU-BLOG-SERIES(1)               User Commands                RU-BLOG-SERIES(1)
+
+NAME
+       блог
+
+DESCRIPTION
+       Что читает автор, и как.
+
+       reading · terminals
+
+READING
+       How a reader keeps what they read.
+       вышло 1 из 2
+
+       Медленное чтение                                             2026-11-15
+              Почему страницу, прочитанную дважды, читают один раз.
+              часть 1
+              reading · terminals
+              https://example.test/ru/blog/reading-slowly.txt
+
+       Reading aloud                                                     скоро
+              часть 2
+
+example.test                                                 RU-BLOG-SERIES(1)

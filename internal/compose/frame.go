@@ -23,15 +23,18 @@ type OpenedPage struct {
 	Offered bool
 }
 
-// Frame is what a face lays round the documents it draws, on every page alike, in the site's words: the name of the
-// theme button, which is pressed while the page is dark, the words of the button that copies a command or a block of
+// Frame is what a face lays round the documents it draws in one language, on every page alike, in the site's words in
+// it: the name of the theme button, which is pressed while the page is dark, the locale Open Graph marks a page in,
+// the words of the button that copies a command or a block of
 // code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
 // has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, by each
 // name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the words of its series
 // and of the panes at its foot, the name of its outline, and the words of the blog's list.
 type Frame struct {
-	DarkTheme    string
+	DarkTheme string
+	// Locale is the locale Open Graph marks a page in, language_TERRITORY, as the language's words write it
+	Locale       string
 	CopyWords    CopyWords
 	SSH          Way
 	ReadingGives string
@@ -73,22 +76,25 @@ type Window struct {
 	Page document.Page
 }
 
-// ListWords are the site's words a face lays round the blog's list: its window, the way to it beside a post's other
-// posts, the word before how it groups its posts, and the name of each grouping, by year and by series.
+// ListWords are the site's words a face lays round the blog's list in their language: its window, the way to it beside
+// a post's other posts, the word before how it groups its posts, and the name of each grouping, by year and by series;
+// and the list by year in their language, where the blog's session starts and the way to every post leads.
 type ListWords struct {
 	Window   string
 	AllPosts string
 	By       string
 	Years    string
 	Series   string
+	List     document.Page
 }
 
-// PostLabels are the site's words a face labels a post's facts with: the version a reader reads, its series, and its
-// tags.
+// PostLabels are the site's words a face labels a post's facts with: the version a reader reads, its series, the
+// language it is read in, and its tags.
 type PostLabels struct {
-	Version string
-	Series  string
-	Tags    string
+	Version  string
+	Series   string
+	Language string
+	Tags     string
 }
 
 // VersionWords are the site's words of a post's versions as a face lists them (DESIGN.md, Pick): the title of the
@@ -168,48 +174,56 @@ type Way struct {
 	Gives   string
 }
 
-// frameOf is the frame of a site's pages, with the blog's pages it serves its audience.
+// frameOf is the frame of a site's pages in a blog's language, with the blog's pages it serves its audience.
 func frameOf(snapshot *content.Snapshot, read blog) Frame {
-	words := snapshot.Words
+	words := read.words
 	copyWords := CopyWords{words: words}
 	projects := projectPlaces(snapshot.Profile.Projects)
+	listWords := read.listWords()
 	return Frame{
 		DarkTheme:    words.Text(content.WordDarkTheme),
+		Locale:       words.Text(content.WordLocale),
 		CopyWords:    copyWords,
 		SSH:          copyWords.Way(snapshot.Profile.Site.SSH, words.Text(content.WordSSHGives)),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projects,
-		Pages:        slices.Concat(projectPages(projects), blogPages(read, words)),
+		Pages:        slices.Concat(projectPages(projects), blogPages(read, listWords)),
 		Sessions: []Session{
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
-			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog)},
+			{Name: words.Text(content.WordBlog), Start: listWords.List},
 		},
-		PostLabels: PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
+		PostLabels: PostLabels{
+			Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Language: words.Text(content.WordLanguage),
+			Tags: words.Text(content.WordTags),
+		},
 		VersionWords: VersionWords{
 			Title: words.Text(content.WordVersions), Current: words.Text(content.WordCurrent), Reading: words.Text(content.WordVersionRead),
 		},
 		SeriesWords: SeriesWords{words: words},
 		PaneWords:   paneWords(words),
 		Contents:    words.Text(content.WordContents),
-		ListWords:   listWordsOf(words),
+		ListWords:   listWords,
 	}
 }
 
-// listWordsOf are the site's words of the blog's list.
-func listWordsOf(words content.Words) ListWords {
+// listWords are the site's words of the blog's list in the blog's language, and its list by year there.
+func (read blog) listWords() ListWords {
+	words := read.words
 	return ListWords{
 		Window:   words.Text(content.WordListWindow),
 		AllPosts: words.Text(content.WordAllPosts),
 		By:       words.Text(content.WordBy),
 		Years:    words.Text(content.WordYears),
-		Series:   words.Text(content.WordSeries),
+		Series:   words.Text(content.WordSeriesGrouping),
+		List:     document.PageOf(document.PageBlog).InLanguage(words.Translation()),
 	}
 }
 
-// Groupings are the ways the blog's list groups its posts: by year, then by series.
+// Groupings are the ways the blog's list groups its posts in the words' language: by year, then by series.
 func (listWords ListWords) Groupings() []Grouping {
-	return []Grouping{{Words: listWords.Years, List: document.PageOf(document.PageBlog)}, {Words: listWords.Series, List: document.PageOf(document.PageBlogSeries)}}
+	bySeries := document.PageOf(document.PageBlogSeries).InLanguage(listWords.List.Translation)
+	return []Grouping{{Words: listWords.Years, List: listWords.List}, {Words: listWords.Series, List: bySeries}}
 }
 
 // BlogWindows are the windows of the blog's session showing a list, and a post read beside it, PageNone where none
@@ -305,9 +319,9 @@ func projectPages(projects []document.Place) []OpenedPage {
 // each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, every
 // post served by its number, each older version of a post served, by its address, and the list by each of its
 // filters, which :e opens though Tab offers none.
-func blogPages(read blog, words content.Words) []OpenedPage {
+func blogPages(read blog, listWords ListWords) []OpenedPage {
 	pages := []OpenedPage{}
-	for _, grouping := range listWordsOf(words).Groupings() {
+	for _, grouping := range listWords.Groupings() {
 		pages = append(pages, openedPage(grouping.List, routes.Path(grouping.List, routes.FormatChosen), document.PlaceList, true))
 	}
 	for _, post := range read.newest {
@@ -319,7 +333,7 @@ func blogPages(read blog, words content.Words) []OpenedPage {
 		}
 	}
 	for _, post := range read.served {
-		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.ID), document.PlacePost, false))
+		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.Translation, post.ID), document.PlacePost, false))
 	}
 	for _, post := range read.served {
 		for _, version := range read.olderVersionsOf(post) {

@@ -85,7 +85,7 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 				document.Link{Target: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, Spans: textSpans("roles")}, document.Text{Text: " "},
 				document.Link{Target: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, Spans: textSpans("tool")}, document.Text{Text: " "},
 				document.Link{Target: document.PageOf(document.PageBlog), Spans: textSpans("list")}, document.Text{Text: " "},
-				document.Link{Target: document.Anchor{Page: postPageOf(fixturePostSlug), Name: "what-a-reader-keeps"}, Spans: textSpans("kept")},
+				document.Link{Target: document.Anchor{Page: document.PostPage(fixturePostSlug), Name: "what-a-reader-keeps"}, Spans: textSpans("kept")},
 			)},
 		},
 		{
@@ -176,7 +176,7 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
-			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -221,7 +221,7 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n",
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
-			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
 			}
 		})
@@ -253,10 +253,10 @@ func TestThePicturesServedAreThePostsServed(test *testing.T) {
 				samplePicture{name: sampleDrawingName, text: sampleDrawing})
 			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: false})
 			served, previewed := []document.File{}, []document.File{}
-			for _, shown := range site.Pictures {
+			for _, shown := range site.Own.Pictures {
 				served = append(served, shown.File)
 			}
-			for _, shown := range site.Previews {
+			for _, shown := range site.Own.Previews {
 				for _, picture := range shown.Pictures {
 					previewed = append(previewed, picture.File)
 				}
@@ -414,7 +414,7 @@ func TestCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
 			want := []document.Block{testCase.want}
-			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, want) {
 				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, want)
 			}
 		})
@@ -461,7 +461,7 @@ func TestCodeRunsJoinToTheCodesTextWhole(test *testing.T) {
 		languages = append(languages, testCase.language)
 		test.Run(testCase.language, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n```"+testCase.language+"\n"+testCase.code+"\n```\n")
-			code := codeOf(test, postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug))
+			code := codeOf(test, postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug))
 			if got := code.Text(); got != testCase.code || len(kindsOfRuns(code.Runs)) < 2 {
 				test.Errorf("the code %q in %s = runs %+v, joined %q; want them joined to the code, of more than one kind",
 					testCase.code, testCase.language, code.Runs, got)
@@ -504,7 +504,7 @@ func kindsOfRuns(runs []document.CodeRun) map[document.CodeKind]bool {
 // Every word a post writes reaches its document as a phrase of its own, wherever it stands: a face that shows every
 // phrase shows the whole post.
 func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
-	phrases := document.Phrases(postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Posts, fixturePostSlug))
+	phrases := document.Phrases(postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Own.Posts, fixturePostSlug))
 	cases := []struct {
 		name string
 		want string
@@ -576,8 +576,8 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		kinds = append(kinds, testCase.kind)
 		test.Run(testCase.kind.String(), func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n", testCase.pictures...)
-			post := snapshot.Posts[slices.IndexFunc(snapshot.Posts, func(post content.Post) bool { return post.Slug == samplePostSlug })]
-			phrases := document.Phrases(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, samplePostSlug))
+			post, _ := snapshot.Post("", samplePostSlug)
+			phrases := document.Phrases(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug))
 			if !slices.Contains(kindsOf(post.Body.Tree), testCase.kind) || !slices.Contains(phrases, testCase.phrase) {
 				test.Errorf("the body %q = kinds %v, phrases %q; want a %v among the kinds and %q among the phrases",
 					testCase.body, kindsOf(post.Body.Tree), phrases, testCase.kind, testCase.phrase)
@@ -632,10 +632,10 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
 			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: testCase.drafts})
 			served, previewed := []string{}, []string{}
-			for _, post := range site.Posts {
+			for _, post := range site.Own.Posts {
 				served = append(served, post.Head.Page.Slug)
 			}
-			for _, shown := range site.Previews {
+			for _, shown := range site.Own.Previews {
 				previewed = append(previewed, shown.Post.Head.Page.Slug)
 			}
 			if slices.Contains(served, samplePostSlug) != testCase.served || slices.Contains(previewed, samplePostSlug) != testCase.previewed {
@@ -686,7 +686,7 @@ func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 // it came out, in the zone it was written in, and where it is discussed, each a link by its site's name; and its
 // series and the posts beside it.
 func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
-	head := postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Posts, fixturePostSlug).Head
+	head := postNamed(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Own.Posts, fixturePostSlug).Head
 	version := fmt.Sprint(head.Version)
 	head.Version = nil
 	description := textSpans("Why a page read twice is read once.")
@@ -716,6 +716,10 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 			{Target: document.Feed{Series: "reading"}, Spans: textSpans("Reading — Mira Example's blog")},
 			{Target: document.Feed{Series: ""}, Spans: textSpans("Mira Example's blog")},
 		},
+		Languages: []document.Language{
+			{Tag: "en", Name: "English", Locale: "en_US", Page: page, Read: true},
+			{Tag: "ru", Name: "Русский", Locale: "ru_RU", Page: page.InLanguage("ru"), Read: false},
+		},
 	}
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)
@@ -737,14 +741,14 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 		{
 			name: "a post out", status: content.StatusPublished,
 			want: document.VersionOut{Day: dayOf(test, "2026-11-10"), Versions: []document.PostVersion{
-				{Page: postPageOf(samplePostSlug), Day: dayOf(test, "2026-11-10"), Name: "2026-11-10", Current: true, Read: true},
+				{Page: document.PostPage(samplePostSlug), Day: dayOf(test, "2026-11-10"), Name: "2026-11-10", Current: true, Read: true},
 			}},
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
-			head := postNamed(test, SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true}).Posts, samplePostSlug).Head
+			head := postNamed(test, SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true}).Own.Posts, samplePostSlug).Head
 			if got, want := fmt.Sprint(head.Version), fmt.Sprint(testCase.want); got != want {
 				test.Errorf("the version of %s = %s, want %s", testCase.name, got, want)
 			}
@@ -785,7 +789,7 @@ func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	composed := make([][]document.Document, 2)
 	var group sync.WaitGroup
 	for index := range composed {
-		group.Go(func() { composed[index] = SiteOf(Prepare(snapshot), publicOnTheDay()).Posts })
+		group.Go(func() { composed[index] = SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts })
 	}
 	group.Wait()
 	if !reflect.DeepEqual(composed[0], composed[1]) {
@@ -823,7 +827,7 @@ func publicOnTheDay() Audience {
 // postNamed is the document of the post of a slug among documents.
 func postNamed(test *testing.T, posts []document.Document, slug string) document.Document {
 	test.Helper()
-	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: slug, Tab: ""})
+	return fixtures.DocumentOf(test, posts, document.PostPage(slug))
 }
 
 func paragraphOf(spans ...document.Span) document.Paragraph {

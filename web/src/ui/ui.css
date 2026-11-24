@@ -2483,11 +2483,14 @@ a.pane:hover .pane-title {
   margin-left: var(--cell-3);
 }
 
-/* the Switch (DESIGN.md, Switch): a few addresses of one thing in one row of quiet hairlines, at a line's size, the
- * links sharing the line between each two; the one shown reversed and bold as the window shown, the others a shade
+/* the Switch (DESIGN.md, Switch): a few addresses of one thing in one row of quiet hairlines, at a line's size in the
+ * small style, the links sharing the line between each two; the one shown reversed and bold as the window shown, the others a shade
  * down under the pointer. Each link keeps its own corners, so a focus ring is never cut */
 .switch {
   display: inline-flex;
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
 }
 
 .switch-way {

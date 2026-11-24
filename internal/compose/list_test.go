@@ -74,7 +74,7 @@ func TestTheListByYearHoldsEveryPostListedNewestFirst(test *testing.T) {
 			posts: []seenListed{{readiness: outAt(test, "old-one", yearBefore), title: "old-one", part: "", series: "", seriesName: "", tags: ""}},
 		},
 	}
-	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
+	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Own.Lists
 	if got := seenGroups(lists[0]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by year = %+v, want %+v", got, want)
 	}
@@ -128,7 +128,7 @@ func TestTheListBySeriesHoldsEverySeriesThenThePostsInNone(test *testing.T) {
 			},
 		},
 	}
-	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Lists
+	lists := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Own.Lists
 	if got := seenGroups(lists[1]); !reflect.DeepEqual(got, want) {
 		test.Errorf("the list by series = %+v, want %+v", got, want)
 	}
@@ -145,9 +145,9 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	snapshot := withPostsAndSeries(test, posts, fixtureSeriesOf(fixturePostSlug, ""))
 	want := []string{"terminals", "reading", "writing"}
 	pages := []document.PageKind{document.PageBlog, document.PageBlogSeries}
-	for index, list := range SiteOf(Prepare(snapshot), publicOnTheDay()).Lists {
+	for index, list := range SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Lists {
 		head := list.Head
-		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.ListedWords(), want) || document.PlainText(head.Title) != snapshot.Words.Text(content.WordBlog) ||
+		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.ListedWords(), want) || document.PlainText(head.Title) != snapshot.Own.Words.Text(content.WordBlog) ||
 			document.PlainText(head.Lead) != "What the writer reads, and how." || document.PlainText(head.Description) != "What the writer reads, and how." {
 			test.Errorf("the list's head = %+v, want the page of kind %d, the tags %q and the blog's name and line", head, pages[index], want)
 		}
@@ -214,7 +214,7 @@ func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
 			groups: []seenGroup{{title: "2026", name: "", line: "", count: "2 posts", posts: []seenListed{fixturePost, first}}},
 		},
 	}
-	filtered := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Filtered
+	filtered := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Own.Filtered
 	if len(filtered) != len(cases) {
 		test.Fatalf("the list is filtered %d ways, %+v, want %d", len(filtered), filtered, len(cases))
 	}
@@ -238,7 +238,7 @@ func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
 // leading back too.
 func TestAListsHeadOffersItsFilters(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
-	lists := slices.Concat(site.Lists, site.Filtered)
+	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
 	whole := document.PageOf(document.PageBlog)
 	reading := document.Filter{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: document.TagFilter("reading"), Current: false, WayOut: ""}
 	terminals := document.Filter{Kind: document.FilterTag, Name: "terminals", Words: textSpans("terminals"), Page: document.TagFilter("terminals"), Current: false, WayOut: ""}
@@ -305,10 +305,10 @@ func TestAListsPlacesAreItsPostsThenItsTagsThenItsSeries(test *testing.T) {
 		list document.Document
 		want []document.Place
 	}{
-		{name: "by year, newest first", list: site.Lists[0], want: slices.Concat([]document.Place{toolbox, read, first, loner}, tagPlaces, seriesPlaces)},
-		{name: "by series, by its groups", list: site.Lists[1], want: slices.Concat([]document.Place{toolbox, first, read, loner}, tagPlaces, seriesPlaces)},
+		{name: "by year, newest first", list: site.Own.Lists[0], want: slices.Concat([]document.Place{toolbox, read, first, loner}, tagPlaces, seriesPlaces)},
+		{name: "by series, by its groups", list: site.Own.Lists[1], want: slices.Concat([]document.Place{toolbox, first, read, loner}, tagPlaces, seriesPlaces)},
 		{
-			name: "filtered by a tag, which leads back to the list", list: fixtures.DocumentOf(test, site.Filtered, document.TagFilter("reading")),
+			name: "filtered by a tag, which leads back to the list", list: fixtures.DocumentOf(test, site.Own.Filtered, document.TagFilter("reading")),
 			want: slices.Concat([]document.Place{read}, filteredTagPlaces, seriesPlaces[1:]),
 		},
 	}
@@ -333,7 +333,7 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{slug: "coming", id: 6, status: "published", published: afterTheDay, tags: ""},
 		{slug: "coming-unlisted", id: 7, status: "unlisted", published: afterTheDay, tags: ""},
 	}
-	read, first, hidden := postPageOf(fixturePostSlug), postPageOf("first"), postPageOf("hidden")
+	read, first, hidden := document.PostPage(fixturePostSlug), document.PostPage("first"), document.PostPage("hidden")
 	want := []OpenedPage{
 		{Place: document.Place{Name: "tidy-tool", Kind: document.PlaceProject, Page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, Section: ""}, Offered: true},
 		{Place: document.Place{Name: "blog", Kind: document.PlaceList, Page: document.PageOf(document.PageBlog), Section: ""}, Offered: true},
@@ -344,19 +344,14 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/3", Kind: document.PlacePost, Page: first, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/5", Kind: document.PlacePost, Page: hidden, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/1", Kind: document.PlacePost, Page: read, Section: ""}, Offered: false},
-		{Place: document.Place{Name: "blog/reading-slowly/2026-11-10", Kind: document.PlaceVersion, Page: document.OlderVersion(fixturePostSlug, "2026-11-10"), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "blog/reading-slowly/2026-11-10", Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug).OlderVersion("2026-11-10"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading"), Section: ""}, Offered: false},
 	}
-	if got := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Frame.Pages; !reflect.DeepEqual(got, want) {
+	if got := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Own.Frame.Pages; !reflect.DeepEqual(got, want) {
 		test.Errorf("the pages :e opens = %+v, want %+v", got, want)
 	}
-}
-
-// postPageOf is the page of a post of a slug.
-func postPageOf(slug string) document.Page {
-	return document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}
 }
 
 // seenGroups are the groups of a list as a test reads them, each a section holding its posts.
@@ -381,7 +376,7 @@ func seenGroups(list document.Document) []seenGroup {
 func seenListedOf(post document.ListedPost) seenListed {
 	return seenListed{
 		readiness: fmt.Sprint(post.Readiness), title: document.PlainText(post.Title), part: document.PlainText(post.Part),
-		series: document.PlainText(post.Series), seriesName: post.SeriesName, tags: strings.Join(post.Tags, seenTagJoint),
+		series: document.PlainText(post.Series), seriesName: post.SeriesGroup.Name, tags: strings.Join(post.Tags, seenTagJoint),
 	}
 }
 

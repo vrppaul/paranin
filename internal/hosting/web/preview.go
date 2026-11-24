@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // The fewest bytes a preview key holds: as many as SHA-256 writes, since a key shorter than its hash weakens the HMAC
@@ -17,8 +20,8 @@ import (
 const leastKeyBytes = sha256.Size
 
 // How a preview link's token is written, one segment of its path: the moment the link lapses, in seconds of Unix time,
-// then its signature, the HMAC-SHA256 over that moment and the post's slug in base64url with no padding; and what joins
-// the moment to the slug in what is signed. Neither mark stands in a slug, a number or base64url
+// then its signature, the HMAC-SHA256 over that moment and the address the post has once out, in base64url with no
+// padding; and what joins the moment to the address in what is signed. Neither mark stands in a number or base64url
 const (
 	tokenJoint  = "."
 	signedJoint = "/"
@@ -48,16 +51,16 @@ func ReadPreviewKey(path string) (*PreviewKey, error) {
 }
 
 // Token is the token of a post's preview link that lapses at a moment: the moment, then the key's signature over it
-// and the post's slug, so neither is changed without the key.
-func (key *PreviewKey) Token(slug string, lapses time.Time) string {
+// and the post's address once out, so neither is changed without the key and a link opens one language alone.
+func (key *PreviewKey) Token(post document.Page, lapses time.Time) string {
 	moment := strconv.FormatInt(lapses.Unix(), decimal)
-	return moment + tokenJoint + key.signature(moment, slug)
+	return moment + tokenJoint + key.signature(moment, routes.Path(post, routes.FormatChosen))
 }
 
-// admits is whether a token opens the preview link of a post's slug at a moment: written as Token writes one, signed by
-// the key over the slug and the moment it lapses, which has not come; never where the server holds no key. The
+// admits is whether a token opens the preview link of a post at a moment: written as Token writes one, signed by the
+// key over the post's address and the moment it lapses, which has not come; never where the server holds no key. The
 // signature is compared in constant time, so how long a request takes tells nothing of how near its token came.
-func (key *PreviewKey) admits(token, slug string, moment time.Time) bool {
+func (key *PreviewKey) admits(token string, post document.Page, moment time.Time) bool {
 	if key == nil {
 		return false
 	}
@@ -66,13 +69,13 @@ func (key *PreviewKey) admits(token, slug string, moment time.Time) bool {
 	if !isWritten || err != nil || !moment.Before(time.Unix(lapses, 0)) {
 		return false
 	}
-	return hmac.Equal([]byte(signature), []byte(key.signature(lapsesWritten, slug)))
+	return hmac.Equal([]byte(signature), []byte(key.signature(lapsesWritten, routes.Path(post, routes.FormatChosen))))
 }
 
-// signature is the key's HMAC-SHA256 over the moment a link lapses, as its token writes it, and a post's slug.
-func (key *PreviewKey) signature(lapses, slug string) string {
+// signature is the key's HMAC-SHA256 over the moment a link lapses, as its token writes it, and a post's address.
+func (key *PreviewKey) signature(lapses, address string) string {
 	signer := hmac.New(sha256.New, key.secret)
 	// a hash takes every write, and says so by returning no error
-	_, _ = signer.Write([]byte(lapses + signedJoint + slug))
+	_, _ = signer.Write([]byte(lapses + signedJoint + address))
 	return base64.RawURLEncoding.EncodeToString(signer.Sum(nil))
 }

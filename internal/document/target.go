@@ -15,8 +15,8 @@ type Address struct {
 	URL string
 }
 
-// Page is a page of the site, by its kind and slug, and the tab of it shown alone, or the older version of a post; the
-// zero page is none.
+// Page is a page of the site, by its kind and slug, and the tab of it shown alone, or the older version of a post, in
+// the language it is translated into; the zero page is none.
 type Page struct {
 	Kind PageKind
 	Slug string
@@ -25,6 +25,8 @@ type Page struct {
 	// Revision is the older version of a post shown, by the day it came out as its revision's name writes it,
 	// YYYY-MM-DD; none for the current version, and on any other page
 	Revision string
+	// Translation is the language the page is translated into, by its tag, as ru; none in English, the site's own
+	Translation string
 }
 
 // PageKind is what a page of the site is.
@@ -59,22 +61,35 @@ const (
 // PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
 // list by year or by series; PageNone's, no page.
 func PageOf(kind PageKind) Page {
-	return Page{Kind: kind, Slug: "", Tab: "", Revision: ""}
+	return Page{Kind: kind, Slug: "", Tab: "", Revision: "", Translation: ""}
+}
+
+// PostPage is a post's page, its current version's, in the site's own language, by its slug.
+func PostPage(slug string) Page {
+	return Page{Kind: PagePost, Slug: slug, Tab: "", Revision: "", Translation: ""}
 }
 
 // TagFilter is the blog's list filtered by a tag (docs/FOUNDATION.md §5.4, Series, tags and lists).
 func TagFilter(tag string) Page {
-	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: ""}
+	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: "", Translation: ""}
 }
 
 // SeriesFilter is the blog's list filtered by a series, by its name.
 func SeriesFilter(name string) Page {
-	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: ""}
+	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: "", Translation: ""}
 }
 
-// OlderVersion is an older version of a post, by its slug and its revision's name (docs/FOUNDATION.md §5.4, Revisions).
-func OlderVersion(slug, revision string) Page {
-	return Page{Kind: PagePost, Slug: slug, Tab: "", Revision: revision}
+// OlderVersion is the older version of the post a page is, in its language, by its revision's name (docs/FOUNDATION.md
+// §5.4, Revisions).
+func (page Page) OlderVersion(revision string) Page {
+	page.Revision = revision
+	return page
+}
+
+// InLanguage is the page in a language, by its tag: translated into it, or in the site's own where the tag is none.
+func (page Page) InLanguage(translation string) Page {
+	page.Translation = translation
+	return page
 }
 
 // InBlog is whether a page is the blog's, a post or the list, by year, by series or filtered, which a face shows in
@@ -98,12 +113,12 @@ func (page Page) Indexed() bool {
 	return !isFilter && page.Revision == ""
 }
 
-// Unfiltered is the list a filtered list filters, the blog's list by year, and whether the page is a filtered list.
-// exhaustive holds the switch to every kind.
+// Unfiltered is the list a filtered list filters, the blog's list by year in its language, and whether the page is a
+// filtered list. exhaustive holds the switch to every kind.
 func (page Page) Unfiltered() (Page, bool) {
 	switch page.Kind {
 	case PageTagFilter, PageSeriesFilter:
-		return PageOf(PageBlog), true
+		return PageOf(PageBlog).InLanguage(page.Translation), true
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills, PagePost, PageBlog, PageBlogSeries:
 	}
 	return page, false
@@ -122,10 +137,12 @@ type File struct {
 	Name string
 }
 
-// Feed is a feed of the blog a reader subscribes to (docs/FOUNDATION.md §5.4, Feeds), by the series it follows: a
+// Feed is a feed of the blog a reader subscribes to (docs/FOUNDATION.md §5.4, Feeds), by the series it follows, a
 // series' parts out, by the series' name, or, where it names none, every post the blog lists.
 type Feed struct {
 	Series string
+	// Translation is the language of the blog the feed follows, as a page names it
+	Translation string
 }
 
 // Mail is a mailbox a link writes to, by its address as the content writes it.

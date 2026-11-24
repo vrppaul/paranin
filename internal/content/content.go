@@ -10,62 +10,103 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"path"
 
 	"go.yaml.in/yaml/v3"
 )
 
-// The files of the folder: the profile, and the site's words in English, its one language so far (D12), in the
-// folder of the catalogues, in a file named by the language's tag (wordsFile); a file of YAML ends as yamlEnding
-// says, a catalogue and a series alike
+// The files of the folder: the profile, and the site's words in each language, English, the site's own (D12), and
+// each a post may be translated into, in the folder of the catalogues, in a file named by the language's tag
+// (wordsFile); a file of YAML ends as yamlEnding says, a catalogue and a series alike
 const (
 	profileFile = "profile.yaml"
 	english     = "en"
-	wordsFolder = "i18n/"
+	wordsFolder = "i18n"
 	yamlEnding  = ".yaml"
 )
 
 // wordsFile is the file of the site's words in a language, by its tag.
 func wordsFile(language string) string {
-	return wordsFolder + language + yamlEnding
+	return path.Join(wordsFolder, language+yamlEnding)
 }
 
 // Snapshot is the content as one load read it.
 type Snapshot struct {
 	Profile Profile
-	Words   Words
-	// Posts stand in the order of their slugs and the series in that of their names, as their folders list them: an
-	// order no edit of a post's fields changes. A list of posts orders them its own way
-	Posts  []Post
+	// Own is the content in the site's own language, English, which the résumé is written in and every post first
+	Own Edition
+	// Translations are the content in each other language the site has words for, in their tags' order
+	Translations []Edition
+	// Series stand in the order of their names, as their folder lists them
 	Series []Series
+}
+
+// Edition is the content in one language: the site's words in it, and the posts written in it, in the order of their
+// slugs, which no edit of a post's fields changes.
+type Edition struct {
+	Words Words
+	Posts []Post
+}
+
+// Editions are the content in every language, English first.
+func (snapshot *Snapshot) Editions() []Edition {
+	return append([]Edition{snapshot.Own}, snapshot.Translations...)
+}
+
+// TranslatedInto are the languages the site is translated into, by their tags, in their order.
+func (snapshot *Snapshot) TranslatedInto() []string {
+	tags := []string{}
+	for _, edition := range snapshot.Translations {
+		tags = append(tags, edition.Words.Language())
+	}
+	return tags
+}
+
+// Post is the post of a slug in the language it is translated into, the original where it names none, if any.
+func (snapshot *Snapshot) Post(translation, slug string) (Post, bool) {
+	for _, edition := range snapshot.Editions() {
+		for _, post := range edition.Posts {
+			if post.Slug == slug && post.Translation == translation {
+				return post, true
+			}
+		}
+	}
+	var none Post
+	return none, false
 }
 
 // Load reads the content folder and checks it whole: a snapshot, or Faults naming everything wrong in it.
 func Load(folder fs.FS) (*Snapshot, error) {
-	wordsPath := wordsFile(english)
 	profile, profileDocument, faults := readFile[Profile](folder, profileFile)
-	written, wordsDocument, wordFaults := readFile[map[string]string](folder, wordsPath)
-	posts, unreadPosts, misplacedPosts := readPosts(folder)
+	catalogues, unreadWords, misplacedWords := readCatalogues(folder)
+	translated := catalogues.translatedLanguages()
+	posts, unreadPosts, misplacedPosts := readPosts(folder, translated)
 	series, unreadSeries, misplacedSeries := readSeries(folder)
-	faults = append(faults, wordFaults...)
+	faults = append(faults, unreadWords...)
 	faults = append(faults, unreadPosts...)
 	faults = append(faults, unreadSeries...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	words, wordFaults := readWords(english, written)
+	words, wordFaults := inspectCatalogues(catalogues)
 	faults = inspectProfile(profile)
 	faults = append(faults, inspectCharacters(profileFile, profileDocument)...)
 	faults = append(faults, wordFaults...)
-	faults = append(faults, inspectCharacters(wordsPath, wordsDocument)...)
+	faults = append(faults, misplacedWords...)
 	faults = append(faults, misplacedPosts...)
-	checkedPosts, postFaults := inspectPosts(folder, profile.Site.BaseURL, posts)
+	originals, translations, postFaults := inspectPosts(folder, profile.Site.BaseURL, posts)
 	faults = append(faults, postFaults...)
 	faults = append(faults, misplacedSeries...)
 	faults = append(faults, inspectSeries(series, posts)...)
 	if len(faults) > 0 {
 		return nil, faults
 	}
-	return &Snapshot{Profile: profile, Words: words, Posts: checkedPosts, Series: seriesOf(series)}, nil
+	editions := []Edition{}
+	for _, language := range translated {
+		editions = append(editions, Edition{Words: words[language], Posts: translations[language]})
+	}
+	own := Edition{Words: words[english], Posts: originals}
+	return &Snapshot{Profile: profile, Own: own, Translations: editions, Series: seriesOf(series)}, nil
 }
 
 // readFile reads a file of the folder and decodes it strictly, as decodeStrictly does.

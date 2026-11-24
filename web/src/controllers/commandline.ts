@@ -64,11 +64,11 @@ const BACKSPACE = "Backspace";
 const FORWARD = 1;
 const BACKWARD = -1;
 
-// What the field says to a screen reader: what it is, its name, the keys it names, whether it offers a menu, whether
-// the menu shows, and the place chosen; a search is a field of its own kind, with no menu
+// What the field says to a screen reader: what it is, the element that names it, in English, the keys it names, whether
+// it offers a menu, whether the menu shows, and the place chosen; a search is a field of its own kind, with no menu
 const ROLE = "role";
 const SEARCH_ROLE = "searchbox";
-const NAME = "aria-label";
+const LABELLED_BY = "aria-labelledby";
 const DESCRIBED_BY = "aria-describedby";
 const AUTOCOMPLETE = "aria-autocomplete";
 const CONTROLS = "aria-controls";
@@ -80,6 +80,9 @@ const SELECTED = "aria-selected";
 const STATE = "data-state";
 const FOUND_STATE = "found";
 
+// The element that marks Neovim's own words on the line in their language, the one the server marks its keys in
+const OWN_WORDS_ELEMENT = "span";
+
 // The cells of the line before the name its menu lists, which the stylesheet stands the menu's names under
 const TYPED_CELLS = "--typed-cells";
 
@@ -89,10 +92,10 @@ type Visit = (address: string) => void;
 /** What the line is open for: a place or a command after the colon, a search after the slash. */
 type Mode = "command" | "search";
 
-/** How the field presents itself to a screen reader in a mode: what it is, its name, and its menu if any. */
+/** How the field presents itself to a screen reader in a mode: what it is, its label's id, and its menu if any. */
 interface FieldKind {
   role: string;
-  name: string;
+  label: string;
   menu: FieldMenu | undefined;
 }
 
@@ -172,8 +175,8 @@ function partsOf(page: Document): Parts | undefined {
   const searchKeys = line?.querySelector<HTMLElement>(SEARCH_KEYS);
   const count = line?.querySelector<HTMLElement>(COUNT);
   const role = field?.getAttribute(ROLE);
-  const name = field?.getAttribute(NAME);
-  const searchName = field?.dataset.searchName;
+  const label = field?.getAttribute(LABELLED_BY);
+  const searchLabel = field?.dataset.searchLabel;
   const folderName = field?.dataset.folder;
   const folderAddress = field?.dataset.folderAddress;
   const autocomplete = field?.getAttribute(AUTOCOMPLETE);
@@ -193,8 +196,8 @@ function partsOf(page: Document): Parts | undefined {
     !searchKeys ||
     !count ||
     !role ||
-    !name ||
-    !searchName ||
+    !label ||
+    !searchLabel ||
     !folderName ||
     !folderAddress ||
     !autocomplete ||
@@ -203,8 +206,8 @@ function partsOf(page: Document): Parts | undefined {
     return undefined;
   }
   const kinds: Record<Mode, FieldKind> = {
-    command: { role, name, menu: { autocomplete, controls } },
-    search: { role: SEARCH_ROLE, name: searchName, menu: undefined },
+    command: { role, label, menu: { autocomplete, controls } },
+    search: { role: SEARCH_ROLE, label: searchLabel, menu: undefined },
   };
   return {
     switchLabel,
@@ -223,6 +226,14 @@ function partsOf(page: Document): Parts | undefined {
     kinds,
     folder: { name: folderName, address: folderAddress },
   };
+}
+
+/** Neovim's own words as the line says them, marked in their language, whatever the page's. */
+function ownWordsOf(text: string, page: Document, language: string): HTMLElement {
+  const words = page.createElement(OWN_WORDS_ELEMENT);
+  words.lang = language;
+  words.textContent = text;
+  return words;
 }
 
 /** A place as the server draws it on the menu, its kind the word it names it by, or nothing where it lacks a part. */
@@ -401,7 +412,7 @@ class CommandLine {
     this.parts.keys.hidden = searching;
     this.parts.searchKeys.hidden = !searching;
     this.parts.field.setAttribute(ROLE, kind.role);
-    this.parts.field.setAttribute(NAME, kind.name);
+    this.parts.field.setAttribute(LABELLED_BY, kind.label);
     this.parts.field.setAttribute(DESCRIBED_BY, (searching ? this.parts.searchKeys : this.parts.keys).id);
     if (kind.menu === undefined) {
       this.parts.field.removeAttribute(AUTOCOMPLETE);
@@ -516,7 +527,7 @@ class CommandLine {
         this.leave();
         break;
       case "failed":
-        this.answer({ words: outcome.message, failed: true });
+        this.answer({ pieces: outcome.message, failed: true });
         break;
     }
   }
@@ -538,10 +549,13 @@ class CommandLine {
     this.parts.searchKeys.hidden = true;
   }
 
-  /** Says something on the line until the next key. */
+  /** Says something on the line until the next key: Neovim's words in the language of its keys, what was typed as typed. */
   private say(said: Said): void {
     this.standSaying();
-    this.parts.said.textContent = said.words;
+    const language = this.parts.keys.lang;
+    this.parts.said.replaceChildren(
+      ...said.pieces.map((piece) => (piece.echoed ? piece.text : ownWordsOf(piece.text, this.page, language))),
+    );
     if (said.failed) {
       this.parts.said.removeAttribute(STATE);
     } else {

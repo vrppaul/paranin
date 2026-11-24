@@ -29,7 +29,7 @@ func dayOf(test *testing.T, written string) time.Time {
 
 // fixtureVersions are the fixture post's versions, newest first, the version read at a page of them.
 func fixtureVersions(test *testing.T, read document.Page) []document.PostVersion {
-	current, older := postPageOf(fixturePostSlug), document.OlderVersion(fixturePostSlug, fixtureRevisionDay)
+	current, older := document.PostPage(fixturePostSlug), document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay)
 	return []document.PostVersion{
 		{Page: current, Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: read == current},
 		{Page: older, Day: dayOf(test, fixtureRevisionDay), Name: fixtureRevisionDay, Current: false, Read: read == older},
@@ -41,7 +41,7 @@ func fixtureVersions(test *testing.T, read document.Page) []document.PostVersion
 func TestAPostsHeadListsItsVersionsNewestFirst(test *testing.T) {
 	site := SiteOf(Prepare(changedFixture(test, secondRevisionWritten)), publicOnTheDay())
 	names := []string{}
-	for _, version := range document.VersionsOf(postNamed(test, site.Posts, fixturePostSlug).Head.Version) {
+	for _, version := range document.VersionsOf(postNamed(test, site.Own.Posts, fixturePostSlug).Head.Version) {
 		names = append(names, version.Name)
 	}
 	if want := []string{fixtureCurrentDay, "2026-11-11", fixtureRevisionDay}; !slices.Equal(names, want) {
@@ -52,17 +52,17 @@ func TestAPostsHeadListsItsVersionsNewestFirst(test *testing.T) {
 // A post of one version alone lists that version, its current one, read.
 func TestAPostOfOneVersionListsThatVersionAlone(test *testing.T) {
 	site := SiteOf(Prepare(changedFixture(test, fixtureRevisionRemoved)), publicOnTheDay())
-	versions := document.VersionsOf(postNamed(test, site.Posts, fixturePostSlug).Head.Version)
-	want := []document.PostVersion{{Page: postPageOf(fixturePostSlug), Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: true}}
-	if !reflect.DeepEqual(versions, want) || len(site.Versions) > 0 {
-		test.Errorf("the versions = %+v and %d older ones served, want %+v alone", versions, len(site.Versions), want)
+	versions := document.VersionsOf(postNamed(test, site.Own.Posts, fixturePostSlug).Head.Version)
+	want := []document.PostVersion{{Page: document.PostPage(fixturePostSlug), Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: true}}
+	if !reflect.DeepEqual(versions, want) || len(site.Own.Versions) > 0 {
+		test.Errorf("the versions = %+v and %d older ones served, want %+v alone", versions, len(site.Own.Versions), want)
 	}
 }
 
 // An older version's code is split into its kinds of word, as its post's is.
 func TestAnOlderVersionsCodeIsSplitIntoItsKindsOfWord(test *testing.T) {
 	site := SiteOf(Prepare(changedFixture(test, revisionOfCode)), publicOnTheDay())
-	code := codeOf(test, fixtures.DocumentOf(test, site.Versions, document.OlderVersion(fixturePostSlug, "2026-11-11")))
+	code := codeOf(test, fixtures.DocumentOf(test, site.Own.Versions, document.PostPage(fixturePostSlug).OlderVersion("2026-11-11")))
 	if kinds := kindsOfRuns(code.Runs); !kinds[document.CodeKeyword] {
 		test.Errorf("the older version's code runs of kinds %v, want a keyword among them", kinds)
 	}
@@ -94,12 +94,14 @@ func revisionOfCode(test *testing.T, folder string) {
 // site's words round its day; its body its own.
 func TestAnOlderVersionIsAPageOfItsOwnSayingANewerStands(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
-	page := document.OlderVersion(fixturePostSlug, fixtureRevisionDay)
-	older := fixtures.DocumentOf(test, site.Versions, page)
-	head := postNamed(test, site.Posts, fixturePostSlug).Head
+	page := document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay)
+	older := fixtures.DocumentOf(test, site.Own.Versions, page)
+	head := postNamed(test, site.Own.Posts, fixturePostSlug).Head
 	lead := textSpans("Why a page read twice is read once, first said.")
 	versions := fixtureVersions(test, page)
 	head.Page, head.Title, head.Lead, head.Description = page, textSpans("Slow reading"), lead, lead
+	head.Languages = slices.Clone(head.Languages)
+	head.Languages[0].Page = page
 	head.Version = document.VersionOlder{
 		Day: dayOf(test, fixtureRevisionDay), Newer: versions[0], NewerWords: document.Around{Before: "newer: ", After: ""}, Versions: versions,
 	}
@@ -115,7 +117,7 @@ func TestAnOlderVersionIsAPageOfItsOwnSayingANewerStands(test *testing.T) {
 // lists its current version alone, and a draft as its author reads it none; neither serves an older one, though their
 // revisions stay for when they are out.
 func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
-	current := document.PostVersion{Page: postPageOf(fixturePostSlug), Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: true}
+	current := document.PostVersion{Page: document.PostPage(fixturePostSlug), Day: dayOf(test, fixtureCurrentDay), Name: fixtureCurrentDay, Current: true, Read: true}
 	cases := []struct {
 		name     string
 		audience Audience
@@ -129,8 +131,8 @@ func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			site := SiteOf(Prepare(changedFixture(test, testCase.change)), testCase.audience)
 			read := postNamed(test, postsAndPreviews(site), fixturePostSlug).Head.Version
-			if versions := document.VersionsOf(read); len(site.Versions) > 0 || !reflect.DeepEqual(versions, testCase.want) {
-				test.Errorf("%s serves %d older versions and lists %+v, want none and %+v", testCase.name, len(site.Versions), versions, testCase.want)
+			if versions := document.VersionsOf(read); len(site.Own.Versions) > 0 || !reflect.DeepEqual(versions, testCase.want) {
+				test.Errorf("%s serves %d older versions and lists %+v, want none and %+v", testCase.name, len(site.Own.Versions), versions, testCase.want)
 			}
 		})
 	}
@@ -139,14 +141,14 @@ func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
 // A post's places end with its other versions, each by the day it came out: an older version's with the current one.
 func TestAPostsPlacesEndWithItsOtherVersions(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
-	older := document.OlderVersion(fixturePostSlug, fixtureRevisionDay)
+	older := document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay)
 	cases := []struct {
 		name  string
 		shown document.Document
 		want  document.Place
 	}{
-		{name: "the current version", shown: postNamed(test, site.Posts, fixturePostSlug), want: document.Place{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: older, Section: ""}},
-		{name: "an older version", shown: fixtures.DocumentOf(test, site.Versions, older), want: document.Place{Name: fixtureCurrentDay, Kind: document.PlaceVersion, Page: postPageOf(fixturePostSlug), Section: ""}},
+		{name: "the current version", shown: postNamed(test, site.Own.Posts, fixturePostSlug), want: document.Place{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: older, Section: ""}},
+		{name: "an older version", shown: fixtures.DocumentOf(test, site.Own.Versions, older), want: document.Place{Name: fixtureCurrentDay, Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug), Section: ""}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -161,8 +163,8 @@ func TestAPostsPlacesEndWithItsOtherVersions(test *testing.T) {
 // A heading named as a version of its post takes its count, so its name leads to one place.
 func TestAHeadingNamedAsAVersionTakesItsCount(test *testing.T) {
 	snapshot := changedFixture(test, headingNamedAsAVersion)
-	post := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)
-	want := document.Place{Name: fixtureRevisionDay + "-2", Kind: document.PlaceHeading, Page: postPageOf(fixturePostSlug), Section: fixtureRevisionDay + "-2"}
+	post := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug)
+	want := document.Place{Name: fixtureRevisionDay + "-2", Kind: document.PlaceHeading, Page: document.PostPage(fixturePostSlug), Section: fixtureRevisionDay + "-2"}
 	if places := document.PlacesOf(post); !slices.Contains(places, want) {
 		test.Errorf("the post's places = %+v, want %+v among them", places, want)
 	}
@@ -179,11 +181,11 @@ func headingNamedAsAVersion(test *testing.T, folder string) {
 func TestEditOpensAnOlderVersionByItsAddress(test *testing.T) {
 	want := OpenedPage{
 		Place: document.Place{
-			Name: "blog/reading-slowly/" + fixtureRevisionDay, Kind: document.PlaceVersion, Page: document.OlderVersion(fixturePostSlug, fixtureRevisionDay), Section: "",
+			Name: "blog/reading-slowly/" + fixtureRevisionDay, Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay), Section: "",
 		},
 		Offered: false,
 	}
-	if pages := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Frame.Pages; !slices.Contains(pages, want) {
+	if pages := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Own.Frame.Pages; !slices.Contains(pages, want) {
 		test.Errorf("the pages :e opens = %+v, want %+v among them", pages, want)
 	}
 }

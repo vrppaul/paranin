@@ -308,35 +308,61 @@ func TestEveryFaultIsReportedAtOnceOneALine(test *testing.T) {
 	}
 }
 
-// The site's words are content too: each one is there, and the catalogue holds no word the site has not.
+// The site's words are content too: each one is there, in every language, and a catalogue holds no word the site has
+// not.
 func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 	cases := []struct {
 		name        string
+		file        string
 		original    string
 		replacement string
 		want        string
 	}{
-		{name: "a word left empty", original: "experience: Experience", replacement: `experience: ""`, want: "i18n/en.yaml: experience is empty"},
-		{name: "a word left out", original: "experience: Experience\n", replacement: "", want: "i18n/en.yaml: experience is empty"},
-		{name: "a word the site has not", original: "about: About", replacement: "about: About\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
+		{name: "a word left empty", file: wordsFile(english), original: "experience: Experience", replacement: `experience: ""`, want: "i18n/en.yaml: experience is empty"},
+		{name: "a word left out", file: wordsFile(english), original: "experience: Experience\n", replacement: "", want: "i18n/en.yaml: experience is empty"},
+		{name: "a word left out of a translation's words", file: wordsFile("ru"), original: "experience: Опыт\n", replacement: "", want: "i18n/ru.yaml: experience is empty"},
+		{name: "a word the site has not", file: wordsFile(english), original: "about: About", replacement: "about: About\nsummary: Summary", want: "i18n/en.yaml: summary is no word of the site"},
 		{
-			name: "a phrase with no place for its value", original: `copied_command: "Copied {}"`, replacement: "copied_command: Copied",
+			name: "a phrase with no place for its value", file: wordsFile(english), original: `copied_command: "Copied {}"`, replacement: "copied_command: Copied",
 			want: `i18n/en.yaml: copied_command "Copied" writes its place, {}, 0 times, where its values ask for 1`,
 		},
 		{
-			name: "a phrase with two places", original: `copied_command: "Copied {}"`, replacement: `copied_command: "Copied {} {}"`,
+			name: "a phrase with two places", file: wordsFile(english), original: `copied_command: "Copied {}"`, replacement: `copied_command: "Copied {} {}"`,
 			want: `i18n/en.yaml: copied_command "Copied {} {}" writes its place, {}, 2 times, where its values ask for 1`,
 		},
 		{
-			name: "a phrase of two values with one place", original: `part_of: "{} of {}"`, replacement: `part_of: "{} of"`,
+			name: "a phrase of two values with one place", file: wordsFile(english), original: `part_of: "{} of {}"`, replacement: `part_of: "{} of"`,
 			want: `i18n/en.yaml: part_of "{} of" writes its place, {}, 1 times, where its values ask for 2`,
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			faults := faultsOf(test, changedFile(test, fixtureFolder(test), wordsFile(english), testCase.original, testCase.replacement))
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), testCase.file, testCase.original, testCase.replacement))
 			if !slices.ContainsFunc(faults, func(fault Fault) bool { return fault.String() == testCase.want }) {
 				test.Errorf("faults = %q, want one %q", faults, testCase.want)
+			}
+		})
+	}
+}
+
+// A catalogue is named by its language's tag, which an address of the site writes before a translated page's path:
+// a file named otherwise is a fault of its own.
+func TestACatalogueIsNamedByItsLanguage(test *testing.T) {
+	cases := []struct {
+		name string
+		file string
+	}{
+		{name: "a language written whole", file: "i18n/russian.yaml"},
+		{name: "a language with its region", file: "i18n/pt-br.yaml"},
+		{name: "a tag in capitals", file: "i18n/RU.yaml"},
+		{name: "a file of no catalogue", file: "i18n/notes.txt"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			faults := faultsOf(test, writtenFile(fixtureFolder(test), testCase.file, "about: About\n"))
+			want := faultPlace{file: testCase.file, field: "", line: 0}
+			if !slices.ContainsFunc(faults, func(fault Fault) bool { return placeOf(fault) == want }) {
+				test.Errorf("faults with %s = %q, want one at the file", testCase.file, faults)
 			}
 		})
 	}

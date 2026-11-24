@@ -14,6 +14,7 @@ import {
   type Match,
   type Passage,
 } from "../domain/search";
+import type { SaidPiece } from "../domain/said";
 import { forgetChoice, keepChoice, storedChoice, type ChoiceStore } from "./choice";
 
 // Where the browser keeps the search the reader kept, for the pages they open after in the same session
@@ -49,9 +50,9 @@ export interface Layout {
   scrollTo(point: number): void;
 }
 
-/** What the line says of a search: its words, and whether they say it failed. */
+/** What the line says of a search or a command: its words, Neovim's and the reader's, and whether they say it failed. */
 export interface Said {
-  words: string;
+  pieces: SaidPiece[];
   failed: boolean;
 }
 
@@ -281,11 +282,11 @@ export class Search {
     if (!this.show(this.kept.matches, place)) {
       this.shown = undefined;
       this.marks.clear();
-      return { words: notFoundSaid(this.kept.query), failed: true };
+      return { pieces: notFoundSaid(this.kept.query), failed: true };
     }
     this.shown = place;
     this.shownAt = this.layout.scrolled();
-    return { words: foundSaid(this.kept.query, place, this.kept.matches.length), failed: false };
+    return { pieces: foundSaid(this.kept.query, place, this.kept.matches.length), failed: false };
   }
 
   /** Marks matches and brings the one at a place into sight; false where none stands there. */

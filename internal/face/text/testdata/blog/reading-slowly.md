@@ -2,6 +2,8 @@
 
 2026-11-12
 
+**English** · [Русский](https://example.test/ru/blog/reading-slowly.md)
+
 reading · terminals
 
 > Why a page read twice is read once.

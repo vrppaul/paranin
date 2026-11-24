@@ -586,10 +586,9 @@ func statusLine(status int) string {
 // until the next post dated later comes out, the résumé's career line running to the audience's day until then, or the
 // store holds another snapshot.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (*drawing, time.Time) {
-	facts, build := snapshot.Content, snapshot.Build
-	addresses := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority, facts.TranslatedInto())
+	build := snapshot.Build
 	composition := compose.SiteOf(prepared, audience)
-	frame := composition.Own.Frame
+	addresses, frame := composition.Addresses, composition.Own.Frame
 	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
 	served := answersOf()
 	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(routes.PlainType, text.Markdown(composition.Index, addresses))

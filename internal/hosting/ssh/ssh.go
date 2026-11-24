@@ -40,7 +40,6 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/face/tui"
 	"github.com/vrppaul/paranin/internal/release"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // The keys of what the log says of a session
@@ -160,8 +159,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 		documents = append(documents, blog.Served()...)
 		frames = append(frames, blog.Frame)
 	}
-	site := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority, facts.TranslatedInto())
-	return tui.Drawing{Documents: documents, Frames: frames, Site: site}, composition.Until
+	return tui.Drawing{Documents: documents, Frames: frames, Site: composition.Addresses}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).

@@ -24,6 +24,8 @@ type Site struct {
 	// Until is when the site changes as the next post that comes later comes out, in any language, which a host keeps
 	// what it drew until; the zero time where none comes later, so the site holds as long as its snapshot
 	Until time.Time
+	// Addresses write the site's addresses whole, from where its profile says it is served
+	Addresses routes.Site
 	// paths are the pages served, and the feeds, in every language, by the path a link inside the site reaches each by
 	paths map[string]document.Target
 	// served are the documents of every page the site serves, in every language, each tab and older version among them
@@ -67,7 +69,9 @@ func SiteOf(prepared *Prepared, audience Audience) Site {
 	edited := editedPages(snapshot, append([]blog{own}, translations...))
 	site := Site{
 		Index: indexOf(snapshot, own), Pages: pagesOf(snapshot, own), Own: blogPagesOf(snapshot, own, edited), Translations: nil,
-		Until: audience.nextChange(allPosts(snapshot)), paths: map[string]document.Target{}, served: nil,
+		Until:     audience.nextChange(allPosts(snapshot)),
+		Addresses: routes.New(snapshot.Profile.Site.BaseURL, snapshot.Profile.Site.TagAuthority, snapshot.TranslatedInto()),
+		paths:     map[string]document.Target{}, served: nil,
 	}
 	for _, read := range translations {
 		site.Translations = append(site.Translations, blogPagesOf(snapshot, read, edited))

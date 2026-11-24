@@ -65,7 +65,8 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 
 // A page shows one tab of its document, as the TUI does: at its own address its opening, the résumé's first screen and
 // first section, another page's head and the blocks before its first section; at a tab's address that tab alone,
-// under its title, which titles the page, the address it is known by and its markdown the tab's own.
+// under its title, which titles the page with its page's after it, the address it is known by and its markdown the
+// tab's own.
 func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	pages := siteOnTheDay(snapshot).Pages
@@ -94,7 +95,7 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
 			holds: []string{
-				experience, `<title>Experience</title>`, `<h1 aria-label="Experience">`,
+				experience, `<title>Experience — Mira Example</title>`, `<h1 aria-label="Experience">`,
 				`<link rel="canonical" href="https://example.test/experience">`, `type="text/markdown" href="/experience.md"`,
 			},
 			lacks: []string{greeting, summary},
@@ -105,7 +106,7 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 		},
 		{
 			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: []string{why, `<h1 aria-label="Why">`, `<link rel="canonical" href="https://example.test/p/tidy-tool/why">`},
+			holds: []string{why, `<title>Why — tidy-tool</title>`, `<h1 aria-label="Why">`, `<link rel="canonical" href="https://example.test/p/tidy-tool/why">`},
 			lacks: []string{details},
 		},
 	}
@@ -722,7 +723,8 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 // A page no search engine may index tells it so and names no address it is known by, no record and no languages: a
 // filtered list, a view of the list and no page of its own, called by the blog's name and its filter, with no preview
 // either, since a part of the list is no copy of it; an unlisted post, which keeps its preview at its own address. The
-// list and a post published are indexed and known at their own addresses.
+// list, the list by series, called by the blog's name and its grouping so no two lists share a title, and a post
+// published are indexed and known at their own addresses.
 func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
 	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
@@ -741,6 +743,11 @@ func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 		{
 			name: "the list", page: writer.List(fixtures.DocumentOf(test, lists, document.PageOf(document.PageBlog))),
 			holds: []string{`<link rel="canonical" href="https://example.test/blog">`, `<title>blog</title>`}, lacks: []string{noIndexTag},
+		},
+		{
+			name: "the list by series", page: writer.List(fixtures.DocumentOf(test, lists, document.PageOf(document.PageBlogSeries))),
+			holds: []string{`<link rel="canonical" href="https://example.test/blog/series">`, "<title>blog" + dot + "series</title>"},
+			lacks: []string{noIndexTag},
 		},
 		{
 			name: "an unlisted post", page: writer.Post(unlisted.Document, unlisted.Record),

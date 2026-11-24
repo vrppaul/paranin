@@ -86,10 +86,12 @@ const noBreakSpace = "\xc2\xa0"
 // What stands between the parts of one line, the page's own choice as each face's is: the text faces write the same
 // marks, with a plain space before the dot
 const (
-	// a title and its place, a card's tag and its subtitle, a project's tags; a space that never breaks before the dot,
-	// so the dot ends a line and never opens the next
+	// a title and its place, a card's tag and its subtitle, a project's tags, the blog's name and a list's grouping in
+	// the title the list says of itself; a space that never breaks before the dot, so the dot ends a line and never
+	// opens the next
 	dot = noBreakSpace + "· "
-	// a title and its subtitle
+	// a title and its subtitle; in the title a page says of itself, a tab's title and its page's, the blog's name and
+	// the list's filter
 	dash = " — "
 	// the start and the end of a period
 	rangeDash = " – "
@@ -325,21 +327,28 @@ func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame
 }
 
 // Page writes a document as a page of HTML showing one of its tabs (document.TabsOf), parted as every face parts it, by
-// the tab's name, its opening where the name is none of theirs: what the page says of itself, its record as linked
-// data where it has one, the tab as its main part, as a reader of the finished work sees it (document.WrittenBlocks),
-// then the foot line, every tab a window there.
+// the tab's name, its opening where the name is none of theirs: what the page says of itself, a tab by its title and
+// its page's, since two pages may hold tabs of one title; its record as linked data where it has one, the tab as its
+// main part, as a reader of the finished work sees it (document.WrittenBlocks), then the foot line, every tab a window
+// there.
 func (writer PageWriter) Page(composed document.Document, record compose.Record, shown string) string {
 	head := composed.Head
 	tabs := document.TabsOf(composed)
 	page, title := head.Page, head.Title
 	var main templ.Component
 	if tab, isTab := tabNamed(tabs.Rest, shown); isTab {
-		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: "", Translation: head.Page.Translation}, tab.Title
+		page = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: "", Translation: head.Page.Translation}
+		title = joinedTitle(tab.Title, dash, head.Title)
 		main = writer.tabPart(head.Page.Kind, tab.Title, document.WrittenBlocks(tab.Blocks))
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
 	}
 	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, record), main, writer.footOf(page, tabs, document.PlacesOf(composed))))
+}
+
+// joinedTitle is a title a page says of itself made of two, a mark between them.
+func joinedTitle(first []document.Span, mark string, second []document.Span) []document.Span {
+	return slices.Concat(first, []document.Span{document.Text{Text: mark}}, second)
 }
 
 // tabNamed is the tab of a name among tabs, where one has it.

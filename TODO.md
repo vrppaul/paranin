@@ -26,7 +26,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - A page, a feed and a post's picture are sent with `no-cache` and no validator, so a cache that asks again gets the whole answer each time: an `ETag` worked out once a snapshot, answered with `304`, would send only what changed. A feed reader polls a feed, up to twenty posts whole, again and again, so this lands before hosting at the latest.
 - SEO and Open Graph for the whole site (D27), as `docs/SEO.md` has it, approved by the owner on 2026-11-24, each its own chunk:
   - `robots.txt` and `sitemap.xml`, the sitemap written by `face/feed` beside the feeds.
-  - The titles of a résumé's tab, a project's tab and the list by series.
   - Each page's card, `og:image`, `summary_large_image` and `max-image-preview:large`, drawn by Typst, which lands with them, its first user (ADR-0005).
   - IndexNow for a post as it comes out, its key file at the site's root.
 - The content, changed together with the owner (§8, step 9).

@@ -25,10 +25,10 @@ type grouping struct {
 	current string
 }
 
-// List writes the blog's list as a page of HTML (DESIGN.md, Pages): what the page says of itself, by the blog's name
-// and the filter beside it, where it is filtered; then its head, with the Switch between its groupings and its
-// filters, its groups of tiles, and the foot line, in the blog's session, the list its one window, its command line
-// going to the list's posts, tags and series too.
+// List writes the blog's list as a page of HTML (DESIGN.md, Pages): what the page says of itself, under its title
+// (listTitle); then its head, with the Switch between its groupings and its filters, its groups of tiles, and the foot
+// line, in the blog's session, the list its one window, its command line going to the list's posts, tags and series
+// too.
 func (writer PageWriter) List(composed document.Document) string {
 	head := composed.Head
 	page := head.Page
@@ -36,11 +36,20 @@ func (writer PageWriter) List(composed document.Document) string {
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
 	foot := footLineOf(around, around.sessionsOf(page), windows, page, document.PlacesOf(composed))
 	main := writer.listMain(head, around.groupingsOf(around.groupings, page), composed.Blocks)
-	title := head.Title
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, around.listTitle(head), nil), main, foot))
+}
+
+// listTitle is the title the blog's list says of itself, so no two lists share one: the blog's name, with the filter
+// after it where it is filtered, or the word of its grouping where it is grouped otherwise than the blog's own list.
+func (around frame) listTitle(head document.Head) []document.Span {
 	if len(head.Subtitle) > 0 {
-		title = slices.Concat(head.Title, []document.Span{document.Text{Text: dash}}, head.Subtitle)
+		return joinedTitle(head.Title, dash, head.Subtitle)
 	}
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, nil), main, foot))
+	shown := slices.IndexFunc(around.groupings, func(way compose.Grouping) bool { return way.List == head.Page })
+	if shown < 0 || head.Page == around.blogList {
+		return head.Title
+	}
+	return joinedTitle(head.Title, dot, []document.Span{document.Text{Text: around.groupings[shown].Words}})
 }
 
 // groupingsOf are the ways the blog's list groups its posts as its head's Switch links them, the list shown current,

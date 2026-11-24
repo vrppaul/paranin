@@ -33,7 +33,8 @@ const (
 	picturePath     = "/blog/reading-slowly/margin.png"
 )
 
-// Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
+// Each page is served at its address in each format, the index at llms.txt as plain text, as agents read it, and
+// robots.txt and the sitemap at the paths a crawler asks for them by.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
@@ -48,6 +49,11 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the résumé as a manual", path: "/index.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "EXAMPLE.TEST(1)"},
 		{name: "a project's page as a manual", path: "/p/tidy-tool.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "TIDY-TOOL(1)"},
 		{name: "the index", path: "/llms.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files."},
+		{name: "robots.txt", path: "/robots.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "Sitemap: https://example.test/sitemap.xml"},
+		{
+			name: "the sitemap", path: "/sitemap.xml", status: http.StatusOK, contentType: "application/xml; charset=utf-8",
+			holds: "<loc>https://example.test/blog/reading-slowly</loc>",
+		},
 		{name: "a post", path: "/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Reading slowly"},
 		{name: "a post as a manual", path: "/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "READING-SLOWLY(1)"},
 		{name: "an older version", path: "/blog/reading-slowly/2026-11-10.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Slow reading"},

@@ -1,10 +1,6 @@
-// Package feed writes the blog's feeds in Atom (RFC 4287, docs/FOUNDATION.md §5.4, Feeds), for a feed reader to poll:
-// from the feed compose makes (compose.Feed), through typed structs encoding/xml writes, so no text is ever written
-// into the XML unescaped. A post's content is its body as HTML, which the html face draws, every address whole; one
-// face never builds on another, so the host hands it over (BodyWriter). Every address in a feed is whole, since a
-// reader reads it away from the site, and the feed and each post are named by routes, under the site's tag authority,
-// a post by its number. Ways weighed: a template, whose text could slip past the escaping; a
-// library, which brings a dependency for what encoding/xml writes in a few structs.
+// Package feed writes what a machine polls rather than a person reads: the blog's feeds, for a feed reader to learn
+// what came out (RFC 4287, docs/FOUNDATION.md §5.4, Feeds), and robots.txt and the sitemap, for a crawler to learn what
+// to read of the site (docs/SEO.md, Crawling). Each is a format of its own that no face a person reads draws.
 package feed
 
 import (
@@ -17,16 +13,29 @@ import (
 )
 
 // What a feed is written as: the relation of a feed's link to itself, and of a link to the page a person reads what it
-// holds on; the kind of text a post's content is, HTML a reader draws; and how a moment is written, and each element
-// indented, so a feed reads in a diff
+// holds on; the kind of text a post's content is, HTML a reader draws; and how a moment is written
 const (
 	selfRelation      = "self"
 	alternateRelation = "alternate"
 	htmlContent       = "html"
 	momentLayout      = time.RFC3339
-	indent            = "  "
-	lineEnd           = "\n"
 )
+
+// How the package's files are laid out: each element of an XML document indented, so a feed and the sitemap read in a
+// diff, and the end of a line, which ends each line of robots.txt and each XML document
+const (
+	indent  = "  "
+	lineEnd = "\n"
+)
+
+// writtenXML is a feed or the sitemap written as an XML document: its header, each element indented, and a line's end.
+// Each is a struct of strings encoding/xml writes, so no text reaches the XML unescaped. Ways weighed: a template,
+// whose text could slip past the escaping; a library, which brings a dependency for what encoding/xml writes.
+func writtenXML[Written atomFeed | urlSet](written Written) string {
+	// a struct of strings never fails to marshal
+	marshalled, _ := xml.MarshalIndent(written, "", indent)
+	return xml.Header + string(marshalled) + lineEnd
+}
 
 // BodyWriter writes a post's body as HTML a feed reader shows, every address whole: the html face's work.
 type BodyWriter interface {
@@ -94,7 +103,7 @@ func Atom(feed compose.Feed, site routes.Site, bodies BodyWriter) string {
 			Content:   atomContent{Kind: htmlContent, Text: bodies.Body(post.Document)},
 		})
 	}
-	written := atomFeed{
+	return writtenXML(atomFeed{
 		// the field's tag names the element, in Atom's namespace
 		XMLName:  xml.Name{Space: "", Local: ""},
 		Language: feed.Language,
@@ -108,8 +117,5 @@ func Atom(feed compose.Feed, site routes.Site, bodies BodyWriter) string {
 		},
 		Author:  atomAuthor{Name: feed.Author, Address: site.Address(feed.AuthorPage, routes.FormatChosen)},
 		Entries: entries,
-	}
-	// structs of strings, which encoding/xml always writes
-	marshalled, _ := xml.MarshalIndent(written, "", indent)
-	return xml.Header + string(marshalled) + lineEnd
+	})
 }

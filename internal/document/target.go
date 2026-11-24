@@ -100,10 +100,16 @@ func (page Page) InBlog() bool {
 }
 
 // OwnAddress is whether a page has an address of its own, which a link's preview shows (Head's Indexed names the pages
-// that have none).
+// that have none): a page a browser reads as a page of the site, but an older version of a post. No page, the index
+// and the hidden pages are read by no browser as one, and a filtered list is a view of the list. exhaustive holds the
+// switch to every kind.
 func (page Page) OwnAddress() bool {
-	_, isFilter := page.Unfiltered()
-	return !isFilter && page.Revision == ""
+	switch page.Kind {
+	case PageResume, PageProject, PagePost, PageBlog, PageBlogSeries:
+		return page.Revision == ""
+	case PageNone, PageIndex, PageHealth, PageSkills, PageTagFilter:
+	}
+	return false
 }
 
 // Unfiltered is the list a filtered list filters, the blog's list by year in its language, and whether the page is a

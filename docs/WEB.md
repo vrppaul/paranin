@@ -47,6 +47,8 @@ lists the posts out in it alone, in its words; English, the site's own language,
 | `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
 | `GET /{language}/blog…` | The same in a language, for each address above in the blog's folder and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
+| `GET /robots.txt` | What a crawler may read (RFC 9309), `text/plain`, whatever the request asks: every crawler let in and nothing disallowed, the sitemap and, in a comment, `llms.txt`, each by its whole address (`docs/SEO.md`, Crawling). |
+| `GET /sitemap.xml` | Every page a search engine may index ([sitemaps.org](https://www.sitemaps.org/protocol.html)), `application/xml`, whatever the request asks: each by its whole address, with the day its text last changed where it has one (`docs/SEO.md`, Crawling). |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself, nor the widgets' props' schemas. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
 | any other `GET` | `404`, the page of no page: the status, the address asked for, quoted, its path decoded and its query as written, and where the site begins; text or HTML, chosen as a page is, the HTML in the frame of the language whose folder the path opens with, the site's own where none does. |
@@ -60,7 +62,7 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, a feed, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
+| A page in any format, a feed, robots.txt and the sitemap, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list, filtered or not

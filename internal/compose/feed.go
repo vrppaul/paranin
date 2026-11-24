@@ -116,11 +116,12 @@ func (read blog) withPosts(composed []document.Document) []Feed {
 	}
 	feeds := make([]Feed, 0, len(read.feeds))
 	for _, feed := range read.feeds {
-		posts := make([]FeedPost, 0, len(read.feedPosts[feed.Target]))
-		for _, post := range read.feedPosts[feed.Target] {
+		held := read.feedPosts[feed.Target]
+		posts := make([]FeedPost, 0, len(held))
+		for _, post := range held {
 			posts = append(posts, FeedPost{Document: documents[post.Slug], Published: post.Published.At(), Updated: versionOutAt(post)})
 		}
-		feed.Posts, feed.Updated = posts, lastUpdate(posts)
+		feed.Posts, feed.Updated = posts, latestVersionOut(held)
 		feeds = append(feeds, feed)
 	}
 	return feeds
@@ -137,13 +138,14 @@ func versionOutAt(post content.Post) time.Time {
 	return start
 }
 
-// lastUpdate is when the newest version among a feed's posts came out, the zero time where it holds none.
-func lastUpdate(posts []FeedPost) time.Time {
-	last := time.Time{}
+// latestVersionOut is when the latest current version among posts came out, which a feed and a list holding them last
+// changed at; the zero time where there are none.
+func latestVersionOut(posts []content.Post) time.Time {
+	latest := time.Time{}
 	for _, post := range posts {
-		if post.Updated.After(last) {
-			last = post.Updated
+		if out := versionOutAt(post); out.After(latest) {
+			latest = out
 		}
 	}
-	return last
+	return latest
 }

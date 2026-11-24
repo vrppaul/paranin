@@ -12,7 +12,8 @@
 // revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
 // groupings and filtered by each tag, at the address the request's query names (routes.Requested). The
 // blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body as the HTML face draws it
-// for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again. Each
+// for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again; so are
+// robots.txt and the sitemap, at the paths a crawler asks for them by, whatever the request asks. Each
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
 // tell a search engine not to index them. A path with a slash at its end sends its reader on to the path without it,
@@ -592,13 +593,15 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
 	served := answersOf()
 	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(routes.PlainType, text.Markdown(composition.Index, addresses))
+	served.fixed[routes.CrawlerPath(routes.CrawlerRules)] = drawnAs(routes.PlainType, feed.Robots(addresses))
+	served.fixed[routes.CrawlerPath(routes.CrawlerSitemap)] = drawnAs(routes.SitemapType, feed.Sitemap(composition.IndexedPages(), addresses))
 	for path, file := range build.Files() {
 		served.fixed[path] = builtAs(file)
 	}
 	for _, composed := range composition.Pages {
 		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the
 		// tab an address shows inside its page
-		for _, shown := range slices.Concat([]document.Document{composed.Document}, composed.Tabs) {
+		for _, shown := range composed.PageAndTabs() {
 			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), textWriter{site: addresses, manual: frame.Manual})
 		}
 	}

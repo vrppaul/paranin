@@ -54,6 +54,9 @@ type Blog struct {
 	served []document.Document
 	// postsServed are the posts the blog serves as the content holds them, whose links Check reads
 	postsServed []content.Post
+	// listsChanged is when the lists' text last changed, as the latest current version among the posts they name came
+	// out; the zero time where they name none
+	listsChanged time.Time
 }
 
 // SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages and each blog's but their
@@ -103,7 +106,7 @@ func (site Site) Blogs() []Blog {
 func blogPagesOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Blog {
 	return Blog{
 		Lists: blogLists(read), Filtered: filteredLists(read), Posts: nil, Versions: nil, Pictures: picturesOf(read), Feeds: nil,
-		Frame: frameOf(snapshot, read, edited), served: nil, postsServed: read.served,
+		Frame: frameOf(snapshot, read, edited), served: nil, postsServed: read.served, listsChanged: latestVersionOut(read.listed),
 	}
 }
 
@@ -135,7 +138,7 @@ func DocumentsOf(pages []Composed) []document.Document {
 func (site Site) ownPages() []document.Document {
 	pages := []document.Document{site.Index}
 	for _, page := range site.Pages {
-		pages = append(append(pages, page.Document), page.Tabs...)
+		pages = append(pages, page.PageAndTabs()...)
 	}
 	return pages
 }

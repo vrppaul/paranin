@@ -31,13 +31,15 @@ func Formats() []Format {
 	return []Format{FormatChosen, FormatMarkdown, FormatManual}
 }
 
-// The media types the site writes its pages and feeds in, each named once for every face and host: markdown, plain
-// text, the manual's and the index's, the page a browser shows, and a feed
+// The media types the site writes its pages, feeds and files for a crawler in, each named once for every face and
+// host: markdown, plain text, the manual's, the index's and robots.txt's, the page a browser shows, a feed, and the
+// sitemap
 const (
 	MarkdownType = "text/markdown"
 	PlainType    = "text/plain"
 	PageType     = "text/html"
 	FeedType     = "application/atom+xml"
+	SitemapType  = "application/xml"
 )
 
 // Picture is a picture of the site a browser shows beside its pages.
@@ -61,14 +63,28 @@ const (
 	askedByNameFile = "/favicon.ico"
 )
 
+// CrawlerFile is a file of the site a crawler asks for by its name, at the site's root, to learn what to read of it.
+type CrawlerFile int
+
+const (
+	// The zero file names none, and has no path
+	_ CrawlerFile = iota
+	// CrawlerRules is what a crawler may read of the site, robots.txt (RFC 9309)
+	CrawlerRules
+	// CrawlerSitemap is every page a search engine may index, sitemap.xml (sitemaps.org)
+	CrawlerSitemap
+)
+
 // How the site's paths are written: the résumé at the site's root and in its files, a project's folder, the blog's
 // list, by year at the blog's own name and by series in its folder, where a post stands by its slug and by its number,
-// the slash before a tab's name in its page's folder, the index where agents look for it (llmstxt.org), and the endings
-// of the formats
+// the slash before a tab's name in its page's folder, the index where agents look for it (llmstxt.org), the files a
+// crawler asks for by name, and the endings of the formats
 const (
 	resumeRoot     = "/"
 	resumeFile     = "/index"
 	indexFile      = "/llms.txt"
+	rulesFile      = "/robots.txt"
+	sitemapFile    = "/sitemap.xml"
 	projectFolder  = "/p/"
 	blogList       = "/blog"
 	blogFolder     = blogList + folderEnd
@@ -427,6 +443,27 @@ func PicturePath(picture Picture) string {
 		return askedByNameFile
 	}
 	return ""
+}
+
+// CrawlerPath is where a file a crawler asks for by name is served, from the site's root; the zero file has none.
+func CrawlerPath(file CrawlerFile) string {
+	switch file {
+	case CrawlerRules:
+		return rulesFile
+	case CrawlerSitemap:
+		return sitemapFile
+	}
+	return ""
+}
+
+// CrawlerAddress is where a file a crawler asks for by name is served, written whole, as robots.txt names the sitemap;
+// empty for the zero file.
+func (site Site) CrawlerAddress(file CrawlerFile) string {
+	path := CrawlerPath(file)
+	if path == "" {
+		return ""
+	}
+	return site.base + path
 }
 
 // Host is the site's own name: the host of its base address.

@@ -172,3 +172,24 @@ func linksTo(links []readLink, relation string) bool {
 	}
 	return false
 }
+
+// What a crawler reads to learn what to read of the site, robots.txt and the sitemap, is the text itself: each file of
+// the fixture's site is held to its golden file, named by the file's own path.
+func TestEachFileACrawlerAsksForReadsAsItsGolden(test *testing.T) {
+	snapshot := fixtures.LoadedContent(test)
+	site := fixtures.Site(snapshot)
+	composed := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false})
+	cases := []struct {
+		file    routes.CrawlerFile
+		written string
+	}{
+		{file: routes.CrawlerRules, written: Robots(site)},
+		{file: routes.CrawlerSitemap, written: Sitemap(composed.IndexedPages(), site)},
+	}
+	for _, testCase := range cases {
+		path := routes.CrawlerPath(testCase.file)
+		test.Run(path, func(test *testing.T) {
+			golden.Match(test, path, testCase.written)
+		})
+	}
+}

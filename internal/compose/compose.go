@@ -39,6 +39,11 @@ func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	return pages
 }
 
+// PageAndTabs are the documents a page is served as: the page whole, then each of its tabs alone.
+func (composed Composed) PageAndTabs() []document.Document {
+	return slices.Concat([]document.Document{composed.Document}, composed.Tabs)
+}
+
 // composedPage is a page of a document and its record, with the document's tabs.
 func composedPage(composed document.Document, record Record) Composed {
 	return Composed{Document: composed, Tabs: tabDocuments(composed), Record: record}

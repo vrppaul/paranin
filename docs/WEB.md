@@ -7,9 +7,11 @@ fixture profile: `internal/face/text/testdata` for the text formats, `internal/f
 
 Three readers, three formats, from one document per page:
 
-- a browser gets **HTML**, one tab of the page at a time;
+- a browser, and whoever names no format by its exact type but a terminal's client, crawlers and link previews among
+  them, gets **HTML**, one tab of the page at a time;
 - an agent gets **markdown**, where it asks for it or opens a `.md` file;
-- a terminal, `curl` and anyone else get **the manual**: a man page laid out as text, 78 columns, no colour codes.
+- a terminal's client, `curl` among them, and whoever asks for plain text get **the manual**: a man page laid out as
+  text, 78 columns, no colour codes.
 
 Beside them a feed reader polls the blog's feeds, in **Atom**, each at an address of its own.
 
@@ -62,14 +64,26 @@ How long a cache keeps an answer:
 
 ### Negotiation for `/`, `/p/{slug}`, their tabs, `/blog/{slug}` and the blog's list, filtered or not
 
-The format the `Accept` header ranks highest, by the closest range that names it (RFC 9110, 12.5.1): HTML
-(`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each with `; charset=utf-8`. Where it ranks
-two alike the manual goes first, then markdown, then HTML, so `curl`, which sends `*/*`, and a request with no
-`Accept` get the manual. D21 sends such a request HTML, the manual going to a terminal's client alone (owner,
-2026-11-24; `docs/SEO.md`, Formats); this section follows it once that is built (`TODO.md`).
+One function chooses the format, HTML (`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each
+sent with `; charset=utf-8`; why, `docs/SEO.md`, Formats (D21). Each format takes the quality of the closest range of
+the `Accept` header that reaches it (RFC 9110, 12.5.1): its exact type, which names it, or a wildcard, its family
+(`text/*`) or `*/*`.
 
-Every negotiated response sets `Vary: Accept` alone, the page of no page among them: a filter's query is part of the
-address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
+- A format at quality 0, or one no range reaches, is refused and never ranked.
+- Each agent has a format of its own: the manual for a terminal's client, one whose `User-Agent` opens with curl,
+  Wget, HTTPie or xh, the name before its first `/`, in capitals or small letters; HTML for anyone else.
+- Where the header names by its exact type no format it does not refuse, as where it is `*/*` or `text/*` alone, empty
+  or absent, the agent's own goes; where it refuses that, as `text/html;q=0, */*` does HTML, the first it accepts in
+  the order below; where it refuses every format, the agent's own all the same. So `curl` gets the manual, and a
+  crawler sending `*/*` the HTML.
+- Otherwise the format the header ranks highest goes; at equal quality one named by its exact type before one a
+  wildcard reaches; among those named, markdown, then the manual, then HTML, since a browser names neither of the
+  first two; among those a wildcard reaches, the agent's own first, then in that order. So
+  `text/markdown, text/html, */*` gets markdown, `text/html, */*` HTML, and `text/markdown;q=0.5, */*` the agent's own.
+
+The page of no page is chosen the same way, its text where the manual or markdown would be. Every negotiated response
+sets `Vary: Accept, User-Agent`, the page of no page among them: a filter's query is part of the address a cache keys
+on already. Every format of a page, at its own path and where the reader chooses, sets
 `Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses; the HTML names it in its head too, with
 `rel="alternate"` to its markdown. Three kinds of page are not indexed: a filtered list, a view of the list and no
 page of its own (`docs/FOUNDATION.md` §5.4); an older version of a post, which a newer stands over; and an unlisted

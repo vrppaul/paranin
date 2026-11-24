@@ -55,14 +55,14 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 			name: "an older version as a manual", path: "/blog/reading-slowly/2026-11-10.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8",
 			holds: "newer: 2026-11-12",
 		},
-		{name: "an older version, chosen", path: "/blog/reading-slowly/2026-11-10", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "Slow reading"},
+		{name: "an older version, chosen", path: "/blog/reading-slowly/2026-11-10", status: http.StatusOK, contentType: "text/html; charset=utf-8", holds: "Slow reading"},
 		{name: "a post's picture beside its older version", path: "/blog/reading-slowly/margin.png", status: http.StatusOK, contentType: "image/png", holds: ""},
 		{name: "the blog's list", path: "/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
 		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
 		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
 		{name: "the list by series as a manual", path: "/blog/series.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG-SERIES(1)"},
 		{name: "the list filtered by a tag", path: "/blog.md?tag=terminals", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "posts tagged terminals"},
-		{name: "the list filtered, chosen", path: "/blog?tag=reading", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "blog — posts tagged reading"},
+		{name: "the list filtered, chosen", path: "/blog?tag=reading", status: http.StatusOK, contentType: "text/html; charset=utf-8", holds: "blog — posts tagged reading"},
 		{
 			name: "the list filtered, its other keys passed over", path: "/blog.md?ref=feed&tag=reading", status: http.StatusOK,
 			contentType: "text/markdown; charset=utf-8", holds: "posts tagged reading",
@@ -76,7 +76,7 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 			name: "a series' feed, each post's body whole", path: "/blog/series/reading.atom", status: http.StatusOK,
 			contentType: "application/atom+xml; charset=utf-8", holds: "&lt;p&gt;A page read twice is read once",
 		},
-		{name: "the feed of no series", path: "/blog/series/aloud.atom", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
+		{name: "the feed of no series", path: "/blog/series/aloud.atom", status: http.StatusNotFound, contentType: "text/html; charset=utf-8", holds: ""},
 		{name: "a translation", path: "/ru/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Медленное чтение"},
 		{name: "a translation as a manual", path: "/ru/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "Медленное чтение"},
 		{name: "a translation's picture", path: "/ru/blog/reading-slowly/margin.png", status: http.StatusOK, contentType: "image/png", holds: ""},
@@ -86,12 +86,12 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 			name: "the blog's feed in a language", path: "/ru/blog.atom", status: http.StatusOK, contentType: "application/atom+xml; charset=utf-8",
 			holds: `<id>tag:example.test,2026:ru/blog/1</id>`,
 		},
-		{name: "a post in a language it has no translation in", path: "/ru/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
-		{name: "the list in a language the site has no words for", path: "/de/blog.md", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
+		{name: "a post in a language it has no translation in", path: "/ru/blog/notes-on-tools.md", status: http.StatusNotFound, contentType: "text/html; charset=utf-8", holds: ""},
+		{name: "the list in a language the site has no words for", path: "/de/blog.md", status: http.StatusNotFound, contentType: "text/html; charset=utf-8", holds: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, "")
+			response := serve(server, http.MethodGet, testCase.path, "", "")
 			if response.Code != testCase.status || response.Header().Get("Content-Type") != testCase.contentType ||
 				!strings.Contains(response.Body.String(), testCase.holds) {
 				test.Errorf("GET %s = %d %q holding %q, want %d %q holding %q", testCase.path, response.Code,
@@ -123,14 +123,14 @@ func TestATabIsServedAlone(test *testing.T) {
 	}{
 		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", contentType: markdown, holds: "# Experience\n\n## Northwind — Senior Engineer", lacks: resumeOpening},
 		{name: "a tab of the résumé as a manual", path: "/experience.txt", accept: "", contentType: manual, holds: "Northwind", lacks: resumeOpening},
-		{name: "a tab of the résumé, chosen by curl", path: "/experience", accept: "*/*", contentType: manual, holds: "Northwind", lacks: resumeOpening},
+		{name: "a tab of the résumé, chosen as a manual", path: "/experience", accept: "text/plain", contentType: manual, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of the résumé in a browser", path: "/experience", accept: "text/html", contentType: browsed, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of a project's page in markdown", path: "/p/tidy-tool/why.md", accept: "", contentType: markdown, holds: "# Why\n\nFiles were untidy.", lacks: projectOpening},
-		{name: "a tab of a project's page, chosen by curl", path: "/p/tidy-tool/why", accept: "*/*", contentType: manual, holds: "Files were untidy.", lacks: projectOpening},
+		{name: "a tab of a project's page, chosen as a manual", path: "/p/tidy-tool/why", accept: "text/plain", contentType: manual, holds: "Files were untidy.", lacks: projectOpening},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept, "")
 			body := response.Body.String()
 			if response.Code != http.StatusOK || response.Header().Get("Content-Type") != testCase.contentType ||
 				!strings.Contains(body, testCase.holds) || strings.Contains(body, testCase.lacks) {
@@ -141,9 +141,20 @@ func TestATabIsServedAlone(test *testing.T) {
 	}
 }
 
-// At a page's own address the reader's request chooses the format: HTML for a browser, markdown for whoever asks
-// for it, the manual for everyone else, `curl` among them, and for a request that ranks two of them alike; and a
-// cache keeps one copy for each Accept.
+// The agents a test's request is sent by: a terminal's client, and one no list names; and the Accept a browser sends
+const (
+	curlAgent     = "curl/8.5.0"
+	unknownAgent  = "ExampleBot/1.0 (+https://example.test/bot)"
+	browserAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+)
+
+// What a negotiated answer says a cache keeps one copy for each of
+const negotiatedVary = "Accept, User-Agent"
+
+// At a page's own address the reader's request chooses the format: where it names none by its exact type but to refuse
+// it, its agent's own, the manual for a terminal's client and HTML for anyone else; otherwise the format it ranks
+// highest, one it names before one a wildcard reaches, markdown before the manual before HTML among those it names, and
+// the agent's own first among those a wildcard reaches; and a cache keeps one copy for each Accept and User-Agent.
 func TestTheReaderChoosesTheFormat(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const (
@@ -157,49 +168,66 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 		name        string
 		path        string
 		accept      string
+		userAgent   string
 		contentType string
 		holds       string
 	}{
-		{name: "an agent asking for markdown", path: "/", accept: "text/markdown", contentType: markdown, holds: "# Mira Example"},
-		{name: "curl, taking anything", path: "/", accept: "*/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "a request asking for nothing", path: "/", accept: "", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown refused", path: "/", accept: "text/markdown;q=0, */*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown among others", path: "/", accept: "text/html;q=0.9, text/markdown", contentType: markdown, holds: "# Mira Example"},
-		{name: "plain text ranked above markdown", path: "/", accept: "text/plain, text/markdown;q=0.1", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown ranked above plain text", path: "/", accept: "text/markdown, text/plain;q=0.5", contentType: markdown, holds: "# Mira Example"},
-		{name: "all of a family", path: "/", accept: "text/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown below anything", path: "/", accept: "text/markdown;q=0.5, */*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "markdown below its family", path: "/", accept: "text/markdown;q=0.5, text/*", contentType: manual, holds: "EXAMPLE.TEST(1)"},
-		{name: "a browser asking for HTML", path: "/", accept: "text/html", contentType: browsed, holds: pageOpening},
+		{name: "anything, from an agent no list names", path: "/", accept: "*/*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "nothing asked, from an agent no list names", path: "/", accept: "", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "nothing asked, from no agent", path: "/", accept: "", userAgent: "", contentType: browsed, holds: pageOpening},
+		{name: "curl, taking anything", path: "/", accept: "*/*", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "curl, asking for nothing", path: "/", accept: "", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "Wget, taking anything", path: "/", accept: "*/*", userAgent: "Wget/1.21", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "Wget, asking for nothing", path: "/", accept: "", userAgent: "Wget/1.21", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "HTTPie, taking anything", path: "/", accept: "*/*", userAgent: "HTTPie/3.2", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "HTTPie, asking for nothing", path: "/", accept: "", userAgent: "HTTPie/3.2", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "xh, taking anything", path: "/", accept: "*/*", userAgent: "xh/0.22", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "xh, asking for nothing", path: "/", accept: "", userAgent: "xh/0.22", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "a terminal's client in capitals", path: "/", accept: "*/*", userAgent: "CURL/8.5.0", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "an agent whose name opens with a terminal's", path: "/", accept: "*/*", userAgent: "curlish/1.0", contentType: browsed, holds: pageOpening},
+		{name: "an agent asking for markdown", path: "/", accept: "text/markdown", userAgent: "", contentType: markdown, holds: "# Mira Example"},
+		{name: "a terminal asking for markdown", path: "/", accept: "text/markdown", userAgent: curlAgent, contentType: markdown, holds: "# Mira Example"},
+		{name: "a request asking for plain text", path: "/", accept: "text/plain", userAgent: "", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "a terminal asking for HTML before anything", path: "/", accept: "text/html, */*", userAgent: curlAgent, contentType: browsed, holds: pageOpening},
+		{name: "HTML before anything, from an agent no list names", path: "/", accept: "text/html, */*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "markdown and HTML before anything", path: "/", accept: "text/markdown, text/html, */*", userAgent: "", contentType: markdown, holds: "# Mira Example"},
+		{name: "markdown refused", path: "/", accept: "text/markdown;q=0, */*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "markdown refused, by a terminal", path: "/", accept: "text/markdown;q=0, */*", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "HTML refused, and anything taken", path: "/", accept: "text/html;q=0, */*", userAgent: unknownAgent, contentType: markdown, holds: "# Mira Example"},
+		{name: "HTML refused by a terminal, and nothing named", path: "/", accept: "text/html;q=0", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown among others", path: "/", accept: "text/html;q=0.9, text/markdown", userAgent: "", contentType: markdown, holds: "# Mira Example"},
+		{name: "plain text ranked above markdown", path: "/", accept: "text/plain, text/markdown;q=0.1", userAgent: "", contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown ranked above plain text", path: "/", accept: "text/markdown, text/plain;q=0.5", userAgent: "", contentType: markdown, holds: "# Mira Example"},
+		{name: "all of a family", path: "/", accept: "text/*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "all of a family, by a terminal", path: "/", accept: "text/*", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below anything", path: "/", accept: "text/markdown;q=0.5, */*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "markdown below anything, by a terminal", path: "/", accept: "text/markdown;q=0.5, */*", userAgent: curlAgent, contentType: manual, holds: "EXAMPLE.TEST(1)"},
+		{name: "markdown below its family", path: "/", accept: "text/markdown;q=0.5, text/*", userAgent: unknownAgent, contentType: browsed, holds: pageOpening},
+		{name: "a browser asking for HTML", path: "/", accept: "text/html", userAgent: "", contentType: browsed, holds: pageOpening},
+		{name: "a browser's own Accept", path: "/", accept: browserAccept, userAgent: "", contentType: browsed, holds: pageOpening},
+		{name: "HTML and markdown alike", path: "/", accept: "text/html, text/markdown, text/plain;q=0.1", userAgent: "", contentType: markdown, holds: "# Mira Example"},
+		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", userAgent: "", contentType: markdown, holds: "# tidy-tool"},
+		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", userAgent: curlAgent, contentType: manual, holds: "TIDY-TOOL(1)"},
+		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", userAgent: "", contentType: browsed, holds: `<h1 aria-label="tidy-tool">`},
+		{name: "a post in markdown", path: "/blog/reading-slowly", accept: "text/markdown", userAgent: "", contentType: markdown, holds: "# Reading slowly"},
+		{name: "a post as a manual", path: "/blog/reading-slowly", accept: "*/*", userAgent: curlAgent, contentType: manual, holds: "READING-SLOWLY(1)"},
+		{name: "a post in a browser", path: "/blog/reading-slowly", accept: browserAccept, userAgent: "", contentType: browsed, holds: `<h1 class="post-title">`},
+		{name: "the blog's list in markdown", path: "/blog", accept: "text/markdown", userAgent: "", contentType: markdown, holds: "# blog"},
+		{name: "the blog's list in a browser", path: "/blog", accept: "text/html", userAgent: "", contentType: browsed, holds: `<a class="switch-way" href="/blog" aria-current="page">`},
 		{
-			name: "a browser's own Accept", path: "/", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-			contentType: browsed, holds: pageOpening,
-		},
-		{name: "HTML and markdown alike", path: "/", accept: "text/html, text/markdown, text/plain;q=0.1", contentType: markdown, holds: "# Mira Example"},
-		{name: "a project's page in markdown", path: "/p/tidy-tool", accept: "text/markdown", contentType: markdown, holds: "# tidy-tool"},
-		{name: "a project's page as a manual", path: "/p/tidy-tool", accept: "*/*", contentType: manual, holds: "TIDY-TOOL(1)"},
-		{name: "a project's page in a browser", path: "/p/tidy-tool", accept: "text/html", contentType: browsed, holds: `<h1 aria-label="tidy-tool">`},
-		{name: "a post in markdown", path: "/blog/reading-slowly", accept: "text/markdown", contentType: markdown, holds: "# Reading slowly"},
-		{name: "a post as a manual", path: "/blog/reading-slowly", accept: "*/*", contentType: manual, holds: "READING-SLOWLY(1)"},
-		{
-			name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-			contentType: browsed, holds: `<h1 class="post-title">`,
-		},
-		{name: "the blog's list in markdown", path: "/blog", accept: "text/markdown", contentType: markdown, holds: "# blog"},
-		{name: "the blog's list in a browser", path: "/blog", accept: "text/html", contentType: browsed, holds: `<a class="switch-way" href="/blog" aria-current="page">`},
-		{
-			name: "the list by series in a browser", path: "/blog/series", accept: "text/html", contentType: browsed,
+			name: "the list by series in a browser", path: "/blog/series", accept: "text/html", userAgent: "", contentType: browsed,
 			holds: `<a class="switch-way" href="/blog/series" aria-current="page">`,
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept, testCase.userAgent)
 			header := response.Header()
 			if header.Get("Content-Type") != testCase.contentType || !strings.Contains(response.Body.String(), testCase.holds) ||
-				header.Get("Vary") != "Accept" {
-				test.Errorf("GET %s, Accept %q = %q %q, Vary %q; want %q holding %q, Vary %q", testCase.path, testCase.accept,
-					header.Get("Content-Type"), response.Body.String(), header.Get("Vary"), testCase.contentType, testCase.holds, "Accept")
+				header.Get("Vary") != negotiatedVary {
+				test.Errorf("GET %s, Accept %q, User-Agent %q = %q %q, Vary %q; want %q holding %q, Vary %q", testCase.path,
+					testCase.accept, testCase.userAgent, header.Get("Content-Type"), response.Body.String(), header.Get("Vary"),
+					testCase.contentType, testCase.holds, negotiatedVary)
 			}
 		})
 	}
@@ -221,7 +249,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, "text/html")
+			response := serve(server, http.MethodGet, testCase.path, "text/html", "")
 			if !strings.Contains(response.Body.String(), testCase.holds) {
 				test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, response.Body.String(), testCase.holds)
 			}
@@ -262,7 +290,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept, "")
 			if got := response.Header().Get("Link"); got != testCase.want {
 				test.Errorf("GET %s, Accept %q: Link = %q, want %q", testCase.path, testCase.accept, got, testCase.want)
 			}
@@ -296,7 +324,7 @@ func TestAPageOfNoIndexIsSentForNoSearchEngineToIndex(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept, "")
 			if got := response.Header().Get("X-Robots-Tag"); response.Code != http.StatusOK || got != testCase.want {
 				test.Errorf("GET %s, Accept %q = %d, X-Robots-Tag %q; want %d, %q", testCase.path, testCase.accept, response.Code, got, http.StatusOK, testCase.want)
 			}
@@ -314,7 +342,7 @@ func TestAFilteredListAskedForAtOnceIsServedWhole(test *testing.T) {
 		holds  string
 	}{
 		{path: "/blog?tag=reading", accept: "text/html", holds: "<title>blog — posts tagged reading</title>"},
-		{path: "/blog?tag=reading", accept: "", holds: "blog — posts tagged reading"},
+		{path: "/blog?tag=reading", accept: "text/plain", holds: "blog — posts tagged reading"},
 		{path: "/blog.md?tag=reading", accept: "", holds: "posts tagged reading"},
 	}
 	// how many readers ask for each format at the same moment
@@ -324,7 +352,7 @@ func TestAFilteredListAskedForAtOnceIsServedWhole(test *testing.T) {
 	for range readersEach {
 		for _, format := range formats {
 			readers.Go(func() {
-				answered <- readersAnswer{holds: format.holds, body: serve(server, http.MethodGet, format.path, format.accept).Body.String()}
+				answered <- readersAnswer{holds: format.holds, body: serve(server, http.MethodGet, format.path, format.accept, "").Body.String()}
 			})
 		}
 	}
@@ -364,7 +392,7 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, "*/*")
+			response := serve(server, http.MethodGet, testCase.path, "*/*", "")
 			header := response.Header()
 			if response.Code != testCase.status || header.Get("Location") != testCase.location || header.Get("Cache-Control") != "no-cache" {
 				test.Errorf("GET %s = %d, Location %q, Cache-Control %q; want %d, Location %q, Cache-Control %q", testCase.path,
@@ -375,57 +403,66 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 }
 
 // An address of no page is not found, and says so with the status it is answered with and the address asked for, its
-// path as the request decoded it and its query as written: in plain text to a terminal, an agent and a request naming
-// nothing, in HTML to a browser, in the language whose folder the path opens with, the site's own where it opens with
-// none the site is translated into; and a cache keeps one copy for each Accept.
+// path as the request decoded it and its query as written: its format chosen as a page's is, in text where the manual
+// or markdown would be, in HTML where HTML would, in the language whose folder the path opens with, the site's own
+// where it opens with none the site is translated into; and a cache keeps one copy for each Accept and User-Agent.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	const (
 		plain   = "text/plain; charset=utf-8"
 		browsed = "text/html; charset=utf-8"
-		browser = "text/html,application/xhtml+xml,*/*;q=0.8"
 	)
 	cases := []struct {
 		name        string
 		path        string
 		accept      string
+		userAgent   string
 		contentType string
 		holds       string
 	}{
-		{name: "a project with no page", path: "/p/other-tool.md", accept: "", contentType: plain, holds: `404 Not Found: "/p/other-tool.md"`},
-		{name: "no page at all", path: "/nothing", accept: "", contentType: plain, holds: `404 Not Found: "/nothing"`},
-		{name: "a path written escaped", path: "/no%20thing", accept: "", contentType: plain, holds: `404 Not Found: "/no thing"`},
+		{name: "a project with no page", path: "/p/other-tool.md", accept: "text/plain", userAgent: "", contentType: plain, holds: `404 Not Found: "/p/other-tool.md"`},
+		{name: "no page at all", path: "/nothing", accept: "text/plain", userAgent: "", contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "a path written escaped", path: "/no%20thing", accept: "text/plain", userAgent: "", contentType: plain, holds: `404 Not Found: "/no thing"`},
 		{
-			name: "a post's own text beside its picture", path: "/blog/reading-slowly/post.en.md", accept: "",
+			name: "a post's own text beside its picture", path: "/blog/reading-slowly/post.en.md", accept: "text/plain", userAgent: "",
 			contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/post.en.md"`,
 		},
 		{
-			name: "a path out of a post's folder, its slashes escaped", path: "/blog/reading-slowly/..%2F..%2Fprofile.yaml", accept: "",
-			contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/../../profile.yaml"`,
+			name: "a path out of a post's folder, its slashes escaped", path: "/blog/reading-slowly/..%2F..%2Fprofile.yaml", accept: "text/plain",
+			userAgent: "", contentType: plain, holds: `404 Not Found: "/blog/reading-slowly/../../profile.yaml"`,
 		},
-		{name: "the list filtered by a tag no post carries", path: "/blog?tag=nothing", accept: "", contentType: plain, holds: `404 Not Found: "/blog?tag=nothing"`},
-		{name: "the list filtered by no tag", path: "/blog.md?tag=", accept: "", contentType: plain, holds: `404 Not Found: "/blog.md?tag="`},
 		{
-			name: "the list filtered by a tag twice", path: "/blog?tag=reading&tag=terminals", accept: "", contentType: plain,
+			name: "the list filtered by a tag no post carries", path: "/blog?tag=nothing", accept: "text/plain", userAgent: "", contentType: plain,
+			holds: `404 Not Found: "/blog?tag=nothing"`,
+		},
+		{name: "the list filtered by no tag", path: "/blog.md?tag=", accept: "text/plain", userAgent: "", contentType: plain, holds: `404 Not Found: "/blog.md?tag="`},
+		{
+			name: "the list filtered by a tag twice", path: "/blog?tag=reading&tag=terminals", accept: "text/plain", userAgent: "", contentType: plain,
 			holds: `404 Not Found: "/blog?tag=reading&tag=terminals"`,
 		},
-		{name: "no page, with a query", path: "/nothing?ref=feed", accept: "", contentType: plain, holds: `404 Not Found: "/nothing?ref=feed"`},
-		{name: "curl, taking anything", path: "/nothing", accept: "*/*", contentType: plain, holds: `404 Not Found: "/nothing"`},
-		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", contentType: plain, holds: `404 Not Found: "/nothing"`},
-		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
-		{name: "a browser, in the site's language", path: "/nothing", accept: browser, contentType: browsed, holds: `<html lang="en">`},
-		{name: "a browser, in a translation's folder", path: "/ru/blog/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
-		{name: "a browser, in the folder of a language the site has no words for", path: "/de/blog", accept: browser, contentType: browsed, holds: `<html lang="en">`},
+		{name: "no page, with a query", path: "/nothing?ref=feed", accept: "text/plain", userAgent: "", contentType: plain, holds: `404 Not Found: "/nothing?ref=feed"`},
+		{name: "anything, from an agent no list names", path: "/nothing", accept: "*/*", userAgent: unknownAgent, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
+		{name: "nothing asked, from no agent", path: "/nothing", accept: "", userAgent: "", contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
+		{name: "curl, taking anything", path: "/nothing", accept: "*/*", userAgent: curlAgent, contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "curl, asking for nothing", path: "/nothing", accept: "", userAgent: curlAgent, contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", userAgent: "", contentType: plain, holds: `404 Not Found: "/nothing"`},
+		{name: "a browser", path: "/nothing", accept: browserAccept, userAgent: "", contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
+		{name: "a browser, in the site's language", path: "/nothing", accept: browserAccept, userAgent: "", contentType: browsed, holds: `<html lang="en">`},
+		{name: "a browser, in a translation's folder", path: "/ru/blog/nothing", accept: browserAccept, userAgent: "", contentType: browsed, holds: `<html lang="ru">`},
+		{
+			name: "a browser, in the folder of a language the site has no words for", path: "/de/blog", accept: browserAccept, userAgent: "",
+			contentType: browsed, holds: `<html lang="en">`,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, testCase.accept)
+			response := serve(server, http.MethodGet, testCase.path, testCase.accept, testCase.userAgent)
 			header := response.Header()
 			if response.Code != http.StatusNotFound || header.Get("Content-Type") != testCase.contentType ||
-				!strings.Contains(response.Body.String(), testCase.holds) || header.Get("Vary") != "Accept" {
-				test.Errorf("GET %s, Accept %q = %d %q, Vary %q, %q; want %d %q, Vary %q, holding %q", testCase.path,
-					testCase.accept, response.Code, header.Get("Content-Type"), header.Get("Vary"), response.Body.String(),
-					http.StatusNotFound, testCase.contentType, "Accept", testCase.holds)
+				!strings.Contains(response.Body.String(), testCase.holds) || header.Get("Vary") != negotiatedVary {
+				test.Errorf("GET %s, Accept %q, User-Agent %q = %d %q, Vary %q, %q; want %d %q, Vary %q, holding %q", testCase.path,
+					testCase.accept, testCase.userAgent, response.Code, header.Get("Content-Type"), header.Get("Vary"), response.Body.String(),
+					http.StatusNotFound, testCase.contentType, negotiatedVary, testCase.holds)
 			}
 		})
 	}
@@ -443,15 +480,15 @@ func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
 		accept string
 	}{
 		{name: "a page in a browser", method: http.MethodGet, path: "/", accept: "text/html"},
-		{name: "a page as a manual", method: http.MethodGet, path: "/", accept: "*/*"},
+		{name: "a page as a manual", method: http.MethodGet, path: "/", accept: "text/plain"},
 		{name: "a page in markdown at its own path", method: http.MethodGet, path: "/index.md", accept: ""},
 		{name: "no page in a browser", method: http.MethodGet, path: "/nothing", accept: "text/html"},
-		{name: "no page as text", method: http.MethodGet, path: "/nothing", accept: ""},
+		{name: "no page as text", method: http.MethodGet, path: "/nothing", accept: "text/plain"},
 		{name: "a method refused", method: http.MethodPost, path: "/", accept: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			header := serve(server, testCase.method, testCase.path, testCase.accept).Header()
+			header := serve(server, testCase.method, testCase.path, testCase.accept, "").Header()
 			if sentSniffing, sentPolicy := header.Get("X-Content-Type-Options"), header.Get("Content-Security-Policy"); sentSniffing != "nosniff" || sentPolicy != policy {
 				test.Errorf("%s %s, Accept %q: X-Content-Type-Options %q, Content-Security-Policy %q; want %q, %q",
 					testCase.method, testCase.path, testCase.accept, sentSniffing, sentPolicy, "nosniff", policy)
@@ -465,7 +502,7 @@ func TestAPageTellsCachesToAskAgain(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	for _, path := range []string{"/index.md", "/blog.atom"} {
 		test.Run(path, func(test *testing.T) {
-			if got := serve(server, http.MethodGet, path, "").Header().Get("Cache-Control"); got != "no-cache" {
+			if got := serve(server, http.MethodGet, path, "", "").Header().Get("Cache-Control"); got != "no-cache" {
 				test.Errorf("GET %s: Cache-Control = %q, want %q", path, got, "no-cache")
 			}
 		})
@@ -475,7 +512,7 @@ func TestAPageTellsCachesToAskAgain(test *testing.T) {
 // A file of the build is served at its path as the type its name says, whatever the request asks for, and a cache
 // keeps it for good: a file changed is built under another name.
 func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
-	response := serve(serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, stylesheetPath, "*/*")
+	response := serve(serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, stylesheetPath, "*/*", "")
 	header := response.Header()
 	const (
 		wantType  = "text/css; charset=utf-8"
@@ -502,7 +539,7 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			body := serve(server, http.MethodGet, testCase.path, "text/html").Body.String()
+			body := serve(server, http.MethodGet, testCase.path, "text/html", "").Body.String()
 			for _, want := range wanted {
 				if !strings.Contains(body, want) {
 					test.Errorf("GET %s as a browser = %q, want it to hold %q", testCase.path, body, want)
@@ -517,7 +554,7 @@ func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 // type, for a cache to ask for again, since a new build of the server may draw it anew under the same path.
 func TestABrowserFindsTheSiteIcon(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
-	page := serve(server, http.MethodGet, "/", "text/html").Body.String()
+	page := serve(server, http.MethodGet, "/", "text/html", "").Body.String()
 	cases := []struct {
 		name        string
 		path        string
@@ -529,7 +566,7 @@ func TestABrowserFindsTheSiteIcon(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			response := serve(server, http.MethodGet, testCase.path, "image/*")
+			response := serve(server, http.MethodGet, testCase.path, "image/*", "")
 			header := response.Header()
 			linked := `href="` + testCase.path + `"`
 			const wantCache = "no-cache"
@@ -548,7 +585,7 @@ func TestABrowserFindsTheSiteIcon(test *testing.T) {
 // change it under the same name; under a policy that loads and runs nothing in it, so a drawing opened alone runs no
 // script.
 func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
-	response := serve(serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, picturePath, "image/*")
+	response := serve(serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, picturePath, "image/*", "")
 	header := response.Header()
 	const (
 		wantType   = "image/png"
@@ -586,12 +623,12 @@ func TestAReloadReachesTheNextRequest(test *testing.T) {
 			folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 			store := fixtureStore(test, folder)
 			server := serverOf(store, false)
-			serve(server, http.MethodGet, testCase.path, "")
+			serve(server, http.MethodGet, testCase.path, "", "")
 			fixtures.ReplaceIn(test, folder, testCase.file, testCase.original, testCase.replacement)
 			if err := store.Reload(); err != nil {
 				test.Fatalf("Reload = %v, want no error", err)
 			}
-			if body := serve(server, http.MethodGet, testCase.path, "").Body.String(); !strings.Contains(body, testCase.want) {
+			if body := serve(server, http.MethodGet, testCase.path, "", "").Body.String(); !strings.Contains(body, testCase.want) {
 				test.Errorf("GET %s after a reload = %q, want it to hold %q", testCase.path, body, testCase.want)
 			}
 		})
@@ -638,9 +675,9 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 				folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 				fixtures.WriteIn(test, folder, comingPostFile, comingPostText)
 				server := serverOf(fixtureStore(test, folder), testCase.drafts)
-				before := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
+				before := seenAnswerOf(serve(server, http.MethodGet, testCase.path, "", ""), testCase.holds)
 				time.Sleep(comingIn)
-				after := seenAnswerOf(serve(server, http.MethodGet, testCase.path, ""), testCase.holds)
+				after := seenAnswerOf(serve(server, http.MethodGet, testCase.path, "", ""), testCase.holds)
 				if before != testCase.before || after != testCase.after {
 					test.Errorf("GET %s before the post's moment and at it = %+v and %+v, want %+v and %+v", testCase.path, before, after,
 						testCase.before, testCase.after)
@@ -669,7 +706,7 @@ func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), testCase.drafts)
-			if got := seenAnswerOf(serve(server, http.MethodGet, "/blog/notes-on-tools.md", ""), "# Notes on tools"); got != testCase.want {
+			if got := seenAnswerOf(serve(server, http.MethodGet, "/blog/notes-on-tools.md", "", ""), "# Notes on tools"); got != testCase.want {
 				test.Errorf("GET /blog/notes-on-tools.md = %+v, want %+v", got, testCase.want)
 			}
 		})
@@ -679,15 +716,17 @@ func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
 // A page is only read: a request to change it is refused.
 func TestAPageIsOnlyRead(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
-	if response := serve(server, http.MethodPost, "/index.md", ""); response.Code != http.StatusMethodNotAllowed {
+	if response := serve(server, http.MethodPost, "/index.md", "", ""); response.Code != http.StatusMethodNotAllowed {
 		test.Errorf("POST /index.md = %d, want %d", response.Code, http.StatusMethodNotAllowed)
 	}
 }
 
-// serve is the server's answer to a request by a method at a path, with an Accept header.
-func serve(server http.Handler, method, path, accept string) *httptest.ResponseRecorder {
+// serve is the server's answer to a request by a method at a path, with an Accept header and a User-Agent, either empty
+// where the request sends none.
+func serve(server http.Handler, method, path, accept, userAgent string) *httptest.ResponseRecorder {
 	request := httptest.NewRequest(method, path, nil)
 	request.Header.Set("Accept", accept)
+	request.Header.Set("User-Agent", userAgent)
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 	return response

@@ -5,9 +5,10 @@
 // every file of the snapshot's build at its path, from memory, for a cache to keep for good, each picture of a post
 // served, beside it, for a cache to ask for again, and each picture of the site, which the HTML face draws once and a
 // cache asks for again. Each page, and each of its tabs alone, is served at the path routes writes for it in each
-// format, and at its own address in the format the reader's request asks for: HTML for a browser, markdown for an
-// agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
-// a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
+// format, and at its own address in the format the reader's request asks for: HTML for a browser and a request that
+// names no format, crawlers and link previews among them, markdown for an agent that asks for it, and the manual for
+// whoever asks for plain text and a terminal's client, `curl` among them; the index at llms.txt, sent as plain text,
+// as a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
 // revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
 // groupings and filtered by each tag, at the address the request's query names (routes.Requested). The
 // blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body as the HTML face draws it
@@ -15,13 +16,14 @@
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
 // tell a search engine not to index them. Any other address is answered with the page of no page, in text or in
-// HTML, whichever the reader's request ranks higher: drawn for each request, since it quotes the address asked for, in
-// the chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type
+// HTML, chosen as a page's format is: drawn for each request, since it quotes the address asked for, in the chosen
+// format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type
 // and to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own; a
 // post's picture, to load and run nothing at all.
 package web
 
 import (
+	"cmp"
 	"mime"
 	"net/http"
 	"slices"
@@ -88,21 +90,63 @@ const (
 	canonicalRelation = `>; rel="canonical"`
 )
 
-// How a reader's request chooses a format: by the media types its Accept header ranks, which routes names. A cache
-// keeps one copy for each Accept header it meets
+// How a reader's request chooses a format: by the media types its Accept header ranks, which routes names, and by the
+// client its User-Agent names. A cache keeps one copy for each pair of the two it meets, as Vary lists them
 const (
-	acceptHeader     = "Accept"
-	varyHeader       = "Vary"
-	mediaTypeEnd     = ","
-	qualityParameter = "q"
-	qualityBits      = 64
-	// a media type no range of the header names, and one a range names without saying how much
-	unnamedQuality = 0
+	acceptHeader        = "Accept"
+	userAgentHeader     = "User-Agent"
+	varyHeader          = "Vary"
+	headerListSeparator = ", "
+	chosenBy            = acceptHeader + headerListSeparator + userAgentHeader
+	mediaTypeEnd        = ","
+	qualityParameter    = "q"
+	qualityBits         = 64
+	// a media type a range refuses by q=0, or no range names, which is never ranked; and one a range names without
+	// saying how much
+	refusedQuality = 0
 	fullQuality    = 1
 	// what separates a media type's family from its kind, and the range of any family or any kind
 	familyEnd = "/"
 	anyRange  = "*"
+	// what ends the name of the product a User-Agent opens with, before its version: curl/8.5.0
+	productEnd = "/"
 )
+
+// pageFormat is a format a reader may choose a page in at its own address.
+type pageFormat int
+
+const (
+	formatMarkdown pageFormat = iota
+	formatManual
+	formatBrowsed
+)
+
+// byFormat is a value for each format a reader may choose a page in.
+type byFormat[Value any] map[pageFormat]Value
+
+// negotiable is a format a reader may choose a page in, and the media type an Accept header names it by.
+type negotiable struct {
+	format    pageFormat
+	mediaType string
+}
+
+// negotiated are the formats a reader may choose a page in, in the order two a request ranks and names alike go:
+// markdown, the manual, then HTML, since a browser names neither of the first two, so a reader who names one asks for
+// it.
+func negotiated() []negotiable {
+	return []negotiable{
+		{format: formatMarkdown, mediaType: routes.MarkdownType},
+		{format: formatManual, mediaType: routes.PlainType},
+		{format: formatBrowsed, mediaType: routes.PageType},
+	}
+}
+
+// terminalClients are the HTTP clients a terminal reads the site with, each by the product its User-Agent opens with,
+// which get the manual where their request names no format. Telling these few apart keeps a short list that rarely
+// changes, where telling crawlers apart would keep a long one that does (docs/SEO.md, Formats).
+func terminalClients() []string {
+	return []string{"curl", "Wget", "HTTPie", "xh"}
+}
 
 // naming is how closely a range of an Accept header names a media type. The closest range a header holds gives
 // the type its quality (RFC 9110, 12.5.1).
@@ -143,13 +187,13 @@ type drawing struct {
 	moved  map[string]move
 	// notFound are the page of no page in each language, by the language a page is translated into, which names its
 	// folder (compose.Frame.Translation)
-	notFound map[string]missingChoice
+	notFound map[string]byFormat[missingFormat]
 	site     routes.Site
 }
 
 // notFoundAt is the page of no page for a path asked for: in the language whose folder opens it, the site's own where
 // no language's does.
-func (drawn *drawing) notFoundAt(path string) missingChoice {
+func (drawn *drawing) notFoundAt(path string) byFormat[missingFormat] {
 	translation, _ := drawn.site.LanguageFolderOf(path)
 	return drawn.notFound[translation]
 }
@@ -166,30 +210,20 @@ type move struct {
 // whatever the request asks; and each page in every format at the address where the reader chooses.
 type answers struct {
 	fixed  map[string]answer
-	chosen map[string]choice
+	chosen map[string]byFormat[answer]
 	// fixedLater and chosenLater are the pages drawn only once a request first asks for them, as fixed and chosen hold
 	// the others (laterPage)
-	fixedLater  map[string]lazyFormat
-	chosenLater map[string][]lazyFormat
+	fixedLater  map[string]func() answer
+	chosenLater map[string]byFormat[func() answer]
 }
 
 // answersOf are answers holding nothing yet.
 func answersOf() answers {
-	return answers{fixed: map[string]answer{}, chosen: map[string]choice{}, fixedLater: map[string]lazyFormat{}, chosenLater: map[string][]lazyFormat{}}
+	return answers{
+		fixed: map[string]answer{}, chosen: map[string]byFormat[answer]{}, fixedLater: map[string]func() answer{},
+		chosenLater: map[string]byFormat[func() answer]{},
+	}
 }
-
-// choice is one page in each format a reader may choose, never none, in the order a tie between two goes (inTieOrder).
-type choice []answer
-
-// inTieOrder are a page's formats a reader may choose, in the order a tie between two goes: the manual, then
-// markdown, then HTML, so `curl` and a header naming none of them get the manual.
-func inTieOrder[Format any](manual, markdown, browsed Format) []Format {
-	return []Format{manual, markdown, browsed}
-}
-
-// missingChoice is the page of no page in each format a reader may choose, never none, in the order a tie between
-// them goes: text, then HTML.
-type missingChoice []missingFormat
 
 // missingFormat is a format the page of no page is served in: its media type, and how it is drawn for the path
 // asked for, which each request quotes in it.
@@ -198,25 +232,11 @@ type missingFormat struct {
 	draw      func(path string) string
 }
 
-// offer is a format a reader may choose, by the media type an Accept header ranks.
-type offer interface {
-	servedAs() string
-}
-
-func (sent answer) servedAs() string {
-	return sent.mediaType
-}
-
-func (format missingFormat) servedAs() string {
-	return format.mediaType
-}
-
-// answer is a page or a file as it is sent: the media type a page is, which an Accept header ranks, empty for a file,
-// which no reader chooses; the header that says what it is; the Link header naming the address a page is known by,
-// empty where it is none a person reads; what it tells a search engine, empty where it leaves it free to index it; how
-// long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; and what it holds.
+// answer is a page or a file as it is sent: the header that says what it is; the Link header naming the address a page
+// is known by, empty where it is none a person reads; what it tells a search engine, empty where it leaves it free to
+// index it; how long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; and what it
+// holds.
 type answer struct {
-	mediaType    string
 	contentType  string
 	link         string
 	robots       string
@@ -227,29 +247,25 @@ type answer struct {
 
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
 func drawnAs(mediaType, text string) answer {
-	return answer{
-		mediaType: mediaType, contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text),
-	}
+	return answer{contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text)}
 }
 
 // builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
 // another name.
 func builtAs(file assets.File) answer {
-	return answer{mediaType: "", contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body}
+	return answer{contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body}
 }
 
 // picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
 // new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
-	return answer{mediaType: "", contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body}
+	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body}
 }
 
 // postPicturedAs is a post's picture as it is served, which a cache asks for again, since a reload may change it
 // under the same name, and which a browser opening it by itself runs nothing in.
 func postPicturedAs(picture content.Picture) answer {
-	return answer{
-		mediaType: "", contentType: picture.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: picture.Body,
-	}
+	return answer{contentType: picture.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: picture.Body}
 }
 
 // picturesOf are the pictures of the site, by the path each is served at.
@@ -311,37 +327,26 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 }
 
 // answerTo is the status and the answer to a request for a path among the answers: its file or page in the one format
-// served there, the page in the format the request ranks first where the reader chooses, each drawn first where it is
+// served there, the page in the format the request chooses where the reader chooses, each drawn first where it is
 // drawn only once asked for, or else the page of no page, quoting the address the request asked for, as it was written.
-// Where the reader chooses, the header says the answer hangs on Accept.
-func (served answers) answerTo(header http.Header, request *http.Request, path string, notFound missingChoice) (int, answer) {
+// Where the reader chooses, the header says the answer hangs on Accept and User-Agent.
+func (served answers) answerTo(header http.Header, request *http.Request, path string, notFound byFormat[missingFormat]) (int, answer) {
 	if found, isFixed := served.fixed[path]; isFixed {
 		return http.StatusOK, found
 	}
 	if waiting, isLater := served.fixedLater[path]; isLater {
-		return http.StatusOK, waiting.draw()
+		return http.StatusOK, waiting()
 	}
-	header.Set(varyHeader, acceptHeader)
-	accept := request.Header.Get(acceptHeader)
+	header.Set(varyHeader, chosenBy)
+	format := chosenFormat(request)
 	if offered, isChosen := served.chosen[path]; isChosen {
-		return http.StatusOK, rankedFirst(accept, offered)
+		return http.StatusOK, offered[format]
 	}
 	if offered, isLater := served.chosenLater[path]; isLater {
-		return http.StatusOK, rankedFirst(accept, offered).draw()
+		return http.StatusOK, offered[format]()
 	}
-	missing := rankedFirst(accept, notFound)
+	missing := notFound[format]
 	return missingStatus, drawnAs(missing.mediaType, missing.draw(routes.Asked(request.URL.Path, request.URL.RawQuery)))
-}
-
-// lazyFormat is a format a reader may choose, drawn only once chosen: its media type, which an Accept header ranks, and
-// how it is drawn.
-type lazyFormat struct {
-	mediaType string
-	draw      func() answer
-}
-
-func (format lazyFormat) servedAs() string {
-	return format.mediaType
 }
 
 // laterPage is a page in each format a reader may choose, its manual, its markdown and its HTML, each drawn the first
@@ -350,9 +355,9 @@ func (format lazyFormat) servedAs() string {
 // read.
 type laterPage struct {
 	page     document.Page
-	manual   lazyFormat
-	markdown lazyFormat
-	browsed  lazyFormat
+	manual   func() answer
+	markdown func() answer
+	browsed  func() answer
 }
 
 // laterPageOf is a page drawn when asked for: its manual and its markdown as the text faces write them, and its HTML
@@ -361,11 +366,9 @@ func laterPageOf(shown document.Document, writer textWriter, browse func() strin
 	page := shown.Head.Page
 	return laterPage{
 		page:     page,
-		manual:   lazyFormat{mediaType: routes.PlainType, draw: sync.OnceValue(func() answer { return writer.manualOf(shown) })},
-		markdown: lazyFormat{mediaType: routes.MarkdownType, draw: sync.OnceValue(func() answer { return writer.markdownOf(shown) })},
-		browsed: lazyFormat{
-			mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(shown.Head, writer.site) }),
-		},
+		manual:   sync.OnceValue(func() answer { return writer.manualOf(shown) }),
+		markdown: sync.OnceValue(func() answer { return writer.markdownOf(shown) }),
+		browsed:  sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(shown.Head, writer.site) }),
 	}
 }
 
@@ -374,36 +377,119 @@ func laterPageOf(shown document.Document, writer textWriter, browse func() strin
 func (served answers) serveLater(later laterPage) {
 	served.fixedLater[routes.Path(later.page, routes.FormatMarkdown)] = later.markdown
 	served.fixedLater[routes.Path(later.page, routes.FormatManual)] = later.manual
-	served.chosenLater[routes.Path(later.page, routes.FormatChosen)] = inTieOrder(later.manual, later.markdown, later.browsed)
-}
-
-// rankedFirst is the format an Accept header ranks highest, the first of them where it ranks two alike: a browser,
-// which ranks HTML above anything else, gets the page it shows. The formats are never none.
-func rankedFirst[Offer offer](accept string, formats []Offer) Offer {
-	first := formats[0]
-	chosen, best := first, quality(accept, first.servedAs())
-	for _, format := range formats[1:] {
-		if ranked := quality(accept, format.servedAs()); ranked > best {
-			chosen, best = format, ranked
-		}
+	served.chosenLater[routes.Path(later.page, routes.FormatChosen)] = byFormat[func() answer]{
+		formatMarkdown: later.markdown, formatManual: later.manual, formatBrowsed: later.browsed,
 	}
-	return chosen
 }
 
-// quality is the quality an Accept header gives a media type: that of the closest range naming it, nothing where
-// no range does.
-func quality(accept, mediaType string) float64 {
-	best, closest := float64(unnamedQuality), namedByNone
+// chosenFormat is the format a request chooses a page in (docs/WEB.md, "Negotiation"): where its Accept header names
+// no format it does not refuse by its exact type, its agent's own, unless it refuses that; where it refuses every
+// format, its agent's own all the same; otherwise the format the header ranks highest, one it names before one a
+// wildcard reaches, the agent's own first among those a wildcard reaches, and otherwise the first negotiated.
+func chosenFormat(request *http.Request) pageFormat {
+	ranges := mediaRangesOf(request.Header.Get(acceptHeader))
+	agentsOwn := ownFormatOf(request.UserAgent())
+	offered := negotiated()
+	ranked := make([]rankedFormat, 0, len(offered))
+	for _, format := range offered {
+		ranked = append(ranked, rankOf(ranges, format, agentsOwn))
+	}
+	accepted := slices.DeleteFunc(ranked, rankedFormat.isRefused)
+	ownAccepted := slices.ContainsFunc(accepted, func(candidate rankedFormat) bool { return candidate.format == agentsOwn })
+	if len(accepted) == 0 || ownAccepted && !slices.ContainsFunc(accepted, rankedFormat.isNamed) {
+		return agentsOwn
+	}
+	// MaxFunc keeps the first of formats ranked alike, which negotiated orders
+	return slices.MaxFunc(accepted, compareRanks).format
+}
+
+// ownFormatOf is the format an agent gets where its request names none, by the product its User-Agent opens with: the
+// manual to a terminal's client, and HTML to anyone else.
+func ownFormatOf(userAgent string) pageFormat {
+	product, _, _ := strings.Cut(userAgent, productEnd)
+	if slices.ContainsFunc(terminalClients(), func(client string) bool { return strings.EqualFold(client, product) }) {
+		return formatManual
+	}
+	return formatBrowsed
+}
+
+// mediaRange is a range of an Accept header: the media types it names, as family/kind, family/* or */*, and the
+// quality it gives them.
+type mediaRange struct {
+	name    string
+	quality float64
+}
+
+// mediaRangesOf are the ranges of an Accept header that read, parsed once for each request.
+func mediaRangesOf(accept string) []mediaRange {
+	var ranges []mediaRange
 	for part := range strings.SplitSeq(accept, mediaTypeEnd) {
-		mediaRange, parameters, err := mime.ParseMediaType(part)
+		name, parameters, err := mime.ParseMediaType(part)
 		if err != nil {
 			continue
 		}
-		if named := namingOf(mediaRange, mediaType); named > closest {
-			best, closest = qualityOf(parameters), named
+		ranges = append(ranges, mediaRange{name: name, quality: qualityOf(parameters)})
+	}
+	return ranges
+}
+
+// rankedFormat is a format a reader may choose a page in as a request ranks it: the quality of the closest range of
+// its Accept header naming it, and how it stands against another of that quality.
+type rankedFormat struct {
+	format   pageFormat
+	quality  float64
+	standing standing
+}
+
+// standing is how a format goes against another a request ranks at the same quality.
+type standing int
+
+const (
+	// a format a wildcard reaches, as text/* or */*
+	standsReached standing = iota
+	// the agent's own format, which a wildcard reaches
+	standsAsAgentsOwn
+	// a format the header names by its exact type
+	standsNamed
+)
+
+// rankOf is a format as a header's ranges rank it for an agent whose own format is agentsOwn, refused where no range
+// names it.
+func rankOf(ranges []mediaRange, offered negotiable, agentsOwn pageFormat) rankedFormat {
+	quality, closest := float64(refusedQuality), namedByNone
+	for _, headerRange := range ranges {
+		if named := namingOf(headerRange.name, offered.mediaType); named > closest {
+			quality, closest = headerRange.quality, named
 		}
 	}
-	return best
+	return rankedFormat{format: offered.format, quality: quality, standing: standingOf(closest, offered.format == agentsOwn)}
+}
+
+// standingOf is how a format stands, named as closely as a header names it, and whether it is the agent's own.
+func standingOf(closest naming, isAgentsOwn bool) standing {
+	switch {
+	case closest == namedExactly:
+		return standsNamed
+	case isAgentsOwn:
+		return standsAsAgentsOwn
+	default:
+		return standsReached
+	}
+}
+
+// isRefused is whether the header refuses a format, by q=0 or by naming it nowhere.
+func (ranked rankedFormat) isRefused() bool {
+	return ranked.quality <= refusedQuality
+}
+
+// isNamed is whether the header names a format by its exact type: a wildcard, as text/* or */*, names none.
+func (ranked rankedFormat) isNamed() bool {
+	return ranked.standing == standsNamed
+}
+
+// compareRanks orders two formats by their quality, then by how each stands.
+func compareRanks(first, second rankedFormat) int {
+	return cmp.Or(cmp.Compare(first.quality, second.quality), cmp.Compare(first.standing, second.standing))
 }
 
 // namingOf is how closely a range names a media type.
@@ -477,7 +563,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 		}
 	}
 	drawn := blogDrawing{served: served, moved: map[string]move{}}
-	missing, notFound := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}, map[string]missingChoice{}
+	missing, notFound := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}, map[string]byFormat[missingFormat]{}
 	for _, blog := range composition.Blogs() {
 		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), textWriter{site: addresses, manual: blog.Frame.Manual})
 		notFound[blog.Frame.Translation] = missing.choice(blog.Frame)
@@ -493,11 +579,14 @@ type missingDrawing struct {
 	build  *assets.Build
 }
 
-// choice is the page of no page in a frame's language: as text, which no language changes, and as HTML in the frame.
-func (missing missingDrawing) choice(frame compose.Frame) missingChoice {
-	return missingChoice{
-		{mediaType: routes.PlainType, draw: text.NewNotFound(missing.site, missing.status).For},
-		{mediaType: routes.PageType, draw: html.NewNotFound(missing.site, missing.status, missing.build, frame).For},
+// choice is the page of no page in a frame's language: as text, which no language changes, where the manual or
+// markdown is chosen, since it has no markdown of its own, and as HTML in the frame.
+func (missing missingDrawing) choice(frame compose.Frame) byFormat[missingFormat] {
+	plain := missingFormat{mediaType: routes.PlainType, draw: text.NewNotFound(missing.site, missing.status).For}
+	return byFormat[missingFormat]{
+		formatMarkdown: plain,
+		formatManual:   plain,
+		formatBrowsed:  {mediaType: routes.PageType, draw: html.NewNotFound(missing.site, missing.status, missing.build, frame).For},
 	}
 }
 
@@ -564,7 +653,9 @@ func (served answers) serveEveryFormat(shown document.Document, browsed string, 
 	markdown, manual := writer.markdownOf(shown), writer.manualOf(shown)
 	served.fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 	served.fixed[routes.Path(page, routes.FormatManual)] = manual
-	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(shown.Head, writer.site))
+	served.chosen[routes.Path(page, routes.FormatChosen)] = byFormat[answer]{
+		formatMarkdown: markdown, formatManual: manual, formatBrowsed: drawnAs(routes.PageType, browsed).knownAs(shown.Head, writer.site),
+	}
 }
 
 // textWriter is what the text faces write a page with: the site, which writes its addresses, and the manual's own

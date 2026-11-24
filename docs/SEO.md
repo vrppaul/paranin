@@ -18,16 +18,14 @@ recorded in September 2026. Since most crawlers name no format, the format a pag
 
 ## Formats (D21)
 
-A page's own address chooses its format by the `Accept` header's ranking, by the closest range that names each
-(RFC 9110, 12.5.1): HTML, markdown or the manual.
+A page's own address chooses its format by the `Accept` header's ranking: HTML, markdown or the manual.
 
 - Where the header names none of them but by a wildcard, or is absent, the page goes as HTML, but to a terminal's
   HTTP client, known by its `User-Agent`'s product (curl, Wget, HTTPie, xh), which gets the manual, so
   `curl paran.in` gets the manual (owner, 2026-11-24).
-- Where formats rank alike, one the header names goes before one a wildcard reaches; among those it names, markdown
-  goes first, then the manual, then HTML: a browser never names markdown or plain text, so a reader who names one asks
-  for it.
 - Every negotiated answer sends `Vary: Accept, User-Agent`.
+
+The rest of the rule is [WEB](WEB.md), "Negotiation".
 
 Why: a crawler or a preview that gets the manual reads no title, description, Open Graph or record, so Bing would
 index bare text and LinkedIn would show no preview. Telling terminals apart, as
@@ -149,8 +147,8 @@ there, and the previews looked at in LinkedIn's Post Inspector.
 
 ## What stands and what is to build
 
-Stands: each page's title, description, canonical address and Open Graph as a `website`; a post's languages;
-the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list, an
-older version and an unlisted post; `/blog/<number>`'s `301`; the feeds; `llms.txt`.
+Stands: the formats of D21; each page's title, description, canonical address and Open Graph as a `website`; a post's
+languages; the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list,
+an older version and an unlisted post; `/blog/<number>`'s `301`; the feeds; `llms.txt`.
 
 The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.

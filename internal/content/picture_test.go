@@ -92,6 +92,10 @@ func TestAPostsPictureLoadsWithItsTypeAndSize(test *testing.T) {
 			want:    pictureFields{MediaType: "image/png", Width: 16, Height: 8},
 		},
 		{
+			name: "a picture opening a list's item", body: "- ![A page](margin.png)\n\n  Its words.", file: "margin.png", picture: fixturePicture(test),
+			want: pictureFields{MediaType: "image/png", Width: 16, Height: 8},
+		},
+		{
 			name: "a picture in a quote", body: "> ![A page](margin.png)", file: "margin.png", picture: fixturePicture(test),
 			want: pictureFields{MediaType: "image/png", Width: 16, Height: 8},
 		},
@@ -133,11 +137,6 @@ func TestEveryFaultOfAPictureStandsAtItsPlace(test *testing.T) {
 		{name: "a mark in the alt text", body: "![A *slow* page](margin.png)", file: samplePictureName, picture: fixturePicture(test), want: atTheLine},
 		{name: "among words", body: "Its ![A page](margin.png) text.", file: samplePictureName, picture: fixturePicture(test), want: atTheLine},
 		{name: "inside a link", body: "[![A page](margin.png)](https://example.test)", file: samplePictureName, picture: fixturePicture(test), want: atTheLine},
-		{name: "opening a list's item", body: "- ![A page](margin.png)", file: samplePictureName, picture: fixturePicture(test), want: atTheLine},
-		{
-			name: "opening a loose list's item", body: "- ![A page](margin.png)\n\n  Its words.", file: samplePictureName, picture: fixturePicture(test),
-			want: atTheLine,
-		},
 		{
 			name: "in a footnote", body: "Its text.[^note]\n\n[^note]: ![A page](margin.png)", file: samplePictureName, picture: fixturePicture(test),
 			want: faultPlace{file: samplePostFile, field: "", line: 14},

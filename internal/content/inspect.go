@@ -77,7 +77,6 @@ const (
 	noteHeadingProblem   = "cites a footnote from a heading, which names a part and is no line a source stands beside"
 	kindProblem          = "is a node of goldmark's kind %s, which no post holds: no face draws it"
 	pictureAloneProblem  = "is a picture among words, in a link or in a footnote: a picture stands as a paragraph of its own, which every face draws as a figure"
-	pictureItemProblem   = "is a picture that opens a list's item: write the item's words first, the picture under them"
 	altMissingProblem    = "is a picture with no alt text, which stands for it wherever it is not seen: a screen reader, a terminal"
 	altMarkProblem       = "is a picture whose alt text holds a mark, which alt text drops: it is words alone"
 	pictureTypeProblem   = "%q is of no type the site serves a picture as: %s"

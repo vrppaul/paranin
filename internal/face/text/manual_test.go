@@ -100,6 +100,38 @@ func TestATableTooWideForColumnsStandsARowABullet(test *testing.T) {
 	}
 }
 
+// An item of a list that opens with a block, a picture or code, writes that block's first line after its mark, in
+// markdown as in the manual, as an item of words writes its first words there.
+func TestAnItemOpeningWithABlockWritesTheBlockAfterItsMark(test *testing.T) {
+	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
+	picture := document.Figure{Picture: document.File{Page: post, Name: "shelf.png"}, Alt: "A shelf", Caption: "", Width: 1, Height: 1}
+	code := document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "main()"}}}
+	list := document.List{Ordered: false, Start: 0, Items: []document.Item{{Blocks: []document.Block{picture}}, {Blocks: []document.Block{code}}}}
+	composed := document.Document{Head: fixtures.HeadOf(post, nil), Blocks: []document.Block{list}}
+	site := fixtures.Site(fixtures.LoadedContent(test))
+	indent := strings.Repeat(" ", sectionIndent)
+	cases := []struct {
+		name    string
+		written string
+		want    []string
+	}{
+		{
+			name: "markdown", written: Markdown(composed, site),
+			want: []string{"- ![A shelf](https://example.test/blog/reading-slowly/shelf.png)\n", "- ```go\n  main()\n  ```\n"},
+		},
+		{name: "the manual", written: Manual(composed, site, ownManual(test)), want: []string{indent + "- A shelf\n", indent + "- main()\n"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, want := range testCase.want {
+				if !strings.Contains(testCase.written, want) {
+					test.Errorf("%s = %q, want %q", testCase.name, testCase.written, want)
+				}
+			}
+		})
+	}
+}
+
 // Text that touches a command stays with it, as it is written: a full stop after a command is no word of its own.
 func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 	composed := document.Document{

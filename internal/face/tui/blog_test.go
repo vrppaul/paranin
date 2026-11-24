@@ -1008,3 +1008,26 @@ func TestALongLineOfCodeGoesOnUnderItsMark(test *testing.T) {
 		test.Errorf("the post =\n%s\nwant the line going on under %q, whole", screen, codeGoesOnMark)
 	}
 }
+
+// An item of a list that opens with a block, a picture, code, a quote, a table or a list, stands that block's first
+// line on its mark's, as an item of words stands its first words there, its point's dash or its number.
+func TestAnItemOpeningWithABlockStandsTheBlockOnItsMark(test *testing.T) {
+	picture := document.Figure{Picture: document.File{Page: document.PostPage("reading-slowly"), Name: "shelf.svg"}, Alt: "A shelf", Caption: "", Width: 1, Height: 1}
+	code := document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "main()"}}}
+	quote := document.Quote{Blocks: []document.Block{document.Paragraph{Spans: textOf("A quote")}}}
+	table := document.Table{Header: document.Row{Cells: nil}, Rows: []document.Row{{Cells: []document.Cell{
+		{Kind: document.CellText, Spans: textOf("Reading")}, {Kind: document.CellText, Spans: textOf("Kept")},
+	}}}}
+	inner := document.List{Ordered: false, Start: 0, Items: []document.Item{{Blocks: []document.Block{document.Paragraph{Spans: textOf("inside")}}}}}
+	items := []document.Item{{Blocks: []document.Block{picture}}, {Blocks: []document.Block{code}}, {Blocks: []document.Block{quote}}, {Blocks: []document.Block{table}}, {Blocks: []document.Block{inner}}}
+	// a pause, which content refuses in an item, opens with an empty line, which the item's mark stands on
+	paused := document.Item{Blocks: []document.Block{document.Pause{}}}
+	points := document.List{Ordered: false, Start: 0, Items: append(items, paused)}
+	numbered := document.List{Ordered: true, Start: 1, Items: []document.Item{{Blocks: []document.Block{code}}}}
+	read := readRows(aboveTheFooter(screenOf(test, handPost(test, commonWidth, tallHeight, points, numbered))))
+	for _, want := range []string{"- A shelf", "- ┌── go ─", "- ▎ A quote", "- Reading Kept", "- - inside", "-\n* * *", "1. ┌── go ─"} {
+		if !strings.Contains(read, want) {
+			test.Errorf("the post =\n%s\nwant %q on it", read, want)
+		}
+	}
+}

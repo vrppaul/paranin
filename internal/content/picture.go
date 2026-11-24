@@ -57,16 +57,13 @@ func pictureTypes() map[string]pictureType {
 	}
 }
 
-// inspectPicture holds a picture to a paragraph of its own among the post's blocks, which every face draws as a
-// figure, a list's item's after its words; to alt text of words alone, which stands for it wherever it is not seen; to
+// inspectPicture holds a picture to a paragraph of its own among the post's blocks, a list's item's among them, which
+// every face draws as a figure; to alt text of words alone, which stands for it wherever it is not seen; to
 // a caption of characters a value may hold; and to a file of the post's own folder, which it reads.
 func (checked *bodyInspection) inspectPicture(picture *ast.Image) {
 	line := checked.lineOf(picture)
-	switch {
-	case !standsAlone(picture):
+	if !standsAlone(picture) {
 		checked.inspection.addAtLine(line, pictureAloneProblem)
-	case opensItem(picture):
-		checked.inspection.addAtLine(line, pictureItemProblem)
 	}
 	checked.inspectAlt(picture, line)
 	if caption := Resolved(picture.Title); referencedCharacters(picture.Title, caption) {
@@ -85,13 +82,6 @@ func standsAlone(picture *ast.Image) bool {
 	paragraph := picture.Parent()
 	ownParagraph := paragraph.Kind() == ast.KindParagraph || paragraph.Kind() == ast.KindTextBlock
 	return ownParagraph && paragraph.ChildCount() == 1 && !inside(picture, extensionast.KindFootnote)
-}
-
-// opensItem is whether a picture stands in the first block of a list's item, whose mark every face sets on the line of
-// the item's first words.
-func opensItem(picture *ast.Image) bool {
-	paragraph := picture.Parent()
-	return paragraph.Parent().Kind() == ast.KindListItem && paragraph.PreviousSibling() == nil
 }
 
 // inspectAlt holds a picture's alt text to words, and to words alone, since alt text drops a mark.

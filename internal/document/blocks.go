@@ -1,6 +1,9 @@
 package document
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // Block is one kind of block of a document.
 //
@@ -114,6 +117,15 @@ type List struct {
 	// Start is the first item's number in a list in order; 0 in one that is not
 	Start int
 	Items []Item
+}
+
+// What ends an item's number in a list in order, as a face writes it: 3.
+const numberEnd = "."
+
+// Number is an item's number as a face writes it in a list in order, by the item's place, counted from the list's
+// start: 3.
+func (list List) Number(index int) string {
+	return strconv.Itoa(list.Start+index) + numberEnd
 }
 
 // Item is one item of a list, holding blocks as a section does: a paragraph, or more, a list nested in it among them.

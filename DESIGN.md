@@ -547,7 +547,9 @@ A post's body, in the text's column.
 - A pause, a thematic break: three stars as a book sets them, `*   *   *`, in `faint` in the page's face, in the
   middle of the text's column, a row of air above and below on top of the row its block before keeps; no paragraph's
   number.
-- Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint`.
+- Points as the résumé's, a `faint` dash hanging in the margin; a list in order, its numbers `faint` in the dash's
+  place, standing to their right edge. An item that opens with a block, a picture, code, a quote, a table or a list,
+  hangs its mark beside that block's top, as the TUI stands it on the block's first line.
 - Code: in a line, Code; on lines of its own, Code's block in `small`, its language in `faint` and `copy` in `muted`
   at its top right, under the pointer `text` underlined in `accent`, copying as a Command does; the page copies by
   the button alone, so a reader selects the lines. Each kind of word in its colour (Colour): a keyword mauve, a
@@ -651,7 +653,8 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   first is, a link to it by OSC 8; a translation older than its original says so in the same form. Nor has the TUI a
   Switch: a post's other languages are places of the `:` menu, `language`, each by its tag, `ru` (owner, 2026-11-24).
 - A post's lists stand inside the text's column, so their marks never read as the paragraphs' numbers: a point's dash
-  `faint`, an ordered list's numbers `muted`, the words after the widest mark.
+  `faint`, an ordered list's numbers `muted`, the words after the widest mark; an item that opens with a block stands
+  the block's first line, a code frame's top among them, on its mark's.
 - A post: the Outline (`rail`) on a page 132 cells wide (a screen of 140), the paragraphs' numbers (4), the text (66),
   the sources beside it (`aside`) on a page 106 cells wide (a screen of 114) and at the text's end under a `quiet`
   rule where narrower, each column four cells clear of the text. Its head's facts beside the title where the sources'

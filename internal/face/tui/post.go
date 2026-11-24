@@ -34,11 +34,10 @@ const (
 	outlineFrom  = look.Rail + outlineGap + sourcesFrom
 )
 
-// The marks of a post's body: what follows an ordered list's number, the bar beside a quote and the room it takes
-// before the quote's words, the rows of air a pause keeps above and below it on top of the row its block keeps, and
-// what opens each row of a line of code that goes on under itself, as Neovim's showbreak marks it
+// The marks of a post's body: the bar beside a quote and the room it takes before the quote's words, the rows of air
+// a pause keeps above and below it on top of the row its block keeps, and what opens each row of a line of code that
+// goes on under itself, as Neovim's showbreak marks it
 const (
-	orderedMark    = "."
 	quoteBar       = "▎"
 	quoteRoom      = 2
 	pauseAir       = 1
@@ -350,7 +349,7 @@ func (writing *article) list(list document.List, column int) []line {
 	for index := range list.Items {
 		mark := look.PointMark
 		if list.Ordered {
-			mark = strconv.Itoa(list.Start+index) + orderedMark
+			mark = list.Number(index)
 		}
 		marks = append(marks, mark)
 	}
@@ -369,28 +368,25 @@ func (writing *article) list(list document.List, column int) []line {
 	return lines
 }
 
-// item lays out an item of a list after its mark's lead, its words standing from a column: its first paragraph's words
-// on the mark's line, the blocks after them under them, a list among them from the same column. The mark stands alone
-// on its line where the item opens with no paragraph.
+// item lays out an item of a list after its mark's lead, as wide as a column, its blocks laid out in the room right of
+// it, each under the one before, a list among them: its first block's first line on the mark's line, its first words,
+// a picture's alt text, a code frame's top, a quote's or a table's first line, or a list's first mark; the lines after
+// it standing in at the column; the mark alone where it holds no block.
 func (writing *article) item(item document.Item, lead line, column int) []line {
-	words, blocks := []word{}, item.Blocks
-	if paragraph, isParagraph := firstParagraph(blocks); isParagraph {
-		words, blocks = writing.layout.words(paragraph.Spans, kindText), blocks[1:]
+	inside := article{layout: writing.layout, paragraphs: 0, headings: nil}
+	inside.layout.width = writing.layout.width - column
+	laid := []line{}
+	for _, block := range item.Blocks {
+		laid = append(laid, inside.block(block, 0, false)...)
 	}
-	lines := writing.layout.continued(lead, words, column)
-	for _, block := range blocks {
-		lines = append(lines, writing.block(block, column, false)...)
+	if len(laid) == 0 {
+		return []line{lead}
+	}
+	lines := []line{slices.Concat(lead, laid[0])}
+	for _, shown := range laid[1:] {
+		lines = append(lines, slices.Concat(line{gapRun(column)}, shown))
 	}
 	return lines
-}
-
-// firstParagraph is the paragraph blocks open with, where they open with one.
-func firstParagraph(blocks []document.Block) (document.Paragraph, bool) {
-	if len(blocks) == 0 {
-		return document.Paragraph{Spans: nil}, false
-	}
-	paragraph, isParagraph := blocks[0].(document.Paragraph)
-	return paragraph, isParagraph
 }
 
 // quote lays out a quote from a column: its blocks, none numbered, each line after a bar as the page draws it.

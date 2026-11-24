@@ -419,27 +419,34 @@ templ citation(number int) {
 	<sup class="citation">{ strconv.Itoa(number) }</sup>
 }
 
-// postList is a post's list (DESIGN.md, Article), its items drawn: each after a dash hanging in the margin, as the
-// résumé's points, or numbered from its start.
-templ postList(ordered bool, start int, items []templ.Component) {
+// postList is a post's list (DESIGN.md, Article), its items drawn: each after its mark hanging in the margin, a dash
+// as the résumé's points, which a screen reader skips, or its number from its start, which it reads, since its own
+// count of the items starts at one; a list still to a screen reader, though it draws no marker of its own.
+templ postList(ordered bool, start int, items []listedItem) {
 	if ordered {
-		<ol class="post-list" start={ strconv.Itoa(start) }>
-			for _, item := range items {
-				<li>
-					@item
-				</li>
-			}
+		<ol class="post-list points" role="list" start={ strconv.Itoa(start) }>
+			@listedItems(items, ordered)
 		</ol>
 	} else {
-		<ul class="post-list points">
-			for _, item := range items {
-				<li>
-					<span class="point-mark" aria-hidden="true">{ look.PointMark }</span>
-					@text(pointSpace)
-					@item
-				</li>
-			}
+		<ul class="post-list points" role="list">
+			@listedItems(items, ordered)
 		</ul>
+	}
+}
+
+// listedItems are a post's list's items, each its mark, a number read or a dash hidden from a screen reader, then what
+// it holds, a block it opens with on the mark's line.
+templ listedItems(items []listedItem, ordered bool) {
+	for _, item := range items {
+		<li class={ "post-item", templ.KV("post-item-block", item.opensBlock) }>
+			if ordered {
+				<span class="point-mark">{ item.mark }</span>
+			} else {
+				<span class="point-mark" aria-hidden="true">{ item.mark }</span>
+			}
+			@text(pointSpace)
+			@item.content
+		</li>
 	}
 }
 

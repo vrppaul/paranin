@@ -1254,6 +1254,25 @@ func TestTheOutlineListsThePostsHeadings(test *testing.T) {
 	}
 }
 
+// An item of a post's list that opens with a block, code here, says so, so the block stands on its mark's line, which
+// stays in the line a point is copied with; an item of words says nothing of it. Each number of a list in order is
+// read to a screen reader, whose own count of the items starts at one.
+func TestAnItemOpeningWithABlockIsMarkedAsOne(test *testing.T) {
+	code := document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "main()"}}}
+	list := document.List{Ordered: true, Start: 1, Items: []document.Item{
+		{Blocks: []document.Block{code}}, {Blocks: []document.Block{document.Paragraph{Spans: textOf("Words.")}}},
+	}}
+	page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{list}})
+	for _, want := range []string{
+		`<li class="post-item post-item-block"><span class="point-mark">1.</span> <div class="code"`,
+		`<li class="post-item"><span class="point-mark">2.</span> Words.</li>`,
+	} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the page %q holds no %q", page, want)
+		}
+	}
+}
+
 // A post's foot leads to the posts beside it, under a heading saying where: in a series its other parts, the series'
 // pick beside the heading and no way to the blog's list, each side named by its part, a part out a link to it with its
 // lead, a part to come its title and the word saying it comes, no link; outside a series the blog's other posts, the

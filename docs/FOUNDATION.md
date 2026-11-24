@@ -399,18 +399,20 @@ draws never passes unseen.
 
 A picture, `![alt](margin.png "caption")`, is a figure: it stands as a
 paragraph of its own among the post's blocks, in a quote too, or in a
-list's item after its words, its title the caption under it, none where
-it has none. The load reads it from the post's own folder, a file named
-by a slug and the ending of PNG, JPEG, WebP or SVG, and refuses a
-picture with no alt text, or alt text holding a mark; one among words,
-inside a link, in a footnote or first in a list's item, whose mark every
-face sets on the line of the item's words; an address of another site,
-or of any folder but the post's; a file missing, named otherwise, of
-another type, that does not read as its type, or over 1 MiB, since each
-picture is held in memory with its snapshot and sent whole to a phone;
-an SVG that names no size; and a picture of the folder no line shows.
-AVIF is left out: Go reads no size of one. Each picture's size is read as
-it loads, so the page keeps its room before it comes.
+list's item, its title the caption under it, none where it has none. An
+item that opens with a block, a picture, code, a quote, a table or a
+list, stands that block's first line beside its mark on every face, as
+an item of words stands its first words there (owner, 2026-11-24). The
+load reads it from the post's own folder, a file named by a slug and the
+ending of PNG, JPEG, WebP or SVG, and refuses a picture with no alt text,
+or alt text holding a mark; one among words, inside a link or in a
+footnote; an address of another site, or of any folder but the post's; a
+file missing, named otherwise, of another type, that does not read as
+its type, or over 1 MiB, since each picture is held in memory with its
+snapshot and sent whole to a phone; an SVG that names no size; and a
+picture of the folder no line shows. AVIF is left out: Go reads no size
+of one. Each picture's size is read as it loads, so the page keeps its
+room before it comes.
 
 How the TUI draws each kind of block: headings, paragraphs, lists and
 quotes as text; a thematic break, a pause inside a part, as the page's

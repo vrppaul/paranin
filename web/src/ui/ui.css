@@ -1834,14 +1834,12 @@ a.tag[aria-current]:hover {
   line-height: var(--type-source-line);
 }
 
-/* a post's list: points as the résumé's, a faint dash hanging in the margin (.points); a list in order, its numbers
- * faint; a list inside an item, and an item's blocks after its first words, close under them, none of them hanging */
-.article ol.post-list {
-  padding-left: var(--cell-3);
-}
-
-.post-list li::marker {
-  color: var(--faint);
+/* a post's list: points as the résumé's, a faint dash hanging in the margin (.points); a list in order, its numbers in
+ * the dash's place, faint, standing to their right edge, a wider one reaching further into the margin; a list inside
+ * an item, and an item's blocks after its first words, close under them, none of them hanging */
+ol.post-list .point-mark {
+  display: inline-flex;
+  justify-content: flex-end;
 }
 
 .post-list li > :not(.point-mark) {
@@ -1861,6 +1859,21 @@ a.tag[aria-current]:hover {
 
 .post .article blockquote > * + * {
   margin-top: var(--row-half);
+}
+
+/* an item that opens with a block, a picture, code, a quote, a table or a list, stands the block on its mark's line,
+ * as wide as the item, its top at the line's, so the mark stays in the line a point is copied with and hangs beside
+ * the block's top; the space above it the item's own */
+.post-item-block {
+  margin-top: var(--row-half);
+}
+
+.post-list .post-item-block > .point-mark + * {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0;
+  vertical-align: top;
 }
 
 /* a pause (DESIGN.md, Article): the three stars its rule carries, as a book sets them, in the page's face, faint, in the

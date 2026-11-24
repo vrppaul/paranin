@@ -35,11 +35,10 @@ const (
 	bulletMark    = "-"
 )
 
-// The marks of a post's blocks: what follows an item's number in a list in order; the bar a quote's lines stand
-// behind, and how far its text stands in from where the bar does; a note's number, between brackets, where a line
-// cites it and before its words; and the rule under a table's header
+// The marks of a post's blocks: the bar a quote's lines stand behind, and how far its text stands in from where the
+// bar does; a note's number, between brackets, where a line cites it and before its words; and the rule under a
+// table's header
 const (
-	orderedEnd  = "."
 	quoteBar    = "│"
 	quoteIndent = 2
 	noteOpens   = "["
@@ -379,7 +378,7 @@ func listMarks(list document.List) []string {
 	for index := range list.Items {
 		mark := bulletMark
 		if list.Ordered {
-			mark = strconv.Itoa(list.Start+index) + orderedEnd
+			mark = list.Number(index)
 		}
 		marks = append(marks, mark)
 	}

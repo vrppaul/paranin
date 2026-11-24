@@ -7,6 +7,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -242,9 +243,11 @@ func (drawing *article) block(block document.Block) templ.Component {
 		drawing.codes++
 		return copyableCode(typed, drawing.writer.frame.copyWords.CodeButton(drawing.codes))
 	case document.List:
-		items := make([]templ.Component, 0, len(typed.Items))
-		for _, item := range typed.Items {
-			items = append(items, listItem(item, drawing.writer.spans, drawing.blocks))
+		items := make([]listedItem, 0, len(typed.Items))
+		for index, item := range typed.Items {
+			items = append(items, listedItem{
+				mark: itemMark(typed, index), opensBlock: opensWithBlock(item), content: listItem(item, drawing.writer.spans, drawing.blocks),
+			})
 		}
 		return postList(typed.Ordered, typed.Start, items)
 	case document.Quote:
@@ -268,6 +271,32 @@ func (drawing *article) blocks(blocks []document.Block) []templ.Component {
 		drawn = append(drawn, drawing.block(block))
 	}
 	return drawn
+}
+
+// listedItem is an item of a post's list as the page draws it: its mark, a dash or its number, which hangs in the
+// margin; whether it opens with a block, which then stands on the mark's line; and what it holds.
+type listedItem struct {
+	mark       string
+	opensBlock bool
+	content    templ.Component
+}
+
+// itemMark is the mark an item of a list opens with, by its place: a dash, or in a list in order its number.
+func itemMark(list document.List, index int) string {
+	if !list.Ordered {
+		return look.PointMark
+	}
+	return list.Number(index)
+}
+
+// opensWithBlock is whether an item opens with a block that is no paragraph: a picture, code, a quote, a table or a
+// list.
+func opensWithBlock(item document.Item) bool {
+	if len(item.Blocks) == 0 {
+		return false
+	}
+	_, isParagraph := item.Blocks[0].(document.Paragraph)
+	return !isParagraph
 }
 
 // listItem is what an item of a post's list holds, its spans and its blocks drawn as the page or the feed draws them:

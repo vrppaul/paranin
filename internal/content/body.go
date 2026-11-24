@@ -13,12 +13,11 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-// The level of a post's title, the page's one heading of it, which no heading of the body takes; the deepest level
-// markdown writes; and the language of a fenced block that is a widget
+// The level of a post's title, the page's one heading of it, which no heading of the body takes, and the deepest level
+// markdown writes
 const (
-	titleLevel     = 1
-	deepestLevel   = 6
-	widgetLanguage = "widget"
+	titleLevel   = 1
+	deepestLevel = 6
 )
 
 // How a reference to a footnote is written, after no backslash, which would escape it; where goldmark finds no
@@ -78,13 +77,14 @@ func (shown *shownPictures) add(more shownPictures) {
 }
 
 // inspectBody finds in a post's body what the format refuses: a node of a kind no post holds (PostKinds), raw HTML
-// among them, a heading of the title's level or one that skips a level, a widget, a pause between no two of the post's
-// own blocks, a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph
-// or cites another, a reference to no footnote and one in a heading; what no face draws, a line broken hard, a link's
+// among them, a heading of the title's level or one that skips a level, a pause between no two of the post's own
+// blocks, a table's row of more cells than its header, a footnote no reference cites, one that is no one paragraph or
+// cites another, a reference to no footnote and one in a heading; what no face draws, a line broken hard, a link's
 // title and a picture that is no paragraph of its own; a link to neither the web, nor a path from the site's root, nor
-// a mailbox, and one to the site's own address; a picture with no alt text, or none of the post's folder; and
-// characters no value may hold, written or referenced. It hands back the pictures the body shows and its links inside
-// the site, which only the whole site can hold to a page.
+// a mailbox, and one to the site's own address; a picture with no alt text, or none of the post's folder; a widget
+// that is no block of the post's own, or that its reading found faults in; and characters no value may hold, written
+// or referenced. It hands back the pictures the body shows and its links inside the site, which only the whole site
+// can hold to a page.
 func inspectBody(inspection *inspection, written writtenBody) (shownPictures, map[*ast.Link]WrittenLink) {
 	checked := &bodyInspection{
 		writtenBody: written, inspection: inspection, headingLevel: titleLevel, reference: regexp.MustCompile(referencePattern),
@@ -131,10 +131,10 @@ func (checked *bodyInspection) inspectNode(node ast.Node) ast.WalkStatus {
 	case *ast.Heading:
 		checked.inspectHeading(typed)
 	case *ast.FencedCodeBlock:
-		if checked.body.Language(typed) == widgetLanguage {
-			checked.inspection.addAtLine(checked.lineOf(node), widgetProblem)
-		}
 		checked.addCodeLines(typed.Lines())
+	case *WidgetNode:
+		// a widget's body is its props, never code, so a tab there is refused as in the text
+		checked.inspectWidget(typed)
 	case *ast.CodeBlock:
 		checked.addCodeLines(typed.Lines())
 	case *ast.ThematicBreak:

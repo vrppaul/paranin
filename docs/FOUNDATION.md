@@ -322,11 +322,12 @@ web/src/
   controllers/   behaviour over server markup: vim, theme, hint, form submit
   islands/       mounted into data-island: VimChrome, SalaryRange, Matcher, Chat
   kit/           the widget kit for articles: Stage (canvas, DPR, resize, reduced motion), play/pause/step, sliders
+  widgets/       the articles' widgets, named for the whole site, as a post's block names one: PageCache.svelte
   entries/       site.ts, post.ts: the island registry
 ```
 
-- eslint holds the layers: `domain` knows no DOM, `ui` knows no page, an
-  article's widgets build on `kit` and `ui` alone.
+- eslint holds the layers: `domain` knows no DOM, `ui` knows no page, the
+  articles' widgets in `widgets/` build on `kit` and `ui` alone.
 - Vim mode becomes a pure state machine in `domain` with a `KEYMAP` table,
   tested in vitest with no browser, and a Svelte island for its chrome.
   `CHROME_HTML` goes.
@@ -376,14 +377,14 @@ address, which would lead from a staging host to the live site. A path
 must be the address of a page the site serves where the reader chooses
 the format, and its anchor, where it names one, the anchor of a section
 of that page, a heading of a post or a series' group of the list by
-series; each face writes the page's address in its own format. Only the
-whole site knows its pages, so this part of the check runs once the
-content loads (ADR-0003), each post's links over the site as it stands
-when the post comes out, now or at its later date: a link to a draft or
-a post that comes out after the one linking it leads nowhere, one to a
-post out before it or with it leads somewhere. A draft's links are
-checked too, over the site as its author reads it under
-`paranin serve --drafts` once every post dated later is out, where
+series, or of a widget of a post; each face writes the page's address in
+its own format. Only the whole site knows its pages, so this part of the
+check runs once the content loads (ADR-0003), each post's links over the
+site as it stands when the post comes out, now or at its later date: a
+link to a draft or a post that comes out after the one linking it leads
+nowhere, one to a post out before it or with it leads somewhere. A
+draft's links are checked too, over the site as its author reads it
+under `paranin serve --drafts` once every post dated later is out, where
 another draft's page leads somewhere (2026-11-23).
 It refuses as well what no face draws yet: a link's title; a table's row
 of more cells than its header, whose cells past it GFM drops; a footnote that is more than
@@ -428,15 +429,25 @@ content/posts/2026-11-page-cache/
   post.ru.md
   page-cache.svg
   revisions/2026-11-10.en.md
-  widgets/PageCache.svelte
-  widgets/PageCache.messages.ts
 ```
 
 1. A widget in markdown is a fenced block, ` ```widget PageCache `, with its
    props as YAML inside, `caption` and `alt` among them. It is valid
-   CommonMark and shows as code on GitHub. A goldmark extension turns it
-   into a `Widget` node of the document. `alt` is required: it is the
-   widget in the TUI, the man page, the feed and a screen reader.
+   CommonMark and shows as code on GitHub. The fence names a widget of
+   `web/src/widgets`, `PageCache.svelte`, named for the whole site, which
+   any post may show; a post's folder holds none (owner, 2026-11-24), since
+   eslint, run from `web/`, reads no file outside it, and a bare import of
+   `svelte` resolves from no folder of `content/`. A goldmark extension of
+   `content`'s turns the block into a widget's node as the post is parsed,
+   and `compose` turns that into a `Widget` block of the document, its
+   anchor the widget's name, which a link inside the site may name. `alt`
+   is required: it is the widget in the TUI, the man page, the feed and a
+   screen reader. The load refuses a widget inside a quote, a list's item
+   or a footnote; a name of no component's form, a capital letter then
+   letters and digits; a body that is no one mapping; `alt` or `caption`
+   that is no one line of words; and props written with an anchor, an
+   alias or a tag of their own, or a key that is no text or stands twice;
+   each at its line.
 2. Each face draws `Widget` its own way. HTML: a `<figure data-island>`
    holding a still image the island brings to life. Every other face: the
    caption, the alt text and a link to the live version.
@@ -474,10 +485,10 @@ discussions:
   where it says none (Revisions).
 - `tags` are slugs, none twice; each discussion is a site's name and the
   thread's `https` address (D13).
-- Until its step lands, a post's folder holds `post.en.md`, its
-  translations, its `revisions/` and its pictures alone: `widgets/` is a
-  fault that says so, and so is a translation into a language the site has
-  no words for.
+- A post's folder holds `post.en.md`, its translations, its `revisions/`
+  and its pictures alone: `widgets/` is a fault that says a widget lives in
+  `web/src/widgets`, and a translation into a language the site has no
+  words for one that says its catalogue comes first.
 
 #### Where posts live (Decided, D6)
 
@@ -849,9 +860,9 @@ For every page of the site, the blog's among them:
   address the web already writes.
 - **`llms.txt`** lists the English site, whose posts' markdown leads to
   their translations.
-- **Words inside widgets** live in a typed table,
-  `PageCache.messages.ts` (`satisfies Record<Lang, Messages>`): a missing
-  translation of a label fails to compile.
+- **Words inside widgets** live in a typed table beside the widget,
+  `web/src/widgets/PageCache.messages.ts` (`satisfies Record<Lang,
+  Messages>`): a missing translation of a label fails to compile.
 - **Words of the site** (Published, Read in Russian, vim hints, man page
   headings) live in one catalogue per language, `content/i18n/en.yaml` and
   `ru.yaml`, used by every face, the TUI (`ssh ru/blog@…`) and

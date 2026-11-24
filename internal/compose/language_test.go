@@ -21,7 +21,7 @@ const (
 	// the sources the translation names the fixture post's text by: as its revision of the 10th keeps it, the
 	// fixture's, and as it stands
 	fixtureRevisionSource = "en@59b3c768ccba"
-	fixtureCurrentSource  = "en@520f97557153"
+	fixtureCurrentSource  = "en@e77425251563"
 	// the Russian blog's place among the site's translations, the fixture's one
 	russianBlog = 0
 )

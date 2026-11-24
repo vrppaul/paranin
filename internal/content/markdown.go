@@ -2,6 +2,7 @@ package content
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -28,9 +29,12 @@ const (
 	// a footnote's definition is tried after every other block but a paragraph, its reference before a link
 	footnoteBlockPriority  = 999
 	footnoteInlinePriority = 101
+	// a widget's block is read after the tables, though neither holds the other
+	widgetTreePriority = 100
 )
 
-// postFormat is how goldmark reads a post: CommonMark and, of GFM, its tables and footnotes alone.
+// postFormat is how goldmark reads a post: CommonMark and, of GFM, its tables and footnotes alone, each widget's fenced
+// block read into a widget's node.
 //
 // goldmark's root package would add the extensions itself, but it renders too, which no part under the faces does,
 // so the parser is put together from the parts the extensions' own Extend methods add. One is left out: the
@@ -46,6 +50,7 @@ func postFormat() []parser.Option {
 		parser.WithParagraphTransformers(parser.DefaultParagraphTransformers()...),
 		parser.WithParagraphTransformers(util.Prioritized(extension.NewTableParagraphTransformer(), tableParagraphPriority)),
 		parser.WithASTTransformers(util.Prioritized(extension.NewTableASTTransformer(), tableTreePriority)),
+		parser.WithASTTransformers(util.Prioritized(widgetReading{name: regexp.MustCompile(widgetNamePattern)}, widgetTreePriority)),
 	}
 }
 
@@ -60,6 +65,7 @@ func PostKinds() []ast.NodeKind {
 		ast.KindText, ast.KindCodeSpan, ast.KindEmphasis, ast.KindLink, ast.KindAutoLink, ast.KindImage,
 		extensionast.KindTable, extensionast.KindTableHeader, extensionast.KindTableRow, extensionast.KindTableCell,
 		extensionast.KindFootnoteList, extensionast.KindFootnote, extensionast.KindFootnoteLink,
+		KindWidget,
 	}
 }
 

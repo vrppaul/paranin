@@ -27,7 +27,7 @@ type OpenedPage struct {
 // has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, in every
 // language, by each name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the
 // words of its series and of the panes at its foot, the name of its outline, the words of the blog's list, how a day is
-// written, and the manual's own words.
+// written, the manual's own words, and the word in a widget's edge that says it runs.
 type Frame struct {
 	// Language is the tag of the language of the frame's words, as BCP 47 writes it: "en"
 	Language string
@@ -54,6 +54,7 @@ type Frame struct {
 	ListWords    ListWords
 	Days         DayWords
 	Manual       ManualWords
+	LiveWord     string
 }
 
 // DayWords write a day as a reader of their language reads it (DESIGN.md, Content): its number, its month's name as the
@@ -236,6 +237,7 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 			Section: words.Text(content.WordManualSection), Name: words.Text(content.WordManualName),
 			Description: words.Text(content.WordManualDescription), Notes: words.Text(content.WordManualNotes),
 		},
+		LiveWord: words.Text(content.WordLive),
 	}
 }
 

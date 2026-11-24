@@ -26,12 +26,13 @@ const (
 
 // What is said of a post's link inside the site that leads nowhere: to a post that comes out after the post linking
 // it, by its path and the moment it comes out, as front matter writes it; to no page the site serves, by its path; to
-// a section of a page that has none, by the anchor and the path; or to none of its sections, naming those it has
+// a section of a page that has none, by the anchor and the path; or to none of its sections and widgets, naming the
+// anchors it has
 const (
 	laterProblem      = "%q leads to a post that comes out only at %s, after the post linking it"
 	noPageProblem     = "%q leads to no page the site serves: a link inside it is a page's path from the root, as /blog/<slug>"
 	noSectionsProblem = "%q names a section of %q, which has none: link to the page alone"
-	noSectionProblem  = "%q names no section of %q, whose sections are %s"
+	noSectionProblem  = "%q names no section or widget of %q, whose anchors are %s"
 	anchorJoint       = ", "
 )
 
@@ -196,24 +197,32 @@ func byPlace(first, second content.Fault) int {
 	return cmp.Or(cmp.Compare(first.File, second.File), cmp.Compare(first.Line, second.Line), cmp.Compare(first.Problem, second.Problem))
 }
 
-// anchorsOf are the anchors of each document's sections, in reading order, by its page.
+// anchorsOf are the anchors of each document's sections and widgets, in reading order, by its page.
 func anchorsOf(documents []document.Document) map[document.Page][]string {
 	anchors := make(map[document.Page][]string, len(documents))
 	for _, composed := range documents {
-		anchors[composed.Head.Page] = sectionAnchors(composed.Blocks)
+		anchors[composed.Head.Page] = anchorsAmong(composed.Blocks)
 	}
 	return anchors
 }
 
-// sectionAnchors are the anchors of the sections among blocks that have one, each followed by those inside it.
-func sectionAnchors(blocks []document.Block) []string {
+// anchorsAmong are the anchors among blocks a link may name, in reading order: each section's that has one, followed
+// by those inside it, and each widget's.
+func anchorsAmong(blocks []document.Block) []string {
 	anchors := []string{}
 	for _, block := range blocks {
-		if section, isSection := block.(document.Section); isSection {
-			if section.Name != "" {
-				anchors = append(anchors, section.Name)
+		switch typed := block.(type) {
+		case document.Section:
+			if typed.Name != "" {
+				anchors = append(anchors, typed.Name)
 			}
-			anchors = append(anchors, sectionAnchors(section.Blocks)...)
+			anchors = append(anchors, anchorsAmong(typed.Blocks)...)
+		case document.Widget:
+			anchors = append(anchors, typed.Live.Name)
+		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause, document.Figure,
+			document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills, document.Posts:
+			// a widget stands as a block of the post's own, never inside a quote or a list's item, and no other block
+			// takes an anchor
 		}
 	}
 	return anchors

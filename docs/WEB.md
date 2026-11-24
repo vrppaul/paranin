@@ -94,7 +94,8 @@ left out, and a gap among written words stands marked as one.
   or to a section of one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an
   anchor; a card's page, its address on a line of its own. A post's table stands in columns under its header where it fits the 78
   columns, a bullet a row where not; a quote behind `│`; a picture its alt text, its address between `<` and `>` and
-  its caption, a line each; a tab in code as the spaces to its stop, every eight columns. The blog's list stands a
+  its caption, a line each, and a widget so, its address the live one's, the post's page at the widget,
+  `<https://paran.in/blog/{slug}#PageCache>`; a tab in code as the spaces to its stop, every eight columns. The blog's list stands a
   section a group, each post its title with its day at the right, then its lead, its part and series, its tags and
   its address; a filtered list is named as the list, `BLOG(1)`, its filter in `NAME` after the blog's,
   `blog — posts tagged go`.
@@ -102,7 +103,8 @@ left out, and a gap among written words stands marked as one.
   `draft` for a draft, and an older version's the newer beside it, `newer: [2026-11-21](address)`, a translation older
   than its original the site's words saying so, a link to the original's markdown; under it the
   languages it is read in, the one read strong and the others links, `**en** · [ru](address)`; its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
-  `![alt](address "caption")`, its address whole. The blog's list
+  `![alt](address "caption")`, its address whole, and a widget as the same link to the live one with no picture's
+  mark, `[alt](address "caption")`. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead; a filtered list writes its filter on the line under the blog's name.
 - **A feed** is Atom (RFC 4287), every address in it whole: its id, a tag URI under the profile's `site.tag_authority`
@@ -113,7 +115,7 @@ left out, and a gap among written words stands marked as one.
   entry, newest first: its id by its number (`tag:paran.in,2026:blog/12`, a translation's `…:ru/blog/12`), which
   neither a renamed folder nor a moved site changes, its title, a link to its page, when it came out and when its current version did, the start of its
   `updated:` day in its own zone, its lead as the summary and its body whole as HTML, every address whole, its code in
-  no colour, its notes numbered at its end, with no id, paragraph's number, point's mark, button or script, which a
+  no colour, its notes numbered at its end, a widget its alt text as a link to the live one over its caption, with no id, paragraph's number, point's mark, button or script, which a
   reader would show as stray words or run nothing for.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
@@ -141,7 +143,9 @@ left out, and a gap among written words stands marked as one.
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first
   cites it, and every note once at the text's end, which a phone shows in their place; a picture a `<figure>`, its
   `<img>` holding its alt text and its size, so the page keeps its room before it comes, fetched as it nears the
-  screen, and its caption a `<figcaption>`. The blog's list has the blog's
+  screen, and its caption a `<figcaption>`; a widget a `<figure>` its anchor names, by the widget's name, counted from
+  the second of a name (`#PageCache-2`), its window holding its name, the mark that it runs, hidden until the script
+  runs it, and its alt text, its caption a `<figcaption>`. The blog's list has the blog's
   name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it, its
   day in a `<time datetime>` then its title, stretched over its tile, its series a link to its group on the list by
   series, a part to come no link; it has no record until the site's SEO. The list's tags and a post's are links to the

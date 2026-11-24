@@ -4,11 +4,12 @@ package look
 // done, a check passed or a command copied; the dash before each point of an entry or a list; the mark before a
 // command a reader may run, as a shell's prompt ends in; the three stars a post pauses on, as a book sets them; and the
 // arrow before what a version of a post says under its day: an older version's way to the newer, a translation older
-// than its original's way to the original
+// than its original's way to the original; and the dot before the word in a widget's edge that says it runs
 const (
 	DoneMark        = "✓"
 	PointMark       = "-"
 	PromptMark      = "❯"
 	PauseMark       = "*   *   *"
 	VersionNoteMark = "↑"
+	LiveMark        = "●"
 )

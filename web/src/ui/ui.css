@@ -318,9 +318,22 @@ a.tag[aria-current] .tag-mark {
   white-space: normal;
 }
 
-/* a hint pads as a dialog does, in the text's own style, not the line's */
+/* a hint, a pane and a widget's window pad as a dialog does, a row and a half clear at the top for what is set into
+ * their edge; a hint and a pane at their sides as well, where a widget's window lets its edge and what it holds keep
+ * their own, each counted in its own type (.widget-window > .edge) */
+.hint,
+.pane,
+.widget-window {
+  padding-block: calc(var(--row) + var(--row-half)) var(--row);
+}
+
+.hint,
+.pane {
+  padding-inline: var(--cell-3);
+}
+
+/* a hint in the text's own style, not the line's */
 .hint {
-  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
   font-size: var(--type-body-size);
   font-weight: var(--type-body-weight);
   line-height: var(--type-body-line);
@@ -1775,9 +1788,10 @@ a.tag[aria-current]:hover {
   line-height: var(--type-strong-line);
 }
 
-/* a heading, or a group of the list, reached by its anchor stands a row clear of the screen's top, as the Outline's
- * mark of it and a group's sticking name stand */
+/* a heading, a widget or a group of the list reached by its anchor stands a row clear of the screen's top, as the
+ * Outline's mark of it and a group's sticking name stand, so the name a widget sets into its edge shows whole */
 .post .article :is(h2, h3, h4, h5, h6),
+.widget,
 .group {
   scroll-margin-top: var(--row);
 }
@@ -1908,6 +1922,36 @@ ol.post-list .point-mark {
   font-size: var(--type-small-size);
   font-weight: var(--type-small-weight);
   line-height: var(--type-small-line);
+}
+
+/* a widget (DESIGN.md, Article): half a row lower than a block, as the tiles stand, so its name set into its edge
+ * stands a row clear of the block above; a window as tmux draws a popup, padded as a dialog, in a muted hairline on the
+ * page's ground, rounded; its name set into its top edge as a pane's is (.edge), and at the edge's right, once the
+ * script runs it, the dot in the colour of a thing passed and the word muted, on the page's ground; inside it what
+ * runs, or its alt text where nothing does; its caption under it as a picture's */
+.widget {
+  padding-top: var(--row-half);
+}
+
+.widget-window {
+  position: relative;
+  border: var(--hairline) solid var(--muted);
+  border-radius: var(--radius);
+}
+
+.widget-live {
+  flex-shrink: 0;
+  padding: 0 var(--cell);
+  background: var(--background);
+  color: var(--muted);
+}
+
+.widget-live-mark {
+  color: var(--passed);
+}
+
+.widget-alt {
+  margin: 0 var(--cell-3);
 }
 
 /* a block of code (DESIGN.md, Article and Code): the block, in the small style, a row clear at its top for its bar,
@@ -2198,14 +2242,13 @@ a.pick-row:hover {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-/* a pane, padded as a dialog, in a muted hairline; the whole of it the link, a shade down under the pointer, its
+/* a pane, padded as a dialog (.hint), in a muted hairline; the whole of it the link, a shade down under the pointer, its
  * title's underline turning the accent, twice as thick. A tile of the blog's list is one too, and adds what differs */
 .pane {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--nudge);
-  padding: calc(var(--row) + var(--row-half)) var(--cell-3) var(--row);
   border: var(--hairline) solid var(--muted);
   color: var(--text);
   text-decoration: none;
@@ -2222,16 +2265,42 @@ a.pick-row:hover {
   border-left-color: transparent;
 }
 
-/* its name set into its top edge, bold, small, on the page's ground */
-.pane-name {
+/* what a pane, a tile or a widget's window sets into its top edge: a row half over the edge, as far in from each
+ * corner, counted in its own small type; its name at the left and, in a widget's, the mark that it runs at the right
+ * (.widget-live), a gap between them */
+.edge {
+  display: flex;
+  gap: var(--cell);
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: var(--type-small-size);
+  line-height: var(--row);
+}
+
+/* a pane's and a tile's stands over the frame, whose words stand a row and a half below its top: a label, never a
+ * target, the pointer passing through it to the pane or the tile above, which it overlaps where they stack */
+.pane .edge {
   position: absolute;
   top: calc(-0.5 * var(--row));
+  right: var(--cell-2);
   left: var(--cell-2);
+  pointer-events: none;
+}
+
+/* a widget's stands in the window's flow, pulled up over the room the window pads its top with, so what the window
+ * holds stands a row below it however many lines its name takes */
+.widget-window > .edge {
+  margin: calc(-1 * var(--row-2)) var(--cell-2) var(--row);
+}
+
+/* the name bold, on the page's ground; one too long for the row breaks between its words, where the page marks them,
+ * and inside a word only where a word alone is wider */
+.edge-name {
+  min-width: 0;
   padding: 0 var(--cell);
   background: var(--background);
-  font-size: var(--type-small-size);
   font-weight: var(--type-strong-weight);
-  line-height: var(--row);
+  overflow-wrap: anywhere;
 }
 
 /* its title bold, underlined in the muted colour; the side after's, the next part's, in the heading's style */
@@ -2277,7 +2346,7 @@ a.pick-row:hover {
   border-color: var(--quiet-half);
 }
 
-.pane-none .pane-name {
+.pane-none .edge-name {
   color: var(--faint);
   font-weight: var(--type-small-weight);
 }
@@ -2295,7 +2364,7 @@ a.pick-row:hover {
   background: var(--sunk);
 }
 
-:is(a.pane:hover, .tile:has(> a.tile-title:hover)) .pane-name {
+:is(a.pane:hover, .tile:has(> a.tile-title:hover)) .edge-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--sunk) 0);
 }
 
@@ -2309,7 +2378,7 @@ a.pane:hover .pane-title {
   background: var(--deep);
 }
 
-:is(a.pane:active, .tile:has(> a.tile-title:active)) .pane-name {
+:is(a.pane:active, .tile:has(> a.tile-title:active)) .edge-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--deep) 0);
 }
 
@@ -2589,7 +2658,7 @@ a.pane:hover .pane-title {
   margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
 }
 
-/* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .pane-name), its title
+/* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .edge), its title
  * the link (a.tile-title, below): what differs is here. Its day muted and not bold; in a series' own group its part
  * before it, bold in the text's colour */
 .tile-edge {
@@ -2655,7 +2724,7 @@ a.pane:hover .pane-title {
   font-weight: var(--type-body-weight);
 }
 
-.tile-to-come .tile-edge {
+.tile-to-come .edge {
   z-index: var(--layer-tile-name);
 }
 

@@ -61,7 +61,7 @@ const (
 	strayRevisionProblem = "is no revision: a post's revisions folder holds a file <day>.<language>.md for each, its day as 2026-11-10"
 	earlyRevisionProblem = "%q comes before the day the post was published, %q, its first version's"
 	lateRevisionProblem  = "%q comes no earlier than the day of the post's current version, %q: date the version that followed it by its updated:"
-	widgetsProblem       = "holds widgets, which come with the first island"
+	widgetsProblem       = "holds widgets, whose code lives in web/src/widgets, each named by a post's widget block"
 	strayPartProblem     = "is no part of a post: a post's folder holds its " + englishPostFile + ", its translations, its " + revisionsFolder + " and the pictures it shows"
 	frontMatterProblem   = "opens with no front matter: a line " + frontMatterFence + ", the post's fields, and another"
 	unclosedProblem      = "opens front matter that no line " + frontMatterFence + " closes"
@@ -69,7 +69,16 @@ const (
 	titleLevelProblem    = "is a heading of level 1, the post's title's alone"
 	skippedLevelProblem  = "is a heading of level %d after one of %d, which skips a level"
 	nestedHeadingProblem = "is a heading inside a quote or a list's item, where it opens no part of the post"
-	widgetProblem        = "is a widget, and widgets come with the first island"
+	widgetPlaceProblem   = "is a widget inside a quote, a list's item or a footnote: a widget stands as a block of the post's own"
+	widgetNameProblem    = "%q names no widget: widget, then one component of web/src/widgets, a capital letter then letters and digits"
+	widgetMappingProblem = "is a widget whose body is no one mapping of its props, " + altKey + " among them"
+	widgetYAMLProblem    = "is a widget whose props read as no YAML: %v"
+	widgetAltProblem     = "is a widget with no " + altKey + ", the words that stand for it wherever it does not run: a screen reader, a terminal"
+	widgetLineProblem    = "is a widget's %s that is no one line of words"
+	widgetAnchorProblem  = "is an anchor or an alias in a widget's props: each value is written where it stands"
+	widgetTagProblem     = "%q is a tag of a widget's props' own: a value reads as the type YAML gives it"
+	widgetKeyProblem     = "%q is a key of a widget's props that is no text"
+	widgetTwiceProblem   = "%q is a key of its mapping twice"
 	uncitedProblem       = "%q is a footnote no reference cites"
 	unansweredProblem    = "%q cites no footnote"
 	noteFormProblem      = "%q is no one paragraph, which a note set beside the line it is cited on holds"
@@ -145,7 +154,12 @@ func (inspection *inspection) add(field, format string, values ...any) {
 
 // addAtLine writes a fault at a line of the file, as add writes one at a field.
 func (inspection *inspection) addAtLine(line int, format string, values ...any) {
-	problem := fmt.Sprintf(format, values...)
+	inspection.addProblemAtLine(line, fmt.Sprintf(format, values...))
+}
+
+// addProblemAtLine writes a fault worded already at a line of the file: one a widget's reading found as the post was
+// parsed.
+func (inspection *inspection) addProblemAtLine(line int, problem string) {
 	inspection.faults = append(inspection.faults, Fault{File: inspection.file, Field: "", Line: line, Problem: problem})
 }
 

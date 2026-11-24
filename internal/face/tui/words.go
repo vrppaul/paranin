@@ -87,6 +87,8 @@ const (
 	// kindLookMark is a mark beside words that says where to look: the bar before the heading of a post's Outline the
 	// reader is reading, their place in the post, and the arrow before the way from an older version to the newer
 	kindLookMark
+	// kindLiveMark is the dot in a widget's edge that says it runs
+	kindLiveMark
 	// kindCodeKeyword to kindCodeVariable are the kinds of word in a post's code that stand in colours of their own
 	// (document.CodeKind); a comment, punctuation and any other word read as muted, faint and text
 	kindCodeKeyword

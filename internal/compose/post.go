@@ -71,8 +71,8 @@ func postHeads(read blog) []document.Head {
 
 // postDocument is a version of a post as every face draws it, where the post stands in the blog: its head, then its
 // body walked from the tree the load parsed, which nothing here writes to, its code as Prepare split it, its pictures
-// the post's, each heading named by its words and each link inside the site read into the page or the feed at its path
-// among paths.
+// the post's, each heading and widget named for a link to reach it and each link inside the site read into the page or
+// the feed at its path among paths.
 func postDocument(version postVersion, read blog, prepared *Prepared, paths map[string]document.Target) document.Document {
 	text := version.text
 	head := postHead(version, read)
@@ -115,7 +115,7 @@ func postHead(version postVersion, read blog) document.Head {
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
 // figures stand beside and are sized by; its links inside the site, as the load read them, by their nodes, and the
 // site's pages and feeds by the paths they name; its code as Prepare split it, by its node; the words of each footnote
-// by its number, read first, which every citation of it carries; and the anchors its headings took so far.
+// by its number, read first, which every citation of it carries; and the anchors its headings and widgets took so far.
 type bodyReader struct {
 	body     content.Markdown
 	page     document.Page
@@ -186,6 +186,8 @@ func (reader bodyReader) block(node ast.Node) (document.Block, bool) {
 		return document.Paragraph{Spans: reader.spans(node)}, true
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
 		return reader.codes[node], true
+	case *content.WidgetNode:
+		return reader.widget(typed.Widget), true
 	case *ast.Blockquote:
 		return document.Quote{Blocks: reader.containedBlocks(node)}, true
 	case *ast.ThematicBreak:
@@ -211,6 +213,14 @@ func (reader bodyReader) figure(picture *ast.Image) document.Figure {
 		Width:   shown.Width,
 		Height:  shown.Height,
 	}
+}
+
+// widget is a widget of the body, the live one at the post's page by an anchor of the widget's name, counted where an
+// earlier widget took it: a heading's anchor, all small letters, never holds the capital a name opens with, nor does a
+// name hold the mark the page's own ids open with, so the widget's anchor is its own for good (ADR-0003).
+func (reader bodyReader) widget(widget content.Widget) document.Widget {
+	live := document.Anchor{Page: reader.page, Name: reader.anchors.given(widget.Name)}
+	return document.Widget{Name: widget.Name, Alt: widget.Alt, Caption: widget.Caption, Live: live}
 }
 
 // list is a list of the body, its items each holding blocks, numbered from its start where it is in order.

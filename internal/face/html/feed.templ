@@ -98,6 +98,17 @@ templ feedPause() {
 	<hr/>
 }
 
+// feedWidget is a post's widget in a feed, which runs no island: its alt text as a link to the live one, by its whole
+// address, its caption under it where it has one, as a picture's.
+templ (writer FeedWriter) feedWidget(shown document.Widget) {
+	<figure>
+		<p><a href={ writer.addressOf(shown.Live, routes.FormatChosen) }>{ shown.Alt }</a></p>
+		if shown.Caption != "" {
+			<figcaption>{ shown.Caption }</figcaption>
+		}
+	</figure>
+}
+
 // feedFigure is a post's picture in a feed, by its whole address and its size, its caption under it where it has one.
 templ (writer FeedWriter) feedFigure(shown document.Figure) {
 	<figure>

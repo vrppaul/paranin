@@ -185,6 +185,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return appendChunk(chunks, breakMark)
 	case document.Figure:
 		return appendChunk(chunks, writer.figure(typed))
+	case document.Widget:
+		return appendChunk(chunks, writer.widget(typed))
 	case document.Facts:
 		return appendChunk(chunks, writer.facts(typed.List))
 	case document.Entry:
@@ -436,14 +438,24 @@ func link(text, target string) string {
 	return linkTextOpening + text + linkTextClosing + linkAddressOpening + target + linkAddressClosing
 }
 
-// figure writes a picture as markdown shows one, a link after the picture's mark: its alt text as the link's words,
-// its address whole, and its caption, where it has one, as its title.
+// figure writes a picture as markdown shows one, the picture's mark before its captioned link.
 func (writer markdownWriter) figure(figure document.Figure) string {
-	target := linkAddress(writer.site.Address(figure.Picture, routes.FormatMarkdown))
-	if figure.Caption != "" {
-		target += space + titleQuote + writer.titleEscape.Replace(figure.Caption) + titleQuote
+	return pictureMark + writer.captionedLink(figure.Alt, writer.site.Address(figure.Picture, routes.FormatMarkdown), figure.Caption)
+}
+
+// widget writes a widget as a picture stands, a captioned link, to the live one on the post's page, which runs it.
+func (writer markdownWriter) widget(widget document.Widget) string {
+	return writer.captionedLink(widget.Alt, writer.site.Address(widget.Live, routes.FormatChosen), widget.Caption)
+}
+
+// captionedLink writes what stands for a picture or a widget: its alt text as the link's words, its address whole, and
+// its caption, where it has one, as its title.
+func (writer markdownWriter) captionedLink(alt, address, caption string) string {
+	target := linkAddress(address)
+	if caption != "" {
+		target += space + titleQuote + writer.titleEscape.Replace(caption) + titleQuote
 	}
-	return pictureMark + link(writer.text(figure.Alt), target)
+	return link(writer.text(alt), target)
 }
 
 // linkAddress is an address as a link or a picture writes it: between brackets where a space or a parenthesis would

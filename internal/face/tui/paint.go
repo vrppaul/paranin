@@ -137,6 +137,8 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindOff:       plain.Foreground(colour(look.ColourQuietHalf)),
 			kindQuoteBar:  plain.Foreground(colour(look.ColourEdge)),
 			kindLookMark:  plain.Foreground(colour(look.ColourAccent)),
+			// the dot that says a widget runs in the colour of a thing passed, the word beside it telling it with none
+			kindLiveMark: plain.Foreground(colour(look.ColourPassed)),
 			// each kind of word in code in its own hue (DESIGN.md, Article)
 			kindCodeKeyword:  plain.Foreground(colour(look.ColourCodeKeyword)),
 			kindCodeString:   plain.Foreground(colour(look.ColourCodeString)),
@@ -237,7 +239,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
 		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar, kindEmphasis,
-		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindLookMark, kindCodeKeyword, kindCodeString, kindCodeNumber,
+		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindLookMark, kindLiveMark, kindCodeKeyword, kindCodeString, kindCodeNumber,
 		kindCodeFunction, kindCodeType, kindCodeBuiltin, kindCodeOperator, kindCodeVariable:
 	}
 	return nil

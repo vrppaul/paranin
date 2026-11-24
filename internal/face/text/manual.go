@@ -184,7 +184,10 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	case document.Pause:
 		return pause(indent)
 	case document.Figure:
-		return writer.figure(indent, typed)
+		return standIn(indent, typed.Alt, writer.site.Address(typed.Picture, routes.FormatManual), typed.Caption)
+	case document.Widget:
+		// the live widget is the post's page, which runs it
+		return standIn(indent, typed.Alt, writer.site.Address(typed.Live, routes.FormatChosen), typed.Caption)
 	case document.Facts:
 		return writer.pairs(indent, typed.List)
 	case document.Entry:
@@ -416,12 +419,12 @@ func pause(indent int) []string {
 	return []string{"", strings.Repeat(space, indent+room/sides) + look.PauseMark, ""}
 }
 
-// figure writes a picture as a terminal reads one, each part from a line of its own: its alt text, its address as a
-// link to a page of the site writes one, and its caption.
-func (writer manualWriter) figure(indent int, figure document.Figure) []string {
-	address := addressOpening + writer.site.Address(figure.Picture, routes.FormatManual) + addressClosing
-	lines := slices.Concat(paragraph(indent, 0, strings.Fields(figure.Alt)), paragraph(indent, 0, []string{address}))
-	return append(lines, paragraph(indent, 0, strings.Fields(figure.Caption))...)
+// standIn writes what stands for a picture or a widget, which a terminal shows neither of, each part from a line of its
+// own: its alt text, its address as a link to a page of the site writes one, and its caption.
+func standIn(indent int, alt, address, caption string) []string {
+	enclosed := addressOpening + address + addressClosing
+	lines := slices.Concat(paragraph(indent, 0, strings.Fields(alt)), paragraph(indent, 0, []string{enclosed}))
+	return append(lines, paragraph(indent, 0, strings.Fields(caption))...)
 }
 
 // notes writes the notes the page's blocks cite, in a section of their own at its end, each its number and then

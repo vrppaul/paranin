@@ -731,7 +731,8 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // section's title. A tab's title the page draws in the titles' font, or not at all on the opening, reaches the reader
 // by form too, as the footer's name of the tab. A project's opening shows its repository by its form too: its owner
 // and name under the title, a link to the address, without its label. The blog's list and a post reach it as well,
-// the blog's name in the titles' font, and a post's code of several lines in a frame, an edge between each two.
+// the blog's name in the titles' font; what a frame holds, a post's code and a widget's alt text, is read without the
+// frame's sides, which stand between each two of its rows.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	drawn := sessionDrawing(snapshot, false)
@@ -770,8 +771,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		},
 		{
 			name: "a post", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}),
-			model:  New(drawn, "blog/1", commonWidth, tallHeight, fixtures.Day()),
-			byForm: []string{"// slowly reads a page twice, aloud\nfunc slowly(page string) int {\n\tfmt.Println(\"slowly\", page)\n\treturn len(page) * 2\n}"},
+			model: New(drawn, "blog/1", commonWidth, tallHeight, fixtures.Day()), byForm: nil,
 		},
 	}
 	for _, testCase := range cases {
@@ -781,7 +781,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 				screens = append(screens, screenOf(test, model))
 				model = pressed(test, model, "l")
 			}
-			read := strings.Join(strings.Fields(strings.Join(screens, " ")), "")
+			read := strings.Join(strings.Fields(strings.ReplaceAll(strings.Join(screens, " "), frameDown, "")), "")
 			for _, phrase := range document.Phrases(testCase.shown) {
 				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) && !slices.Contains(testCase.byForm, phrase) {
 					test.Errorf("no tab of %s holds %q", testCase.name, phrase)

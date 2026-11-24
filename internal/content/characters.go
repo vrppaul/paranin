@@ -1,8 +1,6 @@
 package content
 
 import (
-	"fmt"
-	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -30,34 +28,16 @@ const lineFeed = '\n'
 
 // inspectCharacters finds every value of a file that holds a character a terminal or a browser acts on rather than
 // shows, or bytes that are no text: every face passes a value on as written. It walks the file's document, not the
-// types' fields, so a field a type gains is checked as well.
+// types' fields, so a field a type gains is checked as well. A key needs no check of its own: one that no type or
+// catalogue knows is a fault already, and a fault's line writes it escaped.
 func inspectCharacters(file string, document *yaml.Node) Faults {
 	inspection := &inspection{file: file, faults: nil}
-	inspectNode(inspection, "", document)
-	return inspection.faults
-}
-
-// inspectNode checks a node at its place in the file, and every node it holds at theirs. A key needs no check of
-// its own: one that no type or catalogue knows is a fault already, and a fault's line writes it escaped.
-func inspectNode(inspection *inspection, place string, node *yaml.Node) {
-	switch node.Kind {
-	case yaml.DocumentNode:
-		for _, root := range node.Content {
-			inspectNode(inspection, place, root)
+	for place, node := range valueNodes("", document) {
+		if node.Kind == yaml.ScalarNode {
+			inspectScalar(inspection, place, node)
 		}
-	case yaml.SequenceNode:
-		for index, item := range node.Content {
-			inspectNode(inspection, fmt.Sprintf(itemPlace, place, index), item)
-		}
-	case yaml.MappingNode:
-		for pair := range slices.Chunk(node.Content, keyAndValue) {
-			inspectNode(inspection, keyPlace(place, pair[keyOffset].Value), pair[valueOffset])
-		}
-	case yaml.ScalarNode:
-		inspectScalar(inspection, place, node)
-	case yaml.AliasNode:
-		// an alias's value is checked where its anchor writes it
 	}
+	return inspection.faults
 }
 
 // inspectScalar checks a scalar's text as each reader of it gets it: as written, which a type's own reader takes, and

@@ -152,6 +152,16 @@ type Figure struct {
 	Height  int
 }
 
+// Widget is an island a post shows as a block of its own: the component it names; its alt text, which stands for it
+// wherever it does not run; its caption, none where it has none; and the live one, the post's page at the widget's
+// anchor, which every face that runs no island leads to.
+type Widget struct {
+	Name    string
+	Alt     string
+	Caption string
+	Live    Anchor
+}
+
 // Facts is a list of labels and their values, of a kind a face finds them by, not by their place.
 type Facts struct {
 	Kind FactsKind
@@ -277,6 +287,7 @@ func (List) block()      {}
 func (Quote) block()     {}
 func (Pause) block()     {}
 func (Figure) block()    {}
+func (Widget) block()    {}
 func (Facts) block()     {}
 func (Entry) block()     {}
 func (Card) block()      {}

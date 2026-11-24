@@ -52,6 +52,9 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 	case Figure:
 		// a figure's address is each face's to write, or to show the picture at
 		return textPhrase(textPhrase(phrases, typed.Alt), typed.Caption)
+	case Widget:
+		// a widget's name and its link are each face's to write, as a figure's address is
+		return textPhrase(textPhrase(phrases, typed.Alt), typed.Caption)
 	case Facts:
 		return factPhrases(phrases, typed.List)
 	case Entry:

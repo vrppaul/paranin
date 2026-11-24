@@ -232,12 +232,7 @@ func fieldValue(frontMatter *yaml.Node, name string) (*yaml.Node, bool) {
 	if len(frontMatter.Content) == 0 {
 		return nil, false
 	}
-	for pair := range slices.Chunk(frontMatter.Content[0].Content, keyAndValue) {
-		if pair[keyOffset].Value == name {
-			return pair[valueOffset], true
-		}
-	}
-	return nil, false
+	return valueOf(frontMatter.Content[0], name)
 }
 
 // writtenLength is how many bytes a scalar takes in its file: its value, between its quotes where it is quoted, which

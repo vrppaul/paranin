@@ -300,7 +300,7 @@ func (writing *article) blocks(blocks []document.Block, column int) []line {
 }
 
 // block lays out a block of a post that is no section from a column (DESIGN.md, Article): a paragraph numbered where
-// it is numbered, a table, code in a frame, a list, a quote, a pause and a picture.
+// it is numbered, a table, code in a frame, a list, a quote, a pause, a picture and a widget in a frame.
 func (writing *article) block(block document.Block, column int, numbered bool) []line {
 	layout := writing.layout
 	switch typed := block.(type) {
@@ -325,6 +325,8 @@ func (writing *article) block(block document.Block, column int, numbered bool) [
 		return layout.pause(column)
 	case document.Figure:
 		return layout.figure(typed, column)
+	case document.Widget:
+		return layout.widget(typed, column)
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// body lays out the body's sections, and the load refuses a heading inside a list's item or a quote; a post's
@@ -408,39 +410,82 @@ func (layout layout) pause(column int) []line {
 	return slices.Concat(make([]line, pauseAir), []line{stars}, make([]line, pauseAir))
 }
 
-// figure lays out a picture from a column as a terminal, which draws none, shows it (docs/FOUNDATION.md §5.4), each
-// part from a line of its own: its alt text, then its address, faint, each a link to the picture, so an address broken
-// across lines leads there from each; its caption muted, as the page sets it.
+// figure lays out a picture from a column as a terminal, which draws none, shows it (docs/FOUNDATION.md §5.4): what
+// stands in for it, then its caption muted, as the page sets it.
 func (layout layout) figure(figure document.Figure, column int) []line {
-	address := layout.site.Address(figure.Picture, routes.FormatChosen)
-	lines := layout.fill(layout.words(pictureLink(figure, figure.Alt), kindText), column)
-	lines = append(lines, layout.fill(layout.words(pictureLink(figure, address), kindFaint), column)...)
-	return append(lines, layout.fill(textWords(figure.Caption, kindMuted), column)...)
+	return append(layout.standIn(figure.Picture, figure.Alt, column), layout.fill(textWords(figure.Caption, kindMuted), column)...)
 }
 
-// pictureLink is words as a link to a figure's picture.
-func pictureLink(figure document.Figure, words string) []document.Span {
-	return []document.Span{document.Link{Target: figure.Picture, Spans: []document.Span{document.Text{Text: words}}}}
+// widget lays out a widget from a column as a terminal, which runs none, shows it (DESIGN.md, The TUI): in a muted
+// frame across the text's column, as the page's window, its name bold set into the top edge at the left and the dot and
+// the word that say it runs at the right; inside, what stands in for it; its caption under the frame, muted, as the
+// page sets it.
+func (layout layout) widget(widget document.Widget, column int) []line {
+	edges := frameEdges{
+		left:  line{plainRun(space+widget.Name+space, kindStrong)},
+		right: line{plainRun(space+look.LiveMark, kindLiveMark), plainRun(space+layout.siteWords.LiveWord+space, kindMuted)},
+		edge:  kindMuted,
+	}
+	inside := layout
+	inside.width = layout.frameRoom(column)
+	return append(layout.framed(column, edges, inside.standIn(widget.Live, widget.Alt, 0)), layout.fill(textWords(widget.Caption, kindMuted), column)...)
+}
+
+// standIn lays out what stands in a terminal for a picture or a widget from a column, each part from a line of its
+// own: its alt text, then the address of the picture or the live widget, faint, each a link there, so an address
+// broken across lines leads there from each.
+func (layout layout) standIn(target document.Target, alt string, column int) []line {
+	address := layout.site.Address(target, routes.FormatChosen)
+	return slices.Concat(layout.fill(layout.words(linkTo(target, alt), kindText), column), layout.fill(layout.words(linkTo(target, address), kindFaint), column))
+}
+
+// linkTo is words as a link to a target.
+func linkTo(target document.Target, words string) []document.Span {
+	return []document.Span{document.Link{Target: target, Spans: []document.Span{document.Text{Text: words}}}}
 }
 
 // codeFrame lays out a block of code from a column in a quiet frame across the text's column (DESIGN.md, The TUI): its
-// language set into the top edge, a row of room above and below the code, each kind of word in its colour, a tab
-// standing to the next of look.TabStop's stops, and a line wider than the frame going on under itself after the mark
-// that says so, so no letter is lost; each line carries the whole block for y to copy once a search finds it.
+// language set into the top edge, each kind of word in its colour, a tab standing to the next of look.TabStop's stops,
+// and a line wider than the frame going on under itself after the mark that says so, so no letter is lost; each line
+// carries the whole block for y to copy once a search finds it.
 func (layout layout) codeFrame(block document.CodeBlock, column int) []line {
-	across := layout.width - column - sides*textWidth(frameDown)
-	label := line{}
+	edges := frameEdges{left: line{}, right: line{}, edge: kindQuietLine}
 	if block.Language != "" {
-		label = line{plainRun(space+block.Language+space, kindFaint)}
+		edges.left = line{plainRun(space+block.Language+space, kindFaint)}
 	}
-	top := slices.Concat(line{gapRun(column), plainRun(frameTopLeft+strings.Repeat(frameAcross, frameNameInset), kindQuietLine)}, label,
-		line{plainRun(strings.Repeat(frameAcross, max(across-frameNameInset-runsWidth(label), 0))+frameTopRight, kindQuietLine)})
+	return layout.framed(column, edges, codeRows(block, layout.frameRoom(column)))
+}
+
+// frameEdges are what a frame of a post's text sets into its top edge, at its left and at its right, and the kind of
+// line its edge is.
+type frameEdges struct {
+	left  line
+	right line
+	edge  kind
+}
+
+// frameRoom is how wide the rows inside a frame across the text's column from a column stand.
+func (layout layout) frameRoom(column int) int {
+	return layout.width - column - sides*(textWidth(frameDown)+framePadding)
+}
+
+// framed lays out rows in a frame across the text's column from a column, as tmux frames a pane: its edges set into its
+// top edge, each as far in from its corner, and a row of room above and below the rows, which stand as wide as
+// frameRoom says.
+func (layout layout) framed(column int, edges frameEdges, rows []line) []line {
+	across := layout.width - column - sides*textWidth(frameDown)
+	inset := strings.Repeat(frameAcross, frameNameInset)
+	between := strings.Repeat(frameAcross, max(across-sides*frameNameInset-runsWidth(edges.left)-runsWidth(edges.right), 0))
+	top := slices.Concat(
+		line{gapRun(column), plainRun(frameTopLeft+inset, edges.edge)}, edges.left, line{plainRun(between, edges.edge)}, edges.right,
+		line{plainRun(inset+frameTopRight, edges.edge)},
+	)
 	lines := []line{top}
-	for _, code := range slices.Concat(make([]line, frameRowsRound), codeRows(block, across-sides*framePadding), make([]line, frameRowsRound)) {
-		row := append(line{gapRun(framePadding)}, code...)
-		lines = append(lines, slices.Concat(line{gapRun(column), plainRun(frameDown, kindQuietLine)}, row, line{gapRun(across - runsWidth(row)), plainRun(frameDown, kindQuietLine)}))
+	for _, shown := range slices.Concat(make([]line, frameRowsRound), rows, make([]line, frameRowsRound)) {
+		row := append(line{gapRun(framePadding)}, shown...)
+		lines = append(lines, slices.Concat(line{gapRun(column), plainRun(frameDown, edges.edge)}, row, line{gapRun(across - runsWidth(row)), plainRun(frameDown, edges.edge)}))
 	}
-	bottom := plainRun(frameBottomLeft+strings.Repeat(frameAcross, max(across, 0))+frameBottomRight, kindQuietLine)
+	bottom := plainRun(frameBottomLeft+strings.Repeat(frameAcross, max(across, 0))+frameBottomRight, edges.edge)
 	return append(lines, line{gapRun(column), bottom})
 }
 

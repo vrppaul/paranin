@@ -63,6 +63,8 @@ func (writer FeedWriter) block(block document.Block, depth int) templ.Component 
 		return feedPause()
 	case document.Figure:
 		return writer.feedFigure(typed)
+	case document.Widget:
+		return writer.feedWidget(typed)
 	case document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills, document.Posts:
 		// a post's body holds none of the résumé's blocks, the index's or the list's
 	}

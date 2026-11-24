@@ -145,13 +145,15 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 // tileEdge is what is set into a tile's top edge, as a pane's name: when its post came out or that it comes, after its
 // part in its series' own group.
 templ (writer PageWriter) tileEdge(post document.ListedPost, when templ.Component) {
-	<span class="pane-name tile-edge">
-		if post.InItsSeriesGroup() {
-			<span class="tile-part">
-				@writer.spans(post.Part)
-			</span>
-			@text(dot)
-		}
-		@when
+	<span class="edge">
+		<span class="edge-name tile-edge">
+			if post.InItsSeriesGroup() {
+				<span class="tile-part">
+					@writer.spans(post.Part)
+				</span>
+				@text(dot)
+			}
+			@when
+		</span>
 	</span>
 }

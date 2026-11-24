@@ -32,8 +32,8 @@ const (
 // that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens in every
 // language, and the blog's folder in each, where :e opens a post a page does not list; the site's sessions, which the
 // foot line names; the labels of a post's facts, the words of its versions, of its series and of the panes at its
-// foot, the name of its outline, the words round the blog's list, the list and its groupings, and how a day is
-// written. Each is in the language of the pages it frames.
+// foot, the name of its outline, the words round the blog's list, the list and its groupings, how a day is written,
+// and the word in a widget's edge that says it runs. Each is in the language of the pages it frames.
 type frame struct {
 	site         routes.Site
 	start        string
@@ -56,6 +56,7 @@ type frame struct {
 	blogList     document.Page
 	groupings    []compose.Grouping
 	days         compose.DayWords
+	liveWord     string
 }
 
 // folder is a folder of the blog, in a language, where :e opens a post by its name though the menu lists none: the
@@ -137,6 +138,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		blogList:     document.PageOf(document.PageBlog).InLanguage(composed.Translation),
 		groupings:    composed.ListWords.Groupings(composed.Translation),
 		days:         composed.Days,
+		liveWord:     composed.LiveWord,
 	}
 }
 

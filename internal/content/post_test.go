@@ -67,7 +67,7 @@ const sourceLine = "source: " + currentSource
 const (
 	translationFile = "posts/reading-slowly/post.ru.md"
 	russian         = "ru"
-	currentSource   = "en@520f97557153"
+	currentSource   = "en@e77425251563"
 	revisionSource  = "en@59b3c768ccba"
 )
 
@@ -387,7 +387,41 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a heading of the title's level", sample: samplePost, file: samplePostFile, original: "## A section", replacement: "# A section", want: faultPlace{file: samplePostFile, field: "", line: 10}},
 		{name: "a first heading that skips a level", sample: samplePost, file: samplePostFile, original: "## A section", replacement: "### A section", want: faultPlace{file: samplePostFile, field: "", line: 10}},
 		{name: "a heading that skips a level after another", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.\n\n#### Deeper", want: faultPlace{file: samplePostFile, field: "", line: 14}},
-		{name: "a widget", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget of no name", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget\nalt: A cache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget named in small letters", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget cache\nalt: A cache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget of two names", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Page Cache\nalt: A cache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget with no alt text", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\ncaption: A cache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget's empty alt text", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\npages: 4\nalt: \"\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's alt text of two lines", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: |\n  A cache,\n  read twice.\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's alt text of no text", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: [a, cache]\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's caption of two lines", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\ncaption: \"Read\\ntwice.\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's alt text holding an escape", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: \"A \\e[2J cache.\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget of no props", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget's props of no YAML", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: [a\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget's props of no mapping", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\n- alt\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's props of two documents", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n---\npages: 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "an anchor in a widget's props", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: &four 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "an alias in a widget's props", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: &four 4\nrows: *four\n```", want: faultPlace{file: samplePostFile, field: "", line: 15}},
+		{name: "a tag of a widget's own", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: !!str 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a tab in a widget's props", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A\tcache.\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "an anchor in a prop's list", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: [&four 4]\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a tag in a prop's list", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: [!!str 4]\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "an escape in a prop's list", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages: [\"\\e[2J\"]\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "an anchor on a prop's key", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n&key pages: 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a tag on a prop's key", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n!!str pages: 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "an escape in a prop's key", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n\"pa\\eges\": 4\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's key of no text", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n4: pages\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's key twice", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\nalt: A page.\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a key twice, the last one explicit, its value an implicit null", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\n? alt\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's props parted by a carriage return, an escape after it", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: x\rb: \"c\\e\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's props parted by two carriage returns, an escape after them", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: x\r\rb: \"c\\e\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's props parted by a line separator, an escape after it", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: x b: \"c\\e\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget's props parted by a next line, an escape after it", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: x\u0085b: \"c\\e\"\n```", want: faultPlace{file: samplePostFile, field: "", line: 13}},
+		{name: "a widget's caption of spaces", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\ncaption: \"  \"\n```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a prop's key twice", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "```widget Cache\nalt: A cache.\npages:\n  size: 4\n  size: 5\n```", want: faultPlace{file: samplePostFile, field: "", line: 16}},
+		{name: "a widget in a quote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "> ```widget Cache\n> alt: A cache.\n> ```", want: faultPlace{file: samplePostFile, field: "", line: 12}},
+		{name: "a widget in a list's item", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "- one\n\n  ```widget Cache\n  alt: A cache.\n  ```", want: faultPlace{file: samplePostFile, field: "", line: 14}},
+		{name: "a widget in a footnote", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its text.[^note]\n\n[^note]: A note.\n\n    ```widget Cache\n    alt: A cache.\n    ```", want: faultPlace{file: samplePostFile, field: "", line: 16}},
 		{name: "an escape in the body", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its \x1b[2J text.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "a mark of direction in the body", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its ‮ text.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
 		{name: "a tab in a paragraph", sample: samplePost, file: samplePostFile, original: "Its text.", replacement: "Its\ttext.", want: faultPlace{file: samplePostFile, field: "", line: 12}},
@@ -461,7 +495,7 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 			want: faultPlace{file: translationFile, field: "source", line: 0},
 		},
 		{
-			name: "a translation's source of no hash", sample: sampleTranslation, file: translationFile, original: currentSource, replacement: "520f97557153",
+			name: "a translation's source of no hash", sample: sampleTranslation, file: translationFile, original: currentSource, replacement: "e77425251563",
 			want: faultPlace{file: translationFile, field: "source", line: 0},
 		},
 		{name: "an original naming a source", sample: samplePost, file: samplePostFile, original: "id: 3", replacement: "id: 3\n" + sourceLine, want: faultPlace{file: samplePostFile, field: "", line: 0}},

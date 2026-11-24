@@ -862,15 +862,15 @@ func TestATileSaysWhereItsPostStands(test *testing.T) {
 		{
 			name: "a part in its series' group",
 			post: document.ListedPost{Readiness: out, Title: textOf("One"), Lead: textOf("About one."), Part: textOf("part 1"), SeriesGroup: stintGroup},
-			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="pane-name tile-edge"><span class="tile-part">part 1</span>` + dot +
-				`<time datetime="2026-11-10">10 Nov 2026</time></span> One</a> <span class="tile-lead">About one.</span> </div>`,
+			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="edge"><span class="edge-name tile-edge"><span class="tile-part">part 1</span>` + dot +
+				`<time datetime="2026-11-10">10 Nov 2026</time></span></span> One</a> <span class="tile-lead">About one.</span> </div>`,
 		},
 		{
 			name: "a part in its year's group, tagged",
 			post: document.ListedPost{
 				Readiness: out, Title: textOf("One"), Part: textOf("part 1"), Series: textOf("Stint"), SeriesGroup: stintGroup, Tags: []string{"payments", "agents"},
 			},
-			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="pane-name tile-edge"><time datetime="2026-11-10">10 Nov 2026</time></span> ` +
+			want: `<div class="pane tile"><a class="tile-title" href="/blog/one"><span class="edge"><span class="edge-name tile-edge"><time datetime="2026-11-10">10 Nov 2026</time></span></span> ` +
 				`One</a> <div class="tile-foot"><span class="tile-series"><span class="tile-part">part 1</span>` +
 				`<span class="tile-dot">` + dot + `</span> <a class="tile-series-link" href="/blog/series#stint">Stint</a></span> ` +
 				`<ul class="tags"><li><span class="tag-mark" aria-hidden="true">#</span>payments</li>` +
@@ -879,8 +879,8 @@ func TestATileSaysWhereItsPostStands(test *testing.T) {
 		{
 			name: "a part to come",
 			post: document.ListedPost{Readiness: document.ComingPart{Coming: textOf("soon")}, Title: textOf("Three"), Part: textOf("part 3"), SeriesGroup: stintGroup},
-			want: `<div class="pane tile tile-to-come"><span class="pane-name tile-edge"><span class="tile-part">part 3</span>` + dot +
-				`soon</span><span class="tile-title">Three</span> </div>`,
+			want: `<div class="pane tile tile-to-come"><span class="edge"><span class="edge-name tile-edge"><span class="tile-part">part 3</span>` + dot +
+				`soon</span></span><span class="tile-title">Three</span> </div>`,
 		},
 	}
 	for _, testCase := range cases {
@@ -1225,6 +1225,32 @@ func TestAnItemOpeningWithABlockIsMarkedAsOne(test *testing.T) {
 	}
 }
 
+// A widget's name set into its window's edge may break between its words alone, each opening at a capital after a
+// small letter or a digit, or at the last capital of a run before a small letter.
+func TestAWidgetsNameBreaksBetweenItsWords(test *testing.T) {
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "ReadingPace", want: "Reading<wbr>Pace"},
+		{name: "HTTPRetry", want: "HTTP<wbr>Retry"},
+		{name: "LRUCache", want: "LRU<wbr>Cache"},
+		{name: "Page2Cache", want: "Page2<wbr>Cache"},
+		{name: "CacheLRU", want: "Cache<wbr>LRU"},
+		{name: "Cache", want: "Cache"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			live := document.Anchor{Page: document.PostPage("listed"), Name: testCase.name}
+			widget := document.Widget{Name: testCase.name, Alt: "A widget.", Caption: "", Live: live}
+			page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{widget}})
+			if want := `<span class="edge-name">` + testCase.want + `</span>`; !strings.Contains(page, want) {
+				test.Errorf("the page of a widget named %q holds no %q", testCase.name, want)
+			}
+		})
+	}
+}
+
 // A post's foot leads to the posts beside it, under a heading saying where: in a series its other parts, the series'
 // pick beside the heading and no way to the blog's list, each side named by its part, a part out a link to it with its
 // lead, a part to come its title and the word saying it comes, no link; outside a series the blog's other posts, the
@@ -1252,16 +1278,16 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 			},
 			want: []string{
 				`<h2 id="_more" class="panes-title">Other parts of Stint</h2>`,
-				`<a class="pane" href="/blog/one"><span class="pane-name">part 1</span> <span class="pane-title">One</span> <span class="pane-lead">About one.</span> </a>`,
-				`<div class="pane pane-after"><span class="pane-name">part 3</span> <span class="pane-title pane-to-come">Three <span class="pane-soon">soon</span></span></div>`,
+				`<a class="pane" href="/blog/one"><span class="edge"><span class="edge-name">part 1</span></span> <span class="pane-title">One</span> <span class="pane-lead">About one.</span> </a>`,
+				`<div class="pane pane-after"><span class="edge"><span class="edge-name">part 3</span></span> <span class="pane-title pane-to-come">Three <span class="pane-soon">soon</span></span></div>`,
 			},
 		},
 		{
 			name: "the last part of a series", series: series,
 			neighbours: document.Neighbours{Before: nil, After: nil},
 			want: []string{
-				`<div class="pane pane-none"><span class="pane-name">previous</span> <span class="pane-words">none: this is the first part</span></div>`,
-				`<div class="pane pane-none pane-after"><span class="pane-name">next</span> <span class="pane-words">none: this is the last part</span></div>`,
+				`<div class="pane pane-none"><span class="edge"><span class="edge-name">previous</span></span> <span class="pane-words">none: this is the first part</span></div>`,
+				`<div class="pane pane-none pane-after"><span class="edge"><span class="edge-name">next</span></span> <span class="pane-words">none: this is the last part</span></div>`,
 			},
 		},
 		{
@@ -1272,8 +1298,8 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 			},
 			want: []string{
 				`<h2 id="_more" class="panes-title">Other posts</h2><a class="panes-all" href="/blog">all posts</a></div>`,
-				`<div class="pane pane-none"><span class="pane-name">older</span> <span class="pane-words">none: this is the first post</span></div>`,
-				`<a class="pane pane-after" href="/blog/newer"><span class="pane-name">newer</span> <span class="pane-title">Newer</span> <span class="pane-lead">About newer.</span> <span class="pane-date"><time datetime="2026-11-20">20 Nov 2026</time></span></a>`,
+				`<div class="pane pane-none"><span class="edge"><span class="edge-name">older</span></span> <span class="pane-words">none: this is the first post</span></div>`,
+				`<a class="pane pane-after" href="/blog/newer"><span class="edge"><span class="edge-name">newer</span></span> <span class="pane-title">Newer</span> <span class="pane-lead">About newer.</span> <span class="pane-date"><time datetime="2026-11-20">20 Nov 2026</time></span></a>`,
 			},
 		},
 		{
@@ -1284,7 +1310,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 				{Target: document.Address{URL: "https://lobsters.example.test/1"}, Spans: textOf("Lobsters")},
 			},
 			want: []string{
-				`<div class="pane pane-none pane-after"><span class="pane-name">newer</span> <span class="pane-words">none: this is the newest post</span></div>`,
+				`<div class="pane pane-none pane-after"><span class="edge"><span class="edge-name">newer</span></span> <span class="pane-words">none: this is the newest post</span></div>`,
 				`<p class="discussions"><span class="discuss">discuss</span> <a href="https://news.example.test/1">Hacker News</a>` + dot + `<a href="https://lobsters.example.test/1">Lobsters</a></p>`,
 			},
 		},

@@ -28,6 +28,8 @@ A page read twice is read once, if the first reading was *slow*.[^1]
 
 ![A noted margin](https://example.test/blog/reading-slowly/margin.png "The margin, where a slow reader writes back.")
 
+[Two readers of one page, the slow one keeping three notes where the fast one keeps none.](https://example.test/blog/reading-slowly#ReadingPace "Slow the pace, and the margin fills.")
+
 ### In a terminal
 
 3. open the file
@@ -50,6 +52,8 @@ See [the reader's notes](https://notes.example.test/slow), or write to [mira@exa
 ## Afterwards
 
 A page kept is a page read again, as [what a reader keeps](https://example.test/blog/reading-slowly.md#what-a-reader-keeps) says, and [the tool](https://example.test/p/tidy-tool.md) that tidies it.
+
+[The same two readers a week later, the slow one still keeping its notes.](https://example.test/blog/reading-slowly#ReadingPace-2)
 
 ***
 

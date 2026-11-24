@@ -158,6 +158,8 @@ file so.
 Amended 2026-11-24, on the owner's word: the composition root prepares a snapshot once for both hosts.
 Amended 2026-11-24, on the owner's word: a widget lands with the blog's first, before the form's salary range.
 Amended 2026-11-24, on the owner's word: no preview status; a post dated later is a draft until it comes out.
+Amended 2026-11-24, with the widget block: a widget is a node of a post's tree and a block of the document, its anchor
+named by `compose`, a place a link may name.
 
 ### Context
 
@@ -360,8 +362,18 @@ and web routes.
     cannot read, and `learning` on a skill whose `learning` is not true;
     `compose` writes a span and a gap as the profile does, and `side` and
     `learning` in the site's words, as it writes `current`);
-  - a widget (a name, its props, a caption and an alt text), the form and
-    the salary range among them, so `compose` places them too;
+  - a widget (amended 2026-11-24, with the widget block), an island a post
+    shows as a block of its own: the component of `web/src/widgets` it
+    names, its alt text, its caption, and the live one, the post's page at
+    the widget's anchor, which every face that runs no island leads to.
+    `content` reads the block as the post is parsed, by a transformer of
+    goldmark's tree, into a node of a kind of its own that carries the
+    widget, which `PostKinds` names and `compose` walks, and holds its props
+    to their form; the props reach the document with the first island,
+    their first reader. Way weighed: the widgets kept beside the tree by
+    their fenced blocks, as a link is, which every reader of a post's code
+    would have to tell from code. The form
+    and the salary range are widgets too, so `compose` places them;
   - the posts' (step 8): a list, in order from its first number or not,
     whose items hold blocks; a quote, holding blocks; code with its
     language, its text in runs of the kinds of word (below); a pause, a
@@ -582,20 +594,27 @@ and web routes.
   anchor: the page writes it as the section's id, and the TUI keeps the
   line it stands at. The page's own ids, its menu's, its hints', its
   paragraphs', open with a mark `SlugOf` never writes, so no anchor takes
-  one. The kinds of place are `document`'s words, and `compose` hands every
-  face the pages `:e` opens in one list, by every name it reads, a post's
-  number among them, each saying whether Tab offers it. A name two places
-  share stands once where both lead to one place, as the post read and the
-  list's own post do, and for each, by its kind, where they lead apart, as
-  a tag and a series named alike do, or a heading named as a window, a
-  project, a part, a version or the TUI's `help` (amended 2026-11-24);
-  Enter goes to the one Tab chose, or runs the command the line names, or
-  goes to the first. A place is no anchor, so none takes a count. Ways
-  weighed: the places a field of the head, which kept a second list beside
-  the blocks; each face naming its anchors, which named a heading twice and
-  let the page rename one its own ids took; a heading's anchor kept clear
-  of the page's other places, which a new part, project or version named
-  alike renamed, breaking every link to it.
+  one. A widget carries its anchor too (amended 2026-11-24), which `compose`
+  names once, by the widget's name, counted where an earlier widget of the
+  post took it, which the page writes as the widget's id and a link inside
+  the site may name, as a heading's: it opens with a capital, which no
+  heading's anchor holds, and with no mark of the page's own ids. Way
+  weighed: an anchor by the widget's place among the post's, which a widget
+  written before it renames. The kinds of place are `document`'s words, and
+  `compose` hands every face the pages `:e` opens in one list, by every name
+  it reads, a post's number among them, each saying whether Tab offers it.
+  A name two places share stands once where both lead to one place, as the
+  post read and the list's own post do, and for each, by its kind, where
+  they lead apart, as a tag and a series named alike do, or a heading
+  named as a window, a project, a part, a version or the TUI's `help`
+  (amended 2026-11-24); Enter goes to the one Tab chose, or runs the
+  command the line names, or goes to the first. A place is no anchor, so
+  none takes a count. Ways weighed: the places a field of the head, which
+  kept a second list beside the blocks; each face naming its anchors,
+  which named a heading twice and let the page rename one its own ids
+  took; a heading's anchor kept clear of the page's other places, which a
+  new part, project or version named alike renamed, breaking every link to
+  it.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still
@@ -655,8 +674,8 @@ and web routes.
   the person's and a project's, with `face/html`, the feeds with
   `face/feed` (2026-11-24), and the sitemap's dates with the sitemap, the
   `dateModified` of the résumé's `ProfilePage` with them; a widget with
-  the blog's first (FOUNDATION §8, step 8), which brings the islands,
-  since `face/html` came without one; the posts' blocks
+  the blog's first (FOUNDATION §8, step 8), drawn by every face with no
+  script (2026-11-24), its props with the first island; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
   in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
   them with each face's post, the figure with the post's pictures, in every

@@ -94,9 +94,9 @@ type faultSpot struct {
 // page where it names one: a path no page takes, a post's number, which only sends the reader on, a page's markdown, a
 // draft's page, a post out after the post linking it, or an anchor no section of its page takes, a feed's among them,
 // is a fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's lists, a heading,
-// a series' group and a feed lead somewhere, and to a post out before the post linking it, or with it. A draft's links
-// are held to the site as its author reads it once every post dated later is out, where a draft's page leads
-// somewhere.
+// a widget, a series' group and a feed lead somewhere, and to a post out before the post linking it, or with it. A
+// draft's links are held to the site as its author reads it once every post dated later is out, where a draft's page
+// leads somewhere.
 func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -110,6 +110,7 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 			change: fixtures.KeepFolder, want: []faultSpot{},
 		},
 		{name: "the list filtered by a tag", body: "[a](/blog?tag=terminals)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "a widget", body: "[a](/blog/reading-slowly#ReadingPace)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "an older version and its heading", body: "[a](/blog/reading-slowly/2026-11-10) [b](/blog/reading-slowly/2026-11-10#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "the blog's feed and a series'", body: "[a](/blog.atom) [b](/blog/series/reading.atom)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{

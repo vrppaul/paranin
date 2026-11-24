@@ -2,6 +2,7 @@ package html
 
 import (
 	"strconv"
+	"unicode"
 
 	"github.com/a-h/templ"
 
@@ -216,7 +217,7 @@ func (drawing *article) part(block document.Block) templ.Component {
 
 // block is a block of a post as its article draws it, inside a list's item or a quote as at the body's top: a list and
 // a quote holding blocks drawn so too, code numbered, with its language and the button that copies it, a picture
-// under its caption.
+// under its caption, a widget in its window.
 func (drawing *article) block(block document.Block) templ.Component {
 	switch typed := block.(type) {
 	case document.Paragraph:
@@ -240,6 +241,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return pause()
 	case document.Figure:
 		return drawing.writer.figure(typed)
+	case document.Widget:
+		return drawing.writer.widget(typed)
 	case document.Section, document.Facts, document.Entry, document.Card, document.Contents, document.Checks, document.Skills,
 		document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks; the
@@ -281,6 +284,31 @@ func opensWithBlock(item document.Item) bool {
 	}
 	_, isParagraph := item.Blocks[0].(document.Paragraph)
 	return !isParagraph
+}
+
+// nameWords are the words of a widget's name, as a component is named, which the page lets a name too long for its line
+// break between: each opens at a capital after a small letter or a digit, Page2|Cache, or at the last capital of a run
+// before a small letter, HTTP|Retry.
+func nameWords(name string) []string {
+	letters := []rune(name)
+	words, start := []string{}, 0
+	for index := 1; index < len(letters); index++ {
+		if opensWord(letters, index) {
+			words = append(words, string(letters[start:index]))
+			start = index
+		}
+	}
+	return append(words, string(letters[start:]))
+}
+
+// opensWord is whether the letter at a place of a name, past its first, opens a word of it, as nameWords reads them.
+func opensWord(letters []rune, index int) bool {
+	if !unicode.IsUpper(letters[index]) {
+		return false
+	}
+	afterWord := !unicode.IsUpper(letters[index-1])
+	beforeSmall := index+1 < len(letters) && unicode.IsLower(letters[index+1])
+	return afterWord || beforeSmall
 }
 
 // listItem is what an item of a post's list holds, its spans and its blocks drawn as the page or the feed draws them:

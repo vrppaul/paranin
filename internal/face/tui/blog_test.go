@@ -1009,6 +1009,19 @@ func TestALongLineOfCodeGoesOnUnderItsMark(test *testing.T) {
 	}
 }
 
+// A widget, which a terminal runs none of, is its frame, its name and the word saying it runs set into the frame's top
+// edge, inside it its alt text and the address of the live one, and its caption under it.
+func TestAWidgetIsItsFrameHoldingItsAltText(test *testing.T) {
+	live := document.Anchor{Page: document.PostPage("reading-slowly"), Name: "PageCache"}
+	widget := document.Widget{Name: "PageCache", Alt: "A page read twice", Caption: "The cache", Live: live}
+	read := readRows(aboveTheFooter(screenOf(test, handPost(test, commonWidth, tallHeight, widget))))
+	for _, want := range []string{"┌── PageCache ─", "─ ● live ──┐", "│ A page read twice │", "│ https://example.test/blog/reading-slowly#PageCache │", "└─", "\nThe cache"} {
+		if !strings.Contains(read, want) {
+			test.Errorf("the post =\n%s\nwant %q on it", read, want)
+		}
+	}
+}
+
 // An item of a list that opens with a block, a picture, code, a quote, a table or a list, stands that block's first
 // line on its mark's, as an item of words stands its first words there, its point's dash or its number.
 func TestAnItemOpeningWithABlockStandsTheBlockOnItsMark(test *testing.T) {

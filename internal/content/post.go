@@ -18,8 +18,8 @@ import (
 
 // The folder of the posts, a folder for each named by its slug, and what a post's folder holds: its text in English,
 // the original (D12), and in each language it is translated into, each named post.<language>.md (textFile); its
-// revisions, older versions of its text in each; and its widgets, which come with a step of the blog of their own
-// (docs/FOUNDATION.md §5.4)
+// revisions, older versions of its text in each; and the folder of widgets it never holds, since a widget's code lives
+// in web/src/widgets, where a post names it (docs/FOUNDATION.md §5.4)
 const (
 	postsFolder     = "posts"
 	postFilePrefix  = "post."

@@ -218,6 +218,50 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 	}
 }
 
+// A widget's block is a widget of the document: the component it names, its alt text and its caption, and the post's
+// page at its anchor, the widget's name, counted where an earlier widget of the post took it, which no heading's
+// anchor, all small letters, takes; its props stay out of the document.
+func TestAWidgetsBlockIsAWidgetNamedForALink(test *testing.T) {
+	page := document.PostPage(samplePostSlug)
+	cases := []struct {
+		name string
+		body string
+		want []document.Block
+	}{
+		{
+			name: "a widget under its caption, its props left out", body: "```widget PageCache\nalt: A page read twice.\ncaption: The cache\npages: 4\n```",
+			want: []document.Block{document.Widget{
+				Name: "PageCache", Alt: "A page read twice.", Caption: "The cache", Live: document.Anchor{Page: page, Name: "PageCache"},
+			}},
+		},
+		{
+			name: "a widget with no caption", body: "```widget PageCache\nalt: A page read twice.\n```",
+			want: []document.Block{document.Widget{Name: "PageCache", Alt: "A page read twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}}},
+		},
+		{
+			name: "a widget twice, counted", body: "```widget PageCache\nalt: Once.\n```\n\n```widget PageCache\nalt: Twice.\n```",
+			want: []document.Block{
+				document.Widget{Name: "PageCache", Alt: "Once.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}},
+				document.Widget{Name: "PageCache", Alt: "Twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache-2"}},
+			},
+		},
+		{
+			name: "a widget beside a heading of its words", body: "## Page cache\n\n```widget PageCache\nalt: A page read twice.\n```",
+			want: []document.Block{document.Section{Title: textSpans("Page cache"), Name: "page-cache", Blocks: []document.Block{
+				document.Widget{Name: "PageCache", Alt: "A page read twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}},
+			}}},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: published\n---\n"+testCase.body+"\n")
+			if got := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug).Blocks; !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the body %q composes to\n%#v\nwant\n%#v", testCase.body, got, testCase.want)
+			}
+		})
+	}
+}
+
 // The site serves the pictures of the posts it serves, each at its file beside its post: a draft's never, nor a post's
 // that comes later than its reader until it is out.
 func TestThePicturesServedAreThePostsServed(test *testing.T) {
@@ -501,6 +545,8 @@ func TestEveryWordOfAPostReachesItsDocument(test *testing.T) {
 		{name: "a note's words", want: "A soft one, which rubs out."},
 		{name: "a picture's alt text", want: "A noted margin"},
 		{name: "a picture's caption", want: "The margin, where a slow reader writes back."},
+		{name: "a widget's alt text", want: "Two readers of one page, the slow one keeping three notes where the fast one keeps none."},
+		{name: "a widget's caption", want: "Slow the pace, and the margin fills."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -549,6 +595,7 @@ func TestEveryKindAPostHoldsReachesItsDocument(test *testing.T) {
 		{kind: extensionast.KindFootnoteList, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
 		{kind: extensionast.KindFootnote, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
 		{kind: extensionast.KindFootnoteLink, body: "Cited.[^a]\n\n[^a]: A note.", pictures: nil, phrase: "A note."},
+		{kind: content.KindWidget, body: "```widget PageCache\nalt: A page read twice.\n```", pictures: nil, phrase: "A page read twice."},
 	}
 	kinds := []ast.NodeKind{}
 	for _, testCase := range cases {

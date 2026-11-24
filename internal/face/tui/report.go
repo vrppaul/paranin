@@ -123,7 +123,7 @@ func checksIn(blocks []document.Block) []document.Check {
 		case document.Checks:
 			checks = append(checks, typed.List...)
 		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause,
-			document.Figure, document.Facts, document.Entry, document.Card, document.Contents, document.Skills, document.Posts:
+			document.Figure, document.Widget, document.Facts, document.Entry, document.Card, document.Contents, document.Skills, document.Posts:
 		}
 	}
 	return checks

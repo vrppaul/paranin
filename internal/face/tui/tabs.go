@@ -381,7 +381,7 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.checks(typed, indent)
 	case document.Skills:
 		return layout.skills(typed, indent)
-	case document.List, document.Quote, document.Pause, document.Figure, document.Posts:
+	case document.List, document.Quote, document.Pause, document.Figure, document.Widget, document.Posts:
 		// a post's and the blog's list's alone, which post.go and list.go lay out
 	}
 	return nil

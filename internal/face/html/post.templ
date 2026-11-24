@@ -344,12 +344,12 @@ templ (writer PageWriter) panes(foot panesFoot) {
 templ (writer PageWriter) pane(side paneSide) {
 	if side.neighbour == nil {
 		<div class={ "pane", "pane-none", templ.KV("pane-after", side.after) }>
-			<span class="pane-name">{ side.name }</span>
+			<span class="edge"><span class="edge-name">{ side.name }</span></span>
 			<span class="pane-words">{ side.none }</span>
 		</div>
 	} else if side.neighbour.Page.Kind == document.PageNone {
 		<div class={ "pane", templ.KV("pane-after", side.after) }>
-			<span class="pane-name">{ side.name }</span>
+			<span class="edge"><span class="edge-name">{ side.name }</span></span>
 			<span class="pane-title pane-to-come">
 				@writer.spans(side.neighbour.Title)
 				@text(wordSpace)
@@ -358,7 +358,7 @@ templ (writer PageWriter) pane(side paneSide) {
 		</div>
 	} else {
 		<a class={ "pane", templ.KV("pane-after", side.after) } href={ routes.Reference(side.neighbour.Page, routes.FormatChosen) }>
-			<span class="pane-name">{ side.name }</span>
+			<span class="edge"><span class="edge-name">{ side.name }</span></span>
 			<span class="pane-title">
 				@writer.spans(side.neighbour.Title)
 			</span>
@@ -470,6 +470,35 @@ templ pause() {
 templ (writer PageWriter) figure(shown document.Figure) {
 	<figure>
 		<img src={ routes.Reference(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) } loading="lazy" decoding="async"/>
+		if shown.Caption != "" {
+			<figcaption>{ shown.Caption }</figcaption>
+		}
+	</figure>
+}
+
+// widget is a post's widget (DESIGN.md, Article), named by its anchor for a link to reach it: a window, its name set
+// into its top edge and, at its right, the mark that it runs, hidden until the site's script runs it; inside, its alt
+// text, which stands for it until then; its caption under the window, where it has one.
+templ (writer PageWriter) widget(shown document.Widget) {
+	<figure id={ shown.Live.Name } class="widget">
+		<div class="widget-window">
+			<span class="edge">
+				<span class="edge-name">
+					for index, word := range nameWords(shown.Name) {
+						if index > 0 {
+							<wbr/>{ word }
+						} else {
+							{ word }
+						}
+					}
+				</span>
+				<span class="widget-live" hidden>
+					<span class="widget-live-mark" aria-hidden="true">{ look.LiveMark }</span>
+					{ writer.frame.liveWord }
+				</span>
+			</span>
+			<p class="widget-alt">{ shown.Alt }</p>
+		</div>
 		if shown.Caption != "" {
 			<figcaption>{ shown.Caption }</figcaption>
 		}

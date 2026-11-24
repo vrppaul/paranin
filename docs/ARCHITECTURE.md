@@ -380,9 +380,10 @@ and web routes.
     its size, into the snapshot with the post, so a reload swaps a picture
     with the text and a page names only pictures its snapshot serves; the
     web host alone serves them, at the post's address. A release's folders
-    are read through `os.Root`, opened afresh for each read, so no read
-    leaves them, by a link inside among others, and a release switched in
-    by a link is read once switched. Ways weighed: a picture as a
+    are read through `os.Root`, one opened for each load and closed after
+    it, so no read leaves them, by a link inside among others, and every
+    file of a load comes from one release, one switched in by a link read
+    whole at the next load. Ways weighed: a picture as a
     span, which no face draws among words; a caption from the paragraph
     after the picture, a convention of no format, where the title is
     CommonMark's own and markdown writes it back as it was; the pictures
@@ -767,7 +768,7 @@ included (D8). Their widgets are code, built by the page's toolchain.
   blocks (a fenced ` ```widget Name ` block with its props as YAML, `alt`
   required). `paranin check` refuses anything else, raw HTML first.
 - **Status**: `draft` (never shipped), `preview` (a link signed by the
-  server's secret over the slug and the moment it lapses, `noindex`,
+  server's secret over the post's address and the moment it lapses, `noindex`,
   listed nowhere), `published`, `unlisted`. A
   `published` date in the future keeps a post a preview until then, worked
   out from the time, the site composed again as the post comes out

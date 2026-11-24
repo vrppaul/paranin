@@ -6,6 +6,9 @@ answers for what an agent writes as if it wrote it.
 - Work comes from the order `TODO.md` gives or from the owner's own words, nothing else: an idea a document leaves for
   later is no work until he asks for it.
 - Before a brief, step back as `AGENTS.md` asks, on the whole too: what the chunk may break in what stands.
+- Changes that share files go to one author, in one branch, a commit each, each read and reviewed before the author
+  starts the next, since a new agent spends its tokens learning the context again; authors run side by side only on
+  work that shares no files.
 - A brief to an author gives the goal, the whole it serves and the rules to read. A change `AGENTS.md` leaves to the
   owner's approval is in it only with that approval named; a chunk that finds it needs one stops and hands the
   question back.

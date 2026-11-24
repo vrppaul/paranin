@@ -23,8 +23,9 @@ export interface Place {
 }
 
 /**
- * A folder of the site where :e opens a page by its name though the menu lists none: the name a terminal writes for
- * it, and its address, whose every page the site answers, a missing one by its page of no page.
+ * A folder of the site where :e opens a page by its name though the menu lists none, the blog's in a language: the
+ * name a terminal writes for it, and its address, whose every page the site answers, a missing one by its page of no
+ * page.
  */
 export interface Folder {
   name: string;
@@ -32,13 +33,13 @@ export interface Folder {
 }
 
 /**
- * A page's places, worked out once: each name with each place it leads to, the pages :e opens, and the folder
- * where it opens any other.
+ * A page's places, worked out once: each name with each place it leads to, the pages :e opens, and the folders where it
+ * opens any other.
  */
 export interface Places {
   named: readonly Place[];
   edited: readonly Place[];
-  folder: Folder;
+  folders: readonly Folder[];
 }
 
 /** A place Tab goes round, with what it writes on the line where it is chosen. */
@@ -97,15 +98,15 @@ const SAID: Record<Fault, (typed: string) => SaidPiece[]> = {
 /**
  * A page's places: those it goes to by name, as the TUI's places do, a name two share standing once where both lead to
  * one address, as the post read and the list's own post do, and for each where they lead apart, as a tag and a series
- * named alike, each by its kind, Enter going to the first; the pages :e opens; and the folder where :e opens a page the
+ * named alike, each by its kind, Enter going to the first; the pages :e opens; and the folders where :e opens a page the
  * menu does not list.
  */
-export function placesOf(all: readonly Place[], folder: Folder): Places {
+export function placesOf(all: readonly Place[], folders: readonly Folder[]): Places {
   const byName = all.filter((place) => !place.edited);
   const named = byName.filter(
     (place, index) => byName.findIndex((each) => each.name === place.name && each.address === place.address) === index,
   );
-  return { named, edited: all.filter((place) => place.edited), folder };
+  return { named, edited: all.filter((place) => place.edited), folders };
 }
 
 /**
@@ -171,11 +172,11 @@ export function ran(places: Places, line: string, chosen: Completion | undefined
   if (opened !== undefined) {
     return wentTo(opened);
   }
-  // the site answers in the blog's folder for every post, by its slug or its number, unlisted ones too
-  const { folder } = places;
-  return argument.startsWith(folder.name)
-    ? { kind: "go", address: folder.address + argument.slice(folder.name.length) }
-    : failed("missing", argument);
+  // the site answers in the blog's folder in each language for every post, by its slug or its number, unlisted ones too
+  const folder = places.folders.find((held) => argument.startsWith(held.name));
+  return folder === undefined
+    ? failed("missing", argument)
+    : { kind: "go", address: folder.address + argument.slice(folder.name.length) };
 }
 
 /** Where going to a place takes the reader: to its address, or nowhere where it is the page shown. */

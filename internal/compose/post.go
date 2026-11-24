@@ -128,8 +128,8 @@ func postDocument(version postVersion, read blog, prepared *Prepared, paths map[
 // part's its series names, out or not, so a heading's anchor holds as a part comes out, and each of its versions'.
 func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []string {
 	taken := []string{KeysPlace}
-	listWords := read.listWords()
-	for _, window := range listWords.BlogWindows(listWords.List, postPage(post)) {
+	list := document.PageOf(document.PageBlog).InLanguage(read.words.Translation())
+	for _, window := range read.listWords().BlogWindows(list, postPage(post)) {
 		taken = append(taken, window.Name)
 	}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {

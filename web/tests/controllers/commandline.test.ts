@@ -174,14 +174,22 @@ test("Enter goes to a series, at its group on the list by series, where Tab chos
 
 test.each([
   {
-    name: "a page of the résumé, each project's and the blog's lists",
+    name: "a page of the résumé, each project's and the blog's lists in every language",
     golden: undefined,
-    want: ["tidy-tool", "blog", "blog/series"],
+    want: ["tidy-tool", "blog", "blog/series", "ru/blog", "ru/blog/series"],
   },
   {
-    name: "a page of the blog, the blog's posts too",
+    name: "a page of the blog, the blog's posts in every language too",
     golden: listPage,
-    want: ["tidy-tool", "blog", "blog/series", "blog/reading-slowly"],
+    want: [
+      "tidy-tool",
+      "blog",
+      "blog/series",
+      "blog/reading-slowly",
+      "ru/blog",
+      "ru/blog/series",
+      "ru/blog/reading-slowly",
+    ],
   },
 ])("the menu after :e and a space on $name", ({ golden, want }) => {
   started(true, () => undefined, golden);
@@ -231,6 +239,12 @@ test.each([
   { name: "a place by its name", typed: "skills", want: ["/skills"] },
   { name: "the project's page :e names", typed: "e tidy-tool", want: ["/p/tidy-tool"] },
   { name: "a post :e names by its number, in the blog's folder", typed: "e blog/1", want: ["/blog/1"] },
+  { name: "the blog's list in another language :e names", typed: "e ru/blog", want: ["/ru/blog"] },
+  {
+    name: "a post :e names by its number, in the folder of the blog in another language",
+    typed: "e ru/blog/1",
+    want: ["/ru/blog/1"],
+  },
   { name: "nowhere on the tab shown", typed: "experience", want: [] },
 ])("Enter goes to $name and closes the line", ({ typed, want }) => {
   const { went } = started();

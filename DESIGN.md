@@ -336,14 +336,14 @@ in a `quiet` hairline, `radius`, what it does `muted`.
 
 - The menu of the places that fit what is typed stands over it as soon as the colon is typed and narrows with each
   letter: before a letter the page's tabs but the one shown, then every tab, place of the page's own (The TUI) and
-  project's page the letters start, after `:e ` the pages it opens: the projects', `project`, the blog's lists,
-  `list`, and on the blog's own pages each post the list names, `post`, which no other page carries for its weight, by
-  the names a terminal reaches them by, as the TUI's `:e`. `:e` opens any name in the blog's folder, a post by its
-  number or one no list names among them, by going to its address, where the site answers for it. A hairline
-  box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name under where the line writes it, a cell
-  of air either side, its kind `muted` in a column of the kinds four cells after the widest name, as The TUI names it.
-  The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as small text, on the
-  TUI's menu too.
+  project's page the letters start, after `:e ` the pages it opens: the projects', `project`, the blog's lists in every
+  language, `list`, and on the blog's own pages each post the lists name, `post`, which no other page carries for its
+  weight, by the names a terminal reaches them by, as the TUI's `:e`. `:e` opens any name in the blog's folder of any
+  language, a post by its number or one no list names among them, by going to its address, where the site answers for
+  it. A hairline box in `edge` on `sunk`, as a Tooltip lies over the page, `radius`; each name under where the line
+  writes it, a cell of air either side, its kind `muted` in a column of the kinds four cells after the widest name, as
+  The TUI names it. The letters typed are bold, underlined in `accent`, which Latte allows as a fill and never as
+  small text, on the TUI's menu too.
 - Tab and Shift+Tab go round them, writing the one chosen on the line, reversed and bold as the window shown. The menu
   holds as many whole rows as the screen has over the foot line's two, a row of air above, stands a `nudge` clear of
   its hairline, and scrolls in the browser's own thin bar, keeping the one chosen in sight; the page does not move.
@@ -636,6 +636,10 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   list; `:e blog/12` and `ssh blog/12@paran.in` the post, the list in the first window; h and l go between the two;
   q on a post goes back to the list, and on the list back to the résumé. The first window keeps the list's grouping
   the reader chose, by year or by series, beside a post; the page, which keeps no state, leads it to the list by year.
+- The blog in another language is reached as on the web, by its folder: `ssh ru/blog@paran.in`, `:e ru/blog/12` (owner,
+  2026-11-24). It is drawn in its words, its session too, `[блог]` and `1:посты`; the TUI's own words stay as Neovim
+  and tmux write them. The session reads one language: a page of another takes both windows there, the post read in
+  its translation, or its window closed where it has none.
 - The blog's pages run wider than the résumé's column where the screen has room, 132 cells at most, the text still
   held to its measure.
 - The list: BLOG in the title font, as the page's; the groups' names in a column, 22 cells wide, 18 under 132, the
@@ -647,7 +651,8 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
 - A post's version is its date among its facts, as the page's; the TUI has no Pick, so the other versions are places of
   the `:` menu, `version`, each by its date as its address writes it. An older version says under its date that a newer
   stands, as the page's: `↑` in `accent`, then `newer: 21 Nov 2026` bold on `tint`, painted as a result worth seeing
-  first is, a link to it by OSC 8.
+  first is, a link to it by OSC 8; a translation older than its original says so in the same form. Nor has the TUI a
+  Switch: a post's other languages are places of the `:` menu, `language`, each by its tag, `ru` (owner, 2026-11-24).
 - A post's lists stand inside the text's column, so their marks never read as the paragraphs' numbers: a point's dash
   `faint`, an ordered list's numbers `muted`, the words after the widest mark.
 - A post: the Outline (`rail`) on a page 132 cells wide (a screen of 140), the paragraphs' numbers (4), the text (66),
@@ -663,8 +668,8 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
 - A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,
   2026-11-23).
-- The `:` menu names each place by its kind: on a post `tab`, `heading`, `part` and `version`; on the list `post`,
-  `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
+- The `:` menu names each place by its kind: on a post `tab`, `heading`, `part`, `version` and `language`; on the list
+  `post`, `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
   heading, a series to its group on the list by series, a tag to the list it filters, shown in the list's window, and
   on that list back to the list; the list's head shows the filter reversed, as the page's does. A heading named as
   another place of its page, `help` among them, takes its count, `posts-2`, since a heading is an anchor; a name two

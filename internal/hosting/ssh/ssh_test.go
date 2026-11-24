@@ -64,7 +64,7 @@ func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 
 // A session opens on the page of the blog its user's name reaches (D26): the list by blog, a post by blog and its
 // number, the list in the first window, and an older version by its address, its own title shown; the server hands the
-// TUI the blog beside the site's pages.
+// TUI the blog in every language beside the site's pages, a translation's in its words.
 func TestASessionOpensOnTheBlogsPageItsUserNames(test *testing.T) {
 	cases := []struct {
 		user  string
@@ -73,6 +73,7 @@ func TestASessionOpensOnTheBlogsPageItsUserNames(test *testing.T) {
 		{user: "blog", shown: "1:posts*"},
 		{user: "blog/1", shown: "2:reading-slowly*"},
 		{user: "blog/reading-slowly/2026-11-10", shown: "Slow reading"},
+		{user: "ru/blog/1", shown: "Медленное чтение"},
 	}
 	address := serving(test, slog.New(slog.DiscardHandler))
 	for _, testCase := range cases {

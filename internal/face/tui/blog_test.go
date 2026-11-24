@@ -28,6 +28,13 @@ const (
 	resumeOpened   = "1:about*"
 )
 
+// The footer's windows of the blog's session in Russian, the fixture's translation: its list shown alone, and its list
+// beside the post read
+const (
+	russianListAlone      = "1:посты*"
+	russianListBesidePost = "1:посты"
+)
+
 // openedModel is a session on what the fixture draws, opened on the page a name reaches, of a size.
 func openedModel(test *testing.T, opening string, width, height int) Model {
 	return New(sessionDrawing(fixtures.LoadedContent(test), false), opening, width, height, fixtures.Day())
@@ -35,7 +42,8 @@ func openedModel(test *testing.T, opening string, width, height int) Model {
 
 // A session opens on the page of the blog its SSH user's name reaches (D26): the blog's list by blog, a post by its
 // slug and by its number, the list beside it in the first window; a name in the blog's folder that reaches no post,
-// a draft's among them, opens the list and says it finds no page by the name; any other name opens the résumé.
+// a draft's among them, opens the list and says it finds no page by the name; any other name opens the résumé. A name
+// in a language's folder opens that language's blog, framed in its words, as its address does on the web.
 func TestASessionOpensOnTheBlogsPageItsNameReaches(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -49,6 +57,14 @@ func TestASessionOpensOnTheBlogsPageItsNameReaches(test *testing.T) {
 		{name: "an older version by its address", user: "blog/reading-slowly/2026-11-10", holds: []string{listBesidePost, postRead}, lacks: nil},
 		{name: "a number no post has", user: "blog/9", holds: []string{listAlone, `E447: Can't find file "blog/9" in path`}, lacks: nil},
 		{name: "a draft's number", user: "blog/2", holds: []string{listAlone, `E447: Can't find file "blog/2" in path`}, lacks: nil},
+		{name: "the list in Russian", user: "ru/blog", holds: []string{"[example.test] [блог]", russianListAlone}, lacks: []string{"2:"}},
+		{name: "a translation by its number", user: "ru/blog/1", holds: []string{russianListBesidePost, postRead}, lacks: nil},
+		{name: "a translation by its slug", user: "ru/blog/reading-slowly", holds: []string{russianListBesidePost, postRead}, lacks: nil},
+		{
+			name: "a number no translation has", user: "ru/blog/9", holds: []string{russianListAlone, `E447: Can't find file "ru/blog/9" in path`},
+			lacks: nil,
+		},
+		{name: "a language the site has no words for", user: "de/blog", holds: []string{resumeOpened}, lacks: []string{"E447"}},
 		{name: "a login name", user: "reader", holds: []string{resumeOpened}, lacks: []string{"posts", "E447"}},
 		{name: "a project's slug, which :e reads and no address of the blog is", user: "tidy-tool", holds: []string{resumeOpened}, lacks: []string{"E447"}},
 	}
@@ -85,7 +101,7 @@ func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	drawn := sessionDrawing(snapshot, false)
 	documents := []document.Document{compose.Resume(snapshot, nil), fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
-	drawing := Drawing{Documents: documents, Frame: drawn.Frame, Site: fixtures.Site(snapshot)}
+	drawing := Drawing{Documents: documents, Frames: drawn.Frames, Site: fixtures.Site(snapshot)}
 	cases := []struct {
 		name  string
 		model Model
@@ -112,7 +128,8 @@ func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
 }
 
 // :e opens the blog's pages from the résumé by the names a terminal reaches them by: the list by year, a post by its
-// number and its slug, and the list by series; and says it finds no post of a number no post has.
+// number and its slug, and the list by series, each in Russian too by the name in its folder; and says it finds no post
+// of a number no post has.
 func TestEditOpensTheBlogsPages(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -124,6 +141,9 @@ func TestEditOpensTheBlogsPages(test *testing.T) {
 		{name: "a post by its number", text: "e blog/1", holds: "What a reader keeps", footer: postRead},
 		{name: "a post by its slug", text: "e blog/reading-slowly", holds: "What a reader keeps", footer: postRead},
 		{name: "the list by series", text: "e blog/series", holds: "1 of 2 out", footer: listAlone},
+		{name: "the list in Russian", text: "e ru/blog", holds: "1 пост", footer: russianListAlone},
+		{name: "a translation by its number", text: "e ru/blog/1", holds: "Что остаётся у читателя", footer: postRead},
+		{name: "the list by series in Russian", text: "e ru/blog/series", holds: "вышла 1 из 2", footer: russianListAlone},
 		{name: "a number no post has", text: "e blog/9", holds: `E447: Can't find file "blog/9" in path`, footer: resumeOpened},
 	}
 	for _, testCase := range cases {
@@ -136,10 +156,11 @@ func TestEditOpensTheBlogsPages(test *testing.T) {
 	}
 }
 
-// The menu names the blog's places by their kinds, those of the tab chosen alone: on a post its headings; on the list
-// its posts, its tags and its series, a series named as a tag standing beside it, and not the headings of the post
-// read beside it, the post read going by its window; and after :e and a space the blog's lists and each post they
-// list, by the names a terminal reaches them by, never a filter of the list, which Tab does not offer.
+// The menu names the blog's places by their kinds, those of the tab chosen alone: on a post its headings and its other
+// languages; on the list its posts, its tags and its series, a series named as a tag standing beside it, and not the
+// headings of the post read beside it, the post read going by its window; and after :e and a space the blog's lists and
+// each post they list, in every language, by the names a terminal reaches them by, never a filter of the list, which
+// Tab does not offer.
 func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
 	beside := pressed(test, openedModel(test, "blog/1", commonWidth, commonHeight), "h")
 	cases := []struct {
@@ -151,6 +172,7 @@ func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
 		lacks []string
 	}{
 		{name: "a post's headings", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "a", after: nil, holds: []string{`afterwards +heading`}, lacks: nil},
+		{name: "a post's other language", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "r", after: nil, holds: []string{`ru +language`}, lacks: nil},
 		{name: "the list beside the post", model: beside, text: "a", after: nil, holds: nil, lacks: []string{`afterwards`}},
 		{
 			name: "the list's post read beside it, by its window", model: beside, text: "r", after: nil, holds: []string{`reading-slowly +tab`},
@@ -170,6 +192,10 @@ func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
 			name: "the blog's pages :e opens", model: openedModel(test, "", commonWidth, commonHeight), text: "e b", after: nil,
 			holds: []string{`blog +list`, `blog/series +list`, `blog/reading-slowly +post`}, lacks: []string{`blog/1`, `blog\?tag`},
 		},
+		{
+			name: "the blog's pages :e opens in Russian", model: openedModel(test, "", commonWidth, commonHeight), text: "e r", after: nil,
+			holds: []string{`ru/blog +list`, `ru/blog/series +list`, `ru/blog/reading-slowly +post`}, lacks: []string{`ru/blog/1`},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -188,24 +214,46 @@ func TestTheMenuNamesTheBlogsPlacesByTheirKinds(test *testing.T) {
 	}
 }
 
-// A second post the tests write beside the fixture's, of a tag of its own: its file, and its text
+// A second post the tests write beside the fixture's, of a tag of its own: its file, and its text; and its Russian
+// translation's, made from a text it never had, which the load warns of and takes
 const (
 	secondPostFile = "posts/second/post.en.md"
 	secondPostText = "---\nid: 3\ntitle: The second post\ndescription: About the second.\nstatus: published\npublished: 2026-11-12T09:00+01:00\n" +
 		"tags: [tools]\n---\nIts text.\n"
+	secondTranslationFile = "posts/second/post.ru.md"
+	secondTranslationText = "---\ntitle: Второй пост\ndescription: О втором.\nstatus: published\npublished: 2026-11-16T09:00+03:00\n" +
+		"source: en@000000000000\n---\nЕго текст.\n"
 )
+
+// fixtureFile is a file a test writes into a copy of the fixture's content: its path there, and its text.
+type fixtureFile struct {
+	path string
+	text string
+}
+
+// secondPost is the second post's file, in English.
+func secondPost() fixtureFile {
+	return fixtureFile{path: secondPostFile, text: secondPostText}
+}
+
+// contentWith is the fixture's content with files written beside its own.
+func contentWith(test *testing.T, files ...fixtureFile) *content.Snapshot {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	for _, written := range files {
+		fixtures.WriteIn(test, folder, written.path, written.text)
+	}
+	snapshot, err := content.Load(os.DirFS(folder))
+	if err != nil {
+		test.Fatalf("load the fixture with %d files beside its own: %v", len(files), err)
+	}
+	return snapshot
+}
 
 // A tag's name shows the list filtered by it in the list's window, and on that list, where it is the filter, the list
 // whole again; another tag's filters the list anew. :e opens the list filtered by a tag or by a series, the series'
 // filter said beside the blog's name, by the name a terminal reaches it by.
 func TestATagsPlaceFiltersTheList(test *testing.T) {
-	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
-	fixtures.WriteIn(test, folder, secondPostFile, secondPostText)
-	snapshot, err := content.Load(os.DirFS(folder))
-	if err != nil {
-		test.Fatalf("load the fixture with a second post: %v", err)
-	}
-	list := New(sessionDrawing(snapshot, false), "blog", commonWidth, tallHeight, fixtures.Day())
+	list := New(sessionDrawing(contentWith(test, secondPost()), false), "blog", commonWidth, tallHeight, fixtures.Day())
 	cases := []struct {
 		name     string
 		commands []string
@@ -259,7 +307,8 @@ func TestALongFilterBreaksOnlyBetweenItsWords(test *testing.T) {
 }
 
 // Enter on a heading's name brings it to the page's top; on a post's or a part's name opens that post beside the
-// list; on a version's, by its day, that version, in the post's window, an older one from the current and back.
+// list; on a version's, by its day, that version, in the post's window, an older one from the current and back; on a
+// language's, by its tag, the post in that language, its blog's list beside it.
 func TestEnterOnABlogsPlaceGoesThere(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -276,6 +325,8 @@ func TestEnterOnABlogsPlaceGoesThere(test *testing.T) {
 			name: "the current version", model: openedModel(test, "blog/reading-slowly/2026-11-10", commonWidth, commonHeight), text: "2026-11-12",
 			top: "Reading slowly", footer: postRead,
 		},
+		{name: "a translation", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "ru", top: "Медленное чтение", footer: russianListBesidePost},
+		{name: "the original", model: openedModel(test, "ru/blog/1", commonWidth, commonHeight), text: "en", top: "Reading slowly", footer: listBesidePost},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -416,6 +467,71 @@ func TestTheBlogKeepsThePostReadBesideTheListShown(test *testing.T) {
 			screen := screenOf(test, testCase.opened)
 			if footer := footerOf(screen); !strings.Contains(footer, "1:posts*") || !strings.Contains(footer, "2:reading-slowly") || !strings.Contains(screen, testCase.holds) {
 				test.Errorf("the screen =\n%s\nwant the list shown, holding %q, the post's window beside it", screen, testCase.holds)
+			}
+		})
+	}
+}
+
+// The blog's session reads one language at a time, as a reader of the web stays in a language's folder: a page of
+// another language shows in its window, and the other window follows it there, the post read in its translation where
+// it has one, an older version's current one, and closed where not, its own language's list opening it no more; the
+// list in the same grouping and filter where the language's list has that filter, and by year where not.
+func TestTheBlogsSessionReadsOneLanguage(test *testing.T) {
+	translated := []fixtureFile{secondPost(), {path: secondTranslationFile, text: secondTranslationText}}
+	cases := []struct {
+		name     string
+		files    []fixtureFile
+		user     string
+		commands []string
+		keys     []string
+		holds    []string
+		lacks    []string
+	}{
+		{
+			name: "the post read, translated", files: nil, user: "blog/1", commands: []string{"e ru/blog"}, keys: []string{"l"},
+			holds: []string{russianListBesidePost, postRead, "Медленное чтение"}, lacks: nil,
+		},
+		{
+			name: "the post read, with no translation", files: []fixtureFile{secondPost()}, user: "blog/second", commands: []string{"e ru/blog"}, keys: nil,
+			holds: []string{russianListAlone}, lacks: []string{"2:"},
+		},
+		{
+			name: "an older version read, at its translation's current version", files: nil, user: "blog/reading-slowly/2026-11-10",
+			commands: []string{"e ru/blog"}, keys: []string{"l"}, holds: []string{russianListBesidePost, postRead, "Медленное чтение"}, lacks: nil,
+		},
+		{
+			name: "the post closed, which its own language's list opens no more", files: []fixtureFile{secondPost()}, user: "blog/second",
+			commands: []string{"e ru/blog", "e blog"}, keys: nil, holds: []string{listAlone}, lacks: []string{"2:"},
+		},
+		{
+			name: "the original read", files: nil, user: "ru/blog/1", commands: []string{"e blog/series"}, keys: []string{"l"},
+			holds: []string{listBesidePost, postRead, "Reading slowly"}, lacks: nil,
+		},
+		{
+			name: "the list's filter, which the language has", files: translated, user: "blog?tag=reading", commands: []string{"e ru/blog/1"}, keys: []string{"h"},
+			holds: []string{russianListAlone, "Медленное чтение"}, lacks: []string{"Второй пост"},
+		},
+		{
+			name: "the list's filter, which the language lacks", files: []fixtureFile{secondPost()}, user: "blog?tag=tools", commands: []string{"e ru/blog/1"},
+			keys: []string{"h"}, holds: []string{russianListAlone, "Медленное чтение"}, lacks: nil,
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			model := New(sessionDrawing(contentWith(test, testCase.files...), false), testCase.user, commonWidth, tallHeight, fixtures.Day())
+			for _, text := range testCase.commands {
+				model = commanded(test, model, text)
+			}
+			screen := screenOf(test, pressed(test, model, testCase.keys...))
+			for _, want := range testCase.holds {
+				if !strings.Contains(screen, want) {
+					test.Errorf("opened by %q, after :%s and %q, the screen =\n%s\nwant %q on it", testCase.user, testCase.commands, testCase.keys, screen, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(screen, unwanted) {
+					test.Errorf("opened by %q, after :%s and %q, the screen =\n%s\nwant no %q on it", testCase.user, testCase.commands, testCase.keys, screen, unwanted)
+				}
 			}
 		})
 	}
@@ -670,6 +786,33 @@ func TestAnOlderVersionSaysANewerStands(test *testing.T) {
 		if !strings.Contains(read, want) {
 			test.Errorf("the older version =\n%s\nwant %q on it", read, want)
 		}
+	}
+}
+
+// The blog in another language is written in that language's words, as its page is: on its list a count in the
+// language's plural and a day in its months; on a translation its facts by the language's labels, and under its day
+// that it is older than its original, where the original's text changed since it was made.
+func TestATranslationIsWrittenInItsLanguagesWords(test *testing.T) {
+	cases := []struct {
+		name string
+		user string
+		want []string
+	}{
+		{name: "the list", user: "ru/blog", want: []string{"1 пост", "15 нояб. 2026", "часть 1 · Чтение"}},
+		{
+			name: "a translation", user: "ru/blog/reading-slowly",
+			want: []string{"версия 15 нояб. 2026", look.VersionNoteMark + " старше оригинала", "язык English · Русский", "теги #reading #terminals"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			read := readRows(aboveTheFooter(screenOf(test, openedModel(test, testCase.user, commonWidth, tallHeight))))
+			for _, want := range testCase.want {
+				if !strings.Contains(read, want) {
+					test.Errorf("opened by %q the screen =\n%s\nwant %q on it", testCase.user, read, want)
+				}
+			}
+		})
 	}
 }
 

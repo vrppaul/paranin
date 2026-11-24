@@ -4,8 +4,8 @@ import { expect, test } from "vitest";
 import { completionsOf, lineOf, placesOf, ran, stepped, type Outcome } from "../../src/domain/commandline";
 
 // The places of a page showing the experience tab: its tabs, and three projects' pages, one starting as a tab does
-// and one named as a tab is; then the pages :e opens, those three and the blog's list; and the blog's folder, where :e
-// opens any post
+// and one named as a tab is; then the pages :e opens, those three and the blog's list; and the blog's folder in English
+// and in Russian, where :e opens any post
 const PLACES = placesOf(
   [
     { name: "about", kind: "tab", address: "/", current: false, edited: false },
@@ -19,7 +19,10 @@ const PLACES = placesOf(
     { name: "skills", kind: "project", address: "/p/skills", current: false, edited: true },
     { name: "blog", kind: "list", address: "/blog", current: false, edited: true },
   ],
-  { name: "blog/", address: "/blog/" },
+  [
+    { name: "blog/", address: "/blog/" },
+    { name: "ru/blog/", address: "/ru/blog/" },
+  ],
 );
 
 // Tab's step forward and Shift+Tab's back
@@ -91,6 +94,11 @@ test.each<{ name: string; typed: string; want: Partial<Outcome> }>([
     name: "goes to a post :e names in the blog's folder",
     typed: "e blog/12",
     want: { kind: "go", address: "/blog/12" },
+  },
+  {
+    name: "goes to a post :e names in the folder of the blog in another language",
+    typed: "e ru/blog/12",
+    want: { kind: "go", address: "/ru/blog/12" },
   },
   {
     name: "refuses a page :e alone opens, by its name alone",

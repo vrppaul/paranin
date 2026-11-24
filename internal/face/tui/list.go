@@ -171,7 +171,7 @@ func (layout layout) waysLines(head document.Head) []line {
 	listWords := layout.siteWords.ListWords
 	grouped, _ := head.Page.Unfiltered()
 	grouping := []word{wordOf(listWords.By, kindMuted)}
-	for _, way := range listWords.Groupings() {
+	for _, way := range listWords.Groupings(layout.siteWords.Translation) {
 		shown := kindText
 		if way.List == grouped {
 			shown = kindChosen

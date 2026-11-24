@@ -287,24 +287,31 @@ func TestATerminalNamesAPageByItsPath(test *testing.T) {
 }
 
 // A name a terminal writes is the blog's where it is the list's or one in the blog's folder, whether or not a page goes
-// by it, and no other's.
+// by it, in the site's own language or in the folder of one the site is translated into, and no other's.
 func TestABlogsNameIsItsListsOrInItsFolder(test *testing.T) {
 	cases := []struct {
-		name string
-		want bool
+		name        string
+		translation string
+		isBlog      bool
 	}{
-		{name: "blog", want: true},
-		{name: "blog/99", want: true},
-		{name: "blog?tag=nowhere", want: true},
-		{name: "blogger", want: false},
-		{name: "blogger?tag=go", want: false},
-		{name: "reader", want: false},
-		{name: "p/tidy-tool", want: false},
+		{name: "blog", translation: "", isBlog: true},
+		{name: "blog/99", translation: "", isBlog: true},
+		{name: "blog?tag=nowhere", translation: "", isBlog: true},
+		{name: "ru/blog", translation: "ru", isBlog: true},
+		{name: "ru/blog/99", translation: "ru", isBlog: true},
+		{name: "ru/blog?tag=nowhere", translation: "ru", isBlog: true},
+		{name: "de/blog", translation: "", isBlog: false},
+		{name: "ru/blogger", translation: "", isBlog: false},
+		{name: "blogger", translation: "", isBlog: false},
+		{name: "blogger?tag=go", translation: "", isBlog: false},
+		{name: "reader", translation: "", isBlog: false},
+		{name: "p/tidy-tool", translation: "", isBlog: false},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := IsBlogName(testCase.name); got != testCase.want {
-				test.Errorf("IsBlogName(%q) = %t, want %t", testCase.name, got, testCase.want)
+			translation, isBlog := testedSite().BlogNamed(testCase.name)
+			if translation != testCase.translation || isBlog != testCase.isBlog {
+				test.Errorf("BlogNamed(%q) = %q, %t, want %q, %t", testCase.name, translation, isBlog, testCase.translation, testCase.isBlog)
 			}
 		})
 	}

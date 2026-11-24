@@ -9,7 +9,6 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // What the command line says where :e finds no page by the name typed, as Neovim says it of a file
@@ -77,19 +76,53 @@ func placesLeft(buffers map[document.Page][]tab) map[document.Page]readerPlace {
 
 // showing is the model showing a page in its session: a post in the blog's second window, after its list; a list in
 // the blog's first window, the post read kept beside it; any other page in the site's session, in place of the page
-// it showed.
+// it showed. The blog's session reads one language, as a reader of the web stays in a language's folder, so a page of
+// the blog in another takes the other window there too.
 func (model Model) showing(page document.Page) Model {
 	model = model.kept()
 	switch {
 	case page.Kind == document.PagePost:
-		model.blog.post, model.blog.atPost = page, true
+		model.blog = blogSession{list: model.listIn(page.Translation), post: page, atPost: true}
 	case page.InBlog():
-		model.blog.list, model.blog.atPost = page, false
+		model.blog = blogSession{list: page, post: model.postIn(page.Translation), atPost: false}
 	default:
 		model.sitePage = page
 	}
 	model.inBlog = page.InBlog()
 	return model.windowed()
+}
+
+// listIn is the blog's list shown in a language, by the language a page is translated into: in the same grouping and
+// filter where the session holds the list so there, and else by year, as the filter is a tag or a series the
+// language's posts may not have.
+func (model Model) listIn(translation string) document.Page {
+	list := model.blog.list.InLanguage(translation)
+	if model.holds(list) {
+		return list
+	}
+	unfiltered, _ := list.Unfiltered()
+	return unfiltered
+}
+
+// postIn is the post read, PageNone where none is, in a language, by the language a page is translated into: itself
+// where it is in that language; else the page its head offers in it, its language's place, which :ru goes to too, an
+// older version's leading to the current version there; and else PageNone, its window closed, so a list in its own
+// language shown after opens it no more.
+func (model Model) postIn(translation string) document.Page {
+	if model.blog.post.Translation == translation {
+		return model.blog.post
+	}
+	for _, offered := range model.pagePlaces[model.blog.post] {
+		if offered.Kind == document.PlaceLanguage && offered.Page.Translation == translation {
+			return offered.Page
+		}
+	}
+	return document.PageOf(document.PageNone)
+}
+
+// sessionWords are the site's words of the frame in the language the blog's session reads, which its list is in.
+func (model Model) sessionWords() compose.Frame {
+	return model.frames[model.blog.list.Translation]
 }
 
 // kept is the model with where the reader stands in the tabs shown kept for their pages, and, in the blog's session,
@@ -119,7 +152,7 @@ func (model Model) windows() ([]tab, int) {
 		return model.buffers[model.sitePage], model.left[model.sitePage].chosen
 	}
 	tabs, chosen := []tab{}, 0
-	for _, window := range model.siteWords.ListWords.BlogWindows(model.blog.list, model.blog.post) {
+	for _, window := range model.sessionWords().ListWords.BlogWindows(model.blog.list, model.blog.post) {
 		held, isHeld := model.buffers[window.Page]
 		if !isHeld {
 			continue
@@ -150,14 +183,15 @@ func (model Model) windowed() Model {
 		return model.relaid()
 	}
 	model.laid, model.search.shown = make([]laidTab, 0, len(tabs)), make([]shownMatch, 0, len(tabs))
-	reused, layout := map[int]paintedTab{}, model.layout()
+	reused := map[int]paintedTab{}
 	for place, shown := range tabs {
 		if old := before.placeOf(shown); old != noPlace {
 			model.laid, model.search.shown = append(model.laid, before.laid[old]), append(model.search.shown, before.search.shown[old])
 			reused[place] = paintedTab{page: before.drawn.tabs[old].paintedPage, stuck: before.drawn.tabs[old].stuck}
 			continue
 		}
-		model.laid, model.search.shown = append(model.laid, layout.tab(shown)), append(model.search.shown, shownMatch{place: 0, scroll: 0, shown: false})
+		laid := model.layoutIn(shown.page.Translation).tab(shown)
+		model.laid, model.search.shown = append(model.laid, laid), append(model.search.shown, shownMatch{place: 0, scroll: 0, shown: false})
 	}
 	painted := make([]paintedTab, 0, len(tabs))
 	for place := range tabs {
@@ -177,16 +211,17 @@ func (model Model) placeOf(wanted tab) int {
 }
 
 // reached is the model opened on the page a name from outside reaches (New), its letters a terminal does not show as
-// they are left out: a page of the blog; where the name is the blog's but names no page, the blog's list where the
-// session holds it, the résumé where not, saying it finds no page by the name; the résumé where it names nothing of
-// the blog.
+// they are left out: a page of the blog, in any language; where the name is a blog's but names no page, that blog's
+// list where the session holds it, the résumé where not, saying it finds no page by the name; the résumé where it names
+// nothing of a blog.
 func (model Model) reached(given string) Model {
 	name := strings.Map(shownLetter, given)
 	if page, named := model.opened[name]; named && page.InBlog() && model.holds(page) {
 		return model.showing(page)
 	}
-	opened, blogs := document.PageOf(document.PageResume), routes.IsBlogName(name)
-	if list := document.PageOf(document.PageBlog); blogs && model.holds(list) {
+	translation, blogs := model.site.BlogNamed(name)
+	opened := document.PageOf(document.PageResume)
+	if list := document.PageOf(document.PageBlog).InLanguage(translation); blogs && model.holds(list) {
 		opened = list
 	}
 	shown := model.showing(opened)
@@ -211,6 +246,15 @@ func (model Model) edit(name string) (Model, tea.Cmd) {
 		return model, nil
 	}
 	return model.showing(page), nil
+}
+
+// framesOf are the site's words of the frame in each language, by the language a page is translated into.
+func framesOf(frames []compose.Frame) map[string]compose.Frame {
+	byTranslation := make(map[string]compose.Frame, len(frames))
+	for _, frame := range frames {
+		byTranslation[frame.Translation] = frame
+	}
+	return byTranslation
 }
 
 // openedPages are the pages :e opens, by every name it reads.

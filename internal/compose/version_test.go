@@ -138,23 +138,32 @@ func TestAPostNotOutServesNoOlderVersion(test *testing.T) {
 	}
 }
 
-// A post's places end with its other versions, each by the day it came out: an older version's with the current one.
-func TestAPostsPlacesEndWithItsOtherVersions(test *testing.T) {
+// A post's places end with its other versions, each by the day it came out, an older version's with the current one;
+// then with its other languages, each by its tag, at the current version in it.
+func TestAPostsPlacesEndWithItsOtherVersionsThenLanguages(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
-	older := document.PostPage(fixturePostSlug).OlderVersion(fixtureRevisionDay)
+	current := document.PostPage(fixturePostSlug)
+	older := current.OlderVersion(fixtureRevisionDay)
+	translated := document.Place{Name: russian, Kind: document.PlaceLanguage, Page: current.InLanguage(russian), Section: ""}
 	cases := []struct {
 		name  string
 		shown document.Document
-		want  document.Place
+		want  []document.Place
 	}{
-		{name: "the current version", shown: postNamed(test, site.Own.Posts, fixturePostSlug), want: document.Place{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: older, Section: ""}},
-		{name: "an older version", shown: fixtures.DocumentOf(test, site.Own.Versions, older), want: document.Place{Name: fixtureCurrentDay, Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug), Section: ""}},
+		{
+			name: "the current version", shown: postNamed(test, site.Own.Posts, fixturePostSlug),
+			want: []document.Place{{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: older, Section: ""}, translated},
+		},
+		{
+			name: "an older version", shown: fixtures.DocumentOf(test, site.Own.Versions, older),
+			want: []document.Place{{Name: fixtureCurrentDay, Kind: document.PlaceVersion, Page: current, Section: ""}, translated},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			places := document.PlacesOf(testCase.shown)
-			if last := places[len(places)-1]; last != testCase.want {
-				test.Errorf("the last place of %s = %+v, want %+v", testCase.name, last, testCase.want)
+			if last := places[max(len(places)-len(testCase.want), 0):]; !reflect.DeepEqual(last, testCase.want) {
+				test.Errorf("the last places of %s = %+v, want %+v", testCase.name, last, testCase.want)
 			}
 		})
 	}

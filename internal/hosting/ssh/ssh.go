@@ -1,14 +1,14 @@
 // Package ssh serves the TUI over SSH (docs/REQUIREMENTS.md): a kiosk, not a shell. Anyone may connect, with no key
 // and no password, since no way to authenticate is installed (FR-1); a session with a terminal reads the résumé,
-// the projects' pages, the TUI's extras and the blog, opening on the blog's page its user's name reaches (D26), and
-// nothing else is served: no shell, no command, no file transfer, no forwarding (SEC-1, SEC-2). A session with no
-// terminal is refused (SEC-3), a panic ends its own session and never the server (SEC-4), a connection too long in
-// starting its session, its handshake with it, and a session idle too long or open too long are closed (SEC-5), a
-// connection opens one session, a terminal larger than a bound is drawn at the bound, a session's input reaches the
-// TUI at a reader's pace and its environment holds only what the colour profile reads, so no connection takes memory
-// or time without end (SEC-7), and each session is logged as it opens and closes, and its refused requests once
-// (SEC-13), what its reader sent cut short and quoted by the logger's handler, as slog's handlers quote a value with a
-// control character in it (SEC-15).
+// the projects' pages, the TUI's extras and the blog in each language, opening on the blog's page its user's name
+// reaches (D26), and nothing else is served: no shell, no command, no file transfer, no forwarding (SEC-1, SEC-2). A
+// session with no terminal is refused (SEC-3), a panic ends its own session and never the server (SEC-4), a
+// connection too long in starting its session, its handshake with it, and a session idle too long or open too long
+// are closed (SEC-5), a connection opens one session, a terminal larger than a bound is drawn at the bound, a
+// session's input reaches the TUI at a reader's pace and its environment holds only what the colour profile reads, so
+// no connection takes memory or time without end (SEC-7), and each session is logged as it opens and closes, and its
+// refused requests once (SEC-13), what its reader sent cut short and quoted by the logger's handler, as slog's
+// handlers quote a value with a control character in it (SEC-15).
 //
 // A panic in the TUI's Init, Update or View is logged with its session and its stack, and goes on up to Bubble Tea,
 // which ends the session and gives the reader's terminal back as it found it. Bubble Tea and wish take no logger:
@@ -151,17 +151,20 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// draw is what the sessions of a snapshot draw as an audience reads it: the pages of its content, the extras the TUI
-// opens by a command, and the blog's lists, filtered or not, posts and their older versions, with the site's words of
-// the frame round them, all in the site's own language; and until when it holds, as the next post dated later comes
-// out. Prepare read the snapshot's content.
+// draw is what the sessions of a snapshot draw as an audience reads it: the pages of its content and the extras the TUI
+// opens by a command, in the site's own language, and the blog in each language, its lists, filtered or not, posts and
+// their older versions, with the site's words of the frame round them in each; and until when it holds, as the next
+// post dated later comes out. Prepare read the snapshot's content.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
 	composition := compose.SiteOf(prepared, audience)
-	own := composition.Own
-	documents := slices.Concat(composition.Documents(), compose.Extras(facts), own.Lists, own.Filtered, own.Posts, own.Versions)
+	documents, frames := slices.Concat(composition.Documents(), compose.Extras(facts)), []compose.Frame{}
+	for _, blog := range composition.Blogs() {
+		documents = append(documents, blog.Served()...)
+		frames = append(frames, blog.Frame)
+	}
 	site := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority, facts.TranslatedInto())
-	return tui.Drawing{Documents: documents, Frame: own.Frame, Site: site}, composition.Until
+	return tui.Drawing{Documents: documents, Frames: frames, Site: site}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).

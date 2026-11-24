@@ -492,16 +492,28 @@ and web routes.
   languages its reader may go to (`Head.Languages`), the one read and each
   the lists name it in, which the page draws as its Switch, its `hreflang`
   alternates and `og:locale:alternate`, and the other faces as a line of
-  links. The hosts draw each blog in its own frame; the TUI shows the site
-  in English, a translation a link to its address. Ways weighed: the
+  links, and offers among its places (`document.PlacesOf`), each by its
+  tag. A frame names its language once, as a page does
+  (`Frame.Translation`, `document.Untranslated` for the site's own), which
+  each host keys its frames by and its list's groupings are worked out
+  from (`ListWords.Groupings`). Every frame holds the one list of the
+  pages `:e` opens in every language (`Frame.Pages`), so the page's `:e`
+  and the TUI's open the same pages, and the page names each language's
+  blog folder (`routes.Site.BlogFolders`). The hosts draw each blog in its
+  own frame: the SSH host hands a session every blog's documents
+  (`Blog.Served`) and each frame (`tui.Drawing.Frames`), and the TUI lays
+  a page out in its language's frame, opens a page of any language by its
+  terminal name, which `routes.Site.BlogNamed` reads a language's folder
+  off, and holds the blog's session in the language of the list it shows,
+  a post read going where its head's language leads. Ways weighed: the
   language as a kind of page, which every switch over the kinds would name
   again for each kind; a `routes.Site` for each language, whose targets
   could name no page in another, so no Switch; a site and a snapshot per
   language, each carrying a copy of the profile, the series, an index and
   pages none but English has; every language read off a path by its form,
-  which read `/de/blog` as a language the site has not; the
-  faces reading the words of a document's language off it, which would
-  carry the frame's words into every head.
+  which read `/de/blog` as a language the site has not; the faces reading
+  the words of a document's language off it, which would carry the frame's
+  words into every head.
   A translation names the text of its original it was made from (amended
   2026-11-24, FOUNDATION §5.4, A stale translation shows), `source:
   en@<hash>`, the hash of the original's version's text, its title, lead

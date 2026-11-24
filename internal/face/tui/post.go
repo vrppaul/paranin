@@ -186,19 +186,33 @@ type postFact struct {
 	value []word
 }
 
+// versionFacts are the facts of the version of a post read: its day, or the word a draft gives in its place, and under
+// it the note of a version a reader may rather read, the newer over an older version or the original a translation is
+// older than; none where the head names no version. gochecksumtype holds the switch to every kind.
+func (layout layout) versionFacts(read document.Version) []postFact {
+	label, days := layout.siteWords.PostLabels.Version, layout.siteWords.Days
+	switch version := read.(type) {
+	case document.VersionOut:
+		day := postFact{label: label, value: textWords(days.Of(version.Day), kindText)}
+		if version.Outdated == nil {
+			return []postFact{day}
+		}
+		return []postFact{day, {label: "", value: layout.versionNoteWords(version.Outdated.Spans())}}
+	case document.VersionOlder:
+		return []postFact{
+			{label: label, value: textWords(days.Of(version.Day), kindText)},
+			{label: "", value: layout.versionNoteWords(version.NewerSpans(days.Of(version.Newer.Day)))},
+		}
+	case document.VersionDraft:
+		return []postFact{{label: label, value: textWords(version.Word, kindText)}}
+	}
+	return []postFact{}
+}
+
 // postFacts lays out a post's facts, each value in a column after the widest label, those the post has.
 func (layout layout) postFacts(head document.Head) []line {
 	labels := layout.siteWords.PostLabels
-	facts := []postFact{}
-	switch version := head.Version.(type) {
-	case document.VersionOut:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(layout.siteWords.Days.Of(version.Day), kindText)})
-	case document.VersionOlder:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(layout.siteWords.Days.Of(version.Day), kindText)},
-			postFact{label: "", value: layout.newerWords(version)})
-	case document.VersionDraft:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Word, kindText)})
-	}
+	facts := layout.versionFacts(head.Version)
 	if place := head.Post; place != nil && place.Series != nil {
 		series := place.Series
 		partOf := layout.siteWords.SeriesWords.PartOf(series.Reading(), len(series.Parts))
@@ -234,13 +248,12 @@ func (layout layout) languageWords(languages []document.Language) []word {
 	return words
 }
 
-// newerWords are what an older version of a post says under its day of the newer one that stands over it (DESIGN.md,
-// PostHead): the arrow in the accent, then the site's word for it and the current version's day, a link to it, bold
-// on the tint.
-func (layout layout) newerWords(older document.VersionOlder) []word {
+// versionNoteWords are what a post says under its day of the version a reader may rather read (DESIGN.md, PostHead):
+// the arrow in the accent, then the note's words, a link to that version, bold on the tint. An older version's note
+// names the newer that stands over it, and a translation's older than its original names the original.
+func (layout layout) versionNoteWords(note []document.Span) []word {
 	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation}
-	spans := older.NewerSpans(layout.siteWords.Days.Of(older.Newer.Day))
-	return append([]word{wordOf(look.VersionNoteMark, kindLookMark)}, layout.formWords(spans, form)...)
+	return append([]word{wordOf(look.VersionNoteMark, kindLookMark)}, layout.formWords(note, form)...)
 }
 
 // article lays out a post's body: its layout, how many of its paragraphs it has numbered so far, and the line of the

@@ -796,7 +796,7 @@ For every page of the site, the blog's among them:
   rank HTML first unless `text/plain` is named, which gives a bare `curl`
   the HTML.
 
-#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the TUI's language and the résumé's)
+#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the résumé's)
 
 - **One folder per post, one file per language**; widgets shared. English
   is the main language. A post's language is its file's name,
@@ -858,13 +858,13 @@ For every page of the site, the blog's among them:
   CI pass and print it (the hook runs `verbose`), and `paranin serve` logs
   it at each load. The translation's current version says under its day
   that it is older than the original, a link to the original: on the page
-  in the form an older version's way to the newer takes, in markdown and in
-  the manual; the TUI shows no translation yet. The note leads where the
-  Switch does, so a translation whose original no list names says nothing;
-  an older version of a translation says a newer stands already, and
-  nothing of its original. The author refreshes the hash by hand, writing
-  the one the warning names once the translation follows the original; a
-  new translation's is the one the check's refusal names. Ways weighed: the
+  in the form an older version's way to the newer takes, in markdown, in
+  the manual and in the TUI. The note leads where the Switch does, so a
+  translation whose original no list names says nothing; an older version
+  of a translation says a newer stands already, and nothing of its
+  original. The author refreshes the hash by hand, writing the one the
+  warning names once the translation follows the original; a new
+  translation's is the one the check's refusal names. Ways weighed: the
   file's bytes whole, which marks a translation stale when the original's
   status, day or discussions change; the body alone, which misses a title
   rewritten; a command beside `revise` that rewrites the front matter, a
@@ -877,17 +877,39 @@ For every page of the site, the blog's among them:
   in the sitemap, a feed per language, `og:locale` from each catalogue's
   `locale`, `<html lang>` the page's own. The language switch lists only
   the translations that exist, each by its own name for itself.
-- **What the TUI and `llms.txt` show, until the TUI reads a language:**
-  a session reads the site in English; a post's head lists its languages
-  as the page does, a translation a link to its address on the web, which
-  a terminal opens in a browser. `llms.txt` lists the English site, whose
-  posts' markdown leads to their translations.
+- **The TUI reads the blog in a language by its address** (owner,
+  2026-11-24), as the web does: `ssh ru/blog@paran.in`, `ssh
+  ru/blog/12@paran.in` and `:e ru/blog/page-cache` open the Russian blog,
+  framed in its words, its days in its months and the note of a
+  translation older than its original among them. `:e` opens the same
+  pages on every face, every language's, which compose lists once, and in
+  the blog's folder of each language a post no list names; Tab offers
+  every language's lists and posts. Since the TUI has no Switch, a post's
+  other languages are places of its `:` menu, `language`, each by its tag,
+  `:ru`, as its versions are by their days; the page's command line offers
+  them too. The blog's session reads one language at a time, as a reader
+  of the web stays in a language's folder: a post or a list of another
+  language takes the other window there, the post read going where its
+  head's language leads, an older version to the translation's current
+  one, and closed where it has none; the list in its grouping and its
+  filter where the language has that filter, and by year where not. The
+  résumé, the projects' pages and the TUI's own words (the ruler, the
+  keys, the menu's kinds, Neovim's messages) stay English. Ways weighed:
+  `:set lang=ru`, an option Neovim lacks (it answers `E518: Unknown
+  option`), which, as `:set helplang=ru` does, makes a session's state
+  choose which page one name opens, where every other face lets the
+  address alone choose; `:language ru`, which in Neovim sets the language
+  of its own messages, which the TUI keeps English; a language read off
+  the SSH user's name alone, `ssh ru@paran.in`, a second way in beside the
+  address the web already writes.
+- **`llms.txt`** lists the English site, whose posts' markdown leads to
+  their translations.
 - **Words inside widgets** live in a typed table,
   `PageCache.messages.ts` (`satisfies Record<Lang, Messages>`): a missing
   translation of a label fails to compile.
 - **Words of the site** (Published, Read in Russian, vim hints, man page
   headings) live in one catalogue per language, `content/i18n/en.yaml` and
-  `ru.yaml`, used by every face, the TUI (`:set lang=ru`) and
+  `ru.yaml`, used by every face, the TUI (`ssh ru/blog@…`) and
   `curl paran.in/ru/…` included. `paranin check` requires every key in
   every language. The catalogue arrives with `compose`, the first part that
   writes a word of the site, not with the first translation, so no template

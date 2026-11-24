@@ -324,7 +324,8 @@ func TestAListsPlacesAreItsPostsThenItsTagsThenItsSeries(test *testing.T) {
 // Every face's :e opens each project's page by its slug, then the blog's list in each grouping and each post the list
 // names, newest first, which Tab offers; then a post served and no list names, by its slug, and every post served by
 // its number, and the list filtered by each tag and each series, which Tab never offers; never a draft, a preview or a
-// post that comes later than its reader, each by the name a terminal reaches it by.
+// post that comes later than its reader, each by the name a terminal reaches it by; then the same of the blog in each
+// other language, in its folder. Every language's frame holds that one list.
 func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: ""},
@@ -348,9 +349,18 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading"), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "ru/blog", Kind: document.PlaceList, Page: document.PageOf(document.PageBlog).InLanguage(russian), Section: ""}, Offered: true},
+		{Place: document.Place{Name: "ru/blog/series", Kind: document.PlaceList, Page: document.PageOf(document.PageBlogSeries).InLanguage(russian), Section: ""}, Offered: true},
+		{Place: document.Place{Name: "ru/blog/" + fixturePostSlug, Kind: document.PlacePost, Page: read.InLanguage(russian), Section: ""}, Offered: true},
+		{Place: document.Place{Name: "ru/blog/1", Kind: document.PlacePost, Page: read.InLanguage(russian), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "ru/blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading").InLanguage(russian), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "ru/blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals").InLanguage(russian), Section: ""}, Offered: false},
+		{Place: document.Place{Name: "ru/blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading").InLanguage(russian), Section: ""}, Offered: false},
 	}
-	if got := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Own.Frame.Pages; !reflect.DeepEqual(got, want) {
-		test.Errorf("the pages :e opens = %+v, want %+v", got, want)
+	for _, blog := range SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Blogs() {
+		if got := blog.Frame.Pages; !reflect.DeepEqual(got, want) {
+			test.Errorf("the pages :e opens in the frame of %q = %+v, want %+v", blog.Frame.Language, got, want)
+		}
 	}
 }
 

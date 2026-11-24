@@ -155,28 +155,20 @@ type Server struct {
 // day; the page of an address of no page in each language; each post served at its preview link alone, which a request
 // opening one draws; and the site's addresses, which read a request's path.
 type drawing struct {
-	served   answers
-	moved    map[string]move
-	notFound notFoundPages
+	served answers
+	moved  map[string]move
+	// notFound are the page of no page in each language, by the language a page is translated into, which names its
+	// folder (compose.Frame.Translation)
+	notFound map[string]missingChoice
 	previews previewing
 	site     routes.Site
-}
-
-// notFoundPages are the page of no page in the site's own language, and in each it is translated into, by its tag,
-// which names its folder.
-type notFoundPages struct {
-	own          missingChoice
-	translations map[string]missingChoice
 }
 
 // notFoundAt is the page of no page for a path asked for: in the language whose folder opens it, the site's own where
 // no language's does.
 func (drawn *drawing) notFoundAt(path string) missingChoice {
 	translation, _ := drawn.site.LanguageFolderOf(path)
-	if translated, isTranslated := drawn.notFound.translations[translation]; isTranslated {
-		return translated
-	}
-	return drawn.notFound.own
+	return drawn.notFound[translation]
 }
 
 // move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's
@@ -601,13 +593,10 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	drawn := blogDrawing{served: served, moved: map[string]move{}, previews: previewing{
 		posts: map[document.Page]framedPreview{}, build: build, today: audience.At,
 	}}
+	missing, notFound := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}, map[string]missingChoice{}
 	for _, blog := range composition.Blogs() {
 		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), textWriter{site: addresses, manual: blog.Frame.Manual})
-	}
-	missing := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}
-	notFound := notFoundPages{own: missing.choice(frame), translations: map[string]missingChoice{}}
-	for _, blog := range composition.Translations {
-		notFound.translations[blog.Frame.Language] = missing.choice(blog.Frame)
+		notFound[blog.Frame.Translation] = missing.choice(blog.Frame)
 	}
 	return &drawing{served: served, moved: drawn.moved, notFound: notFound, previews: drawn.previews, site: addresses}, composition.Until
 }

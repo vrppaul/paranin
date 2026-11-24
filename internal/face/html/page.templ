@@ -130,9 +130,9 @@ templ vimKeysSwitch() {
 // commandLineMarkup is the command line the vim keys open over the foot line (DESIGN.md, CommandLine), as Neovim's
 // stands with no row of its own: a field the reader types a place's name or a command in, after the colon, or a
 // search after the slash, the menu of the places that fit what is typed over it, what the line says of a command or a
-// search, and the keys that finish it, a search's with the count of its matches; the field names the blog's folder,
-// where :e opens a post the menu does not list. The site's script opens it, shows the mark and the keys of the key
-// that opened it, and goes where it says or marks what it finds.
+// search, and the keys that finish it, a search's with the count of its matches; and the blog's folder in each
+// language, where :e opens a post the menu does not list. The site's script opens it, shows the mark and the keys of
+// the key that opened it, and goes where it says or marks what it finds.
 templ commandLineMarkup(foot footLine) {
 	<div class="command-line content-width" data-part={ commandLinePart } hidden>
 		<div class="command-entry" data-part={ commandEntryPart }>
@@ -142,7 +142,10 @@ templ commandLineMarkup(foot footLine) {
 					@placeItem(index, shown)
 				}
 			</ul>
-			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><span id={ ownID(commandNamePart) } lang={ frameLanguage } data-part={ commandNamePart } hidden>{ commandName }</span><span id={ ownID(searchNamePart) } lang={ frameLanguage } data-part={ searchNamePart } hidden>{ searchName }</span><input id={ ownID(commandFieldPart) } class="command-field" type="text" role="combobox" aria-labelledby={ ownID(commandNamePart) } aria-controls={ ownID(placesPart) } aria-expanded="false" aria-autocomplete="list" aria-describedby={ ownID(commandKeysPart) } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-label={ ownID(searchNamePart) } data-folder={ foot.frame.folder } data-folder-address={ foot.frame.folderAddress }/>
+			<span class="command-mark" aria-hidden="true" data-part={ commandMarkPart }>{ commandMark }</span><span class="command-mark" aria-hidden="true" data-part={ searchMarkPart } hidden>{ searchMark }</span><span id={ ownID(commandNamePart) } lang={ frameLanguage } data-part={ commandNamePart } hidden>{ commandName }</span><span id={ ownID(searchNamePart) } lang={ frameLanguage } data-part={ searchNamePart } hidden>{ searchName }</span><input id={ ownID(commandFieldPart) } class="command-field" type="text" role="combobox" aria-labelledby={ ownID(commandNamePart) } aria-controls={ ownID(placesPart) } aria-expanded="false" aria-autocomplete="list" aria-describedby={ ownID(commandKeysPart) } autocomplete="off" autocapitalize="off" spellcheck="false" data-part={ commandFieldPart } data-search-label={ ownID(searchNamePart) }/>
+			for _, held := range foot.frame.folders {
+				<span data-part={ folderPart } data-name={ held.name } data-address={ held.address } hidden></span>
+			}
 		</div>
 		<p class="command-said" role="alert" data-part={ commandSaidPart } hidden></p>
 		<span id={ ownID(commandKeysPart) } class="command-keys" lang={ frameLanguage } data-part={ commandKeysPart }>

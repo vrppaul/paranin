@@ -171,13 +171,13 @@ func commandParts(typed string) (name, argument string, argued bool) {
 
 // pageCompletions are the pages :e opens that Tab goes round after a command named and a space, by name, where the
 // command takes an argument: those Tab offers whose names start with what is typed, each written after the command's
-// name.
+// name; read off the site's own frame, as New reads the pages :e opens, since every frame holds the one list.
 func (model Model) pageCompletions(name, typed string) []completion {
 	listed := []completion{}
 	if known, found := model.commandNamed(name); !found || !known.takesArgument {
 		return listed
 	}
-	for _, page := range model.siteWords.Pages {
+	for _, page := range model.frames[document.Untranslated].Pages {
 		if page.Offered && strings.HasPrefix(page.Place.Name, typed) {
 			listed = append(listed, completion{written: name + space + page.Place.Name, name: page.Place.Name, kind: string(page.Place.Kind), goes: nil})
 		}

@@ -76,7 +76,7 @@ func outdatedOf(post content.Post, words content.Words, languages []document.Lan
 		return nil
 	}
 	for _, offered := range languages {
-		if offered.Page.Translation == "" {
+		if offered.Page.Translation == document.Untranslated {
 			return &document.Outdated{Original: offered.Page, Language: offered.Tag, Words: words.Text(content.WordOutdated)}
 		}
 	}

@@ -216,8 +216,9 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 // page has none; the switch that turns the vim keys on, and the theme button. Over it stands the command line those
 // keys open, with the places it goes to by name: the document's tabs, the one shown among them, then the page's own
 // places, a post's headings and the posts and series of the blog's list, then the page of each project that has one,
-// by its slug, shown where its opening is; and the pages its :e opens, the projects' and the blog's lists, the one
-// shown among them, the blog's posts on its own pages alone, and the blog's folder, where :e opens any other.
+// by its slug, shown where its opening is; and the pages its :e opens, the projects' and the blog's lists in every
+// language, the one shown among them, the blog's posts on its own pages alone, and the blog's folder in each language,
+// where :e opens any other.
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
@@ -233,6 +234,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		`popovertarget="_hint-ssh" popovertargetaction="hide"`, `popovertarget="_hint-curl" popovertargetaction="hide"`,
 		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
 		`data-place="list" data-name="blog/series" data-address="/blog/series"`,
+		`data-place="list" data-name="ru/blog" data-address="/ru/blog"`,
 	}
 	// the commands that read the résumé whole, which the page of no page offers too, and the project's page whole
 	const (
@@ -269,7 +271,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
 				`data-place="tab" data-name="contact" data-address="/contact"`, projectPlace, projectPlace + ` data-edit`,
-				`data-folder="blog/" data-folder-address="/blog/"`,
+				`data-part="folder" data-name="blog/" data-address="/blog/"`, `data-part="folder" data-name="ru/blog/" data-address="/ru/blog/"`,
 			}),
 			lacks: []string{noPagePlace, `data-name="blog/reading-slowly"`},
 		},

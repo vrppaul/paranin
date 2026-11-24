@@ -35,7 +35,7 @@ func (writer PageWriter) List(composed document.Document) string {
 	around := writer.frame
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
 	foot := footLineOf(around, around.sessionsOf(page), windows, page, document.PlacesOf(composed))
-	main := writer.listMain(head, around.groupingsOf(around.listWords.Groupings(), page), composed.Blocks)
+	main := writer.listMain(head, around.groupingsOf(around.groupings, page), composed.Blocks)
 	title := head.Title
 	if len(head.Subtitle) > 0 {
 		title = slices.Concat(head.Title, []document.Span{document.Text{Text: dash}}, head.Subtitle)

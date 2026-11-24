@@ -63,12 +63,13 @@ type Blog struct {
 func SiteOf(prepared *Prepared, audience Audience) Site {
 	snapshot := prepared.snapshot
 	own, translations := blogsOf(snapshot, audience)
+	edited := editedPages(snapshot, append([]blog{own}, translations...))
 	site := Site{
-		Index: indexOf(snapshot, own), Pages: pagesOf(snapshot, own), Own: blogPagesOf(snapshot, own), Translations: nil,
+		Index: indexOf(snapshot, own), Pages: pagesOf(snapshot, own), Own: blogPagesOf(snapshot, own, edited), Translations: nil,
 		Until: audience.nextChange(allPosts(snapshot)), paths: map[string]document.Target{}, served: nil,
 	}
 	for _, read := range translations {
-		site.Translations = append(site.Translations, blogPagesOf(snapshot, read))
+		site.Translations = append(site.Translations, blogPagesOf(snapshot, read, edited))
 	}
 	composing := []blogComposing{{composed: &site.Own, read: own}}
 	for index, read := range translations {
@@ -100,12 +101,18 @@ func (site Site) Blogs() []Blog {
 }
 
 // blogPagesOf is a blog as a snapshot reads it in a language, but its posts: its lists, filtered or not, its posts'
-// pictures and its frame.
-func blogPagesOf(snapshot *content.Snapshot, read blog) Blog {
+// pictures and its frame, with the pages :e opens in every language.
+func blogPagesOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Blog {
 	return Blog{
 		Lists: blogLists(read), Filtered: filteredLists(read), Posts: nil, Versions: nil, Pictures: picturesOf(read), Previews: nil,
-		Feeds: nil, Frame: frameOf(snapshot, read), served: nil, postsServed: read.served,
+		Feeds: nil, Frame: frameOf(snapshot, read, edited), served: nil, postsServed: read.served,
 	}
+}
+
+// Served are the documents of every page the blog serves, its lists, filtered or not, its posts and each older version
+// of them, for a face that draws them all, as the TUI does.
+func (composed Blog) Served() []document.Document {
+	return composed.served
 }
 
 // composePosts composes a blog's posts, their feeds and older versions, and its previews, their links read among paths.

@@ -38,8 +38,9 @@ type seenBlog struct {
 	posts     []document.Page
 	languages []string
 	feeds     []document.Feed
-	frameList document.Page
-	locale    string
+	// frameIn is the language the frame's pages are translated into
+	frameIn string
+	locale  string
 }
 
 // A translation is a blog of its own language: its lists, posts, feeds and frame in its folder and its words alone.
@@ -60,7 +61,7 @@ func TestATranslationIsABlogOfItsOwnLanguage(test *testing.T) {
 		posts:     []document.Page{post},
 		languages: []string{russian},
 		feeds:     []document.Feed{{Series: "", Translation: russian}, {Series: fixtureSeriesName, Translation: russian}},
-		frameList: document.PageOf(document.PageBlog).InLanguage(russian),
+		frameIn:   russian,
 		locale:    "ru_RU",
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -72,7 +73,7 @@ func TestATranslationIsABlogOfItsOwnLanguage(test *testing.T) {
 func seenBlogOf(composed Blog) seenBlog {
 	seen := seenBlog{
 		lists: []document.Page{}, listTitle: document.PlainText(composed.Lists[0].Head.Title), posts: []document.Page{}, languages: []string{},
-		feeds: []document.Feed{}, frameList: composed.Frame.ListWords.List, locale: composed.Frame.Locale,
+		feeds: []document.Feed{}, frameIn: composed.Frame.Translation, locale: composed.Frame.Locale,
 	}
 	for _, list := range composed.Lists {
 		seen.lists = append(seen.lists, list.Head.Page)

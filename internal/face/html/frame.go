@@ -29,32 +29,40 @@ const (
 // address leads to; the theme button's name; the locale Open Graph marks a page in; the words of
 // the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
-// that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
-// blog's folder, by the name a terminal writes and by its address, where :e opens a post a page does not list;
-// the site's sessions, which the foot line names; the labels of a post's facts, the words of its versions, of its
-// series and of the panes at its foot, the name of its outline, the words round the blog's list, and how a day is
+// that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens in every
+// language, and the blog's folder in each, where :e opens a post a page does not list; the site's sessions, which the
+// foot line names; the labels of a post's facts, the words of its versions, of its series and of the panes at its
+// foot, the name of its outline, the words round the blog's list, the list and its groupings, and how a day is
 // written. Each is in the language of the pages it frames.
 type frame struct {
-	site          routes.Site
-	start         string
-	darkTheme     string
-	locale        string
-	copyWords     compose.CopyWords
-	ssh           compose.Way
-	readingGives  string
-	writeTo       string
-	projects      []document.Place
-	pages         []compose.OpenedPage
-	folder        string
-	folderAddress string
-	sessions      []compose.Session
-	postLabels    compose.PostLabels
-	versionWords  compose.VersionWords
-	seriesWords   compose.SeriesWords
-	paneWords     compose.PaneWords
-	contents      string
-	listWords     compose.ListWords
-	days          compose.DayWords
+	site         routes.Site
+	start        string
+	darkTheme    string
+	locale       string
+	copyWords    compose.CopyWords
+	ssh          compose.Way
+	readingGives string
+	writeTo      string
+	projects     []document.Place
+	pages        []compose.OpenedPage
+	folders      []folder
+	sessions     []compose.Session
+	postLabels   compose.PostLabels
+	versionWords compose.VersionWords
+	seriesWords  compose.SeriesWords
+	paneWords    compose.PaneWords
+	contents     string
+	listWords    compose.ListWords
+	blogList     document.Page
+	groupings    []compose.Grouping
+	days         compose.DayWords
+}
+
+// folder is a folder of the blog, in a language, where :e opens a post by its name though the menu lists none: the
+// name a terminal writes for it, and its address.
+type folder struct {
+	name    string
+	address string
 }
 
 // footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the sessions, the document's tabs as
@@ -108,27 +116,37 @@ type window struct {
 // frameOf is the frame of a site's pages.
 func frameOf(site routes.Site, composed compose.Frame) frame {
 	return frame{
-		site:          site,
-		start:         site.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
-		darkTheme:     composed.DarkTheme,
-		locale:        composed.Locale,
-		copyWords:     composed.CopyWords,
-		ssh:           composed.SSH,
-		readingGives:  composed.ReadingGives,
-		writeTo:       composed.WriteTo,
-		projects:      composed.Projects,
-		pages:         composed.Pages,
-		folder:        routes.TerminalName(routes.BlogFolder()),
-		folderAddress: routes.BlogFolder(),
-		sessions:      composed.Sessions,
-		postLabels:    composed.PostLabels,
-		versionWords:  composed.VersionWords,
-		seriesWords:   composed.SeriesWords,
-		paneWords:     composed.PaneWords,
-		contents:      composed.Contents,
-		listWords:     composed.ListWords,
-		days:          composed.Days,
+		site:         site,
+		start:        site.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
+		darkTheme:    composed.DarkTheme,
+		locale:       composed.Locale,
+		copyWords:    composed.CopyWords,
+		ssh:          composed.SSH,
+		readingGives: composed.ReadingGives,
+		writeTo:      composed.WriteTo,
+		projects:     composed.Projects,
+		pages:        composed.Pages,
+		folders:      foldersOf(site),
+		sessions:     composed.Sessions,
+		postLabels:   composed.PostLabels,
+		versionWords: composed.VersionWords,
+		seriesWords:  composed.SeriesWords,
+		paneWords:    composed.PaneWords,
+		contents:     composed.Contents,
+		listWords:    composed.ListWords,
+		blogList:     document.PageOf(document.PageBlog).InLanguage(composed.Translation),
+		groupings:    composed.ListWords.Groupings(composed.Translation),
+		days:         composed.Days,
 	}
+}
+
+// foldersOf are the blog's folders of a site, in its own language and each it is translated into.
+func foldersOf(site routes.Site) []folder {
+	folders := []folder{}
+	for _, path := range site.BlogFolders() {
+		folders = append(folders, folder{name: routes.TerminalName(path), address: path})
+	}
+	return folders
 }
 
 // sessionsOf are the foot line's sessions on a page, each leading to where it begins, the one the page belongs to

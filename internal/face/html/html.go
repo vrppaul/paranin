@@ -105,8 +105,9 @@ const (
 // The vim keys as the site's script finds and runs them (web/src/controllers/vimswitch.ts and commandline.ts): the
 // switch that turns them on and its words; the command line they open, the part a reader types in and its field, the
 // field's name to a screen reader and the mark before it; the menu of its places, each place and the letters of its
-// name typed and not; what the line says of a command that failed; and the keys it names, Tab's among them, which
-// shows while a place fits. A part and an id share a name where the field names the part by its id
+// name typed and not; what the line says of a command that failed; the keys it names, Tab's among them, which shows
+// while a place fits; and each blog's folder :e opens a post in. A part and an id share a name where the field names
+// the part by its id
 const (
 	vimKeysPart      = "vim-keys"
 	vimKeysWords     = "vim keys"
@@ -125,6 +126,7 @@ const (
 	commandSaidPart  = "command-said"
 	commandKeysPart  = "command-keys"
 	nextKeyPart      = "command-next"
+	folderPart       = "folder"
 )
 
 // The search the vim keys' slash opens on the same line (web/src/controllers/commandline.ts): the colon's mark and the
@@ -253,7 +255,7 @@ func alternatesOf(languages []document.Language, site routes.Site) []alternate {
 		alternates = append(alternates, alternate{language: language.Tag, address: site.Address(language.Page, routes.FormatChosen)})
 	}
 	for _, language := range languages {
-		if language.Page.Translation == "" {
+		if language.Page.Translation == document.Untranslated {
 			alternates = append(alternates, alternate{language: defaultLanguage, address: site.Address(language.Page, routes.FormatChosen)})
 		}
 	}

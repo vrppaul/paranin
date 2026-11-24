@@ -24,21 +24,21 @@ const (
 	assumedHeight = 24
 )
 
-// Drawing is what a session draws, as its host hands it: the documents it holds, the site's words of the frame round
-// them, and the site that writes their addresses.
+// Drawing is what a session draws, as its host hands it: the documents it holds, in every language; the site's words of
+// the frame round them in each language, the site's own first; and the site that writes their addresses.
 type Drawing struct {
 	Documents []document.Document
-	Frame     compose.Frame
+	Frames    []compose.Frame
 	Site      routes.Site
 }
 
 // Model is one reader's session: the buffers of the documents it holds, the tabs of the one shown, the terminal it
 // is drawn in, and where the reader is.
 type Model struct {
-	// buffers are the tabs of each page the session holds. sitePage is the page the site's session shows, blog what
-	// the blog's session shows, and inBlog whether the blog's is the session shown; tabs are its windows. left is where
-	// the reader stood in each page, as they left it, and chosen, scrolls and tiles below where they stand in the tabs
-	// shown
+	// buffers are the tabs of each page the session holds, in every language. sitePage is the page the site's session
+	// shows, blog what the blog's session shows, in one language, and inBlog whether the blog's is the session shown;
+	// tabs are its windows. left is where the reader stood in each page, as they left it, and chosen, scrolls and tiles
+	// below where they stand in the tabs shown
 	buffers  map[document.Page][]tab
 	sitePage document.Page
 	blog     blogSession
@@ -49,12 +49,14 @@ type Model struct {
 	// to after them, the projects' pages and the window of keys
 	pagePlaces map[document.Page][]document.Place
 	sitePlaces []place
-	// opened are the pages :e opens by every name it reads, as compose names them, an SSH user name among them
+	// opened are the pages :e opens in every language by every name it reads, as compose names them, an SSH user name
+	// among them
 	opened map[string]document.Page
-	// siteWords are the site's words of the frame, and site writes the addresses links lead to
-	siteWords compose.Frame
-	site      routes.Site
-	terminal  terminal
+	// frames are the site's words of the frame in each language, by the language a page is translated into
+	// (document.Page.Translation), and site writes the addresses links lead to
+	frames   map[string]compose.Frame
+	site     routes.Site
+	terminal terminal
 	// today is the day the session opened, which a role still held runs to on the career's line
 	today time.Time
 	// frame and laid are where the page sits and each tab laid out in it, worked out again when the terminal's
@@ -88,15 +90,16 @@ type terminal struct {
 }
 
 // New is a session that draws what a host hands it, the résumé among its documents, opened on the page the name it is
-// reached by names, an SSH session's user's (D26): a page of the blog; the blog's list, saying it finds no page, where
-// the name is under the blog's but names none; the résumé where it names nothing of the blog. In a terminal of a size,
-// a dark one of full colour until it says what it is, on a day, which a role still held runs to on the career's line.
-// A size of nothing is taken for a common terminal's.
+// reached by names, an SSH session's user's (D26): a page of the blog in any language; that language's list, saying it
+// finds no page, where the name is under its blog's but names none; the résumé where it names nothing of a blog. In a
+// terminal of a size, a dark one of full colour until it says what it is, on a day, which a role still held runs to on
+// the career's line. A size of nothing is taken for a common terminal's.
 func New(drawing Drawing, reachedBy string, width, height int, today time.Time) Model {
 	if width <= 0 || height <= 0 {
 		width, height = assumedWidth, assumedHeight
 	}
-	buffers := buffersOf(drawing.Documents)
+	buffers, frames := buffersOf(drawing.Documents), framesOf(drawing.Frames)
+	own := frames[document.Untranslated]
 	model := Model{
 		buffers:    buffers,
 		sitePage:   document.PageOf(document.PageResume),
@@ -105,9 +108,9 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 		tabs:       nil,
 		left:       placesLeft(buffers),
 		pagePlaces: pagePlacesOf(drawing.Documents),
-		sitePlaces: sitePlaces(drawing.Frame.Projects),
-		opened:     openedPages(drawing.Frame.Pages),
-		siteWords:  drawing.Frame,
+		sitePlaces: sitePlaces(own.Projects),
+		opened:     openedPages(own.Pages),
+		frames:     frames,
 		site:       drawing.Site,
 		terminal:   terminal{width: width, height: height, theme: look.ThemeDark, profile: colorprofile.TrueColor},
 		today:      today,
@@ -176,10 +179,9 @@ func themeOf(dark bool) look.Theme {
 // keep the tile the keys stand on in sight.
 func (model Model) relaid() Model {
 	model.frame = frameOf(model.terminal.width, model.terminal.height, widestPageOf(model.inBlog))
-	layout := model.layout()
 	model.laid = make([]laidTab, 0, len(model.tabs))
 	for _, shown := range model.tabs {
-		model.laid = append(model.laid, layout.tab(shown))
+		model.laid = append(model.laid, model.layoutIn(shown.page.Translation).tab(shown))
 	}
 	// the matches shown were places among the matches of the layout gone
 	model.search.shown = make([]shownMatch, len(model.tabs))
@@ -201,9 +203,10 @@ func (model Model) windowOfKeysSettled() Model {
 	return model
 }
 
-// layout is how the tabs shown are laid out, for the terminal's size as the frame has it.
-func (model Model) layout() layout {
-	return layout{site: model.site, siteWords: model.siteWords, width: model.frame.inner, pageRows: model.frame.rows, today: model.today}
+// layoutIn is how the tabs shown of a page in a language are laid out, by the language a page is translated into: in
+// the site's words in it, for the terminal's size as the frame has it.
+func (model Model) layoutIn(translation string) layout {
+	return layout{site: model.site, siteWords: model.frames[translation], width: model.frame.inner, pageRows: model.frame.rows, today: model.today}
 }
 
 // repainted is the model with every tab and the frame around it painted again, for the terminal's background

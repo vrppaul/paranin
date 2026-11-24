@@ -124,7 +124,7 @@ func (read blog) postFilters(post content.Post) []document.Filter {
 // first, by its title and its description.
 func blogListings(read blog, words content.Words) []document.Listing {
 	listings := []document.Listing{}
-	for _, grouping := range read.listWords().Groupings() {
+	for _, grouping := range read.listWords().Groupings(read.words.Translation()) {
 		head := read.listHead(grouping.List, nil, words)
 		title := words.Phrase(content.PhraseGroupedList, document.PlainText(head.Title), grouping.Words)
 		listings = append(listings, document.Listing{Page: head.Page, Title: textSpans(title), Note: head.Description})

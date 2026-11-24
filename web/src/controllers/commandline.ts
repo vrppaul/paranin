@@ -24,7 +24,8 @@ import { BACK, ONWARD, Search, type Layout, type Marks, type MatchWay, type Said
 // The parts as the server draws them: the switch and its box; the line, the part a reader types in, its field and the
 // menu of its places, each place with the letters typed of its name and the rest; the colon's mark and the slash's;
 // what the line says; the keys it names for a place, and the one that goes round the places; the keys it names for a
-// search, and the count of its matches; and the page's main part, which a search finds words in
+// search, and the count of its matches; the blog's folder in each language; and the page's main part, which a search
+// finds words in
 const SWITCH = '[data-part="vim-keys"]';
 const BOX = "input";
 const LINE = '[data-part="command-line"]';
@@ -41,6 +42,7 @@ const KEYS = '[data-part="command-keys"]';
 const NEXT = '[data-part="command-next"]';
 const SEARCH_KEYS = '[data-part="search-keys"]';
 const COUNT = '[data-part="search-count"]';
+const FOLDER = '[data-part="folder"]';
 const MAIN = "main";
 
 // How the stylesheet takes a part out of the page, as it takes the switch on a phone
@@ -106,8 +108,8 @@ interface FieldMenu {
 }
 
 /**
- * The parts of the line the server draws, how its field presents itself for a place and for a search, and the folder
- * its field names, where :e opens a page the menu does not list.
+ * The parts of the line the server draws, how its field presents itself for a place and for a search, and the folders
+ * it names, where :e opens a page the menu does not list.
  */
 interface Parts {
   switchLabel: HTMLElement;
@@ -124,7 +126,7 @@ interface Parts {
   searchKeys: HTMLElement;
   count: HTMLElement;
   kinds: Record<Mode, FieldKind>;
-  folder: Folder;
+  folders: readonly Folder[];
 }
 
 /** A place on the menu: where it goes, and its element with the letters typed of its name and the rest. */
@@ -177,8 +179,9 @@ function partsOf(page: Document): Parts | undefined {
   const role = field?.getAttribute(ROLE);
   const label = field?.getAttribute(LABELLED_BY);
   const searchLabel = field?.dataset.searchLabel;
-  const folderName = field?.dataset.folder;
-  const folderAddress = field?.dataset.folderAddress;
+  const folders = [...(line?.querySelectorAll<HTMLElement>(FOLDER) ?? [])].flatMap(
+    (element) => folderOf(element) ?? [],
+  );
   const autocomplete = field?.getAttribute(AUTOCOMPLETE);
   const controls = field?.getAttribute(CONTROLS);
   if (
@@ -198,8 +201,7 @@ function partsOf(page: Document): Parts | undefined {
     !role ||
     !label ||
     !searchLabel ||
-    !folderName ||
-    !folderAddress ||
+    folders.length === 0 ||
     !autocomplete ||
     !controls
   ) {
@@ -224,8 +226,14 @@ function partsOf(page: Document): Parts | undefined {
     searchKeys,
     count,
     kinds,
-    folder: { name: folderName, address: folderAddress },
+    folders,
   };
+}
+
+/** A blog's folder as the server names it on the line, or nothing where it lacks its name or its address. */
+function folderOf(element: HTMLElement): Folder | undefined {
+  const { name, address } = element.dataset;
+  return name === undefined || address === undefined ? undefined : { name, address };
 }
 
 /** Neovim's own words as the line says them, marked in their language, whatever the page's. */
@@ -280,7 +288,7 @@ class CommandLine {
   ) {
     this.places = placesOf(
       items.map((item) => item.place),
-      parts.folder,
+      parts.folders,
     );
     this.completions = completionsOf(this.places, "");
   }

@@ -1,7 +1,6 @@
 package compose
 
 import (
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -25,18 +24,21 @@ type OpenedPage struct {
 }
 
 // Frame is what a face lays round the documents it draws in one language, on every page alike, in the site's words in
-// it: the language's tag, the name of the theme button, which is pressed while the page is dark, the locale Open Graph
-// marks a page in, the words of the button that copies a command or a block of
-// code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
-// writes with the page's address, the words of the button that writes to the author, the page of each project that
-// has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, by each
-// name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the words of its series
-// and of the panes at its foot, the name of its outline, the words of the blog's list, how a day is written, and the
-// manual's own words.
+// it: the language's tag, the language its pages are translated into, the name of the theme button, which is pressed
+// while the page is dark, the locale Open Graph marks a page in, the words of the button that copies a command or a
+// block of code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a
+// face writes with the page's address, the words of the button that writes to the author, the page of each project that
+// has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, in every
+// language, by each name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the
+// words of its series and of the panes at its foot, the name of its outline, the words of the blog's list, how a day is
+// written, and the manual's own words.
 type Frame struct {
 	// Language is the tag of the language of the frame's words, as BCP 47 writes it: "en"
-	Language  string
-	DarkTheme string
+	Language string
+	// Translation is the language the frame's pages are translated into, as a page names it (document.Page), which a
+	// host keys a frame by; document.Untranslated in the site's own
+	Translation string
+	DarkTheme   string
 	// Locale is the locale Open Graph marks a page in, language_TERRITORY, as the language's words write it
 	Locale       string
 	CopyWords    CopyWords
@@ -44,6 +46,8 @@ type Frame struct {
 	ReadingGives string
 	WriteTo      string
 	Projects     []document.Place
+	// Pages are every page :e opens, in every language, each once, so a face's :e opens the same pages whichever
+	// language its page is in
 	Pages        []OpenedPage
 	Sessions     []Session
 	PostLabels   PostLabels
@@ -106,15 +110,13 @@ type Window struct {
 }
 
 // ListWords are the site's words a face lays round the blog's list in their language: its window, the way to it beside
-// a post's other posts, the word before how it groups its posts, and the name of each grouping, by year and by series;
-// and the list by year in their language, where the blog's session starts and the way to every post leads.
+// a post's other posts, the word before how it groups its posts, and the name of each grouping, by year and by series.
 type ListWords struct {
 	Window   string
 	AllPosts string
 	By       string
 	Years    string
 	Series   string
-	List     document.Page
 }
 
 // PostLabels are the site's words a face labels a post's facts with: the version a reader reads, its series, the
@@ -203,25 +205,24 @@ type Way struct {
 	Gives   string
 }
 
-// frameOf is the frame of a site's pages in a blog's language, with the blog's pages it serves its audience.
-func frameOf(snapshot *content.Snapshot, read blog) Frame {
+// frameOf is the frame of a site's pages in a blog's language, with the pages :e opens in every language.
+func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 	words := read.words
 	copyWords := CopyWords{words: words}
-	projects := projectPlaces(snapshot.Profile.Projects)
-	listWords := read.listWords()
 	return Frame{
 		Language:     words.Language(),
+		Translation:  words.Translation(),
 		DarkTheme:    words.Text(content.WordDarkTheme),
 		Locale:       words.Text(content.WordLocale),
 		CopyWords:    copyWords,
 		SSH:          copyWords.Way(snapshot.Profile.Site.SSH, words.Text(content.WordSSHGives)),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
-		Projects:     projects,
-		Pages:        slices.Concat(projectPages(projects), blogPages(read, listWords)),
+		Projects:     projectPlaces(snapshot.Profile.Projects),
+		Pages:        edited,
 		Sessions: []Session{
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
-			{Name: words.Text(content.WordBlog), Start: listWords.List},
+			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog).InLanguage(words.Translation())},
 		},
 		PostLabels: PostLabels{
 			Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Language: words.Text(content.WordLanguage),
@@ -233,7 +234,7 @@ func frameOf(snapshot *content.Snapshot, read blog) Frame {
 		SeriesWords: SeriesWords{words: words},
 		PaneWords:   paneWords(words),
 		Contents:    words.Text(content.WordContents),
-		ListWords:   listWords,
+		ListWords:   read.listWords(),
 		Days:        DayWords{words: words},
 		Manual: ManualWords{
 			Section: words.Text(content.WordManualSection), Name: words.Text(content.WordManualName),
@@ -242,7 +243,7 @@ func frameOf(snapshot *content.Snapshot, read blog) Frame {
 	}
 }
 
-// listWords are the site's words of the blog's list in the blog's language, and its list by year there.
+// listWords are the site's words of the blog's list in the blog's language.
 func (read blog) listWords() ListWords {
 	words := read.words
 	return ListWords{
@@ -251,14 +252,14 @@ func (read blog) listWords() ListWords {
 		By:       words.Text(content.WordBy),
 		Years:    words.Text(content.WordYears),
 		Series:   words.Text(content.WordSeriesGrouping),
-		List:     document.PageOf(document.PageBlog).InLanguage(words.Translation()),
 	}
 }
 
-// Groupings are the ways the blog's list groups its posts in the words' language: by year, then by series.
-func (listWords ListWords) Groupings() []Grouping {
-	bySeries := document.PageOf(document.PageBlogSeries).InLanguage(listWords.List.Translation)
-	return []Grouping{{Words: listWords.Years, List: listWords.List}, {Words: listWords.Series, List: bySeries}}
+// Groupings are the ways the blog's list groups its posts in the words' language, by the language a page is translated
+// into: by year, then by series.
+func (listWords ListWords) Groupings(translation string) []Grouping {
+	byYear, bySeries := document.PageOf(document.PageBlog).InLanguage(translation), document.PageOf(document.PageBlogSeries).InLanguage(translation)
+	return []Grouping{{Words: listWords.Years, List: byYear}, {Words: listWords.Series, List: bySeries}}
 }
 
 // BlogWindows are the windows of the blog's session showing a list, and a post read beside it, PageNone where none
@@ -350,13 +351,23 @@ func projectPages(projects []document.Place) []OpenedPage {
 	return pages
 }
 
+// editedPages are the pages :e opens in every language, each once: each project's page, then each blog's pages, the
+// site's own language's first.
+func editedPages(snapshot *content.Snapshot, blogs []blog) []OpenedPage {
+	pages := projectPages(projectPlaces(snapshot.Profile.Projects))
+	for _, read := range blogs {
+		pages = append(pages, blogPages(read)...)
+	}
+	return pages
+}
+
 // blogPages are the blog's pages :e opens by the names a terminal reaches them by (D26): its list in each grouping and
 // each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, every
 // post served by its number, each older version of a post served, by its address, and the list by each of its
 // filters, which :e opens though Tab offers none.
-func blogPages(read blog, listWords ListWords) []OpenedPage {
+func blogPages(read blog) []OpenedPage {
 	pages := []OpenedPage{}
-	for _, grouping := range listWords.Groupings() {
+	for _, grouping := range read.listWords().Groupings(read.words.Translation()) {
 		pages = append(pages, openedPage(grouping.List, routes.Path(grouping.List, routes.FormatChosen), document.PlaceList, true))
 	}
 	for _, post := range read.newest {

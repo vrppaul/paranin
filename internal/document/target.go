@@ -25,9 +25,13 @@ type Page struct {
 	// Revision is the older version of a post shown, by the day it came out as its revision's name writes it,
 	// YYYY-MM-DD; none for the current version, and on any other page
 	Revision string
-	// Translation is the language the page is translated into, by its tag, as ru; none in English, the site's own
+	// Translation is the language the page is translated into, by its tag, as ru; Untranslated in English, the site's
+	// own
 	Translation string
 }
+
+// Untranslated is the translation of a page in the site's own language: none.
+const Untranslated = ""
 
 // PageKind is what a page of the site is.
 type PageKind int
@@ -61,22 +65,22 @@ const (
 // PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
 // list by year or by series; PageNone's, no page.
 func PageOf(kind PageKind) Page {
-	return Page{Kind: kind, Slug: "", Tab: "", Revision: "", Translation: ""}
+	return Page{Kind: kind, Slug: "", Tab: "", Revision: "", Translation: Untranslated}
 }
 
 // PostPage is a post's page, its current version's, in the site's own language, by its slug.
 func PostPage(slug string) Page {
-	return Page{Kind: PagePost, Slug: slug, Tab: "", Revision: "", Translation: ""}
+	return Page{Kind: PagePost, Slug: slug, Tab: "", Revision: "", Translation: Untranslated}
 }
 
 // TagFilter is the blog's list filtered by a tag (docs/FOUNDATION.md §5.4, Series, tags and lists).
 func TagFilter(tag string) Page {
-	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: "", Translation: ""}
+	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: "", Translation: Untranslated}
 }
 
 // SeriesFilter is the blog's list filtered by a series, by its name.
 func SeriesFilter(name string) Page {
-	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: "", Translation: ""}
+	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: "", Translation: Untranslated}
 }
 
 // OlderVersion is the older version of the post a page is, in its language, by its revision's name (docs/FOUNDATION.md

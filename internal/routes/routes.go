@@ -110,7 +110,7 @@ type preview struct {
 
 // inLanguage is a page's path in the site's own language as its translation has it, in the language's folder.
 func inLanguage(translation, path string) string {
-	if translation == "" || path == "" {
+	if translation == document.Untranslated || path == "" {
 		return path
 	}
 	return pathStart + translation + path
@@ -122,7 +122,7 @@ func (site Site) LanguageFolderOf(path string) (string, string) {
 	inside, _ := strings.CutPrefix(path, pathStart)
 	language, rest, parted := strings.Cut(inside, folderEnd)
 	if !parted || !slices.Contains(site.translations, language) {
-		return "", path
+		return document.Untranslated, path
 	}
 	return language, folderEnd + rest
 }
@@ -422,17 +422,26 @@ func TerminalName(path string) string {
 	return strings.TrimPrefix(path, pathStart)
 }
 
-// BlogFolder is the blog's folder, where the site answers for every post by its slug and by its number, sending a
-// number on to its slug.
-func BlogFolder() string {
-	return blogFolder
+// BlogFolders are the blog's folder in the site's own language, then in each it is translated into, where the site
+// answers for every post by its slug and by its number, sending a number on to its slug.
+func (site Site) BlogFolders() []string {
+	folders := []string{blogFolder}
+	for _, translation := range site.translations {
+		folders = append(folders, inLanguage(translation, blogFolder))
+	}
+	return folders
 }
 
-// IsBlogName is whether a name a terminal writes is the blog's: its list's, with a query or none, as blog?tag=go is,
-// or one in its folder, as blog/99 is, whether or not a page goes by it.
-func IsBlogName(name string) bool {
-	path, _, _ := strings.Cut(pathStart+name, queryStart)
-	return path == blogList || strings.HasPrefix(path, blogFolder)
+// BlogNamed is the language whose blog a name a terminal writes is, by its tag, none for the site's own, and whether it
+// is a blog's: its list's, with a query or none, as blog?tag=go is, or one in its folder, as blog/99 is, whether or not
+// a page goes by it, in the site's own language or in the folder of one the site is translated into, as ru/blog is.
+func (site Site) BlogNamed(name string) (string, bool) {
+	translation, rest := site.LanguageFolderOf(pathStart + name)
+	path, _, _ := strings.Cut(rest, queryStart)
+	if path != blogList && !strings.HasPrefix(path, blogFolder) {
+		return document.Untranslated, false
+	}
+	return translation, true
 }
 
 // postPaths are where a post is served: in the blog's folder by its slug, its files under the same name. A post has

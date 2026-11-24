@@ -881,20 +881,23 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 }
 
 // sessionDrawing is what the SSH server hands a session of a snapshot on the tests' day, its drafts too where drafts
-// says, as their author reads them: its pages, the TUI's extras, the blog's lists, filtered or not, and its posts, with
-// the site's words and its site.
+// says, as their author reads them: its pages, the TUI's extras, the blog in each language, its lists, filtered or not,
+// and its posts, with the site's words in each and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
-	own := site.Own
-	documents := slices.Concat(site.Documents(), compose.Extras(snapshot), own.Lists, own.Filtered, own.Posts, own.Versions)
-	return Drawing{Documents: documents, Frame: own.Frame, Site: fixtures.Site(snapshot)}
+	documents, frames := slices.Concat(site.Documents(), compose.Extras(snapshot)), []compose.Frame{}
+	for _, blog := range site.Blogs() {
+		documents = append(documents, blog.Served()...)
+		frames = append(frames, blog.Frame)
+	}
+	return Drawing{Documents: documents, Frames: frames, Site: fixtures.Site(snapshot)}
 }
 
 // handModel is a session on documents a test builds by hand, the résumé among them, with the fixture's words and site,
 // opened on the résumé.
 func handModel(test *testing.T, width, height int, documents ...document.Document) Model {
 	snapshot := fixtures.LoadedContent(test)
-	return New(Drawing{Documents: documents, Frame: sessionDrawing(snapshot, false).Frame, Site: fixtures.Site(snapshot)}, "", width, height, fixtures.Day())
+	return New(Drawing{Documents: documents, Frames: sessionDrawing(snapshot, false).Frames, Site: fixtures.Site(snapshot)}, "", width, height, fixtures.Day())
 }
 
 // handHealth is a session on a résumé of nothing and a health report a test builds by hand, of one section under a

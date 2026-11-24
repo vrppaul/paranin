@@ -19,7 +19,8 @@ import (
 )
 
 // A reload, asked by SIGHUP or by a change in the folders, takes good content and refuses content with faults,
-// keeping what the site served; a stop then ends the site cleanly.
+// keeping what the site served, and tells IndexNow's notifier of a reload that took alone; a stop then ends the site
+// cleanly.
 func TestTheSiteAnswersItsSignals(test *testing.T) {
 	cases := []struct {
 		name        string
@@ -27,10 +28,20 @@ func TestTheSiteAnswersItsSignals(test *testing.T) {
 		ask         func(tested siteUnderTest)
 		wantLog     string
 		wantName    string
+		wantTold    bool
 	}{
-		{name: "a reload of good content", replacement: "name: Mira Other", ask: askBySignal, wantLog: "the release is loaded again", wantName: "Mira Other"},
-		{name: "a reload of faulty content", replacement: `name: ""`, ask: askBySignal, wantLog: "the new release is refused", wantName: "Mira Example"},
-		{name: "a change in the folders", replacement: "name: Mira Other", ask: askByChange, wantLog: "the release is loaded again", wantName: "Mira Other"},
+		{
+			name: "a reload of good content", replacement: "name: Mira Other", ask: askBySignal, wantLog: "the release is loaded again",
+			wantName: "Mira Other", wantTold: true,
+		},
+		{
+			name: "a reload of faulty content", replacement: `name: ""`, ask: askBySignal, wantLog: "the new release is refused",
+			wantName: "Mira Example", wantTold: false,
+		},
+		{
+			name: "a change in the folders", replacement: "name: Mira Other", ask: askByChange, wantLog: "the release is loaded again",
+			wantName: "Mira Other", wantTold: true,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -46,10 +57,10 @@ func TestTheSiteAnswersItsSignals(test *testing.T) {
 				testCase.ask(tested)
 				stop()
 				code := <-exits
-				if name := tested.running.store.Current().Content.Profile.Person.Name; code != succeeded || name != testCase.wantName ||
-					!strings.Contains(tested.log.String(), testCase.wantLog) {
-					test.Errorf("exit %d with the name %q, logging %q; want exit %d with %q, logging %q", code, name,
-						tested.log.String(), succeeded, testCase.wantName, testCase.wantLog)
+				name, told := tested.running.store.Current().Content.Profile.Person.Name, len(tested.running.reloaded) > 0
+				if code != succeeded || name != testCase.wantName || !strings.Contains(tested.log.String(), testCase.wantLog) || told != testCase.wantTold {
+					test.Errorf("exit %d with the name %q, logging %q, IndexNow's notifier told %t; want exit %d with %q, logging %q, told %t",
+						code, name, tested.log.String(), told, succeeded, testCase.wantName, testCase.wantLog, testCase.wantTold)
 				}
 			})
 		})
@@ -210,6 +221,7 @@ func testSite(test *testing.T, folder string) siteUnderTest {
 		store:       store,
 		servers:     []server{newServer(http.NotFoundHandler(), logger)},
 		reloads:     make(chan os.Signal),
+		reloaded:    make(chan struct{}, 1),
 		changes:     changes,
 		failures:    make(chan error, 1),
 		stopSignals: keepSignals,

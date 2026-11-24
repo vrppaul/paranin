@@ -17,14 +17,16 @@
 // compose names the anchors.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
-// made there when missing). serve loads both folders again, as one release, on SIGHUP and once a change in either holds
+// made there when missing). Where PARANIN_INDEXNOW_KEY sets a key, of IndexNow's form, and the drafts are not served,
+// serve serves the key's file and tells IndexNow each address to read again as a reload takes or a post dated later
+// comes out. serve loads both folders again, as one release, on SIGHUP and once a change in either holds
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
 // them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.<language>.md beside
 // it, the day its current version came out, dates the post as updated on the day it runs, and prints the file's path:
 // its author then rewrites the post, which loads as its new version. The program exits 0 when it did what it was
-// asked, 1 when the content or the build has faults, the server failed, or no revision could be taken, and 2 when the
-// command itself is written wrong.
+// asked, 1 when the content or the build has faults, the IndexNow key is of another form, the server failed, or no
+// revision could be taken, and 2 when the command itself is written wrong.
 package main
 
 import (
@@ -48,6 +50,7 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/hosting/indexnow"
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
@@ -123,6 +126,13 @@ const (
 	network            = "tcp"
 )
 
+// The IndexNow key the site is known by, none where the environment sets none, and where IndexNow is told what
+// changed: the endpoint every search engine that reads it shares (indexnow.org)
+const (
+	indexNowKeyVariable = "PARANIN_INDEXNOW_KEY"
+	indexNowEndpoint    = "https://api.indexnow.org/indexnow"
+)
+
 // How faults are printed: the folder, or the folders of a release, each quoted, then each fault on a line of its own;
 // and how warnings are, after the content folder, quoted
 const (
@@ -141,6 +151,8 @@ const (
 	errorKey    = "error"
 	faultsKey   = "faults"
 	warningsKey = "warnings"
+	// whether IndexNow is told what changed
+	indexNowToldKey = "indexnow"
 )
 
 // How long the server waits on a slow reader, and on the requests in hand when it stops
@@ -439,6 +451,11 @@ func serve(asked servingAsked) int {
 		return refused(err, folders.Content, folders.Build)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	indexNowKey, err := indexNowKeyOf(asked.drafts)
+	if err != nil {
+		logger.Error("the IndexNow key is refused", errorKey, err)
+		return failed
+	}
 	settings := ssh.Settings{
 		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), OpeningTimeout: openingTimeout,
 		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout, Drafts: asked.drafts,
@@ -456,13 +473,17 @@ func serve(asked servingAsked) int {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	webServer := newServer(web.New(store, prepared, asked.drafts), logger)
+	webServer := newServer(web.New(store, prepared, asked.drafts, indexNowKey), logger)
 	servers := []server{webServer, sshServer}
+	// the notifier reads the store's current release as it wakes, so a wake still waiting stands for every reload after
+	// it, and one place is all a reload needs
+	reloaded := make(chan struct{}, 1)
 	running := serving{
 		logger:      logger,
 		store:       store,
 		servers:     servers,
 		reloads:     make(chan os.Signal, 1),
+		reloaded:    reloaded,
 		changes:     changes,
 		failures:    make(chan error, len(servers)),
 		stopSignals: stop,
@@ -470,8 +491,26 @@ func serve(asked servingAsked) int {
 	signal.Notify(running.reloads, syscall.SIGHUP)
 	go func() { running.failures <- webServer.Serve(webListener) }()
 	go func() { running.failures <- sshServer.Serve(sshListener) }()
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts)
+	if indexNowKey != "" {
+		notifier := indexnow.New(store, prepared, logger, indexnow.Settings{Key: indexNowKey, Endpoint: indexNowEndpoint, Client: &http.Client{}})
+		go notifier.Run(stopping, reloaded)
+	}
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts,
+		indexNowToldKey, indexNowKey != "")
 	return running.watch(stopping)
+}
+
+// indexNowKeyOf is the IndexNow key the site is known by: the environment's, held to IndexNow's form; none where it
+// sets none, or where the site serves its drafts to their author, which no search engine is told of.
+func indexNowKeyOf(drafts bool) (string, error) {
+	key := os.Getenv(indexNowKeyVariable)
+	if drafts || key == "" {
+		return "", nil
+	}
+	if err := indexnow.CheckKey(key); err != nil {
+		return "", fmt.Errorf("%s: %w", indexNowKeyVariable, err)
+	}
+	return key, nil
 }
 
 // logWarnings logs what the content served holds wrong that refuses nothing, where it holds any.
@@ -530,6 +569,8 @@ type serving struct {
 	store   *release.Store
 	servers []server
 	reloads chan os.Signal
+	// reloaded tells IndexNow's notifier, where one runs, that a reload took
+	reloaded chan<- struct{}
 	// changes says the folders changed and held still, as the release's watch saw them
 	changes  <-chan struct{}
 	failures chan error
@@ -565,6 +606,7 @@ func (running serving) reload() {
 		return
 	}
 	running.logger.Info("the release is loaded again")
+	release.SendUnlessWaiting(running.reloaded)
 	running.logWarnings()
 }
 

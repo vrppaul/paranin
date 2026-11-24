@@ -441,6 +441,19 @@ linters:
           deny:
             - pkg: github.com/vrppaul/paranin/internal/hosting/
               desc: *host-alone
+        # IndexNow's notifier is the host that talks outward: it tells search engines the addresses of what compose
+        # makes, and serves and draws nothing
+        hosting-indexnow-alone:
+          list-mode: lax
+          files:
+            - "**/internal/hosting/indexnow/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/hosting/indexnow
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/hosting/
+              desc: *host-alone
+            - pkg: github.com/vrppaul/paranin/internal/face
+              desc: IndexNow is told addresses, which routes writes; it draws no page
         knows-no-face:
           files:
             - "**/internal/content/**"

@@ -30,11 +30,22 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 	// content that loads, but whose draft links to a page the site does not serve
 	drafting := fixtures.Copy(test, fixtures.ContentFolder(test))
 	fixtures.ReplaceIn(test, drafting, "posts/notes-on-tools/post.en.md", "A draft,", "A [draft](/blog/no-such-post),")
+	// where a site would listen were it to start, so a site that should not start and does waits on no real port
+	startedAside := []environmentVariable{
+		{name: webAddressVariable, value: anyPort},
+		{name: sshAddressVariable, value: anyPort},
+		{name: hostKeyVariable, value: filepath.Join(test.TempDir(), "host_key")},
+	}
 	cases := []struct {
-		name      string
-		arguments []string
-		want      int
+		name        string
+		arguments   []string
+		environment []environmentVariable
+		want        int
 	}{
+		{
+			name: "a site with an IndexNow key of another form", arguments: []string{"paranin", "serve", fixtures.ContentFolder(test), fixtures.BuildFolder(test)},
+			environment: append([]environmentVariable{{name: indexNowKeyVariable, value: "key_of_another_form"}}, startedAside...), want: failed,
+		},
 		// the fixture's translation was made from an older version of its original, which the check warns of alone
 		{name: "content that loads, a translation older than its original", arguments: []string{"paranin", "check", fixtures.ContentFolder(test)}, want: succeeded},
 		{name: "content with faults", arguments: []string{"paranin", "check", faulty}, want: failed},
@@ -58,8 +69,47 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
+			for _, variable := range testCase.environment {
+				test.Setenv(variable.name, variable.value)
+			}
 			if got := run(testCase.arguments); got != testCase.want {
-				test.Errorf("run(%q) = %d, want %d", testCase.arguments, got, testCase.want)
+				test.Errorf("run(%q) with %+v = %d, want %d", testCase.arguments, testCase.environment, got, testCase.want)
+			}
+		})
+	}
+}
+
+// environmentVariable is a variable of the environment a test sets for the command it runs.
+type environmentVariable struct {
+	name  string
+	value string
+}
+
+// An address the system picks a free port at
+const anyPort = "localhost:0"
+
+// A site takes the IndexNow key the environment sets, of IndexNow's form, and none where it sets none or the site
+// serves its drafts, a key of another form among them.
+func TestServeTakesTheIndexNowKeyOfItsForm(test *testing.T) {
+	cases := []struct {
+		name      string
+		key       string
+		drafts    bool
+		want      string
+		isRefused bool
+	}{
+		{name: "none", key: "", drafts: false, want: "", isRefused: false},
+		{name: "a key", key: "a1b2c3d4-key", drafts: false, want: "a1b2c3d4-key", isRefused: false},
+		{name: "a key of another form", key: "key_of_another_form", drafts: false, want: "", isRefused: true},
+		{name: "a key, with the drafts", key: "a1b2c3d4-key", drafts: true, want: "", isRefused: false},
+		{name: "a key of another form, with the drafts", key: "key_of_another_form", drafts: true, want: "", isRefused: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			test.Setenv(indexNowKeyVariable, testCase.key)
+			if got, err := indexNowKeyOf(testCase.drafts); got != testCase.want || (err != nil) != testCase.isRefused {
+				test.Errorf("indexNowKeyOf(%t) with the key %q = %q, %v; want %q, refused: %t", testCase.drafts, testCase.key, got, err,
+					testCase.want, testCase.isRefused)
 			}
 		})
 	}

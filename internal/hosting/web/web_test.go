@@ -661,6 +661,58 @@ func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
 	}
 }
 
+// The key a site tells IndexNow of, and the path its file is served at, from the site's root (indexnow.org); and the
+// path of the file of an empty key
+const (
+	indexNowKey      = "fixture-key-3f9a"
+	indexNowKeyPath  = "/fixture-key-3f9a.txt"
+	emptyKeyFilePath = "/.txt"
+)
+
+// seenKeyFile is the key's file as a test reads it: its status, its type, how long a cache keeps it, and whether its
+// body is the key, all it holds.
+type seenKeyFile struct {
+	status       int
+	contentType  string
+	cacheControl string
+	isKey        bool
+}
+
+// Where a site is served with an IndexNow key, its file at the site's root holds the key as plain text, whatever the
+// request asks, for a cache to ask for again; where it is served with none, there is no such file, nor one of an empty
+// key.
+func TestTheIndexNowKeyIsServedWhereTheSiteHasOne(test *testing.T) {
+	missing := seenKeyFile{status: http.StatusNotFound, contentType: "text/html; charset=utf-8", cacheControl: "no-cache", isKey: false}
+	cases := []struct {
+		name string
+		key  string
+		path string
+		want seenKeyFile
+	}{
+		{
+			name: "a key", key: indexNowKey, path: indexNowKeyPath,
+			want: seenKeyFile{status: http.StatusOK, contentType: "text/plain; charset=utf-8", cacheControl: "no-cache", isKey: true},
+		},
+		{name: "none", key: "", path: indexNowKeyPath, want: missing},
+		{name: "none, at an empty key's path", key: "", path: emptyKeyFilePath, want: missing},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			store := fixtureStore(test, fixtures.ContentFolder(test))
+			server := New(store, release.DeriveFromContent(store, compose.Prepare), false, testCase.key)
+			response := serve(server, http.MethodGet, testCase.path, "text/html", "")
+			header := response.Header()
+			got := seenKeyFile{
+				status: response.Code, contentType: header.Get("Content-Type"), cacheControl: header.Get("Cache-Control"),
+				isKey: response.Body.String() == indexNowKey,
+			}
+			if got != testCase.want {
+				test.Errorf("GET %s with the key %q = %+v, want %+v", testCase.path, testCase.key, got, testCase.want)
+			}
+		})
+	}
+}
+
 // What the store holds is drawn again once it holds new content: a reload reaches the next request, for a page and for
 // a post's picture alike.
 func TestAReloadReachesTheNextRequest(test *testing.T) {
@@ -811,9 +863,9 @@ func pngOfTwoByOne(test *testing.T) []byte {
 }
 
 // serverOf is a server of a store, its drafts read where drafts says, composed from each snapshot prepared as the
-// composition root prepares it.
+// composition root prepares it, with no IndexNow key.
 func serverOf(store *release.Store, drafts bool) *Server {
-	return New(store, release.DeriveFromContent(store, compose.Prepare), drafts)
+	return New(store, release.DeriveFromContent(store, compose.Prepare), drafts, "")
 }
 
 // An unlisted post, out long before any test runs: its file in the content's folder, its text and the path it is

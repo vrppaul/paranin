@@ -1035,6 +1035,7 @@ MVP reads from env with sane defaults (12-factor):
 | `PARANIN_SSH_ADDR` | `localhost:23234` | SSH listen address |
 | `PARANIN_SSH_HOST_KEY` | `.paranin/ssh_host_ed25519_key` | host key path (persisted, gitignored; made when missing) |
 | `PARANIN_HTTP_ADDR` | `localhost:8080` | HTTP listen address |
+| `PARANIN_INDEXNOW_KEY` | unset | the IndexNow key, 8 to 128 of `a–z`, `A–Z`, `0–9` and `-`: served at `/<key>.txt`, and IndexNow told each address that changes; none under `--drafts` |
 | `PARANIN_MESSAGES_PATH` | `data/messages.jsonl` | where contact messages are appended |
 | `PARANIN_TRUST_PROXY` | off | `1` counts the rate limit by `X-Forwarded-For` |
 

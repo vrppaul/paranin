@@ -21,7 +21,9 @@
 // page, in text or in HTML, chosen as a page's format is: drawn for each request, since it quotes the address asked
 // for, in the chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess
 // its type and to load nothing but the site's own files, so markup slipped into a page runs no script but the site's
-// own; a post's picture, to load and run nothing at all.
+// own; a post's picture, to load and run nothing at all. Where the site has an IndexNow key, it serves the key's file
+// at the site's root, as plain text whatever the request asks: a search engine reads it to trust what IndexNow is told
+// of the site.
 package web
 
 import (
@@ -175,14 +177,15 @@ const (
 	statusSeparator = " "
 )
 
-// Server serves the pages and the built files of the store's current snapshot, and the pictures of the site.
+// Server serves the pages and the built files of the store's current snapshot, and the site's own files.
 type Server struct {
 	// drawn is every page of the store's current snapshot, drawn once for each snapshot and again as a post dated
 	// later comes out
 	drawn *release.Derived[*drawing]
-	// pictures are the pictures of the site, drawn once, since no snapshot changes them
-	pictures map[string]answer
-	handler  http.Handler
+	// siteFiles are the files no snapshot changes, by the path each is served at: the pictures of the site, drawn
+	// once, and the file of the IndexNow key, where the site has one
+	siteFiles map[string]answer
+	handler   http.Handler
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, every file of its build and every picture
@@ -284,13 +287,17 @@ func postPicturedAs(picture content.Picture) answer {
 	return answer{contentType: picture.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: picture.Body}
 }
 
-// picturesOf are the pictures of the site, by the path each is served at.
-func picturesOf(icons []html.Icon) map[string]answer {
-	pictures := make(map[string]answer, len(icons))
+// siteFilesOf are the site's own files, by the path each is served at: its pictures, and the file of the IndexNow key
+// where it has one, holding the key alone, as IndexNow reads it.
+func siteFilesOf(icons []html.Icon, indexNowKey string) map[string]answer {
+	files := make(map[string]answer, len(icons))
 	for _, icon := range icons {
-		pictures[icon.Path] = picturedAs(icon)
+		files[icon.Path] = picturedAs(icon)
 	}
-	return pictures
+	if indexNowKey != "" {
+		files[routes.KeyPath(indexNowKey)] = drawnAs(routes.PlainType, indexNowKey)
+	}
+	return files
 }
 
 // knownAs is a page's answer, by the page's head, naming the address the page is known by, as a Link header writes it
@@ -306,13 +313,13 @@ func (sent answer) knownAs(head document.Head, site routes.Site) answer {
 }
 
 // New is a server of the site the store holds, composed from each snapshot as prepared reads it, serving its drafts too
-// where drafts says, to their author alone.
-func New(store *release.Store, prepared *release.Derived[*compose.Prepared], drafts bool) *Server {
+// where drafts says, to their author alone, and the file of the IndexNow key the site is known by, where it has one.
+func New(store *release.Store, prepared *release.Derived[*compose.Prepared], drafts bool, indexNowKey string) *Server {
 	mux := http.NewServeMux()
 	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (*drawing, time.Time) {
 		return draw(snapshot, prepared.Of(snapshot, moment), compose.Audience{At: moment, Drafts: drafts})
 	})
-	server := &Server{drawn: drawn, pictures: picturesOf(html.Icons()), handler: mux}
+	server := &Server{drawn: drawn, siteFiles: siteFilesOf(html.Icons(), indexNowKey), handler: mux}
 	mux.HandleFunc(pagePattern, server.servePage)
 	return server
 }
@@ -328,8 +335,8 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
 	path := request.URL.Path
-	if picture, isPicture := server.pictures[path]; isPicture {
-		send(writer, http.StatusOK, picture)
+	if file, isSiteFile := server.siteFiles[path]; isSiteFile {
+		send(writer, http.StatusOK, file)
 		return
 	}
 	drawn := server.drawn.Current(time.Now())
@@ -361,10 +368,10 @@ func (server *Server) movedFrom(drawn *drawing, address *url.URL) (move, bool) {
 	return stays, false
 }
 
-// serves is whether a path is served, as a picture of the site or as any answer the drawing holds.
+// serves is whether a path is served, as a file of the site's own or as any answer the drawing holds.
 func (server *Server) serves(drawn *drawing, path string) bool {
-	_, isPicture := server.pictures[path]
-	return isPicture || drawn.served.hold(path)
+	_, isSiteFile := server.siteFiles[path]
+	return isSiteFile || drawn.served.hold(path)
 }
 
 // answerTo is the status and the answer to a request for a path among the answers: its file or page in the one format

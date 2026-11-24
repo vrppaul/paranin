@@ -59,16 +59,17 @@ func watch(ctx context.Context, folders Folders, interval time.Duration, taken s
 		current := look(folders)
 		if current.same(previous) && !current.same(taken) {
 			taken = current
-			sendOnce(changes)
+			SendUnlessWaiting(changes)
 		}
 		previous = current
 	}
 }
 
-// sendOnce sends a change unless one is already waiting to be taken.
-func sendOnce(changes chan<- struct{}) {
+// SendUnlessWaiting wakes whoever reads a channel of one place, never waiting on them: where a wake already waits to
+// be taken, it stands for this one too, so sends that pile up are taken as one.
+func SendUnlessWaiting(wakes chan<- struct{}) {
 	select {
-	case changes <- struct{}{}:
+	case wakes <- struct{}{}:
 	default:
 	}
 }

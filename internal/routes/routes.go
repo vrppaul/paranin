@@ -466,6 +466,20 @@ func (site Site) CrawlerAddress(file CrawlerFile) string {
 	return site.base + path
 }
 
+// What ends the name of the file at the site's root that holds the IndexNow key, after the key (indexnow.org)
+const keyFileEnding = ".txt"
+
+// KeyPath is where the file holding the IndexNow key the site is known by is served, from the site's root.
+func KeyPath(key string) string {
+	return pathStart + key + keyFileEnding
+}
+
+// KeyAddress is where the file holding the IndexNow key the site is known by is served, written whole, as IndexNow is
+// told it.
+func (site Site) KeyAddress(key string) string {
+	return site.base + KeyPath(key)
+}
+
 // Host is the site's own name: the host of its base address.
 func (site Site) Host() string {
 	return site.host

@@ -39,8 +39,9 @@ func hiddenCommands() []hiddenCommand {
 	}
 }
 
-// command is a command the command line runs, as Neovim's does, though Tab goes round none of them: the names it
-// goes by; whether it takes an argument, which it needs then; and what it does with the argument.
+// command is a command the command line runs, as Neovim's does, though Tab goes round none of them but :help, which
+// the menu shows as the place of the window of keys: the names it goes by; whether it takes an argument, which it needs
+// then; and what it does with the argument.
 type command struct {
 	names         []string
 	takesArgument bool
@@ -51,13 +52,15 @@ type command struct {
 type commandAction func(model Model, argument string) (Model, tea.Cmd)
 
 // commands are the commands the command line runs: Neovim's ways to close a window, as q closes it, and to quit, as
-// Ctrl+C does, and its way to open a file, here a project's page by its slug; then the hidden commands of the hidden
-// pages the session holds, each showing its page in place of the one shown, as :e does a project's.
+// Ctrl+C does, its way to open a file, here a project's page by its slug, and its :help, here the window of keys; then
+// the hidden commands of the hidden pages the session holds, each showing its page in place of the one shown, as :e
+// does a project's.
 func commands(buffers map[document.Page][]tab) []command {
 	known := []command{
 		{names: []string{"q", "quit", "q!"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.closed() }},
 		{names: []string{"qa"}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.quit() }},
 		{names: []string{editCommand, "edit"}, takesArgument: true, act: Model.edit},
+		{names: []string{keysPlace}, takesArgument: false, act: func(model Model, _ string) (Model, tea.Cmd) { return model.openKeys() }},
 	}
 	for _, hidden := range hiddenCommands() {
 		if _, held := buffers[hidden.page]; held {
@@ -195,9 +198,10 @@ func (model Model) commandNamed(name string) (command, bool) {
 	return command{names: nil, takesArgument: false, act: nil}, false
 }
 
-// ranCommand goes to the place Tab chose, where the line is what it wrote, or the first place typed, or runs the
-// command typed, as Neovim does: the one named by the first word, with what follows it, or none, and the command line
-// says it knows no such command; the keys go back to normal mode either way, and nothing typed runs nothing.
+// ranCommand goes to the place Tab chose, where the line is what it wrote; or runs the command typed, as Neovim does,
+// the one named by the first word, with what follows it, so a place named like a command is reached only by Tab; or
+// goes to the first place typed; or the command line says it knows no such command. The keys go back to normal mode
+// either way, and nothing typed runs nothing.
 func (model Model) ranCommand() (Model, tea.Cmd) {
 	model.keys.mode = modeNormal
 	typed := strings.TrimSpace(model.keys.typing)
@@ -207,12 +211,12 @@ func (model Model) ranCommand() (Model, tea.Cmd) {
 	if goes, chosen := model.completion.chosenGoing(typed); chosen {
 		return goes(model)
 	}
-	if known, found := model.placeNamed(typed); found {
-		return known.act(model)
-	}
 	name, argument, _ := commandParts(typed)
 	if known, found := model.commandNamed(name); found {
 		return model.ranWith(known, strings.TrimSpace(argument))
+	}
+	if known, found := model.placeNamed(typed); found {
+		return known.act(model)
 	}
 	model.said = commandMessage{text: unknownCommand + typed, failed: true}
 	return model, nil

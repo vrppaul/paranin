@@ -169,23 +169,6 @@ func TestAPostsPlacesEndWithItsOtherVersionsThenLanguages(test *testing.T) {
 	}
 }
 
-// A heading named as a version of its post takes its count, so its name leads to one place.
-func TestAHeadingNamedAsAVersionTakesItsCount(test *testing.T) {
-	snapshot := changedFixture(test, headingNamedAsAVersion)
-	post := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug)
-	want := document.Place{Name: fixtureRevisionDay + "-2", Kind: document.PlaceHeading, Page: document.PostPage(fixturePostSlug), Section: fixtureRevisionDay + "-2"}
-	if places := document.PlacesOf(post); !slices.Contains(places, want) {
-		test.Errorf("the post's places = %+v, want %+v among them", places, want)
-	}
-}
-
-// headingNamedAsAVersion titles a heading of the fixture's post as the day of its older version.
-//
-//wrapper:a test names the change it writes
-func headingNamedAsAVersion(test *testing.T, folder string) {
-	fixtures.ReplaceIn(test, folder, fixturePostFile, "## Afterwards", "## "+fixtureRevisionDay)
-}
-
 // :e opens an older version by the name a terminal reaches it by, though Tab never offers it.
 func TestEditOpensAnOlderVersionByItsAddress(test *testing.T) {
 	want := OpenedPage{

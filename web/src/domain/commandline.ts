@@ -147,7 +147,8 @@ export function lineOf(completions: Completions): string {
 
 /**
  * What Enter does with a line: goes to the place chosen, where Tab or a press chose the one the line writes, among
- * places that share a name; else to the first place the line names, or :e names; stays, does nothing, or refuses.
+ * places that share a name; else runs :e where the line names it, so a place named like :e is reached only by Tab;
+ * else goes to the first place the line names; stays, does nothing, or refuses.
  */
 export function ran(places: Places, line: string, chosen: Completion | undefined): Outcome {
   const typed = line.trim();
@@ -157,13 +158,10 @@ export function ran(places: Places, line: string, chosen: Completion | undefined
   if (chosen?.written === typed) {
     return wentTo(chosen.place);
   }
-  const named = places.named.find((place) => place.name === typed);
-  if (named !== undefined) {
-    return wentTo(named);
-  }
   const { name, argument } = partsOf(typed);
   if (!EDIT_NAMES.includes(name)) {
-    return failed("unknown", typed);
+    const named = places.named.find((place) => place.name === typed);
+    return named === undefined ? failed("unknown", typed) : wentTo(named);
   }
   if (argument === "") {
     return failed("argument", argument);

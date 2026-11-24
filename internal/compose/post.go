@@ -109,36 +109,18 @@ func postHeads(read blog) []document.Head {
 
 // postDocument is a version of a post as every face draws it, where the post stands in the blog: its head, then its
 // body walked from the tree the load parsed, which nothing here writes to, its code as Prepare split it, its pictures
-// the post's, each heading named clear of the page's other places and each link inside the site read into the page or
-// the feed at its path among paths.
+// the post's, each heading named by its words and each link inside the site read into the page or the feed at its path
+// among paths.
 func postDocument(version postVersion, read blog, prepared *Prepared, paths map[string]document.Target) document.Document {
-	snapshot, text := prepared.snapshot, version.text
+	text := version.text
 	head := postHead(version, read)
 	body := bodyReader{
 		body: text.Body, page: head.Page, pictures: version.post.Pictures, links: text.SiteLinks, paths: paths, codes: prepared.codes,
-		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(version.post, read, snapshot)),
+		notes: map[int][]document.Span{}, anchors: anchors{},
 	}
 	// readNote returns no error, so the walk ends with none
 	_ = ast.Walk(text.Body.Tree, body.readNote)
 	return document.Document{Head: head, Blocks: body.containedBlocks(text.Body.Tree)}
-}
-
-// namesBeside are the names a post's page offers its places by but its headings, which theirs keep clear of on every
-// face, so each name on the page leads to one place: its windows', each project's page's, the window of keys', each
-// part's its series names, out or not, so a heading's anchor holds as a part comes out, and each of its versions'.
-func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []string {
-	taken := []string{KeysPlace}
-	list := document.PageOf(document.PageBlog).InLanguage(read.words.Translation())
-	for _, window := range read.listWords().BlogWindows(list, postPage(post)) {
-		taken = append(taken, window.Name)
-	}
-	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
-		taken = append(taken, project.Slug)
-	}
-	for _, version := range read.versionsOf(post, postPage(post)) {
-		taken = append(taken, version.Name)
-	}
-	return append(taken, read.seriesOf[post.Slug].Posts...)
 }
 
 // postHead is the head of a version of a post: its page, the post's own or its revision's, its number, the language of
@@ -171,8 +153,7 @@ func postHead(version postVersion, read blog) document.Head {
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
 // figures stand beside and are sized by; its links inside the site, as the load read them, by their nodes, and the
 // site's pages and feeds by the paths they name; its code as Prepare split it, by its node; the words of each footnote
-// by its number, read first, which every citation of it carries; and the names taken on the post's page, which each
-// heading's is kept clear of.
+// by its number, read first, which every citation of it carries; and the anchors its headings took so far.
 type bodyReader struct {
 	body     content.Markdown
 	page     document.Page
@@ -181,7 +162,7 @@ type bodyReader struct {
 	paths    map[string]document.Target
 	codes    map[ast.Node]document.CodeBlock
 	notes    map[int][]document.Span
-	names    names
+	anchors  anchors
 }
 
 // readNote keeps the words of a footnote the walk meets, by its number; the load holds a footnote to one paragraph.
@@ -216,7 +197,7 @@ func (reader bodyReader) nested(nodes []ast.Node, level int) ([]document.Block, 
 			return blocks, nodes
 		case isHeading:
 			title := reader.spans(heading)
-			name := reader.names.given(cmp.Or(document.SlugOf(document.PlainText(title)), unnamedHeading))
+			name := reader.anchors.given(cmp.Or(document.SlugOf(document.PlainText(title)), unnamedHeading))
 			inside, rest := reader.nested(nodes[1:], heading.Level)
 			blocks = append(blocks, document.Section{Title: title, Name: name, Blocks: inside})
 			nodes = rest

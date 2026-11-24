@@ -671,9 +671,9 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
 - The `:` menu names each place by its kind: on a post `tab`, `heading`, `part`, `version` and `language`; on the list
   `post`, `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
   heading, a series to its group on the list by series, a tag to the list it filters, shown in the list's window, and
-  on that list back to the list; the list's head shows the filter reversed, as the page's does. A heading named as
-  another place of its page, `help` among them, takes its count, `posts-2`, since a heading is an anchor; a name two
-  places share stands once where both lead to one place, as the post read beside the list and the list's own, and for
-  each, by its kind, where they lead apart, as a tag and a series named alike, Tab going round both. On the page and in
-  the TUI alike, Enter goes to the place Tab chose, while the line holds the name Tab wrote for it, and else to the
-  first the menu lists by the name typed.
+  on that list back to the list; the list's head shows the filter reversed, as the page's does. A name two places
+  share stands once where both lead to one place, as the post read beside the list and the list's own, and for each,
+  by its kind, where they lead apart, as a tag and a series named alike, or a heading named as a window, a project, a
+  part, a version or `help`, Tab going round both. On the page and in the TUI alike, Enter goes to the place Tab
+  chose, while the line holds the name Tab wrote for it; else runs the command the line names, as Neovim's `:e` and,
+  in the TUI, `:help`, whatever place shares its name; else goes to the first the menu lists by the name typed.

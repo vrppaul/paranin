@@ -15,6 +15,17 @@ import (
 // The presses of Tab that reach the last place from the résumé's first tab: the fixture's four other tabs, then help
 const lastPlace = 5
 
+// The fixture's post, its file and the name a session opens it by, its last heading, which a case retitles Help, and
+// the title and words that tell the window of keys
+const (
+	fixturePostFile    = "posts/reading-slowly/post.en.md"
+	fixturePostName    = "blog/reading-slowly"
+	fixtureLastHeading = "## Afterwards"
+	helpTitle          = "Help"
+	helpHeading        = "## " + helpTitle
+	keysWindowWords    = "next / prior match"
+)
+
 // A colon opens the command line over the footer, where what the reader types shows after it, the footer still under
 // it.
 func TestTheColonOpensTheCommandLineOverTheFooter(test *testing.T) {
@@ -164,6 +175,22 @@ func TestASecondColonOpensOnNothing(test *testing.T) {
 	}
 }
 
+// A line that names one of the TUI's own commands runs it, though a place of the page shares the name, which Tab still
+// reaches: on a post with a heading titled Help, :help and Enter open the window of keys, and :help, Tab and Enter go
+// to the heading.
+func TestTheTUIsOwnCommandKeepsItsName(test *testing.T) {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	fixtures.ReplaceIn(test, folder, fixturePostFile, fixtureLastHeading, helpHeading)
+	post := New(sessionDrawing(fixtures.LoadedFrom(test, folder), false), fixturePostName, commonWidth, commonHeight, fixtures.Day())
+	if screen := screenOf(test, commanded(test, post, keysPlace)); !strings.Contains(screen, keysWindowWords) {
+		test.Errorf("on a post with a heading titled Help, after :help the screen =\n%s\nwant the window of keys", screen)
+	}
+	screen := screenOf(test, pressed(test, typed(test, pressed(test, post, commandKey), keysPlace), "tab", "enter"))
+	if top := firstRowOf(screen); !strings.Contains(top, helpTitle) {
+		test.Errorf("on a post with a heading titled Help, after :help, Tab and Enter the screen =\n%s\nwant the heading on its first row", screen)
+	}
+}
+
 // Enter on a place's name goes there: a tab chosen, a project's page opened, the window of keys opened.
 func TestEnterOnAPlaceGoesThere(test *testing.T) {
 	cases := []struct {
@@ -173,7 +200,7 @@ func TestEnterOnAPlaceGoesThere(test *testing.T) {
 	}{
 		{name: "a tab", text: "experience", holds: "Northwind"},
 		{name: "a project's page", text: "tidy-tool", holds: projectTagline},
-		{name: "the window of keys", text: "help", holds: "next / prior match"},
+		{name: "the window of keys", text: keysPlace, holds: keysWindowWords},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -209,17 +236,17 @@ func TestThePlacesFollowThePageShown(test *testing.T) {
 // window of keys is named stands beside the window, Tab writing the name for each in turn before the round comes back
 // to what was typed.
 func TestANameTwoPlacesShareStandsForEach(test *testing.T) {
-	section := document.Section{Title: textOf("Help"), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
+	section := document.Section{Title: textOf(helpTitle), Blocks: []document.Block{document.Paragraph{Spans: textOf("the door")}}}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{section}}
-	model := pressed(test, handModel(test, commonWidth, commonHeight, composed), ":", "tab", "tab")
+	model := pressed(test, handModel(test, commonWidth, commonHeight, composed), commandKey, "tab", "tab")
 	screen := screenOf(test, model)
 	for _, want := range []string{`help +tab`, `help +keys`} {
 		if !regexp.MustCompile(want).MatchString(aboveTheCommandLine(screen)) {
 			test.Errorf("on a page with a tab titled Help, after a colon the menu =\n%s\nwant it to hold %q", aboveTheCommandLine(screen), want)
 		}
 	}
-	if line := commandLineOf(screen); line != ":help" {
-		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, ":help")
+	if line := commandLineOf(screen); line != commandKey+keysPlace {
+		test.Errorf("on a page with a tab titled Help, after a colon and Tab twice the command line = %q, want %q", line, commandKey+keysPlace)
 	}
 }
 

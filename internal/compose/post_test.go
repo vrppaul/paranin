@@ -111,16 +111,6 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			},
 		},
 		{
-			name: "a heading of the name of another place of the page, a window, a project's page or the keys', takes its count",
-			body: "## Posts\n\nOne.\n\n## Notes on tools\n\nTwo.\n\n## Tidy tool\n\nThree.\n\n## Help\n\nFour.",
-			want: []document.Block{
-				document.Section{Title: textSpans("Posts"), Name: "posts-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "One."})}},
-				document.Section{Title: textSpans("Notes on tools"), Name: "notes-on-tools-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Two."})}},
-				document.Section{Title: textSpans("Tidy tool"), Name: "tidy-tool-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Three."})}},
-				document.Section{Title: textSpans("Help"), Name: "help-2", Blocks: []document.Block{paragraphOf(document.Text{Text: "Four."})}},
-			},
-		},
-		{
 			name: "a list nested in an item",
 			body: "- one\n- two\n  - inner",
 			want: []document.Block{document.List{Ordered: false, Start: 0, Items: []document.Item{

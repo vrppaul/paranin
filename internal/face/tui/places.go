@@ -7,7 +7,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 )
 
@@ -75,7 +74,7 @@ func sitePlaces(projects []document.Place) []place {
 		})
 	}
 	keys := destination{page: document.PageOf(document.PageNone), tab: 0, section: ""}
-	return append(places, place{name: compose.KeysPlace, kind: keysTitle, tab: noTab, goesTo: keys, offeredIdle: true, act: Model.openKeys})
+	return append(places, place{name: keysPlace, kind: keysTitle, tab: noTab, goesTo: keys, offeredIdle: true, act: Model.openKeys})
 }
 
 // shownPlacesOf are the places of tabs shown, beside the site's, each page's own as pagePlaces holds them.

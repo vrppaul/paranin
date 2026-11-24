@@ -27,16 +27,6 @@ const (
 	projectAsThePreview    = "slug: preview"
 )
 
-// A part slugged as a heading of the fixture's post, dated after the tests' day: its file and its text; and how the
-// fixture's series names it, after the fixture's post
-const (
-	headingPartFile    = "posts/afterwards/post.en.md"
-	headingPartText    = "---\nid: 10\ntitle: Afterwards\ndescription: About it.\nstatus: published\npublished: " + afterTheDay + "\n---\nIts text.\n"
-	fixtureSeriesFile  = "series/reading.yaml"
-	fixtureSeriesParts = "posts: [reading-slowly"
-	headingPartAfter   = ", afterwards"
-)
-
 // The fixture's published post's file, its revision, and its status, which a case turns to a draft's; the field a case
 // dates a post by, and the day the fixture's post was updated, which a case dating it later takes away with its
 // revision; and the file's line the sample post's body opens on, after its front matter
@@ -159,10 +149,6 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "a post out after the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostSooner, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out before the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostLater, want: []faultSpot{}},
 		{name: "a post out with the post linking it, both later", body: "[a](/blog/reading-slowly)", change: bothPostsLaterTogether, want: []faultSpot{}},
-		{
-			name: "a heading named as a part of its series out later", body: "[a](/blog/reading-slowly#afterwards)", change: laterPartNamedAsAHeading,
-			want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}},
-		},
 		{name: "a post's link to a preview", body: "[a](/blog/reading-slowly)", change: fixturePostPreviewed, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a preview's link to its own section", body: "## Its heading\n\n[a](/blog/notes-on-tools#its-heading)", change: samplePostPreviewed, want: []faultSpot{}},
 		{name: "a preview's link to no page", body: "[a](/nowhere)", change: samplePostPreviewed, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
@@ -326,13 +312,6 @@ func linkingPostSooner(test *testing.T, folder string) {
 func linkingPostLater(test *testing.T, folder string) {
 	fixturePostDated(test, folder, soonAfterTheDay)
 	fixtures.ReplaceIn(test, folder, samplePostFile, publishedField+sampleMoment, publishedField+afterTheDay)
-}
-
-// laterPartNamedAsAHeading writes a post dated after the tests' day, slugged as a heading of the fixture's post, and
-// names it a part of the fixture's series, after the fixture's post.
-func laterPartNamedAsAHeading(test *testing.T, folder string) {
-	fixtures.WriteIn(test, folder, headingPartFile, headingPartText)
-	fixtures.ReplaceIn(test, folder, fixtureSeriesFile, fixtureSeriesParts, fixtureSeriesParts+headingPartAfter)
 }
 
 // bothPostsLaterTogether dates both posts at one moment after the tests' day.

@@ -152,6 +152,7 @@ language: an edition holds its series in its language, a catalogue writes a coun
 read by x/text's CLDR rules, and the frame carries how a day and the manual's headings are written in its language.
 Amended 2026-11-24, with a translation's source: `content` holds a translation to the text of its original it was made
 from and keeps what it warns of beside a snapshot, and a translation older than its original says so under its day.
+Amended 2026-11-24, on the owner's word: a heading's anchor is its words, whatever else its page names alike.
 
 ### Context
 
@@ -227,12 +228,10 @@ and web routes.
   and sections, so it may link to a post due before it comes out, and to
   its own sections, and never to a draft or another preview; a preview's
   page takes its address for the clash of addresses, since it takes it
-  once out (amended 2026-11-23). A heading's anchor holds over
-  time, since it keeps clear of every part its series names, out or not.
-  Ways weighed: the check over the site as it stands now alone, which
-  sees neither a post dated later nor its links; every link to a post
-  dated later let pass, which serves a dead link until that post comes
-  out.
+  once out (amended 2026-11-23). Ways weighed: the check over the site
+  as it stands now alone, which sees neither a post dated later nor its
+  links; every link to a post dated later let pass, which serves a dead
+  link until that post comes out.
 - **One document, every face.** `compose` turns content into documents: the
   résumé, a page for each project that has one, each post, the blog's list
   in its two groupings, by year and by series, the index of the
@@ -588,10 +587,9 @@ and web routes.
   the blog's list names, its tags and their series (`document.PlacesOf`), as its tabs
   and notes are, so no list of places is kept in step with the blocks. A
   heading's section carries its anchor, which `compose` names once, by the
-  heading's words, counted where the page's other places, the TUI's `help`
-  among them, every part its series names, out or not, so the anchor holds
-  as a part comes out (2026-11-23), or an earlier heading take them, so no
-  face filters a place out; a series' group carries the series' name, and a post
+  heading's words, counted only where an earlier heading of the post took
+  them, so an anchor holds whatever else the page comes to name alike
+  (amended 2026-11-24); a series' group carries the series' name, and a post
   the list names its series' name. Every face reaches a section by that
   anchor: the page writes it as the section's id, and the TUI keeps the
   line it stands at. The page's own ids, its menu's, its hints', its
@@ -601,11 +599,15 @@ and web routes.
   number among them, each saying whether Tab offers it. A name two places
   share stands once where both lead to one place, as the post read and the
   list's own post do, and for each, by its kind, where they lead apart, as
-  a tag and a series named alike do (amended 2026-11-24); Enter goes to the
-  one Tab chose, or the first. A place is no anchor, so none takes a count.
-  Ways weighed: the places a field of the head, which kept a second list
-  beside the blocks; each face naming its anchors, which named a heading
-  twice and let the page rename one its own ids took.
+  a tag and a series named alike do, or a heading named as a window, a
+  project, a part, a version or the TUI's `help` (amended 2026-11-24);
+  Enter goes to the one Tab chose, or runs the command the line names, or
+  goes to the first. A place is no anchor, so none takes a count. Ways
+  weighed: the places a field of the head, which kept a second list beside
+  the blocks; each face naming its anchors, which named a heading twice and
+  let the page rename one its own ids took; a heading's anchor kept clear
+  of the page's other places, which a new part, project or version named
+  alike renamed, breaking every link to it.
 - **A period is a type**: a start and an end, each a month or a gap, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still

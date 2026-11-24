@@ -211,38 +211,16 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 	}
 }
 
-// A heading named as another part of its post's series takes its count, so its name leads to one place; and takes it
-// whether the part is out or not, so its anchor holds as the part comes out.
-func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
-	cases := []struct {
-		name string
-		part writtenPost
-		want []string
-	}{
-		{
-			name: "a part out", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps", fixtureRevisionDay, russian},
-		},
-		{
-			name: "a part dated later", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: afterTheDay},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", fixtureRevisionDay, russian},
-		},
-		{
-			name: "a draft", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusDraft, published: ""},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", fixtureRevisionDay, russian},
-		},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			snapshot := withPostsAndSeries(test, []writtenPost{testCase.part}, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
-			got := []string{}
-			for _, place := range document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug)) {
-				got = append(got, place.Name)
-			}
-			if !reflect.DeepEqual(got, testCase.want) {
-				test.Errorf("the post's places = %q, want %q", got, testCase.want)
-			}
-		})
+// A heading named as another part of its post's series keeps its words, and the post's places hold both, each by its
+// kind.
+func TestAHeadingNamedAsAPartStandsBesideThePart(test *testing.T) {
+	part := writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier}
+	snapshot := withPostsAndSeries(test, []writtenPost{part}, fixtureSeriesOf("what-a-reader-keeps, reading-slowly", ""))
+	heading := document.Place{Name: part.slug, Kind: document.PlaceHeading, Page: document.PostPage(fixturePostSlug), Section: part.slug}
+	partPlace := document.Place{Name: part.slug, Kind: document.PlacePart, Page: document.PostPage(part.slug), Section: ""}
+	places := document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, fixturePostSlug))
+	if !slices.Contains(places, heading) || !slices.Contains(places, partPlace) {
+		test.Errorf("the post's places = %+v, want %+v and %+v among them", places, heading, partPlace)
 	}
 }
 

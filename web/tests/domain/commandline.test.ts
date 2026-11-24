@@ -3,9 +3,9 @@
 import { expect, test } from "vitest";
 import { completionsOf, lineOf, placesOf, ran, stepped, type Outcome } from "../../src/domain/commandline";
 
-// The places of a page showing the experience tab: its tabs, and three projects' pages, one starting as a tab does
-// and one named as a tab is; then the pages :e opens, those three and the blog's list; and the blog's folder in English
-// and in Russian, where :e opens any post
+// The places of a page showing the experience tab: its tabs, and four projects' pages, one starting as a tab does, one
+// named as a tab is and one named as :edit; then the pages :e opens, three of those and the blog's list; and the blog's
+// folder in English and in Russian, where :e opens any post
 const PLACES = placesOf(
   [
     { name: "about", kind: "tab", address: "/", current: false, edited: false },
@@ -14,6 +14,7 @@ const PLACES = placesOf(
     { name: "sorted-list", kind: "project", address: "/p/sorted-list", current: false, edited: false },
     { name: "tidy-tool", kind: "project", address: "/p/tidy-tool", current: false, edited: false },
     { name: "skills", kind: "project", address: "/p/skills", current: false, edited: false },
+    { name: "edit", kind: "project", address: "/p/edit", current: false, edited: false },
     { name: "sorted-list", kind: "project", address: "/p/sorted-list", current: false, edited: true },
     { name: "tidy-tool", kind: "project", address: "/p/tidy-tool", current: false, edited: true },
     { name: "skills", kind: "project", address: "/p/skills", current: false, edited: true },
@@ -89,6 +90,11 @@ test.each<{ name: string; typed: string; want: Partial<Outcome> }>([
   { name: "does nothing with nothing typed", typed: "  ", want: { kind: "nothing" } },
   { name: "refuses a command it does not know", typed: "x", want: { kind: "failed", fault: "unknown" } },
   { name: "refuses :e with no page", typed: "e", want: { kind: "failed", fault: "argument" } },
+  {
+    name: "runs its own command a place's name shares, refusing :edit with no page",
+    typed: "edit",
+    want: { kind: "failed", fault: "argument" },
+  },
   { name: "goes to the blog's page :e names", typed: "e blog", want: { kind: "go", address: "/blog" } },
   {
     name: "goes to a post :e names in the blog's folder",
@@ -113,15 +119,23 @@ test.each<{ name: string; typed: string; want: Partial<Outcome> }>([
 test.each([
   {
     name: "goes to the first place a name two share names, typed",
+    typed: "skills",
     steps: [],
     want: { kind: "go", address: "/skills" },
   },
   {
     name: "goes to the place Tab chose among those a name two share names",
+    typed: "skills",
     steps: [FORWARD, FORWARD],
     want: { kind: "go", address: "/p/skills" },
   },
-])("Enter $name", ({ steps, want }) => {
-  const completions = steps.reduce((current, step) => stepped(current, step), completionsOf(PLACES, "skills"));
+  {
+    name: "goes to the place Tab chose that shares its own command's name",
+    typed: "edit",
+    steps: [FORWARD],
+    want: { kind: "go", address: "/p/edit" },
+  },
+])("Enter $name", ({ typed, steps, want }) => {
+  const completions = steps.reduce((current, step) => stepped(current, step), completionsOf(PLACES, typed));
   expect(ran(PLACES, lineOf(completions), completions.listed[completions.chosen])).toMatchObject(want);
 });

@@ -14,6 +14,10 @@ const (
 	closeHint = "close"
 )
 
+// The name the window of keys goes by on every page's command line, as Neovim's :help opens its own: the command's,
+// and its place's, which is how the menu shows the command
+const keysPlace = "help"
+
 // The mark between the first tab's number and the last's
 const keyRangeMark = "-"
 

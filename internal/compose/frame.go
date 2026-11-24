@@ -13,10 +13,6 @@ import (
 // What parts a command's program from the words after it
 const programEnd = " "
 
-// KeysPlace is the name the TUI's window of keys goes by on every page's command line, as Neovim's :help opens its
-// own, which no heading's anchor takes
-const KeysPlace = "help"
-
 // OpenedPage is a page :e opens by a name, as a place of the command line, and whether Tab offers it.
 type OpenedPage struct {
 	Place   document.Place

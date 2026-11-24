@@ -1,0 +1,61 @@
+<p>A page read twice is read once, if the first reading was <em>slow</em>.<sup class="citation">1</sup>
+</p>
+<h2>What a reader keeps</h2>
+<table>
+<thead>
+<tr>
+<th>Reading</th>
+<th>Kept</th>
+</tr>
+</thead> <tbody>
+<tr>
+<td>Fast</td>
+<td>Little</td>
+</tr>
+<tr>
+<td>Slow</td>
+<td>
+<strong>Most</strong>
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>the margins</li>
+<li>the notes<ul>
+<li>in pencil<sup class="citation">2</sup>
+</li>
+<li>in ink</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>A book is read with a pencil.</p>
+<p>Twice, with a pen.</p>
+</blockquote>
+<figure>
+<img src="https://example.test/blog/reading-slowly/margin.png" alt="A noted margin" width="16" height="8"> <figcaption>The margin, where a slow reader writes back.</figcaption>
+</figure>
+<h3>In a terminal</h3>
+<ol start="3">
+<li>open the file</li>
+<li>read it with <code>less</code>
+</li>
+</ol>
+<pre><code>// slowly reads a page twice, aloud
+func slowly(page string) int {
+	fmt.Println(&#34;slowly&#34;, page)
+	return len(page) * 2
+}</code></pre>
+<pre><code>less &#34;$HOME/notes&#34;</code></pre>
+<p>See <a href="https://notes.example.test/slow">the reader&#39;s notes</a>, or write to <a href="mailto:mira@example.test">mira@example.test</a>.<sup class="citation">1</sup>
+</p>
+<h2>Afterwards</h2>
+<p>A page kept is a page read again, as <a href="https://example.test/blog/reading-slowly#what-a-reader-keeps">what a reader keeps</a> says, and <a href="https://example.test/p/tidy-tool">the tool</a> that tidies it.</p>
+<hr>
+<p>What stays is what was argued with.</p>
+<hr>
+<ol>
+<li value="1">Mira Example, on her own reading.</li>
+<li value="2">A soft one, which rubs out.</li>
+</ol>

@@ -26,11 +26,12 @@ type Composed struct {
 	Record   Record
 }
 
-// Pages are the pages a snapshot makes for a person to read, each with its record: the résumé, then the page of
-// each project that has one. The site's index lists them.
-func Pages(snapshot *content.Snapshot) []Composed {
+// pagesOf are the pages a snapshot makes for a person to read, each with its record: the résumé, naming the blog's feed
+// as the blog reads it, so a feed reader handed the site's address finds it; then the page of each project that has
+// one. The site's index lists them.
+func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	profile := snapshot.Profile
-	pages := []Composed{composedPage(Resume(snapshot), personRecord(profile))}
+	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks("")), personRecord(profile))}
 	for _, project := range projectsWithPages(profile.Projects) {
 		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Words), workRecord(project, profile.Person)))
 	}
@@ -53,8 +54,8 @@ func tabDocuments(composed document.Document) []document.Document {
 	return documents
 }
 
-// tabHead is the head of a tab shown alone: its page's, naming the tab, under the tab's title, with the language and
-// description of its page's head.
+// tabHead is the head of a tab shown alone: its page's, naming the tab, under the tab's title, with the language,
+// description and feeds of its page's head.
 func tabHead(head document.Head, tab document.Tab) document.Head {
 	return document.Head{
 		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: ""},
@@ -71,6 +72,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Repository:  nil,
 		Post:        nil,
 		Description: head.Description,
+		Feeds:       head.Feeds,
 	}
 }
 
@@ -79,12 +81,13 @@ func projectsWithPages(projects []content.Project) []content.Project {
 	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
 }
 
-// Resume is the résumé as one document: its head, then five sections, each under the site's word for it, as a
-// reader asks of an author: about them, their experience, their projects, their skills, and how to reach them.
-func Resume(snapshot *content.Snapshot) document.Document {
+// Resume is the résumé as one document: its head, naming the feeds a reader handed the site's address finds, then five
+// sections, each under the site's word for it, as a reader asks of an author: about them, their experience, their
+// projects, their skills, and how to reach them.
+func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document {
 	profile, words := snapshot.Profile, snapshot.Words
 	return document.Document{
-		Head: resumeHead(profile, words),
+		Head: resumeHead(profile, words, feeds),
 		Blocks: []document.Block{
 			aboutSection(profile, words),
 			experienceSection(profile.Experience, words),
@@ -113,7 +116,7 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 // listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
 func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	words := snapshot.Words
-	resume := resumeHead(snapshot.Profile, words)
+	resume := resumeHead(snapshot.Profile, words, nil)
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
@@ -139,6 +142,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,
+			Feeds:       nil,
 		},
 		Blocks: blocks,
 	}
@@ -150,8 +154,8 @@ func listing(head document.Head) document.Listing {
 }
 
 // resumeHead is the résumé's head, its headline its description: it greets the reader before the author's name,
-// and names its opening, in the site's words.
-func resumeHead(profile content.Profile, words content.Words) document.Head {
+// names its opening, in the site's words, and the feeds handed it.
+func resumeHead(profile content.Profile, words content.Words, feeds []document.Link) document.Head {
 	person := profile.Person
 	headline := markedSpans(person.Headline)
 	return document.Head{
@@ -169,6 +173,7 @@ func resumeHead(profile content.Profile, words content.Words) document.Head {
 		Repository:  nil,
 		Post:        nil,
 		Description: headline,
+		Feeds:       feeds,
 	}
 }
 
@@ -266,6 +271,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Repository:  projectRepository(project, words),
 		Post:        nil,
 		Description: description,
+		Feeds:       nil,
 	}
 }
 

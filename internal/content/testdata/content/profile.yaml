@@ -3,6 +3,7 @@
 site:
   base_url: https://example.test
   ssh: ssh example.test
+  tag_authority: example.test,2026
 
 person:
   name: Mira Example

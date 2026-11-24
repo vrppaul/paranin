@@ -13,8 +13,8 @@ import (
 )
 
 // page is a page of a document in its language: what it says of itself, its title, that no search engine indexes it
-// where it may not, its description, the address it is known by with Open Graph and its record as linked data, and its
-// markdown, each where it has one; then its main part and the foot line.
+// where it may not, its description, the address it is known by with Open Graph and its record as linked data, its
+// markdown, each where it has one, and each feed that follows it; then its main part and the foot line.
 templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
 	<html lang={ language }>
@@ -32,7 +32,10 @@ templ (writer PageWriter) page(language string, metadata pageMetadata, record co
 				@writer.linkedData(record, metadata.canonical)
 			}
 			if metadata.markdown != "" {
-				<link rel="alternate" type={ markdownType } href={ metadata.markdown }/>
+				<link rel="alternate" type={ routes.MarkdownType } href={ metadata.markdown }/>
+			}
+			for _, feed := range metadata.feeds {
+				<link rel="alternate" type={ routes.FeedType } title={ feed.title } href={ feed.path }/>
 			}
 		</head>
 		<body>
@@ -440,12 +443,6 @@ templ (writer PageWriter) section(section document.Section, depth int) {
 	</section>
 }
 
-templ (writer PageWriter) paragraph(paragraph document.Paragraph) {
-	<p>
-		@writer.spans(paragraph.Spans)
-	</p>
-}
-
 // table is rows of cells (DESIGN.md, Table), under the row that names its columns where it has one, as a post's may,
 // in a part that scrolls sideways where the screen is narrower than the table, so the page never does. A table that
 // names no columns is marked, since a phone folds it into a grid, and each of its parts names its role, which a
@@ -609,12 +606,6 @@ templ (writer PageWriter) titled(title, subtitle []document.Span) {
 	@writer.spans(subtitle)
 }
 
-templ (writer PageWriter) spans(spans []document.Span) {
-	for _, span := range spans {
-		@writer.span(span)
-	}
-}
-
 // text is text as it reads. Text beside the other parts of a line is written through it, never as an expression
 // of its own: templ writes a space before an expression that opens a line of the template after another part.
 templ text(text string) {
@@ -629,18 +620,6 @@ templ code(text string) {
 // (DESIGN.md, Highlight).
 templ gap(text string) {
 	<span class="gap">{ text }</span>
-}
-
-templ (writer PageWriter) highlight(spans []document.Span) {
-	<mark>
-		@writer.spans(spans)
-	</mark>
-}
-
-templ (writer PageWriter) link(address string, spans []document.Span) {
-	<a href={ address }>
-		@writer.spans(spans)
-	</a>
 }
 
 // knownMonth is a month of a year as a time: as a reader reads it, and as a machine does.

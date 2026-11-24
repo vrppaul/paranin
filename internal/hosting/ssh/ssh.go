@@ -160,7 +160,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	composition := compose.SiteOf(prepared, audience)
 	documents := slices.Concat(composition.Documents(), compose.Extras(facts), composition.Lists, composition.Filtered, composition.Posts,
 		composition.Versions)
-	return tui.Drawing{Documents: documents, Frame: composition.Frame, Site: routes.New(facts.Profile.Site.BaseURL)}, composition.Until
+	return tui.Drawing{Documents: documents, Frame: composition.Frame, Site: routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority)}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).

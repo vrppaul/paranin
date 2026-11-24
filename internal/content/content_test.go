@@ -217,6 +217,33 @@ func skillNamed(test *testing.T, snapshot *Snapshot, name string) Skill {
 	return Skill{Name: name, Duration: Duration{}, Sources: nil, Learning: false}
 }
 
+// The site's tag authority (RFC 4151) takes one form: a domain, a comma, and a day its author held it on, a year or a
+// date. A profile with none, or one of another form RFC 4151 has, a month or a mail address, is refused.
+func TestATagAuthorityIsADomainAndAYearOrADate(test *testing.T) {
+	cases := []struct {
+		name      string
+		authority string
+		loads     bool
+	}{
+		{name: "a domain and a year", authority: "example.test,2026", loads: true},
+		{name: "a domain and a date", authority: "example.test,2026-11-24", loads: true},
+		{name: "none", authority: "", loads: false},
+		{name: "a domain alone", authority: "example.test", loads: false},
+		{name: "a domain and a month", authority: "example.test,2026-11", loads: false},
+		{name: "a domain and a date of no day", authority: "example.test,2026-13-01", loads: false},
+		{name: "a mail address", authority: "mira@example.test,2026", loads: false},
+		{name: "a web address", authority: "https://example.test,2026", loads: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			_, err := Load(changedProfile(test, "tag_authority: example.test,2026", "tag_authority: "+testCase.authority))
+			if loads := err == nil; loads != testCase.loads {
+				test.Errorf("a profile whose tag authority is %q loads: %t (%v), want %t", testCase.authority, loads, err, testCase.loads)
+			}
+		})
+	}
+}
+
 // The site's base address is read once, as the content writes it, and keeps its host, which names the site.
 func TestTheBaseAddressKeepsItsHost(test *testing.T) {
 	cases := []struct {

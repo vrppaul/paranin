@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"maps"
 	"slices"
 	"time"
 
@@ -31,13 +32,16 @@ type Site struct {
 	// Previews are the posts the site serves at their preview links alone, in the snapshot's order, each with its
 	// pictures: no list, page or session names them
 	Previews []Preview
+	// Feeds are the blog's feeds, its own and then each series', each holding its newest posts the lists name; none
+	// where the lists name none
+	Feeds []Feed
 	// Frame is what a face lays round the pages, the pages :e opens among it
 	Frame Frame
 	// Until is when the site changes as the next post that comes later comes out, which a host keeps what it drew
 	// until; the zero time where none comes later, so the site holds as long as its snapshot
 	Until time.Time
-	// paths are the pages served by the path a link inside the site reaches each by
-	paths map[string]document.Page
+	// paths are the pages served, and the feeds, by the path a link inside the site reaches each by
+	paths map[string]document.Target
 	// served are the documents of every page the site serves, each tab of a page alone and each older version of a
 	// post too
 	served []document.Document
@@ -46,18 +50,21 @@ type Site struct {
 }
 
 // SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages first, then its posts,
-// their older versions and its previews, whose links lead among them by their paths.
+// their older versions and its previews, whose links lead among them and the feeds by their paths, and the feeds of
+// its posts.
 func SiteOf(prepared *Prepared, audience Audience) Site {
 	snapshot := prepared.snapshot
 	read := blogOf(snapshot, audience)
 	site := Site{
-		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Filtered: filteredLists(read, snapshot.Words),
-		Posts: nil, Versions: nil, Pictures: picturesOf(read), Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts),
-		paths: nil, served: nil, postsServed: read.served,
+		Index: indexOf(snapshot, read), Pages: pagesOf(snapshot, read), Lists: blogLists(read, snapshot.Words),
+		Filtered: filteredLists(read, snapshot.Words), Posts: nil, Versions: nil, Pictures: picturesOf(read), Previews: nil, Feeds: nil,
+		Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil, postsServed: read.served,
 	}
 	pages := site.pagesButPosts()
 	site.paths = pagesAt(append(headsOf(pages), postHeads(read, snapshot.Words)...))
+	maps.Copy(site.paths, feedsAt(read.feeds))
 	site.Posts = composedPosts(prepared, read, site.paths)
+	site.Feeds = read.withPosts(site.Posts)
 	site.Versions = olderDocuments(prepared, read, site.paths)
 	site.Previews = previewsOf(prepared, read, site.paths)
 	site.served = slices.Concat(pages, site.Posts, site.Versions)
@@ -85,8 +92,8 @@ func (site Site) pagesButPosts() []document.Document {
 
 // pagesAt are the pages of heads by the path a link inside the site reaches each by, where the reader chooses its
 // format; a page served in none, as the index, has none.
-func pagesAt(heads []document.Head) map[string]document.Page {
-	pages := make(map[string]document.Page, len(heads))
+func pagesAt(heads []document.Head) map[string]document.Target {
+	pages := make(map[string]document.Target, len(heads))
 	for _, head := range heads {
 		if path := routes.Path(head.Page, routes.FormatChosen); path != "" {
 			pages[path] = head.Page

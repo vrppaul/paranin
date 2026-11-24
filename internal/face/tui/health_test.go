@@ -54,7 +54,7 @@ func TestCheckhealthShowsTheHealthReport(test *testing.T) {
 // as Neovim says it of a command it does not know, the résumé still shown.
 func TestAHiddenCommandWithNoPageIsNoCommand(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	model := handModel(test, commonWidth, commonHeight, compose.Resume(snapshot))
+	model := handModel(test, commonWidth, commonHeight, compose.Resume(snapshot, nil))
 	cases := []struct {
 		name    string
 		command string

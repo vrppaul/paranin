@@ -91,12 +91,12 @@ type faultSpot struct {
 
 // A post's link inside the site leads to a page the site serves by the path it is served at, and to a section of that
 // page where it names one: a path no page takes, a post's number, which only sends the reader on, a page's markdown, a
-// draft's page, a preview's, a post out after the post linking it, or an anchor no section of its page takes, is a
-// fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's lists, a heading and a
-// series' group lead somewhere, and to a post out before the post linking it, or with it. A draft's links are held to
-// the site as its author reads it once every post dated later is out, where a draft's page leads somewhere; a
-// preview's, to the site its link's reader reads then, where its own page leads somewhere and no draft's or other
-// preview's does.
+// draft's page, a preview's, a post out after the post linking it, or an anchor no section of its page takes, a feed's
+// among them, is a fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's
+// lists, a heading, a series' group and a feed lead somewhere, and to a post out before the post linking it, or with
+// it. A draft's links are held to the site as its author reads it once every post dated later is out, where a draft's
+// page leads somewhere; a preview's, to the site its link's reader reads then, where its own page leads somewhere and
+// no draft's or other preview's does.
 func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -111,6 +111,8 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		},
 		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "an older version and its heading", body: "[a](/blog/reading-slowly/2026-11-10) [b](/blog/reading-slowly/2026-11-10#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "the blog's feed and a series'", body: "[a](/blog.atom) [b](/blog/series/reading.atom)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "a section of a feed", body: "[a](/blog.atom#reading)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a revision's link to no page", body: "Its text.", change: revisionLinkingNowhere, want: []faultSpot{{file: sampleRevisionFile, line: sampleRevisionLine}}},
 		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},

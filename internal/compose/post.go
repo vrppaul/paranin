@@ -31,11 +31,11 @@ const (
 const unnamedHeading = "heading"
 
 // composedPosts are the posts the blog serves its audience, each a document of its current version, in the snapshot's
-// order; each link inside the site read into the page at its path among pages.
-func composedPosts(prepared *Prepared, read blog, pages map[string]document.Page) []document.Document {
+// order; each link inside the site read into the page or the feed at its path among paths.
+func composedPosts(prepared *Prepared, read blog, paths map[string]document.Target) []document.Document {
 	documents := []document.Document{}
 	for _, post := range read.served {
-		documents = append(documents, postDocument(currentOf(post), read, prepared, pages))
+		documents = append(documents, postDocument(currentOf(post), read, prepared, paths))
 	}
 	return documents
 }
@@ -76,20 +76,20 @@ type Preview struct {
 
 // previewsOf are the posts the blog serves its audience at their preview links, in the snapshot's order, each composed
 // as composedPosts composes a post, its links read among the pages served and its own page.
-func previewsOf(prepared *Prepared, read blog, pages map[string]document.Page) []Preview {
+func previewsOf(prepared *Prepared, read blog, paths map[string]document.Target) []Preview {
 	previews := []Preview{}
 	for _, post := range read.previewed {
 		previews = append(previews, Preview{
-			Post: postDocument(currentOf(post), read, prepared, withOwnPage(pages, postPage(post))), Pictures: postPictures(post), written: post,
+			Post: postDocument(currentOf(post), read, prepared, withOwnPage(paths, postPage(post))), Pictures: postPictures(post), written: post,
 		})
 	}
 	return previews
 }
 
-// withOwnPage are the pages served beside the page of a post read at its preview link: its link to a section of its
-// own leads there, though its own address serves nothing yet.
-func withOwnPage(pages map[string]document.Page, page document.Page) map[string]document.Page {
-	own := maps.Clone(pages)
+// withOwnPage are the pages served and the feeds beside the page of a post read at its preview link: its link to a
+// section of its own leads there, though its own address serves nothing yet.
+func withOwnPage(paths map[string]document.Target, page document.Page) map[string]document.Target {
+	own := maps.Clone(paths)
 	own[routes.Path(page, routes.FormatChosen)] = page
 	return own
 }
@@ -109,13 +109,13 @@ func postHeads(read blog, words content.Words) []document.Head {
 
 // postDocument is a version of a post as every face draws it, where the post stands in the blog: its head, then its
 // body walked from the tree the load parsed, which nothing here writes to, its code as Prepare split it, its pictures
-// the post's, each heading named clear of the page's other places and each link inside the site read into the page at
-// its path among pages.
-func postDocument(version postVersion, read blog, prepared *Prepared, pages map[string]document.Page) document.Document {
+// the post's, each heading named clear of the page's other places and each link inside the site read into the page or
+// the feed at its path among paths.
+func postDocument(version postVersion, read blog, prepared *Prepared, paths map[string]document.Target) document.Document {
 	snapshot, text := prepared.snapshot, version.text
 	head := postHead(version, read, snapshot.Words)
 	body := bodyReader{
-		body: text.Body, page: head.Page, pictures: version.post.Pictures, links: text.SiteLinks, pages: pages, codes: prepared.codes,
+		body: text.Body, page: head.Page, pictures: version.post.Pictures, links: text.SiteLinks, paths: paths, codes: prepared.codes,
 		notes: map[int][]document.Span{}, names: namesHeld(namesBeside(version.post, read, snapshot)),
 	}
 	// readNote returns no error, so the walk ends with none
@@ -142,7 +142,7 @@ func namesBeside(post content.Post, read blog, snapshot *content.Snapshot) []str
 
 // postHead is the head of a version of a post: its page, the post's own or its revision's, its number, the language of
 // the site's words, the version's title, its description as its lead and its page's description, the post's tags as
-// the filters of the list they are, the version read, and where the post stands in the blog.
+// the filters of the list they are, the version read, where the post stands in the blog, and the feeds that follow it.
 func postHead(version postVersion, read blog, words content.Words) document.Head {
 	post, description := version.post, textSpans(version.text.Description)
 	return document.Head{
@@ -160,20 +160,21 @@ func postHead(version postVersion, read blog, words content.Words) document.Head
 		Repository:  nil,
 		Post:        read.placeOf(post),
 		Description: description,
+		Feeds:       read.feedLinks(read.seriesShownOn(post)),
 	}
 }
 
 // bodyReader reads a post's body into blocks: the body; the post's page and its pictures, by their names, which its
 // figures stand beside and are sized by; its links inside the site, as the load read them, by their nodes, and the
-// site's pages by the paths they name; its code as Prepare split it, by its node; the words of each footnote by its
-// number, read first, which every citation of it carries; and the names taken on the post's page, which each heading's
-// is kept clear of.
+// site's pages and feeds by the paths they name; its code as Prepare split it, by its node; the words of each footnote
+// by its number, read first, which every citation of it carries; and the names taken on the post's page, which each
+// heading's is kept clear of.
 type bodyReader struct {
 	body     content.Markdown
 	page     document.Page
 	pictures map[string]content.Picture
 	links    map[*ast.Link]content.WrittenLink
-	pages    map[string]document.Page
+	paths    map[string]document.Target
 	codes    map[ast.Node]document.CodeBlock
 	notes    map[int][]document.Span
 	names    names
@@ -360,17 +361,23 @@ func appendJoined(spans []document.Span, text string) []document.Span {
 	return append(spans, document.Text{Text: text})
 }
 
-// linkTarget is where a link leads: inside the site, its page or a section of it; else its address.
+// linkTarget is where a link leads: inside the site, its page, a section of it or a feed; else its address.
 func (reader bodyReader) linkTarget(link *ast.Link) document.Target {
 	written, isInside := reader.links[link]
-	// a path no page is served at reads as no page, which Check refuses
-	switch {
-	case !isInside:
+	if !isInside {
 		return addressTarget(content.ResolvedAddress(link.Destination))
-	case written.Link.Anchor == "":
-		return reader.pages[written.Link.Path]
 	}
-	return document.Anchor{Page: reader.pages[written.Link.Path], Name: written.Link.Anchor}
+	target, isServed := reader.paths[written.Link.Path]
+	switch {
+	case !isServed:
+		// a path nothing is served at reads as no page, which Check refuses
+		return document.PageOf(document.PageNone)
+	case written.Link.Anchor == "":
+		return target
+	}
+	// a feed has no sections, so its section is one of no page, which Check refuses
+	page, _ := target.(document.Page)
+	return document.Anchor{Page: page, Name: written.Link.Anchor}
 }
 
 // addressTarget is where a link's address outside the site leads: a mailbox where it writes to one, an address of the

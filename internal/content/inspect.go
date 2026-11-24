@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 // How a slug is written: small letters and digits, words joined by hyphens
@@ -97,6 +98,18 @@ const kindSeparator = ", "
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
 
+// The site's tag authority (RFC 4151): its field; what parts its domain from the day its author held it on; how a
+// domain is written, words of small letters and digits joined by hyphens, two or more parted by dots; and how its day
+// is written, a year alone, which RFC 4151 reads as its 1 January, or a date
+const (
+	tagAuthorityField   = "site.tag_authority"
+	tagAuthorityComma   = ","
+	domainPattern       = `^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$`
+	tagYearLayout       = "2006"
+	tagAuthorityProblem = "%q is no tag authority: a domain, a comma, and a day its author held it on, as example.org,2026 or " +
+		"example.org,2026-11-24"
+)
+
 // inspection gathers the faults of one file, each at its field, so every one is reported at once.
 type inspection struct {
 	file   string
@@ -185,6 +198,29 @@ func inspectSite(inspection *inspection, site Site) {
 		inspection.add(baseAddressField, slashProblem, site.BaseURL.Written())
 	}
 	inspection.require("site.ssh", site.SSH)
+	inspectTagAuthority(inspection, site.TagAuthority)
+}
+
+// inspectTagAuthority holds the site's tag authority to the one form of RFC 4151's it takes: a domain, a comma, and a
+// day its author held it on, a year or a date.
+func inspectTagAuthority(inspection *inspection, authority string) {
+	domain, day, _ := strings.Cut(authority, tagAuthorityComma)
+	switch {
+	case blank(authority):
+		inspection.add(tagAuthorityField, emptyProblem)
+	case !regexp.MustCompile(domainPattern).MatchString(domain), !readsAsTagDay(day):
+		inspection.add(tagAuthorityField, tagAuthorityProblem, authority)
+	}
+}
+
+// readsAsTagDay is whether a tag authority's day reads as a year or a date.
+func readsAsTagDay(day string) bool {
+	for _, layout := range []string{tagYearLayout, time.DateOnly} {
+		if _, err := time.Parse(layout, day); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func inspectPerson(inspection *inspection, person Person) {

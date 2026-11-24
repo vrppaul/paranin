@@ -16,8 +16,8 @@ type Document struct {
 // Head is what a face shows first: the page the document is, a post's number, the language it is written in, its
 // title, a subtitle and the place beside it, what a project is made of or a post's tags, a lead, the day a post came
 // out and where a project's code lives, which every face shows; where a post stands in the blog; the page's
-// description; and, for a face that has a use for it, a greeting before the title. The ways to reach the author are
-// facts of their own kind, which a face places where it chooses.
+// description and the feeds that follow it; and, for a face that has a use for it, a greeting before the title. The
+// ways to reach the author are facts of their own kind, which a face places where it chooses.
 type Head struct {
 	Page Page
 	// Number is a post's number, which blog/<number> reaches as its slug does (D26); 0 on any other page
@@ -49,6 +49,10 @@ type Head struct {
 	// it is shared. A face writes it as plain text; none where no browser reads the page (the index, the hidden
 	// pages) or the content gives none
 	Description []Span
+	// Feeds are the feeds that follow a page of the blog, each a link to a Feed by its title: a series' first, on a
+	// page that shows the series, then the blog's, which the résumé names too; none on any other page, or where no
+	// feed holds a post
+	Feeds []Link
 }
 
 // Fact is a label and its value: a fact of the résumé, a way to reach its author, a detail of a project.

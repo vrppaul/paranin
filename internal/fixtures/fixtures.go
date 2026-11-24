@@ -60,7 +60,7 @@ func Day() time.Time {
 //
 //wrapper:names the site every face's test writes its pages and sessions for
 func Site(snapshot *content.Snapshot) routes.Site {
-	return routes.New(snapshot.Profile.Site.BaseURL)
+	return routes.New(snapshot.Profile.Site.BaseURL, snapshot.Profile.Site.TagAuthority)
 }
 
 // HeadOf is the head of a page a test builds by hand: the page and its title, nothing else, so a field the head gains
@@ -68,7 +68,7 @@ func Site(snapshot *content.Snapshot) routes.Site {
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
 		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Filters: nil, MadeOf: nil, Lead: nil,
-		Version: nil, Repository: nil, Post: nil, Description: nil,
+		Version: nil, Repository: nil, Post: nil, Description: nil, Feeds: nil,
 	}
 }
 
@@ -85,11 +85,19 @@ func DocumentOf(test *testing.T, documents []document.Document, page document.Pa
 }
 
 // LoadedContent is the fixture content, loaded.
+//
+//wrapper:names the fixture content every package's test reads
 func LoadedContent(test *testing.T) *content.Snapshot {
 	test.Helper()
-	snapshot, err := content.Load(os.DirFS(ContentFolder(test)))
+	return LoadedFrom(test, ContentFolder(test))
+}
+
+// LoadedFrom is the content of a folder, loaded: the fixture's, or a copy of it a test changed.
+func LoadedFrom(test *testing.T, folder string) *content.Snapshot {
+	test.Helper()
+	snapshot, err := content.Load(os.DirFS(folder))
 	if err != nil {
-		test.Fatalf("load the fixture content: %v", err)
+		test.Fatalf("load the content of %s: %v", folder, err)
 	}
 	return snapshot
 }

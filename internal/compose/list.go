@@ -47,13 +47,17 @@ func (read blog) filtersOf() []listFilter {
 		})
 	}
 	for _, series := range read.seriesNewestFirst() {
-		kept := slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return read.seriesOf[post.Slug].Name != series.Name })
 		filters = append(filters, listFilter{
 			page: document.SeriesFilter(series.Name), kind: document.FilterSeries, name: series.Name, phrase: content.PhraseSeriesFilter,
-			title: series.Title, posts: kept,
+			title: series.Title, posts: read.partsOut(series),
 		})
 	}
 	return filters
+}
+
+// partsOut are the parts of a series the lists name, newest first.
+func (read blog) partsOut(series content.Series) []content.Post {
+	return slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return read.seriesOf[post.Slug].Name != series.Name })
 }
 
 // filteredLists are the blog's list by year filtered by each of its filters, a view of the list each, not a page of its
@@ -131,8 +135,8 @@ func blogListings(read blog, words content.Words) []document.Listing {
 }
 
 // listHead is the head of the blog's list as a page shows it, in a grouping or filtered: the blog's name its title, the
-// filter beside it, none where it filters none, its line the lead and the page's description, and the filters it
-// offers, the tags of every post the blog lists among them.
+// filter beside it, none where it filters none, its line the lead and the page's description, the filters it offers,
+// the tags of every post the blog lists among them, and the feeds that follow it.
 func (read blog) listHead(page document.Page, filter []document.Span, words content.Words) document.Head {
 	line := textSpans(words.Text(content.WordBlogLine))
 	return document.Head{
@@ -150,6 +154,7 @@ func (read blog) listHead(page document.Page, filter []document.Span, words cont
 		Repository:  nil,
 		Post:        nil,
 		Description: line,
+		Feeds:       read.feedLinks(seriesShownBy(page)),
 	}
 }
 

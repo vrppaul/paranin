@@ -742,7 +742,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		// byForm are the phrases the page shows by its form, not as text
 		byForm []string
 	}{
-		{name: "the résumé", shown: compose.Resume(snapshot), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
+		{name: "the résumé", shown: compose.Resume(snapshot, nil), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
 		{
 			name: "a project's page", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),

@@ -31,6 +31,15 @@ func Formats() []Format {
 	return []Format{FormatChosen, FormatMarkdown, FormatManual}
 }
 
+// The media types the site writes its pages and feeds in, each named once for every face and host: markdown, plain
+// text, the manual's and the index's, the page a browser shows, and a feed
+const (
+	MarkdownType = "text/markdown"
+	PlainType    = "text/plain"
+	PageType     = "text/html"
+	FeedType     = "application/atom+xml"
+)
+
 // Picture is a picture of the site a browser shows beside its pages.
 type Picture int
 
@@ -85,6 +94,8 @@ const mailScheme = "mailto:"
 type Site struct {
 	base string
 	host string
+	// tagAuthority is what the site's feeds and posts are named under for good, wherever the site moves (RFC 4151)
+	tagAuthority string
 	// previewed is the post read at its preview link, none where the site is read at its own addresses alone
 	previewed *preview
 }
@@ -102,9 +113,23 @@ type BaseAddress interface {
 	Host() string
 }
 
-// New is the site served at a base address, and named by the address's host.
-func New(base BaseAddress) Site {
-	return Site{base: base.Written(), host: base.Host(), previewed: nil}
+// New is the site served at a base address, and named by the address's host; what it serves is named for good under a
+// tag authority, as the profile gives it.
+func New(base BaseAddress, tagAuthority string) Site {
+	return Site{base: base.Written(), host: base.Host(), tagAuthority: tagAuthority, previewed: nil}
+}
+
+// How a path of the site is named for good (RFC 4151, and RFC 4287's atom:id): the scheme, the site's tag authority,
+// then a colon and the path with no opening slash
+const (
+	tagScheme    = "tag:"
+	tagSeparator = ":"
+)
+
+// TagURI is the name a path of the site keeps for good under its tag authority, wherever the site moves: a feed's by
+// its path, a post's by the path its number reaches it at, which never changes (D26).
+func (site Site) TagURI(path string) string {
+	return tagScheme + site.tagAuthority + tagSeparator + strings.TrimPrefix(path, pathStart)
 }
 
 // Previewing is the site as the reader of a post's preview link reads it (docs/FOUNDATION.md §5.4, Status): every
@@ -128,7 +153,7 @@ func (site Site) Address(target document.Target, format Format) string {
 	switch target.(type) {
 	case document.Address, document.Mail:
 		return site.Reference(target, format)
-	case document.Page, document.Anchor, document.File:
+	case document.Page, document.Anchor, document.File, document.Feed:
 		if path := site.Reference(target, format); path != "" {
 			return site.base + path
 		}
@@ -136,10 +161,10 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
-// Reference is where a link inside one of the site's own pages leads: a page of the site, or a section of one, by its
-// path from the root, which a browser reads against the address the page came from, so a page served from this
-// machine or a staging host leads there and not to the live site; an address outside the site as it is; a mailbox
-// under the scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
+// Reference is where a link inside one of the site's own pages leads: a page of the site, a section of one, a file or a
+// feed, by its path from the root, which a browser reads against the address the page came from, so a page served
+// from this machine or a staging host leads there and not to the live site; an address outside the site as it is; a
+// mailbox under the scheme that writes to it. A target with no path leads nowhere, and its reference is empty.
 func (site Site) Reference(target document.Target, format Format) string {
 	switch typed := target.(type) {
 	case document.Address:
@@ -152,8 +177,24 @@ func (site Site) Reference(target document.Target, format Format) string {
 		return site.anchorPath(typed, format)
 	case document.File:
 		return site.filePath(typed)
+	case document.Feed:
+		return FeedPath(typed)
 	}
 	return ""
+}
+
+// The ending of a feed's path, which no format's, picture's or day's is, so a feed never shares a page's or a file's
+// path
+const feedEnding = ".atom"
+
+// FeedPath is where a feed is served, in Atom alone, whatever the format a link names (docs/FOUNDATION.md §5.4,
+// Feeds): the blog's beside its list by year, /blog.atom, and a series' in the list by series' folder by the series'
+// name, /blog/series/stint.atom, where no post stands, since the check refuses a post slugged as that list.
+func FeedPath(feed document.Feed) string {
+	if feed.Series == "" {
+		return blogList + feedEnding
+	}
+	return seriesList + folderEnd + feed.Series + feedEnding
 }
 
 // What parts a section's anchor from its page's path

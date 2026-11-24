@@ -49,7 +49,7 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 // Every phrase of a document as written, all but a fact or a point that is only a gap, reaches one of its pages, its
 // opening's or a tab's, as HTML writes text: the facts a browser shows are the facts the written document holds.
 func TestEveryPhraseReachesThePage(test *testing.T) {
-	for _, composed := range compose.Pages(fixtures.LoadedContent(test)) {
+	for _, composed := range siteOnTheDay(fixtures.LoadedContent(test)).Pages {
 		pages := fixtureWriter(test).Page(composed.Document, composed.Record, "")
 		for _, tab := range document.TabsOf(composed.Document).Rest {
 			pages += fixtureWriter(test).Page(composed.Document, composed.Record, tab.Slug)
@@ -1397,7 +1397,7 @@ func fixtureWriter(test *testing.T) PageWriter {
 
 // composedOf is a page of the fixture as compose makes it, its document and its record.
 func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page) compose.Composed {
-	for _, composed := range compose.Pages(snapshot) {
+	for _, composed := range siteOnTheDay(snapshot).Pages {
 		if composed.Document.Head.Page == page {
 			return composed
 		}

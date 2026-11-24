@@ -1,0 +1,39 @@
+package html
+
+import "github.com/vrppaul/paranin/internal/document"
+
+templ (writer spanWriter) paragraph(paragraph document.Paragraph) {
+	<p>
+		@writer.spans(paragraph.Spans)
+	</p>
+}
+
+templ (writer spanWriter) spans(spans []document.Span) {
+	for _, span := range spans {
+		@writer.span(span)
+	}
+}
+
+templ (writer spanWriter) emphasis(spans []document.Span) {
+	<em>
+		@writer.spans(spans)
+	</em>
+}
+
+templ (writer spanWriter) strong(spans []document.Span) {
+	<strong>
+		@writer.spans(spans)
+	</strong>
+}
+
+templ (writer spanWriter) highlight(spans []document.Span) {
+	<mark>
+		@writer.spans(spans)
+	</mark>
+}
+
+templ (writer spanWriter) link(address string, spans []document.Span) {
+	<a href={ address }>
+		@writer.spans(spans)
+	</a>
+}

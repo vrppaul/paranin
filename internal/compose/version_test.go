@@ -1,7 +1,6 @@
 package compose
 
 import (
-	"os"
 	"reflect"
 	"slices"
 	"testing"
@@ -194,11 +193,7 @@ func changedFixture(test *testing.T, change func(test *testing.T, folder string)
 	test.Helper()
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	change(test, folder)
-	snapshot, err := content.Load(os.DirFS(folder))
-	if err != nil {
-		test.Fatalf("load the fixture changed: %v", err)
-	}
-	return snapshot
+	return fixtures.LoadedFrom(test, folder)
 }
 
 // A revision the fixture post's revisions folder gains, the version of the 11th, whose body is its file's 5th line

@@ -9,7 +9,9 @@
 // agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
 // a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
 // revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
-// groupings and filtered by each tag and series, at the address the request's query names (routes.Requested). Each
+// groupings and filtered by each tag and series, at the address the request's query names (routes.Requested). The
+// blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body as the HTML face draws it
+// for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again. Each
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
 // tell a search engine not to index them. A preview is served at its link alone, under a key
@@ -37,6 +39,7 @@ import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/face/feed"
 	"github.com/vrppaul/paranin/internal/face/html"
 	"github.com/vrppaul/paranin/internal/face/text"
 	"github.com/vrppaul/paranin/internal/release"
@@ -98,17 +101,14 @@ const (
 	canonicalRelation = `>; rel="canonical"`
 )
 
-// How a reader's request chooses a format: by the media types its Accept header ranks. A cache keeps one copy
-// for each Accept header it meets
+// How a reader's request chooses a format: by the media types its Accept header ranks, which routes names. A cache
+// keeps one copy for each Accept header it meets
 const (
-	acceptHeader      = "Accept"
-	varyHeader        = "Vary"
-	markdownMediaType = "text/markdown"
-	plainMediaType    = "text/plain"
-	htmlMediaType     = "text/html"
-	mediaTypeEnd      = ","
-	qualityParameter  = "q"
-	qualityBits       = 64
+	acceptHeader     = "Accept"
+	varyHeader       = "Vary"
+	mediaTypeEnd     = ","
+	qualityParameter = "q"
+	qualityBits      = 64
 	// a media type no range of the header names, and one a range names without saying how much
 	unnamedQuality = 0
 	fullQuality    = 1
@@ -280,7 +280,7 @@ func postPicturedAs(picture content.Picture) answer {
 
 // sentOnTo is an answer that sends the reader on to a path, saying nothing of its own.
 func sentOnTo(path string) answer {
-	sent := drawnAs(plainMediaType, "")
+	sent := drawnAs(routes.PlainType, "")
 	sent.location = path
 	return sent
 }
@@ -458,9 +458,9 @@ func laterPageOf(shown document.Document, site routes.Site, browse func() string
 	page := shown.Head.Page
 	return laterPage{
 		page:     page,
-		manual:   lazyFormat{mediaType: plainMediaType, draw: sync.OnceValue(func() answer { return manualOf(shown, site) })},
-		markdown: lazyFormat{mediaType: markdownMediaType, draw: sync.OnceValue(func() answer { return markdownOf(shown, site) })},
-		browsed:  lazyFormat{mediaType: htmlMediaType, draw: sync.OnceValue(func() answer { return drawnAs(htmlMediaType, browse()).knownAs(page, site) })},
+		manual:   lazyFormat{mediaType: routes.PlainType, draw: sync.OnceValue(func() answer { return manualOf(shown, site) })},
+		markdown: lazyFormat{mediaType: routes.MarkdownType, draw: sync.OnceValue(func() answer { return markdownOf(shown, site) })},
+		browsed:  lazyFormat{mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(page, site) })},
 	}
 }
 
@@ -553,17 +553,17 @@ func statusLine(status int) string {
 }
 
 // draw draws every page of a snapshot, as Prepare read it, as an audience reads it, at the address it is served at,
-// beside every file of its build and every picture of its posts served, and keeps each preview to draw for its link;
-// and says until when it holds: until the next post dated later comes out, the résumé's career line running to the
-// audience's day until then, or the store holds another snapshot.
+// beside every file of its build, every picture of its posts served and each feed, and keeps each preview to draw for
+// its link; and says until when it holds: until the next post dated later comes out, the résumé's career line running
+// to the audience's day until then, or the store holds another snapshot.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (*drawing, time.Time) {
 	facts, build := snapshot.Content, snapshot.Build
-	addresses := routes.New(facts.Profile.Site.BaseURL)
+	addresses := routes.New(facts.Profile.Site.BaseURL, facts.Profile.Site.TagAuthority)
 	composition := compose.SiteOf(prepared, audience)
 	frame := composition.Frame
 	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
 	served := answersOf()
-	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(plainMediaType, text.Markdown(composition.Index, addresses))
+	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(routes.PlainType, text.Markdown(composition.Index, addresses))
 	for path, file := range build.Files() {
 		served.fixed[path] = builtAs(file)
 	}
@@ -592,10 +592,14 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	for _, older := range composition.Versions {
 		served.serveLater(laterPageOf(older, addresses, func() string { return pageWriter.Post(older) }))
 	}
+	bodies := html.NewFeedWriter(addresses)
+	for _, composedFeed := range composition.Feeds {
+		served.fixed[routes.FeedPath(composedFeed.Target)] = drawnAs(routes.FeedType, feed.Atom(composedFeed, addresses, bodies))
+	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
-		{mediaType: plainMediaType, draw: text.NewNotFound(addresses, status).For},
-		{mediaType: htmlMediaType, draw: html.NewNotFound(addresses, status, facts.Words.Language(), build, frame).For},
+		{mediaType: routes.PlainType, draw: text.NewNotFound(addresses, status).For},
+		{mediaType: routes.PageType, draw: html.NewNotFound(addresses, status, facts.Words.Language(), build, frame).For},
 	}
 	previews := previewing{posts: map[string]compose.Preview{}, site: addresses, build: build, frame: frame, today: audience.At}
 	for _, previewed := range composition.Previews {
@@ -632,15 +636,15 @@ func (served answers) serveEveryFormat(shown document.Document, browsed string, 
 	markdown, manual := markdownOf(shown, site), manualOf(shown, site)
 	served.fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 	served.fixed[routes.Path(page, routes.FormatManual)] = manual
-	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(htmlMediaType, browsed).knownAs(page, site))
+	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(page, site))
 }
 
 // markdownOf is a page in markdown, as the site writes its addresses, naming the address the page is known by.
 func markdownOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(markdownMediaType, text.Markdown(shown, site)).knownAs(shown.Head.Page, site)
+	return drawnAs(routes.MarkdownType, text.Markdown(shown, site)).knownAs(shown.Head.Page, site)
 }
 
 // manualOf is a page as a manual, as the site writes its addresses, naming the address the page is known by.
 func manualOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(plainMediaType, text.Manual(shown, site)).knownAs(shown.Head.Page, site)
+	return drawnAs(routes.PlainType, text.Manual(shown, site)).knownAs(shown.Head.Page, site)
 }

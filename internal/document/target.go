@@ -3,7 +3,7 @@ package document
 import "strings"
 
 // Target is where a link leads: an address outside the site, a page of it or a section of one, a file served beside a
-// page, or a mailbox, whose address routes writes in each face's format.
+// page, a feed of the blog, or a mailbox, whose address routes writes in each face's format.
 //
 //sumtype:decl
 type Target interface {
@@ -122,6 +122,12 @@ type File struct {
 	Name string
 }
 
+// Feed is a feed of the blog a reader subscribes to (docs/FOUNDATION.md §5.4, Feeds), by the series it follows: a
+// series' parts out, by the series' name, or, where it names none, every post the blog lists.
+type Feed struct {
+	Series string
+}
+
 // Mail is a mailbox a link writes to, by its address as the content writes it.
 type Mail struct {
 	Address string
@@ -160,4 +166,5 @@ func (Address) target() {}
 func (Page) target()    {}
 func (Anchor) target()  {}
 func (File) target()    {}
+func (Feed) target()    {}
 func (Mail) target()    {}

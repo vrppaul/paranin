@@ -97,7 +97,7 @@ func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
 
 // recordOf is the record compose makes beside the document of a page.
 func recordOf(test *testing.T, snapshot *content.Snapshot, page document.Page) Record {
-	for _, composed := range Pages(snapshot) {
+	for _, composed := range SiteOf(Prepare(snapshot), publicOnTheDay()).Pages {
 		if composed.Document.Head.Page == page {
 			return composed.Record
 		}

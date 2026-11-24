@@ -32,7 +32,8 @@
 // the blog's name in block letters, its line, the Switch of its groupings and its tags, then each group under its name,
 // its posts as tiles, each a link to its post.
 // Every page links the pictures of the site (icon.go), which it draws for its host to serve: a square of the name's
-// gradient, as SVG and as pixels.
+// gradient, as SVG and as pixels. A page of the blog names in its head the feeds that follow it, and a post's body is
+// drawn once more for a feed reader (feed.go), as plain HTML, every address whole.
 package html
 
 //go:generate go -C ../../.. run ./scripts/templates -write
@@ -57,9 +58,6 @@ const (
 	monthLayout        = "01/2006"
 	machineMonthLayout = "2006-01"
 )
-
-// The media type of a page's markdown, which its head names beside the link to it
-const markdownType = "text/markdown"
 
 // The kind of thing Open Graph says every page is, as the first version said it. The résumé could be a profile,
 // which asks for the person's names in fields of its own; until a page needs that, one kind serves every page
@@ -197,30 +195,40 @@ const (
 	codeWordsPart = "code-words"
 )
 
-// PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: what each includes to
-// run the site's script, the frame round each, whose site writes their addresses, and the day they are drawn on, which
-// the résumé's career line runs to.
+// PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: how it writes text
+// inside a block, each link by its path from the root; what each includes to run the site's script, the frame round
+// each, whose site writes their addresses, and the day they are drawn on, which the résumé's career line runs to.
 type PageWriter struct {
+	spanWriter
 	included assets.Included
 	frame    frame
 	today    time.Time
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
-// as plain text, the address it is known by, whole, and the path of its markdown, each empty where it has none; and
-// whether a search engine may index it.
+// as plain text, the address it is known by, whole, and the path of its markdown, each empty where it has none;
+// whether a search engine may index it; and the feeds that follow it, which a feed reader finds it by.
 type pageMetadata struct {
 	title       string
 	description string
 	canonical   string
 	markdown    string
 	indexed     bool
+	feeds       []headFeed
+}
+
+// headFeed is a feed a page names in its head: its title, as plain text, and its path from the root.
+type headFeed struct {
+	title string
+	path  string
 }
 
 // NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
 // round each, on a day the host reads off its clock.
 func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame, today time.Time) PageWriter {
-	return PageWriter{included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today}
+	return PageWriter{
+		spanWriter: spanWriter{addressOf: site.Reference}, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today,
+	}
 }
 
 // Page writes a document as a page of HTML showing one of its tabs (document.TabsOf), parted as every face parts it, by
@@ -270,6 +278,10 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 		canonical:   site.Address(shown, routes.FormatChosen),
 		markdown:    site.Reference(shown, routes.FormatMarkdown),
 		indexed:     true,
+		feeds:       make([]headFeed, 0, len(head.Feeds)),
+	}
+	for _, feed := range head.Feeds {
+		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: site.Reference(feed.Target, routes.FormatChosen)})
 	}
 	if !shown.Indexed() {
 		metadata.canonical, metadata.indexed = "", false
@@ -317,33 +329,6 @@ func setBack(kind document.CellKind) bool {
 	}
 	// the zero kind, which compose never builds, reads as words
 	return false
-}
-
-// span is the component of a span; a link whose target has no address reads as its text.
-func (writer PageWriter) span(span document.Span) templ.Component {
-	switch typed := span.(type) {
-	case document.Text:
-		return text(typed.Text)
-	case document.Code:
-		return code(typed.Text)
-	case document.Gap:
-		return gap(typed.Text)
-	case document.Highlight:
-		return writer.highlight(typed.Spans)
-	case document.Link:
-		if reference := writer.frame.site.Reference(typed.Target, routes.FormatChosen); reference != "" {
-			return writer.link(reference, typed.Spans)
-		}
-		return writer.spans(typed.Spans)
-	case document.Emphasis:
-		return writer.emphasis(typed.Spans)
-	case document.Strong:
-		return writer.strong(typed.Spans)
-	case document.Note:
-		// a note's words stand beside the line or at the article's end (notesBeside); where a line cites it, its number
-		return citation(typed.Number)
-	}
-	return templ.NopComponent
 }
 
 // factValue is the component of a fact's value by its shape: a command alone as a chip that copies it (DESIGN.md,

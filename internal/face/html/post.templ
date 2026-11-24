@@ -383,18 +383,6 @@ templ citation(number int) {
 	<sup class="citation">{ strconv.Itoa(number) }</sup>
 }
 
-templ (writer PageWriter) emphasis(spans []document.Span) {
-	<em>
-		@writer.spans(spans)
-	</em>
-}
-
-templ (writer PageWriter) strong(spans []document.Span) {
-	<strong>
-		@writer.spans(spans)
-	</strong>
-}
-
 // postList is a post's list (DESIGN.md, Article), its items drawn: each after a dash hanging in the margin, as the
 // résumé's points, or numbered from its start.
 templ postList(ordered bool, start int, items []templ.Component) {

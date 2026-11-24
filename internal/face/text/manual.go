@@ -559,7 +559,7 @@ func (writer manualWriter) siteAddress(target document.Target) string {
 		return writer.site.Address(typed, routes.FormatManual)
 	case document.Anchor:
 		return writer.site.Address(typed.Page, routes.FormatManual)
-	case document.Address, document.Mail, document.File:
+	case document.Address, document.Mail, document.File, document.Feed:
 	}
 	return ""
 }

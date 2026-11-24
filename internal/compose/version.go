@@ -70,12 +70,12 @@ func (read blog) versionOf(version postVersion, words content.Words) document.Ve
 
 // olderDocuments are the older versions of the posts the blog serves its audience, each a page of its own, the posts in
 // the snapshot's order and each one's versions newest first; each composed as postDocument composes a post, its links
-// read among the pages served.
-func olderDocuments(prepared *Prepared, read blog, pages map[string]document.Page) []document.Document {
+// read among the pages served and the feeds.
+func olderDocuments(prepared *Prepared, read blog, paths map[string]document.Target) []document.Document {
 	documents := []document.Document{}
 	for _, post := range read.served {
 		for _, version := range read.olderVersionsOf(post) {
-			documents = append(documents, postDocument(version, read, prepared, pages))
+			documents = append(documents, postDocument(version, read, prepared, paths))
 		}
 	}
 	return documents

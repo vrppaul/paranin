@@ -13,10 +13,11 @@
 # series, how many posts a group holds, one or more, how many of a series' parts are out, its name in a grouping, and
 # the filter of a list filtered by a tag or a series, and that filter as the way back to the whole list; and a post's
 # versions, the title of the window that lists them, the words that mark the current one and the one read, and what an
-# older one says of the newer. A phrase holds a place, {}, for each value it takes, in the order the site hands them:
-# the command, the code block's number on its page, a part's number and the count of parts, the series' title, a count
-# of posts, the parts out and the count of parts, the list's title and the grouping's word, the tag, the filter's
-# words, the newer version's day. `paranin check content` requires every one of them.
+# older one says of the newer; and the titles of the blog's feed and of a series'. A phrase holds a place, {}, for each
+# value it takes, in the order the site hands them: the command, the code block's number on its page, a part's number
+# and the count of parts, the series' title, a count of posts, the parts out and the count of parts, the list's title
+# and the grouping's word, the tag, the filter's words, the newer version's day, the author's name, the series' title
+# and the blog's feed's title. `paranin check content` requires every one of them.
 
 about: About
 greeting: Hi, my name is
@@ -85,3 +86,5 @@ versions: versions
 current: current
 version_read: reading
 newer_version: "newer: {}"
+blog_feed: "{}'s blog"
+series_feed: "{} — {}"

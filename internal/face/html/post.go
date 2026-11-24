@@ -244,7 +244,7 @@ func (drawing *article) block(block document.Block) templ.Component {
 	case document.List:
 		items := make([]templ.Component, 0, len(typed.Items))
 		for _, item := range typed.Items {
-			items = append(items, drawing.item(item))
+			items = append(items, listItem(item, drawing.writer.spans, drawing.blocks))
 		}
 		return postList(typed.Ordered, typed.Start, items)
 	case document.Quote:
@@ -270,16 +270,16 @@ func (drawing *article) blocks(blocks []document.Block) []templ.Component {
 	return drawn
 }
 
-// item is what an item of a post's list holds: its first block's words on the line of its mark, where that is a
-// paragraph, and the blocks after them under them.
-func (drawing *article) item(item document.Item) templ.Component {
+// listItem is what an item of a post's list holds, its spans and its blocks drawn as the page or the feed draws them:
+// its first block's words on the line of its mark, where that is a paragraph, and the blocks after them under them.
+func listItem(item document.Item, spans func([]document.Span) templ.Component, blocks func([]document.Block) []templ.Component) templ.Component {
 	if len(item.Blocks) == 0 {
 		return templ.NopComponent
 	}
 	if paragraph, isParagraph := item.Blocks[0].(document.Paragraph); isParagraph {
-		return templ.Join(append([]templ.Component{drawing.writer.spans(paragraph.Spans)}, drawing.blocks(item.Blocks[1:])...)...)
+		return templ.Join(append([]templ.Component{spans(paragraph.Spans)}, blocks(item.Blocks[1:])...)...)
 	}
-	return templ.Join(drawing.blocks(item.Blocks)...)
+	return templ.Join(blocks(item.Blocks)...)
 }
 
 // firstCited are the notes a block cites that no block before it has, in the order it cites them.

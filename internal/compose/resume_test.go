@@ -15,7 +15,7 @@ import (
 // Every fact of the profile a person reads reaches the résumé, as a phrase of its own: a face that shows every
 // phrase shows every fact.
 func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
-	phrases := document.Phrases(Resume(fixtures.LoadedContent(test)))
+	phrases := document.Phrases(Resume(fixtures.LoadedContent(test), nil))
 	cases := []struct {
 		name string
 		want string
@@ -70,7 +70,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 // site's word for it, the summary and the facts in the first; and in the skills, after the groups, the languages and
 // the education.
 func TestTheResumeKeepsOneOrder(test *testing.T) {
-	resume := Resume(fixtures.LoadedContent(test))
+	resume := Resume(fixtures.LoadedContent(test), nil)
 	skills := sectionTitled(test, resume, "Skills").Blocks
 	cases := []struct {
 		name   string
@@ -95,7 +95,7 @@ func TestTheResumeKeepsOneOrder(test *testing.T) {
 
 // A skill group's table tells a skill's duration from the words beside it, so each face can draw it set back.
 func TestASkillsDurationStandsInACellOfItsOwnKind(test *testing.T) {
-	group := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "Tools")
+	group := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Tools")
 	table := as[document.Table](test, group.Blocks[0])
 	got := [][]string{}
 	for _, row := range table.Rows {
@@ -109,7 +109,7 @@ func TestASkillsDurationStandsInACellOfItsOwnKind(test *testing.T) {
 
 // The résumé's first section, about the author, holds the summary and then the facts, and nothing more.
 func TestTheAboutSectionHoldsTheSummaryAndTheFacts(test *testing.T) {
-	about := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "About").Blocks
+	about := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "About").Blocks
 	got := make([]string, 0, len(about))
 	for _, block := range about {
 		got = append(got, fmt.Sprintf("%T", block))
@@ -122,7 +122,7 @@ func TestTheAboutSectionHoldsTheSummaryAndTheFacts(test *testing.T) {
 // A role's months reach the document typed, so each face writes them its own way, and a role still held stays
 // current.
 func TestEachRoleKeepsItsPeriod(test *testing.T) {
-	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test)), "Experience")
+	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience")
 	got := []document.Period{}
 	for _, block := range experience.Blocks {
 		got = append(got, as[document.Entry](test, block).Period)
@@ -139,7 +139,7 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 // Each entry of the résumé says what its time was spent on: an entry of the experience is a role, one of the
 // education a school, so a face takes either by its kind, not by the section it stands in.
 func TestEachEntryTellsARoleFromASchool(test *testing.T) {
-	resume := Resume(fixtures.LoadedContent(test))
+	resume := Resume(fixtures.LoadedContent(test), nil)
 	kindNames := map[document.EntryKind]string{0: "of no kind", document.EntryRole: "a role", document.EntrySchool: "a school"}
 	cases := []struct {
 		name    string

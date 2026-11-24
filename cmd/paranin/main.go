@@ -312,7 +312,7 @@ func previewLinkOf(contentFolder, slug string, key *web.PreviewKey, moment, laps
 	if found < 0 {
 		return "", fmt.Errorf("%q is no post previewed now: a preview, or a post dated later, of the folder %q", slug, contentFolder)
 	}
-	site := routes.New(loaded.Profile.Site.BaseURL).Previewing(slug, key.Token(slug, lapses))
+	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority).Previewing(slug, key.Token(slug, lapses))
 	return site.Address(previews[found].Post.Head.Page, routes.FormatChosen), nil
 }
 

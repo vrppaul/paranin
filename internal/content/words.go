@@ -85,8 +85,9 @@ const (
 // of the blog's list, how many posts a group holds, one or more, how many of a series' parts are out, with that
 // count and the count of parts, the list's name in a grouping, with its title and the grouping's word, and the
 // filter of a filtered list, by a tag, with the tag, or by a series, with the series' title, and that filter as the
-// way back to the whole list, with its words; and what an older version of a post says of the newer, with that
-// version's day. A catalogue writes each place as phrasePlace, where its language puts the value, the values in the
+// way back to the whole list, with its words; what an older version of a post says of the newer, with that version's
+// day; and the title of the blog's feed, with the author's name, and of a series', with the series' title and the
+// blog's feed's. A catalogue writes each place as phrasePlace, where its language puts the value, the values in the
 // order the site hands them.
 type Phrase int
 
@@ -108,6 +109,8 @@ const (
 	PhraseSeriesFilter
 	PhraseFilterWayOut
 	PhraseNewerVersion
+	PhraseBlogFeed
+	PhraseSeriesFeed
 )
 
 // How a phrase writes the place of a value
@@ -143,6 +146,8 @@ func phraseForms() map[Phrase]phraseForm {
 		PhraseSeriesFilter:  {key: "series_filter", values: oneValue},
 		PhraseFilterWayOut:  {key: "filter_way_out", values: oneValue},
 		PhraseNewerVersion:  {key: "newer_version", values: oneValue},
+		PhraseBlogFeed:      {key: "blog_feed", values: oneValue},
+		PhraseSeriesFeed:    {key: "series_feed", values: twoValues},
 	}
 }
 

@@ -121,24 +121,24 @@ func sharedAddresses(heads []document.Head) error {
 	return clashes
 }
 
-// destinations are where a site's links inside it may lead: the pages it serves by their paths, the anchors of each
-// page's sections, and the posts that come later by their paths, each by the moment it comes out.
+// destinations are where a site's links inside it may lead: the pages it serves and its feeds by their paths, the
+// anchors of each page's sections, and the posts that come later by their paths, each by the moment it comes out.
 type destinations struct {
-	pages   map[string]document.Page
+	paths   map[string]document.Target
 	anchors map[document.Page][]string
 	later   map[string]content.Moment
 }
 
 // destinationsOf are where a site's links may lead, beside the posts that come later.
 func destinationsOf(site Site, later map[string]content.Moment) destinations {
-	return destinations{pages: site.paths, anchors: anchorsOf(site.served), later: later}
+	return destinations{paths: site.paths, anchors: anchorsOf(site.served), later: later}
 }
 
 // previewDestinations are where a preview's links may lead, beside the posts that come later: where the site's do, and
 // to its own page and its sections.
 func previewDestinations(site Site, previewed Preview, later map[string]content.Moment) destinations {
 	return destinations{
-		pages:   withOwnPage(site.paths, previewed.Post.Head.Page),
+		paths:   withOwnPage(site.paths, previewed.Post.Head.Page),
 		anchors: anchorsOf(append(slices.Clone(site.served), previewed.Post)),
 		later:   later,
 	}
@@ -181,7 +181,9 @@ func (reached destinations) faultsOf(links map[*ast.Link]content.WrittenLink) co
 // leadsNowhere is what is wrong with a link inside the site, where it leads to a post not out yet, to no page served
 // or to no section of one.
 func (reached destinations) leadsNowhere(link content.SiteLink) (string, bool) {
-	page, found := reached.pages[link.Path]
+	target, found := reached.paths[link.Path]
+	// a feed has no sections, and no page's are taken
+	page, _ := target.(document.Page)
 	taken := reached.anchors[page]
 	comes, isLater := reached.later[link.Path]
 	switch {

@@ -18,6 +18,10 @@
 site:
   base_url: https://paran.in
   ssh: ssh paran.in
+  # Names the feeds and their posts for good, wherever the site moves (RFC 4151): a domain, then a day the author held
+  # it on, a year alone read as its 1 January, so this says paran.in was his on 2026-01-01. Never changed once readers
+  # subscribe, or every feed reader shows every post as new.
+  tag_authority: paran.in,2026
 
 person:
   name: Pavel Paranin

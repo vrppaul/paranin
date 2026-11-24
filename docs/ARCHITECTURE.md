@@ -140,7 +140,10 @@ own, which `compose` composes with the site and the web host draws when first as
 offers, and `routes` reads a request's query into its address. Amended 2026-11-24, with revisions: `content` reads a
 post's revisions with it, the version read is one of three kinds and lists the post's versions, an older version is a
 page of its own a post's page names by its revision, which `compose` composes with the site and the web host draws when
-first asked for, and a page says whether a search engine indexes it.
+first asked for, and a page says whether a search engine indexes it. Amended 2026-11-24, with the feeds: `compose`
+composes the blog's feed and each series' with the site, a head names the feeds that follow its page, a feed is a link's
+target of its own, `routes` names what the site serves for good and each format's media type, and `face/feed` writes
+Atom, each post's body as `face/html` draws it for a feed reader.
 
 ### Context
 
@@ -423,6 +426,33 @@ and web routes.
     hand would carry; a filter composed per request, a request that
     composes; the TUI filtering the list's buffer in place, a list no
     other face could name.
+- **The feeds** (amended 2026-11-24, FOUNDATION §5.4, Feeds) are the blog's
+  and each series' with a part out, which `compose` composes with the site
+  (`Site.Feeds`, `compose.Feed`): each its newest posts the lists name,
+  twenty at most, the document of each post's current version, when the
+  post came out and when that version did, the start of its `updated:` day
+  in the post's own zone, never before the post (`compose.FeedPost`); a
+  blog that lists no post has no feed. A feed is a target of its own
+  (`document.Feed`), its address `routes.FeedPath`'s, so a post's link
+  inside the site may lead to one, and a head names the feeds that follow
+  its page (`Head.Feeds`), a series' first where the page shows the series,
+  the blog's on the résumé too, which the page's head links for a feed
+  reader to find. A feed and each post are named for good by a tag URI
+  (RFC 4151), which `routes` writes (`Site.TagURI`) under the site's tag
+  authority, the profile's `site.tag_authority`, which `routes.New` takes,
+  and the path it is served at, a post by its number's,
+  `tag:paran.in,2026:blog/12`, so neither the site's address nor a post's
+  folder moving renames them. The media type of each format is named once,
+  in `routes`. `face/feed` writes Atom through typed structs `encoding/xml`
+  escapes, and takes each post's body from a `BodyWriter` the host hands
+  it, `face/html`'s `FeedWriter`, which writes text inside a block as the
+  page does, every address whole, and the blocks plain, with none of the
+  page's own parts, since one face never builds on another. Ways weighed:
+  a template, whose text could slip past the escaping; a library, a
+  dependency for a few structs; a post's address as its id, which moves
+  with the site; the page's article as the body, whose notes stand twice
+  and whose buttons and numbers show in a reader as stray words; the
+  summary alone, which a feed standing in for a newsletter cannot be.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
   strong, a link, a highlight (`==result==`) and a note hold spans; text,
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a
@@ -537,10 +567,11 @@ and web routes.
   (2026-11-06), a project's tags and repository with its page
   there (2026-11-07), the entry's and the facts' kinds and the five
   sections with the owner's word (2026-11-15); the records for JSON-LD,
-  the person's and a project's, with `face/html`, and the sitemap's dates
-  with `face/feed`, the `dateModified` of the résumé's `ProfilePage` with
-  them; a widget with the first island that draws one, the form's salary
-  range (step 10), since `face/html` came without one; the posts' blocks
+  the person's and a project's, with `face/html`, the feeds with
+  `face/feed` (2026-11-24), and the sitemap's dates with the sitemap, the
+  `dateModified` of the résumé's `ProfilePage` with them; a widget with
+  the first island that draws one, the form's salary range (step 10),
+  since `face/html` came without one; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
   in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
   them with each face's post, the figure with the post's pictures, in every
@@ -740,7 +771,7 @@ description on request, and every page and post needs a card of its own.
 ```
 cmd/paranin
   hosting/web · hosting/ssh
-    face/html · face/text · face/tui
+    face/html · face/text · face/feed · face/tui
       compose · routes · release
         document · content · look · assets
 ```
@@ -751,7 +782,7 @@ the content they are made from, nor the release a host hands it; `release`
 stands beside `compose` and `routes`, `compose` building on `routes` to find
 two pages at one address, and the hosts bring them together. The parts
 still to come land with their steps of [FOUNDATION](FOUNDATION.md) §8, where
-§5.2 places them: `face/feed` and `face/print` beside the faces, `inbox`
+§5.2 places them: `face/print` beside the faces, `inbox`
 beside `compose`, the brain beside the faces.
 
 ## Phase 1 component design (SSH TUI)
@@ -853,6 +884,7 @@ internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
 internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page, the icon
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
+internal/face/feed/      # the blog's feeds in Atom
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
 internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch

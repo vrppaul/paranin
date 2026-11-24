@@ -76,6 +76,15 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 			contentType: "text/markdown; charset=utf-8", holds: "posts tagged reading",
 		},
 		{name: "the list, its other keys passed over", path: "/blog.md?ref=feed", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
+		{
+			name: "the blog's feed", path: "/blog.atom", status: http.StatusOK, contentType: "application/atom+xml; charset=utf-8",
+			holds: `<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">`,
+		},
+		{
+			name: "a series' feed, each post's body whole", path: "/blog/series/reading.atom", status: http.StatusOK,
+			contentType: "application/atom+xml; charset=utf-8", holds: "&lt;p&gt;A page read twice is read once",
+		},
+		{name: "the feed of no series", path: "/blog/series/aloud.atom", status: http.StatusNotFound, contentType: "text/plain; charset=utf-8", holds: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -441,11 +450,15 @@ func TestEveryAnswerTellsBrowsersWhatTheyMayDo(test *testing.T) {
 	}
 }
 
-// A page tells a cache to ask again each time, since a reload can change it.
+// A page and a feed tell a cache to ask again each time, since a reload, or a post coming out, can change them.
 func TestAPageTellsCachesToAskAgain(test *testing.T) {
-	response := serve(New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil), http.MethodGet, "/index.md", "")
-	if got := response.Header().Get("Cache-Control"); got != "no-cache" {
-		test.Errorf("GET /index.md: Cache-Control = %q, want %q", got, "no-cache")
+	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
+	for _, path := range []string{"/index.md", "/blog.atom"} {
+		test.Run(path, func(test *testing.T) {
+			if got := serve(server, http.MethodGet, path, "").Header().Get("Cache-Control"); got != "no-cache" {
+				test.Errorf("GET %s: Cache-Control = %q, want %q", path, got, "no-cache")
+			}
+		})
 	}
 }
 
@@ -609,6 +622,8 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 		{name: "its number", path: "/blog/3", holds: "/blog/coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusMovedPermanently, holds: true}},
 		{name: "the blog's list", path: "/blog.md", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
 		{name: "the index", path: "/llms.txt", holds: "Coming", before: seenAnswer{status: http.StatusOK, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
+		// the bubble's clock starts in 2000, before the fixture's post: the blog lists none until this one comes out
+		{name: "the blog's feed", path: "/blog.atom", holds: "Coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

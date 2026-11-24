@@ -11,6 +11,8 @@ Three readers, three formats, from one document per page:
 - an agent gets **markdown**, where it asks for it or opens a `.md` file;
 - a terminal, `curl` and anyone else get **the manual**: a man page laid out as text, 78 columns, no colour codes.
 
+Beside them a feed reader polls the blog's feeds, in **Atom**, each at an address of its own.
+
 ## Addresses
 
 A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé or a
@@ -39,6 +41,7 @@ token into them.
 | `GET /blog/{slug}/{picture}` | A picture a version of the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. A picture's name ends in its type's ending, which no day and no format's ending is, so a version and a picture never share a path. |
 | `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
+| `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
@@ -53,7 +56,7 @@ How long a cache keeps an answer:
 
 | Answer | `Cache-Control` |
 | --- | --- |
-| A page in any format, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
+| A page in any format, a feed, a post's picture, the icon, the page of no page, a post's number sent on | `no-cache`: a reload, or a post coming out, can change any of them but the icon, which keeps its path when a new build of the server draws it anew, and a post's number its own when the post's slug does |
 | A built file | `public, max-age=31536000, immutable`: a changed file is built under another name |
 | Any answer in the preview's folder, `302`, `404` and what `net/http` writes there among them | `private, no-store`: its address may hold a link's token, which no cache keeps |
 
@@ -95,6 +98,15 @@ left out, and a gap among written words stands marked as one.
   `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead; a filtered list writes its filter on the line under the blog's name.
+- **A feed** is Atom (RFC 4287), every address in it whole: its id, a tag URI under the profile's `site.tag_authority`
+  and its path (`tag:paran.in,2026:blog.atom`), its title in the site's words by the author's name, the blog's line or
+  the series' as its subtitle, when its newest version came out, a link to itself and to the list it follows, the
+  series' group on the list by series for a series', and its author, by name and the résumé's address. Each post is an
+  entry, newest first: its id by its number (`tag:paran.in,2026:blog/12`), which neither a renamed folder nor a moved
+  site changes, its title, a link to its page, when it came out and when its current version did, the start of its
+  `updated:` day in its own zone, its lead as the summary and its body whole as HTML, every address whole, its code in
+  no colour, its notes numbered at its end, with no id, paragraph's number, point's mark, button or script, which a
+  reader would show as stray words or run nothing for.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
   names, newest first, by its description; never a draft, a preview, a post unlisted, one not yet out or an older
@@ -103,8 +115,11 @@ left out, and a gap among written words stands marked as one.
   and what runs the site's script. A page with an address adds its canonical link; Open Graph's `og:type`
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as
   JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
-  its tabs; a post's comes with the site's SEO (`TODO.md`). A post's page is the post whole: its title the one `h1`,
-  its version's day in a `<time datetime>`, a draft's version the word `draft`; a post out its version's day a button
+  its tabs; a post's comes with the site's SEO (`TODO.md`). A page of the blog names the feeds that follow it,
+  `<link rel="alternate" type="application/atom+xml">` with each feed's title, a series' first on a page that shows
+  the series, its filtered list or a post of it, then the blog's, which the résumé and its tabs name too, for a feed
+  reader handed the page, or the site's address, to find them. A post's page is the post whole: its title the one
+  `h1`, its version's day in a `<time datetime>`, a draft's version the word `draft`; a post out its version's day a button
   opening, as a popover, the list of its versions, each a link to it but the one read, and an older version under it a
   link to the newer; each paragraph a place `#_p1` names and its
   number a link to it, each heading a place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two

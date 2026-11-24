@@ -32,6 +32,7 @@ func Skills(snapshot *content.Snapshot) document.Document {
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,
+			Feeds:       nil,
 		},
 		Blocks: []document.Block{document.Skills{List: skillList(snapshot.Profile.SkillGroups, snapshot.Words)}},
 	}
@@ -71,6 +72,7 @@ func Health(snapshot *content.Snapshot) document.Document {
 			Repository:  nil,
 			Post:        nil,
 			Description: nil,
+			Feeds:       nil,
 		},
 		Blocks: checkGroups(snapshot.Profile.Health),
 	}

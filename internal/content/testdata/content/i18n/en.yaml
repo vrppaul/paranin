@@ -67,3 +67,5 @@ versions: versions
 current: current
 version_read: reading
 newer_version: "newer: {}"
+blog_feed: "{}'s blog"
+series_feed: "{} — {}"

@@ -11,7 +11,7 @@ import (
 // address in each format, the address a reader's request chooses the format at among them, the index at the address
 // agents look for it, llms.txt, and in markdown alone; and an address outside the site is left as it is.
 func TestEveryTargetHasItsAddress(test *testing.T) {
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	resumeTab := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
@@ -74,6 +74,8 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a section of a page with no address", target: document.Anchor{Page: index, Name: "in-a-terminal"}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatMarkdown, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatMarkdown, want: "mailto:mira@example.test"},
+		{name: "the blog's feed, in any format", target: document.Feed{Series: ""}, format: FormatMarkdown, want: "https://example.test/blog.atom"},
+		{name: "a series' feed, in any format", target: document.Feed{Series: "stint"}, format: FormatChosen, want: "https://example.test/blog/series/stint.atom"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -108,8 +110,9 @@ func TestALinkInsideThePageLeadsByItsPath(test *testing.T) {
 		{name: "a section of a hidden page", target: document.Anchor{Page: document.Page{Kind: document.PageHealth, Slug: "", Tab: ""}, Name: "go"}, format: FormatChosen, want: ""},
 		{name: "an address outside the site", target: document.Address{URL: "https://github.test/mira"}, format: FormatChosen, want: "https://github.test/mira"},
 		{name: "a mailbox, under the scheme that writes to it", target: document.Mail{Address: "mira@example.test"}, format: FormatChosen, want: "mailto:mira@example.test"},
+		{name: "a series' feed", target: document.Feed{Series: "stint"}, format: FormatChosen, want: "/blog/series/stint.atom"},
 	}
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			if got := site.Reference(testCase.target, testCase.format); got != testCase.want {
@@ -129,7 +132,7 @@ const (
 // format, its sections and its pictures among them, whole and as a path from the root alike; every other page keeps
 // its own address.
 func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
-	site := New(writtenAddress{written: testedBase, host: "example.test"}).Previewing("coming", previewToken)
+	site := New(writtenAddress{written: testedBase, host: "example.test"}, testedAuthority).Previewing("coming", previewToken)
 	previewed := document.Page{Kind: document.PagePost, Slug: "coming", Tab: ""}
 	cases := []struct {
 		name     string
@@ -212,7 +215,7 @@ func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 
 // A page of the site is read in a terminal with curl and its whole address, which answers a terminal with the manual.
 func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
-	site := New(writtenAddress{written: "https://example.test", host: "example.test"})
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority)
 	cases := []struct {
 		name string
 		page document.Page
@@ -322,6 +325,32 @@ func TestTheAddressAskedForReadsAsWritten(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			if got := Asked(testCase.path, testCase.rawQuery); got != testCase.want {
 				test.Errorf("Asked(%q, %q) = %q, want %q", testCase.path, testCase.rawQuery, got, testCase.want)
+			}
+		})
+	}
+}
+
+// The tag authority a test's site names what it serves under
+const testedAuthority = "example.test,2026"
+
+// A feed and a post are named for good by their paths under the site's tag authority, a post by the path its number
+// reaches it at, and keep the name wherever the site is served.
+func TestAFeedAndAPostAreNamedForGoodWhereverTheSiteIs(test *testing.T) {
+	cases := []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "the blog's feed", path: FeedPath(document.Feed{Series: ""}), want: "tag:example.test,2026:blog.atom"},
+		{name: "a series' feed", path: FeedPath(document.Feed{Series: "stint"}), want: "tag:example.test,2026:blog/series/stint.atom"},
+		{name: "a post, by its number", path: NumberPath(12), want: "tag:example.test,2026:blog/12"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, base := range []writtenAddress{{written: testedBase, host: "example.test"}, {written: "https://moved.test", host: "moved.test"}} {
+				if got := New(base, testedAuthority).TagURI(testCase.path); got != testCase.want {
+					test.Errorf("TagURI(%q) served at %s = %q, want %q", testCase.path, base.written, got, testCase.want)
+				}
 			}
 		})
 	}

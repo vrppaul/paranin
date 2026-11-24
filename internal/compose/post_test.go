@@ -712,6 +712,10 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 			Discussions: []document.Link{{Target: document.Address{URL: "https://lobsters.example.test/s/slow"}, Spans: textSpans("Lobsters")}},
 		},
 		Description: description,
+		Feeds: []document.Link{
+			{Target: document.Feed{Series: "reading"}, Spans: textSpans("Reading — Mira Example's blog")},
+			{Target: document.Feed{Series: ""}, Spans: textSpans("Mira Example's blog")},
+		},
 	}
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)

@@ -16,7 +16,7 @@ const firstPart = 1
 // audience: the audience; every post by its slug; the posts the site serves them, in the snapshot's order, and those
 // it serves them at their preview links alone; the posts the lists name, those published and out, in the order they
 // came out and newest first, and their tags; every series in their names' order; each series by the slug of every post
-// it names; and the filters of the list.
+// it names; the filters of the list; and its feeds, and the posts each holds.
 type blog struct {
 	audience  Audience
 	posts     map[string]content.Post
@@ -28,6 +28,8 @@ type blog struct {
 	series    []content.Series
 	seriesOf  map[string]content.Series
 	filters   []listFilter
+	feeds     []Feed
+	feedPosts map[document.Feed][]content.Post
 }
 
 // listedPart is a part of a series as its reader holds it: its title, and its post where it is out or is the part
@@ -41,7 +43,8 @@ type listedPart struct {
 func blogOf(snapshot *content.Snapshot, audience Audience) blog {
 	read := blog{
 		audience: audience, posts: map[string]content.Post{}, served: []content.Post{}, previewed: []content.Post{}, listed: []content.Post{},
-		newest: nil, tags: nil, series: snapshot.Series, seriesOf: map[string]content.Series{}, filters: nil,
+		newest: nil, tags: nil, series: snapshot.Series, seriesOf: map[string]content.Series{}, filters: nil, feeds: nil,
+		feedPosts: nil,
 	}
 	for _, post := range snapshot.Posts {
 		read.posts[post.Slug] = post
@@ -64,6 +67,7 @@ func blogOf(snapshot *content.Snapshot, audience Audience) blog {
 	}
 	read.newest, read.tags = newestFirst(read.listed), listedTags(read.listed)
 	read.filters = read.filtersOf()
+	read.feeds, read.feedPosts = read.feedsOf(snapshot)
 	return read
 }
 

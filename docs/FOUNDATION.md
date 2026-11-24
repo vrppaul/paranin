@@ -709,7 +709,18 @@ and SSH to the host: "without a new binary" does not mean without a build.
   document every face draws: the TUI gives the blog a session of its own
   (DESIGN.md, The TUI), and its posts, tags and series stand in the `:`
   menu.
-- **Feeds:** Atom for the blog in each language, and one for each series.
+- **Feeds:** Atom for the blog in each language, and one for each series
+  (built 2026-11-24): the blog's at `/blog.atom`, a series' at
+  `/blog/series/<name>.atom`, where no post stands, each holding the twenty
+  newest posts the lists name, published and out, never a draft, a preview
+  or an unlisted post, each with its lead and its body whole, so a feed
+  stands in for a newsletter; a blog that lists none has no feed. A feed
+  changes as the lists do, when a post comes out. A feed and each post keep
+  one name for good, a tag URI under `site.tag_authority`, a post by its
+  number, so neither the site moving nor a folder renamed shows a post as
+  new. Every page of the blog names its feeds in its head, a series' first
+  on a page that shows the series, and the résumé the blog's, so a reader
+  pasting the site's address finds it (ADR-0003).
 - **For the first post:** footnotes as sources beside the line that cites
   them, at the post's end where the screen is narrow, numbered links in a
   terminal; anchors on headings and a table of contents for a long post;

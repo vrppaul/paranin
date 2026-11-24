@@ -1,0 +1,109 @@
+package html
+
+import (
+	"strconv"
+
+	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
+)
+
+// feedBody is a post's body as a feed reader shows it: its blocks, then, under a rule, every note its lines cite, each
+// by its number.
+templ feedBody(blocks []templ.Component, notes []templ.Component) {
+	for _, block := range blocks {
+		@block
+	}
+	if len(notes) > 0 {
+		<hr/>
+		<ol>
+			for _, note := range notes {
+				@note
+			}
+		</ol>
+	}
+}
+
+// feedNote is a note at the end of a post's body in a feed, numbered as its citations are.
+templ (writer FeedWriter) feedNote(note document.Note) {
+	<li value={ strconv.Itoa(note.Number) }>
+		@writer.spans(note.Spans)
+	</li>
+}
+
+// feedSection is a section of a post's body in a feed: its heading at its depth, then its blocks.
+templ (writer FeedWriter) feedSection(depth int, title []document.Span, blocks []templ.Component) {
+	@heading(depth, unnamed, writer.spans(title))
+	for _, block := range blocks {
+		@block
+	}
+}
+
+// feedTable is a table of a post's body in a feed: the row that names its columns, where it has one, then its rows.
+templ (writer FeedWriter) feedTable(table document.Table) {
+	<table>
+		if len(table.Header.Cells) > 0 {
+			<thead>
+				<tr>
+					for _, cell := range table.Header.Cells {
+						<th>
+							@writer.spans(cell.Spans)
+						</th>
+					}
+				</tr>
+			</thead>
+		}
+		<tbody>
+			for _, row := range table.Rows {
+				<tr>
+					for _, cell := range row.Cells {
+						<td>
+							@writer.spans(cell.Spans)
+						</td>
+					}
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+// feedCode is a post's code in a feed, as it is, line for line, in no colour, since a feed reader has no stylesheet to
+// colour its kinds of word by.
+templ feedCode(code string) {
+	<pre><code>{ code }</code></pre>
+}
+
+// feedList is a post's list in a feed, its items drawn, numbered from its start or not.
+templ feedList(ordered bool, start int, items []templ.Component) {
+	if ordered {
+		<ol start={ strconv.Itoa(start) }>
+			for _, item := range items {
+				<li>
+					@item
+				</li>
+			}
+		</ol>
+	} else {
+		<ul>
+			for _, item := range items {
+				<li>
+					@item
+				</li>
+			}
+		</ul>
+	}
+}
+
+// feedPause is a turn a post takes inside a part, a rule.
+templ feedPause() {
+	<hr/>
+}
+
+// feedFigure is a post's picture in a feed, by its whole address and its size, its caption under it where it has one.
+templ (writer FeedWriter) feedFigure(shown document.Figure) {
+	<figure>
+		<img src={ writer.addressOf(shown.Picture, routes.FormatChosen) } alt={ shown.Alt } width={ strconv.Itoa(shown.Width) } height={ strconv.Itoa(shown.Height) }/>
+		if shown.Caption != "" {
+			<figcaption>{ shown.Caption }</figcaption>
+		}
+	</figure>
+}

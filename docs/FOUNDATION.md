@@ -40,13 +40,13 @@ Each decision carries one of three marks:
 | D18 | Nothing lands before its user: `document` and `compose` arrive in one chunk, `compose` making the résumé their first user; `routes` arrives with `face/text`, the first face to write an address; `look` and the token generator with `face/tui`, the first that needs a colour. | 2026-11-01 |
 | D19 | Every face draws the résumé, the project pages and the posts from one document model, the HTML page and the islands included. The document has the résumé's own kinds beside markdown's, and its kinds are a closed set every face switches over. Its parts, in ADR-0003, are the author's, on Pavel's leave to choose. | 2026-11-01 |
 | D20 | The layers of ADR-0003 are accepted. | 2026-11-01 |
-| D21 | A page's own address chooses its format by the Accept header's ranking alone, with `Vary: Accept`, HTML among the formats once it is served: no reader is told apart by its agent (the author's choice, on Pavel's leave to choose). | 2026-11-01 |
+| D21 | A page's own address chooses its format by the Accept header's ranking: HTML, markdown or the manual. Where the header names none but by a wildcard, or is absent, the page goes as HTML, but to a terminal's HTTP client, known by its agent, which gets the manual; `Vary: Accept, User-Agent` (`docs/SEO.md`, Formats; owner, 2026-11-24). | 2026-11-24 |
 | D22 | The one front-end build of ADR-0004 is accepted as its bullet is written: one Vite build writing hashed files, one manifest and each widget's props as JSON Schema, files served from a folder and none embedded, the manifest and the props checked when a snapshot loads, `vite build --watch` in development. Embedding would ship a post's widgets only with a new binary (D5), Vite's dev server breaks the CSP (§2), and two builds would ship Svelte twice. | 2026-11-03 |
 | D23 | The blog holds the author's own thoughts and what he learned, each written up as an article; the original in English, translations beside it (D12). Interactive parts at least on the web, a reduced post over SSH (§5.4). | 2026-11-22 |
 | D24 | A post has revisions: the reader sees which date's version they read and can open an older one (§5.4, Revisions). | 2026-11-22 |
 | D25 | Posts group into series, and carry tags; the blog lists its posts by year or by series, and a tag filters the list (§5.4, Series, tags and lists; the tag alone, owner, 2026-11-24). | 2026-11-22 |
 | D26 | A post has a slug and a short number, both reached as `blog/…` in every face: `paran.in/blog/12`, `:e blog/12`, `ssh blog/12@paran.in` (§5.4, Addresses). | 2026-11-22 |
-| D27 | The whole site, the blog among it, has good SEO and Open Graph (§5.4, SEO and Open Graph). | 2026-11-22 |
+| D27 | The whole site, the blog among it, has good SEO and Open Graph; its model is `docs/SEO.md` (owner, 2026-11-24). | 2026-11-22 |
 
 ## 2. What must hold whatever we build
 
@@ -289,7 +289,7 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
   the string `"present"`; health levels are one enumeration that every face
   names.
 - **Plain text by contract.** `Accept` and a `.txt` route, with
-  `Vary: Accept` alone (D21); negotiated routes send
+  `Vary: Accept, User-Agent` (D21); negotiated routes send
   `Cache-Control: no-cache` until the contract is settled in `WEB.md`.
 - **Typst replaces headless Chrome** (Decided, D10) for `cv.pdf`, the tailored CV (phase 5)
   and a social card per page and post. One tool makes PDF and PNG from
@@ -719,36 +719,11 @@ and SSH to the host: "without a new binary" does not mean without a build.
   passes `blog/12` as it is written. A name that names no post opens the
   résumé, as a login name does.
 
-#### SEO and Open Graph (Decided, D27; the model Proposed)
+#### SEO and Open Graph (Decided, D27; the model Decided, owner, 2026-11-24)
 
-For every page of the site, the blog's among them:
-
-- **The head:** a title and a description for each page, which the check
-  requires of a post; Open Graph and Twitter's card tags; an `og:image`,
-  each page's card (ADR-0005).
-- **JSON-LD:** `BlogPosting` for a post, with `datePublished`,
-  `dateModified` its current version's day (Revisions), its author linked to the résumé,
-  `inLanguage`, `keywords` from its tags and `isPartOf` its series;
-  `BreadcrumbList`; the résumé's `ProfilePage` as it stands.
-- **Languages:** `hreflang` and `x-default` between a page and its
-  translations.
-- **Crawling:** `robots.txt` naming `sitemap.xml`, and `llms.txt` in a
-  comment, since no page links it and no `rel` names it (owner,
-  2026-11-23); the sitemap with every
-  page, tab and post and their `lastmod`, per language; `noindex` on
-  unlisted posts, older versions and the filtered list; `301` from
-  `/blog/12` and from a path with a trailing slash.
-- **The markup:** one `h1`, `<article>`, `<time datetime>`, alt text
-  required of every picture.
-- **At hosting:** HTTPS and HSTS, the site verified in Google's and Bing's
-  consoles, IndexNow for a new post, Lighthouse on its pages.
-- **Open: D21 and crawlers.** A page's own address chooses its format by
-  `Accept` alone, the manual winning a tie, so a crawler sending `*/*` gets
-  the manual at the page's canonical address. Bing's crawler is reported to
-  send `*/*`, LinkedIn's possibly too; neither documents it. To settle from
-  the server's logs once it is served, then the owner's call: keep D21, or
-  rank HTML first unless `text/plain` is named, which gives a bare `curl`
-  the HTML.
+For every page of the site, the blog's among them: `docs/SEO.md`, which
+holds what a search engine, an AI crawler and a link preview read of it,
+and D21 as crawlers made it (owner, 2026-11-24).
 
 #### Translations (Decided, D12; the model Decided, owner, 2026-11-24; built)
 

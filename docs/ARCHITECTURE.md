@@ -949,7 +949,7 @@ sessions on a stop.
    browser, curl, agent ──HTTP──▶ ┌──────────────────────────────────────┐
                                   │ internal/hosting/web (net/http)      │
                                   │  GET, HEAD at the addresses of WEB   │
-                                  │  own address: Accept ranks →         │
+                                  │  own address: Accept, else agent →   │
                                   │    HTML | markdown | manual          │
                                   │  its .md, .txt; llms.txt, each built │
                                   │    file, the icon: one format each   │
@@ -999,7 +999,7 @@ sessions on a stop.
 ```
 cmd/paranin/main.go      # check the content, or serve it with the build: both servers, the signals, the stop
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
-internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks
+internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks, else its agent (D21)
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted
 internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page, the icon
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text

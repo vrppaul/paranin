@@ -65,7 +65,8 @@ How long a cache keeps an answer:
 The format the `Accept` header ranks highest, by the closest range that names it (RFC 9110, 12.5.1): HTML
 (`text/html`), markdown (`text/markdown`) or the manual (`text/plain`), each with `; charset=utf-8`. Where it ranks
 two alike the manual goes first, then markdown, then HTML, so `curl`, which sends `*/*`, and a request with no
-`Accept` get the manual (D21).
+`Accept` get the manual. D21 sends such a request HTML, the manual going to a terminal's client alone (owner,
+2026-11-24; `docs/SEO.md`, Formats); this section follows it once that is built (`TODO.md`).
 
 Every negotiated response sets `Vary: Accept` alone, the page of no page among them: a filter's query is part of the
 address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
@@ -124,13 +125,9 @@ left out, and a gap among written words stands marked as one.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script; `<html lang>` is its language's tag, and the frame's own words, Neovim's and tmux's
   (`vim keys`, `esc close`, the command line's keys, kinds and names, Neovim's words on its line), stand in
-  `lang="en"` on every page, and what the reader types and the line echoes in the page's own. A page with an address adds its canonical
-  link; Open Graph's `og:type` (`website`), `og:site_name`, `og:locale` (its language's catalogue's `locale`,
-  `en_US`), `og:title`, `og:url`, and `og:description` where it has one; a post read in more than one language,
-  `<link rel="alternate" hreflang>` to the post in each, itself among them, and `hreflang="x-default"` to the English
-  original, and `og:locale:alternate` for each of the others; and its record as
-  JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
-  its tabs; a post's comes with the site's SEO (`TODO.md`). A page of the blog names the feeds that follow it,
+  `lang="en"` on every page, and what the reader types and the line echoes in the page's own. A page with an address adds
+  what a search engine and a link preview read of it: its canonical link, Open Graph, its languages and its record
+  (`docs/SEO.md`). A page of the blog names the feeds that follow it,
   `<link rel="alternate" type="application/atom+xml">` with each feed's title, a series' first on a post's page that
   shows the series, then the blog's, which the résumé and its tabs name too, for a feed
   reader handed the page, or the site's address, to find them. A post's page is the post whole: its title the one
@@ -149,7 +146,7 @@ left out, and a gap among written words stands marked as one.
   the widget runs, and its props, a block of JSON (`application/json`), its caption a `<figcaption>`. The blog's list
   has the blog's name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link
   to it, its day in a `<time datetime>` then its title, stretched over its tile, its series a link to its group on the
-  list by series, a part to come no link; it has no record until the site's SEO. The list's tags and a post's are
+  list by series, a part to come no link; it has no record (`docs/SEO.md`). The list's tags and a post's are
   links to the list each filters, a post's only where the lists name it; the filter shown is `aria-current="true"`, leads back to
   the list and is named to a screen reader as the way there (`posts tagged go, show all posts`); a filtered list is called by the blog's name and its filter, `blog — posts tagged go`. Every page ends with the
   foot line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.

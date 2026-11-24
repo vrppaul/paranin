@@ -413,7 +413,7 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
 		{name: "a browser, in the site's language", path: "/nothing", accept: browser, contentType: browsed, holds: `<html lang="en">`},
 		{name: "a browser, in a translation's folder", path: "/ru/blog/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
-		{name: "a browser, in a translation's preview folder", path: "/ru/preview/token/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
+		{name: "a browser, in a translation's preview folder", path: "/preview/ru/token/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
 		{name: "a browser, in the folder of a language the site has no words for", path: "/de/blog", accept: browser, contentType: browsed, holds: `<html lang="en">`},
 	}
 	for _, testCase := range cases {
@@ -701,7 +701,7 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 	_, signature, _ := strings.Cut(token, tokenJoint)
 	movedLater := "/preview/" + strconv.FormatInt(lapses.Add(linkLasts).Unix(), decimal) + tokenJoint + signature + "/previewed.md"
 	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), lapses)
-	translationLink := "/ru/preview/" + translationToken + "/" + fixtures.PreviewSlug
+	translationLink := "/preview/ru/" + translationToken + "/" + fixtures.PreviewSlug
 	opened, missing := seenAnswer{status: http.StatusOK, holds: true}, seenAnswer{status: http.StatusNotFound, holds: false}
 	cases := []struct {
 		name       string
@@ -734,11 +734,15 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 		{name: "its translation's page", previewKey: key, path: translationLink, accept: "text/html", holds: `<html lang="ru">`, want: opened},
 		{
 			name: "its translation's markdown, leading to its picture at the link", previewKey: key, path: translationLink + ".md", accept: "",
-			holds: "(https://example.test/ru/preview/" + translationToken + "/previewed/margin.png", want: opened,
+			holds: "(https://example.test/preview/ru/" + translationToken + "/previewed/margin.png", want: opened,
 		},
 		{name: "its translation's picture", previewKey: key, path: translationLink + "/margin.png", accept: "", holds: "PNG", want: opened},
-		{name: "its translation at the original's link", previewKey: key, path: "/ru/preview/" + token + "/previewed.md", accept: "", holds: "# Предпросмотр", want: missing},
+		{name: "its translation at the original's link", previewKey: key, path: "/preview/ru/" + token + "/previewed.md", accept: "", holds: "# Предпросмотр", want: missing},
 		{name: "the original at its translation's link", previewKey: key, path: "/preview/" + translationToken + "/previewed.md", accept: "", holds: "# Previewed", want: missing},
+		{
+			name: "its link in a language the site is not translated into", previewKey: key, path: "/preview/de/" + token + "/previewed.md", accept: "",
+			holds: "# Previewed", want: missing,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -777,8 +781,11 @@ func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 		{name: "the token and its folder's end", method: http.MethodGet, path: "/preview/" + token + "/", accept: "text/html"},
 		{name: "a path of an empty segment", method: http.MethodGet, path: "/preview/" + token + "//" + fixtures.PreviewSlug, accept: ""},
 		{name: "a method no page takes", method: http.MethodPost, path: link, accept: ""},
-		{name: "its translation's page", method: http.MethodGet, path: "/ru/preview/" + translationToken + "/" + fixtures.PreviewSlug, accept: "text/html"},
-		{name: "the token alone in a language's folder", method: http.MethodGet, path: "/ru/preview/" + token, accept: "text/html"},
+		{name: "its translation's page", method: http.MethodGet, path: "/preview/ru/" + translationToken + "/" + fixtures.PreviewSlug, accept: "text/html"},
+		{name: "the token alone in a language's folder", method: http.MethodGet, path: "/preview/ru/" + token, accept: "text/html"},
+		{name: "a path opening with an empty segment", method: http.MethodGet, path: "/" + link, accept: ""},
+		{name: "a path opening with a dot", method: http.MethodGet, path: "/." + link, accept: ""},
+		{name: "a path leading out of another folder into it", method: http.MethodGet, path: "/blog/.." + link, accept: ""},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

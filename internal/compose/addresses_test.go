@@ -19,12 +19,8 @@ const (
 	wordsFile           = "i18n/en.yaml"
 	experienceWord      = "experience: Experience"
 	experienceAsTheBlog = "experience: Blog"
-	// a post slugged, the experience retitled and the project slugged, as the preview's folder is named
-	previewSluggedPostFile = "posts/preview/post.en.md"
+	// the experience retitled as the preview's folder is named
 	experienceAsThePreview = "experience: Preview"
-	profileFile            = "profile.yaml"
-	projectSlug            = "slug: tidy-tool"
-	projectAsThePreview    = "slug: preview"
 )
 
 // The fixture's published post's file, its revision, and its status, which a case turns to a draft's; the field a case
@@ -52,9 +48,9 @@ const (
 )
 
 // No two pages of the site share an address in any format: a post slugged as the address the blog's list by series
-// takes, a draft, a preview or one out later among them, or a tab of the résumé titled as the blog, whose address the
-// list by year takes, is found at every address it shares; content whose pages each have their own is found to share
-// none.
+// takes, a draft, a preview or one out later among them, a tab of the résumé titled as the blog, whose address the
+// list by year takes, or one titled as the preview's folder, is found at every address it shares; content whose pages
+// each have their own is found to share none.
 func TestNoTwoPagesShareAnAddress(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -75,8 +71,6 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 		{name: "a post out later slugged as the list by series", change: laterPostSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a preview slugged as the list by series", change: previewSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a tab of the résumé titled as the blog", change: tabTitledBlog, want: []string{"/blog", "/blog.md", "/blog.txt"}},
-		{name: "a post slugged as the preview's folder", change: postSluggedPreview, want: []string{"/blog/preview/"}},
-		{name: "a project slugged as the preview's folder", change: projectSluggedPreview, want: []string{"/p/preview/", "/p/preview/why/"}},
 		{name: "a tab of the résumé titled as the preview's folder", change: tabTitledPreview, want: []string{"/preview/"}},
 	}
 	for _, testCase := range cases {
@@ -252,20 +246,6 @@ func laterPostSluggedSeries(test *testing.T, folder string) {
 //wrapper:a case of the table names the change it writes
 func tabTitledBlog(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, wordsFile, experienceWord, experienceAsTheBlog)
-}
-
-// postSluggedPreview writes a post whose folder, where its pictures and versions stand, bears the preview's name.
-//
-//wrapper:a case of the table names the change it writes
-func postSluggedPreview(test *testing.T, folder string) {
-	fixtures.WriteIn(test, folder, previewSluggedPostFile, sharedPostText)
-}
-
-// projectSluggedPreview slugs the fixture's project as the preview's folder is named, so its tabs would stand in one.
-//
-//wrapper:a case of the table names the change it writes
-func projectSluggedPreview(test *testing.T, folder string) {
-	fixtures.ReplaceIn(test, folder, profileFile, projectSlug, projectAsThePreview)
 }
 
 // tabTitledPreview titles the résumé's experience as the preview's folder, so its tab's folder would be one.

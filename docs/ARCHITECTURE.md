@@ -156,6 +156,7 @@ Amended 2026-11-24, on the owner's word: a heading's anchor is its words, whatev
 Amended 2026-11-24, on the owner's word: a tag alone filters the list, a filtered list a page of one kind.
 Amended 2026-11-24, on the owner's word: `paranin revise` dates the post as updated on its day, `content` writing its
 file so.
+Amended 2026-11-24, on the owner's word: the preview's folder holds a translation's language, `/preview/ru/`.
 
 ### Context
 
@@ -477,17 +478,20 @@ and web routes.
   names the language it is translated into (`Page.Translation`), as it
   names an older version (`Page.Revision`), so a target, a head and a link
   name a page in any language by one value; `routes` writes every address
-  of a translated page in its language's folder, `/ru/blog/<slug>`, a
-  preview's `/ru/preview/<token>/<slug>` and a feed's `/ru/blog.atom`, and
-  reads a folder back only for a language the site is translated into,
-  which `routes.New` takes from the snapshot; only whether a path is in a
-  preview folder, which a host's private headers ask of every request
-  before any drawing, it reads by the path's form alone, `/preview/` at
-  the root or one segment down, so `/de/preview/` goes out privately too;
-  the tag's form is `content`'s alone, which `routes` cannot read. No page
-  stands there: `Check` refuses a page whose folder would
-  (`routes.PreviewFolderTaken`), a post or a project slugged `preview` or a
-  tab of the résumé titled so, as an address the preview links take. `compose.SiteOf` composes one site, its index and pages
+  of a translated page in its language's folder, `/ru/blog/<slug>` and a
+  feed's `/ru/blog.atom`, a preview's in the preview's folder with its
+  language's folder after it, `/preview/ru/<token>/<slug>` (amended
+  2026-11-24, the owner's word), and reads a folder back only for a
+  language the site is translated into, which `routes.New` takes from the
+  snapshot; whether a path is in the preview's folder, which a host's
+  private headers ask of every request before any drawing, is its opening
+  alone, `/preview/`, so every token stands under one folder whatever
+  follows it. No page stands there: `Check` refuses a page whose folder
+  would (`routes.PreviewFolderTaken`), a tab of the résumé titled
+  `preview`, as an address the preview links take. Way weighed: the
+  preview's folder in the language's, `/ru/preview/`, which asked of every
+  path one segment down and refused a post or a project slugged `preview`.
+  `compose.SiteOf` composes one site, its index and pages
   once, and a blog in each language (`Site.Own`, `Site.Translations`) by the code that composes
   the English, each with its frame in its words and its own lists, filters,
   posts, versions, previews and feeds, all their links read among the pages
@@ -682,11 +686,13 @@ and web routes.
 - **`routes`** writes every address. Read at a post's preview link, a
   site writes every address of that post, its faces, sections and
   pictures, with the blog's folder swapped for the preview's folder and the
-  link's token, `/preview/<token>/<slug>`, and `PreviewPath` reads a path
-  back the same way, its token and its slug among it, so the one rule is
-  written once (amended 2026-11-23); `InPreviewFolder` says by the opening
-  alone whether a path is in the folder, so the host sends whatever it
-  answers there privately. A link inside a page is written by the site
+  link's token, `/preview/<token>/<slug>`, a translation's language's
+  folder between the two, `/preview/ru/<token>/<slug>`, and `PreviewPath`
+  reads a path back the same way, its token and its slug among it, so the
+  one rule is written once (amended 2026-11-23); `InPreviewFolder` says by
+  the opening of a path's clean form alone, as `net/http` cleans it,
+  whether it is in the folder, so the host sends whatever it answers there
+  privately, a redirect to that clean form among them. A link inside a page is written by the site
   too, `Site.Reference`, so a face drawing a preview leads nowhere near
   its public address. A filtered list is the site's one address with a
   query, `/blog?tag=go` (amended 2026-11-24), and `Requested` reads a

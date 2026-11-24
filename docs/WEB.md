@@ -21,20 +21,22 @@ project's page is a tab, named by its title's letters and digits in small letter
 and its `published` time has come, as a preview at its preview link alone, and as a draft only under
 `paranin serve --drafts`, to its author; the list names the posts published and out alone. A post dated later comes
 out at its time with no reload, and is a preview until then. A preview's every address is the one it would have in the
-blog's folder with `/blog/` swapped for `/preview/{token}/`, its token `{lapses}.{signature}`: the moment the link
-lapses in seconds of Unix time, then an HMAC-SHA256 of that moment and the post's address once out, `/blog/{slug}` or
-`/ru/blog/{slug}`, under the server's key, in base64url (`docs/FOUNDATION.md` §5.4, Status), so a link opens the post
+blog's folder with `/blog/` swapped for `/preview/{token}/`, a translation's `/{language}/blog/` for
+`/preview/{language}/{token}/`, its token `{lapses}.{signature}`: the moment the link lapses in seconds of Unix time,
+then an HMAC-SHA256 of that moment and the post's address once out, `/blog/{slug}` or `/ru/blog/{slug}`, under the
+server's key, in base64url (`docs/FOUNDATION.md` §5.4, Status), so a link opens the post
 in its own language alone; a link whose token signs a slug alone, as an earlier `paranin preview-link` printed, opens
 nothing. `paranin preview-link` signs a link for thirty days, or as long as `--lasts` asks, ninety
 days at most, and a translation's where `--language` names its language. A server that holds no key serves no preview;
 it reads its key as it starts, so a new key takes a restart. A preview's faces are drawn for each request that opens
 one, since each link writes its own token into them.
 
-A post's translation, and the blog in its language, stand in the language's folder: every address of the blog below,
-its previews' among them, with `/{language}` before it, as `/ru/blog/{slug}`, `/ru/blog.md?tag={tag}`,
-`/ru/preview/{token}/{slug}` and `/ru/blog.atom`, for each language the content has words for (`content/i18n/`), its tag
-two or three small letters. The blog in a language lists the posts out in it alone, in its words; English, the site's
-own language, has no folder. Nothing answers by `Accept-Language`: the address alone picks the language.
+A post's translation, and the blog in its language, stand in the language's folder, for each language the content
+has words for (`content/i18n/`), its tag two or three small letters: every address of the blog below with
+`/{language}` before it, as `/ru/blog/{slug}`, `/ru/blog.md?tag={tag}` and `/ru/blog.atom`, and a preview's in the
+preview's folder with the language's after it, `/preview/ru/{token}/{slug}`, so the preview's folder alone holds every
+token. The blog in a language lists the posts out in it alone, in its words; English, the site's own language, has no
+folder. Nothing answers by `Accept-Language`: the address alone picks the language.
 
 | Method, path | Answer |
 | --- | --- |
@@ -50,7 +52,7 @@ own language, has no folder. Nothing answers by `Accept-Language`: the address a
 | `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
-| `GET /{language}/blog…`, `GET /{language}/preview/…` | The same in a language, for each address above in the blog's folder, the preview's and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
+| `GET /{language}/blog…`, `GET /preview/{language}/…` | The same in a language, for each address above in the blog's folder, the preview's and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
@@ -190,10 +192,11 @@ counted in; a mono face of the reader's own shows the text until it has come. An
 Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent but in the preview's folder:
 `strict-origin-when-cross-origin` is every browser's own default.
 
-Every answer whose path opens with `/preview/`, or with any one segment and then it, `/ru/preview/` whether or not the
-site has the language, adds these; no page stands there, since content whose page's folder would, a post or a project
-slugged `preview` or a tab of the résumé titled so, is refused as it loads. It adds them, the handler's own and what `net/http` writes there alike: a
-path of no page, a `302` on to a post out, a redirect to a path's clean form, a refusal of a method. It names no
+Every answer whose path opens with `/preview/` once cleaned as `net/http` cleans it, a translation's preview at
+`/preview/ru/` and `//preview/…` or `/blog/../preview/…` among them, adds these; no page stands there, since content
+whose page's folder would, a tab of the résumé titled `preview`, is refused as it loads. It adds them, the handler's
+own and what `net/http` writes there alike: a path of no page, a `302` on to a post out, a redirect to a path's clean
+form, a refusal of a method. It names no
 canonical address, since the post's own serves nothing yet; a preview's page says `noindex` in its head too
 (`<meta name="robots">`):
 

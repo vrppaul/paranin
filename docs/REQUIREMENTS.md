@@ -172,8 +172,9 @@ Each part meets these when it is built ([FOUNDATION](FOUNDATION.md) §8).
   secret is at least 32 bytes, read from a file alone, since a value in
   the environment is read by every child process and through `/proc`, and
   never logged; a new secret ends every link.
-- Every answer in the preview's folder, a refusal or a redirect `net/http`
-  writes among them, carries `X-Robots-Tag: noindex`,
+- Every answer in the preview's folder, any path that opens with
+  `/preview/`, a translation's preview at `/preview/ru/` among them, a
+  refusal or a redirect `net/http` writes too, carries `X-Robots-Tag: noindex`,
   `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`,
   so its token reaches neither Cloudflare nor a site it links to.
 - A post before its date answers 404, not 403, and a status worked out for

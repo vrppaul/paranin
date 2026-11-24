@@ -155,9 +155,9 @@ func TestAPreviewIsAddressedUnderItsToken(test *testing.T) {
 		{name: "another post", previewed: previewed, target: document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}, format: FormatChosen, wantPath: "/blog/reading-slowly"},
 		{name: "the post in another language", previewed: previewed, target: translated, format: FormatChosen, wantPath: "/ru/blog/coming"},
 		{name: "the résumé", previewed: previewed, target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, format: FormatChosen, wantPath: "/"},
-		{name: "a translation as the reader asks", previewed: translated, target: translated, format: FormatChosen, wantPath: "/ru/preview/c2lnbmVk/coming"},
-		{name: "a translation in markdown", previewed: translated, target: translated, format: FormatMarkdown, wantPath: "/ru/preview/c2lnbmVk/coming.md"},
-		{name: "a translation's picture", previewed: translated, target: document.File{Page: translated, Name: "margin.png"}, format: FormatChosen, wantPath: "/ru/preview/c2lnbmVk/coming/margin.png"},
+		{name: "a translation as the reader asks", previewed: translated, target: translated, format: FormatChosen, wantPath: "/preview/ru/c2lnbmVk/coming"},
+		{name: "a translation in markdown", previewed: translated, target: translated, format: FormatMarkdown, wantPath: "/preview/ru/c2lnbmVk/coming.md"},
+		{name: "a translation's picture", previewed: translated, target: document.File{Page: translated, Name: "margin.png"}, format: FormatChosen, wantPath: "/preview/ru/c2lnbmVk/coming/margin.png"},
 		{name: "the original of a translation", previewed: translated, target: previewed, format: FormatChosen, wantPath: "/blog/coming"},
 	}
 	for _, testCase := range cases {
@@ -190,11 +190,10 @@ func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
 			want: PreviewLink{Token: previewToken, Post: post, PostPath: "/blog/coming/margin.png"}, wantRead: true,
 		},
 		{
-			name: "a translation's markdown", path: "/ru/preview/c2lnbmVk/coming.md",
+			name: "a translation's markdown", path: "/preview/ru/c2lnbmVk/coming.md",
 			want: PreviewLink{Token: previewToken, Post: post.InLanguage("ru"), PostPath: "/ru/blog/coming.md"}, wantRead: true,
 		},
-		{name: "a folder of no language", path: "/russian/preview/c2lnbmVk/coming", want: none, wantRead: false},
-		{name: "a language the site is not translated into", path: "/de/preview/c2lnbmVk/coming", want: none, wantRead: false},
+		{name: "a translation's token alone", path: "/preview/ru/c2lnbmVk", want: none, wantRead: false},
 		{name: "a post's own address", path: "/blog/coming", want: none, wantRead: false},
 		{name: "the folder with no post", path: "/preview/c2lnbmVk/", want: none, wantRead: false},
 		{name: "the folder with no token", path: "/preview//coming", want: none, wantRead: false},
@@ -210,8 +209,8 @@ func TestAPreviewsPathReadsBackAsItsTokenAndItsPost(test *testing.T) {
 	}
 }
 
-// A path is in a preview's folder by its opening alone, at the root or one segment down, which no page takes since the
-// check refuses one, so every answer there is sent as a preview link's is; the name alone, or deeper, is not.
+// A path is in the preview's folder by its opening alone, a translation's in it too, which no page takes since the
+// check refuses one, so every answer there is sent as a preview link's is; the name alone, or below the root, is not.
 func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 	cases := []struct {
 		path string
@@ -220,15 +219,12 @@ func TestAPathIsInThePreviewsFolderByItsOpening(test *testing.T) {
 		{path: "/preview/c2lnbmVk/coming", want: true},
 		{path: "/preview/c2lnbmVk", want: true},
 		{path: "/preview/", want: true},
-		{path: "/ru/preview/c2lnbmVk/coming", want: true},
-		{path: "/ru/preview/", want: true},
+		{path: "/preview/ru/c2lnbmVk/coming", want: true},
 		{path: "/preview", want: false},
-		{path: "/ru/preview", want: false},
 		{path: "/previews/coming", want: false},
 		{path: "/blog/coming", want: false},
-		{path: "/de/preview/c2lnbmVk/coming", want: true},
-		{path: "/p/preview/why", want: true},
-		{path: "/p/tidy-tool/preview/why", want: false},
+		{path: "/blog/preview/margin.png", want: false},
+		{path: "/p/preview/why", want: false},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.path, func(test *testing.T) {

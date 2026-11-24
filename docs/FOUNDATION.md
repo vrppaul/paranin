@@ -548,8 +548,13 @@ updated: 2026-11-12
     leads to its public address, which serves nothing yet; each link holds
     a token of its own, so a preview's faces are drawn for the request that
     opens one, from the post composed once. A translation's preview stands
-    in its language's folder, `/ru/preview/<token>/<slug>`, as its post
-    does once out; `paranin preview-link --language ru` signs its link.
+    in the preview's folder, its language's folder after it,
+    `/preview/ru/<token>/<slug>`, so every token is under `/preview/`
+    alone; `paranin preview-link --language ru` signs its link (owner,
+    2026-11-24). Way weighed: the preview's folder in the language's,
+    `/ru/preview/`, as the post stands once out, which made every path one
+    segment down a preview's and refused a post or a project slugged
+    `preview`.
   - **What leaks nothing:** every answer in the preview's folder, a path
     of it that is no page, a redirect to a path's clean form and a refusal
     of a method among them, is sent with `X-Robots-Tag: noindex`,
@@ -758,9 +763,9 @@ and SSH to the host: "without a new binary" does not mean without a build.
   number two posts share, a slug of digits alone, which `blog/12` would
   read as a number, and content of which two pages share an address, as a
   post slugged `series` would share the list by series', or of which a
-  page's folder is a preview's, as a post or a project slugged `preview`, or
-  a tab of the résumé titled so, would be (2026-11-24): every answer there is
-  sent privately, which would drop the page out of search.
+  page's folder is the preview's, as a tab of the résumé titled `preview`
+  would be (2026-11-24): every answer there is sent privately, which would
+  drop the page out of search.
 - **On the web** `/blog/12` answers `301` to `/blog/<slug>`, and
   `/blog/<slug>` the post as the project pages answer, its markdown and its
   manual at `.md` and `.txt` beside it (`docs/WEB.md`).
@@ -822,8 +827,9 @@ For every page of the site, the blog's among them:
   `Accept-Language`: the address alone picks the language, so a crawler and
   `curl` get one text per address. Every address of the blog has its
   language's folder before it, `/ru/blog/12`, `/ru/blog.md?tag=go`,
-  `/ru/blog/page-cache/2026-11-10`, a preview's `/ru/preview/<token>/<slug>`;
-  a post may link to a translation, which the check holds as it holds any
+  `/ru/blog/page-cache/2026-11-10`, but a preview's, whose language's
+  folder stands after the preview's, `/preview/ru/<token>/<slug>`; a post
+  may link to a translation, which the check holds as it holds any
   link inside the site.
 - **The blog in a language is a blog of its own** (2026-11-24): its list
   at `/ru/blog`, by year and by series, filtered by its tags,

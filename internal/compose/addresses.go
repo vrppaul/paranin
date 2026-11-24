@@ -119,7 +119,7 @@ func (clashes AddressClashes) Error() string {
 // sharedAddresses are the addresses more than one of the served pages' heads takes, as AddressClashes; none where
 // every page has addresses of its own. It reads them through the addresses routes writes, so a tab of the résumé
 // titled as the blog, or a post slugged as its list by series, is found as any other clash; and a page whose folder is
-// a preview's, which the preview links take, as a post slugged preview.
+// the preview's, which the preview links take, as a tab of the résumé titled preview.
 func sharedAddresses(heads []document.Head) error {
 	titlesAt := map[string][]string{}
 	for _, head := range heads {

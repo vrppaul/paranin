@@ -164,11 +164,9 @@ type drawing struct {
 	site     routes.Site
 }
 
-// notFoundAt is the page of no page for a path asked for: in the language whose folder opens it, the site's own where
-// no language's does.
+// notFoundAt is the page of no page for a path asked for, in the language it is read in (routes.Site's LanguageOf).
 func (drawn *drawing) notFoundAt(path string) missingChoice {
-	translation, _ := drawn.site.LanguageFolderOf(path)
-	return drawn.notFound[translation]
+	return drawn.notFound[drawn.site.LanguageOf(path)]
 }
 
 // move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's

@@ -116,8 +116,9 @@ func inLanguage(translation, path string) string {
 	return pathStart + translation + path
 }
 
-// languageFolderOf parts a path into the language whose folder opens it and the path after; none and the path whole.
-func (site Site) languageFolderOf(path string) (string, string) {
+// LanguageFolderOf parts a path into the language the site is translated into whose folder opens it, and the path
+// after; none and the path whole where no such folder does.
+func (site Site) LanguageFolderOf(path string) (string, string) {
 	inside, _ := strings.CutPrefix(path, pathStart)
 	language, rest, parted := strings.Cut(inside, folderEnd)
 	if !parted || !slices.Contains(site.translations, language) {
@@ -293,7 +294,7 @@ const slugEnds = folderEnd + "."
 // PreviewPath reads a path in the preview's folder as the preview link it is, the one rule paths keeps the other way
 // round, and whether it is one, naming a token and a post.
 func (site Site) PreviewPath(path string) (PreviewLink, bool) {
-	language, own := site.languageFolderOf(path)
+	language, own := site.LanguageFolderOf(path)
 	inFolder, isInFolder := strings.CutPrefix(own, previewFolder)
 	token, inPost, namesPost := strings.Cut(inFolder, folderEnd)
 	slug := inPost
@@ -397,7 +398,7 @@ func (site Site) Requested(path string, query url.Values) string {
 			named[key] = values
 		}
 	}
-	_, own := site.languageFolderOf(path)
+	_, own := site.LanguageFolderOf(path)
 	if len(named) == 0 || !slices.ContainsFunc(Formats(), func(format Format) bool { return ownPath(document.PageOf(document.PageBlog), format) == own }) {
 		return path
 	}

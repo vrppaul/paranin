@@ -40,7 +40,3 @@ type Basic uint8
 
 // BasicOwn is the terminal's own colour, where no basic colour serves: a number no colour of sixteen has
 const BasicOwn Basic = math.MaxUint8
-
-// DayLayout is how a post's day reads on the page and in the TUI (DESIGN.md, Content): 21 Nov 2026; the manual writes
-// it as a machine does
-const DayLayout = "2 Jan 2006"

@@ -11,9 +11,6 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The count of posts a group holds that the site's words write as one post, not as posts
-const onePost = 1
-
 // blogLists are the blog's list, a document every face draws (D25), in its two groupings: every post the blog lists
 // by year, newest first, and the same posts by series, the posts in no series last. Each opens with the blog's head.
 func blogLists(read blog) []document.Document {
@@ -211,7 +208,7 @@ func (read blog) bySeries(words content.Words) []document.Block {
 				out++
 			}
 		}
-		count := textSpans(words.Phrase(content.PhrasePartsOut, strconv.Itoa(out), strconv.Itoa(len(parts))))
+		count := textSpans(words.Count(content.CountPartsOut, out, strconv.Itoa(len(parts))))
 		groups = append(groups, postGroup(series.Title, series.Name, textSpans(series.Line), count, posts))
 	}
 	others := []document.ListedPost{}
@@ -232,13 +229,9 @@ func postGroup(title, name string, line, count []document.Span, posts []document
 	return document.Section{Title: textSpans(title), Name: name, Blocks: []document.Block{document.Posts{Line: line, Count: count, List: posts}}}
 }
 
-// postCount is how many posts a group holds, in the site's words, one post apart from more.
+// postCount is how many posts a group holds, in the site's words.
 func postCount(posts int, words content.Words) []document.Span {
-	phrase := content.PhrasePosts
-	if posts == onePost {
-		phrase = content.PhraseOnePost
-	}
-	return textSpans(words.Phrase(phrase, strconv.Itoa(posts)))
+	return textSpans(words.Count(content.CountPosts, posts))
 }
 
 // newestFirst are posts in the order they came out turned round, the one out last first.

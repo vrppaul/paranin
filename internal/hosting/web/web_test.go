@@ -379,7 +379,8 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 
 // An address of no page is not found, and says so with the status it is answered with and the address asked for, its
 // path as the request decoded it and its query as written: in plain text to a terminal, an agent and a request naming
-// nothing, in HTML, in the site's language, to a browser; and a cache keeps one copy for each Accept.
+// nothing, in HTML to a browser, in the language whose folder the path opens with, the site's own where it opens with
+// none the site is translated into; and a cache keeps one copy for each Accept.
 func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	const (
@@ -420,6 +421,9 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 		{name: "an agent asking for markdown", path: "/nothing", accept: "text/markdown", contentType: plain, holds: `404 Not Found: "/nothing"`},
 		{name: "a browser", path: "/nothing", accept: browser, contentType: browsed, holds: `<code>&#34;/nothing&#34;</code>`},
 		{name: "a browser, in the site's language", path: "/nothing", accept: browser, contentType: browsed, holds: `<html lang="en">`},
+		{name: "a browser, in a translation's folder", path: "/ru/blog/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
+		{name: "a browser, in a translation's preview folder", path: "/ru/preview/token/nothing", accept: browser, contentType: browsed, holds: `<html lang="ru">`},
+		{name: "a browser, in the folder of a language the site has no words for", path: "/de/blog", accept: browser, contentType: browsed, holds: `<html lang="en">`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

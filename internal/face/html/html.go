@@ -154,8 +154,12 @@ func ownID(name string) string {
 	return ownIDMark + name
 }
 
-// The language the frame's own words are written in on every page, Neovim's and tmux's, which no translation changes
-const frameLanguage = "en"
+// The language the frame's own words are written in on every page, Neovim's and tmux's, and HTTP's status on the page
+// of no page, which no translation changes; and what names a title in its page's own language, none other
+const (
+	frameLanguage = "en"
+	pageLanguage  = ""
+)
 
 // The keys the command line names, each with what it does, as the TUI's names them; Esc closes a hint's window too
 const (

@@ -42,6 +42,11 @@ const (
 	rangeProblem         = "%d is not above min, %d"
 	unknownWordProblem   = "is no word of the site"
 	placeProblem         = "%q writes its place, %s, %d times, where its values ask for %d"
+	textProblem          = "is no text: a word or a phrase of the site is written as one"
+	formsProblem         = "is no count: a count is written in each form its language gives a whole number, %s, a text under each"
+	strayFormProblem     = "is no form the language gives a whole number: it gives %s"
+	monthsProblem        = "is no list of the %d months' names, January first"
+	unknownLanguage      = "%q is no language BCP 47 knows, whose plural rule picks a count's form"
 	characterProblem     = "%q holds a control character, a mark of direction or bytes of no character, which every face would pass on"
 	sharedNumberProblem  = "%d is another post's number too"
 	unknownMoment        = "%q is no date and time with its zone, as 2026-11-10T09:00+01:00"
@@ -87,11 +92,14 @@ const (
 	linkProblem          = "%q is no absolute web address, no path from the site's root and no mailto: of a bare mail address"
 	ownAddressProblem    = "%q is the site's own address: a link inside the site is written [its words](/its/path), from the root"
 	linkTitleProblem     = "%q is a link's title, which no face shows"
-	straySeriesProblem   = "is no series: the series' folder holds a file <name>" + yamlEnding + " for each"
-	emptySeriesProblem   = "holds no post"
-	unknownPostProblem   = "%q names no post"
-	sharedPartProblem    = "%q is a part of the series already"
-	otherSeriesProblem   = "%q is a part of another series, %q"
+	straySeriesProblem   = "is no series: the series' folder holds a file <name>" + yamlEnding + " for each, and <name>.<language>" +
+		yamlEnding + " for each translation of one"
+	emptySeriesProblem        = "holds no post"
+	unknownPostProblem        = "%q names no post"
+	sharedPartProblem         = "%q is a part of the series already"
+	otherSeriesProblem        = "%q is a part of another series, %q"
+	untranslatedSeriesProblem = "translates no series: its original, %s, comes first"
+	englishSeriesProblem      = "translates a series into English, which its original, <name>" + yamlEnding + ", is written in"
 )
 
 // What separates the kinds a fault lists where a value is none of them

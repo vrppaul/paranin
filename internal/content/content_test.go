@@ -345,6 +345,103 @@ func TestEveryWordOfTheSiteIsRequired(test *testing.T) {
 	}
 }
 
+// A count is written in the form its language's plural rule (CLDR) gives the number, the number in its first place:
+// English writes two forms, Russian three for a whole count.
+func TestACountIsWrittenInTheFormItsLanguageGivesTheNumber(test *testing.T) {
+	snapshot, err := Load(fixtureFolder(test))
+	if err != nil {
+		test.Fatalf("Load of the fixture = %v, want no error", err)
+	}
+	wordsIn := map[string]Words{}
+	for _, edition := range snapshot.Editions() {
+		wordsIn[edition.Words.Language()] = edition.Words
+	}
+	cases := []struct {
+		name     string
+		language string
+		count    Count
+		number   int
+		values   []string
+		want     string
+	}{
+		{name: "one post in English", language: english, count: CountPosts, number: 1, values: nil, want: "1 post"},
+		{name: "no post in English", language: english, count: CountPosts, number: 0, values: nil, want: "0 posts"},
+		{name: "two posts in English", language: english, count: CountPosts, number: 2, values: nil, want: "2 posts"},
+		{name: "one post in Russian", language: russian, count: CountPosts, number: 1, values: nil, want: "1 пост"},
+		{name: "three posts in Russian", language: russian, count: CountPosts, number: 3, values: nil, want: "3 поста"},
+		{name: "five posts in Russian", language: russian, count: CountPosts, number: 5, values: nil, want: "5 постов"},
+		{name: "eleven posts in Russian", language: russian, count: CountPosts, number: 11, values: nil, want: "11 постов"},
+		{name: "twenty-one posts in Russian", language: russian, count: CountPosts, number: 21, values: nil, want: "21 пост"},
+		{name: "twenty-two posts in Russian", language: russian, count: CountPosts, number: 22, values: nil, want: "22 поста"},
+		{name: "a part of two out in Russian", language: russian, count: CountPartsOut, number: 1, values: []string{"2"}, want: "вышла 1 из 2"},
+		{name: "every part of a series of one", language: english, count: CountAllParts, number: 1, values: nil, want: "1 part"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := wordsIn[testCase.language].Count(testCase.count, testCase.number, testCase.values...); got != testCase.want {
+				test.Errorf("Count(%d, %d, %q) in %s = %q, want %q", testCase.count, testCase.number, testCase.values, testCase.language, got, testCase.want)
+			}
+		})
+	}
+}
+
+// Every fault of a catalogue's count or months stands at its key, and at the form or the month it names: a form the
+// language's rule gives a whole count and the catalogue leaves out, or one the rule never gives.
+func TestEveryFaultOfACatalogueStandsAtItsPlace(test *testing.T) {
+	cases := []struct {
+		name        string
+		file        string
+		original    string
+		replacement string
+		want        faultPlace
+	}{
+		{
+			name: "a count written as one text", file: wordsFile(english), original: "posts_count:\n  one: \"{} post\"\n  other: \"{} posts\"",
+			replacement: `posts_count: "{} posts"`, want: faultPlace{file: wordsFile(english), field: "posts_count", line: 0},
+		},
+		{
+			name: "a form its language gives left out", file: wordsFile(russian), original: "  few: \"{} поста\"\n", replacement: "",
+			want: faultPlace{file: wordsFile(russian), field: "posts_count.few", line: 0},
+		},
+		{
+			name: "a form its language never gives a whole count", file: wordsFile(english), original: "  other: \"{} posts\"",
+			replacement: "  other: \"{} posts\"\n  few: \"{} posts\"", want: faultPlace{file: wordsFile(english), field: "posts_count.few", line: 0},
+		},
+		{
+			name: "a form of no name CLDR gives", file: wordsFile(english), original: "  other: \"{} posts\"",
+			replacement: "  other: \"{} posts\"\n  several: \"{} posts\"", want: faultPlace{file: wordsFile(english), field: "posts_count.several", line: 0},
+		},
+		{
+			name: "a form with no place for its count", file: wordsFile(english), original: `one: "{} post"`, replacement: `one: "a post"`,
+			want: faultPlace{file: wordsFile(english), field: "posts_count.one", line: 0},
+		},
+		{
+			name: "a word written as forms", file: wordsFile(english), original: "about: About", replacement: "about: {one: About}",
+			want: faultPlace{file: wordsFile(english), field: "about", line: 0},
+		},
+		{
+			name: "eleven months", file: wordsFile(english), original: "Nov, Dec]", replacement: "Nov]",
+			want: faultPlace{file: wordsFile(english), field: "months", line: 0},
+		},
+		{
+			name: "a month left empty", file: wordsFile(english), original: "Apr,", replacement: `"",`,
+			want: faultPlace{file: wordsFile(english), field: "months[3]", line: 0},
+		},
+		{
+			name: "months written as one text", file: wordsFile(english), original: "months: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]",
+			replacement: "months: Jan", want: faultPlace{file: wordsFile(english), field: "months", line: 0},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			faults := faultsOf(test, changedFile(test, fixtureFolder(test), testCase.file, testCase.original, testCase.replacement))
+			if !slices.ContainsFunc(faults, func(fault Fault) bool { return placeOf(fault) == testCase.want }) {
+				test.Errorf("faults with %q = %q, want one at %+v", testCase.replacement, faults, testCase.want)
+			}
+		})
+	}
+}
+
 // A catalogue is named by its language's tag, which an address of the site writes before a translated page's path:
 // a file named otherwise is a fault of its own.
 func TestACatalogueIsNamedByItsLanguage(test *testing.T) {
@@ -356,6 +453,7 @@ func TestACatalogueIsNamedByItsLanguage(test *testing.T) {
 		{name: "a language with its region", file: "i18n/pt-br.yaml"},
 		{name: "a tag in capitals", file: "i18n/RU.yaml"},
 		{name: "a file of no catalogue", file: "i18n/notes.txt"},
+		{name: "a tag of no language", file: "i18n/xx.yaml"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -408,6 +506,12 @@ func changedProfile(test *testing.T, original, replacement string) fstest.MapFS 
 
 func writtenFile(folder fstest.MapFS, file, text string) fstest.MapFS {
 	folder[file] = &fstest.MapFile{Data: []byte(text)}
+	return folder
+}
+
+// withoutFile is a folder with one of its files taken away.
+func withoutFile(folder fstest.MapFS, file string) fstest.MapFS {
+	delete(folder, file)
 	return folder
 }
 

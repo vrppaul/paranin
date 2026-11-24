@@ -18,7 +18,7 @@ func TestACommandNeverBreaksAcrossLines(test *testing.T) {
 			{Label: "install", Value: []document.Span{document.Code{Text: command}}},
 		}}},
 	}
-	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, command) {
+	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test)); !strings.Contains(got, command) {
 		test.Errorf("Manual = %q, want the command %q on one line", got, command)
 	}
 }
@@ -43,7 +43,7 @@ func TestTheDescriptionHoldsWhatDescribesThePage(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil), Blocks: testCase.blocks}
-			got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+			got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test))
 			if !strings.Contains(got, testCase.holds) || strings.Contains(got, testCase.lacks) {
 				test.Errorf("Manual = %q, want it to hold %q and not %q", got, testCase.holds, testCase.lacks)
 			}
@@ -61,7 +61,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 		Blocks: []document.Block{document.Entry{Kind: document.EntryRole, Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Points: nil}},
 	}
 	want := strings.Repeat(" ", sectionIndent) + "[2020] – [2021]\n"
-	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, "\n"+want) {
+	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test)); !strings.Contains(got, "\n"+want) {
 		test.Errorf("Manual = %q, want the period on a line of its own, %q", got, want)
 	}
 }
@@ -73,7 +73,7 @@ func TestATabInCodeStandsAsTheSpacesToItsStop(test *testing.T) {
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil),
 		Blocks: []document.Block{document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "if x {\n\treturn\n}\nab\tc"}}}},
 	}
-	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test))
 	indent := strings.Repeat(" ", sectionIndent)
 	for _, want := range []string{indent + "    return\n", indent + "ab  c\n"} {
 		if !strings.Contains(got, want) || strings.Contains(got, "\t") {
@@ -91,7 +91,7 @@ func TestATableTooWideForColumnsStandsARowABullet(test *testing.T) {
 		Rows:   []document.Row{{Cells: []document.Cell{cellOf("Slow"), cellOf(wide)}}},
 	}
 	composed := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PagePost, Slug: "post", Tab: ""}, nil), Blocks: []document.Block{table}}
-	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)))
+	got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test))
 	indent := strings.Repeat(" ", sectionIndent)
 	for _, want := range []string{indent + "- Name — Note\n", indent + "- Slow — word"} {
 		if !strings.Contains(got, want) {
@@ -108,7 +108,7 @@ func TestTextTouchingACommandStaysBesideTheCommand(test *testing.T) {
 			document.Text{Text: "Run "}, document.Code{Text: "tool --all"}, document.Text{Text: "."},
 		}}},
 	}
-	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test))); !strings.Contains(got, "Run tool --all.") {
+	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test)); !strings.Contains(got, "Run tool --all.") {
 		test.Errorf("Manual = %q, want %q", got, "Run tool --all.")
 	}
 }

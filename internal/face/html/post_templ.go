@@ -550,8 +550,8 @@ func (writer PageWriter) languageSwitch(languages []document.Language) templ.Com
 	})
 }
 
-// day is a post's day as a time: as a reader reads it, and as a machine does.
-func day(published time.Time) templ.Component {
+// day is a post's day as a time: as a reader of the page's language reads it, and as a machine does.
+func (writer PageWriter) day(published time.Time) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -586,9 +586,9 @@ func day(published time.Time) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(published.Format(look.DayLayout))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.days.Of(published))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 139, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 139, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -639,7 +639,7 @@ func (writer PageWriter) versionPick(read time.Time, versions []document.PostVer
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = day(read).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.day(read).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -869,7 +869,7 @@ func (writer PageWriter) versionRow(version document.PostVersion) templ.Componen
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = day(version.Day).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.day(version.Day).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -958,7 +958,7 @@ func (writer PageWriter) newer(older document.VersionOlder) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = day(older.Newer.Day).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.day(older.Newer.Day).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2047,7 +2047,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = day(side.neighbour.Published).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = writer.day(side.neighbour.Published).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

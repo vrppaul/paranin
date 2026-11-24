@@ -4,11 +4,11 @@ reading · terminals
 
 > Что читает автор, и как.
 
-## Reading
+## Чтение
 
-How a reader keeps what they read.
+Как читатель удерживает прочитанное.
 
-вышло 1 из 2
+вышла 1 из 2
 
 ### [Медленное чтение](https://example.test/ru/blog/reading-slowly.md)
 
@@ -18,6 +18,6 @@ reading · terminals
 
 Почему страницу, прочитанную дважды, читают один раз.
 
-### Reading aloud
+### Чтение вслух
 
 скоро · часть 2

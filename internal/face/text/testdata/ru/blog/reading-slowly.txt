@@ -1,9 +1,9 @@
-READING-SLOWLY(1)               User Commands                READING-SLOWLY(1)
+READING-SLOWLY(1)            Команды пользователя            READING-SLOWLY(1)
 
-NAME
+ИМЯ
        Медленное чтение
 
-DESCRIPTION
+ОПИСАНИЕ
        Почему страницу, прочитанную дважды, читают один раз.
 
        English <https://example.test/blog/reading-slowly.txt> · Русский

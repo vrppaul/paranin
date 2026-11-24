@@ -139,6 +139,20 @@ func translationWith(test *testing.T, original, replacement string) *content.Sna
 	return snapshot
 }
 
+// A blog in a language writes a day in its language's months, and a series in the words its translation of it writes.
+func TestABlogWritesDaysAndSeriesInItsLanguage(test *testing.T) {
+	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
+	day := fixtures.MomentOf(test, "2026-11-15T10:00+03:00")
+	russianPost := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, document.PostPage(fixturePostSlug).InLanguage(russian))
+	got := []string{
+		site.Own.Frame.Days.Of(day), site.Translations[russianBlog].Frame.Days.Of(day),
+		document.PlainText(postNamed(test, site.Own.Posts, fixturePostSlug).Head.Post.Series.Title), document.PlainText(russianPost.Head.Post.Series.Title),
+	}
+	if want := []string{"15 Nov 2026", "15 нояб. 2026", "Reading", "Чтение"}; !slices.Equal(got, want) {
+		test.Errorf("the day and the series' title in English and in Russian = %q, want %q", got, want)
+	}
+}
+
 // The site changes as a translation dated later comes out, as it does when a post does.
 func TestATranslationDatedLaterChangesTheSiteWhenOut(test *testing.T) {
 	site := SiteOf(Prepare(translationWith(test, translationOut, translationOutLater)), publicOnTheDay())

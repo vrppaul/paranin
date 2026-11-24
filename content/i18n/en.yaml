@@ -10,17 +10,20 @@
 # reader, the panes' headings, each side's name and what a side with none says, the word before where the post is
 # discussed, and the name of its outline; and the blog's list: the line it opens with, its window, the way to it beside
 # a post's other posts, the word before how it groups its posts, its grouping by year, its group of the posts in no
-# series, how many posts a group holds, one or more, how many of a series' parts are out, its name in a grouping, and
-# the filter of a list filtered by a tag or a series, and that filter as the way back to the whole list; and a post's
-# versions, the title of the window that lists them, the words that mark the current one and the one read, and what an
-# older one says of the newer; the titles of the blog's feed and of a series'; and the language: the label of a post's
-# language, the language's own name for itself, which the language's Switch shows, and the locale Open Graph marks its
-# pages in, language_TERRITORY; and the list's grouping by series, after the word before how it groups its posts,
-# apart from the series' label among a post's facts, since a language may write the two otherwise. A phrase holds a place, {}, for each
-# value it takes, in the order the site hands them: the command, the code block's number on its page, a part's number
-# and the count of parts, the series' title, a count of posts, the parts out and the count of parts, the list's title
-# and the grouping's word, the tag, the filter's words, the newer version's day, the author's name, the series' title
-# and the blog's feed's title. `paranin check content` requires every one of them.
+# series, how many posts a group holds, how many of a series' parts are out, its name in a grouping, and the filter of
+# a list filtered by a tag or a series, and that filter as the way back to the whole list; and a post's versions, the
+# title of the window that lists them, the words that mark the current one and the one read, and what an older one
+# says of the newer; the titles of the blog's feed and of a series'; and the language: the label of a post's language,
+# the language's own name for itself, which the language's Switch shows, and the locale Open Graph marks its pages in,
+# language_TERRITORY; and the list's grouping by series, after the word before how it groups its posts, apart from the
+# series' label among a post's facts, since a language may write the two otherwise; the months' names as a day writes
+# them, 21 Nov 2026; the manual's own words, the section of the manual its pages stand in, the names of the sections
+# each opens with and of its notes, which it writes in capitals. A phrase holds a place, {}, for each value it takes, in the order the site hands them: the command, the code
+# block's number on its page, a part's number and the count of parts, the series' title, the list's title and the
+# grouping's word, the tag, the filter's words, the newer version's day, the author's name, the series' title and the
+# blog's feed's title. A count, how many posts, all the parts of a series and those out, is written in each form the
+# language gives a whole number, as CLDR names them, English one and other, Russian one, few and many, its number in
+# its first place. `paranin check content` requires every one of them.
 
 about: About
 greeting: Hi, my name is
@@ -60,7 +63,9 @@ reading: reading
 next: next
 soon: soon
 other_parts: "Other parts of {}"
-all_parts: "all {} parts"
+all_parts:
+  one: "{} part"
+  other: "all {} parts"
 part: "part {}"
 previous: previous
 older: older
@@ -78,9 +83,12 @@ all_posts: all posts
 by: by
 years: years
 outside_series: other posts
-one_post: "{} post"
-posts_count: "{} posts"
-parts_out: "{} of {} out"
+posts_count:
+  one: "{} post"
+  other: "{} posts"
+parts_out:
+  one: "{} of {} out"
+  other: "{} of {} out"
 grouped_list: "{} by {}"
 tag_filter: "posts tagged {}"
 series_filter: "parts of {}"
@@ -95,3 +103,8 @@ language: language
 language_name: English
 locale: en_US
 series_grouping: series
+months: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+manual_section: User Commands
+manual_name: Name
+manual_description: Description
+manual_notes: Notes

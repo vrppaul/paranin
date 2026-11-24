@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/yuin/goldmark/ast"
@@ -33,6 +34,14 @@ const sampleSeries = `title: Tools
 line: On the tools a writer keeps.
 posts: [notes-on-tools]
 `
+
+// A translation of the fixture's series that loads in place of its own in Russian, which a case writes changed
+const sampleSeriesTranslation = `title: Чтение
+line: Как читатель удерживает прочитанное.
+`
+
+// Where the fixture's series is translated into Russian
+const fixtureSeriesTranslation = "series/reading.ru.yaml"
 
 // A translation that loads in place of the fixture post's own in Russian, which a case writes changed: its body's lines
 // are the file's 7th to 11th
@@ -171,17 +180,43 @@ func TestThePostsComeInTheOrderOfTheirSlugs(test *testing.T) {
 	}
 }
 
-func TestASeriesLoadsWithItsPartsInOrder(test *testing.T) {
-	snapshot, err := Load(fixtureFolder(test))
-	if err != nil {
-		test.Fatalf("Load of the fixture = %v, want no error", err)
+// A series loads in each language with its parts in order: its title, line and parts to come as its file in the
+// language writes them, its original's where it has none there, and its posts its original's.
+func TestASeriesLoadsInEachLanguageWithItsPartsInOrder(test *testing.T) {
+	cases := []struct {
+		name   string
+		folder fstest.MapFS
+		want   map[string][]Series
+	}{
+		{
+			name: "a series written in Russian too", folder: fixtureFolder(test),
+			want: map[string][]Series{
+				english: {{Name: "reading", Title: "Reading", Line: "How a reader keeps what they read.", Posts: []string{fixturePostSlug}, ToCome: []string{"Reading aloud"}}},
+				russian: {{Name: "reading", Title: "Чтение", Line: "Как читатель удерживает прочитанное.", Posts: []string{fixturePostSlug}, ToCome: []string{"Чтение вслух"}}},
+			},
+		},
+		{
+			name: "a series written in English alone", folder: withoutFile(fixtureFolder(test), fixtureSeriesTranslation),
+			want: map[string][]Series{
+				english: {{Name: "reading", Title: "Reading", Line: "How a reader keeps what they read.", Posts: []string{fixturePostSlug}, ToCome: []string{"Reading aloud"}}},
+				russian: {{Name: "reading", Title: "Reading", Line: "How a reader keeps what they read.", Posts: []string{fixturePostSlug}, ToCome: []string{"Reading aloud"}}},
+			},
+		},
 	}
-	want := []Series{{
-		Name: "reading", Title: "Reading", Line: "How a reader keeps what they read.", Posts: []string{fixturePostSlug},
-		ToCome: []string{"Reading aloud"},
-	}}
-	if !reflect.DeepEqual(snapshot.Series, want) {
-		test.Errorf("the series = %+v, want %+v", snapshot.Series, want)
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot, err := Load(testCase.folder)
+			if err != nil {
+				test.Fatalf("Load = %v, want no error", err)
+			}
+			got := map[string][]Series{}
+			for _, edition := range snapshot.Editions() {
+				got[edition.Words.Language()] = edition.Series
+			}
+			if !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the series by language = %+v, want %+v", got, testCase.want)
+			}
+		})
 	}
 }
 
@@ -392,6 +427,38 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a series name of digits alone", sample: sampleSeries, file: "series/12.yaml", original: "title: Tools", replacement: "title: Tools", want: faultPlace{file: "series/12.yaml", field: "", line: 0}},
 		{name: "a file of no series", sample: sampleSeries, file: "series/notes.txt", original: "title: Tools", replacement: "title: Tools", want: faultPlace{file: "series/notes.txt", field: "", line: 0}},
 		{name: "a folder among the series", sample: sampleSeries, file: "series/old/tools.yaml", original: "title: Tools", replacement: "title: Tools", want: faultPlace{file: "series/old", field: "", line: 0}},
+		{
+			name: "a series' translation into a language of no words", sample: sampleSeriesTranslation, file: "series/reading.de.yaml", original: "title:",
+			replacement: "title:", want: faultPlace{file: "series/reading.de.yaml", field: "", line: 0},
+		},
+		{
+			name: "a series' translation into English", sample: sampleSeriesTranslation, file: "series/reading.en.yaml", original: "title:",
+			replacement: "title:", want: faultPlace{file: "series/reading.en.yaml", field: "", line: 0},
+		},
+		{
+			name: "a series' translation of no series", sample: sampleSeriesTranslation, file: "series/tools.ru.yaml", original: "title:", replacement: "title:",
+			want: faultPlace{file: "series/tools.ru.yaml", field: "", line: 0},
+		},
+		{
+			name: "a series' translation naming its posts", sample: sampleSeriesTranslation, file: fixtureSeriesTranslation, original: "title:",
+			replacement: "posts: [reading-slowly]\ntitle:", want: faultPlace{file: fixtureSeriesTranslation, field: "", line: 0},
+		},
+		{
+			name: "a series' translation with no title", sample: sampleSeriesTranslation, file: fixtureSeriesTranslation, original: "title: Чтение",
+			replacement: `title: ""`, want: faultPlace{file: fixtureSeriesTranslation, field: "title", line: 0},
+		},
+		{
+			name: "a series' translation with no line", sample: sampleSeriesTranslation, file: fixtureSeriesTranslation,
+			original: "line: Как читатель удерживает прочитанное.\n", replacement: "", want: faultPlace{file: fixtureSeriesTranslation, field: "line", line: 0},
+		},
+		{
+			name: "a series' translation's part to come with no title", sample: sampleSeriesTranslation, file: fixtureSeriesTranslation, original: "title: Чтение",
+			replacement: "title: Чтение\nto_come: [\"\"]", want: faultPlace{file: fixtureSeriesTranslation, field: "to_come[0]", line: 0},
+		},
+		{
+			name: "a series' name of digits alone in a translation", sample: sampleSeriesTranslation, file: "series/12.ru.yaml", original: "title:",
+			replacement: "title:", want: faultPlace{file: "series/12.ru.yaml", field: "", line: 0},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

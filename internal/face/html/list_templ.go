@@ -343,7 +343,7 @@ func (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.tileParts(post, day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.tileParts(post, writer.day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

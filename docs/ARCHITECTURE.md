@@ -147,7 +147,9 @@ Atom, each post's body as `face/html` draws it for a feed reader. Amended 2026-1
 author's choice, ways weighed below, for the owner to confirm: a snapshot holds an edition in each language, its words
 and its posts, a page names the language it is translated into, `routes` writes its every address in that language's
 folder, `compose` composes a blog in each language, its frame in its words, whose links read the pages of every
-language, and a post's head lists the languages it is read in.
+language, and a post's head lists the languages it is read in. Amended 2026-11-24, with the site's words in every
+language: an edition holds its series in its language, a catalogue writes a count in each plural form and the months,
+read by x/text's CLDR rules, and the frame carries how a day and the manual's headings are written in its language.
 
 ### Context
 
@@ -458,10 +460,10 @@ and web routes.
   and whose buttons and numbers show in a reader as stray words; the
   summary alone, which a feed standing in for a newsletter cannot be.
 - **Translations** (amended 2026-11-24, FOUNDATION §5.4, Translations; the
-  author's choice, for the owner to confirm). `content` loads one profile,
-  one set of series, and an edition in each language it has words for,
+  author's choice, for the owner to confirm). `content` loads one profile
+  and an edition in each language it has words for,
   English's apart from the rest (`Snapshot.Own`, `Snapshot.Translations`),
-  so no place in a list says which is English: that language's words and the posts
+  so no place in a list says which is English: that language's words, its series and the posts
   written in it, a translation with its original's number, tags and
   discussions and its own text, status, dates and revisions
   (`Post.Translation`). A language's tag is stored once, in its words;
@@ -498,6 +500,24 @@ and web routes.
   which read `/de/blog` as a language the site has not; the
   faces reading the words of a document's language off it, which would
   carry the frame's words into every head.
+  A series is read in each language (amended 2026-11-24, `Edition.Series`), its own
+  words where its translation's file writes them, its original's where
+  none does, so `compose` reads a blog's series as it reads its posts. The
+  site's words in a language are its catalogue's alone: a count
+  (`content.Count`) is written in each plural form the language's CLDR rule
+  gives a whole number, which `content` reads from
+  `golang.org/x/text/feature/plural` with the language's tag, depguard
+  keeping x/text to `content` and to those two packages; the months a day
+  writes, which the frame's `DayWords` writes as `DESIGN.md` has a day,
+  for the page and the TUI alike; the manual's headings, which the frame
+  carries (`Frame.Manual`) and the web host hands `face/text` with the
+  site's addresses; and the frame of the page of no page in a language's
+  folder, which the web host draws for each language. Its cost: the binary
+  grows by 0.36 MB. Ways weighed: a table of plural rules of our own,
+  each language a grammar copied by hand and waiting on code; the series'
+  words in the catalogue, which every catalogue would have to hold for
+  every series; the manual's words in the document's head, which carries
+  the frame's words into every head.
 - **Text inside a block** is a tree of spans, a closed set too: emphasis,
   strong, a link, a highlight (`==result==`) and a note hold spans; text,
   code and a gap (`[text]`, still to fill) are leaves. A gap may sit inside a

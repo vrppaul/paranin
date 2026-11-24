@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -24,14 +25,17 @@ type OpenedPage struct {
 }
 
 // Frame is what a face lays round the documents it draws in one language, on every page alike, in the site's words in
-// it: the name of the theme button, which is pressed while the page is dark, the locale Open Graph marks a page in,
-// the words of the button that copies a command or a block of
+// it: the language's tag, the name of the theme button, which is pressed while the page is dark, the locale Open Graph
+// marks a page in, the words of the button that copies a command or a block of
 // code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a face
 // writes with the page's address, the words of the button that writes to the author, the page of each project that
 // has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, by each
 // name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the words of its series
-// and of the panes at its foot, the name of its outline, and the words of the blog's list.
+// and of the panes at its foot, the name of its outline, the words of the blog's list, how a day is written, and the
+// manual's own words.
 type Frame struct {
+	// Language is the tag of the language of the frame's words, as BCP 47 writes it: "en"
+	Language  string
 	DarkTheme string
 	// Locale is the locale Open Graph marks a page in, language_TERRITORY, as the language's words write it
 	Locale       string
@@ -48,6 +52,31 @@ type Frame struct {
 	PaneWords    PaneWords
 	Contents     string
 	ListWords    ListWords
+	Days         DayWords
+	Manual       ManualWords
+}
+
+// DayWords write a day as a reader of their language reads it (DESIGN.md, Content): its number, its month's name as the
+// language's words write it in a day, and its year, 21 Nov 2026.
+type DayWords struct {
+	words content.Words
+}
+
+// What parts a day's number, its month and its year
+const dayJoint = " "
+
+// Of is a day as its language writes it, in the zone the moment holds.
+func (dayWords DayWords) Of(day time.Time) string {
+	return strconv.Itoa(day.Day()) + dayJoint + dayWords.words.Month(day.Month()) + dayJoint + strconv.Itoa(day.Year())
+}
+
+// ManualWords are the manual's own words in a language: the section of the manual its pages stand in, and the names of
+// the sections every page opens with and of the notes it ends with where it cites any, as man-pages(7) names them.
+type ManualWords struct {
+	Section     string
+	Name        string
+	Description string
+	Notes       string
 }
 
 // Session is one of the site's sessions, as a face's foot line names them after tmux's (DESIGN.md, FootLine): its
@@ -181,6 +210,7 @@ func frameOf(snapshot *content.Snapshot, read blog) Frame {
 	projects := projectPlaces(snapshot.Profile.Projects)
 	listWords := read.listWords()
 	return Frame{
+		Language:     words.Language(),
 		DarkTheme:    words.Text(content.WordDarkTheme),
 		Locale:       words.Text(content.WordLocale),
 		CopyWords:    copyWords,
@@ -204,6 +234,11 @@ func frameOf(snapshot *content.Snapshot, read blog) Frame {
 		PaneWords:   paneWords(words),
 		Contents:    words.Text(content.WordContents),
 		ListWords:   listWords,
+		Days:        DayWords{words: words},
+		Manual: ManualWords{
+			Section: words.Text(content.WordManualSection), Name: words.Text(content.WordManualName),
+			Description: words.Text(content.WordManualDescription), Notes: words.Text(content.WordManualNotes),
+		},
 	}
 }
 
@@ -264,7 +299,7 @@ func (seriesWords SeriesWords) OtherParts(title string) string {
 
 // AllParts is the pick that lists every part of a series, by their count.
 func (seriesWords SeriesWords) AllParts(parts int) string {
-	return seriesWords.words.Phrase(content.PhraseAllParts, strconv.Itoa(parts))
+	return seriesWords.words.Count(content.CountAllParts, parts)
 }
 
 // Part is a part of a series by its number: "part 4".

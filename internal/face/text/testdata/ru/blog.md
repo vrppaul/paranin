@@ -10,7 +10,7 @@ reading · terminals
 
 ### [Медленное чтение](https://example.test/ru/blog/reading-slowly.md)
 
-2026-11-15 · часть 1 · Reading
+2026-11-15 · часть 1 · Чтение
 
 reading · terminals
 

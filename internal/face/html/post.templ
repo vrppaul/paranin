@@ -134,9 +134,9 @@ templ (writer PageWriter) languageSwitch(languages []document.Language) {
 	</span>
 }
 
-// day is a post's day as a time: as a reader reads it, and as a machine does.
-templ day(published time.Time) {
-	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(look.DayLayout) }</time>
+// day is a post's day as a time: as a reader of the page's language reads it, and as a machine does.
+templ (writer PageWriter) day(published time.Time) {
+	<time datetime={ published.Format(machineDayLayout) }>{ writer.frame.days.Of(published) }</time>
 }
 
 // versionPick is the versions' Pick (DESIGN.md, Pick): the day of the version read and a mark saying it opens a
@@ -144,7 +144,7 @@ templ day(published time.Time) {
 // word for the versions, lists each, newest first, its close button last, so the keyboard reaches the versions first.
 templ (writer PageWriter) versionPick(read time.Time, versions []document.PostVersion) {
 	<button type="button" class="version-pick" popovertarget={ ownID(versionsPickID) }>
-		@day(read)
+		@writer.day(read)
 		@text(wordSpace)
 		<span class="pick-mark" aria-hidden="true">{ pickMark }</span>
 	</button>
@@ -182,7 +182,7 @@ templ (writer PageWriter) pickVersion(version document.PostVersion) {
 
 // versionRow is a version's row in its pick's window: its day, and where it stands, none for an older one not read.
 templ (writer PageWriter) versionRow(version document.PostVersion) {
-	@day(version.Day)
+	@writer.day(version.Day)
 	if state := writer.frame.versionWords.State(version); state != "" {
 		@text(wordSpace)
 		<span class="version-state">{ state }</span>
@@ -195,7 +195,7 @@ templ (writer PageWriter) newer(older document.VersionOlder) {
 	<a class="newer" href={ writer.frame.site.Reference(older.Newer.Page, routes.FormatChosen) }>
 		<span class="newer-mark" aria-hidden="true">{ look.NewerMark }</span>
 		{ older.NewerWords.Before }
-		@day(older.Newer.Day)
+		@writer.day(older.Newer.Day)
 		{ older.NewerWords.After }
 	</a>
 }
@@ -357,7 +357,7 @@ templ (writer PageWriter) pane(side paneSide) {
 			</span>
 			if !side.neighbour.Published.IsZero() {
 				<span class="pane-date">
-					@day(side.neighbour.Published)
+					@writer.day(side.neighbour.Published)
 				</span>
 			}
 		</a>

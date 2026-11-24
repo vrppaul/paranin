@@ -38,7 +38,9 @@ reading: reading
 next: next
 soon: soon
 other_parts: "Other parts of {}"
-all_parts: "all {} parts"
+all_parts:
+  one: "{} part"
+  other: "all {} parts"
 part: "part {}"
 previous: previous
 older: older
@@ -56,9 +58,12 @@ all_posts: all posts
 by: by
 years: years
 outside_series: other posts
-one_post: "{} post"
-posts_count: "{} posts"
-parts_out: "{} of {} out"
+posts_count:
+  one: "{} post"
+  other: "{} posts"
+parts_out:
+  one: "{} of {} out"
+  other: "{} of {} out"
 grouped_list: "{} by {}"
 tag_filter: "posts tagged {}"
 series_filter: "parts of {}"
@@ -73,3 +78,8 @@ language: language
 language_name: English
 locale: en_US
 series_grouping: series
+months: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+manual_section: User Commands
+manual_name: Name
+manual_description: Description
+manual_notes: Notes

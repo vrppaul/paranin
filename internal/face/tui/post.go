@@ -192,9 +192,9 @@ func (layout layout) postFacts(head document.Head) []line {
 	facts := []postFact{}
 	switch version := head.Version.(type) {
 	case document.VersionOut:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Day.Format(look.DayLayout), kindText)})
+		facts = append(facts, postFact{label: labels.Version, value: textWords(layout.siteWords.Days.Of(version.Day), kindText)})
 	case document.VersionOlder:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Day.Format(look.DayLayout), kindText)},
+		facts = append(facts, postFact{label: labels.Version, value: textWords(layout.siteWords.Days.Of(version.Day), kindText)},
 			postFact{label: "", value: layout.newerWords(version)})
 	case document.VersionDraft:
 		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Word, kindText)})
@@ -239,7 +239,7 @@ func (layout layout) languageWords(languages []document.Language) []word {
 // on the tint.
 func (layout layout) newerWords(older document.VersionOlder) []word {
 	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation}
-	spans := older.NewerSpans(older.Newer.Day.Format(look.DayLayout))
+	spans := older.NewerSpans(layout.siteWords.Days.Of(older.Newer.Day))
 	return append([]word{wordOf(look.NewerMark, kindLookMark)}, layout.formWords(spans, form)...)
 }
 
@@ -651,7 +651,7 @@ func (layout layout) paneWordsOf(side paneSide) []line {
 	title := layout.words([]document.Span{document.Link{Target: neighbour.Page, Spans: neighbour.Title}}, kindStrong)
 	lines := slices.Concat(layout.fill(title, 0), layout.fill(layout.words(neighbour.Lead, kindMuted), 0))
 	if !neighbour.Published.IsZero() {
-		lines = append(lines, layout.fill(textWords(neighbour.Published.Format(look.DayLayout), kindFaint), 0)...)
+		lines = append(lines, layout.fill(textWords(layout.siteWords.Days.Of(neighbour.Published), kindFaint), 0)...)
 	}
 	return lines
 }

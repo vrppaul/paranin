@@ -152,14 +152,31 @@ type Server struct {
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, every file of its build and every picture
 // of its posts served; where a path sends the reader on to, by the path: a post's number, and its current version's
-// day; the page of an address of no page; each post served at its preview link alone, which a request opening one
-// draws; and the site's addresses, which read a request's path.
+// day; the page of an address of no page in each language; each post served at its preview link alone, which a request
+// opening one draws; and the site's addresses, which read a request's path.
 type drawing struct {
 	served   answers
 	moved    map[string]move
-	notFound missingChoice
+	notFound notFoundPages
 	previews previewing
 	site     routes.Site
+}
+
+// notFoundPages are the page of no page in the site's own language, and in each it is translated into, by its tag,
+// which names its folder.
+type notFoundPages struct {
+	own          missingChoice
+	translations map[string]missingChoice
+}
+
+// notFoundAt is the page of no page for a path asked for: in the language whose folder opens it, the site's own where
+// no language's does.
+func (drawn *drawing) notFoundAt(path string) missingChoice {
+	translation, _ := drawn.site.LanguageFolderOf(path)
+	if translated, isTranslated := drawn.notFound.translations[translation]; isTranslated {
+		return translated
+	}
+	return drawn.notFound.own
 }
 
 // move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's
@@ -369,7 +386,7 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		http.Redirect(writer, request, moved.location, moved.status)
 		return
 	}
-	status, sent := drawn.served.answerTo(writer.Header(), request, drawn.site.Requested(path, request.URL.Query()), drawn.notFound)
+	status, sent := drawn.served.answerTo(writer.Header(), request, drawn.site.Requested(path, request.URL.Query()), drawn.notFoundAt(path))
 	send(writer, status, sent)
 }
 
@@ -402,16 +419,17 @@ func (served answers) answerTo(header http.Header, request *http.Request, path s
 // post among them, as no page, so a link tells nothing of which posts there are.
 func (server *Server) atLink(drawn *drawing, header http.Header, request *http.Request, moment time.Time) (int, answer) {
 	link, isLink := drawn.site.PreviewPath(request.URL.Path)
+	notFound := drawn.notFoundAt(request.URL.Path)
 	if !isLink || !server.previewKey.admits(link.Token, link.Post, moment) {
-		return answersOf().answerTo(header, request, link.PostPath, drawn.notFound)
+		return answersOf().answerTo(header, request, link.PostPath, notFound)
 	}
 	if previewed, isPreview := drawn.previews.posts[link.Post]; isPreview {
-		return drawn.previews.at(previewed, drawn.site.Previewing(link.Post, link.Token)).answerTo(header, request, link.PostPath, drawn.notFound)
+		return drawn.previews.at(previewed, drawn.site.Previewing(link.Post, link.Token)).answerTo(header, request, link.PostPath, notFound)
 	}
 	if drawn.served.holds(link.PostPath) {
 		return sentOnForAWhile, sentOnTo(link.PostPath)
 	}
-	return answersOf().answerTo(header, request, link.PostPath, drawn.notFound)
+	return answersOf().answerTo(header, request, link.PostPath, notFound)
 }
 
 // holds is whether the answers hold a path, in one format or where the reader chooses, drawn or still to draw.
@@ -429,7 +447,7 @@ func (previews previewing) at(previewed framedPreview, site routes.Site) answers
 	post := previewed.preview.Post
 	writer := html.NewPageWriter(site, previews.build, previewed.frame, previews.today)
 	served := answersOf()
-	served.serveLater(laterPageOf(post, site, func() string { return writer.Preview(post) }))
+	served.serveLater(laterPageOf(post, textWriter{site: site, manual: previewed.frame.Manual}, func() string { return writer.Preview(post) }))
 	served.servePictures(previewed.preview.Pictures)
 	return served
 }
@@ -456,15 +474,17 @@ type laterPage struct {
 	browsed  lazyFormat
 }
 
-// laterPageOf is a page drawn when asked for: its manual and its markdown as the site writes its addresses, and its
-// HTML as browse draws it, each naming the address it is known by.
-func laterPageOf(shown document.Document, site routes.Site, browse func() string) laterPage {
+// laterPageOf is a page drawn when asked for: its manual and its markdown as the text faces write them, and its HTML
+// as browse draws it, each naming the address it is known by.
+func laterPageOf(shown document.Document, writer textWriter, browse func() string) laterPage {
 	page := shown.Head.Page
 	return laterPage{
 		page:     page,
-		manual:   lazyFormat{mediaType: routes.PlainType, draw: sync.OnceValue(func() answer { return manualOf(shown, site) })},
-		markdown: lazyFormat{mediaType: routes.MarkdownType, draw: sync.OnceValue(func() answer { return markdownOf(shown, site) })},
-		browsed:  lazyFormat{mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(page, site) })},
+		manual:   lazyFormat{mediaType: routes.PlainType, draw: sync.OnceValue(func() answer { return writer.manualOf(shown) })},
+		markdown: lazyFormat{mediaType: routes.MarkdownType, draw: sync.OnceValue(func() answer { return writer.markdownOf(shown) })},
+		browsed: lazyFormat{
+			mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(page, writer.site) }),
+		},
 	}
 }
 
@@ -575,21 +595,37 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the
 		// tab an address shows inside its page
 		for _, shown := range slices.Concat([]document.Document{composed.Document}, composed.Tabs) {
-			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), addresses)
+			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), textWriter{site: addresses, manual: frame.Manual})
 		}
 	}
 	drawn := blogDrawing{served: served, moved: map[string]move{}, previews: previewing{
 		posts: map[document.Page]framedPreview{}, build: build, today: audience.At,
 	}}
 	for _, blog := range composition.Blogs() {
-		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), addresses)
+		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), textWriter{site: addresses, manual: blog.Frame.Manual})
 	}
-	status := statusLine(missingStatus)
-	notFound := missingChoice{
-		{mediaType: routes.PlainType, draw: text.NewNotFound(addresses, status).For},
-		{mediaType: routes.PageType, draw: html.NewNotFound(addresses, status, facts.Own.Words.Language(), build, frame).For},
+	missing := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}
+	notFound := notFoundPages{own: missing.choice(frame), translations: map[string]missingChoice{}}
+	for _, blog := range composition.Translations {
+		notFound.translations[blog.Frame.Language] = missing.choice(blog.Frame)
 	}
 	return &drawing{served: served, moved: drawn.moved, notFound: notFound, previews: drawn.previews, site: addresses}, composition.Until
+}
+
+// missingDrawing is what the page of no page is drawn from in any language: the site, the status the host answers
+// with, and the build it is drawn in.
+type missingDrawing struct {
+	site   routes.Site
+	status string
+	build  *assets.Build
+}
+
+// choice is the page of no page in a frame's language: as text, which no language changes, and as HTML in the frame.
+func (missing missingDrawing) choice(frame compose.Frame) missingChoice {
+	return missingChoice{
+		{mediaType: routes.PlainType, draw: text.NewNotFound(missing.site, missing.status).For},
+		{mediaType: routes.PageType, draw: html.NewNotFound(missing.site, missing.status, missing.build, frame).For},
+	}
 }
 
 // blogDrawing is every blog as draw serves it: the answers it adds its pages to, where its paths send the reader on to,
@@ -602,29 +638,29 @@ type blogDrawing struct {
 
 // draw serves a blog in its language's frame: each post, its number sending the reader on to it, and its pictures; the
 // lists, the filtered ones and the older versions drawn when first asked for; the feeds; and keeps each preview.
-func (drawn blogDrawing) draw(blog compose.Blog, pageWriter html.PageWriter, addresses routes.Site) {
+func (drawn blogDrawing) draw(blog compose.Blog, pageWriter html.PageWriter, writer textWriter) {
 	served := drawn.served
 	served.servePictures(blog.Pictures)
 	for _, post := range blog.Posts {
 		page := post.Head.Page
-		served.serveEveryFormat(post, pageWriter.Post(post), addresses)
+		served.serveEveryFormat(post, pageWriter.Post(post), writer)
 		drawn.moved[routes.NumberPath(page.Translation, post.Head.Number)] = move{location: routes.Path(page, routes.FormatChosen), status: http.StatusMovedPermanently}
 		currentDayMoves(drawn.moved, post)
 	}
 	for _, list := range blog.Lists {
-		served.serveEveryFormat(list, pageWriter.List(list), addresses)
+		served.serveEveryFormat(list, pageWriter.List(list), writer)
 	}
 	// a filtered list and an older version of a post are drawn as a request first asks for them: there is one for each
 	// tag and series and each revision, and few are read
 	for _, list := range blog.Filtered {
-		served.serveLater(laterPageOf(list, addresses, func() string { return pageWriter.List(list) }))
+		served.serveLater(laterPageOf(list, writer, func() string { return pageWriter.List(list) }))
 	}
 	for _, older := range blog.Versions {
-		served.serveLater(laterPageOf(older, addresses, func() string { return pageWriter.Post(older) }))
+		served.serveLater(laterPageOf(older, writer, func() string { return pageWriter.Post(older) }))
 	}
-	bodies := html.NewFeedWriter(addresses)
+	bodies := html.NewFeedWriter(writer.site)
 	for _, composedFeed := range blog.Feeds {
-		served.fixed[routes.FeedPath(composedFeed.Target)] = drawnAs(routes.FeedType, feed.Atom(composedFeed, addresses, bodies))
+		served.fixed[routes.FeedPath(composedFeed.Target)] = drawnAs(routes.FeedType, feed.Atom(composedFeed, writer.site, bodies))
 	}
 	for _, previewed := range blog.Previews {
 		drawn.previews.posts[previewed.Post.Head.Page] = framedPreview{preview: previewed, frame: blog.Frame}
@@ -654,20 +690,27 @@ func (served answers) servePictures(pictures []compose.PostPicture) {
 // serveEveryFormat draws a page in the text formats and serves each at its own path among the fixed answers, and serves
 // them with the page's HTML, drawn already, at the address where the reader chooses; each names the address the page
 // is known by, as the site writes its addresses.
-func (served answers) serveEveryFormat(shown document.Document, browsed string, site routes.Site) {
+func (served answers) serveEveryFormat(shown document.Document, browsed string, writer textWriter) {
 	page := shown.Head.Page
-	markdown, manual := markdownOf(shown, site), manualOf(shown, site)
+	markdown, manual := writer.markdownOf(shown), writer.manualOf(shown)
 	served.fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 	served.fixed[routes.Path(page, routes.FormatManual)] = manual
-	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(page, site))
+	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(page, writer.site))
+}
+
+// textWriter is what the text faces write a page with: the site, which writes its addresses, and the manual's own
+// words in the page's language.
+type textWriter struct {
+	site   routes.Site
+	manual compose.ManualWords
 }
 
 // markdownOf is a page in markdown, as the site writes its addresses, naming the address the page is known by.
-func markdownOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(routes.MarkdownType, text.Markdown(shown, site)).knownAs(shown.Head.Page, site)
+func (writer textWriter) markdownOf(shown document.Document) answer {
+	return drawnAs(routes.MarkdownType, text.Markdown(shown, writer.site)).knownAs(shown.Head.Page, writer.site)
 }
 
 // manualOf is a page as a manual, as the site writes its addresses, naming the address the page is known by.
-func manualOf(shown document.Document, site routes.Site) answer {
-	return drawnAs(routes.PlainType, text.Manual(shown, site)).knownAs(shown.Head.Page, site)
+func (writer textWriter) manualOf(shown document.Document) answer {
+	return drawnAs(routes.PlainType, text.Manual(shown, writer.site, writer.manual)).knownAs(shown.Head.Page, writer.site)
 }

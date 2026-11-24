@@ -796,7 +796,7 @@ For every page of the site, the blog's among them:
   rank HTML first unless `text/plain` is named, which gives a bare `curl`
   the HTML.
 
-#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; its first half built)
+#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the stale translation, the TUI's language and the résumé's)
 
 - **One folder per post, one file per language**; widgets shared. English
   is the main language. A post's language is its file's name,
@@ -822,13 +822,20 @@ For every page of the site, the blog's among them:
   beside it, counted among themselves. The simplest rule that holds
   everywhere: every face, a feed and a filter included, reads the blog in
   one language as it reads the English one, by the same code, and a reader
-  of Russian stays in Russian. A series' title, line and parts to come
-  stand as their file writes them, in English, until a series has words of
-  its own in another language. Ways weighed: no `/ru/blog`, a translation's
-  page leading to the English list, its tags to English filters and its
-  feed to an English page, so a feed per language would name no page of
-  its own; one list of every post, each in the language it is read in,
-  which a feed per language could not follow.
+  of Russian stays in Russian. A series in another language is a file
+  beside its original, `series/reading.ru.yaml`, as a post's text is,
+  writing its own `title`, `line` and `to_come`; its posts are its
+  original's, which the check refuses there, and a translation of no series,
+  into English or into a language with no words is refused. A series with no file in a
+  language stands there as its original writes it (built 2026-11-24). Ways
+  weighed for the series: its words in the catalogue, which holds the
+  site's words and would ask every catalogue for every series; a block per
+  language inside the series' file, a second way to translate beside the
+  posts' and the profile's file per language. Ways weighed for the blog:
+  no `/ru/blog`, a translation's page leading to the English list, its
+  tags to English filters and its feed to an English page, so a feed per
+  language would name no page of its own; one list of every post, each in
+  the language it is read in, which a feed per language could not follow.
 - **Each translation has its own status**: the English can be published
   while the Russian is still a preview. A post's Switch offers the
   languages the lists name it in, and its own; so a translation still a
@@ -860,7 +867,33 @@ For every page of the site, the blog's among them:
   writes a word of the site, not with the first translation, so no template
   is written twice. The repository's content holds `en.yaml` alone until
   the owner's first Russian post brings `ru.yaml`; the tests' fixture holds
-  both.
+  both. Every word a page in a language shows comes from its catalogue or
+  its content, never a face's constant (built 2026-11-24): the manual's
+  own headings, its section's name, `NAME`, `DESCRIPTION` and `NOTES`, which
+  the manual writes in capitals; the months of a day, `months`, twelve
+  short names as a day writes them, `21 Nov 2026`, `21 нояб. 2026`, its
+  order the site's; the page of no page in a language's folder, framed in
+  its words, HTTP's status in English; and a count, how many posts, all a
+  series' parts and those out, written in each plural form its language's
+  rule gives a whole number, as CLDR names them, English `one` and `other`,
+  Russian `one`, `few` and `many`:
+
+  ```yaml
+  posts_count:
+    one: "{} пост"
+    few: "{} поста"
+    many: "{} постов"
+  ```
+
+  The check holds a count to every form its language gives a whole number
+  and refuses any other. The rule is CLDR's, read by
+  `golang.org/x/text/feature/plural` (ADR-0003). Ways weighed: a table of
+  our own for the languages the site has, a grammar copied by hand that a
+  new language would wait on code for; message catalogues (`x/text/message`,
+  go-i18n), each a format of its own for a few counts. A day's form for
+  Russian follows `DESIGN.md`'s short month, CLDR's abbreviated genitive,
+  `15 нояб. 2026`; the month's name is the catalogue's, so the owner may
+  write it whole, `ноября`, if his eye picks it.
 - **The résumé in another language later**: `profile.ru.yaml` beside
   `profile.yaml`, holding the words that translate; the check refuses a key
   the main file lacks.

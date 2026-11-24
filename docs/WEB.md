@@ -54,7 +54,7 @@ own language, has no folder. Nothing answers by `Accept-Language`: the address a
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
 | `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
-| any other `GET` | `404`, the page of no page: the status, the address asked for, quoted, its path decoded and its query as written, and where the site begins; text or HTML, chosen as a page is. |
+| any other `GET` | `404`, the page of no page: the status, the address asked for, quoted, its path decoded and its query as written, and where the site begins; text or HTML, chosen as a page is, the HTML in the frame of the language whose folder the path opens with, the site's own where none does. |
 | any other method | `405`, `Allow: GET, HEAD`, from `net/http`. |
 | a request whose line and headers pass the server's bound, 16 KB and the 4 KB of slack `net/http` adds | `431`, from `net/http`, before the handler reads it. |
 
@@ -92,8 +92,10 @@ period]`). The HTML shows a page as a reader of the finished work sees it: a fac
 left out, and a gap among written words stands marked as one.
 
 - **The manual** opens with `NAME` and `DESCRIPTION`, then a section for each of the page's, as `man(1)` lays a page
-  out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds the day of a post's
-  version read in the middle, as `2026-11-10`, or `draft` for a draft, where `man(1)` writes a page's date. An older
+  out, and `NOTES` where a post cites any, each by its number as `[1]`, its title line naming the manual's section,
+  `User Commands`, each in the page's language, as its catalogue writes them, `ИМЯ` and `Команды пользователя` in
+  Russian; its last line holds the day of a post's version read in the middle, as `2026-11-10`, or `draft` for a
+  draft, where `man(1)` writes a page's date. An older
   version's `DESCRIPTION` opens with the newer that stands over it, `newer: 2026-11-21` and its address. A post read in
   more than one language lists them under its lead, each by its own name, the others with their addresses,
   `English · Русский <…/ru/blog/{slug}.txt>`. A link to a page of the site,
@@ -139,7 +141,7 @@ left out, and a gap among written words stands marked as one.
   reader handed the page, or the site's address, to find them. A post's page is the post whole: its title the one
   `h1`, its version's day in a `<time datetime>`, a draft's version the word `draft`; a post out its version's day a button
   opening, as a popover, the list of its versions, each a link to it but the one read, and an older version under it a
-  link to the newer; its languages a Switch, each a link by its own name with `hreflang` and `lang`, the one read
+  link to the newer; its day in its language's words, `15 нояб. 2026`; its languages a Switch, each a link by its own name with `hreflang` and `lang`, the one read
   `aria-current="page"`; each paragraph a place `#_p1` names and its
   number a link to it, each heading a place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first

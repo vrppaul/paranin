@@ -42,11 +42,11 @@ type listedPart struct {
 	post  *content.Post
 }
 
-// blogOf is the blog of an edition's posts and the snapshot's series, as an audience reads it.
+// blogOf is the blog of an edition's posts and series, as an audience reads it.
 func blogOf(snapshot *content.Snapshot, edition content.Edition, audience Audience) blog {
 	read := blog{
 		audience: audience, words: edition.Words, languages: nil, posts: map[string]content.Post{}, served: []content.Post{},
-		previewed: []content.Post{}, listed: []content.Post{}, newest: nil, tags: nil, series: snapshot.Series,
+		previewed: []content.Post{}, listed: []content.Post{}, newest: nil, tags: nil, series: edition.Series,
 		seriesOf: map[string]content.Series{}, filters: nil, feeds: nil, feedPosts: nil,
 	}
 	for _, post := range edition.Posts {
@@ -63,7 +63,7 @@ func blogOf(snapshot *content.Snapshot, edition content.Edition, audience Audien
 	}
 	// the snapshot holds the posts in their slugs' order, which a stable sort keeps among posts out at one moment
 	slices.SortStableFunc(read.listed, func(first, second content.Post) int { return first.Published.At().Compare(second.Published.At()) })
-	for _, series := range snapshot.Series {
+	for _, series := range edition.Series {
 		for _, slug := range series.Posts {
 			read.seriesOf[slug] = series
 		}

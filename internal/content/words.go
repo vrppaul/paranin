@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/text/feature/plural"
+	"golang.org/x/text/language"
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
@@ -24,7 +26,9 @@ import (
 // foot line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year
 // and by series, and its group of the posts in no series; and a post's versions: the title of the window that lists
 // them, and the words that mark the current one and the one read; and the language: the label of a post's language,
-// the language's own name for itself, which a post's Switch shows, and the locale Open Graph marks a page in.
+// the language's own name for itself, which a post's Switch shows, and the locale Open Graph marks a page in; the
+// manual's own words, the section of the manual its pages stand in and the names of the sections each opens with and
+// of the notes it ends with.
 type Word int
 
 const (
@@ -86,19 +90,21 @@ const (
 	WordLanguageName
 	WordLocale
 	WordSeriesGrouping
+	WordManualSection
+	WordManualName
+	WordManualDescription
+	WordManualNotes
 )
 
 // Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
 // name and what the toast says once it has copied, each with the command; a code block's button's name, with the
 // block's number; and of a series, a part's place in it, with its number and the count of parts, the panes' heading,
-// with the series' title, the pick that lists every part, with their count, and a part's name, with its number; and
-// of the blog's list, how many posts a group holds, one or more, how many of a series' parts are out, with that
-// count and the count of parts, the list's name in a grouping, with its title and the grouping's word, and the
-// filter of a filtered list, by a tag, with the tag, or by a series, with the series' title, and that filter as the
-// way back to the whole list, with its words; what an older version of a post says of the newer, with that version's
-// day; and the title of the blog's feed, with the author's name, and of a series', with the series' title and the
-// blog's feed's. A catalogue writes each place as phrasePlace, where its language puts the value, the values in the
-// order the site hands them.
+// with the series' title, and a part's name, with its number; and of the blog's list, the list's name in a grouping,
+// with its title and the grouping's word, and the filter of a filtered list, by a tag, with the tag, or by a series,
+// with the series' title, and that filter as the way back to the whole list, with its words; what an older version of
+// a post says of the newer, with that version's day; and the title of the blog's feed, with the author's name, and of
+// a series', with the series' title and the blog's feed's. A catalogue writes each place as phrasePlace, where its
+// language puts the value, the values in the order the site hands them.
 type Phrase int
 
 const (
@@ -109,11 +115,7 @@ const (
 	PhraseCopyCode
 	PhrasePartOf
 	PhraseOtherParts
-	PhraseAllParts
 	PhrasePart
-	PhraseOnePost
-	PhrasePosts
-	PhrasePartsOut
 	PhraseGroupedList
 	PhraseTagFilter
 	PhraseSeriesFilter
@@ -146,11 +148,7 @@ func phraseForms() map[Phrase]phraseForm {
 		PhraseCopiedCommand: {key: "copied_command", values: oneValue},
 		PhrasePartOf:        {key: "part_of", values: twoValues},
 		PhraseOtherParts:    {key: "other_parts", values: oneValue},
-		PhraseAllParts:      {key: "all_parts", values: oneValue},
 		PhrasePart:          {key: "part", values: oneValue},
-		PhraseOnePost:       {key: "one_post", values: oneValue},
-		PhrasePosts:         {key: "posts_count", values: oneValue},
-		PhrasePartsOut:      {key: "parts_out", values: twoValues},
 		PhraseGroupedList:   {key: "grouped_list", values: twoValues},
 		PhraseTagFilter:     {key: "tag_filter", values: oneValue},
 		PhraseSeriesFilter:  {key: "series_filter", values: oneValue},
@@ -165,70 +163,79 @@ func phraseForms() map[Phrase]phraseForm {
 // every Word, so a word added to the constants has its key here too.
 func wordKeys() map[Word]string {
 	return map[Word]string{
-		WordAbout:          "about",
-		WordGreeting:       "greeting",
-		WordExperience:     "experience",
-		WordProjects:       "projects",
-		WordSkills:         "skills",
-		WordEducation:      "education",
-		WordLanguages:      "languages",
-		WordContact:        "contact",
-		WordMail:           "mail",
-		WordSSH:            "ssh",
-		WordRepository:     "repository",
-		WordInstall:        "install",
-		WordPresent:        "present",
-		WordSide:           "side",
-		WordLearning:       "learning",
-		WordAuthor:         "author",
-		WordResume:         "resume",
-		WordHealth:         "health",
-		WordDarkTheme:      "dark_theme",
-		WordCopy:           "copy",
-		WordCopied:         "copied",
-		WordWriteTo:        "write_to",
-		WordSSHGives:       "ssh_gives",
-		WordReadingGives:   "reading_gives",
-		WordBlog:           "blog",
-		WordVersion:        "version",
-		WordDraft:          "draft",
-		WordTags:           "tags",
-		WordCopiedCode:     "copied_code",
-		WordSeries:         "series",
-		WordReading:        "reading",
-		WordNext:           "next",
-		WordSoon:           "soon",
-		WordPrevious:       "previous",
-		WordOlder:          "older",
-		WordNewer:          "newer",
-		WordFirstPart:      "first_part",
-		WordLastPart:       "last_part",
-		WordFirstPost:      "first_post",
-		WordNewestPost:     "newest_post",
-		WordOtherPosts:     "other_posts",
-		WordDiscuss:        "discuss",
-		WordContents:       "contents",
-		WordBlogLine:       "blog_line",
-		WordListWindow:     "list_window",
-		WordAllPosts:       "all_posts",
-		WordBy:             "by",
-		WordYears:          "years",
-		WordOutsideSeries:  "outside_series",
-		WordVersions:       "versions",
-		WordCurrent:        "current",
-		WordVersionRead:    "version_read",
-		WordLanguage:       "language",
-		WordLanguageName:   "language_name",
-		WordLocale:         "locale",
-		WordSeriesGrouping: "series_grouping",
+		WordAbout:             "about",
+		WordGreeting:          "greeting",
+		WordExperience:        "experience",
+		WordProjects:          "projects",
+		WordSkills:            "skills",
+		WordEducation:         "education",
+		WordLanguages:         "languages",
+		WordContact:           "contact",
+		WordMail:              "mail",
+		WordSSH:               "ssh",
+		WordRepository:        "repository",
+		WordInstall:           "install",
+		WordPresent:           "present",
+		WordSide:              "side",
+		WordLearning:          "learning",
+		WordAuthor:            "author",
+		WordResume:            "resume",
+		WordHealth:            "health",
+		WordDarkTheme:         "dark_theme",
+		WordCopy:              "copy",
+		WordCopied:            "copied",
+		WordWriteTo:           "write_to",
+		WordSSHGives:          "ssh_gives",
+		WordReadingGives:      "reading_gives",
+		WordBlog:              "blog",
+		WordVersion:           "version",
+		WordDraft:             "draft",
+		WordTags:              "tags",
+		WordCopiedCode:        "copied_code",
+		WordSeries:            "series",
+		WordReading:           "reading",
+		WordNext:              "next",
+		WordSoon:              "soon",
+		WordPrevious:          "previous",
+		WordOlder:             "older",
+		WordNewer:             "newer",
+		WordFirstPart:         "first_part",
+		WordLastPart:          "last_part",
+		WordFirstPost:         "first_post",
+		WordNewestPost:        "newest_post",
+		WordOtherPosts:        "other_posts",
+		WordDiscuss:           "discuss",
+		WordContents:          "contents",
+		WordBlogLine:          "blog_line",
+		WordListWindow:        "list_window",
+		WordAllPosts:          "all_posts",
+		WordBy:                "by",
+		WordYears:             "years",
+		WordOutsideSeries:     "outside_series",
+		WordVersions:          "versions",
+		WordCurrent:           "current",
+		WordVersionRead:       "version_read",
+		WordLanguage:          "language",
+		WordLanguageName:      "language_name",
+		WordLocale:            "locale",
+		WordSeriesGrouping:    "series_grouping",
+		WordManualSection:     "manual_section",
+		WordManualName:        "manual_name",
+		WordManualDescription: "manual_description",
+		WordManualNotes:       "manual_notes",
 	}
 }
 
-// Words are the site's words in one language, every one of them there (D12).
+// Words are the site's words in one language, every one of them there (D12): its tag, and the language as CLDR knows
+// it, whose plural rule picks a count's form; its words and phrases, its counts in each form a whole number takes in
+// it, and the names of the months as a day writes them.
 type Words struct {
 	language string
+	plurals  language.Tag
 	texts    map[Word]string
 	phrases  map[Phrase]string
+	counts   map[Count]map[plural.Form]string
+	months   []string
 }
 
 // Text is a word as this language writes it.
@@ -239,7 +246,12 @@ func (words Words) Text(word Word) string {
 // Phrase is a phrase as this language writes it, each value in its place, in their order; a place written in a value
 // stays the value's.
 func (words Words) Phrase(phrase Phrase, values ...string) string {
-	pieces := strings.Split(words.phrases[phrase], phrasePlace)
+	return filled(words.phrases[phrase], values)
+}
+
+// filled is a phrase as a catalogue writes it with each value in its place, in their order.
+func filled(written string, values []string) string {
+	pieces := strings.Split(written, phrasePlace)
 	var builder strings.Builder
 	for index, piece := range pieces {
 		builder.WriteString(piece)
@@ -273,10 +285,14 @@ func (words Words) Translation() string {
 // How a language's tag is written, as ISO 639 writes a language: two or three small letters
 const languagePattern = `^[a-z]{2,3}$`
 
+// writtenWords are a catalogue's words as its file writes them, each by its key: a word or a phrase a text, a count a
+// text for each plural form, and the months a list.
+type writtenWords map[string]yaml.Node
+
 // writtenCatalogue is a catalogue as its file writes it: its language, its words by their keys, and its document.
 type writtenCatalogue struct {
 	language string
-	written  map[string]string
+	written  writtenWords
 	document *yaml.Node
 }
 
@@ -293,7 +309,7 @@ func (written catalogues) all() []writtenCatalogue {
 
 // readCatalogues reads the site's words in English, then in each other language, with their faults and the strays'.
 func readCatalogues(folder fs.FS) (catalogues, Faults, Faults) {
-	written, document, unreadable := readFile[map[string]string](folder, wordsFile(english))
+	written, document, unreadable := readFile[writtenWords](folder, wordsFile(english))
 	read := catalogues{own: writtenCatalogue{language: english, written: written, document: document}, translations: nil}
 	entries, unreadFolder := readFolder(folder, wordsFolder)
 	unreadable = append(unreadable, unreadFolder...)
@@ -305,7 +321,7 @@ func readCatalogues(folder fs.FS) (catalogues, Faults, Faults) {
 		case entry.IsDir() || !isYAML || !languageForm.MatchString(language):
 			misplaced = append(misplaced, fileFault(path.Join(wordsFolder, entry.Name()), strayWordsProblem))
 		case language != english:
-			written, document, faults := readFile[map[string]string](folder, wordsFile(language))
+			written, document, faults := readFile[writtenWords](folder, wordsFile(language))
 			read.translations = append(read.translations, writtenCatalogue{language: language, written: written, document: document})
 			unreadable = append(unreadable, faults...)
 		}
@@ -334,41 +350,65 @@ func inspectCatalogues(written catalogues) (map[string]Words, Faults) {
 	return words, faults
 }
 
-// readWords takes a catalogue in a language as the file writes it: every word and phrase under its key and none
-// empty, each phrase with a place for each of its values, and no key the site has no word or phrase for. The faults
-// come in the order of the words, then of the phrases, then of the keys.
-func readWords(language string, written map[string]string) (Words, Faults) {
+// readWords takes a catalogue in a language as the file writes it: every word and phrase under its key, a text and none
+// empty, each phrase with a place for each of its values; every count, in each form the language gives a whole number
+// alone; the months; and no key the site has no word for. The faults come in the order of the words, then of the
+// phrases, the counts, the months, then of the keys.
+func readWords(language string, written writtenWords) (Words, Faults) {
 	inspection := &inspection{file: wordsFile(language), faults: nil}
+	plurals, isKnown := pluralRuleOf(language)
+	if !isKnown {
+		inspection.add("", unknownLanguage, language)
+	}
 	keys := wordKeys()
 	texts := make(map[Word]string, len(keys))
 	for _, word := range slices.Sorted(maps.Keys(keys)) {
-		texts[word] = written[keys[word]]
-		inspection.require(keys[word], texts[word])
+		texts[word] = inspection.text(written, keys[word])
 	}
 	forms := phraseForms()
 	phrases := make(map[Phrase]string, len(forms))
-	known := slices.Collect(maps.Values(keys))
+	known := append(slices.Collect(maps.Values(keys)), monthsKey)
 	for _, phrase := range slices.Sorted(maps.Keys(forms)) {
 		form := forms[phrase]
-		phrases[phrase] = written[form.key]
-		inspection.requirePhrase(form, phrases[phrase])
+		phrases[phrase] = inspection.text(written, form.key)
+		inspection.requirePlaces(form.key, form.values, phrases[phrase])
 		known = append(known, form.key)
 	}
+	whole := wholeForms(plurals)
+	counted := countForms()
+	counts := make(map[Count]map[plural.Form]string, len(counted))
+	for _, count := range slices.Sorted(maps.Keys(counted)) {
+		counts[count] = inspection.count(written, counted[count], whole)
+		known = append(known, counted[count].key)
+	}
+	months := inspection.months(written)
 	for _, key := range slices.Sorted(maps.Keys(written)) {
 		if !slices.Contains(known, key) {
 			inspection.add(key, unknownWordProblem)
 		}
 	}
-	return Words{language: language, texts: texts, phrases: phrases}, inspection.faults
+	return Words{language: language, plurals: plurals, texts: texts, phrases: phrases, counts: counts, months: months}, inspection.faults
 }
 
-// requirePhrase finds a phrase empty, or holding a count of places other than the count of values its form takes.
-func (inspection *inspection) requirePhrase(form phraseForm, phrase string) {
-	if blank(phrase) {
-		inspection.add(form.key, emptyProblem)
-		return
+// text is the text a catalogue writes under a key, a fault where it writes none, or something else there.
+func (inspection *inspection) text(written writtenWords, key string) string {
+	node, isWritten := written[key]
+	var text string
+	switch {
+	case !isWritten:
+		inspection.add(key, emptyProblem)
+	case node.Decode(&text) != nil:
+		inspection.add(key, textProblem)
+	case blank(text):
+		inspection.add(key, emptyProblem)
 	}
-	if places := strings.Count(phrase, phrasePlace); places != form.values {
-		inspection.add(form.key, placeProblem, phrase, phrasePlace, places, form.values)
+	return text
+}
+
+// requirePlaces finds a phrase at a field that holds a count of places other than the count of values it takes; an
+// empty one is a fault already.
+func (inspection *inspection) requirePlaces(field string, values int, phrase string) {
+	if places := strings.Count(phrase, phrasePlace); !blank(phrase) && places != values {
+		inspection.add(field, placeProblem, phrase, phrasePlace, places, values)
 	}
 }

@@ -91,7 +91,7 @@ templ (writer PageWriter) tiles(posts document.Posts) {
 // a link holds no other.
 templ (writer PageWriter) tileOut(post document.ListedPost, out document.PostOut) {
 	<div class="pane tile">
-		@writer.tileParts(post, day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen))
+		@writer.tileParts(post, writer.day(out.Published), writer.frame.site.Reference(out.Page, routes.FormatChosen))
 	</div>
 }
 

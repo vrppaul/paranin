@@ -7,6 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/look"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -27,15 +28,11 @@ const (
 	sides = 2
 )
 
-// The words of the format itself: the section of the manual a page belongs to, its name, the sections every page
-// opens with and the one of notes it ends with where it cites any, as man-pages(7) names it
+// The marks of the format itself: the section of the manual a page belongs to, whose name and those of a page's own
+// sections are the site's words in the page's language, and a bullet
 const (
-	manualSection      = "(1)"
-	manualSectionTitle = "User Commands"
-	nameSection        = "NAME"
-	descriptionSection = "DESCRIPTION"
-	notesSection       = "NOTES"
-	bulletMark         = "-"
+	manualSection = "(1)"
+	bulletMark    = "-"
 )
 
 // The marks of a post's blocks: what follows an item's number in a list in order; the bar a quote's lines stand
@@ -70,20 +67,22 @@ const (
 	dotWord  = "·"
 )
 
-// manualWriter writes one document as a manual page; the site writes its addresses and names the résumé's page.
+// manualWriter writes one document as a manual page; the site writes its addresses and names the résumé's page, and the
+// manual's own words name its sections in the page's language.
 type manualWriter struct {
 	site routes.Site
+	own  compose.ManualWords
 }
 
-// Manual writes a document as a manual page laid out as text: a title line, NAME from its head, DESCRIPTION from its
-// head and the blocks that are no section, then a section for each of its sections, NOTES where its blocks cite any,
-// and a closing line, the version a post's reader reads in its middle, its day or a draft's word, where man(1) writes a
-// page's date.
-func Manual(composed document.Document, site routes.Site) string {
-	writer := manualWriter{site: site}
+// Manual writes a document as a manual page laid out as text, in the manual's own words of its language: a title line
+// naming the manual's section, NAME from its head, DESCRIPTION from its head and the blocks that are no section, then a
+// section for each of its sections, NOTES where its blocks cite any, each section's name in capitals, and a closing
+// line, the version a post's reader reads in its middle, its day or a draft's word, where man(1) writes a page's date.
+func Manual(composed document.Document, site routes.Site, own compose.ManualWords) string {
+	writer := manualWriter{site: site, own: own}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
 	others, sections := document.SectionsOf(composed.Blocks)
-	lines := []string{columns(title, manualSectionTitle, title)}
+	lines := []string{columns(title, own.Section, title)}
 	lines = append(lines, writer.name(composed.Head)...)
 	lines = append(lines, writer.description(composed.Head, others)...)
 	for _, section := range sections {
@@ -117,7 +116,7 @@ func (writer manualWriter) pageName(page document.Page) string {
 // name writes the name section: the title with its subtitle and place.
 func (writer manualWriter) name(head document.Head) []string {
 	name := joinedWords(dashWord, writer.words(head.Title), joinedWords(dotWord, writer.words(head.Subtitle), strings.Fields(head.Place)))
-	return append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
+	return append([]string{"", strings.ToUpper(writer.own.Name)}, paragraph(sectionIndent, 0, name)...)
 }
 
 // description writes the description section: where an older version of a post says a newer stands, that first, then
@@ -150,7 +149,7 @@ func (writer manualWriter) description(head document.Head, others []document.Blo
 	if len(lines) == 0 {
 		return nil
 	}
-	return append([]string{"", descriptionSection}, lines...)
+	return append([]string{"", strings.ToUpper(writer.own.Description)}, lines...)
 }
 
 // pageSection writes a section of the page: its title in capitals over its blocks.
@@ -432,7 +431,7 @@ func (writer manualWriter) notes(notes []document.Note) []string {
 	if len(notes) == 0 {
 		return nil
 	}
-	lines := []string{"", notesSection}
+	lines := []string{"", strings.ToUpper(writer.own.Notes)}
 	for _, note := range notes {
 		mark := noteMark(note.Number)
 		lines = append(lines, paragraph(sectionIndent, textWidth(mark)+1, append([]string{mark}, writer.words(note.Spans)...))...)

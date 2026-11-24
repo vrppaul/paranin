@@ -340,6 +340,25 @@ linters:
           deny:
             - pkg: golang.org/x/image
               desc: content takes x/image's WebP reader alone, for a WebP's size
+        # content alone reads a language's plural rule, by x/text's CLDR tables, as a catalogue loads (ADR-0003); every
+        # other part writes a count through the words content read
+        plurals-in-content-alone:
+          files:
+            - "**/internal/**"
+            - "!**/internal/content/**"
+          deny:
+            - pkg: golang.org/x/text
+              desc: content alone reads a count's plural form; every other part writes a count through content.Words
+        content-reads-plural-rules-alone:
+          list-mode: lax
+          files:
+            - "**/internal/content/**"
+          allow:
+            - golang.org/x/text/feature/plural$
+            - golang.org/x/text/language$
+          deny:
+            - pkg: golang.org/x/text
+              desc: content takes x/text's plural rules and the language tags they are read by alone
         routes-read-documents-alone:
           files:
             - "**/internal/routes/**"

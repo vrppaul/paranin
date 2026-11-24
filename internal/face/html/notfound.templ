@@ -2,16 +2,17 @@ package html
 
 // page is the page of a path the site has no page at, quoted, in the frame of every page (DESIGN.md, Pages): its
 // status in block letters, the path, and a link to where the site begins; no apology and no joke. They stand in a part
-// of their own inside the main part, which is the frame's on every page, as the résumé's first screen does.
+// of their own inside the main part, which is the frame's on every page, as the résumé's first screen does, in English,
+// as HTTP writes its status, whatever language the frame round them is in.
 templ (notFound NotFound) page(quotedPath string) {
 	<!DOCTYPE html>
 	<html lang={ notFound.language }>
 		<head>
-			@headOpening(notFound.status, notFound.included)
+			@headOpening(notFound.status, frameLanguage, notFound.included)
 		</head>
 		<body>
 			<main class="content-width">
-				<div class="not-found">
+				<div class="not-found" lang={ frameLanguage }>
 					@notFound.heading
 					<p><code>{ quotedPath }</code></p>
 					<p><a href={ notFound.foot.frame.start }>{ notFound.foot.frame.site.Host() }</a></p>

@@ -33,7 +33,8 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
   out of the web until the author fills it; a gap inside a sentence shows `faint`.
 - Dates are months, `MM/YYYY` (`08/2020`), with the machine's `YYYY-MM` in `<time datetime>`. A range joins two with an
   en dash and spaces, `08/2020 – 01/2022`; a role still held ends in `present`. A post and its versions are dated by
-  the day, `21 Nov 2026`, with `YYYY-MM-DD` in `<time datetime>`.
+  the day, `21 Nov 2026`, with `YYYY-MM-DD` in `<time datetime>`: the day, the month's short name as the page's
+  language writes it in a day, its catalogue's `months`, and the year, `21 нояб. 2026` in Russian.
 - A post's tag is its word after a `#`, `#payments`, as readers know a tag that gathers posts. What a project is made
   of is no tag: its words as the profile writes them, the parts of a line.
 - A heading joins a title and its subtitle with an em dash, `Seznam.cz — Backend Developer`; a line joins its parts
@@ -601,7 +602,8 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
   the place, the Facts, the primary button and the Command, then cv.pdf, GitHub and LinkedIn. Below, the CareerLine
   across the whole width; the four crosses at the corners. Under it the About section; the rest of the résumé is its
   tabs, each a page of its own.
-- The address of no page: its status in block letters, the address quoted as Code, a link to the start; no apology and
+- The address of no page: its status in block letters, in English as HTTP writes it, the address quoted as Code, a
+  link to the start, the foot line in the words of the language whose folder the address opens with; no apology and
   no joke. The foot line stands as on every page, with no windows.
 - The blog's list: the BlogHead, then its Groups of Tiles; a tag or a series filters it, the filter reversed in the
   head.

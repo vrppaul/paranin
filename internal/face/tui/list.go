@@ -7,7 +7,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/vrppaul/paranin/internal/document"
-	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The blog's list's columns (DESIGN.md, The TUI): the groups' names at the left, narrower on a page under the widest
@@ -284,7 +283,7 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 		row := []gridCell{}
 		for _, post := range posts[first:min(first+grid.columns, len(posts))] {
 			_, isOut := post.Readiness.(document.PostOut)
-			row = append(row, gridCell{label: edgeLabel(post), words: inside.tileWordsOf(post), leads: isOut})
+			row = append(row, gridCell{label: layout.edgeLabel(post), words: inside.tileWordsOf(post), leads: isOut})
 		}
 		rows = append(rows, row)
 	}
@@ -418,9 +417,10 @@ func titleLines(lines []line) []line {
 	return whole
 }
 
-// edgeLabel is what a tile's top edge holds (DESIGN.md, Tile): when its post came out, muted, after its part, bold,
-// where it stands in its series' own group; for a part to come, its part and the word saying it comes, faint.
-func edgeLabel(post document.ListedPost) line {
+// edgeLabel is what a tile's top edge holds (DESIGN.md, Tile): when its post came out, in the site's words for a day,
+// muted, after its part, bold, where it stands in its series' own group; for a part to come, its part and the word
+// saying it comes, faint.
+func (layout layout) edgeLabel(post document.ListedPost) line {
 	partKind, label := kindStrong, line{}
 	if _, isComing := post.Readiness.(document.ComingPart); isComing {
 		partKind = kindFaint
@@ -430,7 +430,7 @@ func edgeLabel(post document.ListedPost) line {
 	}
 	switch typed := post.Readiness.(type) {
 	case document.PostOut:
-		return append(label, plainRun(typed.Published.Format(look.DayLayout), kindMuted))
+		return append(label, plainRun(layout.siteWords.Days.Of(typed.Published), kindMuted))
 	case document.ComingPart:
 		return append(label, plainRun(document.PlainText(typed.Coming), kindFaint))
 	}

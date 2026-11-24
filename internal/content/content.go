@@ -37,15 +37,15 @@ type Snapshot struct {
 	Own Edition
 	// Translations are the content in each other language the site has words for, in their tags' order
 	Translations []Edition
-	// Series stand in the order of their names, as their folder lists them
-	Series []Series
 }
 
-// Edition is the content in one language: the site's words in it, and the posts written in it, in the order of their
-// slugs, which no edit of a post's fields changes.
+// Edition is the content in one language: the site's words in it, the posts written in it, in the order of their
+// slugs, which no edit of a post's fields changes, and the series in it, in the order of their names, as their folder
+// lists them.
 type Edition struct {
-	Words Words
-	Posts []Post
+	Words  Words
+	Posts  []Post
+	Series []Series
 }
 
 // Editions are the content in every language, English first.
@@ -81,7 +81,7 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	catalogues, unreadWords, misplacedWords := readCatalogues(folder)
 	translated := catalogues.translatedLanguages()
 	posts, unreadPosts, misplacedPosts := readPosts(folder, translated)
-	series, unreadSeries, misplacedSeries := readSeries(folder)
+	series, unreadSeries, misplacedSeries := readSeries(folder, translated)
 	faults = append(faults, unreadWords...)
 	faults = append(faults, unreadPosts...)
 	faults = append(faults, unreadSeries...)
@@ -103,10 +103,10 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	}
 	editions := []Edition{}
 	for _, language := range translated {
-		editions = append(editions, Edition{Words: words[language], Posts: translations[language]})
+		editions = append(editions, Edition{Words: words[language], Posts: translations[language], Series: series.seriesIn(language)})
 	}
-	own := Edition{Words: words[english], Posts: originals}
-	return &Snapshot{Profile: profile, Own: own, Translations: editions, Series: seriesOf(series)}, nil
+	own := Edition{Words: words[english], Posts: originals, Series: series.seriesIn(english)}
+	return &Snapshot{Profile: profile, Own: own, Translations: editions}, nil
 }
 
 // readFile reads a file of the folder and decodes it strictly, as decodeStrictly does.

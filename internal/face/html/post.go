@@ -10,7 +10,7 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// How a post's day is written for a machine, as a time's datetime holds it; a reader reads it as look.DayLayout has it
+// How a post's day is written for a machine, as a time's datetime holds it; a reader reads it in the frame's words
 const machineDayLayout = "2006-01-02"
 
 // How a paragraph a reader links to is named: by its number after this, an id of the page's own (ownID); a heading

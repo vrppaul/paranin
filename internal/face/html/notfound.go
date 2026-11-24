@@ -16,8 +16,9 @@ import (
 type NotFound struct {
 	// status is the status the host answers with, as HTTP writes it: 404 Not Found
 	status string
-	// language is the tag of the language of the site's words. The page's own words are HTTP's English status and
-	// the site's name, so the two agree only while the site is in English alone (D12)
+	// language is the tag of the language of the frame's words, the foot line's, in which the page of a path in a
+	// language's folder stands; its own words are HTTP's status, in English as the protocol writes it, and the site's
+	// name
 	language string
 	// included is what the page includes to run the site's script, as every page does, so it is seen in the theme
 	// the reader chose
@@ -29,13 +30,13 @@ type NotFound struct {
 	heading templ.Component
 }
 
-// NewNotFound is the page of an address of no page of a site, in a language, titled by the status the host
-// answers with, drawn in the build's stylesheet and running its script, in the frame of every page.
-func NewNotFound(site routes.Site, status, language string, build *assets.Build, composed compose.Frame) NotFound {
+// NewNotFound is the page of an address of no page of a site, titled by the status the host answers with, drawn in the
+// build's stylesheet and running its script, in the frame of every page in a language.
+func NewNotFound(site routes.Site, status string, build *assets.Build, composed compose.Frame) NotFound {
 	around, resume := frameOf(site, composed), document.PageOf(document.PageResume)
 	return NotFound{
 		status:   status,
-		language: language,
+		language: composed.Language,
 		included: build.Includes(assets.Site),
 		foot:     footLineOf(around, around.sessionsOf(resume), nil, resume, nil),
 		heading:  titleHeading(status, text(status)),

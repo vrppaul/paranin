@@ -223,7 +223,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	writer := fixtureWriter(test)
 	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame)
+	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame)
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
@@ -658,13 +658,26 @@ func TestAPageWithNoDescriptionNamesNone(test *testing.T) {
 }
 
 // The page of an address the site has no page at opens its head as every page does, names its language, and its
-// status in its title and on the page; quotes the path asked for as Go quotes a string, so no control character
-// in it reaches the page; and leads to where the site begins, by its path, under the site's name. It is held to
-// its golden file whole.
+// status in its title and on the page, in English as HTTP writes it; quotes the path asked for as Go quotes a string,
+// so no control character in it reaches the page; and leads to where the site begins, by its path, under the site's
+// name, its foot line in its language's words. Each language's is held to its golden file whole.
 func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", "en", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame).For("/nothing\x1b[2J<b>")
-	golden.Match(test, "notfound.html", lined(missing))
+	site := siteOnTheDay(snapshot)
+	cases := []struct {
+		file  string
+		frame compose.Frame
+		path  string
+	}{
+		{file: "notfound.html", frame: site.Own.Frame, path: "/nothing\x1b[2J<b>"},
+		{file: "ru/notfound.html", frame: site.Translations[0].Frame, path: "/ru/nothing"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.file, func(test *testing.T) {
+			missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", fixtures.LoadedBuild(test), testCase.frame).For(testCase.path)
+			golden.Match(test, testCase.file, lined(missing))
+		})
+	}
 }
 
 // A person who works nowhere now is written with no employer, rather than with an employer of no name.

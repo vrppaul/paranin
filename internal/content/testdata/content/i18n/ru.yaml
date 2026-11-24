@@ -38,7 +38,10 @@ reading: читаете
 next: дальше
 soon: скоро
 other_parts: "Другие части: {}"
-all_parts: "все {} частей"
+all_parts:
+  one: "все {} часть"
+  few: "все {} части"
+  many: "все {} частей"
 part: "часть {}"
 previous: раньше
 older: старше
@@ -56,9 +59,14 @@ all_posts: все посты
 by: по
 years: годам
 outside_series: другие посты
-one_post: "{} пост"
-posts_count: "постов: {}"
-parts_out: "вышло {} из {}"
+posts_count:
+  one: "{} пост"
+  few: "{} поста"
+  many: "{} постов"
+parts_out:
+  one: "вышла {} из {}"
+  few: "вышли {} из {}"
+  many: "вышло {} из {}"
 grouped_list: "{} по {}"
 tag_filter: "посты с тегом {}"
 series_filter: "части серии {}"
@@ -73,3 +81,8 @@ language: язык
 language_name: Русский
 locale: ru_RU
 series_grouping: сериям
+months: [янв., февр., мар., апр., мая, июн., июл., авг., сент., окт., нояб., дек.]
+manual_section: Команды пользователя
+manual_name: Имя
+manual_description: Описание
+manual_notes: Примечания

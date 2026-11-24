@@ -32,8 +32,8 @@ const (
 // that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
 // blog's folder, by the name a terminal writes and by its address, where :e opens a post a page does not list;
 // the site's sessions, which the foot line names; the labels of a post's facts, the words of its versions, of its
-// series and of the panes at its foot, the name of its outline, and the words round the blog's list. Each is in the
-// language of the pages it frames.
+// series and of the panes at its foot, the name of its outline, the words round the blog's list, and how a day is
+// written. Each is in the language of the pages it frames.
 type frame struct {
 	site          routes.Site
 	start         string
@@ -54,6 +54,7 @@ type frame struct {
 	paneWords     compose.PaneWords
 	contents      string
 	listWords     compose.ListWords
+	days          compose.DayWords
 }
 
 // footLine is a page's foot line (DESIGN.md, FootLine), as tmux's status line: the sessions, the document's tabs as
@@ -126,6 +127,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		paneWords:     composed.PaneWords,
 		contents:      composed.Contents,
 		listWords:     composed.ListWords,
+		days:          composed.Days,
 	}
 }
 

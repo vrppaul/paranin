@@ -1,16 +1,16 @@
-RU-BLOG-SERIES(1)               User Commands                RU-BLOG-SERIES(1)
+RU-BLOG-SERIES(1)            Команды пользователя            RU-BLOG-SERIES(1)
 
-NAME
+ИМЯ
        блог
 
-DESCRIPTION
+ОПИСАНИЕ
        Что читает автор, и как.
 
        reading · terminals
 
-READING
-       How a reader keeps what they read.
-       вышло 1 из 2
+ЧТЕНИЕ
+       Как читатель удерживает прочитанное.
+       вышла 1 из 2
 
        Медленное чтение                                             2026-11-15
               Почему страницу, прочитанную дважды, читают один раз.
@@ -18,7 +18,7 @@ READING
               reading · terminals
               https://example.test/ru/blog/reading-slowly.txt
 
-       Reading aloud                                                     скоро
+       Чтение вслух                                                      скоро
               часть 2
 
 example.test                                                 RU-BLOG-SERIES(1)

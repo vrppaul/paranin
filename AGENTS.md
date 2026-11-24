@@ -59,11 +59,12 @@ Every change leaves the repository better than it found it: cleaner, easier to r
 Before you change or review code in an area, read its file whole; a brief to another agent names the files.
 
 - `.claude/rules/code.md` — any code: names, values, construction, kinds, where a thing lives.
-- `.claude/rules/go.md` — Go: the layers, the language, errors, time, logging, what reaches a terminal, generated code.
-- `.claude/rules/tests.md` — any test: when one is written, at which level, how, and which run when.
+- `.claude/rules/go.md` — Go: the layers, the language, errors, time, logging, the terminal, generated code.
+- `.claude/rules/tests.md` — any test: when one is written, at which level, how, which run when.
 - `.claude/rules/prose.md` — comments, documents, commit messages, reports.
 - `.claude/rules/tui.md` — the TUI: what a key does and does not, its words.
 - `.claude/rules/page.md` — the page under `web/`: its build, its stylesheets, what its policy refuses.
-- `.claude/rules/design.md` — how a look is designed, for the page and the TUI alike.
-- `.claude/rules/scripts.md` — anything under `scripts/`: the gates of our own and the generators.
-- `.claude/rules/instructions.md` — the instruction files, this one among them: where a line belongs.
+- `.claude/rules/design.md` — how a look is designed, the page's and the TUI's.
+- `.claude/rules/seo.md` — what a crawler reads of a page.
+- `.claude/rules/scripts.md` — `scripts/`: the gates of our own and the generators.
+- `.claude/rules/instructions.md` — the instruction files: where a line belongs.

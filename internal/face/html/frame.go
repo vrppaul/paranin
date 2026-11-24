@@ -26,17 +26,19 @@ const (
 
 // frame is what every page of a site lays round its main part, worked out once for the site (DESIGN.md, FootLine):
 // the site, which writes a page's addresses whole and names the site, and where it begins, which the page of no
-// address leads to; the theme button's name; the locale Open Graph marks a page in; the words of
-// the button that copies a command or a block of code; the way a terminal reaches the site over ssh, whose command the
-// first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
-// that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens in every
-// language, and the blog's folder in each, where :e opens a post a page does not list; the site's sessions, which the
-// foot line names; the labels of a post's facts, the words of its versions, of its series and of the panes at its
-// foot, the name of its outline, the words round the blog's list, the list and its groupings, how a day is written,
-// and the word in a widget's edge that says it runs. Each is in the language of the pages it frames.
+// address leads to; the name a search engine and a link preview show for the site; the theme button's name; the
+// locale Open Graph marks a page in; the words of the button that copies a command or a block of code; the way a
+// terminal reaches the site over ssh, whose command the first screen offers as a chip too; what reading a page in a
+// terminal gives; the words of the first screen's button that writes to the author; the projects' pages, places of
+// every page's command line, the pages its :e opens in every language, and the blog's folder in each, where :e opens a
+// post a page does not list; the site's sessions, which the foot line names; the labels of a post's facts, the words of
+// its versions, of its series and of the panes at its foot, the name of its outline, the words round the blog's list,
+// the list and its groupings, how a day is written, and the word in a widget's edge that says it runs. Each is in the
+// language of the pages it frames.
 type frame struct {
 	site         routes.Site
 	start        string
+	siteName     string
 	darkTheme    string
 	locale       string
 	copyWords    compose.CopyWords
@@ -119,6 +121,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 	return frame{
 		site:         site,
 		start:        routes.Reference(document.PageOf(document.PageResume), routes.FormatChosen),
+		siteName:     composed.SiteName,
 		darkTheme:    composed.DarkTheme,
 		locale:       composed.Locale,
 		copyWords:    composed.CopyWords,

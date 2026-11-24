@@ -234,7 +234,7 @@ templ themeMark() {
 // where it has a record; then the card X shows of it. Its picture comes with the cards Typst draws (ADR-0005).
 templ (writer PageWriter) openGraph(metadata pageMetadata, address string) {
 	<meta property="og:type" content={ metadata.openGraphType }/>
-	<meta property="og:site_name" content={ writer.frame.site.Host() }/>
+	<meta property="og:site_name" content={ writer.frame.siteName }/>
 	<meta property="og:locale" content={ writer.frame.locale }/>
 	for _, locale := range metadata.otherLocales {
 		<meta property="og:locale:alternate" content={ locale }/>

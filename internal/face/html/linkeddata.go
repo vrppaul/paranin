@@ -6,6 +6,7 @@ import (
 	"github.com/a-h/templ"
 
 	"github.com/vrppaul/paranin/internal/compose"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
@@ -15,6 +16,8 @@ const (
 	linkedDataType   = "application/ld+json"
 	vocabulary       = "https://schema.org"
 	profilePageKind  = "ProfilePage"
+	webSiteKind      = "WebSite"
+	webPageKind      = "WebPage"
 	personKind       = "Person"
 	organizationKind = "Organization"
 	schoolKind       = "EducationalOrganization"
@@ -32,6 +35,24 @@ type profilePage struct {
 	Kind       string `json:"@type"`
 	URL        string `json:"url"`
 	MainEntity person `json:"mainEntity"`
+}
+
+// webSite is the site as schema.org has one: the name a search engine shows for it, its host as the name it also goes
+// by, and its root.
+type webSite struct {
+	Context       string `json:"@context"`
+	Kind          string `json:"@type"`
+	Name          string `json:"name"`
+	AlternateName string `json:"alternateName"`
+	URL           string `json:"url"`
+}
+
+// webPage is a page about the one person that is not their profile, as a tab of the résumé is.
+type webPage struct {
+	Context string          `json:"@context"`
+	Kind    string          `json:"@type"`
+	URL     string          `json:"url"`
+	About   personReference `json:"about"`
 }
 
 // person is who a page is about, as schema.org names them; a fact the record lacks is left out.
@@ -58,18 +79,19 @@ type organization struct {
 
 // sourceCode is a project's page as schema.org has a piece of code, with its author.
 type sourceCode struct {
-	Context             string `json:"@context"`
-	Kind                string `json:"@type"`
-	Name                string `json:"name"`
-	Description         string `json:"description,omitempty"`
-	ProgrammingLanguage string `json:"programmingLanguage,omitempty"`
-	URL                 string `json:"url"`
-	CodeRepository      string `json:"codeRepository,omitempty"`
-	Author              author `json:"author"`
+	Context             string          `json:"@context"`
+	Kind                string          `json:"@type"`
+	Name                string          `json:"name"`
+	Description         string          `json:"description,omitempty"`
+	ProgrammingLanguage string          `json:"programmingLanguage,omitempty"`
+	URL                 string          `json:"url"`
+	CodeRepository      string          `json:"codeRepository,omitempty"`
+	Author              personReference `json:"author"`
 }
 
-// author is who wrote a piece of code or a post: the one person, by their @id, their name and their page.
-type author struct {
+// personReference names the one person, by their @id, their name and their page: the author of a work, or whom a page
+// is about.
+type personReference struct {
 	Kind string `json:"@type"`
 	ID   string `json:"@id"`
 	Name string `json:"name"`
@@ -86,7 +108,7 @@ type blogPosting struct {
 	URL           string             `json:"url"`
 	DatePublished string             `json:"datePublished,omitempty"`
 	DateModified  string             `json:"dateModified,omitempty"`
-	Author        author             `json:"author"`
+	Author        personReference    `json:"author"`
 	InLanguage    string             `json:"inLanguage"`
 	Keywords      []string           `json:"keywords,omitempty"`
 	IsPartOf      creativeWorkSeries `json:"isPartOf,omitzero"`
@@ -104,16 +126,20 @@ type creativeWorkSeries struct {
 type writtenPost struct {
 	published string
 	modified  string
-	author    author
+	author    personReference
 	tags      []string
 }
 
-// recordOf is a page's record as the page writes it, for the page at an address: its script of linked data, in
-// schema.org's words, and a post's as its Open Graph reads it too, none where the record is no post's.
-func (writer PageWriter) recordOf(record compose.Record, address string) (templ.Component, *writtenPost) {
+// recordOf is a page's record as the page writes it, for the page shown at an address: its script of linked data, in
+// schema.org's words, and a post's as its Open Graph reads it too, none where the record is no post's. The person's
+// own page is their profile, with the site beside it, each a script of its own; a tab of it is a page about them.
+func (writer PageWriter) recordOf(record compose.Record, shown document.Page, address string) (templ.Component, *writtenPost) {
 	switch typed := record.(type) {
 	case compose.PersonRecord:
-		return linkedScript(writer.profilePageOf(typed, address)), nil
+		if shown != typed.Page {
+			return linkedScript(writer.webPageOf(typed, address)), nil
+		}
+		return templ.Join(linkedScript(writer.profilePageOf(typed, address)), linkedScript(writer.webSiteOf())), nil
 	case compose.WorkRecord:
 		return linkedScript(writer.sourceCodeOf(typed)), nil
 	case compose.PostRecord:
@@ -152,6 +178,28 @@ func (writer PageWriter) profilePageOf(record compose.PersonRecord, address stri
 	}
 }
 
+// webSiteOf is the site at its root, named by its frame's name and by its host.
+func (writer PageWriter) webSiteOf() webSite {
+	site := writer.frame.site
+	return webSite{
+		Context:       vocabulary,
+		Kind:          webSiteKind,
+		Name:          writer.frame.siteName,
+		AlternateName: site.Host(),
+		URL:           site.Address(document.PageOf(document.PageResume), routes.FormatChosen),
+	}
+}
+
+// webPageOf is a page at an address about the person a record names.
+func (writer PageWriter) webPageOf(record compose.PersonRecord, address string) webPage {
+	return webPage{
+		Context: vocabulary,
+		Kind:    webPageKind,
+		URL:     address,
+		About:   writer.personReferenceOf(compose.Author{Name: record.Name, Page: record.Page}),
+	}
+}
+
 // employerOf is where a person works now, as an organization, or none where they work nowhere now.
 func employerOf(name string) organization {
 	if name == "" {
@@ -177,7 +225,7 @@ func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 		ProgrammingLanguage: record.Language,
 		URL:                 writer.frame.site.Address(record.Page, routes.FormatChosen),
 		CodeRepository:      record.Repository,
-		Author:              writer.authorOf(record.Author),
+		Author:              writer.personReferenceOf(record.Author),
 	}
 }
 
@@ -186,7 +234,7 @@ func (writer PageWriter) writtenPostOf(record compose.PostRecord) writtenPost {
 	return writtenPost{
 		published: machineTime(record.Published, time.RFC3339),
 		modified:  machineTime(record.VersionDay, machineDayLayout),
-		author:    writer.authorOf(record.Author),
+		author:    writer.personReferenceOf(record.Author),
 		tags:      record.Tags,
 	}
 }
@@ -213,11 +261,13 @@ func (writer PageWriter) blogPostingOf(record compose.PostRecord, post writtenPo
 	}
 }
 
-// authorOf is the one person as the author of a work: by the IRI every record names them by, their name and their
-// page.
-func (writer PageWriter) authorOf(written compose.Author) author {
+// personReferenceOf is the one person as a record names them: by the IRI every record names them by, their name and
+// their page.
+func (writer PageWriter) personReferenceOf(named compose.Author) personReference {
 	site := writer.frame.site
-	return author{Kind: personKind, ID: site.Identifier(written.Page, personNode), Name: written.Name, URL: site.Address(written.Page, routes.FormatChosen)}
+	return personReference{
+		Kind: personKind, ID: site.Identifier(named.Page, personNode), Name: named.Name, URL: site.Address(named.Page, routes.FormatChosen),
+	}
 }
 
 // machineTime is a time as a machine reads it, in a layout; empty where the time is not known.

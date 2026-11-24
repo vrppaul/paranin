@@ -20,15 +20,17 @@ type OpenedPage struct {
 }
 
 // Frame is what a face lays round the documents it draws in one language, on every page alike, in the site's words in
-// it: the language's tag, the language its pages are translated into, the name of the theme button, which is pressed
-// while the page is dark, the locale Open Graph marks a page in, the words of the button that copies a command or a
-// block of code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives, whose command a
-// face writes with the page's address, the words of the button that writes to the author, the page of each project that
-// has one, in the profile's order, a place of every page's command line by its slug, and every page :e opens, in every
-// language, by each name it reads, the projects' among them, the site's sessions, the labels of a post's facts, the
-// words of its series and of the panes at its foot, the name of its outline, the words of the blog's list, how a day is
-// written, the manual's own words, and the word in a widget's edge that says it runs.
+// it: the site's name, the language's tag, the language its pages are translated into, the name of the theme button,
+// which is pressed while the page is dark, the locale Open Graph marks a page in, the words of the button that copies a
+// command or a block of code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives,
+// whose command a face writes with the page's address, the words of the button that writes to the author, the page of
+// each project that has one, in the profile's order, a place of every page's command line by its slug, and every page
+// :e opens, in every language, by each name it reads, the projects' among them, the site's sessions, the labels of a
+// post's facts, the words of its series and of the panes at its foot, the name of its outline, the words of the blog's
+// list, how a day is written, the manual's own words, and the word in a widget's edge that says it runs.
 type Frame struct {
+	// SiteName is the name a search engine and a link preview show for the site: its person's, as plain text
+	SiteName string
 	// Language is the tag of the language of the frame's words, as BCP 47 writes it: "en"
 	Language string
 	// Translation is the language the frame's pages are translated into, as a page names it (document.Page), which a
@@ -207,6 +209,7 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 	words := read.words
 	copyWords := CopyWords{words: words}
 	return Frame{
+		SiteName:     plainText(snapshot.Profile.Person.Name),
 		Language:     words.Language(),
 		Translation:  words.Translation(),
 		DarkTheme:    words.Text(content.WordDarkTheme),

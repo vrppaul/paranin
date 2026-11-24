@@ -365,7 +365,7 @@ func rendered(component templ.Component) string {
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span, record compose.Record) pageMetadata {
 	site := writer.frame.site
 	url := site.Address(shown, routes.FormatChosen)
-	linked, post := writer.recordOf(record, url)
+	linked, post := writer.recordOf(record, shown, url)
 	metadata := pageMetadata{
 		title:         document.PlainText(title),
 		description:   document.PlainText(head.Description),

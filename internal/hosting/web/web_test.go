@@ -233,8 +233,9 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 	}
 }
 
-// Each page a browser reads carries its record as linked data: the résumé its person, a project's page its code, a
-// tab its page's, the person and the code at their page's address whole.
+// Each page a browser reads carries its record as linked data: the résumé its person, a tab of it a page about the
+// person, by the @id the résumé's address gives them; a project's page its code, and a tab of it its page's, the code
+// at its page's address whole.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
@@ -244,7 +245,7 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 	}{
 		{name: "the résumé", path: "/", holds: `"@type":"ProfilePage"`},
 		{name: "a project's page", path: "/p/tidy-tool", holds: `"@type":"SoftwareSourceCode","name":"tidy-tool"`},
-		{name: "a tab of the résumé, its page's", path: "/experience", holds: `"email":"mira@example.test","url":"https://example.test/","worksFor"`},
+		{name: "a tab of the résumé, a page about its person", path: "/experience", holds: `"@type":"WebPage","url":"https://example.test/experience","about":{"@type":"Person","@id":"https://example.test/#person"`},
 		{name: "a tab of a project's page, its page's", path: "/p/tidy-tool/why", holds: `"programmingLanguage":"Lua","url":"https://example.test/p/tidy-tool","codeRepository"`},
 	}
 	for _, testCase := range cases {

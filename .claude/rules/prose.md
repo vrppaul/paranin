@@ -16,7 +16,8 @@ Every word that is not code: a comment, a document, a commit message, a report, 
 - A way not taken is one line, where the choice is made.
 - A commit follows Conventional Commits and does the one thing its subject says; the subject says nothing of what it replaces.
 - A commit's body is for a why the subject cannot hold, in a few lines: no list of files, no tally of tests or lines.
-- A decision a document, a report or a brief records says whether the owner gave it his explicit yes: `(owner,
-  2026-11-24)` where he did, `(not approved)` where he did not.
+- A product decision a document, a report or a brief records, what the site does, what a reader meets or what an
+  author may write, says whether the owner gave it his explicit yes: `(owner, 2026-11-24)` where he did, `(not
+  approved)` where he did not.
 - Every sentence of a commit message or a report is a claim: look before you write it, and read a count off a command's output.
 - A sentence a reader loses nothing without is cut.

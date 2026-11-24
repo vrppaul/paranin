@@ -145,11 +145,12 @@ left out, and a gap among written words stands marked as one.
   `<img>` holding its alt text and its size, so the page keeps its room before it comes, fetched as it nears the
   screen, and its caption a `<figcaption>`; a widget a `<figure>` its anchor names, by the widget's name, counted from
   the second of a name (`#PageCache-2`), its window holding its name, the mark that it runs, hidden until the script
-  runs it, and its alt text, its caption a `<figcaption>`. The blog's list has the blog's
-  name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link to it, its
-  day in a `<time datetime>` then its title, stretched over its tile, its series a link to its group on the list by
-  series, a part to come no link; it has no record until the site's SEO. The list's tags and a post's are links to the
-  list each filters, a post's only where the lists name it; the filter shown is `aria-current="true"`, leads back to
+  runs it, its body, where the widget runs, holding its alt text, which describes the figure (`aria-describedby`) once
+  the widget runs, and its props, a block of JSON (`application/json`), its caption a `<figcaption>`. The blog's list
+  has the blog's name as its `h1`, each group's name an `h2`, a series' group a place its name names, each post a link
+  to it, its day in a `<time datetime>` then its title, stretched over its tile, its series a link to its group on the
+  list by series, a part to come no link; it has no record until the site's SEO. The list's tags and a post's are
+  links to the list each filters, a post's only where the lists name it; the filter shown is `aria-current="true"`, leads back to
   the list and is named to a screen reader as the way there (`posts tagged go, show all posts`); a filtered list is called by the blog's name and its filter, `blog — posts tagged go`. Every page ends with the
   foot line (`DESIGN.md`, FootLine), a post's and the list's in the blog's session.
 
@@ -188,9 +189,11 @@ Writer Duo, served the same way (`reading_face`). No `Referrer-Policy` is sent:
 ## The page in a browser
 
 Every page runs one script, `web/src/entries/site.ts`. It runs the parts whose look and behaviour `DESIGN.md` gives:
-ThemeSwitch, Command and a post's code that copies as it does, Hint, Tooltip and Toast, VimKeys and CommandLine. With
-no script the page reads whole, and the
-controls the script runs stay hidden.
+ThemeSwitch, Command and a post's code that copies as it does, Hint, Tooltip and Toast, VimKeys and CommandLine. A
+page that shows a widget loads Svelte and the widget's component at once, each a built file of its own that no other
+page loads, and runs the component in the widget's window with the props the page holds as data, read by
+`JSON.parse`; `● live` then shows, and the alt text stands aside, still the figure's description to a screen reader.
+With no script the page reads whole, a widget its alt text, and the controls the script runs stay hidden.
 
 What the script keeps in the browser; where the browser keeps nothing, a choice holds for its page alone:
 

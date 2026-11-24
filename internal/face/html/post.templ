@@ -476,11 +476,14 @@ templ (writer PageWriter) figure(shown document.Figure) {
 	</figure>
 }
 
-// widget is a post's widget (DESIGN.md, Article), named by its anchor for a link to reach it: a window, its name set
-// into its top edge and, at its right, the mark that it runs, hidden until the site's script runs it; inside, its alt
-// text, which stands for it until then; its caption under the window, where it has one.
+// widget is a post's widget (DESIGN.md, Article), named by its anchor for a link to reach it, an island of the
+// component it names: a window, its name set into its top edge and, at its right, the mark that it runs, hidden until
+// the site's script runs it; inside, its body, where the component runs, holding its alt text, which stands for it
+// until then and describes it to a screen reader after, by an id of the page's own; and its props, a block of JSON
+// the script hands the component, which templ writes with HTML's marks escaped, so no text of theirs closes the block;
+// its caption under the window, where it has one.
 templ (writer PageWriter) widget(shown document.Widget) {
-	<figure id={ shown.Live.Name } class="widget">
+	<figure id={ shown.Live.Name } class="widget" data-island={ shown.Name }>
 		<div class="widget-window">
 			<span class="edge">
 				<span class="edge-name">
@@ -492,12 +495,15 @@ templ (writer PageWriter) widget(shown document.Widget) {
 						}
 					}
 				</span>
-				<span class="widget-live" hidden>
+				<span class="widget-live" data-part={ widgetLivePart } hidden>
 					<span class="widget-live-mark" aria-hidden="true">{ look.LiveMark }</span>
 					{ writer.frame.liveWord }
 				</span>
 			</span>
-			<p class="widget-alt">{ shown.Alt }</p>
+			<div class="widget-body" data-part={ widgetBodyPart }>
+				<p id={ ownID(shown.Live.Name + widgetAltEnd) } class="widget-alt" data-part={ widgetAltPart }>{ shown.Alt }</p>
+			</div>
+			@templ.JSONScript("", shown.Props)
 		</div>
 		if shown.Caption != "" {
 			<figcaption>{ shown.Caption }</figcaption>

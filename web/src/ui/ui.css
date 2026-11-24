@@ -1950,8 +1950,13 @@ ol.post-list .point-mark {
   color: var(--passed);
 }
 
-.widget-alt {
+/* the window's body, where the widget runs, inset in the window's cells, so no widget knows the window's padding */
+.widget-body {
   margin: 0 var(--cell-3);
+}
+
+.widget-alt {
+  margin: 0;
 }
 
 /* a block of code (DESIGN.md, Article and Code): the block, in the small style, a row clear at its top for its bar,

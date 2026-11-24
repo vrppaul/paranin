@@ -52,7 +52,8 @@ type Snapshot struct {
 type Check func(*content.Snapshot) error
 
 // Load reads both parts of a release and checks each whole, the content by the check too: a snapshot, or every fault
-// of either part.
+// of either part. Once both load, it holds the two together: a snapshot, or every widget a post shows whose code the
+// build lacks.
 func Load(folders Folders, check Check) (*Snapshot, error) {
 	loaded, contentErr := ReadFolder(folders.Content, content.Load)
 	if contentErr == nil {
@@ -62,7 +63,40 @@ func Load(folders Folders, check Check) (*Snapshot, error) {
 	if err := errors.Join(contentErr, buildErr); err != nil {
 		return nil, err
 	}
+	if err := widgetsWithoutCode(loaded, build); err != nil {
+		return nil, err
+	}
 	return &Snapshot{Content: loaded, Build: build}, nil
+}
+
+// What a post showing a widget the build holds no code for is refused with, by the widget's name and its component's
+// path from web/
+const noCodeProblem = "shows the widget %q, whose component, web/%s, the page's build holds no code of"
+
+// widgetsWithoutCode are the faults of every widget a post shows, in any language and version, whose code the build
+// lacks, each where the post's file shows it; none where the build holds every one.
+func widgetsWithoutCode(loaded *content.Snapshot, build *assets.Build) error {
+	faults := content.Faults{}
+	for _, shown := range shownWidgets(loaded) {
+		if !build.HoldsWidget(shown.Name) {
+			faults = append(faults, content.Fault{File: shown.File, Field: "", Line: shown.Line, Problem: fmt.Sprintf(noCodeProblem, shown.Name, assets.WidgetSource(shown.Name))})
+		}
+	}
+	if len(faults) > 0 {
+		return faults
+	}
+	return nil
+}
+
+// shownWidgets are the widgets the posts of a snapshot show, in every language.
+func shownWidgets(loaded *content.Snapshot) []content.ShownWidget {
+	shown := []content.ShownWidget{}
+	for _, edition := range loaded.Editions() {
+		for _, post := range edition.Posts {
+			shown = append(shown, post.Widgets...)
+		}
+	}
+	return shown
 }
 
 // Store holds the release a running site serves. Each load makes a whole snapshot and swaps it in at once, so a

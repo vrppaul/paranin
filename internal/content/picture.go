@@ -70,7 +70,7 @@ func (checked *bodyInspection) inspectPicture(picture *ast.Image) {
 		checked.inspection.addAtLine(line, characterProblem, caption)
 	}
 	name := ResolvedAddress(picture.Destination)
-	checked.pictures.named[name] = true
+	checked.shown.named[name] = true
 	if format, named := checked.inspectPictureName(name, line); named {
 		checked.readPicture(name, format, line)
 	}
@@ -135,7 +135,7 @@ func (checked *bodyInspection) readPicture(name string, format pictureType, line
 		checked.inspection.addAtLine(line, unreadPictureProblem, name, err)
 		return
 	}
-	checked.pictures.read[name] = Picture{MediaType: format.mediaType, Width: size.Width, Height: size.Height, Body: body}
+	checked.shown.read[name] = Picture{MediaType: format.mediaType, Width: size.Width, Height: size.Height, Body: body}
 }
 
 // The fault of a picture that is no regular file, which no read opens

@@ -40,6 +40,10 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 		{name: "content its check refuses", change: keepFolders, check: refuses, want: refusal},
 		{name: "a faulty build", change: faultyBuild, check: passes, want: manifestFile},
 		{name: "a picture linking out of the content's folder", change: pictureLinkedOut, check: passes, want: pictureName},
+		{name: "a post showing a widget the build holds no code for", change: widgetLeftOut, check: passes, want: widgetPlace},
+		{name: "a build holding the component in another folder", change: componentMoved, check: passes, want: widgetPlace},
+		{name: "an older version showing a widget the build holds no code for", change: revisionWidget, check: passes, want: revisionWidgetPlace},
+		{name: "a translation showing a widget the build holds no code for", change: translationWidget, check: passes, want: translationWidgetPlace},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -205,6 +209,53 @@ func pictureLinkedOut(test *testing.T, folders Folders) {
 	if err != nil {
 		test.Fatalf("link %s out of the content's folder: %v", pictureFile, err)
 	}
+}
+
+// Where the fixture post shows its widget first, at its file and the line of the block's fence, and the widget's key in
+// the build's manifest
+const (
+	widgetPlace = "posts/reading-slowly/post.en.md:32:"
+	widgetKey   = `"src/widgets/ReadingPace.svelte": {`
+)
+
+// A widget the build holds no code for; the fixture post's older version and its translation, a line of each that a
+// case writes the widget over, and where each then shows it
+const (
+	strangeWidget          = "```widget OtherPace\nalt: A pace of no code.\n```"
+	revisionFile           = "posts/reading-slowly/revisions/2026-11-10.en.md"
+	revisionLine           = "The margins, as [the tool](/p/tidy-tool) keeps them."
+	revisionWidgetPlace    = revisionFile + ":9:"
+	translationFile        = "posts/reading-slowly/post.ru.md"
+	translationLine        = "Поля и заметки на них."
+	translationWidgetPlace = translationFile + ":12:"
+)
+
+// widgetLeftOut leaves the build with the code of another widget than the one the fixture post shows.
+//
+//wrapper:a case of the table names the fault it writes
+func widgetLeftOut(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Build, manifestFile, widgetKey, `"src/widgets/OtherPace.svelte": {`)
+}
+
+// componentMoved leaves the build with the fixture post's widget's component in a folder of web/ that holds no widget.
+//
+//wrapper:a case of the table names the fault it writes
+func componentMoved(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Build, manifestFile, widgetKey, `"src/ui/ReadingPace.svelte": {`)
+}
+
+// revisionWidget writes a widget the build holds no code for into the fixture post's older version.
+//
+//wrapper:a case of the table names the fault it writes
+func revisionWidget(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Content, revisionFile, revisionLine, strangeWidget)
+}
+
+// translationWidget writes a widget the build holds no code for into the fixture post's translation.
+//
+//wrapper:a case of the table names the fault it writes
+func translationWidget(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Content, translationFile, translationLine, strangeWidget)
 }
 
 // faultyBuild leaves a manifest that does not read.

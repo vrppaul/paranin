@@ -320,10 +320,10 @@ web/src/
   dom/           what the page does to the document: find by data-part, focus, scroll
   ui/            the Svelte library: Button, Field, Range, Chip, Statusline…
   controllers/   behaviour over server markup: vim, theme, hint, form submit
-  islands/       mounted into data-island: VimChrome, SalaryRange, Matcher, Chat
+  islands/       what runs each island's component in its data-island, a post's widgets first; the site's own: VimChrome, SalaryRange, Matcher, Chat
   kit/           the widget kit for articles: Stage (canvas, DPR, resize, reduced motion), play/pause/step, sliders
   widgets/       the articles' widgets, named for the whole site, as a post's block names one: PageCache.svelte
-  entries/       site.ts, post.ts: the island registry
+  entries/       site.ts, holding the island registry: every widget's code by a lazy glob of widgets/
 ```
 
 - eslint holds the layers: `domain` knows no DOM, `ui` knows no page, the
@@ -1084,7 +1084,7 @@ once); the small words and the table of abbreviations are **Proposed**:
   an editor's language server among its uses, is the same version. The
   script checks each template against `templ fmt` in memory, since templ's
   own `-fail` rewrites the file, and its Go with `templ generate -check`.
-- **Page:** `tsc` strict; `svelte-check`; eslint with `LAYERS`,
+- **Page:** `svelte-check`, strict, over the scripts and the components; eslint with `LAYERS`,
   `id-length`, `NO_NESTED_HELPERS`, `no-magic-numbers`, complexity 10, and
   `innerHTML` and `getElementById` refused; stylelint as in §5.5; knip;
   Prettier; vitest; Playwright.

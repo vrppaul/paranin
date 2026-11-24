@@ -1,10 +1,15 @@
 // The script every page runs (internal/assets, Site), before the page is first painted: the stylesheet every page
 // is drawn in, then the theme, which the page is first seen in, and the switch of the vim keys, which the foot line is
 // first seen with; the controllers a page needs only once it is seen load after, by a dynamic import of their own,
-// each handed what it waits on from the design's times, and the outline the reading line it measures by.
+// each handed what it waits on from the design's times, and the outline the reading line it measures by. A page that
+// shows a widget loads the islands, Svelte with them, and at once the code of each widget it shows, found by its name
+// among the widgets the build holds, each a chunk of its own.
+import type { Component } from "svelte";
 import "../ui/ui.css";
 import { startTheme } from "../controllers/theme";
 import { startVimSwitch } from "../controllers/vimswitch";
+import { islandNames } from "../islands/markup";
+import type { WidgetProps } from "../islands/widgets";
 import { SCREEN_SHARES } from "../tokens/shares";
 import { TIMES } from "../tokens/times";
 
@@ -13,6 +18,9 @@ const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 // A window the browser opens over the page, a way's hint or a series' pick, which it closes on Esc after the page's
 // listeners have heard the key
 const OPEN_WINDOW = ":popover-open";
+// Every widget's code, by its component's path, each loaded only when called: the folder internal/assets finds a
+// widget's code in the manifest by
+const WIDGETS = import.meta.glob<Component<WidgetProps>>("../widgets/*.svelte", { import: "default" });
 
 startTheme(document, () => localStorage, matchMedia(SYSTEM_DARK));
 startVimSwitch(document, () => localStorage);
@@ -36,6 +44,12 @@ void Promise.all([import("../controllers/commandline"), import("../controllers/s
     ),
 );
 void import("../controllers/copy").then(({ startCopying }) => startCopying(document, navigator.clipboard, TIMES.toast));
+// the components the page's islands show, each one's code loading beside the islands', not after them
+const shownComponents = islandNames(document);
+if (shownComponents.length > 0) {
+  const loading = new Map(shownComponents.map((name) => [name, WIDGETS[`../widgets/${name}.svelte`]?.()]));
+  void import("../islands/widgets").then(({ startWidgets }) => startWidgets(document, (name) => loading.get(name)));
+}
 void import("../controllers/outline").then(({ startOutline }) =>
   startOutline(
     document,

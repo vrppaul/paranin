@@ -1,21 +1,27 @@
-// What the page's TypeScript is held to beyond the type checker: typescript-eslint's strict rules over the types,
-// the layers of src/ (docs/FOUNDATION.md §5.3), and the rules for any code (.claude/rules/code.md) a linter can
-// hold. Taken in part from claude-review's frontend/eslint.config.js: its layers, its names, its nested helpers and
-// its lookups by id; what it holds of Svelte, Tailwind and its own library comes here with the parts that need it.
-// typescript-eslint takes TypeScript below 6.1 alone, so web/package.json pins TypeScript at 6.0.
+// What the page's TypeScript and its Svelte components are held to beyond the type checker: typescript-eslint's strict
+// rules over the types, Svelte's plugin's, the layers of src/ (docs/FOUNDATION.md §5.3), and the rules for any code
+// (.claude/rules/code.md) a linter can hold. Taken in part from claude-review's frontend/eslint.config.js: its layers,
+// its names, its nested helpers, its lookups by id, how it reads a component and what it refuses in one's markup of
+// any page, markup handed over whole and a style written in place; what it holds of Tailwind and its own library
+// comes here with the parts that need it. typescript-eslint takes TypeScript below 6.1 alone, so web/package.json
+// pins TypeScript at 6.0.
 import eslint from "@eslint/js";
+import svelte from "eslint-plugin-svelte";
 import tseslint from "typescript-eslint";
+import svelteConfig from "./svelte.config.js";
 
 // What each part of src/ may build on. A part importing one it is not listed with fails here: nothing reaches up
 // into what is built on it. A part comes into the list with its first module
 const LAYERS = {
-  // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, and the design's
-  // times they wait and shares of the screen they measure by
-  entries: ["controllers", "ui", "tokens"],
+  // The scripts a page runs: the stylesheet it is drawn in, the controllers over the server's markup, the islands, and
+  // the design's times they wait and shares of the screen they measure by
+  entries: ["controllers", "islands", "ui", "tokens"],
   // Behaviour over the markup the server draws, each over one part of it, on the logic of the page
   controllers: ["domain"],
   // The page's logic, with no page to touch: the command line's
   domain: [],
+  // What runs a component in the markup the server draws: each post's widget, its code handed in by the entry
+  islands: [],
 };
 // Every part of src/, those that hold no script among them: a stylesheet is reached by an import as a module is
 const PARTS = [...Object.keys(LAYERS), "ui", "tokens"];
@@ -102,17 +108,57 @@ const NO_MODULE_STATE = [
   },
 ];
 
+// A component is styled by its classes, in its stylesheet, which names tokens: never by a style written in its markup,
+// which the page's policy refuses as an attribute and which no stylesheet's check reads as a directive. A number only
+// the component knows reaches its stylesheet as a custom property, style:--name
+const STYLED_BY_CLASSES = "Style with a class; hand a number the stylesheet needs to it as style:--name.";
+// A component's stylesheet is a file the build writes beside its script: one the component asks Svelte to inject into
+// the page, by its options or as a <style> of the page's head, the page's policy refuses, and the widget draws unstyled
+const STYLED_FROM_ITS_FILE = "Keep a component's style in its own <style>, which the build writes to a file.";
+const NO_STYLE_IN_MARKUP = [
+  { selector: "SvelteAttribute[key.name='style']", message: STYLED_BY_CLASSES },
+  { selector: "SvelteStyleDirective:not([key.name.name=/^--/])", message: STYLED_BY_CLASSES },
+  {
+    selector: "SvelteElement[name.name='svelte:options'] > SvelteStartTag > SvelteAttribute[key.name='css']",
+    message: STYLED_FROM_ITS_FILE,
+  },
+  {
+    selector: "SvelteElement[name.name='svelte:head'] :matches(SvelteStyleElement, SvelteElement[name.name='style'])",
+    message: STYLED_FROM_ITS_FILE,
+  },
+];
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
+  ...svelte.configs.recommended,
   {
-    // The rules that read types read them from the page's own TypeScript program, tsconfig.json's
-    files: ["**/*.ts"],
+    // The rules that read types read them from the page's own TypeScript program, tsconfig.json's, a component's
+    // script among it
+    files: ["**/*.ts", "**/*.svelte"],
     languageOptions: {
       parserOptions: {
         projectService: true,
+        extraFileExtensions: [".svelte"],
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+  },
+  {
+    // A component's script is TypeScript, compiled as svelte.config.js says
+    files: ["**/*.svelte"],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+        svelteConfig,
+      },
+    },
+  },
+  {
+    // The type checker knows every name a module and a component use, the runes among them, better than eslint does
+    files: ["**/*.ts", "**/*.svelte"],
+    rules: {
+      "no-undef": "off",
     },
   },
   {
@@ -122,7 +168,16 @@ export default tseslint.config(
   },
   ...layerRules,
   {
-    files: ["src/**/*.ts", "tests/**/*.ts"],
+    files: ["**/*.svelte"],
+    rules: {
+      // Svelte's recommended rules refuse markup handed to the page whole, {@html}, so a widget's props reach it as
+      // data alone (docs/REQUIREMENTS.md §5.5). What a button does is written on it: there is no form for it to submit
+      // by default
+      "svelte/button-has-type": "error",
+    },
+  },
+  {
+    files: ["src/**/*.ts", "tests/**/*.ts", "src/**/*.svelte", "tests/**/*.svelte"],
     rules: {
       "id-length": ["error", { min: WHOLE_WORD_LETTERS, properties: "never" }],
       "no-restricted-syntax": [
@@ -131,6 +186,7 @@ export default tseslint.config(
         ...NO_PAGE_WIDE_ID_LOOKUPS,
         ...NO_STYLED_SCHEME,
         ...NO_MODULE_STATE,
+        ...NO_STYLE_IN_MARKUP,
       ],
       // A handler is one expression here, a body of statements being a helper of its own, and what it hands back is
       // nobody's to read

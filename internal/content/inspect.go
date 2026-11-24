@@ -79,6 +79,7 @@ const (
 	widgetTagProblem     = "%q is a tag of a widget's props' own: a value reads as the type YAML gives it"
 	widgetKeyProblem     = "%q is a key of a widget's props that is no text"
 	widgetTwiceProblem   = "%q is a key of its mapping twice"
+	widgetValueProblem   = "%q is a value of a widget's props the page reads no exact value of: a number of no end, or a whole number past ±(2^53−1)"
 	uncitedProblem       = "%q is a footnote no reference cites"
 	unansweredProblem    = "%q cites no footnote"
 	noteFormProblem      = "%q is no one paragraph, which a note set beside the line it is cited on holds"

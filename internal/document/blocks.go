@@ -1,6 +1,7 @@
 package document
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -153,13 +154,16 @@ type Figure struct {
 }
 
 // Widget is an island a post shows as a block of its own: the component it names; its alt text, which stands for it
-// wherever it does not run; its caption, none where it has none; and the live one, the post's page at the widget's
-// anchor, which every face that runs no island leads to.
+// wherever it does not run; its caption, none where it has none; its props, which the island hands the component;
+// and the live one, the post's page at the widget's anchor, which every face that runs no island leads to.
 type Widget struct {
 	Name    string
 	Alt     string
 	Caption string
-	Live    Anchor
+	// Props are a JSON object of the props the post writes, in their written order, but its alt text and caption: as
+	// JSON, since each widget's own types are the page's (docs/FOUNDATION.md §5.4, Layout of a post)
+	Props json.RawMessage
+	Live  Anchor
 }
 
 // Facts is a list of labels and their values, of a kind a face finds them by, not by their place.

@@ -27,15 +27,17 @@ const fragmentMark = "#"
 // follows it
 const wordSpace = " "
 
-// The names of the parts of a post's page a link or a button names, beside its article's places, each an id of the
-// page's own (ownID): the versions' pick, the series' pick in its head and in its panes' heading, each window's title
-// after the pick's name, and the panes' heading
+// The names of the parts of a post's page a link, a button or a widget names, beside its article's places, each an id
+// of the page's own (ownID): the versions' pick, the series' pick in its head and in its panes' heading, each window's
+// title after the pick's name, the panes' heading, and a widget's alt text after its anchor, which describes the widget
+// once it runs
 const (
 	versionsPickID = "versions"
 	headPickID     = "parts"
 	footPickID     = "parts-foot"
 	pickTitleEnd   = "-title"
 	panesHeadingID = "more"
+	widgetAltEnd   = "-alt"
 )
 
 // The parts of a post's page the site's script finds (web/src/controllers/outline.ts): the outline, each link of it,

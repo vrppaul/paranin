@@ -33,6 +33,9 @@ export default {
   extends: ["stylelint-config-standard"],
   // Written by scripts/tokens, whose hook holds it to its source
   ignoreFiles: ["src/tokens/tokens.css"],
+  // A component's style stands in its file's <style>, which postcss-html reads out of the markup, held to every rule
+  // below as a stylesheet is
+  overrides: [{ files: ["**/*.svelte"], customSyntax: "postcss-html" }],
   rules: {
     "color-no-hex": true,
     "color-named": "never",

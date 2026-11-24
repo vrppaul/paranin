@@ -207,6 +207,14 @@ const (
 	codeWordsPart = "code-words"
 )
 
+// A post's widget as the site's script mounts it (web/src/islands/widgets.ts): the body of its window its component
+// runs in, the mark that it runs and the alt text that stands for it until then
+const (
+	widgetBodyPart = "widget-body"
+	widgetLivePart = "widget-live"
+	widgetAltPart  = "widget-alt"
+)
+
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: how it writes text
 // inside a block, each link by its path from the root; what each includes to run the site's script, the frame round
 // each, whose site writes their addresses, and the day they are drawn on, which the résumé's career line runs to.

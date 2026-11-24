@@ -95,9 +95,10 @@ func readRevision(folder fs.FS, postParser parser.Parser, file string, day Day) 
 }
 
 // inspectRevisions checks a post's revisions as its text is checked, each by itself, and each dated before its current
-// version's: the revisions as the snapshot keeps them, the pictures their bodies show, and the faults found.
-func inspectRevisions(folder fs.FS, site WebAddress, post Post, written writtenPost) ([]Revision, shownPictures, Faults) {
-	shown := shownPictures{read: map[string]Picture{}, named: map[string]bool{}}
+// version's: the revisions as the snapshot keeps them, the pictures and widgets their bodies show, and the faults
+// found.
+func inspectRevisions(folder fs.FS, site WebAddress, post Post, written writtenPost) ([]Revision, shownBlocks, Faults) {
+	shown := noBlocksShown()
 	faults := Faults{}
 	revisions := make([]Revision, 0, len(written.revisions))
 	for _, taken := range written.revisions {

@@ -160,6 +160,8 @@ Amended 2026-11-24, on the owner's word: a widget lands with the blog's first, b
 Amended 2026-11-24, on the owner's word: no preview status; a post dated later is a draft until it comes out.
 Amended 2026-11-24, with the widget block: a widget is a node of a post's tree and a block of the document, its anchor
 named by `compose`, a place a link may name.
+Amended 2026-11-24, with the first island: a widget's props reach the document as JSON, and a release refuses a post
+showing a widget whose code its build lacks.
 
 ### Context
 
@@ -369,8 +371,13 @@ and web routes.
     `content` reads the block as the post is parsed, by a transformer of
     goldmark's tree, into a node of a kind of its own that carries the
     widget, which `PostKinds` names and `compose` walks, and holds its props
-    to their form; the props reach the document with the first island,
-    their first reader. Way weighed: the widgets kept beside the tree by
+    to their form. It writes them as a JSON object in their written order,
+    all but the alt text and the caption, which the page draws round the
+    widget, and the document carries them to the island, their first reader:
+    as JSON, since each widget's own types are the page's (amended
+    2026-11-24, with the first island). The post keeps where it shows each
+    widget, which `release`, holding the build beside the content, holds to
+    the widget's code. Way weighed: the widgets kept beside the tree by
     their fenced blocks, as a link is, which every reader of a post's code
     would have to tell from code. The form
     and the salary range are widgets too, so `compose` places them;
@@ -776,9 +783,10 @@ included (D8). Their widgets are code, built by the page's toolchain.
   post's widgets, and writes hashed files, one manifest and each widget's
   props as JSON Schema into the release folder. Go serves every front-end
   file from there and embeds none. Loading a snapshot checks the manifest
-  holds every entry the pages name and every post's props against their
-  schema. Development runs `vite build --watch` into the same shape, so the
-  strict CSP holds there too.
+  holds every entry the pages name, the code of every widget a post shows
+  (amended 2026-11-24, with the first island), and every post's props
+  against their schema. Development runs `vite build --watch` into the
+  same shape, so the strict CSP holds there too.
 - **Pipeline**: a push to `content/` or `web/` runs CI: `paranin check`, the
   types and the build, Typst's cards, rsync into `releases/<commit>/`, the
   `current` link switched, SIGHUP; CI then reads `/version` and fails if the

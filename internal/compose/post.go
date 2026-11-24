@@ -220,7 +220,7 @@ func (reader bodyReader) figure(picture *ast.Image) document.Figure {
 // name hold the mark the page's own ids open with, so the widget's anchor is its own for good (ADR-0003).
 func (reader bodyReader) widget(widget content.Widget) document.Widget {
 	live := document.Anchor{Page: reader.page, Name: reader.anchors.given(widget.Name)}
-	return document.Widget{Name: widget.Name, Alt: widget.Alt, Caption: widget.Caption, Live: live}
+	return document.Widget{Name: widget.Name, Alt: widget.Alt, Caption: widget.Caption, Props: widget.Props, Live: live}
 }
 
 // list is a list of the body, its items each holding blocks, numbered from its start where it is in order.

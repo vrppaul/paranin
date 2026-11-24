@@ -2,6 +2,7 @@ package content
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,12 +17,22 @@ import (
 )
 
 // Widget is an island a post shows as a block of its own (docs/FOUNDATION.md §5.4, Layout of a post): the component of
-// web/src/widgets it names, its alt text, which stands for it wherever it does not run, and its caption, none where it
-// has none. Its props are held to their form as the post loads; no part reads them, so none is kept.
+// web/src/widgets it names, its alt text, which stands for it wherever it does not run, its caption, none where it
+// has none, and its props, held to their form as the post loads.
 type Widget struct {
 	Name    string
 	Alt     string
 	Caption string
+	// Props are a JSON object of every prop the block writes but its alt text and caption, in their written order
+	Props json.RawMessage
+}
+
+// ShownWidget is a widget where a post's file shows it: the component it names, the file and the line of its block's
+// fence.
+type ShownWidget struct {
+	Name string
+	File string
+	Line int
 }
 
 // KindWidget is the kind of a widget's node in a post's tree.
@@ -97,7 +108,8 @@ func widgetFences(written Markdown, parent ast.Node) []*ast.FencedCodeBlock {
 }
 
 // read reads a widget's fenced block into its node at the block's place: the component it names, and a body that is a
-// mapping of its props, a line of alt text and a line of caption among them, written as propsReading holds them.
+// mapping of its props, a line of alt text and a line of caption among them, written as propsReading holds them, the
+// rest kept as JSON.
 func (reading widgetReading) read(source []byte, fence *ast.FencedCodeBlock) *WidgetNode {
 	info := string(fence.Info.Segment.Value(source))
 	props := &propsReading{body: fencedBody(source, fence.Lines()), faults: nil}
@@ -105,20 +117,21 @@ func (reading widgetReading) read(source []byte, fence *ast.FencedCodeBlock) *Wi
 	if !reading.name.MatchString(name) {
 		props.add(fenceOffset, widgetNameProblem, info)
 	}
-	widget := Widget{Name: name, Alt: "", Caption: ""}
+	widget := Widget{Name: name, Alt: "", Caption: "", Props: nil}
 	if mapping, isMapping := props.mapping(); isMapping {
 		props.inspect(mapping)
-		widget.Alt, widget.Caption = props.altText(mapping), props.caption(mapping)
+		widget.Alt, widget.Caption, widget.Props = props.altText(mapping), props.caption(mapping), props.propsJSON(mapping)
 	}
 	node := &WidgetNode{BaseBlock: ast.BaseBlock{}, Widget: widget, faults: props.faults}
 	node.SetPos(fence.Pos())
 	return node
 }
 
-// inspectWidget holds a widget to a block of the post's own, never inside a quote, a list's item or a footnote, and
-// writes the faults its reading found at the post's lines.
+// inspectWidget holds a widget to a block of the post's own, never inside a quote, a list's item or a footnote, writes
+// the faults its reading found at the post's lines, and keeps where it is shown.
 func (checked *bodyInspection) inspectWidget(widget *WidgetNode) {
 	line := checked.lineOf(widget)
+	checked.shown.widgets = append(checked.shown.widgets, ShownWidget{Name: widget.Widget.Name, File: checked.inspection.file, Line: line})
 	if widget.Parent().Kind() != ast.KindDocument {
 		checked.inspection.addAtLine(line, widgetPlaceProblem)
 	}

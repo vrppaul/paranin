@@ -5,6 +5,7 @@
     "src": "src/entries/site.ts",
     "isEntry": true,
     "imports": ["_shared-fixture.js", "_base-fixture.js"],
+    "dynamicImports": ["src/widgets/ReadingPace.svelte"],
     "css": ["assets/site-fixture.css"],
     "assets": ["assets/font-fixture.woff2"]
   },
@@ -22,5 +23,13 @@
     "file": "assets/base-fixture.js",
     "name": "base",
     "css": ["assets/base-fixture.css"]
+  },
+  "src/widgets/ReadingPace.svelte": {
+    "file": "assets/ReadingPace-fixture.js",
+    "name": "ReadingPace",
+    "src": "src/widgets/ReadingPace.svelte",
+    "isDynamicEntry": true,
+    "imports": ["_base-fixture.js"],
+    "css": ["assets/ReadingPace-fixture.css"]
   }
 }

@@ -50,30 +50,38 @@ type writtenBody struct {
 }
 
 // bodyInspection checks a post's body as goldmark parsed it, node by node, each fault at the file's line of its node,
-// reads the pictures it shows from the post's folder, by their names, and keeps its links inside the site. It keeps
-// the level of the heading before, which the next may go below by one level alone, and the code it met, where a tab
-// may stand.
+// reads the pictures it shows from the post's folder, by their names, and keeps the widgets it shows and its links
+// inside the site. It keeps the level of the heading before, which the next may go below by one level alone, and the
+// code it met, where a tab may stand.
 type bodyInspection struct {
 	writtenBody
 	inspection   *inspection
 	headingLevel int
 	reference    *regexp.Regexp
 	code         []text.Segment
-	pictures     shownPictures
+	shown        shownBlocks
 	links        map[*ast.Link]WrittenLink
 }
 
-// shownPictures are the pictures a post's body shows: those read, by their names, and every name a picture's address
-// gives, read or refused, which the check of the post's folder takes for a part of the post.
-type shownPictures struct {
-	read  map[string]Picture
-	named map[string]bool
+// shownBlocks are the pictures and widgets a post's body shows: the pictures read, by their names, and every name a
+// picture's address gives, read or refused, which the check of the post's folder takes for a part of the post; and the
+// widgets, each where its file shows it, in reading order.
+type shownBlocks struct {
+	read    map[string]Picture
+	named   map[string]bool
+	widgets []ShownWidget
 }
 
-// add takes the pictures more shows among those shown.
-func (shown *shownPictures) add(more shownPictures) {
+// noBlocksShown are the blocks of a body that shows none, which the blocks a body shows are added to.
+func noBlocksShown() shownBlocks {
+	return shownBlocks{read: map[string]Picture{}, named: map[string]bool{}, widgets: []ShownWidget{}}
+}
+
+// add takes the blocks more shows among those shown.
+func (shown *shownBlocks) add(more shownBlocks) {
 	maps.Copy(shown.read, more.read)
 	maps.Copy(shown.named, more.named)
+	shown.widgets = append(shown.widgets, more.widgets...)
 }
 
 // inspectBody finds in a post's body what the format refuses: a node of a kind no post holds (PostKinds), raw HTML
@@ -83,17 +91,17 @@ func (shown *shownPictures) add(more shownPictures) {
 // title and a picture that is no paragraph of its own; a link to neither the web, nor a path from the site's root, nor
 // a mailbox, and one to the site's own address; a picture with no alt text, or none of the post's folder; a widget
 // that is no block of the post's own, or that its reading found faults in; and characters no value may hold, written
-// or referenced. It hands back the pictures the body shows and its links inside the site, which only the whole site
-// can hold to a page.
-func inspectBody(inspection *inspection, written writtenBody) (shownPictures, map[*ast.Link]WrittenLink) {
+// or referenced. It hands back the pictures and widgets the body shows and its links inside the site, which only the
+// whole site can hold to a page.
+func inspectBody(inspection *inspection, written writtenBody) (shownBlocks, map[*ast.Link]WrittenLink) {
 	checked := &bodyInspection{
 		writtenBody: written, inspection: inspection, headingLevel: titleLevel, reference: regexp.MustCompile(referencePattern),
-		code: nil, pictures: shownPictures{read: map[string]Picture{}, named: map[string]bool{}}, links: map[*ast.Link]WrittenLink{},
+		code: nil, shown: noBlocksShown(), links: map[*ast.Link]WrittenLink{},
 	}
 	// visit returns no error, so the walk ends with none
 	_ = ast.Walk(written.body.Tree, checked.visit)
 	checked.inspectCharacters()
-	return checked.pictures, checked.links
+	return checked.shown, checked.links
 }
 
 func (checked *bodyInspection) visit(node ast.Node, entering bool) (ast.WalkStatus, error) {

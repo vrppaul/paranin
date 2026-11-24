@@ -70,6 +70,9 @@ type Post struct {
 	Body        Markdown     `yaml:"-"`
 	// Pictures are the pictures its body and its revisions show, files of the post's folder, by their names
 	Pictures map[string]Picture `yaml:"-"`
+	// Widgets are the widgets its body and its revisions show, each where its file shows it, which only a release,
+	// holding the page's build beside the content, can hold to their code
+	Widgets []ShownWidget `yaml:"-"`
 	// SiteLinks are the body's links inside the site, by their nodes, which compose reads into pages and checks
 	SiteLinks map[*ast.Link]WrittenLink `yaml:"-"`
 	// Revisions are the post's older versions, oldest first
@@ -212,7 +215,7 @@ func decodePost(file string, frontMatter []byte, translation string) (writtenPos
 	post := Post{
 		Slug: "", Translation: translation, ID: 0, Title: fields.Title, Description: fields.Description, Status: fields.Status,
 		Published: fields.Published, Updated: fields.Updated, Tags: nil, Discussions: nil, Body: Markdown{Source: nil, Tree: nil},
-		Pictures: nil, SiteLinks: nil, Revisions: nil, Stale: false,
+		Pictures: nil, Widgets: nil, SiteLinks: nil, Revisions: nil, Stale: false,
 	}
 	return writtenPost{file: file, post: post, source: fields.Source, frontMatter: document, bodyLine: 0, revisions: nil}, faults
 }
@@ -281,11 +284,11 @@ func inspectPosts(folder fs.FS, site WebAddress, folders []writtenFolder) inspec
 	return inspected
 }
 
-// inspectedTranslation is a translation a load inspected: the translation, the pictures it shows, its faults, and its
-// warning, where it is older than its original.
+// inspectedTranslation is a translation a load inspected: the translation, the pictures and widgets it shows, its
+// faults, and its warning, where it is older than its original.
 type inspectedTranslation struct {
 	post     Post
-	shown    shownPictures
+	shown    shownBlocks
 	faults   Faults
 	warnings Faults
 }
@@ -303,13 +306,13 @@ func inspectTranslation(folder fs.FS, site WebAddress, original Post, written wr
 }
 
 // inspectText checks a post's text in one language and its revisions, its fields inspected already.
-func inspectText(folder fs.FS, site WebAddress, inspection *inspection, written writtenPost) (Post, shownPictures, Faults) {
+func inspectText(folder fs.FS, site WebAddress, inspection *inspection, written writtenPost) (Post, shownBlocks, Faults) {
 	post := written.post
 	place := path.Dir(written.file)
 	shown, links := inspectBody(inspection, writtenBody{body: post.Body, firstLine: written.bodyLine, folder: folder, place: place, site: site})
 	revisions, revisionsShown, revisionFaults := inspectRevisions(folder, site, post, written)
 	shown.add(revisionsShown)
-	post.Pictures, post.SiteLinks, post.Revisions = shown.read, links, revisions
+	post.Pictures, post.Widgets, post.SiteLinks, post.Revisions = shown.read, shown.widgets, links, revisions
 	return post, shown, slices.Concat(inspection.faults, inspectCharacters(written.file, written.frontMatter), revisionFaults)
 }
 

@@ -102,21 +102,23 @@ repos:
   # them there. Without pnpm or the install they fail and say so: leave them out on purpose with SKIP
   - repo: local
     hooks:
-      # Every stylesheet but the generated tokens names its colours from the tokens (web/stylelint.config.js)
+      # Every stylesheet but the generated tokens, and every component's style, names its colours from the tokens
+      # (web/stylelint.config.js)
       - id: page-styles
-        name: stylelint (the page's stylesheets)
+        name: stylelint (the page's stylesheets and components' styles)
         entry: pnpm --dir web run lint:styles
         language: system
-        files: ^web/(src/.*\.css|stylelint\.config\.js|package\.json)$
+        files: ^web/(src/.*\.(css|svelte)|tests/.*\.svelte|stylelint\.config\.js|package\.json)$
         pass_filenames: false
-      # The page's TypeScript as the compiler reads it, strict (web/tsconfig.json)
+      # The page's TypeScript and its components as the compiler reads them, strict (web/tsconfig.json)
       - id: page-types
-        name: tsc (the page's types)
+        name: svelte-check (the page's types)
         entry: pnpm --dir web run check:types
         language: system
-        files: ^web/(src/|tests/|tsconfig\.json|vite\.config\.ts|package\.json)
+        files: ^web/(src/|tests/|tsconfig\.json|svelte\.config\.js|vite\.config\.ts|package\.json)
         pass_filenames: false
-      # The layers of src/, the names, the helpers and the lookups (web/eslint.config.js)
+      # The layers of src/, the names, the helpers and the lookups, and what a component's markup may not hold
+      # (web/eslint.config.js)
       - id: page-scripts
         name: eslint (the page's scripts)
         entry: pnpm --dir web run lint:scripts
@@ -130,12 +132,12 @@ repos:
         language: system
         files: ^web/
         pass_filenames: false
-      # The controllers' tests, run over the HTML face's golden pages, so a change to either runs them
+      # The controllers' and the islands' tests, run over the HTML face's golden pages, so a change to either runs them
       - id: page-tests
         name: vitest (the page's tests)
         entry: pnpm --dir web run test
         language: system
-        files: (^web/(src/|tests/|vite\.config\.ts|package\.json)|^internal/face/html/testdata/)
+        files: (^web/(src/|tests/|svelte\.config\.js|vite\.config\.ts|package\.json)|^internal/face/html/testdata/)
         pass_filenames: false
       # Checks rather than rewrites: a commit never carries formatting it was not shown
       - id: page-format

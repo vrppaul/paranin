@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -218,9 +219,9 @@ func TestAPictureStandingAloneIsAFigure(test *testing.T) {
 	}
 }
 
-// A widget's block is a widget of the document: the component it names, its alt text and its caption, and the post's
-// page at its anchor, the widget's name, counted where an earlier widget of the post took it, which no heading's
-// anchor, all small letters, takes; its props stay out of the document.
+// A widget's block is a widget of the document: the component it names, its alt text and its caption, its props as
+// JSON, and the post's page at its anchor, the widget's name, counted where an earlier widget of the post took it,
+// which no heading's anchor, all small letters, takes.
 func TestAWidgetsBlockIsAWidgetNamedForALink(test *testing.T) {
 	page := document.PostPage(samplePostSlug)
 	cases := []struct {
@@ -229,27 +230,44 @@ func TestAWidgetsBlockIsAWidgetNamedForALink(test *testing.T) {
 		want []document.Block
 	}{
 		{
-			name: "a widget under its caption, its props left out", body: "```widget PageCache\nalt: A page read twice.\ncaption: The cache\npages: 4\n```",
+			name: "a widget under its caption, its props beside it", body: "```widget PageCache\nalt: A page read twice.\ncaption: The cache\npages: 4\n```",
 			want: []document.Block{document.Widget{
-				Name: "PageCache", Alt: "A page read twice.", Caption: "The cache", Live: document.Anchor{Page: page, Name: "PageCache"},
+				Name: "PageCache", Alt: "A page read twice.", Caption: "The cache", Props: json.RawMessage(`{"pages":4}`),
+				Live: document.Anchor{Page: page, Name: "PageCache"},
 			}},
 		},
 		{
-			name: "a widget with no caption", body: "```widget PageCache\nalt: A page read twice.\n```",
-			want: []document.Block{document.Widget{Name: "PageCache", Alt: "A page read twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}}},
+			name: "a widget with no caption and no props", body: "```widget PageCache\nalt: A page read twice.\n```",
+			want: []document.Block{document.Widget{
+				Name: "PageCache", Alt: "A page read twice.", Caption: "", Props: json.RawMessage(`{}`), Live: document.Anchor{Page: page, Name: "PageCache"},
+			}},
 		},
 		{
 			name: "a widget twice, counted", body: "```widget PageCache\nalt: Once.\n```\n\n```widget PageCache\nalt: Twice.\n```",
 			want: []document.Block{
-				document.Widget{Name: "PageCache", Alt: "Once.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}},
-				document.Widget{Name: "PageCache", Alt: "Twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache-2"}},
+				document.Widget{Name: "PageCache", Alt: "Once.", Caption: "", Props: json.RawMessage(`{}`), Live: document.Anchor{Page: page, Name: "PageCache"}},
+				document.Widget{Name: "PageCache", Alt: "Twice.", Caption: "", Props: json.RawMessage(`{}`), Live: document.Anchor{Page: page, Name: "PageCache-2"}},
 			},
 		},
 		{
 			name: "a widget beside a heading of its words", body: "## Page cache\n\n```widget PageCache\nalt: A page read twice.\n```",
 			want: []document.Block{document.Section{Title: textSpans("Page cache"), Name: "page-cache", Blocks: []document.Block{
-				document.Widget{Name: "PageCache", Alt: "A page read twice.", Caption: "", Live: document.Anchor{Page: page, Name: "PageCache"}},
+				document.Widget{
+					Name: "PageCache", Alt: "A page read twice.", Caption: "", Props: json.RawMessage(`{}`), Live: document.Anchor{Page: page, Name: "PageCache"},
+				},
 			}}},
+		},
+		{
+			name: "props of every kind YAML reads, in their written order",
+			body: "```widget PageCache\nzone: Europe/Prague\nalt: A page read twice.\nsize: 4.5\nread: true\nday: 2026-11-10\n" +
+				"none: null\nmask: 0x1F\nquoted: \"4 <b>\"\nfar: \"1e400\"\nmost: 9007199254740991\nleast: -9007199254740991\n" +
+				"rows:\n  - [1, two]\n  - {kept: 2, first: 1}\n```",
+			want: []document.Block{document.Widget{
+				Name: "PageCache", Alt: "A page read twice.", Caption: "",
+				Props: json.RawMessage(`{"zone":"Europe/Prague","size":4.5,"read":true,"day":"2026-11-10","none":null,"mask":31,` +
+					`"quoted":"4 <b>","far":"1e400","most":9007199254740991,"least":-9007199254740991,"rows":[[1,"two"],{"kept":2,"first":1}]}`),
+				Live: document.Anchor{Page: page, Name: "PageCache"},
+			}},
 		},
 	}
 	for _, testCase := range cases {

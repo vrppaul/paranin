@@ -3,8 +3,9 @@
 // file the manifest names, each chunk's script, the stylesheets it imports and the files a stylesheet loads, as the
 // font, and checks that the manifest holds every entry the site names and every chunk one imports, so a release's
 // files are held whole beside its content and a page drawn from it names only files it holds. What an entry
-// includes in a page is worked out once, at the load, as Vite's guide to backend integration walks a manifest. It
-// knows no face: a face asks it what an entry includes in a page.
+// includes in a page is worked out once, at the load, as Vite's guide to backend integration walks a manifest; whether
+// it holds a widget's code, which the site's script loads by itself, is read off the manifest's keys. It knows no
+// face: a face asks it what an entry includes in a page.
 package assets
 
 import (
@@ -39,6 +40,14 @@ const (
 	servedRoot   = "/"
 )
 
+// The folder of web/ every widget's component stands in, named for the whole site, and the ending of a component's
+// file. The site's entry imports each lazily by a glob of the folder (web/src/entries/site.ts), so the manifest names
+// a widget's code by its component's path, a chunk of its own
+const (
+	widgetsFolder   = "src/widgets"
+	componentEnding = ".svelte"
+)
+
 // contentTypes are the types the site serves a built file as, by its name's ending: the same on every machine,
 // whatever its own tables say. Each comes with the first file of its kind the build writes.
 func contentTypes() map[string]string {
@@ -67,11 +76,12 @@ type Included struct {
 	Preloads    []string
 }
 
-// Build is one build, read whole: each file by the path the site serves it at, and what each entry the site
-// names includes in a page.
+// Build is one build, read whole: each file by the path the site serves it at, what each entry the site names
+// includes in a page, and every source it holds the code of, by the manifest's key, a widget's component among them.
 type Build struct {
 	files    map[string]File
 	included map[Entry]Included
+	sources  map[string]bool
 }
 
 // chunk is one key of the manifest, as Vite writes it: the file it was built into and the stylesheets it imports,
@@ -97,7 +107,16 @@ func Load(folder fs.FS) (*Build, error) {
 	for _, entry := range named() {
 		included[entry] = includedBy(manifest, manifest[string(entry)])
 	}
-	return &Build{files: files, included: included}, nil
+	sources := make(map[string]bool, len(manifest))
+	for key := range manifest {
+		sources[key] = true
+	}
+	return &Build{files: files, included: included, sources: sources}, nil
+}
+
+// WidgetSource is the path from web/ of a widget's component, by its name: the manifest's key of the widget's code.
+func WidgetSource(name string) string {
+	return path.Join(widgetsFolder, name+componentEnding)
 }
 
 // readManifest is the manifest of a build: each chunk by its key, an entry's the source it was built from.
@@ -223,4 +242,9 @@ func (build *Build) Files() iter.Seq2[string, File] {
 // Includes is what a page includes to run an entry the site names.
 func (build *Build) Includes(entry Entry) Included {
 	return build.included[entry]
+}
+
+// HoldsWidget is whether the build holds the code of a widget, by its component's name.
+func (build *Build) HoldsWidget(name string) bool {
+	return build.sources[WidgetSource(name)]
 }

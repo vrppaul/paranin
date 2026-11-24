@@ -26,18 +26,20 @@ const (
 )
 
 // Every file the manifest names, a chunk's script, the stylesheets it imports and a file a stylesheet loads, as the
-// font, is served at its path from the site's root, as the type its name says; the manifest itself is no file of the
-// site.
+// font, is served at its path from the site's root, as the type its name says, a widget's code, which the site's
+// script loads by itself, among them; the manifest itself is no file of the site.
 func TestABuildServesEveryFileItsManifestNames(test *testing.T) {
 	build := fixtures.LoadedBuild(test)
 	want := map[string]assets.File{
-		"/assets/site-fixture.js":    {ContentType: scriptType, Body: []byte("import \"./shared-fixture.js\";\nimport \"./base-fixture.js\";\n")},
-		"/assets/shared-fixture.js":  {ContentType: scriptType, Body: []byte("import \"./base-fixture.js\";\n")},
-		"/assets/base-fixture.js":    {ContentType: scriptType, Body: []byte("export {};\n")},
-		"/" + stylesheetPath:         {ContentType: styleType, Body: []byte("body{margin:0}\n")},
-		"/assets/shared-fixture.css": {ContentType: styleType, Body: []byte("p{margin:0}\n")},
-		"/assets/base-fixture.css":   {ContentType: styleType, Body: []byte("h1{margin:0}\n")},
-		"/assets/font-fixture.woff2": {ContentType: fontType, Body: []byte("wOF2\n")},
+		"/assets/ReadingPace-fixture.js":  {ContentType: scriptType, Body: []byte("import \"./base-fixture.js\";\nexport default {};\n")},
+		"/assets/ReadingPace-fixture.css": {ContentType: styleType, Body: []byte(".pace{margin:0}\n")},
+		"/assets/site-fixture.js":         {ContentType: scriptType, Body: []byte("import \"./shared-fixture.js\";\nimport \"./base-fixture.js\";\n")},
+		"/assets/shared-fixture.js":       {ContentType: scriptType, Body: []byte("import \"./base-fixture.js\";\n")},
+		"/assets/base-fixture.js":         {ContentType: scriptType, Body: []byte("export {};\n")},
+		"/" + stylesheetPath:              {ContentType: styleType, Body: []byte("body{margin:0}\n")},
+		"/assets/shared-fixture.css":      {ContentType: styleType, Body: []byte("p{margin:0}\n")},
+		"/assets/base-fixture.css":        {ContentType: styleType, Body: []byte("h1{margin:0}\n")},
+		"/assets/font-fixture.woff2":      {ContentType: fontType, Body: []byte("wOF2\n")},
 	}
 	if got := maps.Collect(build.Files()); !maps.EqualFunc(got, want, sameFile) {
 		test.Errorf("Files() = %q, want %q", got, want)

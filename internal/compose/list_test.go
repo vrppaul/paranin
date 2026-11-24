@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -20,11 +19,8 @@ const (
 	newYearsNight = "2026-01-01T00:30+01:00"
 )
 
-// How a case writes when a post came out, as its front matter does, and what joins the tags of a post the list names
-const (
-	writtenMomentLayout = "2006-01-02T15:04Z07:00"
-	seenTagJoint        = ","
-)
+// What joins the tags of a post the list names
+const seenTagJoint = ","
 
 // seenGroup is a group of the blog's list as a test reads it: its title, the name a place reaches it by, a series'
 // line, how many posts it holds, and its posts.
@@ -348,6 +344,7 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/3", Kind: document.PlacePost, Page: first, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/5", Kind: document.PlacePost, Page: hidden, Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog/1", Kind: document.PlacePost, Page: read, Section: ""}, Offered: false},
+		{Place: document.Place{Name: "blog/reading-slowly/2026-11-10", Kind: document.PlaceVersion, Page: document.OlderVersion(fixturePostSlug, "2026-11-10"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading"), Section: ""}, Offered: false},
@@ -392,15 +389,5 @@ func seenListedOf(post document.ListedPost) seenListed {
 // fmt writes the value.
 func outAt(test *testing.T, slug, moment string) string {
 	test.Helper()
-	return fmt.Sprint(document.PostOut{Page: document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}, Published: momentOf(test, moment)})
-}
-
-// momentOf is a moment as a case writes it, as front matter does.
-func momentOf(test *testing.T, written string) time.Time {
-	test.Helper()
-	moment, err := time.Parse(writtenMomentLayout, written)
-	if err != nil {
-		test.Fatalf("read the moment %q: %v", written, err)
-	}
-	return moment
+	return fmt.Sprint(document.PostOut{Page: document.Page{Kind: document.PagePost, Slug: slug, Tab: ""}, Published: fixtures.MomentOf(test, moment)})
 }

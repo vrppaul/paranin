@@ -7,11 +7,12 @@
 // cache asks for again. Each page, and each of its tabs alone, is served at the path routes writes for it in each
 // format, and at its own address in the format the reader's request asks for: HTML for a browser, markdown for an
 // agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
-// a name ending in .txt promises. A post served is drawn whole in every format, and its number sends the reader on to
-// its address; so is the blog's list, in each of its groupings and filtered by each tag and series, at the address the
-// request's query names (routes.Requested). Each format of a page names in a Link header the address the page is known
-// by, the one where the reader chooses, so a search engine counts its markdown and its manual as the page; a filtered
-// list names the list's, and tells a search engine not to index it. A preview is served at its link alone, under a key
+// a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
+// revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
+// groupings and filtered by each tag and series, at the address the request's query names (routes.Requested). Each
+// format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
+// search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
+// tell a search engine not to index them. A preview is served at its link alone, under a key
 // the server is handed (preview.go), until the link lapses: every face and picture of it where its post would stand,
 // the blog's folder swapped for the preview's folder and the link's token, drawn for the request, since each link
 // writes its own token into them; once the post is out, the link sends its reader on to it. Whatever is answered in
@@ -150,13 +151,22 @@ type Server struct {
 }
 
 // drawing is every page of one snapshot, drawn, by the path it is served at, every file of its build and every picture
-// of its posts served; the path a post's number sends the reader on to, by the number's path; the page of an address
-// of no page; and each post served at its preview link alone, which a request opening one draws.
+// of its posts served; where a path sends the reader on to, by the path: a post's number, and its current version's
+// day; the page of an address of no page; and each post served at its preview link alone, which a request opening one
+// draws.
 type drawing struct {
 	served   answers
-	moved    map[string]string
+	moved    map[string]move
 	notFound missingChoice
 	previews previewing
+}
+
+// move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's
+// address, which a cache asks again for, since a folder may be renamed; its current version's day for a while, since
+// that day names an older version once the post is updated.
+type move struct {
+	location string
+	status   int
 }
 
 // answers are pages and files by the path each is served at: in each format at its own path, and each file, the same
@@ -293,10 +303,10 @@ func picturesOf(icons []html.Icon) map[string]answer {
 }
 
 // knownAs is a page's answer naming the address the page is known by, as a Link header writes it (RFC 8288, RFC 6596);
-// a filtered list's names none and tells a search engine not to index it, since it is a view of the list and no page
-// of its own, and a part of the list is no copy of it to name the list's address (docs/FOUNDATION.md §5.4).
+// a page no search engine indexes, a filtered list or an older version of a post, names none and tells a search engine
+// not to index it (document.Page's Indexed, docs/FOUNDATION.md §5.4).
 func (sent answer) knownAs(page document.Page, site routes.Site) answer {
-	if _, isFilter := page.Unfiltered(); isFilter {
+	if !page.Indexed() {
 		sent.robots = noIndex
 		return sent
 	}
@@ -349,10 +359,9 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		send(writer, status, sent.privately())
 		return
 	}
-	if location, isMoved := drawn.moved[path]; isMoved {
-		// a post's folder, its slug, may be renamed, so a cache asks again where its number leads
+	if moved, isMoved := drawn.moved[path]; isMoved {
 		writer.Header().Set(cacheControl, askEveryTime)
-		http.Redirect(writer, request, location, http.StatusMovedPermanently)
+		http.Redirect(writer, request, moved.location, moved.status)
 		return
 	}
 	status, sent := drawn.served.answerTo(writer.Header(), request, routes.Requested(path, request.URL.Query()), drawn.notFound)
@@ -434,7 +443,8 @@ func (format lazyFormat) servedAs() string {
 
 // laterPage is a page in each format a reader may choose, its manual, its markdown and its HTML, each drawn the first
 // time a request asks for it and kept for those after, once however many ask at the same moment: a filtered list,
-// of which there is one for each tag and series and few are read; a preview, whose faces each link draws anew.
+// of which there is one for each tag and series, and an older version of a post, one for each revision, few of either
+// read; a preview, whose faces each link draws anew.
 type laterPage struct {
 	page     document.Page
 	manual   lazyFormat
@@ -565,17 +575,22 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), addresses)
 		}
 	}
-	moved := map[string]string{}
+	moved := map[string]move{}
 	for _, post := range composition.Posts {
 		served.serveEveryFormat(post, pageWriter.Post(post), addresses)
-		moved[routes.NumberPath(post.Head.Number)] = routes.Path(post.Head.Page, routes.FormatChosen)
+		moved[routes.NumberPath(post.Head.Number)] = move{location: routes.Path(post.Head.Page, routes.FormatChosen), status: http.StatusMovedPermanently}
+		currentDayMoves(moved, post)
 	}
 	for _, list := range composition.Lists {
 		served.serveEveryFormat(list, pageWriter.List(list), addresses)
 	}
-	// a filtered list is drawn as a request first asks for it: there is one for each tag and series, and few are read
+	// a filtered list and an older version of a post are drawn as a request first asks for them: there is one for each
+	// tag and series and each revision, and few are read
 	for _, list := range composition.Filtered {
 		served.serveLater(laterPageOf(list, addresses, func() string { return pageWriter.List(list) }))
+	}
+	for _, older := range composition.Versions {
+		served.serveLater(laterPageOf(older, addresses, func() string { return pageWriter.Post(older) }))
 	}
 	status := statusLine(missingStatus)
 	notFound := missingChoice{
@@ -587,6 +602,19 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 		previews.posts[previewed.Post.Head.Page.Slug] = previewed
 	}
 	return &drawing{served: served, moved: moved, notFound: notFound, previews: previews}, composition.Until
+}
+
+// currentDayMoves sends the reader of a post's current version by its day, the name its versions list it by, on to the
+// same face at the post's own address, for a while.
+func currentDayMoves(moved map[string]move, post document.Document) {
+	page := post.Head.Page
+	for _, version := range document.VersionsOf(post.Head.Version) {
+		if version.Current {
+			for _, format := range routes.Formats() {
+				moved[routes.Path(document.OlderVersion(page.Slug, version.Name), format)] = move{location: routes.Path(page, format), status: sentOnForAWhile}
+			}
+		}
+	}
 }
 
 // servePictures serves posts' pictures, each at its file beside its post.

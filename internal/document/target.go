@@ -15,12 +15,16 @@ type Address struct {
 	URL string
 }
 
-// Page is a page of the site, by its kind and slug, and the tab of it shown alone; the zero page is none.
+// Page is a page of the site, by its kind and slug, and the tab of it shown alone, or the older version of a post; the
+// zero page is none.
 type Page struct {
 	Kind PageKind
 	Slug string
 	// Tab is the name of the tab shown alone (Tab.Slug); none where the page is shown whole
 	Tab string
+	// Revision is the older version of a post shown, by the day it came out as its revision's name writes it,
+	// YYYY-MM-DD; none for the current version, and on any other page
+	Revision string
 }
 
 // PageKind is what a page of the site is.
@@ -55,17 +59,22 @@ const (
 // PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
 // list by year or by series; PageNone's, no page.
 func PageOf(kind PageKind) Page {
-	return Page{Kind: kind, Slug: "", Tab: ""}
+	return Page{Kind: kind, Slug: "", Tab: "", Revision: ""}
 }
 
 // TagFilter is the blog's list filtered by a tag (docs/FOUNDATION.md §5.4, Series, tags and lists).
 func TagFilter(tag string) Page {
-	return Page{Kind: PageTagFilter, Slug: tag, Tab: ""}
+	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: ""}
 }
 
 // SeriesFilter is the blog's list filtered by a series, by its name.
 func SeriesFilter(name string) Page {
-	return Page{Kind: PageSeriesFilter, Slug: name, Tab: ""}
+	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: ""}
+}
+
+// OlderVersion is an older version of a post, by its slug and its revision's name (docs/FOUNDATION.md §5.4, Revisions).
+func OlderVersion(slug, revision string) Page {
+	return Page{Kind: PagePost, Slug: slug, Tab: "", Revision: revision}
 }
 
 // InBlog is whether a page is the blog's, a post or the list, by year, by series or filtered, which a face shows in
@@ -79,9 +88,18 @@ func (page Page) InBlog() bool {
 	return false
 }
 
-// Unfiltered is the list a filtered list filters, the blog's list by year, and whether the page is a filtered list: a
-// view of the list, not a page of its own, which no search engine indexes, and which names no canonical address, since
-// a part of the list is no copy of it (docs/FOUNDATION.md §5.4). exhaustive holds the switch to every kind.
+// Indexed is whether a search engine may index a page, which then names the address it is known by: every page served
+// but a filtered list, a view of the list and no page of its own, and an older version of a post, which a newer
+// stands over; neither names a canonical address, since a part of the list is no copy of it, nor is an older version
+// of its post's current one, and a search engine reads noindex beside a canonical address as two signs that disagree
+// (docs/FOUNDATION.md §5.4).
+func (page Page) Indexed() bool {
+	_, isFilter := page.Unfiltered()
+	return !isFilter && page.Revision == ""
+}
+
+// Unfiltered is the list a filtered list filters, the blog's list by year, and whether the page is a filtered list.
+// exhaustive holds the switch to every kind.
 func (page Page) Unfiltered() (Page, bool) {
 	switch page.Kind {
 	case PageTagFilter, PageSeriesFilter:

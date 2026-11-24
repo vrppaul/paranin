@@ -233,7 +233,7 @@ func (writer PageWriter) Page(composed document.Document, record compose.Record,
 	page, title := head.Page, head.Title
 	var main templ.Component
 	if tab, isTab := tabNamed(tabs.Rest, shown); isTab {
-		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug}, tab.Title
+		page, title = document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: ""}, tab.Title
 		main = writer.tabPart(head.Page.Kind, tab.Title, document.WrittenBlocks(tab.Blocks))
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
@@ -260,8 +260,8 @@ func rendered(component templ.Component) string {
 }
 
 // metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab. A
-// filtered list, a view of the list, is indexed by no search engine and known at no address, as a preview is: a part of
-// the list is no copy of it to name the list's.
+// page no search engine indexes, a filtered list or an older version of a post, is known at no address, as a preview
+// is (document.Page's Indexed).
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	site := writer.frame.site
 	metadata := pageMetadata{
@@ -271,7 +271,7 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 		markdown:    site.Reference(shown, routes.FormatMarkdown),
 		indexed:     true,
 	}
-	if _, isFilter := shown.Unfiltered(); isFilter {
+	if !shown.Indexed() {
 		metadata.canonical, metadata.indexed = "", false
 	}
 	return metadata

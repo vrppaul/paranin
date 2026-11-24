@@ -60,9 +60,9 @@ templ (writer PageWriter) outline(headings []outlined) {
 }
 
 // postHead is a post's first screen (DESIGN.md, PostHead): its title, the page's h1, and its lead, in the headline's
-// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, or a draft's by
-// the site's word for one, its series' pick, and its tags; the corners' crosses round it, as round the résumé's first
-// screen.
+// style, in one column; beside them, in the sources' column, its facts: the version read, by its day, the pick of its
+// versions, an older one saying under it that a newer stands, or a draft's by the site's word for one, its series'
+// pick, and its tags; the corners' crosses round it, as round the résumé's first screen.
 templ (writer PageWriter) postHead(head document.Head) {
 	<header class="post-head">
 		<div class="post-intro">
@@ -80,7 +80,13 @@ templ (writer PageWriter) postHead(head document.Head) {
 				case document.VersionOut:
 					<dt>{ writer.frame.postLabels.Version }</dt>
 					<dd>
-						@day(version.Published)
+						@writer.versionPick(version.Day, version.Versions)
+					</dd>
+				case document.VersionOlder:
+					<dt>{ writer.frame.postLabels.Version }</dt>
+					<dd>
+						@writer.versionPick(version.Day, version.Versions)
+						@writer.newer(version)
 					</dd>
 				case document.VersionDraft:
 					<dt>{ writer.frame.postLabels.Version }</dt>
@@ -106,6 +112,72 @@ templ (writer PageWriter) postHead(head document.Head) {
 // day is a post's day as a time: as a reader reads it, and as a machine does.
 templ day(published time.Time) {
 	<time datetime={ published.Format(machineDayLayout) }>{ published.Format(look.DayLayout) }</time>
+}
+
+// versionPick is the versions' Pick (DESIGN.md, Pick): the day of the version read and a mark saying it opens a
+// window, which it does as the browser's popover, with no script, Esc closing it; the window, titled in the site's
+// word for the versions, lists each, newest first, its close button last, so the keyboard reaches the versions first.
+templ (writer PageWriter) versionPick(read time.Time, versions []document.PostVersion) {
+	<button type="button" class="version-pick" popovertarget={ ownID(versionsPickID) }>
+		@day(read)
+		@text(wordSpace)
+		<span class="pick-mark" aria-hidden="true">{ pickMark }</span>
+	</button>
+	<div id={ ownID(versionsPickID) } class="pick" popover role="dialog" aria-labelledby={ ownID(versionsPickID + pickTitleEnd) }>
+		<p id={ ownID(versionsPickID + pickTitleEnd) } class="pick-title">{ writer.frame.versionWords.Title }</p>
+		<ol class="pick-parts">
+			for _, version := range versions {
+				@writer.pickVersion(version)
+			}
+		</ol>
+		@pickClose(ownID(versionsPickID))
+	</div>
+}
+
+// pickVersion is a version of a post in its pick's window: its day and where it stands for the reader; the version read
+// the current page, any other a link to it.
+templ (writer PageWriter) pickVersion(version document.PostVersion) {
+	<li
+		class={ "pick-part", templ.KV("version-read", version.Read) }
+		if version.Read {
+			aria-current="page"
+		}
+	>
+		if version.Read {
+			<span class="pick-row version-row">
+				@writer.versionRow(version)
+			</span>
+		} else {
+			<a class="pick-row version-row" href={ writer.frame.site.Reference(version.Page, routes.FormatChosen) }>
+				@writer.versionRow(version)
+			</a>
+		}
+	</li>
+}
+
+// versionRow is a version's row in its pick's window: its day, and where it stands, none for an older one not read.
+templ (writer PageWriter) versionRow(version document.PostVersion) {
+	@day(version.Day)
+	if state := writer.frame.versionWords.State(version); state != "" {
+		@text(wordSpace)
+		<span class="version-state">{ state }</span>
+	}
+}
+
+// newer is what an older version of a post says under its day (DESIGN.md, PostHead): that a newer stands, the arrow,
+// then the site's words round the current version's day, the whole a link to it.
+templ (writer PageWriter) newer(older document.VersionOlder) {
+	<a class="newer" href={ writer.frame.site.Reference(older.Newer.Page, routes.FormatChosen) }>
+		<span class="newer-mark" aria-hidden="true">{ look.NewerMark }</span>
+		{ older.NewerWords.Before }
+		@day(older.Newer.Day)
+		{ older.NewerWords.After }
+	</a>
+}
+
+// pickClose is the button that closes a pick's window, by the window's id: Esc's cap, then the word.
+templ pickClose(window string) {
+	<button type="button" class="hint-close" popovertarget={ window } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
 }
 
 // tags are a tile's tags, words of the tile (DESIGN.md, Tag), each its word after a hash a screen reader skips.
@@ -158,7 +230,7 @@ templ (writer PageWriter) seriesPick(shown pick) {
 		if shown.count != "" {
 			<span class="series-count">{ shown.count }</span>
 		}
-		<span class="series-mark" aria-hidden="true">{ pickMark }</span>
+		<span class="pick-mark" aria-hidden="true">{ pickMark }</span>
 	</button>
 	<div id={ shown.id } class="pick" popover role="dialog" aria-labelledby={ shown.titleID }>
 		<p id={ shown.titleID } class="pick-title">
@@ -169,7 +241,7 @@ templ (writer PageWriter) seriesPick(shown pick) {
 				@writer.pickPart(part)
 			}
 		</ol>
-		<button type="button" class="hint-close" popovertarget={ shown.id } popovertargetaction="hide"><kbd class="command-key" aria-hidden="true">{ escapeKey }</kbd> { closeHint }</button>
+		@pickClose(shown.id)
 	</div>
 }
 

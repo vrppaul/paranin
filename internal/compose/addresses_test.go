@@ -31,17 +31,18 @@ const (
 	headingPartAfter   = ", afterwards"
 )
 
-// The fixture's published post's file, and its status, which a case turns to a draft's; the field a case dates a post
-// by, and the day the fixture's post was updated, which a case dating it later takes away; and the file's line the
-// sample post's body opens on, after its front matter
+// The fixture's published post's file, its revision, and its status, which a case turns to a draft's; the field a case
+// dates a post by, and the day the fixture's post was updated, which a case dating it later takes away with its
+// revision; and the file's line the sample post's body opens on, after its front matter
 const (
-	fixturePostFile    = "posts/reading-slowly/post.en.md"
-	publishedStatus    = "status: published"
-	draftStatus        = "status: draft"
-	previewStatus      = "status: preview"
-	publishedField     = "published: "
-	fixturePostUpdated = "\nupdated: 2026-11-12"
-	samplePostBodyLine = 8
+	fixturePostFile     = "posts/reading-slowly/post.en.md"
+	fixtureRevisionFile = "posts/reading-slowly/revisions/2026-11-10.en.md"
+	publishedStatus     = "status: published"
+	draftStatus         = "status: draft"
+	previewStatus       = "status: preview"
+	publishedField      = "published: "
+	fixturePostUpdated  = "\nupdated: 2026-11-12"
+	samplePostBodyLine  = 8
 )
 
 // No two pages of the site share an address in any format: a post slugged as the address the blog's list by series
@@ -54,7 +55,7 @@ func TestNoTwoPagesShareAnAddress(test *testing.T) {
 		change func(test *testing.T, folder string)
 		want   []string
 	}{
-		{name: "the fixture", change: keepFolder, want: []string{}},
+		{name: "the fixture", change: fixtures.KeepFolder, want: []string{}},
 		{name: "a post slugged as the list by series", change: postSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a draft slugged as the list by series", change: draftSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
 		{name: "a post out later slugged as the list by series", change: laterPostSluggedSeries, want: []string{"/blog/series", "/blog/series.md", "/blog/series.txt"}},
@@ -106,13 +107,15 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{
 			name:   "links that lead somewhere",
 			body:   "[a](/) [b](/experience) [c](/p/tidy-tool) [d](/p/tidy-tool/why) [e](/blog) [f](/blog/series#reading) [g](/blog/reading-slowly#what-a-reader-keeps) [h](/blog/reading-slowly#in-a-terminal)",
-			change: keepFolder, want: []faultSpot{},
+			change: fixtures.KeepFolder, want: []faultSpot{},
 		},
-		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: keepFolder, want: []faultSpot{}},
-		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a post's number", body: "[a](/blog/1)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "an older version and its heading", body: "[a](/blog/reading-slowly/2026-11-10) [b](/blog/reading-slowly/2026-11-10#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "a revision's link to no page", body: "Its text.", change: revisionLinkingNowhere, want: []faultSpot{{file: sampleRevisionFile, line: sampleRevisionLine}}},
+		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a post's number", body: "[a](/blog/1)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's page", body: "[a](/blog/reading-slowly)", change: fixturePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out after the post linking it", body: "[a](/blog/reading-slowly)", change: fixturePostLater, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out after the post linking it, both later", body: "[a](/blog/reading-slowly)", change: linkingPostSooner, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
@@ -131,11 +134,11 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "a draft's link to no page", body: "[a](/nowhere)", change: samplePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's link to a draft", body: "[a](/blog/reading-slowly)", change: bothDrafted, want: []faultSpot{}},
 		{name: "a draft's link to a post out later", body: "[a](/blog/reading-slowly)", change: draftLinkingALaterPost, want: []faultSpot{}},
-		{name: "a heading no post holds", body: "[a](/blog/reading-slowly#no-such-heading)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "an anchor of a page whose sections take none", body: "[a](/experience#experience)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a link on a later line", body: "[a](/), then\n[b](/nowhere)", change: keepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine + 1}}},
+		{name: "a heading no post holds", body: "[a](/blog/reading-slowly#no-such-heading)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "an anchor of a page whose sections take none", body: "[a](/experience#experience)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a link on a later line", body: "[a](/), then\n[b](/nowhere)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine + 1}}},
 		{
-			name: "links on several lines, in their order", body: "[a](/nowhere), then\n[b](/elsewhere), then\n[c](/anywhere)", change: keepFolder,
+			name: "links on several lines, in their order", body: "[a](/nowhere), then\n[b](/elsewhere), then\n[c](/anywhere)", change: fixtures.KeepFolder,
 			want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}, {file: samplePostFile, line: samplePostBodyLine + 1}, {file: samplePostFile, line: samplePostBodyLine + 2}},
 		},
 	}
@@ -160,9 +163,6 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		})
 	}
 }
-
-// keepFolder leaves the fixture as it is.
-func keepFolder(*testing.T, string) {}
 
 // postSluggedSeries writes a post whose folder bears the name the list by series takes in the blog's folder.
 //
@@ -243,9 +243,11 @@ func bothPostsLaterTogether(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, samplePostFile, publishedField+sampleMoment, publishedField+afterTheDay)
 }
 
-// fixturePostDated dates the fixture's post a moment, which leaves it updated on no day before it.
+// fixturePostDated dates the fixture's post a moment, which leaves it updated on no day before it, nor with a revision
+// that came out before it.
 func fixturePostDated(test *testing.T, folder, moment string) {
 	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedField+fixturePostMoment+fixturePostUpdated, publishedField+moment)
+	fixtures.RemoveIn(test, folder, fixtureRevisionFile)
 }
 
 // fixturePostPreviewed turns the fixture's published post to a preview, which its link alone opens.

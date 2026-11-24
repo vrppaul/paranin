@@ -36,6 +36,12 @@ blends:
     dark: 0.25
     basic: 3
     indexed_lean: 0.5
+page_blends:
+  - name: glow
+    about: the tint under the pointer
+    over: accent
+    light: 0.1
+    dark: 0.25
 mixes:
   - name: soft
     about: the accent softened
@@ -147,6 +153,13 @@ func TestABlendIsItsColourLaidOverThePage(test *testing.T) {
 	}
 }
 
+// A blend the page alone lays is no colour of a terminal's: the TUI's palette names none of it.
+func TestABlendOfThePageAloneIsNoColourOfATerminal(test *testing.T) {
+	if shade, isShaded := shadesOf(test, fixtureTokens)["glow"]; isShaded {
+		test.Errorf("the palette holds the page's blend glow: %+v", shade)
+	}
+}
+
 // The page reads each colour as a custom property, its value in the light theme and the dark one, which theme
 // the page's color-scheme says, the reader's system unless one is chosen; a blend is its colour at its strength,
 // laid over whatever the page puts under it.
@@ -224,6 +237,7 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		{name: "another face, under its own name", want: `--reading-face: "Reading Face", serif;`},
 		{name: "a mix, its colour moved its share toward the other in each theme", want: "--soft: light-dark(#e4e4e4, #cc6c00);"},
 		{name: "what each mix is for", want: "/* the accent softened */"},
+		{name: "a blend the page alone lays, its colour at its strength in each theme", want: "--glow: light-dark(#ffffff1a, #ff870040);"},
 		{name: "a text style's size", want: "--type-body-size: 1rem;"},
 		{name: "a text style's line, a fraction of a rem written in full", want: "--type-body-line: 1.5rem;"},
 		{name: "a text style's weight", want: "--type-body-weight: 400;"},

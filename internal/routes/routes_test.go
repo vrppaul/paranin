@@ -18,6 +18,7 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
 	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
 	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
+	older := document.OlderVersion("reading-slowly", "2026-11-10")
 	list := document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}
 	listBySeries := document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}
 	cases := []struct {
@@ -44,6 +45,11 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a post in markdown", target: post, format: FormatMarkdown, want: "https://example.test/blog/reading-slowly.md"},
 		{name: "a post as a manual", target: post, format: FormatManual, want: "https://example.test/blog/reading-slowly.txt"},
 		{name: "a post as the reader asks", target: post, format: FormatChosen, want: "https://example.test/blog/reading-slowly"},
+		{name: "an older version in markdown", target: older, format: FormatMarkdown, want: "https://example.test/blog/reading-slowly/2026-11-10.md"},
+		{name: "an older version as a manual", target: older, format: FormatManual, want: "https://example.test/blog/reading-slowly/2026-11-10.txt"},
+		{name: "an older version as the reader asks", target: older, format: FormatChosen, want: "https://example.test/blog/reading-slowly/2026-11-10"},
+		{name: "a heading of an older version", target: document.Anchor{Page: older, Name: "in-a-terminal"}, format: FormatChosen, want: "https://example.test/blog/reading-slowly/2026-11-10#in-a-terminal"},
+		{name: "a picture an older version shows", target: document.File{Page: older, Name: "margin.png"}, format: FormatChosen, want: "https://example.test/blog/reading-slowly/margin.png"},
 		{name: "the blog's list in markdown", target: list, format: FormatMarkdown, want: "https://example.test/blog.md"},
 		{name: "the blog's list as a manual", target: list, format: FormatManual, want: "https://example.test/blog.txt"},
 		{name: "the blog's list as the reader asks", target: list, format: FormatChosen, want: "https://example.test/blog"},

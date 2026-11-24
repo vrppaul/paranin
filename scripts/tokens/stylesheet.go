@@ -41,28 +41,23 @@ const (
 )
 
 // stylesheet is the CSS of the tokens: a custom property for the page, each colour and each blend, in the order
-// the file names them, each its value in both themes; then one for each mix, one for each face, three for each text
-// style, its size, its line's height and its weight, and one for each length, each time and each layer; last, each
-// file of each face as a font face, which the page loads it from. A blend is its colour at its strength, which the
-// browser lays over whatever is under it; a mix is its colour in each theme, worked out here. A text style is
-// never one value of `font`: that shorthand sets every longhand of the face again, and would turn back on the
-// ligatures the page turns off once.
+// the file names them, each its value in both themes; then one for each mix, each blend the page alone lays, one for
+// each face, three for each text style, its size, its line's height and its weight, and one for each length, each time
+// and each layer; last, each file of each face as a font face, which the page loads it from. A blend is its colour at
+// its strength, which the browser lays over whatever is under it; a mix is its colour in each theme, worked out here.
+// A text style is never one value of `font`: that shorthand sets every longhand of the face again, and would turn
+// back on the ligatures the page turns off once.
 func stylesheet(read tokens) []byte {
 	var builder strings.Builder
 	builder.WriteString(stylesheetOpening)
-	writeProperty(&builder, backgroundName, read.backgroundAbout,
-		fmt.Sprintf(bothThemes, hexColour(read.background.Light), hexColour(read.background.Dark)))
-	for _, colour := range read.colours {
-		writeProperty(&builder, colour.name, colour.about, fmt.Sprintf(bothThemes, hexColour(colour.values.Light), hexColour(colour.values.Dark)))
-	}
-	for _, blend := range read.blends {
-		writeProperty(&builder, blend.name, blend.about,
-			fmt.Sprintf(bothThemes, laidColour(blend.over.Light, blend.strengths.Light), laidColour(blend.over.Dark, blend.strengths.Dark)))
-	}
+	writeColours(&builder, read)
 	builder.WriteString(ruleClosing)
 	builder.WriteString(pageOpening)
 	for _, mix := range read.page.mixes {
 		writeProperty(&builder, mix.name, mix.about, fmt.Sprintf(bothThemes, hexColour(mix.values.Light), hexColour(mix.values.Dark)))
+	}
+	for _, blend := range read.page.blends {
+		writeProperty(&builder, blend.name, blend.about, laidInBothThemes(blend.over, blend.strengths))
 	}
 	for _, face := range read.page.faces {
 		writeProperty(&builder, face.name, face.about, familyList(face.families))
@@ -86,6 +81,17 @@ func stylesheet(read tokens) []byte {
 	return []byte(builder.String())
 }
 
+// writeColours writes the colours a terminal draws too: the page's own, then each colour and each blend.
+func writeColours(builder *strings.Builder, read tokens) {
+	writeProperty(builder, backgroundName, read.backgroundAbout, fmt.Sprintf(bothThemes, hexColour(read.background.Light), hexColour(read.background.Dark)))
+	for _, colour := range read.colours {
+		writeProperty(builder, colour.name, colour.about, fmt.Sprintf(bothThemes, hexColour(colour.values.Light), hexColour(colour.values.Dark)))
+	}
+	for _, blend := range read.blends {
+		writeProperty(builder, blend.name, blend.about, laidInBothThemes(blend.over, blend.strengths))
+	}
+}
+
 // writeProperty writes a custom property under what it is for.
 func writeProperty(builder *strings.Builder, token, about, value string) {
 	fmt.Fprintf(builder, "  /* %s */\n  %s: %s;\n", about, propertyName(token), value)
@@ -105,4 +111,10 @@ func hexColour(colour color.RGBA) string {
 // strength rounded to the nearest of 256 steps.
 func laidColour(colour color.RGBA, strength float64) string {
 	return colourMark + hex.EncodeToString([]byte{colour.R, colour.G, colour.B, uint8(math.Round(strength * opaque))})
+}
+
+// laidInBothThemes is a blend's value, its colour laid at its strength in each theme, which the browser lays over the
+// page, a blend a terminal draws too and one of the page's alone alike.
+func laidInBothThemes(over themedValue[color.RGBA], strengths themedValue[float64]) string {
+	return fmt.Sprintf(bothThemes, laidColour(over.Light, strengths.Light), laidColour(over.Dark, strengths.Dark))
 }

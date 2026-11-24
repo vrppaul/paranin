@@ -910,6 +910,68 @@ func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
 	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(fixturePost(test))))
 }
 
+// An older version of a post reads as the post does, with its own title, lead and body, its version's pick and under
+// it the way to the newer, held to its golden file, named after its own address; it tells a search engine not to index
+// it and names no address it is known by, as a filtered list names none, while the post itself is known at its own.
+func TestAnOlderVersionReadsAsItsGoldenMarkupIndexedByNone(test *testing.T) {
+	older := fixtures.DocumentOf(test, siteOnTheDay(fixtures.LoadedContent(test)).Versions, document.OlderVersion("reading-slowly", "2026-11-10"))
+	page := fixtureWriter(test).Post(older)
+	golden.Match(test, "blog/reading-slowly/2026-11-10.html", lined(page))
+	for _, want := range []string{noIndexTag, `<a class="newer" href="/blog/reading-slowly">`} {
+		if !strings.Contains(page, want) {
+			test.Errorf("the older version's page %q holds no %q", page, want)
+		}
+	}
+	if strings.Contains(page, `rel="canonical"`) {
+		test.Errorf("the older version's page %q names an address it is known by", page)
+	}
+}
+
+// The versions' pick lists every version of a post newest first, each by its day and where it stands: the current one,
+// the version read, the current page and no link, and an older one a link to its page; a post of one version alone
+// lists that one.
+func TestTheVersionsPickListsEveryVersionAndWhereEachStands(test *testing.T) {
+	page := fixtureWriter(test).Post(fixturePost(test))
+	onlyVersion := fixtureWriter(test).Post(oneVersionPost(test))
+	const currentRow = `<li class="pick-part version-read" aria-current="page"><span class="pick-row version-row"><time datetime="2026-11-12">12 Nov 2026</time> <span class="version-state">current</span></span></li>`
+	cases := []struct {
+		name  string
+		page  string
+		want  string
+		count int
+	}{
+		{name: "the chip, the day read", page: page, want: `popovertarget="_versions"><time datetime="2026-11-12">12 Nov 2026</time> <span class="pick-mark"`, count: 1},
+		{name: "the window titled in the site's word", page: page, want: `class="pick-title">versions</p>`, count: 1},
+		{name: "the current version, read", page: page, want: currentRow, count: 1},
+		{
+			name:  "an older version, a link",
+			page:  page,
+			want:  `<li class="pick-part"><a class="pick-row version-row" href="/blog/reading-slowly/2026-11-10"><time datetime="2026-11-10">10 Nov 2026</time></a></li>`,
+			count: 1,
+		},
+		{name: "a post of one version, its one row", page: onlyVersion, want: currentRow, count: 1},
+		{name: "a post of one version, its one link", page: onlyVersion, want: `class="pick-row version-row" href=`, count: 0},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := strings.Count(testCase.page, testCase.want); got != testCase.count {
+				test.Errorf("the page %q holds %q %d times, want %d", testCase.page, testCase.want, got, testCase.count)
+			}
+		})
+	}
+}
+
+// oneVersionPost is a post a test builds by hand, out on the fixture's current day with no older version.
+func oneVersionPost(test *testing.T) document.Document {
+	day, err := time.Parse(time.DateOnly, "2026-11-12")
+	if err != nil {
+		test.Fatalf("read the day: %v", err)
+	}
+	head := fixtures.HeadOf(postPage("alone"), textOf("Alone"))
+	head.Version = document.VersionOut{Day: day, Versions: []document.PostVersion{{Page: postPage("alone"), Day: day, Name: "2026-11-12", Current: true, Read: true}}}
+	return document.Document{Head: head, Blocks: nil}
+}
+
 // A draft's page, as its author reads it, says it is a draft where a post out says the day of the version read.
 func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
 	site := compose.SiteOf(compose.Prepare(fixtures.LoadedContent(test)), compose.Audience{At: fixtures.Day(), Drafts: true})
@@ -1109,7 +1171,7 @@ func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
 		count int
 	}{
 		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="_parts">Stint <span class="series-count">2 of 4</span>`, count: 1},
-		{name: "the foot's chip, the count of parts", want: `popovertarget="_parts-foot">all 4 parts <span class="series-mark"`, count: 1},
+		{name: "the foot's chip, the count of parts", want: `popovertarget="_parts-foot">all 4 parts <span class="pick-mark"`, count: 1},
 		{name: "each window titled by the series", want: `class="pick-title">Stint</p>`, count: 2},
 		{
 			name:  "a part out, a link",

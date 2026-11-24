@@ -35,7 +35,8 @@ token into them.
 | `GET /blog?tag={tag}`, `GET /blog?series={name}` | The list by year filtered to the posts of a tag, or to the parts of a series, chosen the same way, for each tag of a post the list names and each series with a part out. On the list by year the query names one filter; any other key, and the query of any other path, is passed over. A filter named twice, both at once, or one no list has is `404`. Each is drawn the first time a request asks for it, and kept. |
 | `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md`, `/blog.md?tag={tag}`, `/blog.md?series={name}` | The same in markdown, `text/markdown`. |
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}`, `/blog.txt?series={name}` | The same as the manual, `text/plain`. |
-| `GET /blog/{slug}/{picture}` | A picture the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. |
+| `GET /blog/{slug}/{date}`, `.md`, `.txt` | An older version of a post out, published or unlisted, by the day it came out (`2026-11-10`), its revision's name (`docs/FOUNDATION.md` §5.4, Revisions), chosen and in each format as the post is; drawn the first time a request asks for it, and kept. A draft's and a preview's are served nowhere. The current version's day, the name the post's versions list it by, is `302` to the same face at `/blog/{slug}`, with `Cache-Control: no-cache`, since that day names an older version once the post is updated. |
+| `GET /blog/{slug}/{picture}` | A picture a version of the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. A picture's name ends in its type's ending, which no day and no format's ending is, so a version and a picture never share a path. |
 | `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
@@ -67,9 +68,9 @@ Every negotiated response sets `Vary: Accept` alone, the page of no page among t
 address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
 `Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses; the HTML names it in its head too, with
 `rel="alternate"` to its markdown. A filtered list, a view of the list and no page of its own (`docs/FOUNDATION.md`
-§5.4), names no canonical URL, as a preview names none, since a part of the list is no copy of `/blog`, and sends
-`X-Robots-Tag: noindex` in every format, which its HTML says in its head too (`<meta name="robots">`), with no Open
-Graph tags. Links inside the HTML lead to the
+§5.4), and an older version of a post, which a newer stands over, name no canonical URL, as a preview names none,
+since a part of the list is no copy of `/blog` nor an older version of its post, and send `X-Robots-Tag: noindex` in
+every format, which their HTML says in its head too (`<meta name="robots">`), with no Open Graph tags. Links inside the HTML lead to the
 site's pages by their path from the root; the canonical URL and the text formats' links are whole.
 
 ## What each format holds
@@ -79,8 +80,9 @@ period]`). The HTML shows a page as a reader of the finished work sees it: a fac
 left out, and a gap among written words stands marked as one.
 
 - **The manual** opens with `NAME` and `DESCRIPTION`, then a section for each of the page's, as `man(1)` lays a page
-  out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds a post's day in the
-  middle, as `2026-11-10`, or `draft` for a draft, where `man(1)` writes a page's date. A link to a page of the site,
+  out, and `NOTES` where a post cites any, each by its number as `[1]`; its last line holds the day of a post's
+  version read in the middle, as `2026-11-10`, or `draft` for a draft, where `man(1)` writes a page's date. An older
+  version's `DESCRIPTION` opens with the newer that stands over it, `newer: 2026-11-21` and its address. A link to a page of the site,
   or to a section of one, is its text and its page's address between `<` and `>`, since neither curl nor man reads an
   anchor; a card's page, its address on a line of its own. A post's table stands in columns under its header where it fits the 78
   columns, a bullet a row where not; a quote behind `│`; a picture its alt text, its address between `<` and `>` and
@@ -88,20 +90,23 @@ left out, and a gap among written words stands marked as one.
   section a group, each post its title with its day at the right, then its lead, its part and series, its tags and
   its address; a filtered list is named as the list, `BLOG(1)`, its filter in `NAME` after the blog's,
   `blog — posts tagged go`.
-- **Markdown** is CommonMark, the page's sections as headings; a post's head gives its day under its title, `draft`
-  for a draft, its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
+- **Markdown** is CommonMark, the page's sections as headings; a post's head gives its version's day under its title,
+  `draft` for a draft, and an older version's the newer beside it, `newer: [2026-11-21](address)`, its tables, code with its language and footnotes as GFM writes them, `[^1]`, the notes at the end, and a picture as
   `![alt](address "caption")`, its address whole. The blog's list
   stands a heading a group, each post a heading under it, a link to its markdown, then its day, part and series, its
   tags and its lead; a filtered list writes its filter on the line under the blog's name.
 - **`llms.txt`** is the author's name, the headline, then `## Résumé`, `## Projects` and `## blog`, a link to each
   page's markdown: under the blog, its list by year and by series, each by the blog's line, then each post the list
-  names, newest first, by its description; never a draft, a preview, a post unlisted or one not yet out.
+  names, newest first, by its description; never a draft, a preview, a post unlisted, one not yet out or an older
+  version.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script. A page with an address adds its canonical link; Open Graph's `og:type`
   (`website`), `og:site_name`, `og:title`, `og:url`, and `og:description` where it has one; and its record as
   JSON-LD, `ProfilePage` about a `Person` for the résumé and its tabs, `SoftwareSourceCode` for a project's page and
   its tabs; a post's comes with the site's SEO (`TODO.md`). A post's page is the post whole: its title the one `h1`,
-  its day in a `<time datetime>`, a draft's version the word `draft`, each paragraph a place `#_p1` names and its
+  its version's day in a `<time datetime>`, a draft's version the word `draft`; a post out its version's day a button
+  opening, as a popover, the list of its versions, each a link to it but the one read, and an older version under it a
+  link to the newer; each paragraph a place `#_p1` names and its
   number a link to it, each heading a place its anchor names, by its words; every id of the page's own opens with `_`, which no anchor holds, so no two
   places of the page share one name; a note's number raised where a line cites it, the note beside the line that first
   cites it, and every note once at the text's end, which a phone shows in their place; a picture a `<figure>`, its

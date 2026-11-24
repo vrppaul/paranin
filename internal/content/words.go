@@ -17,7 +17,8 @@ import (
 // reader, each side's name, what a side with none says, the panes' heading outside a series, the word before where
 // the post is discussed, and the name of its outline; and the blog's list: the line it opens with, its window in the
 // foot line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year,
-// and its group of the posts in no series.
+// and its group of the posts in no series; and a post's versions: the title of the window that lists them, and the
+// words that mark the current one and the one read.
 type Word int
 
 const (
@@ -72,6 +73,9 @@ const (
 	WordBy
 	WordYears
 	WordOutsideSeries
+	WordVersions
+	WordCurrent
+	WordVersionRead
 )
 
 // Phrase is one of the site's own phrases, words with a place for each value the site fills in: a command's button's
@@ -81,8 +85,9 @@ const (
 // of the blog's list, how many posts a group holds, one or more, how many of a series' parts are out, with that
 // count and the count of parts, the list's name in a grouping, with its title and the grouping's word, and the
 // filter of a filtered list, by a tag, with the tag, or by a series, with the series' title, and that filter as the
-// way back to the whole list, with its words. A catalogue writes each place as phrasePlace, where its language puts
-// the value, the values in the order the site hands them.
+// way back to the whole list, with its words; and what an older version of a post says of the newer, with that
+// version's day. A catalogue writes each place as phrasePlace, where its language puts the value, the values in the
+// order the site hands them.
 type Phrase int
 
 const (
@@ -102,6 +107,7 @@ const (
 	PhraseTagFilter
 	PhraseSeriesFilter
 	PhraseFilterWayOut
+	PhraseNewerVersion
 )
 
 // How a phrase writes the place of a value
@@ -136,6 +142,7 @@ func phraseForms() map[Phrase]phraseForm {
 		PhraseTagFilter:     {key: "tag_filter", values: oneValue},
 		PhraseSeriesFilter:  {key: "series_filter", values: oneValue},
 		PhraseFilterWayOut:  {key: "filter_way_out", values: oneValue},
+		PhraseNewerVersion:  {key: "newer_version", values: oneValue},
 	}
 }
 
@@ -192,6 +199,9 @@ func wordKeys() map[Word]string {
 		WordBy:            "by",
 		WordYears:         "years",
 		WordOutsideSeries: "outside_series",
+		WordVersions:      "versions",
+		WordCurrent:       "current",
+		WordVersionRead:   "version_read",
 	}
 }
 
@@ -219,6 +229,13 @@ func (words Words) Phrase(phrase Phrase, values ...string) string {
 		}
 	}
 	return builder.String()
+}
+
+// Around are the words a phrase of one value sets before its place and after it, for a value a face writes its own
+// way, as a day.
+func (words Words) Around(phrase Phrase) (before, after string) {
+	before, after, _ = strings.Cut(words.phrases[phrase], phrasePlace)
+	return before, after
 }
 
 // Language is the tag of the language the words are written in, as BCP 47 writes it: "en".

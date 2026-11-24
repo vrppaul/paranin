@@ -172,10 +172,12 @@ func (style readType) properties() []styleProperty {
 	}
 }
 
-// pageTokens are the tokens the page reads but its colours, read: the colours it mixes, its faces, its text styles,
-// its lengths, its times, the shares of the screen's height its script measures by, and its layers.
+// pageTokens are the tokens the page reads but its colours, read: the colours it mixes, the blends it alone lays, its
+// faces, its text styles, its lengths, its times, the shares of the screen's height its script measures by, and its
+// layers.
 type pageTokens struct {
 	mixes        []readMix
+	blends       []readPageBlend
 	faces        []readFace
 	types        []readType
 	lengths      []readLength
@@ -244,9 +246,9 @@ type readLayer struct {
 }
 
 // readPageTokens reads the faces, the text styles, the lengths, the times, the shares of the screen's height and the
-// layers of the file beside the mixes of its colours, read with the colours, each a name of its own beside every
-// property named already.
-func readPageTokens(written tokensFile, mixes []readMix, named map[string]bool) (pageTokens, error) {
+// layers of the file beside the mixes of its colours and the blends the page alone lays, read with the colours, each a
+// name of its own beside every property named already.
+func readPageTokens(written tokensFile, mixes []readMix, blends []readPageBlend, named map[string]bool) (pageTokens, error) {
 	faces, err := readFaces(written.Faces, named)
 	if err != nil {
 		return pageTokens{}, err
@@ -276,7 +278,7 @@ func readPageTokens(written tokensFile, mixes []readMix, named map[string]bool) 
 	if err != nil {
 		return pageTokens{}, err
 	}
-	return pageTokens{mixes: mixes, faces: faces, types: types, lengths: lengths, times: times, screenShares: screenShares, layers: layers}, nil
+	return pageTokens{mixes: mixes, blends: blends, faces: faces, types: types, lengths: lengths, times: times, screenShares: screenShares, layers: layers}, nil
 }
 
 // readLayerTokens reads the layers, each in its place, the lowest first; a layer's property is named by the word layer

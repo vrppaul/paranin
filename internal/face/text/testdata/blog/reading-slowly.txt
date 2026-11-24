@@ -58,4 +58,4 @@ NOTES
        [1] Mira Example, on her own reading.
        [2] A soft one, which rubs out.
 
-example.test                      2026-11-10                 READING-SLOWLY(1)
+example.test                      2026-11-12                 READING-SLOWLY(1)

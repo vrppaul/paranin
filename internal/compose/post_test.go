@@ -243,7 +243,7 @@ func TestThePicturesServedAreThePostsServed(test *testing.T) {
 		{name: "a draft's", status: content.StatusDraft, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{}},
 		{name: "a preview's", status: content.StatusPreview, at: fixtures.Day(), wantServed: []document.File{fixtureMargin}, wantPreviewed: []document.File{sampleMargin}},
 		{
-			name: "a published post's, read before both come out", status: content.StatusPublished, at: momentOf(test, sampleMoment).Add(-time.Minute),
+			name: "a published post's, read before both come out", status: content.StatusPublished, at: fixtures.MomentOf(test, sampleMoment).Add(-time.Minute),
 			wantServed: []document.File{}, wantPreviewed: []document.File{fixtureMargin, sampleMargin},
 		},
 	}
@@ -607,7 +607,7 @@ func kindsOf(node ast.Node) []ast.NodeKind {
 // the moment it is dated has come, and at its preview link alone until then; a draft only to its author, who reads
 // the drafts, and at no link; a preview at its link alone, to the public and its author alike.
 func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
-	dated := momentOf(test, sampleMoment)
+	dated := fixtures.MomentOf(test, sampleMoment)
 	before := dated.Add(-time.Minute)
 	cases := []struct {
 		name      string
@@ -661,7 +661,7 @@ func TestTheSiteHoldsUntilTheNextPostComesOut(test *testing.T) {
 				{slug: "coming", id: 3, status: content.StatusPublished, published: afterTheDay},
 				{slug: "hidden", id: 4, status: content.StatusUnlisted, published: soonAfterTheDay},
 			},
-			want: momentOf(test, soonAfterTheDay),
+			want: fixtures.MomentOf(test, soonAfterTheDay),
 		},
 		{
 			name: "a draft and a preview dated later",
@@ -716,13 +716,13 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)
 	}
-	if want := fmt.Sprint(document.VersionOut{Published: momentOf(test, fixturePostMoment)}); version != want {
+	if want := fmt.Sprint(document.VersionOut{Day: dayOf(test, fixtureCurrentDay), Versions: fixtureVersions(test, page)}); version != want {
 		test.Errorf("the head's version = %s, want %s", version, want)
 	}
 }
 
 // A draft's head, as its author reads it, gives its version as a draft in the site's words, not the day it is dated;
-// a post out gives the day it came out.
+// a post out gives the day it came out, and lists itself alone where it has no older version.
 func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -730,7 +730,12 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 		want   document.Version
 	}{
 		{name: "a draft", status: content.StatusDraft, want: document.VersionDraft{Word: "draft"}},
-		{name: "a post out", status: content.StatusPublished, want: document.VersionOut{Published: momentOf(test, sampleMoment)}},
+		{
+			name: "a post out", status: content.StatusPublished,
+			want: document.VersionOut{Day: dayOf(test, "2026-11-10"), Versions: []document.PostVersion{
+				{Page: postPageOf(samplePostSlug), Day: dayOf(test, "2026-11-10"), Name: "2026-11-10", Current: true, Read: true},
+			}},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

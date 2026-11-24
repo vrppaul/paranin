@@ -54,6 +54,13 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the index", path: "/llms.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "- [tidy-tool](https://example.test/p/tidy-tool.md): Tidies files."},
 		{name: "a post", path: "/blog/reading-slowly.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Reading slowly"},
 		{name: "a post as a manual", path: "/blog/reading-slowly.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "READING-SLOWLY(1)"},
+		{name: "an older version", path: "/blog/reading-slowly/2026-11-10.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "# Slow reading"},
+		{
+			name: "an older version as a manual", path: "/blog/reading-slowly/2026-11-10.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8",
+			holds: "newer: 2026-11-12",
+		},
+		{name: "an older version, chosen", path: "/blog/reading-slowly/2026-11-10", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "Slow reading"},
+		{name: "a post's picture beside its older version", path: "/blog/reading-slowly/margin.png", status: http.StatusOK, contentType: "image/png", holds: ""},
 		{name: "the blog's list", path: "/blog.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "## 2026"},
 		{name: "the blog's list as a manual", path: "/blog.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG(1)"},
 		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
@@ -247,9 +254,9 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	}
 }
 
-// A filtered list, a view of the list and no page of its own, tells a search engine not to index it, in each format;
-// the list itself, and any other page, leaves it free to.
-func TestAFilteredListIsSentForNoSearchEngineToIndex(test *testing.T) {
+// A filtered list, a view of the list and no page of its own, and an older version of a post, which a newer stands
+// over, tell a search engine not to index them, in each format; the list itself, and any other page, leaves it free to.
+func TestAPageOfNoIndexIsSentForNoSearchEngineToIndex(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
 		name   string
@@ -264,6 +271,9 @@ func TestAFilteredListIsSentForNoSearchEngineToIndex(test *testing.T) {
 		{name: "the list", path: "/blog", accept: "text/html", want: ""},
 		{name: "the list in markdown", path: "/blog.md", accept: "", want: ""},
 		{name: "a post", path: "/blog/reading-slowly", accept: "text/html", want: ""},
+		{name: "an older version, in a browser", path: "/blog/reading-slowly/2026-11-10", accept: "text/html", want: "noindex"},
+		{name: "an older version, in markdown", path: "/blog/reading-slowly/2026-11-10.md", accept: "", want: "noindex"},
+		{name: "an older version, as a manual", path: "/blog/reading-slowly/2026-11-10.txt", accept: "", want: "noindex"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -315,7 +325,9 @@ type readersAnswer struct {
 }
 
 // A post's number sends the reader on for good to the post's own address, by its path from the root, and a cache asks
-// again, since the post's slug is its folder's name, which may change; the number of a post not served is no page.
+// again, since the post's slug is its folder's name, which may change; the number of a post not served is no page. The
+// day of a post's current version, the name its versions list it by, sends the reader on for a while to the same face
+// at the post's own address, since the day names an older version once the post is updated.
 func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 	server := New(fixtureStore(test, fixtures.ContentFolder(test)), false, nil)
 	cases := []struct {
@@ -326,6 +338,9 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 	}{
 		{name: "a post published", path: "/blog/1", status: http.StatusMovedPermanently, location: "/blog/reading-slowly"},
 		{name: "a draft", path: "/blog/2", status: http.StatusNotFound, location: ""},
+		{name: "the current version by its day", path: "/blog/reading-slowly/2026-11-12", status: http.StatusFound, location: "/blog/reading-slowly"},
+		{name: "the current version by its day, in markdown", path: "/blog/reading-slowly/2026-11-12.md", status: http.StatusFound, location: "/blog/reading-slowly.md"},
+		{name: "the current version by its day, as a manual", path: "/blog/reading-slowly/2026-11-12.txt", status: http.StatusFound, location: "/blog/reading-slowly.txt"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

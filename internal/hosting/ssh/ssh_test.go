@@ -62,21 +62,23 @@ func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 	}
 }
 
-// A session opens on the page of the blog its user's name reaches (D26): the list by blog, and a post by blog and its
-// number, the list in the first window; the server hands the TUI the blog beside the site's pages.
+// A session opens on the page of the blog its user's name reaches (D26): the list by blog, a post by blog and its
+// number, the list in the first window, and an older version by its address, its own title shown; the server hands the
+// TUI the blog beside the site's pages.
 func TestASessionOpensOnTheBlogsPageItsUserNames(test *testing.T) {
 	cases := []struct {
-		user   string
-		window string
+		user  string
+		shown string
 	}{
-		{user: "blog", window: "1:posts*"},
-		{user: "blog/1", window: "2:reading-slowly*"},
+		{user: "blog", shown: "1:posts*"},
+		{user: "blog/1", shown: "2:reading-slowly*"},
+		{user: "blog/reading-slowly/2026-11-10", shown: "Slow reading"},
 	}
 	address := serving(test, slog.New(slog.DiscardHandler))
 	for _, testCase := range cases {
 		test.Run(testCase.user, func(test *testing.T) {
 			output, _ := openTerminal(test, clientSession(test, address, testCase.user), commonTerminal())
-			readUntil(test, output, testCase.window)
+			readUntil(test, output, testCase.shown)
 		})
 	}
 }

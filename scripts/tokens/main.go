@@ -9,9 +9,10 @@
 //   - internal/look/shares.go, for them too: each share of the screen's height, a constant of its percent;
 //   - web/src/tokens/tokens.css, for the page: each colour becomes a custom property, its value in each theme, and a
 //     blend its colour at its strength, which the browser lays over whatever is under it; then what the page alone
-//     reads: each mix of two colours, worked out in each theme, each face, each text style as its size, its line's
-//     height and its weight, each length, each time, and each layer as its place among the layers, the z-index of
-//     what stands on it; and each of the faces' files, under design/, as a font face the page loads;
+//     reads: each mix of two colours, worked out in each theme, each blend it alone lays, its colour at its strength,
+//     each face, each text style as its size, its line's height and its weight, each length, each time, and each layer
+//     as its place among the layers, the z-index of what stands on it; and each of the faces' files, under design/,
+//     as a font face the page loads;
 //   - web/src/tokens/times.ts, for the page's script: each time in milliseconds, a number a script that waits reads,
 //     since the build writes the stylesheet's times the shortest way;
 //   - web/src/tokens/shares.ts, for the page's script too: each share of the screen's height in percent, which no

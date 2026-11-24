@@ -54,6 +54,7 @@ type tokensFile struct {
 	Background   backgroundToken    `yaml:"background"`
 	Colours      []colourToken      `yaml:"colours"`
 	Blends       []blendToken       `yaml:"blends"`
+	PageBlends   []pageBlendToken   `yaml:"page_blends"`
 	Mixes        []mixToken         `yaml:"mixes"`
 	Faces        []faceToken        `yaml:"faces"`
 	Type         []typeToken        `yaml:"type"`
@@ -90,13 +91,20 @@ type colourToken struct {
 // blendToken is a blend as the file writes it: the colour it lays over the page, its strength in each theme, the
 // basic colour it falls back to, and how far it leans toward its colour for 256 colours.
 type blendToken struct {
-	Name        string      `yaml:"name"`
-	About       string      `yaml:"about"`
-	Over        string      `yaml:"over"`
-	Light       *float64    `yaml:"light"`
-	Dark        *float64    `yaml:"dark"`
-	Basic       *basicValue `yaml:"basic"`
-	IndexedLean *float64    `yaml:"indexed_lean"`
+	pageBlendToken `yaml:",inline"`
+	Basic          *basicValue `yaml:"basic"`
+	IndexedLean    *float64    `yaml:"indexed_lean"`
+}
+
+// pageBlendToken is a blend the page alone lays, as the file writes it: the colour it lays over the page and its
+// strength in each theme; no terminal draws it, so it falls back to no basic colour and leans toward none. A blend a
+// terminal draws too is one with those.
+type pageBlendToken struct {
+	Name  string   `yaml:"name"`
+	About string   `yaml:"about"`
+	Over  string   `yaml:"over"`
+	Light *float64 `yaml:"light"`
+	Dark  *float64 `yaml:"dark"`
 }
 
 // basicValue is one of a terminal's sixteen colours, or ownBasic.
@@ -139,12 +147,18 @@ type readColour struct {
 
 // readBlend is a blend of the file with its colour found and its strengths read.
 type readBlend struct {
-	name        string
-	about       string
-	over        themedValue[color.RGBA]
-	strengths   themedValue[float64]
+	readPageBlend
 	basic       basicValue
 	indexedLean float64
+}
+
+// readPageBlend is a blend the page alone lays, with its colour found and its strengths read; a blend a terminal
+// draws too, its basic colour and its lean beside it.
+type readPageBlend struct {
+	name      string
+	about     string
+	over      themedValue[color.RGBA]
+	strengths themedValue[float64]
 }
 
 // readTokens reads the file strictly: a key it has no place for or one it leaves out, a value that is no colour,
@@ -183,7 +197,13 @@ func readTokens(data []byte) (tokens, error) {
 		}
 		blends = append(blends, blend)
 	}
-	page, err := readPageTokens(written, mixes, named)
+	pageBlends, err := readEach(written.PageBlends, named, func(token pageBlendToken, named map[string]bool) (readPageBlend, error) {
+		return readPageBlendToken(token, colours, named)
+	})
+	if err != nil {
+		return tokens{}, err
+	}
+	page, err := readPageTokens(written, mixes, pageBlends, named)
 	if err != nil {
 		return tokens{}, err
 	}
@@ -235,26 +255,31 @@ func readColourToken(token colourToken, named map[string]bool) (readColour, erro
 	return readColour{name: token.Name, about: token.About, values: values, basic: basic, leastContrast: least}, nil
 }
 
+// readBlendToken reads a blend a terminal draws too: as the page's alone, then the basic colour and the lean a terminal
+// needs.
 func readBlendToken(token blendToken, colours []readColour, named map[string]bool) (readBlend, error) {
-	if err := checkToken(token.Name, token.About, named); err != nil {
+	laid, laidErr := readPageBlendToken(token.pageBlendToken, colours, named)
+	lean, leanErr := strength(token.IndexedLean, token.Name, leanKey)
+	basic, basicErr := required(token.Basic, token.Name, basicKey)
+	if err := errors.Join(laidErr, leanErr, basicErr); err != nil {
 		return readBlend{}, err
+	}
+	return readBlend{readPageBlend: laid, basic: basic, indexedLean: lean}, nil
+}
+
+// readPageBlendToken reads a blend the page alone lays: its name and what it is for, the colour it lays and its
+// strength in each theme.
+func readPageBlendToken(token pageBlendToken, colours []readColour, named map[string]bool) (readPageBlend, error) {
+	if err := checkToken(token.Name, token.About, named); err != nil {
+		return readPageBlend{}, err
 	}
 	over, overErr := namedColour(colours, token.Over, token.Name)
 	light, lightErr := strength(token.Light, token.Name, lightKey)
 	dark, darkErr := strength(token.Dark, token.Name, darkKey)
-	lean, leanErr := strength(token.IndexedLean, token.Name, leanKey)
-	basic, basicErr := required(token.Basic, token.Name, basicKey)
-	if err := errors.Join(overErr, lightErr, darkErr, leanErr, basicErr); err != nil {
-		return readBlend{}, err
+	if err := errors.Join(overErr, lightErr, darkErr); err != nil {
+		return readPageBlend{}, err
 	}
-	return readBlend{
-		name:        token.Name,
-		about:       token.About,
-		over:        over,
-		strengths:   themedValue[float64]{Light: light, Dark: dark},
-		basic:       basic,
-		indexedLean: lean,
-	}, nil
+	return readPageBlend{name: token.Name, about: token.About, over: over, strengths: themedValue[float64]{Light: light, Dark: dark}}, nil
 }
 
 // namedColour is the values of the colour of a name a blend lays or a mix takes, or a fault where the file has no

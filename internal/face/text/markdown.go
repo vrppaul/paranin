@@ -131,13 +131,14 @@ func escaperOf(letters string) *strings.Replacer {
 	return strings.NewReplacer(pairs...)
 }
 
-// head writes the title as a heading, then the subtitle, the place and the version a post's reader reads on a line,
-// what a project is made of or a post's tags on the next, and the lead as a quote. Where a project's code lives stands
-// as a line of its own, not an item, since the list of the project's details comes next and markdown would read two
-// lists in a row as one.
+// head writes the title as a heading, then the subtitle, the place and the version a post's reader reads on a line, an
+// older version's with the newer one that stands over it, what a project is made of or a post's tags on the next, and
+// the lead as a quote. Where a project's code lives stands as a line of its own, not an item, since the list of the
+// project's details comes next and markdown would read two lists in a row as one.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
-	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place), writer.text(versionText(head))))
+	version := joined(dot, writer.text(versionText(head)), writer.spans(newerSpans(head)))
+	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place), version))
 	named := head.ListedWords()
 	tags := make([]string, 0, len(named))
 	for _, tag := range named {

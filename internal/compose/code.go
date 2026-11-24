@@ -26,15 +26,24 @@ type Prepared struct {
 	codes    map[ast.Node]document.CodeBlock
 }
 
-// Prepare reads a snapshot for every composition of it: each post's code split into its kinds of word.
+// Prepare reads a snapshot for every composition of it: the code of each post and of each of its revisions split into
+// its kinds of word.
 func Prepare(snapshot *content.Snapshot) *Prepared {
 	codes := map[ast.Node]document.CodeBlock{}
 	for _, post := range snapshot.Posts {
-		reader := codeReader{body: post.Body, codes: codes}
-		// readCode returns no error, so the walk ends with none
-		_ = ast.Walk(post.Body.Tree, reader.readCode)
+		splitCode(post.Body, codes)
+		for _, revision := range post.Revisions {
+			splitCode(revision.Body, codes)
+		}
 	}
 	return &Prepared{snapshot: snapshot, codes: codes}
+}
+
+// splitCode splits the code of a body into its kinds of word, each block by its node among codes.
+func splitCode(body content.Markdown, codes map[ast.Node]document.CodeBlock) {
+	reader := codeReader{body: body, codes: codes}
+	// readCode returns no error, so the walk ends with none
+	_ = ast.Walk(body.Tree, reader.readCode)
 }
 
 // codeReader splits the code of a post's body into its kinds of word: the body, and the code split so far, by its node.

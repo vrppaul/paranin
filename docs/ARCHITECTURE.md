@@ -137,7 +137,10 @@ changes. Amended 2026-11-23, with preview links: `compose` composes each preview
 snapshot's code once (`Prepare`), `routes` writes a preview's addresses under its link's token, and the web host alone
 holds the key that signs it. Amended 2026-11-24, with the list's filters: a filtered list is a page of two kinds of its
 own, which `compose` composes with the site and the web host draws when first asked for, a head holds the filters it
-offers, and `routes` reads a request's query into its address.
+offers, and `routes` reads a request's query into its address. Amended 2026-11-24, with revisions: `content` reads a
+post's revisions with it, the version read is one of three kinds and lists the post's versions, an older version is a
+page of its own a post's page names by its revision, which `compose` composes with the site and the web host draws when
+first asked for, and a page says whether a search engine indexes it.
 
 ### Context
 
@@ -180,7 +183,15 @@ and web routes.
   of its own, the document model written twice. goldmark keeps to the
   CommonMark spec and is built to be extended; blackfriday and gomarkdown
   keep to none. The posts stand in their slugs' order and the series in
-  their names', as their folders list them.
+  their names', as their folders list them. A post's revisions, older
+  versions of its text (FOUNDATION §5.4, Revisions), are read with it, each
+  its own title, lead and body, held to what the post's text is held to,
+  and dated by its file's name from the day the post was published on and
+  before the post's current version, which its `updated:` dates (amended
+  2026-11-24); a picture one of them alone shows is the post's, served
+  with it. `content.RevisionOf` writes the revision of the current version
+  that `paranin revise` saves, a day after that version came out at the
+  soonest, so the revision's format is written in one layer.
 - **`paranin check`** runs the same loader, of the content or of a whole
   release, so CI refuses what the server would refuse. Both hold the
   content to the site's own check more, `compose.Check`, which the
@@ -260,8 +271,19 @@ and web routes.
   number, its tags as filters of the list, its description as its lead, and the version read, a
   closed set (amended 2026-11-23): out, by when it came out, which each
   face writes its own way, or a draft, by the site's word for one, which a
-  face writes where it would write the day;
-  and, in one field only a post fills, none on every other page, where it
+  face writes where it would write the day; and an older version, which
+  names the current one and the site's words round its day that lead
+  there, which each face writes its own way (amended 2026-11-24). A version
+  out, current or older, lists every version of the post a reader may go
+  to, newest first, the one read among them, its current one alone where
+  it has no older, each by its page, its day and its name: a post's
+  page names an older version by its revision's name beside its slug
+  (`Page.Revision`), so a version is a page like any other, and its places
+  (`version`) are read off its head as a part's are. Ways weighed: an
+  older version as a page of a kind of its own, which every switch over
+  the kinds would name again for what is a post; the versions a field of
+  `PostPlace`, which a draft, with no version out, carries too.
+  The head holds too, in one field only a post fills, none on every other page, where it
   stands in the blog: its series, every part with where it stands for
   the post's reader; the posts beside it, which its foot leads to; and
   where it is discussed. `compose` reads them once from every post and
@@ -378,9 +400,10 @@ and web routes.
     a tag or a series keeps, a page of a kind of its own for each, its slug
     the tag or the series' name, its head the list's with the filter in
     the site's words as its subtitle: every face draws it as the list. The
-    page says it filters the list (`Page.Unfiltered`), which a face and the
-    web host read to send it with `noindex` and name no canonical address,
-    as a preview names none, since a part of the list is no copy of it.
+    page says it filters the list (`Page.Unfiltered`), and so that no search
+    engine indexes it (`Page.Indexed`), which a face and the web host read
+    to send it with `noindex` and name no canonical address, as a preview
+    names none, since a part of the list is no copy of it.
     The head of a list and of a post holds its filters (`Head.Filters`),
     which `compose` works out once: each tag, or the series a list is
     filtered by, by its name and words, where it leads and whether it is
@@ -538,7 +561,16 @@ and web routes.
   request's path and query into the address `Path` writes, by the one
   encoding both use, so the host only looks the address up: on the list
   by year the one filter the query names, every other key passed over; a
-  filter named twice, or both, an address no page has.
+  filter named twice, or both, an address no page has. An older version of
+  a post stands in the post's folder by its revision's name, a day, its
+  formats beside it, `/blog/<slug>/<date>.md` (amended 2026-11-24), and a
+  picture by its name, which ends in its type's ending: neither reads as
+  the other. A page says whether a search engine indexes it
+  (`Page.Indexed`), which a filtered list and an older version do not, so
+  the web host and the page read one rule. `compose` composes each older
+  version of a post out with the site (`Site.Versions`), its links read
+  among the pages served, a link to it among them, and the web host draws
+  each the first time a request asks for it, as it draws a filtered list.
 - **The layers**: `content`, `document`, `look` and `assets` (the page's
   build) at the foot, side by side; `routes` on `document`; `compose` on the
   foundation, and on `routes`, through which it finds two pages at one

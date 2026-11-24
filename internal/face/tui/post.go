@@ -192,7 +192,10 @@ func (layout layout) postFacts(head document.Head) []line {
 	facts := []postFact{}
 	switch version := head.Version.(type) {
 	case document.VersionOut:
-		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Published.Format(look.DayLayout), kindText)})
+		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Day.Format(look.DayLayout), kindText)})
+	case document.VersionOlder:
+		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Day.Format(look.DayLayout), kindText)},
+			postFact{label: "", value: layout.newerWords(version)})
 	case document.VersionDraft:
 		facts = append(facts, postFact{label: labels.Version, value: textWords(version.Word, kindText)})
 	}
@@ -217,6 +220,15 @@ func (layout layout) postFacts(head document.Head) []line {
 		lines = append(lines, layout.continued(line{gapRun(0), plainRun(padded(fact.label, column), kindMuted)}, fact.value, column)...)
 	}
 	return lines
+}
+
+// newerWords are what an older version of a post says under its day of the newer one that stands over it (DESIGN.md,
+// PostHead): the arrow in the accent, then the site's word for it and the current version's day, a link to it, bold
+// on the tint.
+func (layout layout) newerWords(older document.VersionOlder) []word {
+	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation}
+	spans := older.NewerSpans(older.Newer.Day.Format(look.DayLayout))
+	return append([]word{wordOf(look.NewerMark, kindLookMark)}, layout.formWords(spans, form)...)
 }
 
 // article lays out a post's body: its layout, how many of its paragraphs it has numbered so far, and the line of the

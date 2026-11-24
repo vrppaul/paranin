@@ -5,6 +5,7 @@
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //	paranin serve --drafts content build/web    the same, the drafts too, each marked, for their author to read
 //	paranin preview-link content <slug>         prints the link a post is previewed at, for thirty days or --lasts
+//	paranin revise content <slug>               takes a revision of a post out, its current version, beside it
 //
 // check prints the faults, one a line: the commit's hook checks the content alone, and CI the release it builds. Every
 // load, check's and serve's, holds the content to no two of the site's pages sharing an address, and to no post's link
@@ -14,11 +15,14 @@
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). It serves each preview at the link a key signs, the key in the file PARANIN_PREVIEW_KEY
 // names, and none where it names none; preview-link signs a link with the same key, so the link it prints opens on a
-// server holding it. It loads both folders again, as one release, on SIGHUP and once a change in either holds
+// server holding it. serve loads both folders again, as one release, on SIGHUP and once a change in either holds
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
-// them runs out. The program exits 0 when it did what it was asked, 1 when the content or the build has faults, the
-// server failed or no link could be printed, and 2 when the command itself is written wrong.
+// them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.en.md beside it, the
+// day its current version came out, and prints the file's path: its author then rewrites the post and dates the new
+// version by its updated:, which the content's check asks for. The program exits 0 when it did what it was asked, 1
+// when the content or the build has faults, the server failed, or no link could be printed or revision taken, and 2
+// when the command itself is written wrong.
 package main
 
 import (
@@ -32,6 +36,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -40,6 +45,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
+	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/hosting/ssh"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
@@ -59,14 +65,28 @@ const (
 	checkCommand       = "check"
 	serveCommand       = "serve"
 	previewLinkCommand = "preview-link"
+	reviseCommand      = "revise"
 	usage              = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
-		"paranin preview-link [--lasts 720h, at most 2160h] <content folder> <slug>"
+		"paranin preview-link [--lasts 720h, at most 2160h] <content folder> <slug> | paranin revise <content folder> <slug>"
 	commandArgument  = 1
 	contentArgument  = 2
 	buildArgument    = 3
 	contentArguments = 3
 	releaseArguments = 4
+	// revise's post's slug follows the content folder where a release's build folder would
+	reviseSlugArgument = 3
+	reviseArguments    = 4
 )
+
+// Who may read and write what revise writes in the content folder, as git checks a file of the repository out: its
+// owner reads and writes, anyone reads, and a folder's owner lists and enters it too
+const (
+	revisionMode        = 0o644
+	revisionsFolderMode = 0o755
+)
+
+// How revise writes its revision's file: once, and only where none is there yet
+const newFileOnly = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 
 // How preview-link is written after its command: the flag of how long the link lasts, thirty days where it is not
 // asked, a span a reader is sent a draft to read in, and ninety at most, so no link that leaks lives for years; then
@@ -179,6 +199,8 @@ func run(arguments []string) int {
 			return usageWrong()
 		}
 		return previewLink(asked)
+	case command == reviseCommand && len(arguments) == reviseArguments:
+		return revise(arguments[contentArgument], arguments[reviseSlugArgument])
 	default:
 		return usageWrong()
 	}
@@ -292,6 +314,67 @@ func previewLinkOf(contentFolder, slug string, key *web.PreviewKey, moment, laps
 	}
 	site := routes.New(loaded.Profile.Site.BaseURL).Previewing(slug, key.Token(slug, lapses))
 	return site.Address(previews[found].Post.Head.Page, routes.FormatChosen), nil
+}
+
+// revise takes a revision of a post of a content folder out now, and prints the path it wrote it at.
+func revise(contentFolder, slug string) int {
+	written, err := reviseAt(contentFolder, slug, time.Now())
+	if err != nil {
+		return refused(err, contentFolder)
+	}
+	fmt.Println(written)
+	return succeeded
+}
+
+// reviseAt takes a revision of the current version of a post of a content folder out at a moment, beside the post
+// (docs/FOUNDATION.md §5.4, Revisions): the path it wrote, in the folder; a fault where the folder does not load, as it
+// does not once a version is taken until the post is dated by a later update, where the post is then no post out, a
+// draft, a preview or none at all, whose version no reader read, its version came out that day or later, or its text is
+// its newest revision's already.
+func reviseAt(contentFolder, slug string, moment time.Time) (string, error) {
+	loaded, err := release.ReadFolder(contentFolder, content.Load)
+	if err != nil {
+		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
+	}
+	served := compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Posts
+	found := slices.IndexFunc(loaded.Posts, func(post content.Post) bool { return post.Slug == slug })
+	out := slices.ContainsFunc(served, func(post document.Document) bool { return post.Head.Page.Slug == slug })
+	if found < 0 || !out {
+		return "", fmt.Errorf("%q is no post out now of the folder %q: a revision is taken of a version a reader read", slug, contentFolder)
+	}
+	taken, err := content.RevisionOf(loaded.Posts[found], moment)
+	if err != nil {
+		return "", fmt.Errorf("revise %q: %w", slug, err)
+	}
+	return taken.Path, writeRevision(contentFolder, taken)
+}
+
+// writeRevision writes a revision's file in a content folder, opened as a root, so no path leads out of it, making its
+// revisions folder where it is missing; never over a file there.
+func writeRevision(contentFolder string, taken content.RevisionFile) error {
+	root, err := os.OpenRoot(contentFolder)
+	if err != nil {
+		return fmt.Errorf("open the content folder %q: %w", contentFolder, err)
+	}
+	return errors.Join(writeRevisionIn(root, taken), root.Close())
+}
+
+// writeRevisionIn writes a revision's file in a root, never over a file there, and takes it away where it could not
+// be written whole. A reload that meets the file half written refuses it as it refuses the whole one, which the
+// post's current version's day names, until the post is dated by a later update.
+func writeRevisionIn(root *os.Root, taken content.RevisionFile) error {
+	if err := root.MkdirAll(path.Dir(taken.Path), revisionsFolderMode); err != nil {
+		return fmt.Errorf("make the revisions folder of %q: %w", taken.Path, err)
+	}
+	file, err := root.OpenFile(taken.Path, newFileOnly, revisionMode)
+	if err != nil {
+		return fmt.Errorf("make the revision %q: %w", taken.Path, err)
+	}
+	_, err = file.Write(taken.Text)
+	if err = errors.Join(err, file.Close()); err != nil {
+		return fmt.Errorf("write the revision %q: %w", taken.Path, errors.Join(err, root.Remove(taken.Path)))
+	}
+	return nil
 }
 
 // readPreviewKey reads the key preview links are signed with from the file the environment names; none where it names

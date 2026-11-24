@@ -224,6 +224,30 @@ func WriteIn(test *testing.T, folder, file, text string) {
 	writeAt(test, root, file, text)
 }
 
+// How a test writes a moment, as a post's front matter writes when it was published: to the minute, with its zone
+const momentLayout = "2006-01-02T15:04Z07:00"
+
+// MomentOf is a moment as a test writes it, as front matter does, or the test's end where it does not read.
+func MomentOf(test *testing.T, written string) time.Time {
+	test.Helper()
+	moment, err := time.Parse(momentLayout, written)
+	if err != nil {
+		test.Fatalf("read the moment %q: %v", written, err)
+	}
+	return moment
+}
+
+// KeepFolder leaves a folder as it is: the change of a test's case that changes nothing.
+func KeepFolder(*testing.T, string) {}
+
+// RemoveIn takes a file of a folder away, inside the folder, as ReplaceIn writes one.
+func RemoveIn(test *testing.T, folder, file string) {
+	test.Helper()
+	if err := openFolder(test, folder).Remove(file); err != nil {
+		test.Fatalf("remove %s: %v", file, err)
+	}
+}
+
 // openFolder is a folder opened as a root, closed when the test ends.
 func openFolder(test *testing.T, folder string) *os.Root {
 	test.Helper()

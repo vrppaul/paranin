@@ -191,9 +191,9 @@ func partNumber(index int) int {
 	return index + firstPart
 }
 
-// postPage is a post's page, by its slug.
+// postPage is a post's page, its current version's, by its slug.
 func postPage(post content.Post) document.Page {
-	return document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: ""}
+	return document.Page{Kind: document.PagePost, Slug: post.Slug, Tab: "", Revision: ""}
 }
 
 // discussionLinks are where a post is discussed, each a link to the thread by its site's name.

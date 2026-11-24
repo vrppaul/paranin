@@ -1,0 +1,23 @@
+READING-SLOWLY(1)               User Commands                READING-SLOWLY(1)
+
+NAME
+       Slow reading
+
+DESCRIPTION
+       newer: 2026-11-12 <https://example.test/blog/reading-slowly.txt>
+
+       Why a page read twice is read once, first said.
+
+       reading · terminals
+
+       A page read twice is read once.
+
+WHAT A READER KEEPS
+       The margins, as the tool <https://example.test/p/tidy-tool.txt> keeps
+       them.
+
+       A noted margin
+       <https://example.test/blog/reading-slowly/margin.png>
+       The margin, where a slow reader writes back.
+
+example.test                      2026-11-10                 READING-SLOWLY(1)

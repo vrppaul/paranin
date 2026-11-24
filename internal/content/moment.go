@@ -42,8 +42,15 @@ func (moment Moment) Written() string {
 }
 
 // day is the day the moment falls on in its own zone, as a Day's start holds one: its first moment in UTC.
+//
+//wrapper:names the moment's own day, which the checks of a post's days and its versions' read
 func (moment Moment) day() time.Time {
-	year, month, day := moment.at.Date()
+	return moment.dayAt(moment.at)
+}
+
+// dayAt is the day a time falls on in the zone the moment was written in, as a Day's start holds one.
+func (moment Moment) dayAt(at time.Time) time.Time {
+	year, month, day := at.In(moment.at.Location()).Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
 
@@ -63,4 +70,14 @@ func (day *Day) UnmarshalYAML(node *yaml.Node) error {
 func readDay(written string) Day {
 	start, err := time.Parse(dayLayout, written)
 	return Day{written: written, start: start, known: err == nil}
+}
+
+// Written is the day as the content writes it.
+func (day Day) Written() string {
+	return day.written
+}
+
+// Start is the day's first moment in UTC; the zero time where none was written or it did not read.
+func (day Day) Start() time.Time {
+	return day.start
 }

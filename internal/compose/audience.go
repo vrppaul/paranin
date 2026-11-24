@@ -68,6 +68,18 @@ func (audience Audience) lists(post content.Post) bool {
 	return false
 }
 
+// readsVersions is whether the audience reads a post's older versions: of a post published or unlisted and out, whose
+// versions a reader read; a draft's and a preview's none, which no reader read yet, though their revisions stay for
+// when they are out. exhaustive holds the switch to every status.
+func (audience Audience) readsVersions(post content.Post) bool {
+	switch audience.statusOf(post) {
+	case content.StatusPublished, content.StatusUnlisted:
+		return true
+	case content.StatusDraft, content.StatusPreview:
+	}
+	return false
+}
+
 // showsItsSeries is whether a post's own page shows its series, itself the part read, though no list names it: a
 // draft's and a preview's do, so their reader knows which part they read; an unlisted post's never, since its series
 // leaves it out for good. exhaustive holds the switch to every status.

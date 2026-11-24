@@ -31,8 +31,8 @@ const (
 // first screen offers as a chip too; what reading a page in a terminal gives; the words of the first screen's button
 // that writes to the author; the projects' pages, places of every page's command line, the pages its :e opens, and the
 // blog's folder, by the name a terminal writes and by its address, where :e opens a post a page does not list;
-// the site's sessions, which the foot line names; the labels of a post's facts, the words of its series and of the
-// panes at its foot, the name of its outline, and the words round the blog's list.
+// the site's sessions, which the foot line names; the labels of a post's facts, the words of its versions, of its
+// series and of the panes at its foot, the name of its outline, and the words round the blog's list.
 type frame struct {
 	site          routes.Site
 	start         string
@@ -47,6 +47,7 @@ type frame struct {
 	folderAddress string
 	sessions      []compose.Session
 	postLabels    compose.PostLabels
+	versionWords  compose.VersionWords
 	seriesWords   compose.SeriesWords
 	paneWords     compose.PaneWords
 	contents      string
@@ -117,6 +118,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		folderAddress: routes.BlogFolder(),
 		sessions:      composed.Sessions,
 		postLabels:    composed.PostLabels,
+		versionWords:  composed.VersionWords,
 		seriesWords:   composed.SeriesWords,
 		paneWords:     composed.PaneWords,
 		contents:      composed.Contents,
@@ -138,11 +140,11 @@ func (around frame) sessionsOf(page document.Page) []session {
 // own address, the page whole to read in a terminal and as markdown, and its command line going to the page's own
 // places too.
 func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []document.Place) footLine {
-	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: ""}
+	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: "", Revision: ""}
 	around := writer.frame
 	windows := []window{around.windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
 	for _, tab := range tabs.Rest {
-		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug}
+		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug, Revision: ""}
 		windows = append(windows, around.windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
 	return footLineOf(around, around.sessionsOf(whole), windows, whole, own)

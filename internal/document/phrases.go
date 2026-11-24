@@ -1,7 +1,10 @@
 package document
 
+import "strings"
+
 // Phrases are every text of a document a face must show, in its order: the leaves of its spans, its labels, tags and
-// places, and the gaps of its periods; not the head's greeting, which a face may leave out. A face that shows each
+// places, the gaps of its periods, and the words an older version of a post says a newer stands by; not the head's
+// greeting, which a face may leave out. A face that shows each
 // phrase of the document it draws, whole or as WrittenBlocks leaves it, shows every fact of it, which is what a test of
 // every face holds it to.
 func Phrases(document Document) []string {
@@ -14,6 +17,9 @@ func Phrases(document Document) []string {
 	}
 	phrases = spanPhrases(phrases, head.Lead)
 	phrases = factPhrases(phrases, head.Repository.Facts())
+	if older, isOlder := head.Version.(VersionOlder); isOlder {
+		phrases = textPhrase(textPhrase(phrases, strings.TrimSpace(older.NewerWords.Before)), strings.TrimSpace(older.NewerWords.After))
+	}
 	return blockPhrases(phrases, document.Blocks)
 }
 

@@ -254,12 +254,39 @@ a.session:hover {
   color: var(--faint);
 }
 
+/* the versions' pick (DESIGN.md, Pick): the day read bold in muted, underlined in the edge, and the mark that it opens
+ * a window faint; under the pointer the day in the text's colour, underlined in the accent, as a link */
+.version-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: var(--type-strong-weight);
+  cursor: pointer;
+}
+
+.version-pick time {
+  text-decoration: underline var(--edge);
+  text-underline-offset: var(--nudge);
+  transition:
+    color var(--quick),
+    text-decoration-color var(--quick);
+}
+
+.version-pick:hover time {
+  color: var(--text);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: var(--underline-hover);
+}
+
 /* the window shown, the place chosen on the command line's menu, the chip whose window is open, a way's hint or a
- * series' pick, and the filter the blog's list shows, reversed and bold as the TUI's tab: a mark of form, not of colour
- * alone; the chip's hairline and the marks of each with it */
+ * series' pick, the versions' pick whose window is open, and the filter the blog's list shows, reversed and bold as the
+ * TUI's tab: a mark of form, not of colour alone; the chip's hairline and the marks of each with it, and no underline
+ * under the versions' day, as none stands in the series' chip */
 .window[aria-current],
 .places-item[aria-selected="true"],
-.way-chip:has(+ :is(.hint, .pick):popover-open),
+:is(.way-chip, .version-pick):has(+ :is(.hint, .pick):popover-open),
 a.tag[aria-current] {
   background: var(--text);
   color: var(--background);
@@ -267,9 +294,10 @@ a.tag[aria-current] {
 }
 
 .window[aria-current] .window-number,
-.way-chip:has(+ :is(.hint, .pick):popover-open) :is(.way-mark, .series-count, .series-mark),
+:is(.way-chip, .version-pick):has(+ :is(.hint, .pick):popover-open) :is(.way-mark, .series-count, .pick-mark, time),
 a.tag[aria-current] .tag-mark {
   color: var(--background);
+  text-decoration: none;
 }
 
 .way-chip:has(+ :is(.hint, .pick):popover-open) {
@@ -1974,8 +2002,39 @@ a.tag[aria-current]:hover {
   color: var(--muted);
 }
 
-.series-mark {
+/* the mark that a pick opens a window, the series' and the versions', faint */
+.pick-mark {
   color: var(--faint);
+}
+
+/* an older version's way to the newer (DESIGN.md, PostHead): under its day, the arrow in the accent, then the words
+ * bold in the text's colour on the tint, at a line's size, the tint stronger under the pointer */
+.newer {
+  display: flex;
+  align-items: center;
+  gap: var(--cell);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  height: calc(var(--row) - 2 * var(--nudge));
+  margin-top: var(--nudge);
+  padding: 0 var(--cell);
+  border-radius: var(--radius);
+  background: var(--tint);
+  color: var(--text);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-caption-line);
+  text-decoration: none;
+  transition: background var(--quick);
+}
+
+.newer:hover {
+  background: var(--tint-strong);
+}
+
+.newer-mark {
+  color: var(--accent);
 }
 
 /* its window, the box a hint's is (above), in the small style, its title and its close set into its top edge; a part
@@ -1999,6 +2058,15 @@ a.tag[aria-current]:hover {
 
   .panes-heading .pick {
     position-area: bottom span-right;
+  }
+
+  /* the versions' window opens under their whole fact, so it leaves an older version's way to the newer in sight */
+  .post-facts dd:has(> .version-pick) {
+    anchor-name: --version-fact;
+  }
+
+  .version-pick + .pick {
+    position-anchor: --version-fact;
   }
 }
 
@@ -2026,20 +2094,32 @@ a.pick-row:hover {
   background: var(--deep);
 }
 
+/* a version a row of its day and its state, with no number */
+.version-row {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
 .part-number,
 .part-state {
   color: var(--faint);
 }
 
-/* the part read, reversed and bold as the window shown; the next bold, its state in the text's colour; a part to come
- * muted */
-.part-reading {
+/* a version's state, the word that says which is the current one, which a reader needs, so muted, never faint */
+.version-state {
+  color: var(--muted);
+}
+
+/* the part or the version read, reversed and bold as the window shown; the next part bold, its state in the text's
+ * colour; a part to come muted */
+.part-reading,
+.version-read {
   background: var(--text);
   color: var(--background);
   font-weight: var(--type-strong-weight);
 }
 
-.part-reading :is(.part-number, .part-state) {
+.part-reading :is(.part-number, .part-state),
+.version-read .version-state {
   color: var(--background);
 }
 
@@ -2235,6 +2315,8 @@ a.pane:hover .pane-title {
   .code-copy,
   .outline a,
   a.pick-row,
+  .version-pick time,
+  .newer,
   .pane {
     transition: none;
   }
@@ -2337,7 +2419,8 @@ a.pane:hover .pane-title {
    * opened it, as a hint stands over it */
   @supports (anchor-name: --foot) {
     .pick,
-    .panes-heading .pick {
+    .panes-heading .pick,
+    .version-pick + .pick {
       position-anchor: --foot;
       position-area: none;
       inset: auto var(--gutter-phone) auto var(--gutter-phone);

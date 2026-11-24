@@ -40,6 +40,7 @@ type Frame struct {
 	Pages        []OpenedPage
 	Sessions     []Session
 	PostLabels   PostLabels
+	VersionWords VersionWords
 	SeriesWords  SeriesWords
 	PaneWords    PaneWords
 	Contents     string
@@ -88,6 +89,26 @@ type PostLabels struct {
 	Version string
 	Series  string
 	Tags    string
+}
+
+// VersionWords are the site's words of a post's versions as a face lists them (DESIGN.md, Pick): the title of the
+// window that lists them, and what marks the current version and the version read.
+type VersionWords struct {
+	Title   string
+	Current string
+	Reading string
+}
+
+// State is where a version stands for its reader, as a face writes it beside the version's day: the current version,
+// read or not; an older one read; nothing for any other.
+func (versionWords VersionWords) State(version document.PostVersion) string {
+	switch {
+	case version.Current:
+		return versionWords.Current
+	case version.Read:
+		return versionWords.Reading
+	}
+	return ""
 }
 
 // SeriesWords are the site's words a face writes a post's series in, each with the values the series gives it.
@@ -164,7 +185,10 @@ func frameOf(snapshot *content.Snapshot, read blog) Frame {
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
 			{Name: words.Text(content.WordBlog), Start: document.PageOf(document.PageBlog)},
 		},
-		PostLabels:  PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
+		PostLabels: PostLabels{Version: words.Text(content.WordVersion), Series: words.Text(content.WordSeries), Tags: words.Text(content.WordTags)},
+		VersionWords: VersionWords{
+			Title: words.Text(content.WordVersions), Current: words.Text(content.WordCurrent), Reading: words.Text(content.WordVersionRead),
+		},
 		SeriesWords: SeriesWords{words: words},
 		PaneWords:   paneWords(words),
 		Contents:    words.Text(content.WordContents),
@@ -279,7 +303,8 @@ func projectPages(projects []document.Place) []OpenedPage {
 
 // blogPages are the blog's pages :e opens by the names a terminal reaches them by (D26): its list in each grouping and
 // each post the list names, newest first, which Tab offers; then each post served and no list names, by its slug, every
-// post served by its number, and the list by each of its filters, which :e opens though Tab offers none.
+// post served by its number, each older version of a post served, by its address, and the list by each of its
+// filters, which :e opens though Tab offers none.
 func blogPages(read blog, words content.Words) []OpenedPage {
 	pages := []OpenedPage{}
 	for _, grouping := range listWordsOf(words).Groupings() {
@@ -295,6 +320,11 @@ func blogPages(read blog, words content.Words) []OpenedPage {
 	}
 	for _, post := range read.served {
 		pages = append(pages, openedPage(postPage(post), routes.NumberPath(post.ID), document.PlacePost, false))
+	}
+	for _, post := range read.served {
+		for _, version := range read.olderVersionsOf(post) {
+			pages = append(pages, openedPage(version.page, routes.Path(version.page, routes.FormatChosen), document.PlaceVersion, false))
+		}
 	}
 	for _, filter := range read.filters {
 		pages = append(pages, openedPage(filter.page, routes.Path(filter.page, routes.FormatChosen), document.PlaceList, false))

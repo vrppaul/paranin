@@ -55,7 +55,7 @@ func (layout layout) outline(blocks []document.Block, headings map[string]int, f
 			continue
 		}
 		unread := layout.continued(line{gapRun(outlineHang)}, layout.words(section.Title, kindMuted), outlineHang)
-		readLead := line{gapRun(0), plainRun(readMark, kindReadMark), gapRun(outlineHang - textWidth(readMark))}
+		readLead := line{gapRun(0), plainRun(readMark, kindLookMark), gapRun(outlineHang - textWidth(readMark))}
 		read := layout.continued(readLead, layout.words(section.Title, kindStrong), outlineHang)
 		laid.headings = append(laid.headings, outlinedHeading{line: headings[section.Name], first: len(laid.unread), read: read})
 		laid.unread = append(laid.unread, unread...)

@@ -16,6 +16,7 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // The footer's windows of the blog's session on the fixture: its list shown alone, its list beside the post read, and
@@ -45,6 +46,7 @@ func TestASessionOpensOnTheBlogsPageItsNameReaches(test *testing.T) {
 		{name: "the list", user: "blog", holds: []string{"[example.test] [blog]", listAlone}, lacks: []string{"2:"}},
 		{name: "a post by its number", user: "blog/1", holds: []string{listBesidePost, postRead}, lacks: nil},
 		{name: "a post by its slug", user: "blog/reading-slowly", holds: []string{listBesidePost, postRead}, lacks: nil},
+		{name: "an older version by its address", user: "blog/reading-slowly/2026-11-10", holds: []string{listBesidePost, postRead}, lacks: nil},
 		{name: "a number no post has", user: "blog/9", holds: []string{listAlone, `E447: Can't find file "blog/9" in path`}, lacks: nil},
 		{name: "a draft's number", user: "blog/2", holds: []string{listAlone, `E447: Can't find file "blog/2" in path`}, lacks: nil},
 		{name: "a login name", user: "reader", holds: []string{resumeOpened}, lacks: []string{"posts", "E447"}},
@@ -257,7 +259,7 @@ func TestALongFilterBreaksOnlyBetweenItsWords(test *testing.T) {
 }
 
 // Enter on a heading's name brings it to the page's top; on a post's or a part's name opens that post beside the
-// list.
+// list; on a version's, by its day, that version, in the post's window, an older one from the current and back.
 func TestEnterOnABlogsPlaceGoesThere(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -269,6 +271,11 @@ func TestEnterOnABlogsPlaceGoesThere(test *testing.T) {
 		{name: "a heading", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "in-a-terminal", top: "In a terminal", footer: postRead},
 		{name: "a post from the list", model: openedModel(test, "blog", commonWidth, commonHeight), text: "reading-slowly", top: "Reading slowly", footer: postRead},
 		{name: "another part", model: pressed(test, commanded(test, handSeriesModel(test, tallHeight), "late"), "enter"), text: "fifth", top: "The fifth post", footer: "2:fifth*"},
+		{name: "an older version", model: openedModel(test, "blog/1", commonWidth, commonHeight), text: "2026-11-10", top: "Slow reading", footer: postRead},
+		{
+			name: "the current version", model: openedModel(test, "blog/reading-slowly/2026-11-10", commonWidth, commonHeight), text: "2026-11-12",
+			top: "Reading slowly", footer: postRead,
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -622,7 +629,7 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 		name string
 		want string
 	}{
-		{name: "the day", want: "version 10 Nov 2026"},
+		{name: "the day", want: "version 12 Nov 2026"},
 		{name: "the series", want: "series Reading 1 of 2"},
 		{name: "the tags", want: "tags #reading #terminals"},
 		{name: "a numbered paragraph citing a note", want: "1 A page read twice is read once, if the first reading was slow.¹"},
@@ -650,6 +657,17 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 				test.Errorf("the post =\n%s\nwant %q on it", read, testCase.want)
 			}
 		})
+	}
+}
+
+// An older version of a post writes its own title and lead, the day it came out, and under it that a newer stands, the
+// day of the current version after the site's word for it.
+func TestAnOlderVersionSaysANewerStands(test *testing.T) {
+	read := readRows(aboveTheFooter(screenOf(test, openedModel(test, "blog/reading-slowly/2026-11-10", commonWidth, tallHeight))))
+	for _, want := range []string{"Slow reading", "Why a page read twice is read once, first said.", "version 10 Nov 2026", look.NewerMark + " newer: 12 Nov 2026"} {
+		if !strings.Contains(read, want) {
+			test.Errorf("the older version =\n%s\nwant %q on it", read, want)
+		}
 	}
 }
 
@@ -686,7 +704,7 @@ func TestAPostStandsInTheColumnsItsPageHasRoomFor(test *testing.T) {
 		pattern string
 		from    int
 	}{
-		{name: "the facts beside the title", pattern: `(?m)^Reading slowly version 10 Nov 2026$`, from: sourcedWidth},
+		{name: "the facts beside the title", pattern: `(?m)^Reading slowly version 12 Nov 2026$`, from: sourcedWidth},
 		{name: "a source beside its line", pattern: `slow\.¹ 1 Mira Example`, from: sourcedWidth},
 		{name: "a source beside its line, under the one before", pattern: `in pencil² 2 A soft one`, from: sourcedWidth},
 		{name: "the panes side by side", pattern: `── previous ─+┬── part 2 ─`, from: sourcedWidth},

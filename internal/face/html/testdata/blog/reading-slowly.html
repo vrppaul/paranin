@@ -34,11 +34,30 @@
 <dl class="facts post-facts">
 <dt>version</dt>
 <dd>
+<button type="button" class="version-pick" popovertarget="_versions">
+<time datetime="2026-11-12">12 Nov 2026</time> <span class="pick-mark" aria-hidden="true">▾</span>
+</button>
+<div id="_versions" class="pick" popover role="dialog" aria-labelledby="_versions-title">
+<p id="_versions-title" class="pick-title">versions</p>
+<ol class="pick-parts">
+<li class="pick-part version-read" aria-current="page">
+<span class="pick-row version-row">
+<time datetime="2026-11-12">12 Nov 2026</time> <span class="version-state">current</span>
+</span>
+</li>
+<li class="pick-part">
+<a class="pick-row version-row" href="/blog/reading-slowly/2026-11-10">
 <time datetime="2026-11-10">10 Nov 2026</time>
+</a>
+</li>
+</ol>
+<button type="button" class="hint-close" popovertarget="_versions" popovertargetaction="hide">
+<kbd class="command-key" aria-hidden="true">esc</kbd> close</button>
+</div>
 </dd>
 <dt>series</dt>
 <dd>
-<button type="button" class="way-chip series-pick" popovertarget="_parts">Reading <span class="series-count">1 of 2</span> <span class="series-mark" aria-hidden="true">▾</span>
+<button type="button" class="way-chip series-pick" popovertarget="_parts">Reading <span class="series-count">1 of 2</span> <span class="pick-mark" aria-hidden="true">▾</span>
 </button>
 <div id="_parts" class="pick" popover role="dialog" aria-labelledby="_parts-title">
 <p id="_parts-title" class="pick-title">Reading</p>
@@ -200,7 +219,7 @@
 <footer class="panes-foot">
 <div class="panes-heading">
 <h2 id="_more" class="panes-title">Other parts of Reading</h2>
-<button type="button" class="way-chip series-pick" popovertarget="_parts-foot">all 2 parts <span class="series-mark" aria-hidden="true">▾</span>
+<button type="button" class="way-chip series-pick" popovertarget="_parts-foot">all 2 parts <span class="pick-mark" aria-hidden="true">▾</span>
 </button>
 <div id="_parts-foot" class="pick" popover role="dialog" aria-labelledby="_parts-foot-title">
 <p id="_parts-foot-title" class="pick-title">Reading</p>
@@ -274,35 +293,42 @@
 <span data-part="place-rest">afterwards</span>
 </span> <span class="places-kind">heading</span>
 </li>
-<li id="_place-6" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" hidden>
+<li id="_place-6" class="places-item" role="option" aria-selected="false" data-part="place" data-place="version" data-name="2026-11-10" data-address="/blog/reading-slowly/2026-11-10" hidden>
+<span class="places-name">
+<span class="places-typed" data-part="place-typed">
+</span>
+<span data-part="place-rest">2026-11-10</span>
+</span> <span class="places-kind">version</span>
+</li>
+<li id="_place-7" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" hidden>
 <span class="places-name">
 <span class="places-typed" data-part="place-typed">
 </span>
 <span data-part="place-rest">tidy-tool</span>
 </span> <span class="places-kind">project</span>
 </li>
-<li id="_place-7" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" data-edit hidden>
+<li id="_place-8" class="places-item" role="option" aria-selected="false" data-part="place" data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool" data-edit hidden>
 <span class="places-name">
 <span class="places-typed" data-part="place-typed">
 </span>
 <span data-part="place-rest">tidy-tool</span>
 </span> <span class="places-kind">project</span>
 </li>
-<li id="_place-8" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="blog" data-address="/blog" data-edit hidden>
+<li id="_place-9" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="blog" data-address="/blog" data-edit hidden>
 <span class="places-name">
 <span class="places-typed" data-part="place-typed">
 </span>
 <span data-part="place-rest">blog</span>
 </span> <span class="places-kind">list</span>
 </li>
-<li id="_place-9" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="blog/series" data-address="/blog/series" data-edit hidden>
+<li id="_place-10" class="places-item" role="option" aria-selected="false" data-part="place" data-place="list" data-name="blog/series" data-address="/blog/series" data-edit hidden>
 <span class="places-name">
 <span class="places-typed" data-part="place-typed">
 </span>
 <span data-part="place-rest">blog/series</span>
 </span> <span class="places-kind">list</span>
 </li>
-<li id="_place-10" class="places-item" role="option" aria-selected="false" data-part="place" data-place="post" data-name="blog/reading-slowly" data-address="/blog/reading-slowly" data-current data-edit hidden>
+<li id="_place-11" class="places-item" role="option" aria-selected="false" data-part="place" data-place="post" data-name="blog/reading-slowly" data-address="/blog/reading-slowly" data-current data-edit hidden>
 <span class="places-name">
 <span class="places-typed" data-part="place-typed">
 </span>

@@ -23,6 +23,9 @@ type Site struct {
 	Filtered []document.Document
 	// Posts are the posts the site serves, in the snapshot's order, each link inside the site read into its page
 	Posts []document.Document
+	// Versions are the older versions of the posts the site serves, each a page of its own, which no list names and no
+	// search engine indexes, in the posts' order and each post's newest first
+	Versions []document.Document
 	// Pictures are the pictures of the posts the site serves, each at its file beside its post, in no order
 	Pictures []PostPicture
 	// Previews are the posts the site serves at their preview links alone, in the snapshot's order, each with its
@@ -35,27 +38,29 @@ type Site struct {
 	Until time.Time
 	// paths are the pages served by the path a link inside the site reaches each by
 	paths map[string]document.Page
-	// served are the documents of every page the site serves, each tab of a page alone too
+	// served are the documents of every page the site serves, each tab of a page alone and each older version of a
+	// post too
 	served []document.Document
 	// postsServed are the posts the site serves as the content holds them, whose links Check reads
 	postsServed []content.Post
 }
 
-// SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages first, then its posts and
-// its previews, whose links lead among them by their paths.
+// SiteOf composes a snapshot's site, as Prepare read it, as an audience reads it: its pages first, then its posts,
+// their older versions and its previews, whose links lead among them by their paths.
 func SiteOf(prepared *Prepared, audience Audience) Site {
 	snapshot := prepared.snapshot
 	read := blogOf(snapshot, audience)
 	site := Site{
 		Index: indexOf(snapshot, read), Pages: Pages(snapshot), Lists: blogLists(read, snapshot.Words), Filtered: filteredLists(read, snapshot.Words),
-		Posts: nil, Pictures: picturesOf(read), Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts), paths: nil, served: nil,
-		postsServed: read.served,
+		Posts: nil, Versions: nil, Pictures: picturesOf(read), Previews: nil, Frame: frameOf(snapshot, read), Until: audience.nextChange(snapshot.Posts),
+		paths: nil, served: nil, postsServed: read.served,
 	}
 	pages := site.pagesButPosts()
 	site.paths = pagesAt(append(headsOf(pages), postHeads(read, snapshot.Words)...))
 	site.Posts = composedPosts(prepared, read, site.paths)
+	site.Versions = olderDocuments(prepared, read, site.paths)
 	site.Previews = previewsOf(prepared, read, site.paths)
-	site.served = append(pages, site.Posts...)
+	site.served = slices.Concat(pages, site.Posts, site.Versions)
 	return site
 }
 

@@ -187,7 +187,8 @@ func TestAPostShowsItsSeriesPartByPart(test *testing.T) {
 }
 
 // A post's places are its headings, then each other part of its series out, by its slug, at its page: never the part
-// read, which is the page shown, a part to come, which has no page, or a part the series leaves out.
+// read, which is the page shown, a part to come, which has no page, or a part the series leaves out; then its other
+// versions.
 func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: content.StatusPublished, published: earlier},
@@ -202,6 +203,7 @@ func TestAPostsPlacesAreItsHeadingsThenItsOtherParts(test *testing.T) {
 		{Name: "afterwards", Kind: document.PlaceHeading, Page: read, Section: "afterwards"},
 		{Name: "first", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, Section: ""},
 		{Name: "third", Kind: document.PlacePart, Page: document.Page{Kind: document.PagePost, Slug: "third", Tab: ""}, Section: ""},
+		{Name: fixtureRevisionDay, Kind: document.PlaceVersion, Page: document.OlderVersion(fixturePostSlug, fixtureRevisionDay), Section: ""},
 	}
 	if got := document.PlacesOf(postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Posts, fixturePostSlug)); !reflect.DeepEqual(got, want) {
 		test.Errorf("the post's places = %+v, want %+v", got, want)
@@ -218,15 +220,15 @@ func TestAHeadingNamedAsAPartTakesItsCount(test *testing.T) {
 	}{
 		{
 			name: "a part out", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: earlier},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps"},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", "what-a-reader-keeps", fixtureRevisionDay},
 		},
 		{
 			name: "a part dated later", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusPublished, published: afterTheDay},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards"},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", fixtureRevisionDay},
 		},
 		{
 			name: "a draft", part: writtenPost{slug: "what-a-reader-keeps", id: 3, status: content.StatusDraft, published: ""},
-			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards"},
+			want: []string{"what-a-reader-keeps-2", "in-a-terminal", "afterwards", fixtureRevisionDay},
 		},
 	}
 	for _, testCase := range cases {

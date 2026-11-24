@@ -120,10 +120,14 @@ func (writer manualWriter) name(head document.Head) []string {
 	return append([]string{"", nameSection}, paragraph(sectionIndent, 0, name)...)
 }
 
-// description writes the description section: the lead, what a project is made of or a post's or the list's tags,
-// where a project's code lives, then the blocks that are no section; none where there is nothing to describe.
+// description writes the description section: where an older version of a post says a newer stands, that first, then
+// the lead, what a project is made of or a post's or the list's tags, where a project's code lives, then the blocks
+// that are no section; none where there is nothing to describe.
 func (writer manualWriter) description(head document.Head, others []document.Block) []string {
 	lines := paragraph(sectionIndent, 0, writer.words(head.Lead))
+	if newer := newerSpans(head); len(newer) > 0 {
+		lines = append(append(paragraph(sectionIndent, 0, writer.words(newer)), ""), lines...)
+	}
 	if named := head.ListedWords(); len(named) > 0 {
 		tags := make([][]string, 0, len(named))
 		for _, tag := range named {

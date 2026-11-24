@@ -15,8 +15,8 @@ import (
 )
 
 // The folder of the posts, a folder for each named by its slug, and what a post's folder holds: its text in English,
-// the one language so far (D12), named post.<language>.md as every language's file will be; and two folders that come
-// with steps of the blog of their own, its revisions and its widgets (docs/FOUNDATION.md §5.4)
+// the one language so far (D12), named post.<language>.md as every language's file will be; its revisions, older
+// versions of its text; and its widgets, which come with a step of the blog of their own (docs/FOUNDATION.md §5.4)
 const (
 	postsFolder     = "posts"
 	postFilePrefix  = "post."
@@ -26,12 +26,14 @@ const (
 	widgetsFolder   = "widgets"
 )
 
-// The fields the checks name more than once: of a post's front matter, and a post's and a series' title
+// The fields the checks name more than once: of a post's front matter, a post's and a series' title, and a post's and
+// a revision's description
 const (
-	titleField     = "title"
-	idField        = "id"
-	publishedField = "published"
-	updatedField   = "updated"
+	titleField       = "title"
+	descriptionField = "description"
+	idField          = "id"
+	publishedField   = "published"
+	updatedField     = "updated"
 )
 
 // Post is an article of the blog: its slug, its folder's name; what its front matter says; and its body.
@@ -50,10 +52,12 @@ type Post struct {
 	Tags        []string     `yaml:"tags"`
 	Discussions []Discussion `yaml:"discussions"`
 	Body        Markdown     `yaml:"-"`
-	// Pictures are the pictures the body shows, files of the post's folder, by their names
+	// Pictures are the pictures its body and its revisions show, files of the post's folder, by their names
 	Pictures map[string]Picture `yaml:"-"`
 	// SiteLinks are the body's links inside the site, by their nodes, which compose reads into pages and checks
 	SiteLinks map[*ast.Link]WrittenLink `yaml:"-"`
+	// Revisions are the post's older versions, oldest first
+	Revisions []Revision `yaml:"-"`
 }
 
 // Status is who may read a post (D7): a draft, its author alone; a preview, whoever holds its secret link;
@@ -80,12 +84,15 @@ type Discussion struct {
 }
 
 // writtenPost is a post as its folder writes it: the file, the post, the front matter's document, which the check of
-// characters walks, and the file's line the body starts on, which a fault of the body counts from.
+// characters walks, and the file's line the body starts on, which a fault of the body counts from; its revisions as
+// their files write them, and the faults of its revisions folder's other files.
 type writtenPost struct {
-	file        string
-	post        Post
-	frontMatter *yaml.Node
-	bodyLine    int
+	file           string
+	post           Post
+	frontMatter    *yaml.Node
+	bodyLine       int
+	revisions      []writtenRevision
+	strayRevisions Faults
 }
 
 // readPosts reads every post's folder, in their slugs' order, with the faults that kept a post from being read.
@@ -109,37 +116,40 @@ func readPosts(folder fs.FS) ([]writtenPost, Faults, Faults) {
 	return posts, unreadable, misplaced
 }
 
-// readPost reads the file of the post of a slug: its front matter decoded strictly and its body parsed once by the
-// posts' parser.
+// readPost reads the file of the post of a slug, and its revisions: its front matter decoded strictly and its body
+// parsed once by the posts' parser.
 func readPost(folder fs.FS, postParser parser.Parser, slug string) (writtenPost, Faults) {
 	file := path.Join(postsFolder, slug, englishPostFile)
 	// what a post read with faults is never inspected, since its faults end the load
 	var unread writtenPost
+	revisions, unreadRevisions, strayRevisions := readRevisions(folder, postParser, slug)
 	data, err := fs.ReadFile(folder, file)
 	if err != nil {
-		return unread, Faults{unreadFault(file, err)}
+		return unread, append(Faults{unreadFault(file, err)}, unreadRevisions...)
 	}
 	parts, splitFaults := splitPost(file, data)
 	if len(splitFaults) > 0 {
-		return unread, splitFaults
+		return unread, append(splitFaults, unreadRevisions...)
 	}
 	post, frontMatter, decodingFaults := decodeStrictly[Post](file, parts.frontMatter)
 	post.Slug = slug
 	post.Body = Markdown{Source: parts.body, Tree: postParser.Parse(text.NewReader(parts.body))}
-	return writtenPost{file: file, post: post, frontMatter: frontMatter, bodyLine: parts.bodyLine}, decodingFaults
+	written := writtenPost{
+		file: file, post: post, frontMatter: frontMatter, bodyLine: parts.bodyLine, revisions: revisions, strayRevisions: strayRevisions,
+	}
+	return written, append(decodingFaults, unreadRevisions...)
 }
 
-// partFaults find every part of a post's folder but its file in English and the pictures it shows, and say why it is
-// not read.
+// partFaults find every part of a post's folder but its file in English, its revisions and the pictures it shows, and
+// say why it is not read.
 func partFaults(folder fs.FS, place string, shown map[string]bool) Faults {
 	entries, faults := readFolder(folder, place)
 	for _, entry := range entries {
 		file := path.Join(place, entry.Name())
 		switch name := entry.Name(); {
-		case name == englishPostFile || shown[name]:
-			// the post itself, which readPost reads, and a picture its body shows, which its inspection reads
-		case name == revisionsFolder:
-			faults = append(faults, fileFault(file, revisionsProblem))
+		case name == englishPostFile || name == revisionsFolder || shown[name]:
+			// the post itself and its revisions, which readPost reads, and a picture one of its versions shows, which its
+			// inspection reads
 		case name == widgetsFolder:
 			faults = append(faults, fileFault(file, widgetsProblem))
 		case strings.HasPrefix(name, postFilePrefix) && strings.HasSuffix(name, markdownEnding):
@@ -151,9 +161,9 @@ func partFaults(folder fs.FS, place string, shown map[string]bool) Faults {
 	return faults
 }
 
-// inspectPosts checks every post by itself, and that no two share a number, reading the pictures each shows from the
-// folder and holding its links to the site by the site's own address: the posts as the snapshot keeps them, and the
-// faults found.
+// inspectPosts checks every post by itself, its revisions with it, and that no two share a number, reading the pictures
+// each version shows from the folder and holding its links to the site by the site's own address: the posts as the
+// snapshot keeps them, and the faults found.
 func inspectPosts(folder fs.FS, site WebAddress, posts []writtenPost) ([]Post, Faults) {
 	checked := make([]Post, 0, len(posts))
 	faults := Faults{}
@@ -169,9 +179,11 @@ func inspectPosts(folder fs.FS, site WebAddress, posts []writtenPost) ([]Post, F
 		}
 		numbered[post.ID] = true
 		shown, links := inspectBody(inspection, writtenBody{body: post.Body, firstLine: written.bodyLine, folder: folder, place: place, site: site})
-		post.Pictures, post.SiteLinks = shown.read, links
+		revisions, revisionsShown, revisionFaults := inspectRevisions(folder, site, post, written)
+		shown.add(revisionsShown)
+		post.Pictures, post.SiteLinks, post.Revisions = shown.read, links, revisions
 		faults = slices.Concat(faults, folderInspection.faults, inspection.faults, inspectCharacters(written.file, written.frontMatter),
-			partFaults(folder, place, shown.named))
+			revisionFaults, written.strayRevisions, partFaults(folder, place, shown.named))
 		checked = append(checked, post)
 	}
 	return checked, faults
@@ -183,7 +195,7 @@ func inspectPostFields(inspection *inspection, post Post) {
 		inspection.add(idField, positiveProblem, post.ID)
 	}
 	inspection.requireLine(titleField, post.Title)
-	inspection.requireLine("description", post.Description)
+	inspection.requireLine(descriptionField, post.Description)
 	if !statuses()[post.Status] {
 		inspection.add("status", noneOfProblem, post.Status, kindList(statuses()))
 	}

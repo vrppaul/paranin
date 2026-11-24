@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/hosting/web"
 	"github.com/vrppaul/paranin/internal/release"
@@ -162,6 +163,98 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 			response := fixtures.ServedOnTheDay(test, server, http.MethodGet, address.Path+".md", "")
 			if response.Code != testCase.want {
 				test.Errorf("GET %s.md = %d, want %d", address.Path, response.Code, testCase.want)
+			}
+		})
+	}
+}
+
+// The fixture's post out, the revision revise takes of it, dated by its update of the 12th, and a moment late on that
+// day in the post's zone
+const (
+	postOut            = "reading-slowly"
+	postOutFile        = "posts/reading-slowly/post.en.md"
+	revisionTaken      = "posts/reading-slowly/revisions/2026-11-12.en.md"
+	onTheVersionsDay   = "2026-11-12T22:00+01:00"
+	versionDayUpdate   = "updated: 2026-11-12"
+	laterVersionUpdate = "updated: 2026-11-20"
+)
+
+// revise takes a revision of a post out, its current version, beside the post; it refuses a post not out, a draft, a
+// preview or none at all, whose version no reader read, a version taken already, which the folder refuses as it
+// loads, and a version on the day it came out, a change of which is an edit of it. Each case runs on a folder of its
+// own.
+func TestARevisionIsTakenOfAPostOutAlone(test *testing.T) {
+	cases := []struct {
+		name    string
+		slug    string
+		before  func(test *testing.T, folder string)
+		moment  time.Time
+		written bool
+	}{
+		{name: "a post out", slug: postOut, before: fixtures.KeepFolder, moment: fixtures.Day(), written: true},
+		{name: "a draft", slug: "notes-on-tools", before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "a preview", slug: fixtures.PreviewSlug, before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "no post", slug: "no-such-post", before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
+		{name: "its version taken already", slug: postOut, before: revisedOnTheDay, moment: fixtures.Day(), written: false},
+		{name: "on its version's day", slug: postOut, before: fixtures.KeepFolder, moment: fixtures.MomentOf(test, onTheVersionsDay), written: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			folder := fixtures.PreviewedFolder(test)
+			testCase.before(test, folder)
+			if _, err := reviseAt(folder, testCase.slug, testCase.moment); (err == nil) != testCase.written {
+				test.Errorf("reviseAt(%q) at %s = %v, want a revision written: %t", testCase.slug, testCase.moment, err, testCase.written)
+			}
+		})
+	}
+}
+
+// A folder revised loads again once its author dates the post's new version by a later update.
+func TestAFolderRevisedLoadsOnceThePostIsUpdated(test *testing.T) {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	revisedOnTheDay(test, folder)
+	fixtures.ReplaceIn(test, folder, postOutFile, versionDayUpdate, laterVersionUpdate)
+	if code := check(folder); code != succeeded {
+		test.Errorf("check of the folder with %s once the post is updated = %d, want %d", revisionTaken, code, succeeded)
+	}
+}
+
+// A revision's file is never written over: one there already is refused and kept as it was, not taken away.
+func TestARevisionThereAlreadyIsKept(test *testing.T) {
+	const kept = "a revision there already"
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	fixtures.WriteIn(test, folder, revisionTaken, kept)
+	if err := writeRevision(folder, content.RevisionFile{Path: revisionTaken, Text: []byte("another")}); err == nil {
+		test.Errorf("writeRevision over %s = nil, want a fault", revisionTaken)
+	}
+	if written, err := os.ReadFile(filepath.Join(folder, revisionTaken)); err != nil || string(written) != kept {
+		test.Errorf("%s holds %q, %v; want %q", revisionTaken, written, err, kept)
+	}
+}
+
+// revisedOnTheDay takes a revision of the fixture's post out on the tests' day.
+func revisedOnTheDay(test *testing.T, folder string) {
+	test.Helper()
+	if written, err := reviseAt(folder, postOut, fixtures.Day()); err != nil || written != revisionTaken {
+		test.Fatalf("reviseAt(%q) = %q, %v; want %q", postOut, written, err, revisionTaken)
+	}
+}
+
+// revise is written with the content folder and the post's slug, and nothing else.
+func TestReviseTakesAFolderAndASlugAlone(test *testing.T) {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	cases := []struct {
+		name  string
+		words []string
+	}{
+		{name: "no slug", words: []string{folder}},
+		{name: "two slugs", words: []string{folder, postOut, postOut}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			arguments := append([]string{"paranin", "revise"}, testCase.words...)
+			if got := run(arguments); got != usageMistaken {
+				test.Errorf("run(%q) = %d, want %d", arguments, got, usageMistaken)
 			}
 		})
 	}

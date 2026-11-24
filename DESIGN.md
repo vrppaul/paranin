@@ -491,7 +491,11 @@ the pointer `deep`. They are links, since each leads to an address.
 
 A word that opens a window over the page, as the Hint's chip does: a post's versions, its series' parts.
 
-- The version: its date bold in `muted`, underlined in `edge`; under the pointer `text`, underlined in `accent`.
+- The version: its date bold in `muted`, underlined in `edge`, then `▾` in `faint`; under the pointer `text`,
+  underlined in `accent`; reversed while its window is open, as the series' chip. Its window is titled `versions`, a
+  row a version's date, newest first, its state `current` or, for an older one read, `reading`, in `muted`; a post of
+  one version lists that one. The window opens under the whole fact, so an older version's way to the newer stays in
+  sight.
 - The series: the FootLine's chip, its name, then `1 of 11` in `muted` and `▾` in `faint`; reversed while its window
   is open, as a way's chip. In the Panes' heading, which names the series already, it says what it opens, `all 11
   parts`.
@@ -507,7 +511,7 @@ A post's first screen, as the résumé's. Left, over the Outline and the text, i
 a few words a line, balanced) and its lead, `post_lead` at most. Right, in the sources' column, its Facts `row_half`
 apart: version (the Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date
 that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the
-whole a link, `tint_strong` (to add) under the pointer. On a phone one column, the facts under the lead, a `quiet`
+whole a link, `tint_strong` under the pointer. On a phone one column, the facts under the lead, a `quiet`
 hairline under the head. A draft, which its author alone reads under `paranin serve --drafts`, gives the word `draft`
 as its version, a fact's value like any other, where a post out gives its day; the TUI and the text faces write it
 there too. A preview, read at its link, gives its date as a post out does. It is the plainest mark the tokens give, standing until the owner draws one.
@@ -632,6 +636,10 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   gradient. The tiles as the page's, at least 31 cells each. j and k go from tile to tile in reading order, newest
   first; the tile chosen stands on `sunk`, its title underlined in `accent`; Enter opens its post. A move that takes
   the page from the tile chosen chooses one in sight: G the last, gg the first, a search's match its own.
+- A post's version is its date among its facts, as the page's; the TUI has no Pick, so the other versions are places of
+  the `:` menu, `version`, each by its date as its address writes it. An older version says under its date that a newer
+  stands, as the page's: `↑` in `accent`, then `newer: 21 Nov 2026` bold on `tint`, painted as a result worth seeing
+  first is, a link to it by OSC 8.
 - A post's lists stand inside the text's column, so their marks never read as the paragraphs' numbers: a point's dash
   `faint`, an ordered list's numbers `muted`, the words after the widest mark.
 - A post: the Outline (`rail`) on a page 132 cells wide (a screen of 140), the paragraphs' numbers (4), the text (66),

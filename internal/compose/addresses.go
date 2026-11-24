@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yuin/goldmark/ast"
+
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/routes"
@@ -154,14 +156,23 @@ func laterPosts(posts []content.Post, audience Audience) map[string]content.Mome
 	return later
 }
 
-// linksLeadingNowhere are the faults of posts' links inside the site, in no order.
+// linksLeadingNowhere are the faults of posts' links inside the site, and their revisions', in no order.
 func (reached destinations) linksLeadingNowhere(posts []content.Post) content.Faults {
 	faults := content.Faults{}
 	for _, post := range posts {
-		for _, written := range post.SiteLinks {
-			if problem, nowhere := reached.leadsNowhere(written.Link); nowhere {
-				faults = append(faults, content.Fault{File: written.File, Field: "", Line: written.Line, Problem: problem})
-			}
+		for _, version := range append([]content.Revision{post.Current()}, post.Revisions...) {
+			faults = append(faults, reached.faultsOf(version.SiteLinks)...)
+		}
+	}
+	return faults
+}
+
+// faultsOf are the faults of links inside the site, those that lead nowhere, in no order.
+func (reached destinations) faultsOf(links map[*ast.Link]content.WrittenLink) content.Faults {
+	faults := content.Faults{}
+	for _, written := range links {
+		if problem, nowhere := reached.leadsNowhere(written.Link); nowhere {
+			faults = append(faults, content.Fault{File: written.File, Field: "", Line: written.Line, Problem: problem})
 		}
 	}
 	return faults

@@ -66,6 +66,8 @@
   --title-soft-start: light-dark(#da601e, #ecb197);
   /* the end of a title set in text, the host's colour a fifth toward the text */
   --title-soft-end: light-dark(#7736ce, #c7aaf6);
+  /* the tint under the pointer, where it is a link, as the way from an older version of a post to the newer */
+  --tint-strong: light-dark(#fe640b47, #f5a97f5c);
   /* the face the page is written in, monospace as a terminal's, then what stands in for it where it is missing */
   --face: "JetBrains Mono", ui-monospace, "SFMono-Regular", "menlo", monospace;
   /* the face an article's words are read in, proportional where it may be, then the page's own face */

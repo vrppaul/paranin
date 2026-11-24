@@ -13,16 +13,28 @@ const (
 	dayLayout   = time.DateOnly
 )
 
-// versionText writes the version a page's head says is read: the day a post came out, or the site's word for a draft,
-// which has not; nothing on any other page, which has none.
+// versionText writes the version a page's head says is read: the day a version of a post came out, the current one or
+// an older one, or the site's word for a draft, which has not; nothing on any other page, which has none.
 func versionText(head document.Head) string {
 	switch version := head.Version.(type) {
 	case document.VersionOut:
-		return dayText(version.Published)
+		return dayText(version.Day)
+	case document.VersionOlder:
+		return dayText(version.Day)
 	case document.VersionDraft:
 		return version.Word
 	}
 	return ""
+}
+
+// newerSpans are what an older version of a post says of the newer one that stands over it, each face writing the link
+// in its own format: the site's words round the current version's day, a link to it; none on any other page.
+func newerSpans(head document.Head) []document.Span {
+	older, isOlder := head.Version.(document.VersionOlder)
+	if !isOlder {
+		return nil
+	}
+	return older.NewerSpans(dayText(older.Newer.Day))
 }
 
 // dayText writes the day a moment falls on, in the zone it holds; nothing for the zero time, which is none.

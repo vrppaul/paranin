@@ -40,10 +40,10 @@ func manualHolds(text, phrase string) bool {
 }
 
 // textPages are the pages a text face writes of a snapshot as its author reads it on the tests' day: the pages of the
-// résumé and its projects, the posts, its draft among them, and the blog's list in each grouping.
+// résumé and its projects, the posts, its draft among them, their older versions, and the blog's list in each grouping.
 func textPages(snapshot *content.Snapshot) []document.Document {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: true})
-	return slices.Concat(site.Documents(), site.Posts, site.Lists)
+	return slices.Concat(site.Documents(), site.Posts, site.Versions, site.Lists)
 }
 
 // The text of each page is what an agent or `curl` reads, so the text itself is the behaviour: each page of the

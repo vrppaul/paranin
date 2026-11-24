@@ -470,11 +470,14 @@ discussions:
 - `title` and `description` are a line each; the description is the post's
   lead and its page's description.
 - `published` is to the minute, with its zone; `updated` is a day, no
-  earlier than the day the post was published, in that zone.
+  earlier than the day the post was published, in that zone. The post's
+  current version is dated by `updated`, or by the day it was published
+  where it says none (Revisions).
 - `tags` are slugs, none twice; each discussion is a site's name and the
   thread's `https` address (D13).
-- Until their steps land, a post's folder holds `post.en.md` alone: a
-  translation, `revisions/` and `widgets/` are faults that say so.
+- Until their steps land, a post's folder holds `post.en.md`, its
+  `revisions/` and its pictures alone: a translation and `widgets/` are
+  faults that say so.
 
 #### Where posts live (Decided, D6)
 
@@ -587,10 +590,10 @@ The server builds nothing; it reads a finished folder. The binary is
 rebuilt only when Go code changed. The CI job needs Node, a browser, Typst
 and SSH to the host: "without a new binary" does not mean without a build.
 
-#### Revisions (Decided, D24; the model Proposed)
+#### Revisions (Decided, D24; the model Decided, 2026-11-24)
 
 - **A revision is a frozen copy the author takes.** Before he rewrites a
-  post, `paranin revise <slug>` copies its text to
+  post, `paranin revise <content folder> <slug>` copies its text to
   `revisions/<date>.<lang>.md` beside it; `post.<lang>.md` stays the current
   version. A typo fixed is an edit, not a revision. Ways turned down: the
   versions read from git (a release folder holds no `.git`, and every commit
@@ -599,8 +602,53 @@ and SSH to the host: "without a new binary" does not mean without a build.
 - **Addresses:** `/blog/<slug>` is the current version, `/blog/<slug>/<date>`
   an older one. A post shows the date of its version and lists the older
   ones; an older one says a newer stands and is sent with `noindex`. A post
-  has no tabs, so `/blog/<slug>/…` names a version alone.
+  has no tabs, so `/blog/<slug>/…` holds its versions and its pictures
+  alone, and they never clash: a picture's name ends in its type's ending,
+  which no day and no format's ending is. The current version's day,
+  `/blog/<slug>/<its date>`, sends its reader on to `/blog/<slug>` in the
+  same face, `302`, since that day names an older version once the post
+  is updated.
 - **Each language has its own revisions**, as it has its own status.
+- **The model** (2026-11-24). A version is dated by the day its text last
+  changed: the current one by `updated:`, or by the day the post was
+  published where it says none; an older one by its file's name, the day
+  its version came out. A revision is dated from the day the post was
+  published on and before its current version's day, so a post with
+  revisions says `updated:`. `revise` names the copy by the current
+  version's day, so the check refuses the folder until its author rewrites
+  the post and dates the new version by a later `updated:`; it refuses a
+  version on the day it came out or later, in the post's own zone, so a
+  post holds one version a day, and a change on that day is an edit of
+  it. `updated:` is held to no day but the one the post was published on
+  or after: the load reads no clock, and a post dated later may be
+  updated on a day still to come; `revise` refuses such a version until
+  its day has passed. A revision's file holds the version's own `title`
+  and `description` as front matter, then its body as written; the post's facts, its number,
+  status, tags and series, are the post's alone. The load holds it to what
+  a post's text is held to, raw HTML, links and pictures among them, and
+  `compose.Check` its links inside the site over the site as the post's
+  are, so a frozen copy never serves a dead link. A picture a revision
+  alone shows stays in the post's folder and is served with the post's.
+  `revise` refuses a post not out, a draft, a preview or one dated later,
+  whose version no reader read, and a text that is its newest revision's
+  already. Ways weighed: the file copied whole, front matter and all, whose
+  number, status and tags would be read and do nothing; the body alone,
+  which loses the title and lead the version had; the copy named by the
+  day it was taken, which dates a version by the day it ended. The file is
+  never written over one there, and is taken away where it could not be
+  written whole; one half written fails the load as the whole one does,
+  until the post is dated by a later update.
+- **Where versions show.** A post out, published or unlisted, lists its
+  versions, newest first, its current one alone where it has no older,
+  and serves each older one, the same page, its head saying under its day
+  that a newer stands, the current one; a preview, which no reader read
+  yet, lists its current version alone and a draft none, and neither
+  serves an older one, though their revisions stay for when they are out. An older version is in no list,
+  the sitemap or `llms.txt`, and sends no canonical address, as a filtered
+  list sends none; a link inside the site may lead to it. Its markdown
+  and manual stand beside it at `.md` and `.txt`, and write that a newer
+  stands; the TUI opens it by `:e blog/<slug>/<date>` and the `:` menu's
+  `version` places, and the page by its version's Pick.
 
 #### Series, tags and lists (Decided, D25; the model Proposed)
 
@@ -701,7 +749,7 @@ For every page of the site, the blog's among them:
   requires of a post; Open Graph and Twitter's card tags; an `og:image`,
   each page's card (ADR-0005).
 - **JSON-LD:** `BlogPosting` for a post, with `datePublished`,
-  `dateModified` from its revisions, its author linked to the résumé,
+  `dateModified` its current version's day (Revisions), its author linked to the résumé,
   `inLanguage`, `keywords` from its tags and `isPartOf` its series;
   `BreadcrumbList`; the résumé's `ProfilePage` as it stands.
 - **Languages:** `hreflang` and `x-default` between a page and its

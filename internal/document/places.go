@@ -18,6 +18,8 @@ const (
 	PlaceHeading PlaceKind = "heading"
 	// PlacePart is another part out of a post's series
 	PlacePart PlaceKind = "part"
+	// PlaceVersion is another version of a post, by the day it came out
+	PlaceVersion PlaceKind = "version"
 	// PlacePost is a post the blog's list names, as the list offers it and :e opens it
 	PlacePost PlaceKind = "post"
 	// PlaceSeries is a series' group on the blog's list by series
@@ -37,14 +39,14 @@ type Place struct {
 
 // PlacesOf are a page's own places, which its command line offers after its tabs and before the projects' pages, read
 // off the document as its tabs and its notes are, so none is kept in step with the blocks: on a post every heading in
-// reading order, then its series' other parts out; on the blog's list, filtered or not, each post out it names, then
-// each tag its head names, then each series a post out is a part of, in the order they first stand in; none on any
-// other page. exhaustive holds the switch to every kind.
+// reading order, then its series' other parts out, then its other versions, newest first; on the blog's list, filtered
+// or not, each post out it names, then each tag its head names, then each series a post out is a part of, in the order
+// they first stand in; none on any other page. exhaustive holds the switch to every kind.
 func PlacesOf(composed Document) []Place {
 	head := composed.Head
 	switch head.Page.Kind {
 	case PagePost:
-		return slices.Concat(headingPlaces(head.Page, composed.Blocks), partPlaces(head.Post))
+		return slices.Concat(headingPlaces(head.Page, composed.Blocks), partPlaces(head.Post), versionPlaces(head.Version))
 	case PageBlog, PageBlogSeries, PageTagFilter, PageSeriesFilter:
 		return listPlaces(head, composed.Blocks)
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
@@ -77,6 +79,18 @@ func partPlaces(place *PostPlace) []Place {
 		case PartOut, PartNext:
 			places = append(places, Place{Name: part.Page.Slug, Kind: PlacePart, Page: part.Page, Section: ""})
 		case PartReading, PartToCome:
+		}
+	}
+	return places
+}
+
+// versionPlaces are the versions of a post a reader can go to, each by its name, the day it came out: every version but
+// the one read, which is the page shown; none for a post of one version alone or a draft.
+func versionPlaces(version Version) []Place {
+	places := []Place{}
+	for _, other := range VersionsOf(version) {
+		if !other.Read {
+			places = append(places, Place{Name: other.Name, Kind: PlaceVersion, Page: other.Page, Section: ""})
 		}
 	}
 	return places

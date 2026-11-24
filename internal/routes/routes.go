@@ -259,7 +259,7 @@ func Path(page document.Page, format Format) string {
 	case document.PageIndex:
 		return indexPath(format)
 	case document.PagePost:
-		return postPaths(page.Slug).inFormat(format)
+		return versionPaths(page.Slug, page.Revision).inFormat(format)
 	case document.PageBlog:
 		return listPaths().inFormat(format)
 	case document.PageBlogSeries:
@@ -359,6 +359,18 @@ func IsBlogName(name string) bool {
 // no tabs.
 func postPaths(slug string) paths {
 	path := blogFolder + slug
+	return paths{chosen: path, files: path}
+}
+
+// versionPaths are where a version of a post is served: the current at the post's own paths, an older one in the post's
+// folder by its revision's name, a day, YYYY-MM-DD, its files under the same name (docs/FOUNDATION.md §5.4, Revisions).
+// The folder holds the post's pictures too, each by a name that ends in its type's ending, which no day and no format's
+// ending is, so a version and a picture never share a path.
+func versionPaths(slug, revision string) paths {
+	if revision == "" {
+		return postPaths(slug)
+	}
+	path := fileIn(postPaths(slug), revision)
 	return paths{chosen: path, files: path}
 }
 

@@ -311,7 +311,6 @@ func TestEveryFaultOfAPostOrASeriesStandsAtItsPlace(test *testing.T) {
 		{name: "a slug in capitals", sample: samplePost, file: "posts/Sample-Post/post.en.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/Sample-Post", field: "", line: 0}},
 		{name: "a slug of digits alone", sample: samplePost, file: "posts/12/post.en.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/12", field: "", line: 0}},
 		{name: "a translation", sample: samplePost, file: "posts/reading-slowly/post.ru.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/post.ru.md", field: "", line: 0}},
-		{name: "a revision", sample: samplePost, file: "posts/reading-slowly/revisions/2026-11-10.en.md", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/revisions", field: "", line: 0}},
 		{name: "a widget's file", sample: samplePost, file: "posts/reading-slowly/widgets/Cache.svelte", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/widgets", field: "", line: 0}},
 		{name: "a file of no part of a post", sample: samplePost, file: "posts/reading-slowly/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/reading-slowly/notes.txt", field: "", line: 0}},
 		{name: "a post's folder with no post", sample: samplePost, file: "posts/empty-post/notes.txt", original: "id: 3", replacement: "id: 3", want: faultPlace{file: "posts/empty-post/post.en.md", field: "", line: 0}},

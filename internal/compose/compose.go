@@ -57,7 +57,7 @@ func tabDocuments(composed document.Document) []document.Document {
 // description of its page's head.
 func tabHead(head document.Head, tab document.Tab) document.Head {
 	return document.Head{
-		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug},
+		Page:        document.Page{Kind: head.Page.Kind, Slug: head.Page.Slug, Tab: tab.Slug, Revision: ""},
 		Number:      0,
 		Language:    head.Language,
 		Greeting:    "",
@@ -283,7 +283,7 @@ func projectPage(project content.Project) document.Page {
 	if !project.Page {
 		return document.PageOf(document.PageNone)
 	}
-	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: ""}
+	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: "", Revision: ""}
 }
 
 // projectRepository is where a project's code lives, under the site's word for it; none where the project names no

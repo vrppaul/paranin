@@ -21,13 +21,15 @@ const paragraphIDOpening = "p"
 const fragmentMark = "#"
 
 // What stands between two words templ writes no space between: a note's number and its words, a part's title and the
-// word saying it comes, the word before where a post is discussed and the first place
+// word saying it comes, the word before where a post is discussed and the first place, and a version's day and what
+// follows it
 const wordSpace = " "
 
 // The names of the parts of a post's page a link or a button names, beside its article's places, each an id of the
-// page's own (ownID): the series' pick in its head and in its panes' heading, each window's title after the pick's
-// name, and the panes' heading
+// page's own (ownID): the versions' pick, the series' pick in its head and in its panes' heading, each window's title
+// after the pick's name, and the panes' heading
 const (
+	versionsPickID = "versions"
 	headPickID     = "parts"
 	footPickID     = "parts-foot"
 	pickTitleEnd   = "-title"

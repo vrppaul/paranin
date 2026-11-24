@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"io/fs"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -68,6 +69,12 @@ type bodyInspection struct {
 type shownPictures struct {
 	read  map[string]Picture
 	named map[string]bool
+}
+
+// add takes the pictures more shows among those shown.
+func (shown *shownPictures) add(more shownPictures) {
+	maps.Copy(shown.read, more.read)
+	maps.Copy(shown.named, more.named)
 }
 
 // inspectBody finds in a post's body what the format refuses: a node of a kind no post holds (PostKinds), raw HTML

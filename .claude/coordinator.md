@@ -9,6 +9,10 @@ answers for what an agent writes as if it wrote it.
 - Changes that share files go to one author, in one branch, a commit each, each read and reviewed before the author
   starts the next, since a new agent spends its tokens learning the context again; authors run side by side only on
   work that shares no files.
+- Before the brief, settle the chunk's construction yourself from the code: where each part lives, its types, its
+  contract. The brief states it; the author builds it and stops where it does not hold.
+- Two review rounds at most: the second reads the first round's fixes alone, and only where a fix changes logic; you
+  check the rest of the fixes yourself.
 - A brief to an author gives the goal, the whole it serves and the rules to read. A change `AGENTS.md` leaves to the
   owner's approval is in it only with that approval named; a chunk that finds it needs one stops and hands the
   question back.

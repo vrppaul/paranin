@@ -6,14 +6,14 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
-  - The first island, the form's salary range, waits for `inbox` (step 10). It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles, which the build writes to files, never into the page, since the page's policy refuses an inline style (`docs/WEB.md`, "Security headers"); its script loads by a dynamic import, not with the site's entry, which holds the first paint.
+  - The form's salary range, an island, waits for `inbox` (step 10); Svelte comes before it, with the blog's widgets.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - A tab's name keeps every letter of its title, so a site in another script serves its tabs at addresses in that script.
 - At 256 colours Latte's `code_builtin` and `code_variable` fall to one index, 161, and Macchiato's `code_number` and `code_operator` to 116, so the TUI's code shows those two kinds alike there: `scripts/tokens` picking distinct indices for the code colours of a theme would part them.
 - A post's markdown and manual write neither its series, nor the posts beside it, nor where it is discussed, nor its other versions, which its document holds and its page and the TUI draw; an older version's write the newer alone.
 - The document keeps no list's tightness, so a post's loose list of one paragraph an item comes out tight in its markdown.
 - The manual writes a link outside the site by its words alone, so a post read with `curl` loses where its links lead: `docs/FOUNDATION.md` §5.4 plans numbered links in a terminal. The TUI's post leads by OSC 8 alone, as the résumé does, which a terminal that takes none drops: the numbered links would serve both.
-- The blog (§8, step 8), as `docs/FOUNDATION.md` §5.4, D23 to D27 and `DESIGN.md` have it; its look was approved on 2026-11-22. Left to build: the first widget, with Svelte and `kit`.
+- The blog (§8, step 8), as `docs/FOUNDATION.md` §5.4, D23 to D27 and `DESIGN.md` have it; its look was approved on 2026-11-22. Left to build: the widgets' infrastructure, which every widget shares, built on a test's widget, the owner's first real one coming with his post. It brings Svelte, and svelte-check in place of the hook `page-types`'s `tsc`, and widens stylelint's glob to its components' styles, which the build writes to files, never into the page, since the page's policy refuses an inline style (`docs/WEB.md`, "Security headers"); a widget's script loads by a dynamic import, not with the site's entry, which holds the first paint.
 - A draft's own mark, drawn on a canvas for the owner to pick; until then its version reads `draft` (`DESIGN.md`, PostHead).
 - A filtered list is a page of a kind of its own (`PageTagFilter`), where a post's older version and its language are fields of its page (`Page.Revision`, `Page.Translation`): a check of a page's kind by `==` escapes `exhaustive`, so weigh making a filter a field of the list's page too.
 - The tag filter's way out, drawn on a canvas for the owner to pick; until then it is the Link's underline under the pointer (`DESIGN.md`, Tag).
@@ -54,14 +54,12 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 
 ## The owner's
 
-- The translations' model (`docs/FOUNDATION.md` §5.4, Translations, ADR-0003): a blog of its own in each language, `/ru/blog` listing the posts translated alone, chosen with its ways weighed; his to confirm.
 - On the Russian list the blog's name stands as plain text in its `h1`, since the titles' block letters draw no Cyrillic (`list.templ`'s `titleHeading`, `internal/face/html/letters.go`): Cyrillic capitals in `internal/look/glyphs.go`, or a text title in the soft gradient, picked on a canvas.
 - Nothing leads between `/blog` and `/ru/blog` but a post's Switch: whether the list's head offers the other languages' lists, and how, is his eye.
 - On a phone the Switch's links stand 16px tall, under the 24px WCAG 2.5.8 asks for a target: the Switch's own shape, the list's groupings' too.
 - The note of a translation older than its original (`DESIGN.md`, PostHead) stands in an older version's form for the way to the newer, `↑ старше оригинала`: its own form, drawn on a canvas for the owner to pick, as the draft's mark and the tag filter's way out wait to be.
 - For his real `ru.yaml`: CLDR's `one` takes 21, 31 and on as well as 1, so a count's `one` form reads for both, `все {} часть` as `все 21 часть`; and a day writes its month short, `15 нояб. 2026`, which his `months` may write whole, `ноября`.
 
-- The tag authority's date (`site.tag_authority` in `content/profile.yaml`, `paran.in,2026` until he answers, which RFC 4151 reads as 2026-01-01): a day he held paran.in; ids never change once readers subscribe.
 - A published post whose `updated:` names a day still to come gives its feed an `<updated>` in the future, since the load reads no clock and nothing holds the day back: his eye, whether the check refuses such a day for a post out, or the feed waits for it.
 - `tint_strong`'s values (`design/tokens.yaml`, the way from an older version of a post to the newer, under the pointer) are the author's: in Latte the step from `tint` reads 1.13:1, and in Macchiato `text` over it 4.52:1, which no gate holds; a gate on text over a blend is his word.
 - A post's head gives the day of its version read, its `updated:` where it says one, while the list's tiles and the panes give the day it was published, and that first day stands only inside the versions' Pick: his eye.

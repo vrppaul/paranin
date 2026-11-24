@@ -144,7 +144,7 @@ first asked for, and a page says whether a search engine indexes it. Amended 202
 composes the blog's feed and each series' with the site, a head names the feeds that follow its page, a feed is a link's
 target of its own, `routes` names what the site serves for good and each format's media type, and `face/feed` writes
 Atom, each post's body as `face/html` draws it for a feed reader. Amended 2026-11-24, with translations, the model the
-author's choice, ways weighed below, for the owner to confirm: a snapshot holds an edition in each language, its words
+owner's, ways weighed below: a snapshot holds an edition in each language, its words
 and its posts, a page names the language it is translated into, `routes` writes its every address in that language's
 folder, `compose` composes a blog in each language, its frame in its words, whose links read the pages of every
 language, and a post's head lists the languages it is read in. Amended 2026-11-24, with the site's words in every
@@ -159,6 +159,7 @@ file so.
 Amended 2026-11-24, on the owner's word: the preview's folder holds a translation's language, `/preview/ru/`.
 Amended 2026-11-24, on the owner's word: the composition root prepares a snapshot once for both hosts.
 Amended 2026-11-24, on the owner's word: a preview link never lapses, its token signing the post's address alone.
+Amended 2026-11-24, on the owner's word: a widget lands with the blog's first, before the form's salary range.
 
 ### Context
 
@@ -475,7 +476,7 @@ and web routes.
   and whose buttons and numbers show in a reader as stray words; the
   summary alone, which a feed standing in for a newsletter cannot be.
 - **Translations** (amended 2026-11-24, FOUNDATION §5.4, Translations; the
-  author's choice, for the owner to confirm). `content` loads one profile
+  owner's model). `content` loads one profile
   and an edition in each language it has words for,
   English's apart from the rest (`Snapshot.Own`, `Snapshot.Translations`),
   so no place in a list says which is English: that language's words, its series and the posts
@@ -683,7 +684,7 @@ and web routes.
   the person's and a project's, with `face/html`, the feeds with
   `face/feed` (2026-11-24), and the sitemap's dates with the sitemap, the
   `dateModified` of the résumé's `ProfilePage` with them; a widget with
-  the first island that draws one, the form's salary range (step 10),
+  the blog's first (FOUNDATION §8, step 8), which brings the islands,
   since `face/html` came without one; the posts' blocks
   and spans, but the figure, and a post's head with the first post served,
   in the text faces (2026-11-22); the HTML face's and the TUI's drawings of
@@ -983,7 +984,7 @@ sessions on a stop.
   site's script, `src/entries/site.ts`, is the build's one entry so far, the
   stylesheet among what it imports; `assets` works out once what a page
   includes for it, as Vite's guide to backend integration walks a manifest.
-  The islands come with step 6, the CV and the cards with Typst (ADR-0005).
+  The islands come with the blog's first widget, the CV and the cards with Typst (ADR-0005).
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md): each

@@ -812,7 +812,7 @@ For every page of the site, the blog's among them:
   rank HTML first unless `text/plain` is named, which gives a bare `curl`
   the HTML.
 
-#### Translations (Decided, D12; the model: chosen 2026-11-24, ways weighed, the owner to confirm; built but the résumé's)
+#### Translations (Decided, D12; the model Decided, owner, 2026-11-24; built)
 
 - **One folder per post, one file per language**; widgets shared. English
   is the main language. A post's language is its file's name,

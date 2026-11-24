@@ -147,9 +147,10 @@ there, and the previews looked at in LinkedIn's Post Inspector.
 
 ## What stands and what is to build
 
-Stands: the formats of D21; each page's title, description, canonical address and Open Graph as a `website`; a post's
-languages; the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list,
-an older version and an unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; the
-feeds; `llms.txt`.
+Stands: the formats of D21; each page's title, a tab's and the list by series' among them, its description and
+canonical address; Open Graph, a post as an `article`, with the site's name, and `twitter:card` `summary`; a post's
+languages; every record naming the one `Person`, the résumé's `ProfilePage` beside `WebSite`, a tab's `WebPage`, a
+project's `SoftwareSourceCode` and a post's `BlogPosting`; `noindex` on a filtered list, an older version and an
+unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; the feeds; `llms.txt`.
 
 The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.

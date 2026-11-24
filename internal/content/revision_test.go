@@ -267,3 +267,46 @@ func TestARevisionIsTakenTheDayAfterItsVersionAtTheSoonest(test *testing.T) {
 		})
 	}
 }
+
+// A post's front matter as a test of its dating writes it: its lines before where its updated: stands, those after,
+// each kept as written, and a moment late on the day after the test's rewrite in a zone further east, still that day
+// in the post's
+const (
+	datedOpening   = "---\ntitle: Reading slowly\npublished: 2026-11-10T09:00+01:00\n"
+	datedClosing   = "tags: [reading, terminals]  # the two\ndiscussions:\n  - {site: Lobsters, address: \"https://lobsters.example.test/s/slow\"}\n---\nIts text.\n"
+	lateOnTheDayIn = "2026-11-22T00:30:00+02:00"
+)
+
+// A post revised is dated as updated on the day it is revised, as its own zone counts the day: its updated: written in
+// place of the day it said, quoted or not, a comment after it kept, or on a line of its own after its published: where
+// it said none; every other byte as its author wrote it.
+func TestARevisedPostIsDatedOnItsDay(test *testing.T) {
+	snapshot, err := Load(fixtureFolder(test))
+	if err != nil {
+		test.Fatalf("Load = %v, want no error", err)
+	}
+	post := postNamed(test, snapshot, "", fixturePostSlug)
+	dated := datedOpening + "updated: 2026-11-21\n" + datedClosing
+	cases := []struct {
+		name    string
+		written string
+		moment  string
+		want    string
+	}{
+		{name: "a day said", written: datedOpening + "updated: 2026-11-12\n" + datedClosing, moment: dayAfterTheRewrite, want: dated},
+		{
+			name: "a day quoted, a comment after it", written: datedOpening + "updated: '2026-11-12' # a typo fixed\n" + datedClosing, moment: dayAfterTheRewrite,
+			want: datedOpening + "updated: 2026-11-21 # a typo fixed\n" + datedClosing,
+		},
+		{name: "no day said", written: datedOpening + datedClosing, moment: dayAfterTheRewrite, want: dated},
+		{name: "late on the day in a zone further east", written: datedOpening + datedClosing, moment: lateOnTheDayIn, want: dated},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			got, err := UpdatedText(post, []byte(testCase.written), momentOf(test, testCase.moment))
+			if err != nil || string(got) != testCase.want {
+				test.Errorf("UpdatedText of %q at %s = %q, %v; want %q", testCase.written, testCase.moment, got, err, testCase.want)
+			}
+		})
+	}
+}

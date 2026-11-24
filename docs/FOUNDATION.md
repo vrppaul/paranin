@@ -624,11 +624,14 @@ and SSH to the host: "without a new binary" does not mean without a build.
   its version came out. A revision is dated from the day the post was
   published on and before its current version's day, so a post with
   revisions says `updated:`. `revise` names the copy by the current
-  version's day, so the check refuses the folder until its author rewrites
-  the post and dates the new version by a later `updated:`; it refuses a
-  version on the day it came out or later, in the post's own zone, so a
-  post holds one version a day, and a change on that day is an edit of
-  it. `updated:` is held to no day but the one the post was published on
+  version's day, then dates the post itself: it writes its `updated:` as
+  the day it runs, in the post's own zone, in place of the day it said or
+  on a line of its own after `published:`, every other byte of the file
+  as its author wrote it, so the folder loads again at once and the post
+  is the new version its author goes on to rewrite (owner, 2026-11-24).
+  It refuses a version on the day it came out or later, in the post's own
+  zone, so a post holds one version a day, and a change on that day is an
+  edit of it. `updated:` is held to no day but the one the post was published on
   or after: the load reads no clock, and a post dated later may be
   updated on a day still to come; `revise` refuses such a version until
   its day has passed. A revision's file holds the version's own `title`
@@ -646,7 +649,13 @@ and SSH to the host: "without a new binary" does not mean without a build.
   day it was taken, which dates a version by the day it ended. The file is
   never written over one there, and is taken away where it could not be
   written whole; one half written fails the load as the whole one does,
-  until the post is dated by a later update.
+  until the post is dated by a later update. The post is dated only once
+  its revision is written, and written whole: beside its file first, then
+  renamed over it, so a reload meets it as it was or as dated. The field
+  is found where the parsed front matter places it, and its day alone
+  written over. Ways weighed: the front matter decoded and encoded again,
+  which rewrites the author's quotes, flow lists and comments; a line
+  matched by its text, which a nested field or a quoted day would fool.
 - **Where versions show.** A post out, published or unlisted, lists its
   versions, newest first, its current one alone where it has no older,
   and serves each older one, the same page, its head saying under its day
@@ -867,9 +876,8 @@ For every page of the site, the blog's among them:
   translation's is the one the check's refusal names. Ways weighed: the
   file's bytes whole, which marks a translation stale when the original's
   status, day or discussions change; the body alone, which misses a title
-  rewritten; a command beside `revise` that rewrites the front matter, a
-  second writer of a file its author edits, for a line the warning writes
-  out already; the warning a fault, which blocks a typo fixed in the
+  rewritten; a command that writes the hash into the front matter, for a
+  line the warning writes out already; the warning a fault, which blocks a typo fixed in the
   original until the translation follows; the warning a log line alone,
   which `check` never prints.
 - **Markup:** `<link rel="alternate" hreflang>` with `x-default`, the

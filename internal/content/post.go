@@ -34,6 +34,12 @@ func textFile(language string) string {
 	return postFilePrefix + language + markdownEnding
 }
 
+// textPath is where the text of the post of a slug is written in the content folder, in the language it is translated
+// into, the original where it names none.
+func textPath(slug, translation string) string {
+	return path.Join(postsFolder, slug, textFile(fileLanguage(translation)))
+}
+
 // The fields the checks name more than once: of a post's front matter, a post's and a series' title, and a post's and
 // a revision's description
 const (
@@ -180,7 +186,7 @@ func readPostFolder(folder fs.FS, postParser parser.Parser, slug string, languag
 func readText(folder fs.FS, postParser parser.Parser, slug, translation string) (writtenPost, Faults) {
 	// what a post read with faults is never inspected, since its faults end the load
 	var unread writtenPost
-	file := path.Join(postsFolder, slug, textFile(fileLanguage(translation)))
+	file := textPath(slug, translation)
 	data, err := fs.ReadFile(folder, file)
 	if err != nil {
 		return unread, Faults{unreadFault(file, err)}

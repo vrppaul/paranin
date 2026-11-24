@@ -154,6 +154,8 @@ Amended 2026-11-24, with a translation's source: `content` holds a translation t
 from and keeps what it warns of beside a snapshot, and a translation older than its original says so under its day.
 Amended 2026-11-24, on the owner's word: a heading's anchor is its words, whatever else its page names alike.
 Amended 2026-11-24, on the owner's word: a tag alone filters the list, a filtered list a page of one kind.
+Amended 2026-11-24, on the owner's word: `paranin revise` dates the post as updated on its day, `content` writing its
+file so.
 
 ### Context
 
@@ -204,7 +206,9 @@ and web routes.
   2026-11-24); a picture one of them alone shows is the post's, served
   with it. `content.RevisionOf` writes the revision of the current version
   that `paranin revise` saves, a day after that version came out at the
-  soonest, so the revision's format is written in one layer.
+  soonest, and `content.UpdatedText` the post's file dated as updated that
+  day, its other bytes as written, which `revise` puts in the file's place
+  whole, so the post's format is written in one layer.
 - **`paranin check`** runs the same loader, of the content or of a whole
   release, so CI refuses what the server would refuse. Both hold the
   content to the site's own check more, `compose.Check`, which the

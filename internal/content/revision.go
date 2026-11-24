@@ -3,6 +3,7 @@ package content
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"path"
 	"slices"
@@ -162,9 +163,9 @@ type RevisionFile struct {
 }
 
 // RevisionOf is the revision of a post's current version its author takes at a moment, before rewriting the post: its
-// title and lead as front matter, then its body as written, at the day the version came out, so the post's text stays
-// the current version until its author rewrites it and dates the new one by its update; a fault where the version
-// came out on the moment's day or later, in the post's own zone, or the post's text is its newest revision's.
+// title and lead as front matter, then its body as written, at the day the version came out, the post's file then
+// dated by UpdatedText; a fault where the version came out on the moment's day or later, in the post's own zone, or the
+// post's text is its newest revision's.
 func RevisionOf(post Post, now time.Time) (RevisionFile, error) {
 	taken := post.Current()
 	if !taken.Day.start.Before(post.Published.dayAt(now)) {
@@ -181,6 +182,75 @@ func RevisionOf(post Post, now time.Time) (RevisionFile, error) {
 		Text: slices.Concat([]byte(frontMatterLine), fields, []byte(frontMatterLine), taken.Body.Source),
 	}, nil
 }
+
+// PostFile is where a post's text in its language is written in the content folder.
+//
+//wrapper:names a loaded post's file for whoever writes it, as the loader names it by its slug and language
+func PostFile(post Post) string {
+	return textPath(post.Slug, post.Translation)
+}
+
+// What parts a field's name from its value, as a post's file is dated writes a field of its own; and where YAML counts
+// a node's line and column from
+const (
+	fieldJoint     = ": "
+	yamlCountsFrom = 1
+)
+
+// UpdatedText is a post's file as its author wrote it, dated as updated on the day a moment falls on in the post's own
+// zone, as `paranin revise` dates it once it takes the version that stood (docs/FOUNDATION.md §5.4, Revisions): its
+// updated: written in place of the day it said, or on a line of its own after its published: where it said none;
+// every other byte, a comment and each field's form among them, kept, which a document encoded again would not keep.
+func UpdatedText(post Post, written []byte, now time.Time) ([]byte, error) {
+	file := PostFile(post)
+	parts, faults := splitPost(file, written)
+	if len(faults) > 0 {
+		return nil, faults
+	}
+	var frontMatter yaml.Node
+	if err := yaml.Unmarshal(parts.frontMatter, &frontMatter); err != nil {
+		return nil, fmt.Errorf("read the front matter of %q: %w", file, err)
+	}
+	day := post.Published.dayAt(now).Format(dayLayout)
+	lines := bytes.SplitAfter(written, []byte{lineFeed})
+	if updated, said := fieldValue(&frontMatter, updatedField); said {
+		row, start := updated.Line-yamlCountsFrom, updated.Column-yamlCountsFrom
+		lines[row] = slices.Concat(lines[row][:start], []byte(day), lines[row][start+writtenLength(updated):])
+		return bytes.Join(lines, nil), nil
+	}
+	published, said := fieldValue(&frontMatter, publishedField)
+	// a post out says when it was published as it loads, but its file may change before it is dated
+	if !said {
+		return nil, fmt.Errorf("%q names no published: to write its updated: after", file)
+	}
+	ownLine := []byte(updatedField + fieldJoint + day + string(lineFeed))
+	return bytes.Join(slices.Insert(lines, published.Line, ownLine), nil), nil
+}
+
+// fieldValue is the value of a field of a front matter's top level, by its name, and whether it says one.
+func fieldValue(frontMatter *yaml.Node, name string) (*yaml.Node, bool) {
+	if len(frontMatter.Content) == 0 {
+		return nil, false
+	}
+	for pair := range slices.Chunk(frontMatter.Content[0].Content, keyAndValue) {
+		if pair[keyOffset].Value == name {
+			return pair[valueOffset], true
+		}
+	}
+	return nil, false
+}
+
+// writtenLength is how many bytes a scalar takes in its file: its value, between its quotes where it is quoted, which
+// a day, holding no character to escape, writes as it is.
+func writtenLength(scalar *yaml.Node) int {
+	if scalar.Style&(yaml.SingleQuotedStyle|yaml.DoubleQuotedStyle) != 0 {
+		return len(scalar.Value) + quotesAround
+	}
+	return len(scalar.Value)
+}
+
+// The quotes a quoted scalar stands between
+const quotesAround = 2
 
 // What parts a version's title, its lead and its body in its text: neither a title nor a lead holds a line feed
 const textJoint = string(lineFeed)

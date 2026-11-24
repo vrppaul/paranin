@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -209,18 +210,14 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 // The fixture's post out, the revision revise takes of it, dated by its update of the 12th, and a moment late on that
 // day in the post's zone
 const (
-	postOut            = "reading-slowly"
-	postOutFile        = "posts/reading-slowly/post.en.md"
-	revisionTaken      = "posts/reading-slowly/revisions/2026-11-12.en.md"
-	onTheVersionsDay   = "2026-11-12T22:00+01:00"
-	versionDayUpdate   = "updated: 2026-11-12"
-	laterVersionUpdate = "updated: 2026-11-20"
+	postOut          = "reading-slowly"
+	revisionTaken    = "posts/reading-slowly/revisions/2026-11-12.en.md"
+	onTheVersionsDay = "2026-11-12T22:00+01:00"
 )
 
 // revise takes a revision of a post out, its current version, beside the post; it refuses a post not out, a draft, a
-// preview or none at all, whose version no reader read, a version taken already, which the folder refuses as it
-// loads, and a version on the day it came out, a change of which is an edit of it. Each case runs on a folder of its
-// own.
+// preview or none at all, whose version no reader read, and a version on the day it came out, a change of which is an
+// edit of it, the one a revision taken that day dates among them. Each case runs on a folder of its own.
 func TestARevisionIsTakenOfAPostOutAlone(test *testing.T) {
 	out := document.PostPage(postOut)
 	cases := []struct {
@@ -237,7 +234,7 @@ func TestARevisionIsTakenOfAPostOutAlone(test *testing.T) {
 		{name: "a translation previewed", post: document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
 		{name: "no post", post: document.PostPage("no-such-post"), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
 		{name: "a post in a language it has no translation in", post: document.PostPage("notes-on-tools").InLanguage(fixtures.PreviewLanguage), before: fixtures.KeepFolder, moment: fixtures.Day(), written: false},
-		{name: "its version taken already", post: out, before: revisedOnTheDay, moment: fixtures.Day(), written: false},
+		{name: "its version taken that day", post: out, before: revisedOnTheDay, moment: fixtures.Day(), written: false},
 		{name: "on its version's day", post: out, before: fixtures.KeepFolder, moment: fixtures.MomentOf(test, onTheVersionsDay), written: false},
 	}
 	for _, testCase := range cases {
@@ -251,26 +248,35 @@ func TestARevisionIsTakenOfAPostOutAlone(test *testing.T) {
 	}
 }
 
-// A folder revised loads again once its author dates the post's new version by a later update.
-func TestAFolderRevisedLoadsOnceThePostIsUpdated(test *testing.T) {
+// A folder revised loads again at once: revise dates the post as updated on the day it is revised.
+func TestAFolderRevisedLoadsAtOnce(test *testing.T) {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	revisedOnTheDay(test, folder)
-	fixtures.ReplaceIn(test, folder, postOutFile, versionDayUpdate, laterVersionUpdate)
 	if code := check(folder, io.Discard); code != succeeded {
-		test.Errorf("check of the folder with %s once the post is updated = %d, want %d", revisionTaken, code, succeeded)
+		test.Errorf("check of the folder with %s = %d, want %d", revisionTaken, code, succeeded)
 	}
 }
 
-// A revision's file is never written over: one there already is refused and kept as it was, not taken away.
+// A revision's file is never written over: one there already is refused and kept as it was, not taken away, and the
+// post is left as it was, not dated.
 func TestARevisionThereAlreadyIsKept(test *testing.T) {
 	const kept = "a revision there already"
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	fixtures.WriteIn(test, folder, revisionTaken, kept)
-	if err := writeRevision(folder, content.RevisionFile{Path: revisionTaken, Text: []byte("another")}); err == nil {
-		test.Errorf("writeRevision over %s = nil, want a fault", revisionTaken)
+	post, found := fixtures.LoadedContent(test).Post("", postOut)
+	postFile := filepath.Join(folder, content.PostFile(post))
+	before, err := os.ReadFile(postFile)
+	if !found || err != nil {
+		test.Fatalf("read the post %q of the fixture: found %t, %v", postOut, found, err)
+	}
+	if err := saveRevision(folder, post, content.RevisionFile{Path: revisionTaken, Text: []byte("another")}, fixtures.Day()); err == nil {
+		test.Errorf("saveRevision over %s = nil, want a fault", revisionTaken)
 	}
 	if written, err := os.ReadFile(filepath.Join(folder, revisionTaken)); err != nil || string(written) != kept {
 		test.Errorf("%s holds %q, %v; want %q", revisionTaken, written, err, kept)
+	}
+	if after, err := os.ReadFile(postFile); err != nil || !bytes.Equal(after, before) {
+		test.Errorf("%s holds %q, %v; want it as it was, %q", postFile, after, err, before)
 	}
 }
 

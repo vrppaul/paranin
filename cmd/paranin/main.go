@@ -23,8 +23,8 @@
 // still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
 // on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
 // them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.<language>.md beside
-// it, the day its current version came out, and prints the file's path: its author then rewrites the post and dates
-// the new version by its updated:, which the content's check asks for. The program exits 0 when it did what it was
+// it, the day its current version came out, dates the post as updated on the day it runs, and prints the file's path:
+// its author then rewrites the post, which loads as its new version. The program exits 0 when it did what it was
 // asked, 1 when the content or the build has faults, the server failed, or no link could be printed or revision taken,
 // and 2 when the command itself is written wrong.
 package main
@@ -394,11 +394,11 @@ func revise(asked postAsked) int {
 	return succeeded
 }
 
-// reviseAt takes a revision of the current version of a post of a content folder out at a moment, beside the post
-// (docs/FOUNDATION.md §5.4, Revisions): the path it wrote, in the folder; a fault where the folder does not load, as it
-// does not once a version is taken until the post is dated by a later update, where the post is then no post out, a
-// draft, a preview or none at all, whose version no reader read, its version came out that day or later, or its text is
-// its newest revision's already.
+// reviseAt takes a revision of the current version of a post of a content folder out at a moment, beside the post,
+// and dates the post as updated on the moment's day (docs/FOUNDATION.md §5.4, Revisions): the path it wrote, in the
+// folder; a fault where the folder does not load, where the post is then no post out, a draft, a preview or none at
+// all, whose version no reader read, its version came out that day or later, a revision taken that day among them, or
+// its text is its newest revision's already.
 func reviseAt(contentFolder string, page document.Page, moment time.Time) (string, error) {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err != nil {
@@ -416,22 +416,27 @@ func reviseAt(contentFolder string, page document.Page, moment time.Time) (strin
 	if err != nil {
 		return "", fmt.Errorf("revise %s: %w", postName(page), err)
 	}
-	return taken.Path, writeRevision(contentFolder, taken)
+	return taken.Path, saveRevision(contentFolder, post, taken, moment)
 }
 
-// writeRevision writes a revision's file in a content folder, opened as a root, so no path leads out of it, making its
-// revisions folder where it is missing; never over a file there.
-func writeRevision(contentFolder string, taken content.RevisionFile) error {
+// saveRevision writes a revision's file beside its post in a content folder, opened as a root, so no path leads out of
+// it, then dates the post as updated on the moment's day, so the folder loads again at once.
+func saveRevision(contentFolder string, post content.Post, taken content.RevisionFile, moment time.Time) error {
 	root, err := os.OpenRoot(contentFolder)
 	if err != nil {
 		return fmt.Errorf("open the content folder %q: %w", contentFolder, err)
 	}
-	return errors.Join(writeRevisionIn(root, taken), root.Close())
+	err = writeRevisionIn(root, taken)
+	if err == nil {
+		err = datePostIn(root, post, moment)
+	}
+	return errors.Join(err, root.Close())
 }
 
-// writeRevisionIn writes a revision's file in a root, never over a file there, and takes it away where it could not
-// be written whole. A reload that meets the file half written refuses it as it refuses the whole one, which the
-// post's current version's day names, until the post is dated by a later update.
+// writeRevisionIn writes a revision's file in a root, making its revisions folder where it is missing, never over a
+// file there, and takes it away where it could not be written whole. A reload that meets the file half written refuses
+// it as it refuses the whole one, which the post's current version's day names, until the post is dated by a later
+// update.
 func writeRevisionIn(root *os.Root, taken content.RevisionFile) error {
 	if err := root.MkdirAll(path.Dir(taken.Path), revisionsFolderMode); err != nil {
 		return fmt.Errorf("make the revisions folder of %q: %w", taken.Path, err)
@@ -443,6 +448,52 @@ func writeRevisionIn(root *os.Root, taken content.RevisionFile) error {
 	_, err = file.Write(taken.Text)
 	if err = errors.Join(err, file.Close()); err != nil {
 		return fmt.Errorf("write the revision %q: %w", taken.Path, errors.Join(err, root.Remove(taken.Path)))
+	}
+	return nil
+}
+
+// datePostIn dates a post's file in a root as updated on the day a moment falls on in the post's zone, every other byte
+// as its author wrote it, and writes it in its place whole.
+func datePostIn(root *os.Root, post content.Post, moment time.Time) error {
+	file := content.PostFile(post)
+	written, err := root.ReadFile(file)
+	if err != nil {
+		return fmt.Errorf("read the post %q: %w", file, err)
+	}
+	dated, err := content.UpdatedText(post, written, moment)
+	if err != nil {
+		return fmt.Errorf("date the post %q: %w", file, err)
+	}
+	info, err := root.Stat(file)
+	if err != nil {
+		return fmt.Errorf("read the mode of the post %q: %w", file, err)
+	}
+	return replaceIn(root, file, dated, info.Mode().Perm())
+}
+
+// What a file written in place of another is called beside it until it takes the other's place: the other's name and
+// this ending, which a reload refuses as a stray file of a post's folder where one is left
+const replacementEnding = ".replacing"
+
+// How a file written in place of another is opened beside it: to write, made new, or emptied where one was left
+const replacementOnly = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+
+// replaceIn writes a file of a root in its place whole: beside it first, kept on the disk, then renamed over it, so a
+// reader of the folder, a reload among them, meets the file as it was or as written, never half written; the one beside
+// it is taken away where it could not take the file's place.
+func replaceIn(root *os.Root, file string, text []byte, mode os.FileMode) error {
+	beside := file + replacementEnding
+	written, err := root.OpenFile(beside, replacementOnly, mode)
+	if err != nil {
+		return fmt.Errorf("make %q: %w", beside, err)
+	}
+	_, err = written.Write(text)
+	err = errors.Join(err, written.Sync(), written.Close())
+	if err == nil {
+		err = root.Rename(beside, file)
+	}
+	if err != nil {
+		return fmt.Errorf("write %q in place of %q: %w", beside, file, errors.Join(err, root.Remove(beside)))
 	}
 	return nil
 }

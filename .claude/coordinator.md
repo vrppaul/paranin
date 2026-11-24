@@ -11,6 +11,8 @@ answers for what an agent writes as if it wrote it.
   work that shares no files.
 - Before the brief, settle the chunk's construction yourself from the code: where each part lives, its types, its
   contract. The brief states it; the author builds it and stops where it does not hold.
+- Nothing is built on a decision without the owner's explicit yes (`.claude/rules/prose.md`): a construction, a rule, a
+  look or a limit goes to him first, marked, and a decision an agent made unasked is brought to him before a merge.
 - Two review rounds at most: the second reads the first round's fixes alone, and only where a fix changes logic; you
   check the rest of the fixes yourself.
 - A brief to an author gives the goal, the whole it serves and the rules to read. A change `AGENTS.md` leaves to the

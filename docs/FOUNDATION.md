@@ -446,14 +446,12 @@ content/posts/2026-11-page-cache/
    alias or a tag of their own, or a key that is no text or stands twice;
    each at its line.
 2. Each face draws `Widget` its own way. HTML: a `<figure data-island>`
-   holding a still image the island brings to life. Every other face: the
+   holding the alt text, where the island runs the widget. Every other face: the
    caption, the alt text and a link to the live version.
 3. **One rule for props.** Each widget writes its props' schema in valibot;
    the build turns it into JSON Schema beside the manifest, and the Go
    loader checks every post's props against it. `paranin check`, CI and the
    server refuse the same typo.
-4. Playwright takes every still image in CI, canvas and DOM widgets alike:
-   one way to make them. For LinkedIn and X, livereel films the widget.
 
 #### Front matter (Proposed)
 
@@ -940,8 +938,7 @@ TUI, with the two faces made one style, now `DESIGN.md` too: the reading
 layout, its second face iA Writer Duo, and the blog as a session of its own
 beside the résumé's, which settle the third and fourth items. Since
 2026-11-22 the page serves JetBrains Mono from `design/fonts`, the last
-item for the web; Typst and the stills take the face from there when they
-come.
+item for the web; Typst takes the face from there when it comes.
 
 Each goes through a sheet of states in both themes before code:
 
@@ -952,7 +949,7 @@ Each goes through a sheet of states in both themes before code:
 - Constant navigation: résumé, projects, blog.
 - The layout bugs of §3.4 and a favicon.
 - JetBrains Mono served from our own server (OFL), in the repository, so
-  the web, Typst and the stills use one copy.
+  the web and Typst use one copy.
 
 ### 5.7 Distribution — **Proposed**
 
@@ -962,8 +959,7 @@ cookies on our own server (GoatCounter), which keeps `script-src 'self'`,
 and a count of SSH sessions; cross-posts with a canonical link to paran.in;
 links to the profiles where posts go: LinkedIn, HN, Lobsters, Reddit
 (r/golang, r/commandline), dev.to with a canonical link, and X or Bluesky
-for short notices (D13). LinkedIn runs no script, so each post with a
-widget brings its still or a livereel film. First topics: the site itself (a
+for short notices (D13). First topics: the site itself (a
 résumé over SSH, vim mode in a browser, a man page over `curl`) and releases
 of claude-review and semantic-code-mcp. Reading posts in the TUI is a hook
 few sites have.

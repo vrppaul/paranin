@@ -62,9 +62,9 @@ func manualHolds(text, phrase string) bool {
 // grouping, in every language, each with the manual's own words in its language.
 func textPages(snapshot *content.Snapshot) []framedPage {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: true})
-	pages := framedPages(site.Documents(), site.Own.Frame.Manual)
+	pages := framedPages(compose.DocumentsOf(site.Pages), site.Own.Frame.Manual)
 	for _, blog := range site.Blogs() {
-		pages = append(pages, framedPages(slices.Concat(blog.Posts, blog.Versions, blog.Lists), blog.Frame.Manual)...)
+		pages = append(pages, framedPages(slices.Concat(compose.DocumentsOf(blog.Posts), blog.Versions, blog.Lists), blog.Frame.Manual)...)
 	}
 	return pages
 }

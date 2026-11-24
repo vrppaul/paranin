@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -12,10 +13,16 @@ import (
 
 // Each page a person reads has its record, the facts a search engine reads as data: the résumé the person, with
 // where they work now, the schools, the skills they use and not those still learning, the languages and the public
-// profiles; a project's page the project, with its author and the page that is theirs. Each names its own page.
+// profiles; a project's page the project, with its author; a post its current version, when it came out and the day
+// that version did, its author, its language, its tags and the series its page shows, by its group on the list by
+// series in its language. An unlisted part of a series, which its series leaves out, names none; a draft not yet dated
+// names no moment and no day. Each names its own page.
 func TestEachPageHasItsRecord(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
+	resume := document.PageOf(document.PageResume)
+	author := Author{Name: "Mira Example", Page: resume}
 	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
+	post, translation := document.PostPage(fixturePostSlug), document.PostPage(fixturePostSlug).InLanguage(russian)
 	person := PersonRecord{
 		Name:           "Mira Example",
 		AlternateNames: []string{"M. Example"},
@@ -26,28 +33,55 @@ func TestEachPageHasItsRecord(test *testing.T) {
 		Skills:         []string{"Go", "Shell scripts for the build machines"},
 		Languages:      []string{"English"},
 		Profiles:       []string{"https://github.test/mira"},
-		Page:           document.PageOf(document.PageResume),
+		Page:           resume,
 	}
 	work := WorkRecord{
 		Name:        "tidy-tool",
 		Description: "A tool that tidies files.",
 		Language:    "Lua",
 		Repository:  "https://github.test/mira/tidy",
-		Author:      "Mira Example",
-		AuthorPage:  document.PageOf(document.PageResume),
+		Author:      author,
 		Page:        tidyTool,
 	}
+	postOfASeries := PostRecord{
+		Title: "Reading slowly", Description: "Why a page read twice is read once.", Page: post,
+		Published: fixtures.MomentOf(test, "2026-11-10T09:00+01:00"), VersionDay: fixtures.MomentOf(test, "2026-11-12T00:00Z"),
+		Author: author, Language: "en", Tags: []string{"reading", "terminals"},
+		Series: &PostSeries{Title: "Reading", Group: document.Anchor{Page: document.PageOf(document.PageBlogSeries), Name: "reading"}},
+	}
+	unlistedPart := postOfASeries
+	unlistedPart.Series = nil
 	cases := []struct {
-		name string
-		page document.Page
-		want Record
+		name     string
+		snapshot *content.Snapshot
+		audience Audience
+		page     document.Page
+		want     Record
 	}{
-		{name: "the résumé", page: document.PageOf(document.PageResume), want: person},
-		{name: "a project's page", page: tidyTool, want: work},
+		{name: "the résumé", snapshot: snapshot, audience: publicOnTheDay(), page: resume, want: person},
+		{name: "a project's page", snapshot: snapshot, audience: publicOnTheDay(), page: tidyTool, want: work},
+		{name: "a post of a series", snapshot: snapshot, audience: publicOnTheDay(), page: post, want: postOfASeries},
+		{
+			name: "a translation", snapshot: snapshot, audience: publicOnTheDay(), page: translation,
+			want: PostRecord{
+				Title: "Медленное чтение", Description: "Почему страницу, прочитанную дважды, читают один раз.", Page: translation,
+				Published: fixtures.MomentOf(test, "2026-11-15T10:00+03:00"), VersionDay: fixtures.MomentOf(test, "2026-11-15T00:00Z"),
+				Author: author, Language: russian, Tags: []string{"reading", "terminals"},
+				Series: &PostSeries{Title: "Чтение", Group: document.Anchor{Page: document.PageOf(document.PageBlogSeries).InLanguage(russian), Name: "reading"}},
+			},
+		},
+		{name: "an unlisted part of a series", snapshot: changedFixture(test, fixturePostUnlisted), audience: publicOnTheDay(), page: post, want: unlistedPart},
+		{
+			name: "a draft its author reads", snapshot: snapshot, audience: Audience{At: fixtures.Day(), Drafts: true}, page: document.PostPage(samplePostSlug),
+			want: PostRecord{
+				Title: "Notes on tools", Description: "The tools a writer keeps.", Page: document.PostPage(samplePostSlug),
+				Published: time.Time{}, VersionDay: time.Time{}, Author: author, Language: "en", Tags: nil, Series: nil,
+			},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := recordOf(test, snapshot, testCase.page); !reflect.DeepEqual(got, testCase.want) {
+			if got := recordOf(test, SiteOf(Prepare(testCase.snapshot), testCase.audience), testCase.page); !reflect.DeepEqual(got, testCase.want) {
 				test.Errorf("the record of %+v = %+v, want %+v", testCase.page, got, testCase.want)
 			}
 		})
@@ -67,7 +101,7 @@ func TestARecordReadsTheMarksAway(test *testing.T) {
 		profile.Education[index].Name = "==" + profile.Education[index].Name + "=="
 	}
 	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Sources: nil, Learning: false}}}}
-	record := as[PersonRecord](test, recordOf(test, &marked, document.PageOf(document.PageResume)))
+	record := as[PersonRecord](test, recordOf(test, SiteOf(Prepare(&marked), publicOnTheDay()), document.PageOf(document.PageResume)))
 	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Schools: record.Schools, Skills: record.Skills}
 	want := markedFacts{Name: "Mira Example", Title: "Software Engineer", Employer: "Northwind", Schools: []string{"A University"}, Skills: []string{"Go"}}
 	if !reflect.DeepEqual(got, want) {
@@ -90,16 +124,21 @@ func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
 	ended.Profile.Experience = slices.DeleteFunc(slices.Clone(ended.Profile.Experience), func(role content.Role) bool {
 		return role.End.Kind() == content.MonthCurrent
 	})
-	if record := as[PersonRecord](test, recordOf(test, &ended, document.PageOf(document.PageResume))); record.Employer != "" {
+	if record := as[PersonRecord](test, recordOf(test, SiteOf(Prepare(&ended), publicOnTheDay()), document.PageOf(document.PageResume))); record.Employer != "" {
 		test.Errorf("the employer of a person with no role going on = %q, want none", record.Employer)
 	}
 }
 
-// recordOf is the record compose makes beside the document of a page.
-func recordOf(test *testing.T, snapshot *content.Snapshot, page document.Page) Record {
-	for _, composed := range SiteOf(Prepare(snapshot), publicOnTheDay()).Pages {
-		if composed.Document.Head.Page == page {
-			return composed.Record
+// recordOf is the record compose makes beside the document of a page of a site: the résumé, a project's page or a
+// post in any language.
+func recordOf(test *testing.T, site Site, page document.Page) Record {
+	composed := site.Pages
+	for _, blog := range site.Blogs() {
+		composed = slices.Concat(composed, blog.Posts)
+	}
+	for _, found := range composed {
+		if found.Document.Head.Page == page {
+			return found.Record
 		}
 	}
 	test.Fatalf("compose made no page %+v", page)

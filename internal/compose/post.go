@@ -28,14 +28,15 @@ const (
 // The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
 const unnamedHeading = "heading"
 
-// composedPosts are the posts the blog serves its audience, each a document of its current version, in the snapshot's
-// order; each link inside the site read into the page or the feed at its path among paths.
-func composedPosts(prepared *Prepared, read blog, paths map[string]document.Target) []document.Document {
-	documents := []document.Document{}
+// composedPosts are the posts the blog serves its audience, each a document of its current version with its record, in
+// the snapshot's order; each link inside the site read into the page or the feed at its path among paths.
+func composedPosts(prepared *Prepared, read blog, paths map[string]document.Target) []Composed {
+	author := authorOf(prepared.snapshot.Profile.Person)
+	posts := []Composed{}
 	for _, post := range read.served {
-		documents = append(documents, postDocument(currentOf(post), read, prepared, paths))
+		posts = append(posts, Composed{Document: postDocument(currentOf(post), read, prepared, paths), Tabs: nil, Record: read.postRecord(post, author)})
 	}
-	return documents
+	return posts
 }
 
 // PostPicture is a picture of a post the site serves: its file beside the post, and the picture.

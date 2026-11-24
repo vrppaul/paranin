@@ -62,5 +62,5 @@ func TestAPostsBodyInAFeedCarriesNoPartOfThePage(test *testing.T) {
 
 // fixtureFeedBody is the fixture post's body as a feed holds it.
 func fixtureFeedBody(test *testing.T) string {
-	return NewFeedWriter(fixtures.Site(fixtures.LoadedContent(test))).Body(fixturePost(test))
+	return NewFeedWriter(fixtures.Site(fixtures.LoadedContent(test))).Body(fixturePost(test).Document)
 }

@@ -40,7 +40,7 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
 			whole := document.Page{Kind: testCase.page.Kind, Slug: testCase.page.Slug, Tab: ""}
-			composed := composedOf(test, snapshot, whole)
+			composed := composedOf(test, siteOnTheDay(snapshot).Pages, whole)
 			golden.Match(test, testCase.file, lined(fixtureWriter(test).Page(composed.Document, composed.Record, testCase.page.Tab)))
 		})
 	}
@@ -68,8 +68,9 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 // under its title, which titles the page, the address it is known by and its markdown the tab's own.
 func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
-	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	pages := siteOnTheDay(snapshot).Pages
+	resume := composedOf(test, pages, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := composedOf(test, pages, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	writer := fixtureWriter(test)
 	const (
 		// a line of the résumé's first screen, of its first section, and of its experience
@@ -222,8 +223,10 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	writer := fixtureWriter(test)
-	resume := composedOf(test, snapshot, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
-	project := composedOf(test, snapshot, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	pages := siteOnTheDay(snapshot).Pages
+	resume := composedOf(test, pages, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
+	project := composedOf(test, pages, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	post := fixturePost(test)
 	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame)
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
@@ -304,7 +307,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			lacks: []string{`class="window"`, `data-place="tab"`},
 		},
 		{
-			name: "a post's page", page: writer.Post(fixturePost(test)),
+			name: "a post's page", page: writer.Post(post.Document, post.Record),
 			holds: slices.Concat(every, []string{
 				blogSessions, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog/reading-slowly</code>`,
@@ -688,7 +691,7 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	record := blankPerson()
 	record.Name = "Mira Example"
-	if page := fixtureWriter(test).Page(composedOf(test, snapshot, resume).Document, record, ""); strings.Contains(page, "worksFor") {
+	if page := fixtureWriter(test).Page(composedOf(test, siteOnTheDay(snapshot).Pages, resume).Document, record, ""); strings.Contains(page, "worksFor") {
 		test.Errorf("the page %q names an employer", page)
 	}
 }
@@ -724,6 +727,7 @@ func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
 	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
 	writer := fixtureWriter(test)
+	unlisted, published := unlistedPost(test), fixturePost(test)
 	cases := []struct {
 		name  string
 		page  string
@@ -739,12 +743,12 @@ func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 			holds: []string{`<link rel="canonical" href="https://example.test/blog">`, `<title>blog</title>`}, lacks: []string{noIndexTag},
 		},
 		{
-			name: "an unlisted post", page: writer.Post(unlistedPost(test)),
+			name: "an unlisted post", page: writer.Post(unlisted.Document, unlisted.Record),
 			holds: []string{noIndexTag, fixturePostAddress},
 			lacks: []string{`rel="canonical"`, `<link rel="alternate" hreflang=`, `application/ld+json`},
 		},
 		{
-			name: "a post published", page: writer.Post(fixturePost(test)),
+			name: "a post published", page: writer.Post(published.Document, published.Record),
 			holds: []string{`<link rel="canonical" href="https://example.test/blog/reading-slowly">`, fixturePostAddress, `<link rel="alternate" hreflang="ru"`},
 			lacks: []string{noIndexTag},
 		},
@@ -925,7 +929,8 @@ func TestABlockOfTheListThatIsNoGroupStandsAsAnyPageDraws(test *testing.T) {
 // beside the line that first cites it, then the foot line of the blog's session. It is held to its golden file,
 // named after the post's own address.
 func TestAPostReadsAsItsGoldenMarkup(test *testing.T) {
-	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(fixturePost(test))))
+	post := fixturePost(test)
+	golden.Match(test, "blog/reading-slowly.html", lined(fixtureWriter(test).Post(post.Document, post.Record)))
 }
 
 // A translation's post and its language's list read as their golden files, in the language's frame.
@@ -934,9 +939,9 @@ func TestATranslationReadsAsItsGoldenMarkupInItsLanguage(test *testing.T) {
 	// the fixture is translated into Russian alone
 	translated := siteOnTheDay(snapshot).Translations[0]
 	writer := NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), translated.Frame, fixtures.Day())
-	post := fixtures.DocumentOf(test, translated.Posts, document.PostPage("reading-slowly").InLanguage("ru"))
+	post := composedOf(test, translated.Posts, document.PostPage("reading-slowly").InLanguage("ru"))
 	list := fixtures.DocumentOf(test, translated.Lists, document.PageOf(document.PageBlog).InLanguage("ru"))
-	golden.Match(test, "ru/blog/reading-slowly.html", lined(writer.Post(post)))
+	golden.Match(test, "ru/blog/reading-slowly.html", lined(writer.Post(post.Document, post.Record)))
 	golden.Match(test, "ru/blog.html", lined(writer.List(list)))
 }
 
@@ -945,7 +950,7 @@ func TestATranslationReadsAsItsGoldenMarkupInItsLanguage(test *testing.T) {
 // it and names no address it is known by, as a filtered list names none, while the post itself is known at its own.
 func TestAnOlderVersionReadsAsItsGoldenMarkupIndexedByNone(test *testing.T) {
 	older := fixtures.DocumentOf(test, siteOnTheDay(fixtures.LoadedContent(test)).Own.Versions, document.PostPage("reading-slowly").OlderVersion("2026-11-10"))
-	page := fixtureWriter(test).Post(older)
+	page := fixtureWriter(test).Post(older, nil)
 	golden.Match(test, "blog/reading-slowly/2026-11-10.html", lined(page))
 	for _, want := range []string{noIndexTag, `<a class="version-note" href="/blog/reading-slowly">`} {
 		if !strings.Contains(page, want) {
@@ -961,8 +966,9 @@ func TestAnOlderVersionReadsAsItsGoldenMarkupIndexedByNone(test *testing.T) {
 // the version read, the current page and no link, and an older one a link to its page; a post of one version alone
 // lists that one.
 func TestTheVersionsPickListsEveryVersionAndWhereEachStands(test *testing.T) {
-	page := fixtureWriter(test).Post(fixturePost(test))
-	onlyVersion := fixtureWriter(test).Post(oneVersionPost(test))
+	post := fixturePost(test)
+	page := fixtureWriter(test).Post(post.Document, post.Record)
+	onlyVersion := fixtureWriter(test).Post(oneVersionPost(test), nil)
 	const currentRow = `<li class="pick-part version-read" aria-current="page"><span class="pick-row version-row"><time datetime="2026-11-12">12 Nov 2026</time> <span class="version-state">current</span></span></li>`
 	cases := []struct {
 		name  string
@@ -1002,12 +1008,33 @@ func oneVersionPost(test *testing.T) document.Document {
 	return document.Document{Head: head, Blocks: nil}
 }
 
+// A draft not yet dated, whose record knows no moment it came out and no day of its version, names neither, in its
+// linked data or its Open Graph, rather than a day that never was; its author and its kind it still names.
+func TestAnUndatedDraftsPageNamesNoDay(test *testing.T) {
+	page := document.PostPage("undated")
+	record := compose.PostRecord{
+		Title: "Undated", Description: "", Page: page, Published: time.Time{}, VersionDay: time.Time{},
+		Author: compose.Author{Name: "Mira Example", Page: document.PageOf(document.PageResume)}, Language: "en", Tags: nil, Series: nil,
+	}
+	written := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(page, textOf("Undated")), Blocks: nil}, record)
+	for _, want := range []string{`"@type":"BlogPosting"`, `<meta property="article:author" content="https://example.test/">`} {
+		if !strings.Contains(written, want) {
+			test.Errorf("the undated draft's page %q holds no %q", written, want)
+		}
+	}
+	for _, unwanted := range []string{"datePublished", "dateModified", "article:published_time", "article:modified_time"} {
+		if strings.Contains(written, unwanted) {
+			test.Errorf("the undated draft's page %q names %q", written, unwanted)
+		}
+	}
+}
+
 // A draft's page, as its author reads it, says it is a draft where a post out says the day of the version read.
 func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
 	site := compose.SiteOf(compose.Prepare(fixtures.LoadedContent(test)), compose.Audience{At: fixtures.Day(), Drafts: true})
-	draft := fixtures.DocumentOf(test, site.Own.Posts, document.PostPage("notes-on-tools"))
+	draft := composedOf(test, site.Own.Posts, document.PostPage("notes-on-tools"))
 	const mark = "<dt>version</dt><dd>draft</dd>"
-	if page := fixtureWriter(test).Post(draft); !strings.Contains(page, mark) {
+	if page := fixtureWriter(test).Post(draft.Document, draft.Record); !strings.Contains(page, mark) {
 		test.Errorf("the draft's page %q holds no %q", page, mark)
 	}
 }
@@ -1028,10 +1055,10 @@ const (
 // word gone: the facts a browser shows are the post's whole.
 func TestEveryPhraseOfAPostReachesItsPage(test *testing.T) {
 	post := fixturePost(test)
-	shown := codeAsShown(fixtureWriter(test).Post(post))
-	for _, phrase := range document.Phrases(post) {
+	shown := codeAsShown(fixtureWriter(test).Post(post.Document, post.Record))
+	for _, phrase := range document.Phrases(post.Document) {
 		if !strings.Contains(shown, html.EscapeString(phrase)) {
-			test.Errorf("the page of %+v holds no %q", post.Head.Page, phrase)
+			test.Errorf("the page of %+v holds no %q", post.Document.Head.Page, phrase)
 		}
 	}
 }
@@ -1047,7 +1074,8 @@ func codeAsShown(page string) string {
 // link names, every paragraph at the top of the body or a section numbered by a link to it; a note's number raised
 // where a line cites it, the note beside the line that first cites it, and every note once at the text's end.
 func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
-	page := fixtureWriter(test).Post(fixturePost(test))
+	post := fixturePost(test)
+	page := fixtureWriter(test).Post(post.Document, post.Record)
 	// the fixture's two notes as the page writes each
 	const (
 		firstNote  = `<p class="note"><span class="note-number">1</span> Mira Example, on her own reading.</p>`
@@ -1085,7 +1113,7 @@ func TestAPostsPlacesAndNotesStandWhereTheyAreRead(test *testing.T) {
 func TestAHeadingsAnchorIsItsName(test *testing.T) {
 	post := seriesPost(emptySection("P1"), emptySection("Places"), emptySection("Place 1"), emptySection("Hint ssh"),
 		emptySection("Parts"), emptySection("More"), document.Paragraph{Spans: textOf("First.")})
-	page := fixtureWriter(test).Post(post)
+	page := fixtureWriter(test).Post(post, nil)
 	cases := []struct {
 		name string
 		want string
@@ -1109,13 +1137,13 @@ func TestAHeadingsAnchorIsItsName(test *testing.T) {
 // A post of a series, which a test builds by hand, reads as its golden markup: the page the fixture's post, the one
 // part of its series out, cannot show, with its other parts among its places.
 func TestAPostOfASeriesReadsAsItsGoldenMarkup(test *testing.T) {
-	golden.Match(test, "blog/second.html", lined(fixtureWriter(test).Post(seriesPost(emptySection("More")))))
+	golden.Match(test, "blog/second.html", lined(fixtureWriter(test).Post(seriesPost(emptySection("More")), nil)))
 }
 
 // A page's own places lead where the page draws them: a heading to its anchor, another part of a post's series to its
 // page, and a series to its group on the list by series, which that list names by the series' name.
 func TestAPagesOwnPlacesLeadWhereThePageDrawsThem(test *testing.T) {
-	post := fixtureWriter(test).Post(seriesPost(emptySection("More")))
+	post := fixtureWriter(test).Post(seriesPost(emptySection("More")), nil)
 	lists := siteOnTheDay(fixtures.LoadedContent(test)).Own.Lists
 	cases := []struct {
 		name string
@@ -1149,7 +1177,7 @@ func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
 		{Number: 4, Title: textOf("Four"), State: document.PartToCome, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
 	}}
 	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil, Listed: true}
-	page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
+	page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil}, nil)
 	cases := []struct {
 		name  string
 		want  string
@@ -1199,7 +1227,7 @@ func TestTheOutlineListsThePostsHeadings(test *testing.T) {
 		},
 	}
 	unheaded := document.Document{Head: fixtures.HeadOf(document.PostPage("unheaded"), nil), Blocks: []document.Block{document.Paragraph{Spans: textOf("Words.")}}}
-	headedPage, unheadedPage := fixtureWriter(test).Post(headed), fixtureWriter(test).Post(unheaded)
+	headedPage, unheadedPage := fixtureWriter(test).Post(headed, nil), fixtureWriter(test).Post(unheaded, nil)
 	cases := []struct {
 		name  string
 		page  string
@@ -1229,7 +1257,7 @@ func TestAnItemOpeningWithABlockIsMarkedAsOne(test *testing.T) {
 	list := document.List{Ordered: true, Start: 1, Items: []document.Item{
 		{Blocks: []document.Block{code}}, {Blocks: []document.Block{document.Paragraph{Spans: textOf("Words.")}}},
 	}}
-	page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{list}})
+	page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{list}}, nil)
 	for _, want := range []string{
 		`<li class="post-item post-item-block"><span class="point-mark">1.</span> <div class="code"`,
 		`<li class="post-item"><span class="point-mark">2.</span> Words.</li>`,
@@ -1258,7 +1286,7 @@ func TestAWidgetsNameBreaksBetweenItsWords(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			live := document.Anchor{Page: document.PostPage("listed"), Name: testCase.name}
 			widget := document.Widget{Name: testCase.name, Alt: "A widget.", Caption: "", Live: live}
-			page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{widget}})
+			page := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(document.PostPage("listed"), nil), Blocks: []document.Block{widget}}, nil)
 			if want := `<span class="edge-name">` + testCase.want + `</span>`; !strings.Contains(page, want) {
 				test.Errorf("the page of a widget named %q holds no %q", testCase.name, want)
 			}
@@ -1334,7 +1362,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			head := fixtures.HeadOf(document.PostPage("two"), textOf("Two"))
 			head.Post = &document.PostPlace{Series: testCase.series, Neighbours: testCase.neighbours, Discussions: testCase.discussions, Listed: true}
-			page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
+			page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil}, nil)
 			for _, want := range testCase.want {
 				if !strings.Contains(page, want) {
 					test.Errorf("the page %q holds no %q", page, want)
@@ -1374,18 +1402,18 @@ func emptySection(title string) document.Block {
 	return document.Section{Title: []document.Span{document.Text{Text: title}}, Name: document.SlugOf(title), Blocks: nil}
 }
 
-// fixturePost is the fixture's post as compose makes it.
-func fixturePost(test *testing.T) document.Document {
+// fixturePost is the fixture's post as compose makes it, its document and its record.
+func fixturePost(test *testing.T) compose.Composed {
 	posts := siteOnTheDay(fixtures.LoadedContent(test)).Own.Posts
-	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
+	return composedOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
 }
 
-// unlistedPost is the fixture's post as compose makes it, unlisted.
-func unlistedPost(test *testing.T) document.Document {
+// unlistedPost is the fixture's post as compose makes it, unlisted, with its record.
+func unlistedPost(test *testing.T) compose.Composed {
 	post := fixturePost(test)
-	place := *post.Head.Post
+	place := *post.Document.Head.Post
 	place.Listed = false
-	post.Head.Post = &place
+	post.Document.Head.Post = &place
 	return post
 }
 
@@ -1429,9 +1457,9 @@ func fixtureWriter(test *testing.T) PageWriter {
 	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame, fixtures.Day())
 }
 
-// composedOf is a page of the fixture as compose makes it, its document and its record.
-func composedOf(test *testing.T, snapshot *content.Snapshot, page document.Page) compose.Composed {
-	for _, composed := range siteOnTheDay(snapshot).Pages {
+// composedOf is a page of the fixture among those compose made, its document and its record.
+func composedOf(test *testing.T, pages []compose.Composed, page document.Page) compose.Composed {
+	for _, composed := range pages {
 		if composed.Document.Head.Page == page {
 			return composed
 		}

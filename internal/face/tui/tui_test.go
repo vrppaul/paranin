@@ -885,7 +885,7 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // and its posts, with the site's words in each and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
-	documents, frames := slices.Concat(site.Documents(), compose.Extras(snapshot)), []compose.Frame{}
+	documents, frames := slices.Concat(compose.DocumentsOf(site.Pages), compose.Extras(snapshot)), []compose.Frame{}
 	for _, blog := range site.Blogs() {
 		documents = append(documents, blog.Served()...)
 		frames = append(frames, blog.Frame)

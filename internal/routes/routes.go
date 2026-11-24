@@ -163,6 +163,12 @@ func (site Site) Address(target document.Target, format Format) string {
 	return ""
 }
 
+// Identifier is the IRI a page's linked data names a thing by, so every record that names it names the same one: the
+// page's whole address, then the thing's name.
+func (site Site) Identifier(page document.Page, name string) string {
+	return site.Address(page, FormatChosen) + anchorMark + name
+}
+
 // Reference is where a link inside one of the site's own pages leads: a page of the site, a section of one, a file or a
 // feed, by its path from the root, which a browser reads against the address the page came from, so a page served
 // from this machine or a staging host leads there and not to the live site; an address outside the site as it is; a
@@ -200,7 +206,7 @@ func FeedPath(feed document.Feed) string {
 	return inLanguage(feed.Translation, seriesList+folderEnd+feed.Series+feedEnding)
 }
 
-// What parts a section's anchor from its page's path
+// What parts a section's anchor, or the name of a thing a page's linked data names, from its page's path
 const anchorMark = "#"
 
 // anchorPath is where a section of a page is, in a format: its page's path, then the section's anchor; empty where the

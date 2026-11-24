@@ -155,7 +155,7 @@ func (server *Server) Shutdown(ctx context.Context) error {
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
 	composition := compose.SiteOf(prepared, audience)
-	documents, frames := slices.Concat(composition.Documents(), compose.Extras(facts)), []compose.Frame{}
+	documents, frames := slices.Concat(compose.DocumentsOf(composition.Pages), compose.Extras(facts)), []compose.Frame{}
 	for _, blog := range composition.Blogs() {
 		documents = append(documents, blog.Served()...)
 		frames = append(frames, blog.Frame)

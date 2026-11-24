@@ -40,7 +40,7 @@ func (writer PageWriter) List(composed document.Document) string {
 	if len(head.Subtitle) > 0 {
 		title = slices.Concat(head.Title, []document.Span{document.Text{Text: dash}}, head.Subtitle)
 	}
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), nil, main, foot))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, nil), main, foot))
 }
 
 // groupingsOf are the ways the blog's list groups its posts as its head's Switch links them, the list shown current,

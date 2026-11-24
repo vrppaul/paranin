@@ -17,7 +17,7 @@ import (
 // language it is read in, where a search engine may index it; noindex and Open Graph, where only a preview shows its
 // address; noindex alone, where it has none. Then its markdown, each feed that follows it, its main part and the foot
 // line.
-templ (writer PageWriter) page(language string, metadata pageMetadata, record compose.Record, main templ.Component, foot footLine) {
+templ (writer PageWriter) page(language string, metadata pageMetadata, main templ.Component, foot footLine) {
 	<!DOCTYPE html>
 	<html lang={ language }>
 		<head>
@@ -29,7 +29,7 @@ templ (writer PageWriter) page(language string, metadata pageMetadata, record co
 				case knownAddress:
 					<link rel="canonical" href={ address.url }/>
 					@writer.openGraph(metadata, address.url)
-					@writer.linkedData(record, address.url)
+					@metadata.record
 					for _, alternate := range metadata.alternates {
 						<link rel="alternate" hreflang={ alternate.language } href={ alternate.address }/>
 					}
@@ -229,11 +229,11 @@ templ themeMark() {
 	</svg>
 }
 
-// openGraph is how a page reads where a link to it is shared (ogp.me): the site it is of, the locale it is marked up
-// in and a post's others, its title and description, and its own address. Its picture comes with the cards Typst draws
-// (ADR-0005).
+// openGraph is how a page reads where a link to it is shared (ogp.me): what it is, the site it is of, the locale it is
+// marked up in and a post's others, its title and description, its own address, and a post's days, author and tags
+// where it has a record; then the card X shows of it. Its picture comes with the cards Typst draws (ADR-0005).
 templ (writer PageWriter) openGraph(metadata pageMetadata, address string) {
-	<meta property="og:type" content={ openGraphType }/>
+	<meta property="og:type" content={ metadata.openGraphType }/>
 	<meta property="og:site_name" content={ writer.frame.site.Host() }/>
 	<meta property="og:locale" content={ writer.frame.locale }/>
 	for _, locale := range metadata.otherLocales {
@@ -244,6 +244,25 @@ templ (writer PageWriter) openGraph(metadata pageMetadata, address string) {
 		<meta property="og:description" content={ metadata.description }/>
 	}
 	<meta property="og:url" content={ address }/>
+	if metadata.post != nil {
+		@articleProperties(*metadata.post)
+	}
+	<meta name="twitter:card" content={ twitterCard }/>
+}
+
+// articleProperties are what Open Graph says of a post as an article past every page's own: when it came out and when
+// its current version did, where each is known, its author's page and each of its tags.
+templ articleProperties(post writtenPost) {
+	if post.published != "" {
+		<meta property="article:published_time" content={ post.published }/>
+	}
+	if post.modified != "" {
+		<meta property="article:modified_time" content={ post.modified }/>
+	}
+	<meta property="article:author" content={ post.author.URL }/>
+	for _, tag := range post.tags {
+		<meta property="article:tag" content={ tag }/>
+	}
 }
 
 // plainMain is the main part of a page under its head: the head, then blocks, a row apart as a résumé section's are.

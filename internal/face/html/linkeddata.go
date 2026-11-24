@@ -1,6 +1,8 @@
 package html
 
 import (
+	"time"
+
 	"github.com/a-h/templ"
 
 	"github.com/vrppaul/paranin/internal/compose"
@@ -17,7 +19,12 @@ const (
 	organizationKind = "Organization"
 	schoolKind       = "EducationalOrganization"
 	sourceCodeKind   = "SoftwareSourceCode"
+	blogPostingKind  = "BlogPosting"
+	seriesKind       = "CreativeWorkSeries"
 )
+
+// The name the author goes by in the résumé's linked data, after its address, so every record names the one person
+const personNode = "person"
 
 // profilePage is the résumé as schema.org has a page about one person.
 type profilePage struct {
@@ -30,6 +37,7 @@ type profilePage struct {
 // person is who a page is about, as schema.org names them; a fact the record lacks is left out.
 type person struct {
 	Kind          string         `json:"@type"`
+	ID            string         `json:"@id"`
 	Name          string         `json:"name"`
 	AlternateName []string       `json:"alternateName,omitempty"`
 	JobTitle      string         `json:"jobTitle,omitempty"`
@@ -60,24 +68,60 @@ type sourceCode struct {
 	Author              author `json:"author"`
 }
 
-// author is who wrote a piece of code, by their name and their page.
+// author is who wrote a piece of code or a post: the one person, by their @id, their name and their page.
 type author struct {
+	Kind string `json:"@type"`
+	ID   string `json:"@id"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// blogPosting is a post as schema.org has a post of a blog, with its author and the series it is a part of; a fact the
+// record lacks is left out.
+type blogPosting struct {
+	Context       string             `json:"@context"`
+	Kind          string             `json:"@type"`
+	Headline      string             `json:"headline"`
+	Description   string             `json:"description,omitempty"`
+	URL           string             `json:"url"`
+	DatePublished string             `json:"datePublished,omitempty"`
+	DateModified  string             `json:"dateModified,omitempty"`
+	Author        author             `json:"author"`
+	InLanguage    string             `json:"inLanguage"`
+	Keywords      []string           `json:"keywords,omitempty"`
+	IsPartOf      creativeWorkSeries `json:"isPartOf,omitzero"`
+}
+
+// creativeWorkSeries is a series of posts, by its name and the page that lists its parts.
+type creativeWorkSeries struct {
 	Kind string `json:"@type"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
 
-// linkedData is the script of a page's record, in schema.org's words, for the page at an address.
-func (writer PageWriter) linkedData(record compose.Record, address string) templ.Component {
+// writtenPost is a post's record as its Open Graph and its linked data both write it, worked out once: when it came
+// out and when its current version did, as a machine reads each, empty where it is not known, its author and its tags.
+type writtenPost struct {
+	published string
+	modified  string
+	author    author
+	tags      []string
+}
+
+// recordOf is a page's record as the page writes it, for the page at an address: its script of linked data, in
+// schema.org's words, and a post's as its Open Graph reads it too, none where the record is no post's.
+func (writer PageWriter) recordOf(record compose.Record, address string) (templ.Component, *writtenPost) {
 	switch typed := record.(type) {
 	case compose.PersonRecord:
-		return linkedScript(writer.profilePageOf(typed, address))
+		return linkedScript(writer.profilePageOf(typed, address)), nil
 	case compose.WorkRecord:
-		return linkedScript(writer.sourceCodeOf(typed))
+		return linkedScript(writer.sourceCodeOf(typed)), nil
+	case compose.PostRecord:
+		post := writer.writtenPostOf(typed)
+		return linkedScript(writer.blogPostingOf(typed, post)), &post
 	}
-	// compose makes every page of the résumé and the projects with its record; a post's page is drawn with none until
-	// its BlogPosting comes with the site's SEO (TODO.md)
-	return templ.NopComponent
+	// a list, filtered or not, and an older version of a post have no record and write none
+	return templ.NopComponent, nil
 }
 
 // linkedScript is the script that holds an entity of schema.org as linked data.
@@ -93,6 +137,7 @@ func (writer PageWriter) profilePageOf(record compose.PersonRecord, address stri
 		URL:     address,
 		MainEntity: person{
 			Kind:          personKind,
+			ID:            writer.frame.site.Identifier(record.Page, personNode),
 			Name:          record.Name,
 			AlternateName: record.AlternateNames,
 			JobTitle:      record.Title,
@@ -132,10 +177,53 @@ func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 		ProgrammingLanguage: record.Language,
 		URL:                 writer.frame.site.Address(record.Page, routes.FormatChosen),
 		CodeRepository:      record.Repository,
-		Author: author{
-			Kind: personKind,
-			Name: record.Author,
-			URL:  writer.frame.site.Address(record.AuthorPage, routes.FormatChosen),
-		},
+		Author:              writer.authorOf(record.Author),
 	}
+}
+
+// writtenPostOf is a post's record as its page writes it.
+func (writer PageWriter) writtenPostOf(record compose.PostRecord) writtenPost {
+	return writtenPost{
+		published: machineTime(record.Published, time.RFC3339),
+		modified:  machineTime(record.VersionDay, machineDayLayout),
+		author:    writer.authorOf(record.Author),
+		tags:      record.Tags,
+	}
+}
+
+// blogPostingOf is a post at its page, as its page writes it, in the series its record names, where it names one.
+func (writer PageWriter) blogPostingOf(record compose.PostRecord, post writtenPost) blogPosting {
+	site := writer.frame.site
+	var series creativeWorkSeries
+	if record.Series != nil {
+		series = creativeWorkSeries{Kind: seriesKind, Name: record.Series.Title, URL: site.Address(record.Series.Group, routes.FormatChosen)}
+	}
+	return blogPosting{
+		Context:       vocabulary,
+		Kind:          blogPostingKind,
+		Headline:      record.Title,
+		Description:   record.Description,
+		URL:           site.Address(record.Page, routes.FormatChosen),
+		DatePublished: post.published,
+		DateModified:  post.modified,
+		Author:        post.author,
+		InLanguage:    record.Language,
+		Keywords:      post.tags,
+		IsPartOf:      series,
+	}
+}
+
+// authorOf is the one person as the author of a work: by the IRI every record names them by, their name and their
+// page.
+func (writer PageWriter) authorOf(written compose.Author) author {
+	site := writer.frame.site
+	return author{Kind: personKind, ID: site.Identifier(written.Page, personNode), Name: written.Name, URL: site.Address(written.Page, routes.FormatChosen)}
+}
+
+// machineTime is a time as a machine reads it, in a layout; empty where the time is not known.
+func machineTime(moment time.Time, layout string) string {
+	if moment.IsZero() {
+		return ""
+	}
+	return moment.Format(layout)
 }

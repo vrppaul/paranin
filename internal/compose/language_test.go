@@ -79,7 +79,7 @@ func seenBlogOf(composed Blog) seenBlog {
 		seen.lists = append(seen.lists, list.Head.Page)
 	}
 	for _, post := range composed.Posts {
-		seen.posts, seen.languages = append(seen.posts, post.Head.Page), append(seen.languages, post.Head.Language)
+		seen.posts, seen.languages = append(seen.posts, post.Document.Head.Page), append(seen.languages, post.Document.Head.Language)
 	}
 	for _, feed := range composed.Feeds {
 		seen.feeds = append(seen.feeds, feed.Target)
@@ -109,7 +109,7 @@ func TestAPostsSwitchOffersEachLanguageTheListsNameThePostIn(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			site := SiteOf(Prepare(translationWith(test, translationStatus, testCase.status)), testCase.audience)
-			own := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, translated)
+			own := fixtures.DocumentOf(test, DocumentsOf(site.Translations[russianBlog].Posts), translated)
 			if got := postNamed(test, site.Own.Posts, fixturePostSlug).Head.Languages; !reflect.DeepEqual(got, testCase.wantOriginal) {
 				test.Errorf("the original's Switch with the translation %s = %+v, want %+v", testCase.name, got, testCase.wantOriginal)
 			}
@@ -150,7 +150,7 @@ func TestATranslationOlderThanItsOriginalLeadsToTheOriginal(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			site := SiteOf(Prepare(testCase.snapshot), publicOnTheDay())
-			read := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, document.PostPage(fixturePostSlug).InLanguage(russian))
+			read := fixtures.DocumentOf(test, DocumentsOf(site.Translations[russianBlog].Posts), document.PostPage(fixturePostSlug).InLanguage(russian))
 			version, isOut := read.Head.Version.(document.VersionOut)
 			if !isOut || !reflect.DeepEqual(version.Outdated, testCase.want) {
 				test.Errorf("the translation's version, %s = %+v, want one out saying %+v", testCase.name, read.Head.Version, testCase.want)
@@ -170,7 +170,7 @@ func fixturePostUnlisted(test *testing.T, folder string) {
 func TestABlogWritesDaysAndSeriesInItsLanguage(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
 	day := fixtures.MomentOf(test, "2026-11-15T10:00+03:00")
-	russianPost := fixtures.DocumentOf(test, site.Translations[russianBlog].Posts, document.PostPage(fixturePostSlug).InLanguage(russian))
+	russianPost := fixtures.DocumentOf(test, DocumentsOf(site.Translations[russianBlog].Posts), document.PostPage(fixturePostSlug).InLanguage(russian))
 	got := []string{
 		site.Own.Frame.Days.Of(day), site.Translations[russianBlog].Frame.Days.Of(day),
 		document.PlainText(postNamed(test, site.Own.Posts, fixturePostSlug).Head.Post.Series.Title), document.PlainText(russianPost.Head.Post.Series.Title),

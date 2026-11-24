@@ -59,9 +59,15 @@ const (
 	machineMonthLayout = "2006-01"
 )
 
-// The kind of thing Open Graph says every page is, as the first version said it. The résumé could be a profile,
-// which asks for the person's names in fields of its own; until a page needs that, one kind serves every page
-const openGraphType = "website"
+// The kinds of thing Open Graph says a page is: a post an article, every other page a website. The résumé could be a
+// profile, which asks for the person's names in fields of its own; until a page needs that, a website serves it
+const (
+	articleType = "article"
+	websiteType = "website"
+)
+
+// The card X shows of a page, which reads the rest of it from Open Graph: a summary, until the page has a picture
+const twitterCard = "summary"
 
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6; the name of a heading no
 // reader links to, which carries none, the attribute a named one carries its name in, and the one a heading the site's
@@ -226,16 +232,21 @@ type PageWriter struct {
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
-// as plain text and the path of its markdown, each empty where it has none; the address it names; the feeds that
-// follow it, which a feed reader finds it by; and the page in each language it is read in, which a search engine reads
-// beside the address it is known by.
+// as plain text and the path of its markdown, each empty where it has none; the address it names; what Open Graph says
+// it is; its record as linked data; the feeds that follow it, which a feed reader finds it by; and the page in each
+// language it is read in, which a search engine reads beside the address it is known by.
 type pageMetadata struct {
-	title       string
-	description string
-	address     pageAddress
-	markdown    string
-	feeds       []headFeed
-	alternates  []alternate
+	title         string
+	description   string
+	address       pageAddress
+	markdown      string
+	openGraphType string
+	record        templ.Component
+	// post is a post's record as its Open Graph and its linked data both write it; none where the page's record is no
+	// post's
+	post       *writtenPost
+	feeds      []headFeed
+	alternates []alternate
 	// otherLocales are the locales of the languages a post is read in but the one read, which Open Graph names too
 	otherLocales []string
 }
@@ -328,7 +339,7 @@ func (writer PageWriter) Page(composed document.Document, record compose.Record,
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
 	}
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title), record, main, writer.footOf(page, tabs, document.PlacesOf(composed))))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, record), main, writer.footOf(page, tabs, document.PlacesOf(composed))))
 }
 
 // tabNamed is the tab of a name among tabs, where one has it.
@@ -349,17 +360,23 @@ func rendered(component templ.Component) string {
 	return builder.String()
 }
 
-// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab.
-func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
+// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab,
+// with its record.
+func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span, record compose.Record) pageMetadata {
 	site := writer.frame.site
+	url := site.Address(shown, routes.FormatChosen)
+	linked, post := writer.recordOf(record, url)
 	metadata := pageMetadata{
-		title:        document.PlainText(title),
-		description:  document.PlainText(head.Description),
-		address:      addressOf(head, shown, site),
-		markdown:     routes.Reference(shown, routes.FormatMarkdown),
-		feeds:        make([]headFeed, 0, len(head.Feeds)),
-		alternates:   alternatesOf(head.Languages, site),
-		otherLocales: otherLocalesOf(head.Languages),
+		title:         document.PlainText(title),
+		description:   document.PlainText(head.Description),
+		address:       addressOf(head, shown, url),
+		markdown:      routes.Reference(shown, routes.FormatMarkdown),
+		openGraphType: openGraphTypeOf(shown.Kind),
+		record:        linked,
+		post:          post,
+		feeds:         make([]headFeed, 0, len(head.Feeds)),
+		alternates:    alternatesOf(head.Languages, site),
+		otherLocales:  otherLocalesOf(head.Languages),
 	}
 	for _, feed := range head.Feeds {
 		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: routes.Reference(feed.Target, routes.FormatChosen)})
@@ -367,16 +384,27 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 	return metadata
 }
 
-// addressOf is the address a page of a head names, the page shown: its document's whole or a tab (document.Head's
-// Indexed).
-func addressOf(head document.Head, shown document.Page, site routes.Site) pageAddress {
+// addressOf is the address a page of a head names, the page shown at a URL: its document's whole or a tab
+// (document.Head's Indexed).
+func addressOf(head document.Head, shown document.Page, url string) pageAddress {
 	if !shown.OwnAddress() {
 		return noAddress{}
 	}
 	if !head.Indexed() {
-		return shownAddress{url: site.Address(shown, routes.FormatChosen)}
+		return shownAddress{url: url}
 	}
-	return knownAddress{url: site.Address(shown, routes.FormatChosen)}
+	return knownAddress{url: url}
+}
+
+// openGraphTypeOf is what Open Graph says a page of a kind is: a post an article, any other a website.
+func openGraphTypeOf(kind document.PageKind) string {
+	switch kind {
+	case document.PagePost:
+		return articleType
+	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills,
+		document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
+	}
+	return websiteType
 }
 
 // block is the component of a block, at the depth of its headings.

@@ -643,10 +643,10 @@ func (drawn blogDrawing) draw(blog compose.Blog, pageWriter html.PageWriter, wri
 	served := drawn.served
 	served.servePictures(blog.Pictures)
 	for _, post := range blog.Posts {
-		page := post.Head.Page
-		served.serveEveryFormat(post, pageWriter.Post(post), writer)
-		drawn.moved[routes.NumberPath(page.Translation, post.Head.Number)] = move{location: routes.Path(page, routes.FormatChosen), status: http.StatusMovedPermanently}
-		currentDayMoves(drawn.moved, post)
+		page := post.Document.Head.Page
+		served.serveEveryFormat(post.Document, pageWriter.Post(post.Document, post.Record), writer)
+		drawn.moved[routes.NumberPath(page.Translation, post.Document.Head.Number)] = move{location: routes.Path(page, routes.FormatChosen), status: http.StatusMovedPermanently}
+		currentDayMoves(drawn.moved, post.Document)
 	}
 	for _, list := range blog.Lists {
 		served.serveEveryFormat(list, pageWriter.List(list), writer)
@@ -657,7 +657,7 @@ func (drawn blogDrawing) draw(blog compose.Blog, pageWriter html.PageWriter, wri
 		served.serveLater(laterPageOf(list, writer, func() string { return pageWriter.List(list) }))
 	}
 	for _, older := range blog.Versions {
-		served.serveLater(laterPageOf(older, writer, func() string { return pageWriter.Post(older) }))
+		served.serveLater(laterPageOf(older, writer, func() string { return pageWriter.Post(older, nil) }))
 	}
 	bodies := html.NewFeedWriter(writer.site)
 	for _, composedFeed := range blog.Feeds {

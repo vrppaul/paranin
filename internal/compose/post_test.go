@@ -674,7 +674,7 @@ func TestAPostIsServedWhilePublishedOrUnlisted(test *testing.T) {
 			site := SiteOf(Prepare(snapshot), Audience{At: testCase.at, Drafts: testCase.drafts})
 			served := []string{}
 			for _, post := range site.Own.Posts {
-				served = append(served, post.Head.Page.Slug)
+				served = append(served, post.Document.Head.Page.Slug)
 			}
 			if slices.Contains(served, samplePostSlug) != testCase.served {
 				test.Errorf("the posts served = %q, want %q among them: %t", served, samplePostSlug, testCase.served)
@@ -841,7 +841,7 @@ func TestAnUnlistedPostIsIndexedByNoSearchEngine(test *testing.T) {
 // same documents, and under -race, as its hook runs it, neither writes what the other reads.
 func TestTwoComposesOfOnePostAgree(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	composed := make([][]document.Document, 2)
+	composed := make([][]Composed, 2)
 	var group sync.WaitGroup
 	for index := range composed {
 		group.Go(func() { composed[index] = SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts })
@@ -879,10 +879,10 @@ func publicOnTheDay() Audience {
 	return Audience{At: fixtures.Day(), Drafts: false}
 }
 
-// postNamed is the document of the post of a slug among documents.
-func postNamed(test *testing.T, posts []document.Document, slug string) document.Document {
+// postNamed is the document of the post of a slug among the posts compose made.
+func postNamed(test *testing.T, posts []Composed, slug string) document.Document {
 	test.Helper()
-	return fixtures.DocumentOf(test, posts, document.PostPage(slug))
+	return fixtures.DocumentOf(test, DocumentsOf(posts), document.PostPage(slug))
 }
 
 func paragraphOf(spans ...document.Span) document.Paragraph {

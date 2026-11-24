@@ -37,8 +37,9 @@ type Blog struct {
 	// Filtered are the blog's list by year filtered by each tag its head names: views of the list, which a reader opens
 	// from its head and no index lists
 	Filtered []document.Document
-	// Posts are the posts the blog serves, in the snapshot's order, each link inside the site read into its page
-	Posts []document.Document
+	// Posts are the posts the blog serves, in the snapshot's order, each with its record, each link inside the site read
+	// into its page
+	Posts []Composed
 	// Versions are the older versions of the posts the blog serves, each a page of its own, which no list names and no
 	// search engine indexes, in the posts' order and each post's newest first
 	Versions []document.Document
@@ -115,15 +116,16 @@ func (composed Blog) Served() []document.Document {
 // composePosts composes a blog's posts, their feeds and older versions, their links read among paths.
 func (composed *Blog) composePosts(prepared *Prepared, read blog, paths map[string]document.Target) {
 	composed.Posts = composedPosts(prepared, read, paths)
-	composed.Feeds = read.withPosts(composed.Posts)
+	posts := DocumentsOf(composed.Posts)
+	composed.Feeds = read.withPosts(posts)
 	composed.Versions = olderDocuments(prepared, read, paths)
-	composed.served = slices.Concat(composed.lists(), composed.Posts, composed.Versions)
+	composed.served = slices.Concat(composed.lists(), posts, composed.Versions)
 }
 
-// Documents are the documents of the pages a person reads, in their order, for a face that draws no record.
-func (site Site) Documents() []document.Document {
-	documents := make([]document.Document, 0, len(site.Pages))
-	for _, page := range site.Pages {
+// DocumentsOf are the documents of composed pages, in their order, for a face that draws no record.
+func DocumentsOf(pages []Composed) []document.Document {
+	documents := make([]document.Document, 0, len(pages))
+	for _, page := range pages {
 		documents = append(documents, page.Document)
 	}
 	return documents

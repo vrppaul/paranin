@@ -1,13 +1,16 @@
 package compose
 
 import (
+	"time"
+
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 )
 
 // Record is what compose makes of a page for whoever reads it as data rather than as text, a search engine
 // reading JSON-LD among them (ADR-0003): the facts a vocabulary of data names, each as plain text. A face writes
-// the vocabulary; compose picks the facts, as it does for a document. Every page a person reads has one.
+// the vocabulary; compose picks the facts, as it does for a document. The résumé, each project's page and each post
+// have one; the blog's lists, filtered or not, and an older version of a post, which a newer stands over, have none.
 //
 //sumtype:decl
 type Record interface {
@@ -37,13 +40,40 @@ type WorkRecord struct {
 	Description string
 	Language    string
 	Repository  string
-	Author      string
-	AuthorPage  document.Page
+	Author      Author
 	Page        document.Page
+}
+
+// PostRecord is the record of a post's current version: its title and lead, its page, when it came out, the zero time
+// for a draft not yet dated, the day its current version came out, the zero time where none is known, its author, the
+// language it is written in, its tags, and its series, none where its page shows none.
+type PostRecord struct {
+	Title       string
+	Description string
+	Page        document.Page
+	Published   time.Time
+	VersionDay  time.Time
+	Author      Author
+	Language    string
+	Tags        []string
+	Series      *PostSeries
+}
+
+// Author is who wrote a work a record names, a project or a post: their name, and the page that is theirs.
+type Author struct {
+	Name string
+	Page document.Page
+}
+
+// PostSeries is a series as a post's record names it: its title, and its group on the blog's list by series.
+type PostSeries struct {
+	Title string
+	Group document.Anchor
 }
 
 func (PersonRecord) record() {}
 func (WorkRecord) record()   {}
+func (PostRecord) record()   {}
 
 func personRecord(profile content.Profile) PersonRecord {
 	person := profile.Person
@@ -100,15 +130,40 @@ func skillsInUse(groups []content.SkillGroup) []string {
 	return names
 }
 
-func workRecord(project content.Project, author content.Person) WorkRecord {
+func workRecord(project content.Project, author Author) WorkRecord {
 	return WorkRecord{
 		Name:        plainText(project.Name),
 		Description: plainText(project.Description),
 		Language:    project.Language,
 		Repository:  project.Repo,
-		Author:      plainText(author.Name),
-		AuthorPage:  document.PageOf(document.PageResume),
+		Author:      author,
 		Page:        projectPage(project),
+	}
+}
+
+// authorOf is the author of every work a record names: the profile's person, whose page is the résumé.
+func authorOf(person content.Person) Author {
+	return Author{Name: plainText(person.Name), Page: document.PageOf(document.PageResume)}
+}
+
+// postRecord is the record of a post's current version, by its author, in the blog's language, naming the series its
+// page shows.
+func (read blog) postRecord(post content.Post, author Author) PostRecord {
+	var series *PostSeries
+	if read.seriesShownOn(post) != noSeries {
+		shown := read.seriesOf[post.Slug]
+		series = &PostSeries{Title: shown.Title, Group: read.seriesGroup(shown)}
+	}
+	return PostRecord{
+		Title:       post.Title,
+		Description: post.Description,
+		Page:        postPage(post),
+		Published:   post.Published.At(),
+		VersionDay:  post.VersionDay().Start(),
+		Author:      author,
+		Language:    read.words.Language(),
+		Tags:        post.Tags,
+		Series:      series,
 	}
 }
 

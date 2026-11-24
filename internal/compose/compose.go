@@ -32,8 +32,9 @@ type Composed struct {
 func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	profile := snapshot.Profile
 	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks(noSeries)), personRecord(profile))}
+	author := authorOf(profile.Person)
 	for _, project := range projectsWithPages(profile.Projects) {
-		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Own.Words), workRecord(project, profile.Person)))
+		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Own.Words), workRecord(project, author)))
 	}
 	return pages
 }

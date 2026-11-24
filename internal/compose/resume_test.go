@@ -163,7 +163,7 @@ func TestEachEntryTellsARoleFromASchool(test *testing.T) {
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
-	documents := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents()
+	documents := DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages)
 	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	projects := sectionTitled(test, resume, "Projects")
@@ -194,7 +194,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 // Every fact of a project the profile gives reaches its page, as a phrase of its own: a face that shows every phrase
 // shows every fact.
 func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
-	project := fixtures.DocumentOf(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	phrases := document.Phrases(project)
 	cases := []struct {
 		name string
@@ -233,7 +233,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := fixtures.DocumentOf(test, SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Documents(), tidyTool).Head.MadeOf; !slices.Equal(got, testCase.want) {
+			if got := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Pages), tidyTool).Head.MadeOf; !slices.Equal(got, testCase.want) {
 				test.Errorf("the tags of tidy-tool's page = %q, want %q", got, testCase.want)
 			}
 		})
@@ -243,7 +243,7 @@ func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
 // A project's page names where its code lives once, in its head, and its details hold the rest: who made it, the
 // profile's facts, how it is installed.
 func TestAProjectsPageNamesItsRepositoryOnce(test *testing.T) {
-	project := fixtures.DocumentOf(test, SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents(), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	cases := []struct {
 		name  string
 		facts []document.Fact
@@ -306,7 +306,7 @@ func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 		}
 	}
 	want := []document.Page{}
-	for _, page := range SiteOf(Prepare(snapshot), publicOnTheDay()).Documents() {
+	for _, page := range DocumentsOf(SiteOf(Prepare(snapshot), publicOnTheDay()).Pages) {
 		want = append(want, page.Head.Page)
 	}
 	if !slices.Equal(got, want) {
@@ -392,7 +392,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	site := SiteOf(Prepare(snapshot), publicOnTheDay())
-	documents := slices.Concat(site.Documents(), tabDocumentsOf(snapshot), []document.Document{site.Index}, Extras(snapshot))
+	documents := slices.Concat(DocumentsOf(site.Pages), tabDocumentsOf(snapshot), []document.Document{site.Index}, Extras(snapshot))
 	for _, composed := range documents {
 		if got, want := composed.Head.Language, "en"; got != want {
 			test.Errorf("the language of %+v = %q, want %q", composed.Head.Page, got, want)
@@ -404,7 +404,7 @@ func TestEveryDocumentIsInTheLanguageOfItsWords(test *testing.T) {
 // shared: the résumé's is its headline, a project's page's what the project does, a tab's its page's.
 func TestEachPageHasADescription(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
-	documents := slices.Concat(SiteOf(Prepare(snapshot), publicOnTheDay()).Documents(), tabDocumentsOf(snapshot))
+	documents := slices.Concat(DocumentsOf(SiteOf(Prepare(snapshot), publicOnTheDay()).Pages), tabDocumentsOf(snapshot))
 	cases := []struct {
 		name string
 		page document.Page
@@ -426,7 +426,7 @@ func TestEachPageHasADescription(test *testing.T) {
 
 // The résumé's head greets the reader before the author's name, in the site's words; a project's page does not.
 func TestTheResumeHeadGreetsTheReader(test *testing.T) {
-	documents := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Documents()
+	documents := DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages)
 	cases := []struct {
 		name string
 		page document.Page

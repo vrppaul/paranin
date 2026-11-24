@@ -317,7 +317,7 @@ func reviseAt(contentFolder string, page document.Page, moment time.Time) (strin
 	}
 	out := false
 	for _, blog := range compose.SiteOf(compose.Prepare(loaded), compose.Audience{At: moment, Drafts: false}).Blogs() {
-		out = out || slices.ContainsFunc(blog.Posts, func(post document.Document) bool { return post.Head.Page == page })
+		out = out || slices.ContainsFunc(blog.Posts, func(post compose.Composed) bool { return post.Document.Head.Page == page })
 	}
 	post, found := loaded.Post(page.Translation, page.Slug)
 	if !found || !out {

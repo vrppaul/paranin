@@ -48,10 +48,11 @@ const (
 	outlineHeadingPart = "outline-heading"
 )
 
-// Post writes a post as a page of HTML (DESIGN.md, Pages): what the page says of itself, then its head, its outline,
-// its article, the panes at its foot and the foot line. A post has no tabs: it is drawn whole, in the blog's session,
-// its window the post's slug, its command line going to its headings and its series' other parts too.
-func (writer PageWriter) Post(composed document.Document) string {
+// Post writes a post as a page of HTML (DESIGN.md, Pages): what the page says of itself, its record as linked data
+// where it has one, then its head, its outline, its article, the panes at its foot and the foot line. A post has no
+// tabs: it is drawn whole, in the blog's session, its window the post's slug, its command line going to its headings
+// and its series' other parts too.
+func (writer PageWriter) Post(composed document.Document, record compose.Record) string {
 	head := composed.Head
 	foot := writer.postFoot(head.Page, document.PlacesOf(composed))
 	drawn := writer.articleOf(composed.Blocks)
@@ -62,8 +63,7 @@ func (writer PageWriter) Post(composed document.Document) string {
 		notes:   document.NotesOf(composed.Blocks),
 		panes:   writer.panesOf(head.Post),
 	}
-	// a post's record, the BlogPosting its linked data would write, comes with the site's SEO (TODO.md)
-	return rendered(writer.page(head.Language, writer.metadataOf(head, head.Page, head.Title), nil, writer.postMain(parts), foot))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, head.Page, head.Title, record), writer.postMain(parts), foot))
 }
 
 // postParts are the parts of a post's main part, drawn from its document: its head, the headings its outline lists,

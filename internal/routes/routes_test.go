@@ -150,6 +150,28 @@ func TestATerminalReadsAPageByItsWholeAddress(test *testing.T) {
 	}
 }
 
+// A thing a page's linked data names is known by the page's whole address and its name after it, in the page's
+// language's folder where the page is translated.
+func TestAThingOfAPagesRecordIsKnownByThePagesAddress(test *testing.T) {
+	site := New(writtenAddress{written: "https://example.test", host: "example.test"}, testedAuthority, testedTranslations())
+	cases := []struct {
+		name  string
+		page  document.Page
+		thing string
+		want  string
+	}{
+		{name: "the person on the résumé", page: document.PageOf(document.PageResume), thing: "person", want: "https://example.test/#person"},
+		{name: "a thing on a translated post", page: document.PostPage("reading-slowly").InLanguage("ru"), thing: "post", want: "https://example.test/ru/blog/reading-slowly#post"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := site.Identifier(testCase.page, testCase.thing); got != testCase.want {
+				test.Errorf("Identifier(%+v, %q) = %q, want %q", testCase.page, testCase.thing, got, testCase.want)
+			}
+		})
+	}
+}
+
 // In a terminal a page is reached by its path with no slash before it, as an SSH user name and the TUI's :e write it
 // (D26): the blog's list, a post by its slug and by its number.
 func TestATerminalNamesAPageByItsPath(test *testing.T) {

@@ -28,7 +28,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
   - The formats of D21: HTML for a request that names no format, the manual for a terminal's client, `Vary: Accept, User-Agent`; the rule then stands in `docs/WEB.md`'s negotiation, and `docs/SEO.md` keeps its why.
   - `robots.txt` and `sitemap.xml`, the sitemap written by `face/feed` beside the feeds.
   - A post's head: an `article` in Open Graph, its `BlogPosting`, `twitter:card` on every page.
-  - The one `Person` by its `@id`, `WebSite` on `/` and `og:site_name` with the person's name, a tab's `WebPage`; the titles of a résumé's tab, a project's tab and the list by series; `hreflang` between the blog's lists.
+  - The one `Person` by its `@id`, `WebSite` on `/` and `og:site_name` with the person's name, a tab's `WebPage`; the titles of a résumé's tab, a project's tab and the list by series.
   - `noindex` on an unlisted post, worked out where its page is composed, and `301` from a page's path with a slash at its end.
   - Each page's card, `og:image`, `summary_large_image` and `max-image-preview:large`, drawn by Typst, which lands with them, its first user (ADR-0005).
   - IndexNow for a post as it comes out, its key file at the site's root.

@@ -53,7 +53,8 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
 - **One address**, whole, as `routes` writes it: the canonical link in the head, the `Link` header every format sends
   (WEB, "Negotiation"), `og:url`, the record's `url` and the sitemap's entry.
 - **Its languages:** a post read in more than one, `hreflang` to each, itself among them, and `x-default` to the
-  English original; the blog's lists so too, between `/blog` and each language's.
+  English original. The blog's lists name no other: each lists the posts out in its language alone, so none is
+  another's translation.
 - **Open Graph:** `og:type`, `og:site_name` the site's name (Records), `og:locale` from its catalogue, `og:locale:alternate` for a post's other
   languages, `og:title`, `og:description`, `og:url`. A post is an `article` (owner, 2026-11-24), with
   `article:published_time`, `article:modified_time` its current version's day, `article:author` the résumé's address

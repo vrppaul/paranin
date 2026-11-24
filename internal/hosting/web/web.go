@@ -14,8 +14,8 @@
 // for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again. Each
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
-// tell a search engine not to index them. A preview is served at its link alone, under a key
-// the server is handed (preview.go), until the link lapses: every face and picture of it where its post would stand,
+// tell a search engine not to index them. A preview is served at its link alone, under a key the server is handed
+// (preview.go), until the post is out or the key changes: every face and picture of it where its post would stand,
 // the blog's folder swapped for the preview's folder and the link's token, drawn for the request, since each link
 // writes its own token into them; once the post is out, the link sends its reader on to it. Whatever is answered in
 // the preview's folder is for its reader alone: no search engine indexes it, no cache keeps it and no browser sends its
@@ -360,10 +360,9 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		send(writer, http.StatusOK, picture)
 		return
 	}
-	moment := time.Now()
-	drawn := server.drawn.Current(moment)
+	drawn := server.drawn.Current(time.Now())
 	if routes.InPreviewFolder(path) {
-		status, sent := server.atLink(drawn, writer.Header(), request, moment)
+		status, sent := server.atLink(drawn, writer.Header(), request)
 		send(writer, status, sent.privately())
 		return
 	}
@@ -399,14 +398,14 @@ func (served answers) answerTo(header http.Header, request *http.Request, path s
 	return missingStatus, drawnAs(missing.mediaType, missing.draw(routes.Asked(request.URL.Path, request.URL.RawQuery)))
 }
 
-// atLink is the status and the answer to a request in a preview's folder at a moment: where its path is a preview link
-// whose token the key signed for its post and has not lapsed, the post's face or picture there while it is a preview,
-// drawn for that link, or the reader sent on to the same at its own address once the post is out; else, a path of no
-// post among them, as no page, so a link tells nothing of which posts there are.
-func (server *Server) atLink(drawn *drawing, header http.Header, request *http.Request, moment time.Time) (int, answer) {
+// atLink is the status and the answer to a request in a preview's folder: where its path is a preview link whose token
+// the key signed for its post, the post's face or picture there while it is a preview, drawn for that link, or the
+// reader sent on to the same at its own address once the post is out; else, a path of no post among them, as no page,
+// so a link tells nothing of which posts there are.
+func (server *Server) atLink(drawn *drawing, header http.Header, request *http.Request) (int, answer) {
 	link, isLink := drawn.site.PreviewPath(request.URL.Path)
 	notFound := drawn.notFoundAt(request.URL.Path)
-	if !isLink || !server.previewKey.admits(link.Token, link.Post, moment) {
+	if !isLink || !server.previewKey.admits(link.Token, link.Post) {
 		return answersOf().answerTo(header, request, link.PostPath, notFound)
 	}
 	if previewed, isPreview := drawn.previews.posts[link.Post]; isPreview {

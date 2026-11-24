@@ -184,9 +184,10 @@ func KeyFile(test *testing.T, written string) string {
 }
 
 // ServedOnTheDay is a handler's answer to a request by a method at a path, with an Accept header, on the tests' day: in
-// a synctest bubble whose clock is moved on to that day, so a link's lapse is held to it and never to the real clock.
-// The handler has drawn what it draws outside the bubble: preparing a snapshot splits its posts' code by chroma
-// (compose.Prepare), whose regexps start a clock goroutine of their own (regexp2's fastclock) that no bubble outlives.
+// a synctest bubble whose clock is moved on to that day, so the request is read at that moment, never at the real
+// clock's. The handler has drawn what it draws outside the bubble: preparing a snapshot splits its posts' code by
+// chroma (compose.Prepare), whose regexps start a clock goroutine of their own (regexp2's fastclock) that no bubble
+// outlives.
 func ServedOnTheDay(test *testing.T, handler http.Handler, method, path, accept string) *httptest.ResponseRecorder {
 	var response *httptest.ResponseRecorder
 	synctest.Test(test, func(*testing.T) { response = servedOnTheDay(handler, method, path, accept) })

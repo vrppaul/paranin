@@ -4,7 +4,7 @@
 //	paranin check content build/web    loads a content folder and the page's build as one release, the same way
 //	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
 //	paranin serve --drafts content build/web    the same, the drafts too, each marked, for their author to read
-//	paranin preview-link content <slug>         prints the link a post is previewed at, for thirty days or --lasts
+//	paranin preview-link content <slug>         prints the link a post is previewed at, until it is out
 //	paranin revise content <slug>               takes a revision of a post out, its current version, beside it
 //
 // preview-link and revise take --language and a language's tag, as ru, for a post's translation into it.
@@ -71,7 +71,7 @@ const (
 	previewLinkCommand = "preview-link"
 	reviseCommand      = "revise"
 	usage              = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
-		"paranin preview-link [--lasts 720h, at most 2160h] [--language ru] <content folder> <slug> | " +
+		"paranin preview-link [--language ru] <content folder> <slug> | " +
 		"paranin revise [--language ru] <content folder> <slug>"
 	commandArgument  = 1
 	contentArgument  = 2
@@ -99,16 +99,11 @@ const (
 // How revise writes its revision's file: once, and only where none is there yet
 const newFileOnly = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 
-// How preview-link is written after its command: the flag of how long the link lasts, thirty days where it is not
-// asked, a span a reader is sent a draft to read in, and ninety at most, so no link that leaks lives for years; then
-// the content folder and the post's slug, by their places among the words past the flags
+// How preview-link and revise are written after their command: the content folder and the post's slug, by their places
+// among the words past the flags
 const (
-	lastsFlag       = "lasts"
-	lastsUsage      = "how long the link opens the preview, as Go writes a duration, at most 2160h"
-	defaultLinkLife = 30 * 24 * time.Hour
-	longestLinkLife = 90 * 24 * time.Hour
-	slugPlace       = 1
-	linkArguments   = 2
+	slugPlace     = 1
+	postArguments = 2
 )
 
 // How serve is written after its command: the flag that serves the drafts too, then the content folder and the build
@@ -208,7 +203,7 @@ func run(arguments []string) int {
 		}
 		return serve(asked)
 	case command == previewLinkCommand:
-		asked, isWritten := linkAskedOf(arguments[contentArgument:])
+		asked, isWritten := postAskedOf(previewLinkCommand, arguments[contentArgument:])
 		if !isWritten {
 			return usageWrong()
 		}
@@ -295,7 +290,7 @@ func checkedNow(loaded *content.Snapshot) error {
 
 // previewLink prints the link a post of a content folder is previewed at, signed with the key the environment names,
 // as a server holding the same key serves it; a failure where it names none or the post is no preview now.
-func previewLink(asked linkAsked) int {
+func previewLink(asked postAsked) int {
 	key, err := readPreviewKey()
 	if err != nil {
 		return refused(err, previewKeyVariable)
@@ -303,10 +298,9 @@ func previewLink(asked linkAsked) int {
 	if key == nil {
 		return refused(errNoPreviewKey, previewKeyVariable)
 	}
-	now := time.Now()
-	link, err := previewLinkOf(asked.post.folder, asked.post.page, key, now, now.Add(asked.lasts))
+	link, err := previewLinkOf(asked.folder, asked.page, key, time.Now())
 	if err != nil {
-		return refused(err, asked.post.folder)
+		return refused(err, asked.folder)
 	}
 	fmt.Println(link)
 	return succeeded
@@ -318,49 +312,22 @@ type postAsked struct {
 	page   document.Page
 }
 
-// linkAsked is what preview-link is asked: the post, and how long the link lasts.
-type linkAsked struct {
-	post  postAsked
-	lasts time.Duration
-}
-
-// postFlags are the flags of a command asked of a post, which mistakes are told of by the usage alone, as for any
-// other command, with the flag of the post's language among them, whose value it hands back to read once parsed.
-func postFlags(command string) (*flag.FlagSet, *string) {
+// postAskedOf reads the post a command is asked of from the words after its command, and whether they are written
+// right: the flag of its language, where one is asked, then the content folder and the post's slug. A mistake is told
+// of by the usage alone, as for any other command.
+func postAskedOf(command string, words []string) (postAsked, bool) {
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	return flags, flags.String(languageFlag, "", languageUsage)
-}
-
-// postAskedOf reads the post a command is asked of from the words after its command, and whether they are written
-// right: the flag of its language, where one is asked, then the content folder and the post's slug.
-func postAskedOf(command string, words []string) (postAsked, bool) {
-	flags, language := postFlags(command)
-	if err := flags.Parse(words); err != nil || flags.NArg() != linkArguments {
+	language := flags.String(languageFlag, "", languageUsage)
+	if err := flags.Parse(words); err != nil || flags.NArg() != postArguments {
 		return postAsked{folder: "", page: document.PageOf(document.PageNone)}, false
 	}
-	return postAskedIn(flags, *language), true
+	return postAsked{folder: flags.Arg(contentPlace), page: document.PostPage(flags.Arg(slugPlace)).InLanguage(*language)}, true
 }
 
-// postAskedIn is the post a command's flags, parsed, ask of in a language: its content folder and slug.
-func postAskedIn(flags *flag.FlagSet, language string) postAsked {
-	return postAsked{folder: flags.Arg(contentPlace), page: document.PostPage(flags.Arg(slugPlace)).InLanguage(language)}
-}
-
-// linkAskedOf reads what preview-link is asked from the words after its command, and whether they are written right:
-// a lifetime, where one is asked, of some time and no longer than the longest, and the post asked of.
-func linkAskedOf(words []string) (linkAsked, bool) {
-	flags, language := postFlags(previewLinkCommand)
-	lasts := flags.Duration(lastsFlag, defaultLinkLife, lastsUsage)
-	if err := flags.Parse(words); err != nil || flags.NArg() != linkArguments || *lasts <= 0 || *lasts > longestLinkLife {
-		return linkAsked{post: postAsked{folder: "", page: document.PageOf(document.PageNone)}, lasts: 0}, false
-	}
-	return linkAsked{post: postAskedIn(flags, *language), lasts: *lasts}, true
-}
-
-// previewLinkOf is the link a post of a content folder is previewed at at a moment, whole, signed with a key until it
-// lapses: a fault where the folder does not load, or the post is then no preview, a draft, out, or none at all.
-func previewLinkOf(contentFolder string, post document.Page, key *web.PreviewKey, moment, lapses time.Time) (string, error) {
+// previewLinkOf is the link a post of a content folder is previewed at at a moment, whole, signed with a key: a fault
+// where the folder does not load, or the post is then no preview, a draft, out, or none at all.
+func previewLinkOf(contentFolder string, post document.Page, key *web.PreviewKey, moment time.Time) (string, error) {
 	loaded, err := release.ReadFolder(contentFolder, content.Load)
 	if err != nil {
 		return "", err //nolint:wrapcheck // the content's faults, printed one a line as they come
@@ -372,7 +339,7 @@ func previewLinkOf(contentFolder string, post document.Page, key *web.PreviewKey
 	if !previewed {
 		return "", fmt.Errorf("%s is no post previewed now: a preview, or a post dated later, of the folder %q", postName(post), contentFolder)
 	}
-	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority, loaded.TranslatedInto()).Previewing(post, key.Token(post, lapses))
+	site := routes.New(loaded.Profile.Site.BaseURL, loaded.Profile.Site.TagAuthority, loaded.TranslatedInto()).Previewing(post, key.Token(post))
 	return site.Address(post, routes.FormatChosen), nil
 }
 

@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -34,9 +33,6 @@ const (
 	pictureFile     = "posts/reading-slowly/margin.png"
 	picturePath     = "/blog/reading-slowly/margin.png"
 )
-
-// How long a test's preview link lasts from the tests' day, which its links are opened on
-const linkLasts = 24 * time.Hour
 
 // Each page is served at its address in each format, and the index at llms.txt as plain text, as agents read it.
 func TestEveryPageIsServedAtItsAddress(test *testing.T) {
@@ -625,7 +621,7 @@ func TestAPostComesOutAtItsMoment(test *testing.T) {
 	}{
 		{name: "its page", path: "/blog/coming.md", holds: "# Coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusOK, holds: true}},
 		{
-			name: "its preview link", path: "/preview/" + key.Token(document.PostPage("coming"), fixtures.Day().Add(linkLasts)) + "/coming.md", holds: "# Coming",
+			name: "its preview link", path: "/preview/" + key.Token(document.PostPage("coming")) + "/coming.md", holds: "# Coming",
 			before: seenAnswer{status: http.StatusOK, holds: true}, after: seenAnswer{status: http.StatusFound, holds: false},
 		},
 		{name: "its number", path: "/blog/3", holds: "/blog/coming", before: seenAnswer{status: http.StatusNotFound, holds: false}, after: seenAnswer{status: http.StatusMovedPermanently, holds: true}},
@@ -682,25 +678,20 @@ func TestADraftIsServedToItsAuthorAlone(test *testing.T) {
 const (
 	testSecret = "a secret the tests sign preview links with"
 	oldSecret  = "a secret the tests signed preview links with before"
-	// a token as a key writes one, lapsing in 2100, which no key the tests hold signs
-	wrongToken = "4102444800.c2lnbmVkIGJ5IG5vIGtleSB0aGUgdGVzdHMgaG9sZA"
+	// a token as a key writes one, 32 bytes in base64url, which no key the tests hold signs
+	wrongToken = "c2lnbmVkIGJ5IG5vIGtleSB0aGUgdGVzdHMgaG9sZC4"
 )
 
-// A preview is served at its link alone, under the key the server holds, until the link lapses: its page in each
-// format, each leading to its picture and its own sections at the link, and its picture; at its own address, at a link
-// of a wrong token, of another post's, signed with a key the server held before its own, lapsed, or whose lapse is
-// moved later under the same signature, and on a server that holds no key, it is no page. Each link is opened on the
-// tests' day.
+// A preview is served at its link alone, under the key the server holds: its page in each format, each leading to its
+// picture and its own sections at the link, and its picture; at its own address, at a link of a wrong token, of
+// another post's, or signed with a key the server held before its own, and on a server that holds no key, it is no
+// page. Each link is opened on the tests' day.
 func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 	store := fixtureStore(test, fixtures.PreviewedFolder(test))
 	key, oldKey := keyOf(test, testSecret), keyOf(test, oldSecret)
-	lapses := fixtures.Day().Add(linkLasts)
-	token := key.Token(document.PostPage(fixtures.PreviewSlug), lapses)
+	token := key.Token(document.PostPage(fixtures.PreviewSlug))
 	link := "/preview/" + token + "/" + fixtures.PreviewSlug
-	lapsed := "/preview/" + key.Token(document.PostPage(fixtures.PreviewSlug), fixtures.Day().Add(-linkLasts)) + "/previewed.md"
-	_, signature, _ := strings.Cut(token, tokenJoint)
-	movedLater := "/preview/" + strconv.FormatInt(lapses.Add(linkLasts).Unix(), decimal) + tokenJoint + signature + "/previewed.md"
-	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), lapses)
+	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage))
 	translationLink := "/preview/ru/" + translationToken + "/" + fixtures.PreviewSlug
 	opened, missing := seenAnswer{status: http.StatusOK, holds: true}, seenAnswer{status: http.StatusNotFound, holds: false}
 	cases := []struct {
@@ -721,15 +712,13 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 		{name: "its picture at its own address", previewKey: key, path: "/blog/previewed/margin.png", accept: "", holds: "PNG", want: missing},
 		{name: "a wrong token", previewKey: key, path: "/preview/" + wrongToken + "/previewed.md", accept: "", holds: "# Previewed", want: missing},
 		{
-			name: "the token of another post", previewKey: key, path: "/preview/" + key.Token(document.PostPage(fixturePostSlug), lapses) + "/previewed.md", accept: "",
+			name: "the token of another post", previewKey: key, path: "/preview/" + key.Token(document.PostPage(fixturePostSlug)) + "/previewed.md", accept: "",
 			holds: "# Previewed", want: missing,
 		},
 		{
-			name: "a token of an old key", previewKey: key, path: "/preview/" + oldKey.Token(document.PostPage(fixtures.PreviewSlug), lapses) + "/previewed.md", accept: "",
+			name: "a token of an old key", previewKey: key, path: "/preview/" + oldKey.Token(document.PostPage(fixtures.PreviewSlug)) + "/previewed.md", accept: "",
 			holds: "# Previewed", want: missing,
 		},
-		{name: "a link lapsed", previewKey: key, path: lapsed, accept: "", holds: "# Previewed", want: missing},
-		{name: "a lapse moved later", previewKey: key, path: movedLater, accept: "", holds: "# Previewed", want: missing},
 		{name: "no key held", previewKey: nil, path: link + ".md", accept: "", holds: "# Previewed", want: missing},
 		{name: "its translation's page", previewKey: key, path: translationLink, accept: "text/html", holds: `<html lang="ru">`, want: opened},
 		{
@@ -762,8 +751,8 @@ func TestAPreviewOpensAtItsLinkAlone(test *testing.T) {
 func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 	key := keyOf(test, testSecret)
 	server := drawnServer(test, fixtureStore(test, fixtures.PreviewedFolder(test)), key)
-	token := key.Token(document.PostPage(fixtures.PreviewSlug), fixtures.Day().Add(linkLasts))
-	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage), fixtures.Day().Add(linkLasts))
+	token := key.Token(document.PostPage(fixtures.PreviewSlug))
+	translationToken := key.Token(document.PostPage(fixtures.PreviewSlug).InLanguage(fixtures.PreviewLanguage))
 	link := "/preview/" + token + "/" + fixtures.PreviewSlug
 	want := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
 	cases := []struct {
@@ -802,9 +791,9 @@ func TestAPreviewIsSentForItsReaderAlone(test *testing.T) {
 // address, its page, its markdown, its manual or its picture, sent as any answer at a preview link is; a link of
 // another post's token, or of a draft or no post, answers as no page, so it tells nothing of which posts there are.
 func TestAPreviewLinkSendsItsReaderOnOnceThePostIsOut(test *testing.T) {
-	key, lapses := keyOf(test, testSecret), fixtures.Day().Add(linkLasts)
+	key := keyOf(test, testSecret)
 	server := drawnServer(test, fixtureStore(test, fixtures.ContentFolder(test)), key)
-	link := "/preview/" + key.Token(document.PostPage(fixturePostSlug), lapses) + "/" + fixturePostSlug
+	link := "/preview/" + key.Token(document.PostPage(fixturePostSlug)) + "/" + fixturePostSlug
 	private := sentPrivately{robots: "noindex", referrer: "no-referrer", cache: "private, no-store", link: ""}
 	cases := []struct {
 		name string
@@ -816,19 +805,15 @@ func TestAPreviewLinkSendsItsReaderOnOnceThePostIsOut(test *testing.T) {
 		{name: "its manual", path: link + ".txt", want: sentOn{status: http.StatusFound, location: "/blog/reading-slowly.txt", sent: private}},
 		{name: "its picture", path: link + "/margin.png", want: sentOn{status: http.StatusFound, location: picturePath, sent: private}},
 		{
-			name: "another post's token", path: "/preview/" + key.Token(document.PostPage("notes-on-tools"), lapses) + "/reading-slowly.md",
+			name: "another post's token", path: "/preview/" + key.Token(document.PostPage("notes-on-tools")) + "/reading-slowly.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 		{
-			name: "a draft's link", path: "/preview/" + key.Token(document.PostPage("notes-on-tools"), lapses) + "/notes-on-tools.md",
+			name: "a draft's link", path: "/preview/" + key.Token(document.PostPage("notes-on-tools")) + "/notes-on-tools.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 		{
-			name: "a lapsed link", path: "/preview/" + key.Token(document.PostPage(fixturePostSlug), fixtures.Day().Add(-linkLasts)) + "/reading-slowly.md",
-			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
-		},
-		{
-			name: "no post's link", path: "/preview/" + key.Token(document.PostPage("no-such-post"), lapses) + "/no-such-post.md",
+			name: "no post's link", path: "/preview/" + key.Token(document.PostPage("no-such-post")) + "/no-such-post.md",
 			want: sentOn{status: http.StatusNotFound, location: "", sent: private},
 		},
 	}
@@ -887,8 +872,7 @@ func TestAPreviewKeyIsReadFromItsFile(test *testing.T) {
 // A preview key's file signs as the key alone, the spaces and line end round it left out, so a copy written with a line
 // end signs as one without.
 func TestAPreviewKeySignsAsItsCopyWithoutALineEnd(test *testing.T) {
-	lapses := fixtures.Day().Add(linkLasts)
-	bare := keyOf(test, testSecret).Token(document.PostPage(fixtures.PreviewSlug), lapses)
+	bare := keyOf(test, testSecret).Token(document.PostPage(fixtures.PreviewSlug))
 	cases := []struct {
 		name    string
 		written string
@@ -898,7 +882,7 @@ func TestAPreviewKeySignsAsItsCopyWithoutALineEnd(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := keyOf(test, testCase.written).Token(document.PostPage(fixtures.PreviewSlug), lapses); got != bare {
+			if got := keyOf(test, testCase.written).Token(document.PostPage(fixtures.PreviewSlug)); got != bare {
 				test.Errorf("the key %q signs %q, want %q as the key alone does", testCase.written, got, bare)
 			}
 		})

@@ -95,16 +95,16 @@ func TestACheckPrintsWhatTheContentWarnsOfAndPasses(test *testing.T) {
 	}
 }
 
-// The secret the tests sign preview links with, and how long a test's link lasts or has lapsed by
+// The secret the tests sign preview links with, and how long before the tests' day a link is printed that is opened
+// long after: a year
 const (
-	previewSecret = "a secret the tests sign preview links with"
-	linkLasts     = time.Hour
+	previewSecret  = "a secret the tests sign preview links with"
+	printedLongAgo = 365 * 24 * time.Hour
 )
 
-// preview-link prints the link of a post previewed now, signed with the key in the file the environment names, for as
-// long as it is asked, ninety days at most; it fails for a post out, a draft or no post, whose link would open nothing,
-// and where the environment names no key or one too short; written wrong, a lifetime of none or past ninety days among
-// it, it says how it is written.
+// preview-link prints the link of a post previewed now, signed with the key in the file the environment names; it
+// fails for a post out, a draft or no post, whose link would open nothing, and where the environment names no key or
+// one too short; written wrong, it says how it is written.
 func TestAPreviewLinkIsPrintedForAPreviewAlone(test *testing.T) {
 	folder := fixtures.PreviewedFolder(test)
 	key, short := fixtures.KeyFile(test, previewSecret), fixtures.KeyFile(test, "short")
@@ -115,7 +115,6 @@ func TestAPreviewLinkIsPrintedForAPreviewAlone(test *testing.T) {
 		want    int
 	}{
 		{name: "a preview", keyPath: key, words: []string{folder, fixtures.PreviewSlug}, want: succeeded},
-		{name: "a preview for an hour", keyPath: key, words: []string{"--lasts", "1h", folder, fixtures.PreviewSlug}, want: succeeded},
 		{name: "a post out", keyPath: key, words: []string{folder, "reading-slowly"}, want: failed},
 		{name: "a draft", keyPath: key, words: []string{folder, "notes-on-tools"}, want: failed},
 		{name: "no post", keyPath: key, words: []string{folder, "no-such-post"}, want: failed},
@@ -123,10 +122,6 @@ func TestAPreviewLinkIsPrintedForAPreviewAlone(test *testing.T) {
 		{name: "a key too short", keyPath: short, words: []string{folder, fixtures.PreviewSlug}, want: failed},
 		{name: "no slug", keyPath: key, words: []string{folder}, want: usageMistaken},
 		{name: "two slugs", keyPath: key, words: []string{folder, fixtures.PreviewSlug, fixtures.PreviewSlug}, want: usageMistaken},
-		{name: "a lifetime of none", keyPath: key, words: []string{"--lasts", "0s", folder, fixtures.PreviewSlug}, want: usageMistaken},
-		{name: "the longest lifetime", keyPath: key, words: []string{"--lasts", "2160h", folder, fixtures.PreviewSlug}, want: succeeded},
-		{name: "a lifetime past the longest", keyPath: key, words: []string{"--lasts", "2161h", folder, fixtures.PreviewSlug}, want: usageMistaken},
-		{name: "a lifetime that does not read", keyPath: key, words: []string{"--lasts", "soon", folder, fixtures.PreviewSlug}, want: usageMistaken},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -139,33 +134,28 @@ func TestAPreviewLinkIsPrintedForAPreviewAlone(test *testing.T) {
 	}
 }
 
-// preview-link's link lasts thirty days where no lifetime is asked, and as long as one asked; it opens the post in
-// the language asked, the original where none is.
-func TestAPreviewLinkLastsAsAsked(test *testing.T) {
+// preview-link's link opens the post in the language asked, the original where none is.
+func TestAPreviewLinkOpensThePostInTheLanguageAsked(test *testing.T) {
 	coming := document.Page{Kind: document.PagePost, Slug: "coming", Tab: ""}
 	cases := []struct {
 		name  string
 		words []string
-		want  linkAsked
+		want  postAsked
 	}{
-		{name: "no lifetime asked", words: []string{"content", "coming"}, want: linkAsked{post: postAsked{folder: "content", page: coming}, lasts: 30 * 24 * time.Hour}},
-		{name: "an hour asked", words: []string{"--lasts", "1h", "content", "coming"}, want: linkAsked{post: postAsked{folder: "content", page: coming}, lasts: time.Hour}},
-		{
-			name: "a translation's", words: []string{"--language", "ru", "content", "coming"},
-			want: linkAsked{post: postAsked{folder: "content", page: coming.InLanguage("ru")}, lasts: 30 * 24 * time.Hour},
-		},
+		{name: "the original", words: []string{"content", "coming"}, want: postAsked{folder: "content", page: coming}},
+		{name: "a translation's", words: []string{"--language", "ru", "content", "coming"}, want: postAsked{folder: "content", page: coming.InLanguage("ru")}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got, isWritten := linkAskedOf(testCase.words); got != testCase.want || !isWritten {
-				test.Errorf("linkAskedOf(%q) = %+v, written right: %t; want %+v, written right", testCase.words, got, isWritten, testCase.want)
+			if got, isWritten := postAskedOf(previewLinkCommand, testCase.words); got != testCase.want || !isWritten {
+				test.Errorf("postAskedOf(%q) = %+v, written right: %t; want %+v, written right", testCase.words, got, isWritten, testCase.want)
 			}
 		})
 	}
 }
 
-// The link preview-link prints opens the preview on a server holding the same key until it lapses, and not after.
-func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
+// The link preview-link prints opens the preview on a server holding the same key however long ago it was printed.
+func TestAPrintedLinkOpensThePreviewHoweverLongAgoPrinted(test *testing.T) {
 	folder := fixtures.PreviewedFolder(test)
 	key, err := web.ReadPreviewKey(fixtures.KeyFile(test, previewSecret))
 	if err != nil {
@@ -181,18 +171,17 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 	day := fixtures.Day()
 	previewed := document.Page{Kind: document.PagePost, Slug: fixtures.PreviewSlug, Tab: ""}
 	cases := []struct {
-		name   string
-		post   document.Page
-		lapses time.Time
-		want   int
+		name    string
+		post    document.Page
+		printed time.Time
 	}{
-		{name: "before it lapses", post: previewed, lapses: day.Add(linkLasts), want: http.StatusOK},
-		{name: "once it has lapsed", post: previewed, lapses: day.Add(-linkLasts), want: http.StatusNotFound},
-		{name: "a translation's, before it lapses", post: previewed.InLanguage(fixtures.PreviewLanguage), lapses: day.Add(linkLasts), want: http.StatusOK},
+		{name: "printed on the day", post: previewed, printed: day},
+		{name: "printed long ago", post: previewed, printed: day.Add(-printedLongAgo)},
+		{name: "a translation's, printed long ago", post: previewed.InLanguage(fixtures.PreviewLanguage), printed: day.Add(-printedLongAgo)},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			link, err := previewLinkOf(folder, testCase.post, key, day, testCase.lapses)
+			link, err := previewLinkOf(folder, testCase.post, key, testCase.printed)
 			if err != nil {
 				test.Fatalf("previewLinkOf(%+v) = %v, want a link", testCase.post, err)
 			}
@@ -201,8 +190,8 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 				test.Fatalf("the link %q does not parse: %v", link, err)
 			}
 			response := fixtures.ServedOnTheDay(test, server, http.MethodGet, address.Path+".md", "")
-			if response.Code != testCase.want {
-				test.Errorf("GET %s.md = %d, want %d", address.Path, response.Code, testCase.want)
+			if response.Code != http.StatusOK {
+				test.Errorf("GET %s.md = %d, want %d", address.Path, response.Code, http.StatusOK)
 			}
 		})
 	}
@@ -299,7 +288,7 @@ func TestReviseTakesAFolderAndASlugAlone(test *testing.T) {
 		{name: "no slug", words: []string{folder}},
 		{name: "two slugs", words: []string{folder, postOut, postOut}},
 		{name: "a language with no tag", words: []string{folder, postOut, "--language"}},
-		{name: "a flag revise takes not", words: []string{"--lasts", "1h", folder, postOut}},
+		{name: "a flag revise takes not", words: []string{"--drafts", folder, postOut}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

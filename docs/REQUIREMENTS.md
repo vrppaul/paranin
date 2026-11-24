@@ -163,10 +163,14 @@ Each part meets these when it is built ([FOUNDATION](FOUNDATION.md) §8).
 **Statuses and preview links.**
 - The repository is public: a preview hides a post's address, not its text.
   An embargo needs a store outside the repository.
-- A preview's token is HMAC-SHA256 over the post's address, its language's
-  folder in it, and the moment the link lapses, which the token carries,
-  compared with `hmac.Equal`; a link lapsed answers as no page. Not over
-  the status: the server checks each request against the post's status as
+- A preview's token is HMAC-SHA256 over the post's address alone, its
+  language's folder in it, compared with `hmac.Equal`, so a link opens the
+  preview until the post is out or the secret changes (owner, 2026-11-24).
+  Once the post is out the link sends its reader on to it for good, and it
+  opens the post again if it is taken back to a preview, and any later
+  post given the same slug while that one is a preview: a link that leaks
+  opens every preview at its address until the secret changes, which ends
+  every other link too. Not over the status: the server checks each request against the post's status as
   it stands, and a link signed over
   `preview` could not send its reader on to the post once it is out. Its
   secret is at least 32 bytes, read from a file alone, since a value in

@@ -506,13 +506,12 @@ updated: 2026-11-12
 | `unlisted` | At its address, listed nowhere: a post taken off the lists without breaking links to it. |
 
 - **The preview link is not in git.** It is `/preview/<token>/<slug>`, the
-  token an HMAC of the slug and the moment the link lapses under the
-  server's secret. `paranin preview-link [--lasts 720h] <content folder>
-  <slug>` prints it on the owner's machine, which holds the same secret,
-  for thirty days unless asked otherwise, ninety at most, so no link that
-  leaks lives for years (a longer one is written wrong), and refuses a post that is no
-  preview now, whose link would open nothing; the folder gives the site's
-  address. CI
+  token an HMAC of the post's address under the server's secret, which
+  opens the preview until the post is out or the secret changes (owner,
+  2026-11-24). `paranin preview-link <content folder> <slug>` prints it on
+  the owner's machine, which holds the same secret, and refuses a post
+  that is no preview now, whose link would open nothing; the folder gives
+  the site's address. CI
   never sees the secret and never prints a link: the logs of a public
   repository are public too. A new secret ends every old preview link at
   once.
@@ -528,19 +527,20 @@ updated: 2026-11-12
     would open nothing. The server reads it as it starts, so a new secret
     takes a restart. Ways weighed: the secret's value in the variable,
     which a child process, `/proc` and a container's inspection all read.
-  - **The token** is one segment, `<lapses>.<signature>`: the moment the
-    link lapses in seconds of Unix time, then HMAC-SHA256 over that moment
-    and the post's address once out, `/blog/<slug>` or a translation's
-    `/ru/blog/<slug>`, in base64url with no padding, so a link opens the
-    post in its own language alone (2026-11-24). The server signs the
-    address and the moment of the request's own path once and compares in constant
-    time; a link lapsed answers as no page, so a link that leaks lives as
-    long as it was asked to. The status is not signed: the server checks
-    each request against the post's status as it stands, and a link signed
-    over `preview` could not send its reader on once the post is out. Ways
-    weighed: one base64url token holding both, which hides a moment the
-    link's reader may as well see; the moment as a query, which a path's
-    own form drops on the way and two addresses would name one page.
+  - **The token** is one segment: HMAC-SHA256 over the post's address
+    once out, `/blog/<slug>` or a translation's `/ru/blog/<slug>`, in
+    base64url with no padding, so a link opens the post in its own
+    language alone (2026-11-24). The server signs the address of the
+    request's own path once and compares in constant time. No link lapses
+    (owner, 2026-11-24): a link that leaks opens the preview until the post
+    is out, then sends its reader on to the post for good. Since it signs
+    the address alone, it opens the post again if it is taken back to a
+    preview, and any later post given the same slug while that one is a
+    preview: it opens every preview at its address until the secret
+    changes, and a new secret ends every other link too. The status is not
+    signed: the server checks each request against the post's status as it
+    stands, and a link signed over `preview` could not send its reader on
+    once the post is out.
   - **One rule of addresses:** a preview's every face and file stands where
     it would in the blog's folder, with `/blog/` swapped for
     `/preview/<token>/`: its page at `/preview/<token>/<slug>`, its markdown
@@ -572,7 +572,7 @@ updated: 2026-11-12
   - **Once it is out** its address serves it, and its link sends the reader
     on to the same face there, `302` with the headers above: a move for a
     while, since a browser keeps a permanent one even were the post taken
-    back to a preview. A token not signed for its slug, one lapsed, or a
+    back to a preview. A token not signed for its slug, or a
     slug of no post served, answers as no page, so a link tells nothing of
     which posts there are.
 - **Publishing on a date.** A `published` date in the future keeps the post,

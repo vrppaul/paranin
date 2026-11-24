@@ -158,6 +158,7 @@ Amended 2026-11-24, on the owner's word: `paranin revise` dates the post as upda
 file so.
 Amended 2026-11-24, on the owner's word: the preview's folder holds a translation's language, `/preview/ru/`.
 Amended 2026-11-24, on the owner's word: the composition root prepares a snapshot once for both hosts.
+Amended 2026-11-24, on the owner's word: a preview link never lapses, its token signing the post's address alone.
 
 ### Context
 
@@ -261,9 +262,10 @@ and web routes.
   link alone, a preview or a post dated later (amended 2026-11-23): its
   series and foot as a draft's are, itself the part read, and its links
   read among the pages served and its own page. `compose` knows nothing of
-  tokens: the web host checks a request's token against the slug and the
-  moment the link lapses, under the key it holds, compared in constant
-  time, and draws the preview's face asked for with the post's addresses
+  tokens: the web host checks a request's token against the post's
+  address alone, under the key it holds, compared in constant time, so a
+  link opens until the post is out or the key changes (amended 2026-11-24,
+  the owner's word), and draws the preview's face asked for with the post's addresses
   at that link, since each link holds a token of its own. Ways weighed:
   the audience naming the one preview it reads, which composes the whole
   site again for each preview; the token in `document`'s page, which
@@ -786,7 +788,7 @@ included (D8). Their widgets are code, built by the page's toolchain.
   blocks (a fenced ` ```widget Name ` block with its props as YAML, `alt`
   required). `paranin check` refuses anything else, raw HTML first.
 - **Status**: `draft` (never shipped), `preview` (a link signed by the
-  server's secret over the post's address and the moment it lapses, `noindex`,
+  server's secret over the post's address, `noindex`,
   listed nowhere), `published`, `unlisted`. A
   `published` date in the future keeps a post a preview until then, worked
   out from the time, the site composed again as the post comes out

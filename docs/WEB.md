@@ -22,12 +22,10 @@ and its `published` time has come, as a preview at its preview link alone, and a
 `paranin serve --drafts`, to its author; the list names the posts published and out alone. A post dated later comes
 out at its time with no reload, and is a preview until then. A preview's every address is the one it would have in the
 blog's folder with `/blog/` swapped for `/preview/{token}/`, a translation's `/{language}/blog/` for
-`/preview/{language}/{token}/`, its token `{lapses}.{signature}`: the moment the link lapses in seconds of Unix time,
-then an HMAC-SHA256 of that moment and the post's address once out, `/blog/{slug}` or `/ru/blog/{slug}`, under the
-server's key, in base64url (`docs/FOUNDATION.md` §5.4, Status), so a link opens the post
-in its own language alone; a link whose token signs a slug alone, as an earlier `paranin preview-link` printed, opens
-nothing. `paranin preview-link` signs a link for thirty days, or as long as `--lasts` asks, ninety
-days at most, and a translation's where `--language` names its language. A server that holds no key serves no preview;
+`/preview/{language}/{token}/`, its token an HMAC-SHA256 of the post's address once out, `/blog/{slug}` or
+`/ru/blog/{slug}`, under the server's key, in base64url (`docs/FOUNDATION.md` §5.4, Status), so a link opens the post
+in its own language alone, until the post is out or the key changes. `paranin preview-link` signs a link, and a
+translation's where `--language` names its language. A server that holds no key serves no preview;
 it reads its key as it starts, so a new key takes a restart. A preview's faces are drawn for each request that opens
 one, since each link writes its own token into them.
 
@@ -49,7 +47,7 @@ folder. Nothing answers by `Accept-Language`: the address alone picks the langua
 | `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}` | The same as the manual, `text/plain`. |
 | `GET /blog/{slug}/{date}`, `.md`, `.txt` | An older version of a post out, published or unlisted, by the day it came out (`2026-11-10`), its revision's name (`docs/FOUNDATION.md` §5.4, Revisions), chosen and in each format as the post is; drawn the first time a request asks for it, and kept. A draft's and a preview's are served nowhere. The current version's day, the name the post's versions list it by, is `302` to the same face at `/blog/{slug}`, with `Cache-Control: no-cache`, since that day names an older version once the post is updated. |
 | `GET /blog/{slug}/{picture}` | A picture a version of the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. A picture's name ends in its type's ending, which no day and no format's ending is, so a version and a picture never share a path. |
-| `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a link lapsed, a slug of no post served, and on a server with no key. |
+| `GET /preview/{token}/{slug}`, `.md`, `.txt`, `/preview/{token}/{slug}/{picture}` | A preview, as its post would be served at `/blog/{slug}` and beside it, every address it leads to of its own at its link. Once the post is out, `302` to the same face at `/blog/{slug}`, a move for a while, since a browser keeps a permanent one were the post taken back to a preview. `404` for a token the server's key does not sign for that slug, a slug of no post served, and on a server with no key. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |
 | `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
 | `GET /{language}/blog…`, `GET /preview/{language}/…` | The same in a language, for each address above in the blog's folder, the preview's and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |

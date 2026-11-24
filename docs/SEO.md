@@ -149,6 +149,7 @@ there, and the previews looked at in LinkedIn's Post Inspector.
 
 Stands: the formats of D21; each page's title, description, canonical address and Open Graph as a `website`; a post's
 languages; the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list,
-an older version and an unlisted post; `/blog/<number>`'s `301`; the feeds; `llms.txt`.
+an older version and an unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; the
+feeds; `llms.txt`.
 
 The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.

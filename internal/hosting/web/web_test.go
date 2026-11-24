@@ -402,6 +402,57 @@ func TestAPostsNumberSendsTheReaderOnToItsAddress(test *testing.T) {
 	}
 }
 
+// A path with a slash at its end, whose path without it is served, sends the reader on for good to that path, its query
+// kept as written, or where that path sends the reader on to, straight there and for as long; a path with a slash at
+// its end whose path without it is not served is no page, and the site's root is the résumé. A cache asks again, as for
+// every move.
+func TestAPathWithASlashAtItsEndSendsTheReaderOnToThePathWithout(test *testing.T) {
+	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	cases := []struct {
+		name     string
+		path     string
+		status   int
+		location string
+	}{
+		{name: "the résumé", path: "/", status: http.StatusOK, location: ""},
+		{name: "a page", path: "/p/tidy-tool/", status: http.StatusMovedPermanently, location: "/p/tidy-tool"},
+		{name: "a tab", path: "/experience/", status: http.StatusMovedPermanently, location: "/experience"},
+		{name: "the blog's list", path: "/blog/", status: http.StatusMovedPermanently, location: "/blog"},
+		{name: "the list in a language", path: "/ru/blog/", status: http.StatusMovedPermanently, location: "/ru/blog"},
+		{
+			name: "the list, its query kept as written", path: "/blog/?ref=feed&tag=reading", status: http.StatusMovedPermanently,
+			location: "/blog?ref=feed&tag=reading",
+		},
+		{name: "a page's markdown", path: "/index.md/", status: http.StatusMovedPermanently, location: "/index.md"},
+		{
+			name: "an older version, drawn when first asked for", path: "/blog/reading-slowly/2026-11-10/", status: http.StatusMovedPermanently,
+			location: "/blog/reading-slowly/2026-11-10",
+		},
+		{
+			name: "an older version's markdown, drawn when first asked for", path: "/blog/reading-slowly/2026-11-10.md/",
+			status: http.StatusMovedPermanently, location: "/blog/reading-slowly/2026-11-10.md",
+		},
+		{name: "a picture of the site", path: "/favicon.svg/", status: http.StatusMovedPermanently, location: "/favicon.svg"},
+		{name: "a post's number, straight to the post", path: "/blog/1/", status: http.StatusMovedPermanently, location: "/blog/reading-slowly"},
+		{
+			name: "the current version by its day, straight to the post for a while", path: "/blog/reading-slowly/2026-11-12/",
+			status: http.StatusFound, location: "/blog/reading-slowly",
+		},
+		{name: "no page", path: "/nothing/", status: http.StatusNotFound, location: ""},
+		{name: "a language's folder", path: "/ru/", status: http.StatusNotFound, location: ""},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			response := serve(server, http.MethodGet, testCase.path, "", "")
+			header := response.Header()
+			if response.Code != testCase.status || header.Get("Location") != testCase.location || header.Get("Cache-Control") != "no-cache" {
+				test.Errorf("GET %s = %d, Location %q, Cache-Control %q; want %d, Location %q, Cache-Control %q", testCase.path,
+					response.Code, header.Get("Location"), header.Get("Cache-Control"), testCase.status, testCase.location, "no-cache")
+			}
+		})
+	}
+}
+
 // An address of no page is not found, and says so with the status it is answered with and the address asked for, its
 // path as the request decoded it and its query as written: its format chosen as a page's is, in text where the manual
 // or markdown would be, in HTML where HTML would, in the language whose folder the path opens with, the site's own

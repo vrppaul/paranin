@@ -15,17 +15,19 @@
 // for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again. Each
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
-// tell a search engine not to index them. Any other address is answered with the page of no page, in text or in
-// HTML, chosen as a page's format is: drawn for each request, since it quotes the address asked for, in the chosen
-// format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess its type
-// and to load nothing but the site's own files, so markup slipped into a page runs no script but the site's own; a
-// post's picture, to load and run nothing at all.
+// tell a search engine not to index them. A path with a slash at its end sends its reader on to the path without it,
+// where that is served, so a search engine counts one address. Any other address is answered with the page of no
+// page, in text or in HTML, chosen as a page's format is: drawn for each request, since it quotes the address asked
+// for, in the chosen format alone. Every answer, a refusal net/http writes among them, tells a browser not to guess
+// its type and to load nothing but the site's own files, so markup slipped into a page runs no script but the site's
+// own; a post's picture, to load and run nothing at all.
 package web
 
 import (
 	"cmp"
 	"mime"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -162,6 +164,9 @@ const (
 // The pattern every path a reader reads falls under
 const pagePattern = "GET /"
 
+// The slash a path may end in, as a folder's, which names the page of the path without it (docs/SEO.md, Addresses)
+const folderEnd = "/"
+
 // The status an address of no page is answered with, and what stands between a status's code and its reason in
 // the line HTTP writes it in
 const (
@@ -200,7 +205,8 @@ func (drawn *drawing) notFoundAt(path string) byFormat[missingFormat] {
 
 // move is where a path sends its reader on to, and for how long: a post's number for good, as its slug is the post's
 // address, which a cache asks again for, since a folder may be renamed; its current version's day for a while, since
-// that day names an older version once the post is updated.
+// that day names an older version once the post is updated; a path with a slash at its end for good to the path
+// without it, or as that path moves (Server.movedFrom).
 type move struct {
 	location string
 	status   int
@@ -215,6 +221,15 @@ type answers struct {
 	// the others (laterPage)
 	fixedLater  map[string]func() answer
 	chosenLater map[string]byFormat[func() answer]
+}
+
+// hold is whether the answers hold anything at a path, in any format, drawn or to be drawn.
+func (served answers) hold(path string) bool {
+	_, isFixed := served.fixed[path]
+	_, isChosen := served.chosen[path]
+	_, isFixedLater := served.fixedLater[path]
+	_, isChosenLater := served.chosenLater[path]
+	return isFixed || isChosen || isFixedLater || isChosenLater
 }
 
 // answersOf are answers holding nothing yet.
@@ -317,13 +332,38 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 	drawn := server.drawn.Current(time.Now())
-	if moved, isMoved := drawn.moved[path]; isMoved {
+	if moved, isMoved := server.movedFrom(drawn, request.URL); isMoved {
 		writer.Header().Set(cacheControl, askEveryTime)
 		http.Redirect(writer, request, moved.location, moved.status)
 		return
 	}
 	status, sent := drawn.served.answerTo(writer.Header(), request, drawn.site.Requested(path, request.URL.Query()), drawn.notFoundAt(path))
 	send(writer, status, sent)
+}
+
+// movedFrom is where an address sends its reader on to, where it does: a path the drawing moves, to its location; a
+// path with a slash at its end, as a folder's, whose path without it is served, for good to that path, its query kept
+// as written, or, where the drawing moves that path, straight to where it moves it, for as long, so never in two hops.
+func (server *Server) movedFrom(drawn *drawing, address *url.URL) (move, bool) {
+	if moved, isMoved := drawn.moved[address.Path]; isMoved {
+		return moved, true
+	}
+	if withoutSlash, isFolder := strings.CutSuffix(address.Path, folderEnd); isFolder {
+		if moved, isMoved := drawn.moved[withoutSlash]; isMoved {
+			return moved, true
+		}
+		if server.serves(drawn, withoutSlash) {
+			return move{location: (&url.URL{Path: withoutSlash, RawQuery: address.RawQuery}).String(), status: http.StatusMovedPermanently}, true
+		}
+	}
+	var stays move
+	return stays, false
+}
+
+// serves is whether a path is served, as a picture of the site or as any answer the drawing holds.
+func (server *Server) serves(drawn *drawing, path string) bool {
+	_, isPicture := server.pictures[path]
+	return isPicture || drawn.served.hold(path)
 }
 
 // answerTo is the status and the answer to a request for a path among the answers: its file or page in the one format

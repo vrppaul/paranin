@@ -90,8 +90,8 @@ func seenBlogOf(composed Blog) seenBlog {
 // A post's Switch offers the language read and each other the lists name the post in, none where it is read in one.
 func TestAPostsSwitchOffersEachLanguageTheListsNameThePostIn(test *testing.T) {
 	original, translated := document.PostPage(fixturePostSlug), document.PostPage(fixturePostSlug).InLanguage(russian)
-	english := document.Language{Tag: "en", Name: "English", Locale: "en_US", Page: original, Read: false}
-	russianRead := document.Language{Tag: russian, Name: "Русский", Locale: "ru_RU", Page: translated, Read: true}
+	english := document.Language{Tag: "en", Locale: "en_US", Page: original, Read: false}
+	russianRead := document.Language{Tag: russian, Locale: "ru_RU", Page: translated, Read: true}
 	englishRead, russianOffered := english, russianRead
 	englishRead.Read, russianOffered.Read = true, false
 	bothFromEnglish := []document.Language{englishRead, russianOffered}

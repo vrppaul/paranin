@@ -707,8 +707,8 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 			{Target: document.Feed{Series: ""}, Spans: textSpans("Mira Example's blog")},
 		},
 		Languages: []document.Language{
-			{Tag: "en", Name: "English", Locale: "en_US", Page: page, Read: true},
-			{Tag: "ru", Name: "Русский", Locale: "ru_RU", Page: page.InLanguage("ru"), Read: false},
+			{Tag: "en", Locale: "en_US", Page: page, Read: true},
+			{Tag: "ru", Locale: "ru_RU", Page: page.InLanguage("ru"), Read: false},
 		},
 	}
 	if !reflect.DeepEqual(head, want) {

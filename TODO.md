@@ -60,7 +60,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - On a phone the Switch's links stand 16px tall, under the 24px WCAG 2.5.8 asks for a target: the Switch's own shape, the list's groupings' too.
 - The note of a translation older than its original (`DESIGN.md`, PostHead) stands in an older version's form for the way to the newer, `↑ старше оригинала`: its own form, drawn on a canvas for the owner to pick, as the draft's mark and the tag filter's way out wait to be.
 - For his real `ru.yaml`: CLDR's `one` takes 21, 31 and on as well as 1, so a count's `one` form reads for both, `все {} часть` as `все 21 часть`; and a day writes its month short, `15 нояб. 2026`, which his `months` may write whole, `ноября`.
-- The Switch names a language in its own words, `English` and `Русский`, a word of each catalogue (`language_name`); short tags, `en · ru`, are the same word written otherwise.
 
 - The tag authority's date (`site.tag_authority` in `content/profile.yaml`, `paran.in,2026` until he answers, which RFC 4151 reads as 2026-01-01): a day he held paran.in; ids never change once readers subscribe.
 - A published post whose `updated:` names a day still to come gives its feed an `<updated>` in the future, since the load reads no clock and nothing holds the day back: his eye, whether the check refuses such a day for a post out, or the feed waits for it.

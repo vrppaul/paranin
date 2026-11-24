@@ -730,7 +730,7 @@ func TestAPostWritesItsHeadBodyAndFoot(test *testing.T) {
 	}{
 		{name: "the day", want: "version 12 Nov 2026"},
 		{name: "the series", want: "series Reading 1 of 2"},
-		{name: "the languages it is read in", want: "language English · Русский"},
+		{name: "the languages it is read in", want: "language en · ru"},
 		{name: "the tags", want: "tags #reading #terminals"},
 		{name: "a numbered paragraph citing a note", want: "1 A page read twice is read once, if the first reading was slow.¹"},
 		{name: "a paragraph of a section, numbered on", want: "2 See the reader's notes"},
@@ -783,7 +783,7 @@ func TestATranslationIsWrittenInItsLanguagesWords(test *testing.T) {
 		{name: "the list", user: "ru/blog", want: []string{"1 пост", "15 нояб. 2026", "часть 1 · Чтение"}},
 		{
 			name: "a translation", user: "ru/blog/reading-slowly",
-			want: []string{"версия 15 нояб. 2026", look.VersionNoteMark + " старше оригинала", "язык English · Русский", "теги #reading #terminals"},
+			want: []string{"версия 15 нояб. 2026", look.VersionNoteMark + " старше оригинала", "язык en · ru", "теги #reading #terminals"},
 		},
 	}
 	for _, testCase := range cases {

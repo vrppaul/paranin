@@ -77,7 +77,6 @@ newer_version: "новее: {}"
 blog_feed: "Блог: {}"
 series_feed: "{} — {}"
 language: язык
-language_name: Русский
 locale: ru_RU
 series_grouping: сериям
 months: [янв., февр., мар., апр., мая, июн., июл., авг., сент., окт., нояб., дек.]

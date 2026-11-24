@@ -53,10 +53,7 @@ func (read blog) languagesOf(version postVersion) []document.Language {
 			page = postPage(version.post).InLanguage(words.Translation())
 		}
 		if isRead || other.listed[version.post.Slug] {
-			offered = append(offered, document.Language{
-				Tag: words.Language(), Name: words.Text(content.WordLanguageName), Locale: words.Text(content.WordLocale), Page: page,
-				Read: isRead,
-			})
+			offered = append(offered, document.Language{Tag: words.Language(), Locale: words.Text(content.WordLocale), Page: page, Read: isRead})
 		}
 	}
 	if len(offered) < switchedLanguages {

@@ -120,8 +120,8 @@ templ (writer PageWriter) postHead(head document.Head) {
 	</header>
 }
 
-// languageSwitch is the Switch of the languages a post is read in (DESIGN.md, Switch): each language by its name for
-// itself, written in it, a link to the post in it, the one read current.
+// languageSwitch is the Switch of the languages a post is read in (DESIGN.md, Switch): each language by its tag, a
+// link to the post in it, the one read current.
 templ (writer PageWriter) languageSwitch(languages []document.Language) {
 	<span class="switch">
 		for _, language := range languages {
@@ -129,11 +129,10 @@ templ (writer PageWriter) languageSwitch(languages []document.Language) {
 				class="switch-way"
 				href={ writer.frame.site.Reference(language.Page, routes.FormatChosen) }
 				hreflang={ language.Tag }
-				lang={ language.Tag }
 				if language.Read {
 					aria-current={ currentPage }
 				}
-			>{ language.Name }</a>
+			>{ language.Tag }</a>
 		}
 	</span>
 }

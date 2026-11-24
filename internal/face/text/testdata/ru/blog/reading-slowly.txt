@@ -8,7 +8,7 @@ READING-SLOWLY(1)            Команды пользователя            
 
        Почему страницу, прочитанную дважды, читают один раз.
 
-       English <https://example.test/blog/reading-slowly.txt> · Русский
+       en <https://example.test/blog/reading-slowly.txt> · ru
 
        reading · terminals
 

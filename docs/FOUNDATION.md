@@ -892,7 +892,8 @@ For every page of the site, the blog's among them:
   English original, on each language's page of a post, the same alternates
   in the sitemap, a feed per language, `og:locale` from each catalogue's
   `locale`, `<html lang>` the page's own. The language switch lists only
-  the translations that exist, each by its own name for itself.
+  the translations that exist, each by its tag, `en` and `ru`, on the page
+  and in the line the other faces write (owner, 2026-11-24).
 - **The TUI reads the blog in a language by its address** (owner,
   2026-11-24), as the web does: `ssh ru/blog@paran.in`, `ssh
   ru/blog/12@paran.in` and `:e ru/blog/page-cache` open the Russian blog,

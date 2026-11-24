@@ -74,7 +74,6 @@ newer_version: "newer: {}"
 blog_feed: "{}'s blog"
 series_feed: "{} — {}"
 language: language
-language_name: English
 locale: en_US
 series_grouping: series
 months: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]

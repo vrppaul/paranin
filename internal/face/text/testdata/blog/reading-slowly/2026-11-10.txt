@@ -8,7 +8,7 @@ DESCRIPTION
 
        Why a page read twice is read once, first said.
 
-       English · Русский <https://example.test/ru/blog/reading-slowly.txt>
+       en · ru <https://example.test/ru/blog/reading-slowly.txt>
 
        reading · terminals
 

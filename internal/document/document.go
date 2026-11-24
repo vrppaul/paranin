@@ -56,12 +56,10 @@ type Head struct {
 	Languages []Language
 }
 
-// Language is a language a post is read in (DESIGN.md, Switch): its tag, its name for itself, its locale, the post's
-// page in it, and whether it is the language read.
+// Language is a language a post is read in (DESIGN.md, Switch): its tag, which every face names it by, its locale, the
+// post's page in it, and whether it is the language read.
 type Language struct {
 	Tag string
-	// Name is the language's own name for itself, as Русский
-	Name string
 	// Locale is the locale Open Graph marks a page in it in, language_TERRITORY
 	Locale string
 	Page   Page
@@ -70,7 +68,7 @@ type Language struct {
 
 // Spans are a language as a face with no Switch writes it: the one read strong, each other a link to the post in it.
 func (language Language) Spans() []Span {
-	name := []Span{Text{Text: language.Name}}
+	name := []Span{Text{Text: language.Tag}}
 	if language.Read {
 		return []Span{Strong{Spans: name}}
 	}

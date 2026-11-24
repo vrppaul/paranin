@@ -486,9 +486,9 @@ tile the tags are words of the tile, `caption`, all `faint`. Only posts have tag
 
 A few addresses of one thing, a post's language or how the list groups its posts: their words in one row of `quiet`
 hairline, line size, `radius`, a hairline between each two, the one shown reversed and bold as the window shown; under
-the pointer `deep`. They are links, since each leads to an address. A language goes by its own name for itself,
-written in it (`English`, `Русский`); a post read in one language alone shows none. The TUI and the text faces write
-the languages as a line, the one read bold and each other a link.
+the pointer `deep`. They are links, since each leads to an address. A language goes by its tag, `en` and `ru` (owner,
+2026-11-24); a post read in one language alone shows none. The TUI and the text faces write the languages as a line by
+their tags, `en · ru`, the one read bold and each other a link.
 
 ### Pick
 
@@ -512,9 +512,9 @@ A word that opens a window over the page, as the Hint's chip does: a post's vers
 
 A post's first screen, as the résumé's. Left, over the Outline and the text, its title (`title_text` in `title_soft`,
 a few words a line, balanced) and its lead, `post_lead` at most. Right, in the sources' column, its Facts `row_half`
-apart: version (the Pick), series (the Pick), language (the Switch), tags (Tags). An older version says under its date
-that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size, `radius`, the
-whole a link, `tint_strong` under the pointer; the tint grows with words longer than its line. A translation older
+apart: version (the Pick), series (the Pick), language (the Switch, `en · ru`), tags (Tags). An older version says
+under its date that a newer stands: `↑` in `accent`, then `newer: 21 Nov 2026` bold in `text`, on `tint`, line size,
+`radius`, the whole a link, `tint_strong` under the pointer; the tint grows with words longer than its line. A translation older
 than its original says so under its date in the same form, a version's note as the way to the newer is, `↑` then the
 site's words, `older than the original`, the whole a link to the original: the plainest form the tokens give,
 standing until the owner draws one; the text faces write it as they write the way to the newer. On a phone one

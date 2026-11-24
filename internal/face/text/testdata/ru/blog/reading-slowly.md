@@ -2,7 +2,7 @@
 
 2026-11-15 · [старше оригинала](https://example.test/blog/reading-slowly.md)
 
-[English](https://example.test/blog/reading-slowly.md) · **Русский**
+[en](https://example.test/blog/reading-slowly.md) · **ru**
 
 reading · terminals
 

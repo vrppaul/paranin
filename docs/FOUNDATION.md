@@ -233,7 +233,7 @@ app; paranin is a document first), and livereel's plain JS with JSDoc (D3).
 
 Why A: the static part (the résumé, the prose of an article) is a document,
 and Go draws documents well. The interactive part (vim chrome, salary range,
-job matcher, chat, article widgets) is a set of islands, and they get a real
+chat, article widgets) is a set of islands, and they get a real
 framework. Svelte 5, because claude-review's page rules, eslint layers and
 `lib/ui` library carry over almost whole.
 
@@ -316,11 +316,11 @@ and `exactOptionalPropertyTypes`, Svelte 5.
 ```
 web/src/
   tokens/        tokens.ts, tokens.css: generated from one source
-  domain/        pure TS, no DOM: vim motions and counts, the :command parser, search, the matcher, the salary range
+  domain/        pure TS, no DOM: vim motions and counts, the :command parser, search, the salary range
   dom/           what the page does to the document: find by data-part, focus, scroll
   ui/            the Svelte library: Button, Field, Range, Chip, Statusline…
   controllers/   behaviour over server markup: vim, theme, hint, form submit
-  islands/       what runs each island's component in its data-island, a post's widgets first; the site's own: VimChrome, SalaryRange, Matcher, Chat
+  islands/       what runs each island's component in its data-island, a post's widgets first; the site's own: VimChrome, SalaryRange, Chat
   kit/           the widget kit for articles: Stage (canvas, DPR, resize, reduced motion), play/pause/step, sliders
   widgets/       the articles' widgets, named for the whole site, as a post's block names one: PageCache.svelte
   entries/       site.ts, holding the island registry: every widget's code by a lazy glob of widgets/
@@ -331,9 +331,6 @@ web/src/
 - Vim mode becomes a pure state machine in `domain` with a `KEYMAP` table,
   tested in vitest with no browser, and a Svelte island for its chrome.
   `CHROME_HTML` goes.
-- The job matcher stays in the browser, so the text of a job description
-  never reaches the server. Its vocabulary moves into the content and comes
-  to the page with the client data, a change to the contract in `WEB.md`.
 - The client data's types are generated from the Go structs (tygo); a hook
   fails when they drift.
 - **One build, one manifest** (Decided, D22). A single Vite build takes the

@@ -157,6 +157,7 @@ Amended 2026-11-24, on the owner's word: a tag alone filters the list, a filtere
 Amended 2026-11-24, on the owner's word: `paranin revise` dates the post as updated on its day, `content` writing its
 file so.
 Amended 2026-11-24, on the owner's word: the preview's folder holds a translation's language, `/preview/ru/`.
+Amended 2026-11-24, on the owner's word: the composition root prepares a snapshot once for both hosts.
 
 ### Context
 
@@ -269,13 +270,18 @@ and web routes.
   would carry a secret through every layer.
   A composition reads its snapshot through `compose.Prepare`, which splits
   every post's code into its kinds of word once a snapshot (amended
-  2026-11-23); each host keeps it beside its drawing (`release.Derived`,
-  `Of` the snapshot drawn), so a site composed again as a post comes out
-  lexes nothing. A lexer is slow, and chroma's regexps start a clock
-  goroutine of their own (regexp2's fastclock), which a test's bubble
-  would see outlive it. Ways weighed: splitting the code as `content`
-  loads, which takes chroma out of `compose`, against this ADR; the
-  prepared content held by `release`, which knows nothing of `compose`.
+  2026-11-23). The composition root prepares each snapshot once for both
+  hosts: it hands them one `release.Derived` of the content alone
+  (`release.DeriveFromContent`), which each reads `Of` the
+  snapshot it draws (amended 2026-11-24, the owner's word), so neither a
+  second host nor a site composed again as a post comes out lexes the
+  code again. A lexer is slow, and chroma's regexps start a clock goroutine of
+  their own (regexp2's fastclock), which a test's bubble would see outlive
+  it. Ways weighed: splitting the code as `content` loads, which takes
+  chroma out of `compose`, against this ADR; the prepared content held by
+  `release`, which knows nothing of `compose`; each host preparing its
+  own, the code split twice; the check's split kept with the snapshot, a
+  type parameter on every part of `release` for one split a load saves.
 - **A document is a head and its blocks.** The head holds the page it is,
   where it is one; the language it is written in; its title, a subtitle,
   a place and a lead (the résumé's are the name, the title, where the

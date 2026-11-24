@@ -115,6 +115,30 @@ func TestADerivedValueIsWorkedOutAgainOnceLapsed(test *testing.T) {
 	}
 }
 
+// A value derived from a snapshot's content alone is worked out once for each snapshot and held at every moment after,
+// until a reload brings another.
+func TestAValueOfTheContentAloneLapsesWithItsSnapshot(test *testing.T) {
+	folders := fixtureCopies(test)
+	store, err := Open(folders, passes)
+	if err != nil {
+		test.Fatalf("Open(fixtures) = %v, want no error", err)
+	}
+	counter := &workCounter{times: 0, lapses: time.Time{}}
+	names := DeriveFromContent(store, counter.contentName)
+	names.Current(fixtures.Day())
+	names.Current(fixtures.Day().AddDate(1, 0, 0))
+	beforeReload := counter.times
+	fixtures.ReplaceIn(test, folders.Content, profileFile, authorName, "name: Mira Other")
+	if err := store.Reload(); err != nil {
+		test.Fatalf("Reload = %v, want no error", err)
+	}
+	reloaded := names.Current(fixtures.Day())
+	if beforeReload != 1 || counter.times != 2 || reloaded != "Mira Other" {
+		test.Errorf("worked out %d times before a reload and %d times after it, %q; want once, then twice, %q",
+			beforeReload, counter.times, reloaded, "Mira Other")
+	}
+}
+
 // workCounter counts how many times a value is worked out, and says when each value it works out lapses.
 type workCounter struct {
 	times  int
@@ -125,6 +149,12 @@ type workCounter struct {
 func (counter *workCounter) name(snapshot *Snapshot, _ time.Time) (string, time.Time) {
 	counter.times++
 	return snapshot.Content.Profile.Person.Name, counter.lapses
+}
+
+// contentName works out the author's name from the content alone, and counts it.
+func (counter *workCounter) contentName(loaded *content.Snapshot) string {
+	counter.times++
+	return loaded.Profile.Person.Name
 }
 
 // fixtureCopies are copies of both fixtures on disk, which a test may change.

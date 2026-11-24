@@ -326,14 +326,10 @@ func (sent answer) knownAs(page document.Page, site routes.Site) answer {
 	return sent
 }
 
-// New is a server of the site the store holds, serving its drafts too where drafts says, to their author alone, and
-// each preview at the link a key signs, none where it is handed no key.
-func New(store *release.Store, drafts bool, previewKey *PreviewKey) *Server {
+// New is a server of the site the store holds, composed from each snapshot as prepared reads it, serving its drafts too
+// where drafts says, to their author alone, and each preview at the link a key signs, none where it is handed no key.
+func New(store *release.Store, prepared *release.Derived[*compose.Prepared], drafts bool, previewKey *PreviewKey) *Server {
 	mux := http.NewServeMux()
-	prepared := release.Derive(store, func(snapshot *release.Snapshot, _ time.Time) (*compose.Prepared, time.Time) {
-		// the zero time: it lapses with its snapshot alone (release.Work)
-		return compose.Prepare(snapshot.Content), time.Time{}
-	})
 	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (*drawing, time.Time) {
 		return draw(snapshot, prepared.Of(snapshot, moment), compose.Audience{At: moment, Drafts: drafts})
 	})

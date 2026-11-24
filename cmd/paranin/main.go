@@ -542,7 +542,9 @@ func serve(asked servingAsked) int {
 		HostKeyPath: fromEnvironment(hostKeyVariable, defaultHostKey), OpeningTimeout: openingTimeout,
 		IdleTimeout: sessionIdleTimeout, MaxTimeout: sessionMaxTimeout, Drafts: asked.drafts,
 	}
-	sshServer, err := ssh.New(store, logger, settings)
+	// both hosts compose from one prepared content, so each snapshot's code is split once
+	prepared := release.DeriveFromContent(store, compose.Prepare)
+	sshServer, err := ssh.New(store, prepared, logger, settings)
 	if err != nil {
 		logger.Error("the SSH server cannot be made", errorKey, err)
 		return failed
@@ -558,7 +560,7 @@ func serve(asked servingAsked) int {
 		logger.Error("the addresses cannot be listened at", errorKey, err)
 		return failed
 	}
-	webServer := newServer(web.New(store, asked.drafts, previewKey), logger)
+	webServer := newServer(web.New(store, prepared, asked.drafts, previewKey), logger)
 	servers := []server{webServer, sshServer}
 	running := serving{
 		logger:      logger,

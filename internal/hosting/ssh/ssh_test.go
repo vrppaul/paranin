@@ -715,9 +715,9 @@ func listening(test *testing.T, server *Server) string {
 }
 
 // drawnServer is a server of the fixture, logging nothing, that has drawn its snapshot outside any synctest bubble, by
-// a session opened and closed before the test's bubble: preparing a snapshot splits its posts' code by chroma
-// (compose.Prepare), whose regexps start a clock goroutine of their own (regexp2's fastclock) that no bubble outlives,
-// and the server prepares and draws a snapshot on the first session that meets it.
+// a session opened and closed before the test's bubble: the first session that meets a snapshot draws it and prepares
+// it, splitting its posts' code by chroma (compose.Prepare), and chroma's regexps start a clock goroutine of their own
+// (regexp2's fastclock), a cause outside the server that no bubble outlives.
 func drawnServer(test *testing.T) *Server {
 	server := newServer(test, slog.New(slog.DiscardHandler), false)
 	clientEnd, serverEnd := memoryConnections()
@@ -741,7 +741,7 @@ func newServer(test *testing.T, logger *slog.Logger, drafts bool) *Server {
 		HostKeyPath: filepath.Join(test.TempDir(), "host_key"), OpeningTimeout: openingTimeout, IdleTimeout: longTimeout,
 		MaxTimeout: longTimeout, Drafts: drafts,
 	}
-	server, err := New(store, logger, settings)
+	server, err := New(store, release.DeriveFromContent(store, compose.Prepare), logger, settings)
 	if err != nil {
 		test.Fatalf("New = %v, want a server", err)
 	}

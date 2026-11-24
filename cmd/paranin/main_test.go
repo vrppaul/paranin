@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -175,7 +176,7 @@ func TestAPrintedLinkOpensThePreviewUntilTheLinkLapses(test *testing.T) {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
 	// the server draws its snapshot before the bubble a link is opened in (fixtures.ServedOnTheDay)
-	server := web.New(store, false, key)
+	server := web.New(store, release.DeriveFromContent(store, compose.Prepare), false, key)
 	server.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 	day := fixtures.Day()
 	previewed := document.Page{Kind: document.PagePost, Slug: fixtures.PreviewSlug, Tab: ""}

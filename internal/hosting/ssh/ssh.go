@@ -16,9 +16,9 @@
 // with; a panic in a command Bubble Tea runs reaches only those (TODO.md). The server alone ends its sessions: no
 // session's program answers the server's own signals, so a stop waits for the sessions open before it closes them.
 //
-// The documents are composed once for each snapshot the store holds (release.Derived), from its content alone, its
-// posts' code split once (compose.Prepare), and again as a post dated later comes out; each session draws the site as
-// it stood when it opened, so a reload, or a post coming out, reaches the sessions that open after it.
+// The documents are composed once for each snapshot the store holds (release.Derived), from the prepared content the
+// server is handed (compose.Prepare), and again as a post dated later comes out; each session draws the site as it
+// stood when it opened, so a reload, or a post coming out, reaches the sessions that open after it.
 package ssh
 
 import (
@@ -94,12 +94,9 @@ type guard struct {
 	logger *slog.Logger
 }
 
-// New is a server of the site the store holds, logging through the logger.
-func New(store *release.Store, logger *slog.Logger, settings Settings) (*Server, error) {
-	prepared := release.Derive(store, func(snapshot *release.Snapshot, _ time.Time) (*compose.Prepared, time.Time) {
-		// the zero time: it lapses with its snapshot alone (release.Work)
-		return compose.Prepare(snapshot.Content), time.Time{}
-	})
+// New is a server of the site the store holds, composed from each snapshot as prepared reads it, logging through the
+// logger.
+func New(store *release.Store, prepared *release.Derived[*compose.Prepared], logger *slog.Logger, settings Settings) (*Server, error) {
 	drawn := release.Derive(store, func(snapshot *release.Snapshot, moment time.Time) (tui.Drawing, time.Time) {
 		return draw(snapshot, prepared.Of(snapshot, moment), compose.Audience{At: moment, Drafts: settings.Drafts})
 	})

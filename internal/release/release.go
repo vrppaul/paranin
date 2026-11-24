@@ -129,6 +129,12 @@ func Derive[Value any](store *Store, work Work[Value]) *Derived[Value] {
 	return &Derived[Value]{store: store, work: work, last: atomic.Pointer[derivation[Value]]{}}
 }
 
+// DeriveFromContent is a value the content of the store's snapshots makes alone, which holds as long as its snapshot:
+// the zero time (Work).
+func DeriveFromContent[Value any](store *Store, work func(*content.Snapshot) Value) *Derived[Value] {
+	return Derive(store, func(snapshot *Snapshot, _ time.Time) (Value, time.Time) { return work(snapshot.Content), time.Time{} })
+}
+
 // Current is the value of the store's current snapshot at a moment.
 //
 //wrapper:names the snapshot a reader meets, the store's current one, which Of is handed

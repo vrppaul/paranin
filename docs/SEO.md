@@ -119,7 +119,10 @@ its own address (`document.Page`'s `OwnAddress`) and whether a post is listed. E
   ([Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)).
 - **`llms.txt`** stays for agents that read it, coding agents among them; Google says its Search reads none.
 - **IndexNow** names each post to Bing, Yandex, Seznam and Naver as it comes out, which Google does not read, by a
-  key file at the site's root (owner, 2026-11-24): built before hosting, it sends once the site is served.
+  key file at the site's root (owner, 2026-11-24): built before hosting, it sends once the site is served with its key
+  (`PARANIN_INDEXNOW_KEY`). It sends what changed since it last looked, as a reload takes or a post dated later comes
+  out; a start sends nothing, so a deploy announces nothing, and a post that came out while the site was down reaches
+  a search engine by the sitemap alone.
 
 ## Addresses
 
@@ -153,6 +156,6 @@ canonical address; Open Graph, a post as an `article`, with the site's name, and
 languages; every record naming the one `Person`, the résumé's `ProfilePage` beside `WebSite`, a tab's `WebPage`, a
 project's `SoftwareSourceCode` and a post's `BlogPosting`; `noindex` on a filtered list, an older version and an
 unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; `robots.txt` and `sitemap.xml`;
-the feeds; `llms.txt`.
+IndexNow and its key file; the feeds; `llms.txt`.
 
-The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.
+To build: the cards, as the SEO item of `TODO.md` lists them; "At hosting", with hosting.

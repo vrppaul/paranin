@@ -889,7 +889,7 @@ description on request, and every page and post needs a card of its own.
 
 ```
 cmd/paranin
-  hosting/web · hosting/ssh
+  hosting/web · hosting/ssh · hosting/indexnow
     face/html · face/text · face/feed · face/tui
       compose · routes · release
         document · content · look · assets
@@ -997,7 +997,8 @@ sessions on a stop.
 ## Project layout
 
 ```
-cmd/paranin/main.go      # check the content, or serve it with the build: both servers, the signals, the stop
+cmd/paranin/main.go      # check the content, or serve it with the build: both servers, IndexNow, the signals, the stop
+internal/hosting/indexnow/ # tells IndexNow each address that changes, as a reload takes or a post comes out
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
 internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks, else its agent (D21)
 internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs laid out and painted

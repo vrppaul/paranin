@@ -110,12 +110,13 @@ repos:
         language: system
         files: ^web/(src/.*\.(css|svelte)|tests/.*\.svelte|stylelint\.config\.js|package\.json)$
         pass_filenames: false
-      # The page's TypeScript and its components as the compiler reads them, strict (web/tsconfig.json)
+      # The page's TypeScript and its components as the compiler reads them, strict, and the build's, each its own
+      # program (web/tsconfig.json)
       - id: page-types
-        name: svelte-check (the page's types)
+        name: svelte-check and tsc (the page's types and the build's)
         entry: pnpm --dir web run check:types
         language: system
-        files: ^web/(src/|tests/|tsconfig\.json|svelte\.config\.js|vite\.config\.ts|package\.json)
+        files: ^web/(src/|tests/|plugins/|tsconfig(\.\w+)?\.json|svelte\.config\.js|vite\.config\.ts|package\.json)
         pass_filenames: false
       # The layers of src/, the names, the helpers and the lookups, and what a component's markup may not hold
       # (web/eslint.config.js)
@@ -132,12 +133,13 @@ repos:
         language: system
         files: ^web/
         pass_filenames: false
-      # The controllers' and the islands' tests, run over the HTML face's golden pages, so a change to either runs them
+      # The controllers' and the islands' tests, run over the HTML face's golden pages, and the build's plugin's, over
+      # the Go fixtures' build, so a change to either runs them
       - id: page-tests
         name: vitest (the page's tests)
         entry: pnpm --dir web run test
         language: system
-        files: (^web/(src/|tests/|svelte\.config\.js|vite\.config\.ts|package\.json)|^internal/face/html/testdata/)
+        files: (^web/(src/|tests/|plugins/|svelte\.config\.js|vite\.config\.ts|package\.json)|^internal/(face/html|assets)/testdata/)
         pass_filenames: false
       # Checks rather than rewrites: a commit never carries formatting it was not shown
       - id: page-format

@@ -1,14 +1,10 @@
-// Package assets reads the page's front-end build (docs/ARCHITECTURE.md, ADR-0004, D22): the files one Vite build
-// writes, each with a hash in its name, and the manifest naming them, from a folder on disk. A load reads every
-// file the manifest names, each chunk's script, the stylesheets it imports and the files a stylesheet loads, as the
-// font, and checks that the manifest holds every entry the site names and every chunk one imports, so a release's
-// files are held whole beside its content and a page drawn from it names only files it holds. What an entry
-// includes in a page is worked out once, at the load, as Vite's guide to backend integration walks a manifest; whether
-// it holds a widget's code, which the site's script loads by itself, is read off the manifest's keys. It knows no
+// Package assets reads the page's front-end build (docs/ARCHITECTURE.md, ADR-0004, D22) from a folder on disk, whole,
+// so a release holds every file its pages name and every widget's code and props' schema its posts need. It knows no
 // face: a face asks it what an entry includes in a page.
 package assets
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +13,9 @@ import (
 	"maps"
 	"path"
 	"slices"
+	"strings"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // Entry is a source the build takes in, by the path from web/ the manifest names it with.
@@ -38,6 +37,12 @@ func named() []Entry {
 const (
 	manifestFile = "manifest.json"
 	servedRoot   = "/"
+)
+
+// The widgets' props' schemas beside the manifest (web/plugins/widgetprops.ts), never served, and each one's address
+const (
+	propsSchemaFile     = "props.schema.json"
+	widgetSchemaAddress = "urn:paranin:widget:"
 )
 
 // The folder of web/ every widget's component stands in, named for the whole site, and the ending of a component's
@@ -77,11 +82,18 @@ type Included struct {
 }
 
 // Build is one build, read whole: each file by the path the site serves it at, what each entry the site names
-// includes in a page, and every source it holds the code of, by the manifest's key, a widget's component among them.
+// includes in a page, and the props' schema of every widget it holds the code of, by its component's name.
 type Build struct {
 	files    map[string]File
 	included map[Entry]Included
-	sources  map[string]bool
+	widgets  map[string]*jsonschema.Schema
+}
+
+// PropsFault is a widget's prop its schema refuses: where it stands in the props, as a JSON Pointer, which is empty for
+// the props as a whole, and what the schema says of it.
+type PropsFault struct {
+	Prop string
+	Rule string
 }
 
 // chunk is one key of the manifest, as Vite writes it: the file it was built into and the stylesheets it imports,
@@ -95,23 +107,21 @@ type chunk struct {
 
 // Load reads a build from a folder: a build, or every fault that keeps the site from being served from it.
 func Load(folder fs.FS) (*Build, error) {
-	manifest, err := readManifest(folder)
+	// the manifest: each chunk by its key, an entry's the source it was built from
+	manifest, err := readJSON[map[string]chunk](folder, manifestFile)
 	if err != nil {
 		return nil, err
 	}
 	files, filesErr := readFiles(folder, manifest)
-	if err := errors.Join(filesErr, missingEntries(manifest), missingImports(manifest)); err != nil {
+	widgets, widgetsErr := readWidgets(folder, manifest)
+	if err := errors.Join(filesErr, widgetsErr, missingEntries(manifest), missingImports(manifest)); err != nil {
 		return nil, err
 	}
 	included := make(map[Entry]Included, len(named()))
 	for _, entry := range named() {
 		included[entry] = includedBy(manifest, manifest[string(entry)])
 	}
-	sources := make(map[string]bool, len(manifest))
-	for key := range manifest {
-		sources[key] = true
-	}
-	return &Build{files: files, included: included, sources: sources}, nil
+	return &Build{files: files, included: included, widgets: widgets}, nil
 }
 
 // WidgetSource is the path from web/ of a widget's component, by its name: the manifest's key of the widget's code.
@@ -119,17 +129,77 @@ func WidgetSource(name string) string {
 	return path.Join(widgetsFolder, name+componentEnding)
 }
 
-// readManifest is the manifest of a build: each chunk by its key, an entry's the source it was built from.
-func readManifest(folder fs.FS) (map[string]chunk, error) {
-	var manifest map[string]chunk
-	written, err := fs.ReadFile(folder, manifestFile)
+// readWidgets compiles the props' schema of every widget a manifest holds the code of, by its component's name, from
+// the build's file of them; the faults of a file missing or that does not read, and of a widget whose schema it lacks
+// or that does not compile. A schema reads no other schema but JSON Schema's own, which the validator holds: none
+// from disk, which would read past the folder the build is read through.
+func readWidgets(folder fs.FS, manifest map[string]chunk) (map[string]*jsonschema.Schema, error) {
+	schemas, err := readJSON[map[string]json.RawMessage](folder, propsSchemaFile)
+	if err != nil {
+		return nil, err
+	}
+	compiler := jsonschema.NewCompiler()
+	compiler.UseLoader(jsonschema.SchemeURLLoader{})
+	// a format valibot writes, an email or a date, is a rule the props are held to, as valibot holds them
+	compiler.AssertFormat()
+	widgets := map[string]*jsonschema.Schema{}
+	var faults []error
+	for _, name := range widgetNames(manifest) {
+		schema, err := compiledSchema(compiler, name, schemas[name])
+		if err != nil {
+			faults = append(faults, err)
+			continue
+		}
+		widgets[name] = schema
+	}
+	return widgets, errors.Join(faults...)
+}
+
+// widgetNames are the names of the widgets a manifest holds the code of, in their order: each a component of the
+// widgets' folder, whose code is a chunk of its own.
+func widgetNames(manifest map[string]chunk) []string {
+	names := []string{}
+	for _, key := range slices.Sorted(maps.Keys(manifest)) {
+		if path.Dir(key) == widgetsFolder && path.Ext(key) == componentEnding {
+			names = append(names, strings.TrimSuffix(path.Base(key), componentEnding))
+		}
+	}
+	return names
+}
+
+// compiledSchema compiles a widget's props' schema, as the build's file of them writes it; the fault of a schema the
+// file lacks, written as none, or of one that does not compile.
+func compiledSchema(compiler *jsonschema.Compiler, name string, written json.RawMessage) (*jsonschema.Schema, error) {
+	// the decoder would refuse a schema the file lacks as an end of input, which names no fault the author can mend
+	if written == nil {
+		return nil, fmt.Errorf("%w: %s holds no schema of the props of the widget %q", errBuild, propsSchemaFile, name)
+	}
+	address := widgetSchemaAddress + name
+	document, err := jsonschema.UnmarshalJSON(bytes.NewReader(written))
 	if err == nil {
-		err = json.Unmarshal(written, &manifest)
+		err = compiler.AddResource(address, document)
+	}
+	var schema *jsonschema.Schema
+	if err == nil {
+		schema, err = compiler.Compile(address)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: read %s: %w", errBuild, manifestFile, err)
+		return nil, fmt.Errorf("%w: %s holds a schema of the props of the widget %q that does not compile: %w", errBuild, propsSchemaFile, name, err)
 	}
-	return manifest, nil
+	return schema, nil
+}
+
+// readJSON is a file of JSON at the build's root, the manifest or the widgets' props' schemas, read into its type.
+func readJSON[Value any](folder fs.FS, file string) (Value, error) {
+	var value Value
+	written, err := fs.ReadFile(folder, file)
+	if err == nil {
+		err = json.Unmarshal(written, &value)
+	}
+	if err != nil {
+		return value, fmt.Errorf("%w: read %s: %w", errBuild, file, err)
+	}
+	return value, nil
 }
 
 // readFiles reads every file a manifest names, by the path the site serves it at, and the faults of those that are
@@ -246,5 +316,41 @@ func (build *Build) Includes(entry Entry) Included {
 
 // HoldsWidget is whether the build holds the code of a widget, by its component's name.
 func (build *Build) HoldsWidget(name string) bool {
-	return build.sources[WidgetSource(name)]
+	_, held := build.widgets[name]
+	return held
+}
+
+// RefusedProps are the faults a widget's schema finds in its props, a JSON object, each where the schema refuses a
+// prop: none where it takes them all, or where the build holds no such widget, which HoldsWidget says.
+func (build *Build) RefusedProps(name string, props json.RawMessage) []PropsFault {
+	schema, held := build.widgets[name]
+	if !held {
+		return nil
+	}
+	instance, err := jsonschema.UnmarshalJSON(bytes.NewReader(props))
+	if err == nil {
+		err = schema.Validate(instance)
+	}
+	var refused *jsonschema.ValidationError
+	switch {
+	case err == nil:
+		return nil
+	case errors.As(err, &refused):
+		return refusedLeaves(*refused.DetailedOutput())
+	default:
+		return []PropsFault{{Prop: "", Rule: err.Error()}}
+	}
+}
+
+// refusedLeaves are the faults a unit of the validator's output holds: its own where it is a leaf, the rule a prop
+// breaks; or else those of each unit under it, a part of the schema the prop's value was held to.
+func refusedLeaves(unit jsonschema.OutputUnit) []PropsFault {
+	if unit.Error != nil {
+		return []PropsFault{{Prop: unit.InstanceLocation, Rule: unit.Error.String()}}
+	}
+	faults := []PropsFault{}
+	for _, cause := range unit.Errors {
+		faults = append(faults, refusedLeaves(cause)...)
+	}
+	return faults
 }

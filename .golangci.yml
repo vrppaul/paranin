@@ -340,6 +340,15 @@ linters:
           deny:
             - pkg: golang.org/x/image
               desc: content takes x/image's WebP reader alone, for a WebP's size
+        # assets alone compiles each widget's props' JSON Schema, as the build loads, and holds props to it (ADR-0004);
+        # a release asks the build which props it refuses, and no other part reads a schema
+        jsonschema-in-assets-alone:
+          files:
+            - "$all"
+            - "!**/internal/assets/**"
+          deny:
+            - pkg: github.com/santhosh-tekuri/jsonschema
+              desc: assets alone holds a widget's props to its schema; every other part asks the build what it refuses
         # content alone reads a language's plural rule, by x/text's CLDR tables, as a catalogue loads (ADR-0003); every
         # other part writes a count through the words content read
         plurals-in-content-alone:

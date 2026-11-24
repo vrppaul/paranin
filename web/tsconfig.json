@@ -1,23 +1,7 @@
+// The page's two TypeScript programs, as Vite's own template splits them: the page's, which runs in a browser, and the
+// build's, which runs in Node, so neither type-checks what only the other has. An editor and eslint find each file's
+// program through this file
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "noEmit": true
-  },
-  "include": ["src", "tests", "src/**/*.svelte", "tests/**/*.svelte", "vite.config.ts"]
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

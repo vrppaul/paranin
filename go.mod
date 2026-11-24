@@ -11,6 +11,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/x/ansi v0.11.9
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/yuin/goldmark v1.8.7
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/crypto v0.58.0

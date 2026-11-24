@@ -162,6 +162,7 @@ Amended 2026-11-24, with the widget block: a widget is a node of a post's tree a
 named by `compose`, a place a link may name.
 Amended 2026-11-24, with the first island: a widget's props reach the document as JSON, and a release refuses a post
 showing a widget whose code its build lacks.
+Amended 2026-11-24, with the props' schema: a release refuses a post showing a widget with props its schema refuses.
 
 ### Context
 
@@ -377,9 +378,10 @@ and web routes.
     as JSON, since each widget's own types are the page's (amended
     2026-11-24, with the first island). The post keeps where it shows each
     widget, which `release`, holding the build beside the content, holds to
-    the widget's code. Way weighed: the widgets kept beside the tree by
-    their fenced blocks, as a link is, which every reader of a post's code
-    would have to tell from code. The form
+    the widget's code and its props to the widget's schema (amended
+    2026-11-24, with the props' schema; ADR-0004). Way weighed: the widgets
+    kept beside the tree by their fenced blocks, as a link is, which every
+    reader of a post's code would have to tell from code. The form
     and the salary range are widgets too, so `compose` places them;
   - the posts' (step 8): a list, in order from its first number or not,
     whose items hold blocks; a quote, holding blocks; code with its
@@ -787,6 +789,23 @@ included (D8). Their widgets are code, built by the page's toolchain.
   (amended 2026-11-24, with the first island), and every post's props
   against their schema. Development runs `vite build --watch` into the
   same shape, so the strict CSP holds there too.
+- **Props' schema** (amended 2026-11-24): a widget's schema is written once,
+  in valibot, beside its component (`PageCache.props.ts`), which infers
+  its props' type from it. A plugin of the build (`web/plugins/`) turns
+  each into JSON Schema, draft 2020-12, written by the widget's name into
+  `props.schema.json` beside the manifest, which names no such file, so the
+  site never serves it. It refuses a schema by which a typo would pass, an
+  object not strict, and a default, which no reader applies. `assets`
+  compiles each schema as the build loads, by santhosh-tekuri/jsonschema,
+  reading no schema from disk, and `release` holds every post's props to
+  it, a fault at the widget's line. The island takes the props as they
+  stand: the release held them already. Ways weighed: a parse in the
+  browser, valibot in each widget's chunk to check props checked once;
+  a schema in the component's module script, which the build would run
+  Svelte to read; xeipuuv/gojsonschema, with no release since 2019, and
+  kaptinlin/jsonschema and google/jsonschema-go, younger and before 1.0,
+  where santhosh-tekuri's, at 6, passes the JSON Schema test suite of
+  every draft but its optional tests.
 - **Pipeline**: a push to `content/` or `web/` runs CI: `paranin check`, the
   types and the build, Typst's cards, rsync into `releases/<commit>/`, the
   `current` link switched, SIGHUP; CI then reads `/version` and fails if the

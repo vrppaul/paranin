@@ -36,7 +36,8 @@ func ContentFolder(test *testing.T) string {
 
 // BuildFolder is the folder of the build's fixture: a manifest naming the site's entry, the chunks it imports, two
 // deep and one of them twice, and the code of the widget the fixture post shows, ReadingPace, which the entry imports
-// lazily; the file each was built into, with the stylesheets each imports and a font the entry's stylesheet loads.
+// lazily; the file each was built into, with the stylesheets each imports and a font the entry's stylesheet loads; and
+// the widget's props' schema, as the build writes it from web/tests/widgets/ReadingPace.props.ts.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
 }

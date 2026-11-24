@@ -1,0 +1,13 @@
+// The build's program: Vite's config and its plugins, and the plugins' tests, which run in Node, with Node's types and
+// no DOM's, held as strictly as the page's
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": ["node"],
+    // Vite's native config loader, its planned default, reads a module by its whole name, its ending among it
+    "allowImportingTsExtensions": true
+  },
+  "include": ["vite.config.ts", "plugins", "tests/plugins"],
+  "exclude": []
+}

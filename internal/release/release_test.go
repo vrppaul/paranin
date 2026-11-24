@@ -16,6 +16,7 @@ import (
 const (
 	profileFile  = "profile.yaml"
 	manifestFile = "manifest.json"
+	schemasFile  = "props.schema.json"
 	authorName   = "name: Mira Example"
 )
 
@@ -44,6 +45,14 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 		{name: "a build holding the component in another folder", change: componentMoved, check: passes, want: widgetPlace},
 		{name: "an older version showing a widget the build holds no code for", change: revisionWidget, check: passes, want: revisionWidgetPlace},
 		{name: "a translation showing a widget the build holds no code for", change: translationWidget, check: passes, want: translationWidgetPlace},
+		{name: "a widget's prop of a type its schema refuses", change: propsWritten("pace: 4"), check: passes, want: widgetPlace},
+		{name: "a widget's prop of a value its schema does not list", change: propsWritten("pace: brisk"), check: passes, want: widgetPlace},
+		{name: "a widget's prop its schema does not name", change: propsWritten("pace: slow\ntempo: slow"), check: passes, want: widgetPlace},
+		{name: "a widget's prop misspelt", change: propsWritten("Pace: slow"), check: passes, want: widgetPlace},
+		{name: "a widget's prop its schema requires left out", change: propsWritten(""), check: passes, want: widgetPlace},
+		{name: "an older version's widget's props its schema refuses", change: revisionProps, check: passes, want: revisionWidgetPlace},
+		{name: "a translation's widget's props its schema refuses", change: translationProps, check: passes, want: translationWidgetPlace},
+		{name: "a widget's prop of a format its schema refuses", change: paceOfAddresses, check: passes, want: widgetPlace},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -214,7 +223,8 @@ func pictureLinkedOut(test *testing.T, folders Folders) {
 // Where the fixture post shows its widget first, at its file and the line of the block's fence, and the widget's key in
 // the build's manifest
 const (
-	widgetPlace = "posts/reading-slowly/post.en.md:32:"
+	postFile    = "posts/reading-slowly/post.en.md"
+	widgetPlace = postFile + ":32:"
 	widgetKey   = `"src/widgets/ReadingPace.svelte": {`
 )
 
@@ -230,11 +240,11 @@ const (
 	translationWidgetPlace = translationFile + ":12:"
 )
 
-// widgetLeftOut leaves the build with the code of another widget than the one the fixture post shows.
-//
-//wrapper:a case of the table names the fault it writes
+// widgetLeftOut leaves the build with the code and the props' schema of another widget than the one the fixture post
+// shows.
 func widgetLeftOut(test *testing.T, folders Folders) {
 	fixtures.ReplaceIn(test, folders.Build, manifestFile, widgetKey, `"src/widgets/OtherPace.svelte": {`)
+	fixtures.ReplaceIn(test, folders.Build, schemasFile, `"ReadingPace": {`, `"OtherPace": {`)
 }
 
 // componentMoved leaves the build with the fixture post's widget's component in a folder of web/ that holds no widget.
@@ -256,6 +266,43 @@ func revisionWidget(test *testing.T, folders Folders) {
 //wrapper:a case of the table names the fault it writes
 func translationWidget(test *testing.T, folders Folders) {
 	fixtures.ReplaceIn(test, folders.Content, translationFile, translationLine, strangeWidget)
+}
+
+// The fixture post's first widget's caption and its own props, as written, and a widget its schema refuses, of a pace
+// of the wrong type
+const (
+	firstCaption  = "caption: Slow the pace, and the margin fills.\n"
+	writtenProps  = firstCaption + "pace: slow"
+	refusedWidget = "```widget ReadingPace\nalt: A pace of the wrong type.\npace: 4\n```"
+)
+
+// propsWritten writes the fixture post's first widget's own props, its alt text and caption kept.
+func propsWritten(props string) func(test *testing.T, folders Folders) {
+	return func(test *testing.T, folders Folders) {
+		fixtures.ReplaceIn(test, folders.Content, postFile, writtenProps, firstCaption+props)
+	}
+}
+
+// revisionProps writes a widget whose props its schema refuses into the fixture post's older version.
+//
+//wrapper:a case of the table names the fault it writes
+func revisionProps(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Content, revisionFile, revisionLine, refusedWidget)
+}
+
+// translationProps writes a widget whose props its schema refuses into the fixture post's translation.
+//
+//wrapper:a case of the table names the fault it writes
+func translationProps(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Content, translationFile, translationLine, refusedWidget)
+}
+
+// paceOfAddresses holds the fixture widget's pace to a mail address's format in the build's schema, which the paces the
+// fixture post writes, listed by the schema still, are not.
+//
+//wrapper:a case of the table names the fault it writes
+func paceOfAddresses(test *testing.T, folders Folders) {
+	fixtures.ReplaceIn(test, folders.Build, schemasFile, `"type": "string"`, `"type": "string", "format": "email"`)
 }
 
 // faultyBuild leaves a manifest that does not read.

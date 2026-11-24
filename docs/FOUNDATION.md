@@ -322,7 +322,7 @@ web/src/
   controllers/   behaviour over server markup: vim, theme, hint, form submit
   islands/       what runs each island's component in its data-island, a post's widgets first; the site's own: VimChrome, SalaryRange, Chat
   kit/           the widget kit for articles: Stage (canvas, DPR, resize, reduced motion), play/pause/step, sliders
-  widgets/       the articles' widgets, named for the whole site, as a post's block names one: PageCache.svelte
+  widgets/       the articles' widgets, named for the whole site, as a post's block names one: PageCache.svelte, its props' schema beside it, PageCache.props.ts
   entries/       site.ts, holding the island registry: every widget's code by a lazy glob of widgets/
 ```
 

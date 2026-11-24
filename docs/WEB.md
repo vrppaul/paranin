@@ -44,7 +44,7 @@ lists the posts out in it alone, in its words; English, the site's own language,
 | `GET /blog.atom`, `GET /blog/series/{name}.atom` | The blog's feed and a series', in Atom, `application/atom+xml`, whatever the request asks: each the twenty newest posts the list names, or the series' parts among them, for each series with a part out. `404` where the list names none. |
 | `GET /{language}/blog…` | The same in a language, for each address above in the blog's folder and the feeds': the blog of the posts translated into it, `/ru/blog/{number}` sent on to `/ru/blog/{slug}`. `404` in a language the content has no words for, and for a post not translated into it. |
 | `GET /llms.txt` | The index of the markdown files ([llmstxt.org](https://llmstxt.org)): markdown, sent as `text/plain`, as a name ending in `.txt` promises. |
-| `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself. |
+| `GET /assets/{name}-{hash}.js`, `.css` | A file of the page's build, by the name the build's manifest gives it; never the manifest itself, nor the widgets' props' schemas. |
 | `GET /favicon.svg`, `/apple-touch-icon.png`, `/favicon.ico` | The site's icon, one picture for every reader: a drawing, a PNG of 180px and an icon file of 32px. |
 | any other `GET` | `404`, the page of no page: the status, the address asked for, quoted, its path decoded and its query as written, and where the site begins; text or HTML, chosen as a page is, the HTML in the frame of the language whose folder the path opens with, the site's own where none does. |
 | any other method | `405`, `Allow: GET, HEAD`, from `net/http`. |
@@ -192,7 +192,8 @@ Every page runs one script, `web/src/entries/site.ts`. It runs the parts whose l
 ThemeSwitch, Command and a post's code that copies as it does, Hint, Tooltip and Toast, VimKeys and CommandLine. A
 page that shows a widget loads Svelte and the widget's component at once, each a built file of its own that no other
 page loads, and runs the component in the widget's window with the props the page holds as data, read by
-`JSON.parse`; `● live` then shows, and the alt text stands aside, still the figure's description to a screen reader.
+`JSON.parse` and taken as they stand, since the release the page was drawn from held them to the widget's schema;
+`● live` then shows, and the alt text stands aside, still the figure's description to a screen reader.
 With no script the page reads whole, a widget its alt text, and the controls the script runs stay hidden.
 
 What the script keeps in the browser; where the browser keeps nothing, a choice holds for its page alone:

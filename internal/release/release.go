@@ -52,8 +52,8 @@ type Snapshot struct {
 type Check func(*content.Snapshot) error
 
 // Load reads both parts of a release and checks each whole, the content by the check too: a snapshot, or every fault
-// of either part. Once both load, it holds the two together: a snapshot, or every widget a post shows whose code the
-// build lacks.
+// of either part. Once both load, it holds the two together: a snapshot, or the faults of every widget a post shows
+// whose code the build lacks or whose props its schema refuses.
 func Load(folders Folders, check Check) (*Snapshot, error) {
 	loaded, contentErr := ReadFolder(folders.Content, content.Load)
 	if contentErr == nil {
@@ -63,23 +63,32 @@ func Load(folders Folders, check Check) (*Snapshot, error) {
 	if err := errors.Join(contentErr, buildErr); err != nil {
 		return nil, err
 	}
-	if err := widgetsWithoutCode(loaded, build); err != nil {
+	if err := widgetFaults(loaded, build); err != nil {
 		return nil, err
 	}
 	return &Snapshot{Content: loaded, Build: build}, nil
 }
 
-// What a post showing a widget the build holds no code for is refused with, by the widget's name and its component's
-// path from web/
-const noCodeProblem = "shows the widget %q, whose component, web/%s, the page's build holds no code of"
+// What a post is refused with that shows a widget the build holds no code for, by the widget's name and its
+// component's path from web/; and one that shows a widget with a prop its schema refuses, by the widget's name, the
+// prop's place in its props, a JSON Pointer, and what the schema says of it
+const (
+	noCodeProblem       = "shows the widget %q, whose component, web/%s, the page's build holds no code of"
+	refusedPropsProblem = "shows the widget %q with props%s its schema refuses: %s"
+)
 
-// widgetsWithoutCode are the faults of every widget a post shows, in any language and version, whose code the build
-// lacks, each where the post's file shows it; none where the build holds every one.
-func widgetsWithoutCode(loaded *content.Snapshot, build *assets.Build) error {
+// widgetFaults are the faults of every widget a post shows, in any language and version, whose code the build lacks or
+// whose props its schema refuses, each where the post's file shows it; none where the build holds every one and its
+// schema takes its props.
+func widgetFaults(loaded *content.Snapshot, build *assets.Build) error {
 	faults := content.Faults{}
 	for _, shown := range shownWidgets(loaded) {
-		if !build.HoldsWidget(shown.Name) {
-			faults = append(faults, content.Fault{File: shown.File, Field: "", Line: shown.Line, Problem: fmt.Sprintf(noCodeProblem, shown.Name, assets.WidgetSource(shown.Name))})
+		name := shown.Widget.Name
+		if !build.HoldsWidget(name) {
+			faults = append(faults, content.Fault{File: shown.File, Field: "", Line: shown.Line, Problem: fmt.Sprintf(noCodeProblem, name, assets.WidgetSource(name))})
+		}
+		for _, refused := range build.RefusedProps(name, shown.Widget.Props) {
+			faults = append(faults, content.Fault{File: shown.File, Field: "", Line: shown.Line, Problem: fmt.Sprintf(refusedPropsProblem, name, refused.Prop, refused.Rule)})
 		}
 	}
 	if len(faults) > 0 {

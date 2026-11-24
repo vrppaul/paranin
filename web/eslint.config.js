@@ -133,8 +133,8 @@ export default tseslint.config(
   ...tseslint.configs.strictTypeChecked,
   ...svelte.configs.recommended,
   {
-    // The rules that read types read them from the page's own TypeScript program, tsconfig.json's, a component's
-    // script among it
+    // The rules that read types read them from the TypeScript program a file is in, which tsconfig.json names: the
+    // page's, a component's script among it, or the build's
     files: ["**/*.ts", "**/*.svelte"],
     languageOptions: {
       parserOptions: {
@@ -177,7 +177,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/**/*.ts", "tests/**/*.ts", "src/**/*.svelte", "tests/**/*.svelte"],
+    files: ["src/**/*.ts", "tests/**/*.ts", "plugins/**/*.ts", "src/**/*.svelte", "tests/**/*.svelte"],
     rules: {
       "id-length": ["error", { min: WHOLE_WORD_LETTERS, properties: "never" }],
       "no-restricted-syntax": [
@@ -193,6 +193,26 @@ export default tseslint.config(
       "@typescript-eslint/no-confusing-void-expression": ["error", { ignoreArrowShorthand: true }],
       // No number with a meaning in an expression: it is a named constant, with a comment saying what it is
       "@typescript-eslint/no-magic-numbers": ["error", { ignore: [0, 1, -1], ignoreArrayIndexes: true }],
+    },
+  },
+  {
+    // The page takes a widget's props as the release checked them, so a widget's schema reaches the page as a type
+    // alone: a value imported from it brings valibot into the browser's chunks (plugins/widgetprops.ts)
+    files: ["src/**/*.ts", "tests/**/*.ts", "src/**/*.svelte", "tests/**/*.svelte"],
+    ignores: ["tests/plugins/**"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/*.props"],
+              allowTypeImports: true,
+              message: "Import a widget's schema as a type: the page never parses props.",
+            },
+          ],
+        },
+      ],
     },
   },
 );

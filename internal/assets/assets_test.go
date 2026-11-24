@@ -2,6 +2,7 @@ package assets_test
 
 import (
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -16,6 +17,13 @@ import (
 const (
 	manifestPath   = "manifest.json"
 	stylesheetPath = "assets/site-fixture.css"
+	schemasPath    = "props.schema.json"
+)
+
+// The fixture's widget, and where its props' schema opens among the widgets' schemas
+const (
+	widgetName      = "ReadingPace"
+	widgetSchemaKey = `"` + widgetName + `": {`
 )
 
 // The types the fixture's files are served as
@@ -27,7 +35,7 @@ const (
 
 // Every file the manifest names, a chunk's script, the stylesheets it imports and a file a stylesheet loads, as the
 // font, is served at its path from the site's root, as the type its name says, a widget's code, which the site's
-// script loads by itself, among them; the manifest itself is no file of the site.
+// script loads by itself, among them; the manifest itself is no file of the site, nor the widgets' props' schemas.
 func TestABuildServesEveryFileItsManifestNames(test *testing.T) {
 	build := fixtures.LoadedBuild(test)
 	want := map[string]assets.File{
@@ -63,7 +71,8 @@ func TestTheSiteEntryIncludesEveryChunkReached(test *testing.T) {
 
 // A build the site cannot be served from is refused, the fault named: no manifest, one that does not read, one
 // lacking an entry the site names or a chunk one imports, a file it names missing or of a type the site serves
-// none of.
+// none of; no widgets' props' schemas, or ones that do not read, and a widget whose schema they lack, is no schema or
+// reads one from disk.
 func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -98,6 +107,27 @@ func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 			},
 			want: `"assets/site-fixture.png"`,
 		},
+		{name: "no props' schemas", change: func(test *testing.T, folder string) { removeFile(test, folder, schemasPath) }, want: schemasPath},
+		{
+			name:   "props' schemas that do not read",
+			change: func(test *testing.T, folder string) { fixtures.ReplaceIn(test, folder, schemasPath, "{", "[") },
+			want:   schemasPath,
+		},
+		{
+			name: "a widget's props' schema missing",
+			change: func(test *testing.T, folder string) {
+				fixtures.ReplaceIn(test, folder, schemasPath, widgetSchemaKey, `"OtherPace": {`)
+			},
+			want: widgetName,
+		},
+		{
+			name: "a widget's props' schema that is no schema",
+			change: func(test *testing.T, folder string) {
+				fixtures.ReplaceIn(test, folder, schemasPath, `"type": "object"`, `"type": "record"`)
+			},
+			want: widgetName,
+		},
+		{name: "a widget's props' schema reaching past the build's folder", change: schemaReachingOut, want: widgetName},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -123,6 +153,13 @@ func removeFile(test *testing.T, folder, file string) {
 	if err := os.Remove(filepath.Join(folder, file)); err != nil {
 		test.Fatalf("remove %s: %v", file, err)
 	}
+}
+
+// schemaReachingOut makes the fixture's widget's props' schema refer to a schema read from disk past the folder the
+// build is read through: the build's own manifest, by its address on disk, read as a schema that takes any props.
+func schemaReachingOut(test *testing.T, folder string) {
+	outside := url.URL{Scheme: "file", Path: filepath.Join(folder, manifestPath)}
+	fixtures.ReplaceIn(test, folder, schemasPath, widgetSchemaKey, widgetSchemaKey+`"$ref": "`+outside.String()+`",`)
 }
 
 // renameBuilt moves a built file to another name, and the manifest's name for it with it.

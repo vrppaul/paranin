@@ -15,7 +15,10 @@ const ALT = '[data-part="widget-alt"]';
 const PROPS = 'script[type="application/json"]';
 const DESCRIBED_BY = "aria-describedby";
 
-/** A widget's props, as the post writes them: an object of JSON, every widget's of a type of its own. */
+/**
+ * A widget's props, as the post writes them: an object of JSON, every widget's of the type its schema gives it, which
+ * the release the page was drawn from held them to, so the page takes them as they stand.
+ */
 export type WidgetProps = Record<string, unknown>;
 
 /** A widget's component, once its code has come. */

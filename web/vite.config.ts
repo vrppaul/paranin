@@ -2,17 +2,19 @@
 // its name into build/web, and a manifest naming each, which the Go server reads (internal/assets) and serves the
 // files from. In development `pnpm watch` writes the same files again on every change, so the page is always
 // served as it will be, under the same Content-Security-Policy. The posts' widgets, Svelte components, are built
-// through Svelte's plugin (svelte.config.js), each a chunk of its own, with its style, that the entry imports lazily.
-// vitest runs the tests under tests/ in jsdom, a document with no browser.
+// through Svelte's plugin (svelte.config.js), each a chunk of its own, with its style, that the entry imports lazily;
+// their props' schemas into JSON Schema beside the manifest (plugins/widgetprops.ts). vitest runs the tests under
+// tests/ in jsdom, a document with no browser.
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
+import { WIDGET_PROPS } from "./plugins/widgetprops.ts";
 
 // The mode vitest runs Vite in, and the condition a package's exports name its build for a browser by
 const TEST_MODE = "test";
 const BROWSER_CONDITION = "browser";
 
 export default defineConfig(({ mode }) => ({
-  plugins: [svelte()],
+  plugins: [svelte(), WIDGET_PROPS],
   // vitest resolves a package as a server does, and Svelte's build for a server mounts no component: the tests run
   // the page's components in jsdom as a browser runs them, by Svelte's build for a browser, which the page's build
   // takes already

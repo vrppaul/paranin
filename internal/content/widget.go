@@ -27,12 +27,11 @@ type Widget struct {
 	Props json.RawMessage
 }
 
-// ShownWidget is a widget where a post's file shows it: the component it names, the file and the line of its block's
-// fence.
+// ShownWidget is a widget where a post's file shows it: the widget, and the file and the line of its block's fence.
 type ShownWidget struct {
-	Name string
-	File string
-	Line int
+	Widget Widget
+	File   string
+	Line   int
 }
 
 // KindWidget is the kind of a widget's node in a post's tree.
@@ -131,7 +130,7 @@ func (reading widgetReading) read(source []byte, fence *ast.FencedCodeBlock) *Wi
 // the faults its reading found at the post's lines, and keeps where it is shown.
 func (checked *bodyInspection) inspectWidget(widget *WidgetNode) {
 	line := checked.lineOf(widget)
-	checked.shown.widgets = append(checked.shown.widgets, ShownWidget{Name: widget.Widget.Name, File: checked.inspection.file, Line: line})
+	checked.shown.widgets = append(checked.shown.widgets, ShownWidget{Widget: widget.Widget, File: checked.inspection.file, Line: line})
 	if widget.Parent().Kind() != ast.KindDocument {
 		checked.inspection.addAtLine(line, widgetPlaceProblem)
 	}

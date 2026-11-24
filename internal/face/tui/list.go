@@ -165,8 +165,8 @@ func (layout layout) blogHead(head document.Head, column int) []line {
 }
 
 // waysLines are the ways the list is grouped (compose.ListWords.Groupings), after the site's word before them, the
-// grouping shown chosen, a filtered list's the one it filters; then its filters, the series it is filtered by and the
-// tags of the posts it lists; the filters on lines of their own where both do not fit a line.
+// grouping shown chosen, a filtered list's the one it filters; then its filters, the tags of the posts it lists; the
+// filters on lines of their own where both do not fit a line.
 func (layout layout) waysLines(head document.Head) []line {
 	listWords := layout.siteWords.ListWords
 	grouped, _ := head.Page.Unfiltered()
@@ -192,35 +192,16 @@ func (layout layout) waysLines(head document.Head) []line {
 	return slices.Concat([]line{ways}, blankLines(), layout.fill(slices.Concat(filters...), 0))
 }
 
-// filterWords are a filter the list's head offers as the page writes it (DESIGN.md, BlogHead and Tag): a tag's muted
-// word after a faint hash, a series by its words; the filter the list is filtered by chosen whole, a space either side
-// and between its words chosen too, so it stands as one chip and breaks only at a space.
+// filterWords are a filter the list's head offers as the page writes it (DESIGN.md, BlogHead and Tag): its tag's muted
+// word after a faint hash; the filter the list is filtered by chosen whole, hash and all, a space either side, so it
+// stands as one chip.
 func filterWords(filter document.Filter) []word {
-	mark := ""
-	if filter.MarkedAsTag() {
-		mark = tagMark
-	}
 	if !filter.Current {
-		words := textWords(document.PlainText(filter.Words), kindMuted)
-		if len(words) > 0 && mark != "" {
-			words[0].runs = append([]run{plainRun(mark, kindFaint)}, words[0].runs...)
-		}
-		return words
+		return tagWords([]string{filter.Tag}, kindMuted)
 	}
-	written := strings.Fields(mark + document.PlainText(filter.Words))
-	words := make([]word, 0, len(written))
-	for index, piece := range written {
-		if index == 0 {
-			piece = space + piece
-		}
-		if index == len(written)-1 {
-			piece += space
-		}
-		chosen := wordOf(piece, kindChosen)
-		chosen.spaceBefore = kindChosen
-		words = append(words, chosen)
-	}
-	return words
+	chosen := wordOf(space+tagMark+filter.Tag+space, kindChosen)
+	chosen.spaceBefore = kindChosen
+	return []word{chosen}
 }
 
 // tagWords are tags as the page writes them (DESIGN.md, Tag): each its word after a faint hash, the word of a kind.

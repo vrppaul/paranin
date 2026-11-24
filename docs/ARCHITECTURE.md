@@ -153,6 +153,7 @@ read by x/text's CLDR rules, and the frame carries how a day and the manual's he
 Amended 2026-11-24, with a translation's source: `content` holds a translation to the text of its original it was made
 from and keeps what it warns of beside a snapshot, and a translation older than its original says so under its day.
 Amended 2026-11-24, on the owner's word: a heading's anchor is its words, whatever else its page names alike.
+Amended 2026-11-24, on the owner's word: a tag alone filters the list, a filtered list a page of one kind.
 
 ### Context
 
@@ -408,24 +409,22 @@ and web routes.
     block of its own with its title, which would leave the text faces'
     sections and the manual's to write a second time.
     A filtered list (amended 2026-11-24) is the list by year of the posts
-    a tag or a series keeps, a page of a kind of its own for each, its slug
-    the tag or the series' name, its head the list's with the filter in
-    the site's words as its subtitle: every face draws it as the list. The
-    page says it filters the list (`Page.Unfiltered`), and so that no search
-    engine indexes it (`Page.Indexed`), which a face and the web host read
-    to send it with `noindex` and name no canonical address, as a preview
-    names none, since a part of the list is no copy of it.
-    The head of a list and of a post holds its filters (`Head.Filters`),
-    which `compose` works out once: each tag, or the series a list is
-    filtered by, by its name and words, where it leads and whether it is
-    the filter shown, then named to a screen reader as the way to the
-    whole list; a tag of a post the lists name nowhere, a draft's, a
-    preview's or an unlisted post's, leads nowhere, since it may filter
-    none. The faces draw the filters in that order and the list's places
-    are its tags among them, so no face works out where a tag leads.
-    `compose` composes one for each tag and each series with a part out,
-    with the site, so no request composes; the web host draws each
-    filter's formats the first time a request asks for one, once a
+    a tag keeps, a page of a kind of its own, its slug the tag, its head
+    the list's with the filter in the site's words as its subtitle: every
+    face draws it as the list. The page says it filters the list
+    (`Page.Unfiltered`), and so that no search engine indexes it
+    (`Page.Indexed`), which a face and the web host read to send it with
+    `noindex` and name no canonical address, as a preview names none,
+    since a part of the list is no copy of it. The head of a list and of
+    a post holds its filters (`Head.Filters`), which `compose` works out
+    once: each tag, where it leads and whether it is the filter shown,
+    then named to a screen reader as the way to the whole list; a tag of a
+    post the lists name nowhere, a draft's, a preview's or an unlisted
+    post's, leads nowhere, since it may filter none. The faces draw the
+    filters in that order and the list's places are its tags among them,
+    so no face works out where a tag leads. `compose` composes one for
+    each tag, with the site, so no request composes; the web host draws
+    each filter's formats the first time a request asks for one, once a
     drawing however many ask at once (`sync.OnceValue`), as it draws a
     preview's: on 72 posts, 45 tags and 2 series, drawing them all with
     the site took 52 ms and 53 MB of allocations a snapshot, not 23 ms and
@@ -433,7 +432,8 @@ and web routes.
     weighed: the filter a field of every page, which every page written by
     hand would carry; a filter composed per request, a request that
     composes; the TUI filtering the list's buffer in place, a list no
-    other face could name.
+    other face could name; a filter by series too, which repeated the
+    series' group on the list by series.
 - **The feeds** (amended 2026-11-24, FOUNDATION §5.4, Feeds) are the blog's
   and each series' with a part out, which `compose` composes with the site
   (`Site.Feeds`, `compose.Feed`): each its newest posts the lists name,
@@ -688,8 +688,8 @@ and web routes.
   query, `/blog?tag=go` (amended 2026-11-24), and `Requested` reads a
   request's path and query into the address `Path` writes, by the one
   encoding both use, so the host only looks the address up: on the list
-  by year the one filter the query names, every other key passed over; a
-  filter named twice, or both, an address no page has. An older version of
+  by year the tag the query names, every other key passed over; a tag
+  named twice, an address no page has. An older version of
   a post stands in the post's folder by its revision's name, a day, its
   formats beside it, `/blog/<slug>/<date>.md` (amended 2026-11-24), and a
   picture by its name, which ends in its type's ending: neither reads as

@@ -95,8 +95,8 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 }
 
 // A filtered list is written as the list it filters, its manual named as the list's, with the filter in the site's
-// words beside the blog's name, and the posts it keeps; each filter, by tag and by series, in each format, is held to
-// its golden file, named by the filter, since the list's path holds a query.
+// words beside the blog's name, and the posts it keeps; in each format, it is held to its golden file, named by the
+// filter, since the list's path holds a query.
 func TestAFilteredListReadsAsItsGoldenText(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	filtered := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false}).Own.Filtered
@@ -105,7 +105,6 @@ func TestAFilteredListReadsAsItsGoldenText(test *testing.T) {
 		name string
 	}{
 		{page: document.TagFilter("reading"), name: "filtered/tag-reading"},
-		{page: document.SeriesFilter("reading"), name: "filtered/series-reading"},
 	}
 	for _, testCase := range cases {
 		for _, written := range formats() {

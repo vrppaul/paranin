@@ -67,10 +67,6 @@ func TestEveryPageIsServedAtItsAddress(test *testing.T) {
 		{name: "the list by series", path: "/blog/series.md", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "1 of 2 out"},
 		{name: "the list by series as a manual", path: "/blog/series.txt", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "BLOG-SERIES(1)"},
 		{name: "the list filtered by a tag", path: "/blog.md?tag=terminals", status: http.StatusOK, contentType: "text/markdown; charset=utf-8", holds: "posts tagged terminals"},
-		{
-			name: "the list filtered by a series, as a manual", path: "/blog.txt?series=reading", status: http.StatusOK, contentType: "text/plain; charset=utf-8",
-			holds: "blog — parts of Reading",
-		},
 		{name: "the list filtered, chosen", path: "/blog?tag=reading", status: http.StatusOK, contentType: "text/plain; charset=utf-8", holds: "blog — posts tagged reading"},
 		{
 			name: "the list filtered, its other keys passed over", path: "/blog.md?ref=feed&tag=reading", status: http.StatusOK,
@@ -261,7 +257,7 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a translation in markdown", path: "/ru/blog/reading-slowly.md", accept: "", want: `<https://example.test/ru/blog/reading-slowly>; rel="canonical"`},
 		{name: "a filtered list in markdown, a part of the list and no copy of it", path: "/blog.md?tag=reading", accept: "", want: ""},
-		{name: "a filtered list as a manual", path: "/blog.txt?series=reading", accept: "", want: ""},
+		{name: "a filtered list as a manual", path: "/blog.txt?tag=reading", accept: "", want: ""},
 		{name: "a filtered list in a browser", path: "/blog?tag=terminals", accept: "text/html", want: ""},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
@@ -287,7 +283,6 @@ func TestAPageOfNoIndexIsSentForNoSearchEngineToIndex(test *testing.T) {
 		want   string
 	}{
 		{name: "filtered by a tag, in a browser", path: "/blog?tag=reading", accept: "text/html", want: "noindex"},
-		{name: "filtered by a series, chosen", path: "/blog?series=reading", accept: "*/*", want: "noindex"},
 		{name: "filtered, in markdown", path: "/blog.md?tag=terminals", accept: "", want: "noindex"},
 		{name: "filtered, as a manual", path: "/blog.txt?tag=terminals", accept: "", want: "noindex"},
 		{name: "the list", path: "/blog", accept: "text/html", want: ""},
@@ -411,10 +406,6 @@ func TestAnAddressOfNoPageIsNotFound(test *testing.T) {
 		{
 			name: "the list filtered by a tag twice", path: "/blog?tag=reading&tag=terminals", accept: "", contentType: plain,
 			holds: `404 Not Found: "/blog?tag=reading&tag=terminals"`,
-		},
-		{
-			name: "the list filtered by a tag and a series", path: "/blog?tag=reading&series=reading&ref=feed", accept: "", contentType: plain,
-			holds: `404 Not Found: "/blog?tag=reading&series=reading&ref=feed"`,
 		},
 		{name: "no page, with a query", path: "/nothing?ref=feed", accept: "", contentType: plain, holds: `404 Not Found: "/nothing?ref=feed"`},
 		{name: "curl, taking anything", path: "/nothing", accept: "*/*", contentType: plain, holds: `404 Not Found: "/nothing"`},

@@ -314,7 +314,7 @@ func FilePath(file document.File) string {
 	case document.PagePost:
 		return inLanguage(file.Page.Translation, fileIn(postPaths(file.Page.Slug), file.Name))
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
-		document.PageSkills, document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
+		document.PageSkills, document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
 	}
 	return ""
 }
@@ -344,38 +344,30 @@ func ownPath(page document.Page, format Format) string {
 	case document.PageBlogSeries:
 		return paths{chosen: seriesList, files: seriesList}.inFormat(format)
 	case document.PageTagFilter:
-		return filtered(listPaths().inFormat(format), tagKey, page.Slug)
-	case document.PageSeriesFilter:
-		return filtered(listPaths().inFormat(format), seriesKey, page.Slug)
+		return filtered(listPaths().inFormat(format), page.Slug)
 	}
 	return ""
 }
 
-// The keys of the query a filter of the blog's list is written in, /blog?tag=payments and /blog?series=stint, the
-// site's one address with a query (docs/FOUNDATION.md §5.4, Series, tags and lists), and the mark that opens a query
+// The key of the query the blog's list filtered by a tag is written in, /blog?tag=payments, the site's one address
+// with a query (docs/FOUNDATION.md §5.4, Series, tags and lists), and the mark that opens a query
 const (
 	tagKey     = "tag"
-	seriesKey  = "series"
 	queryStart = "?"
 )
-
-// filterKeys are the keys of the query a filter of the blog's list is written in.
-func filterKeys() []string {
-	return []string{tagKey, seriesKey}
-}
 
 // listPaths are where the blog's list by year is served, and every filter of it beside it, with its query.
 func listPaths() paths {
 	return paths{chosen: blogList, files: blogList}
 }
 
-// filtered is the path of the blog's list in a format, filtered by a key's value in its query; none where the list has
-// no path in the format.
-func filtered(listPath, key, value string) string {
+// filtered is the path of the blog's list in a format, filtered by a tag in its query; none where the list has no
+// path in the format.
+func filtered(listPath, tag string) string {
 	if listPath == "" {
 		return ""
 	}
-	return listPath + queryStart + url.Values{key: {value}}.Encode()
+	return listPath + queryStart + url.Values{tagKey: {tag}}.Encode()
 }
 
 // Asked is the address a request asked for as its reader wrote it, which the page of no page quotes back: its path as
@@ -388,21 +380,16 @@ func Asked(path, rawQuery string) string {
 }
 
 // Requested is the address a request for a path with a query reaches its page by, as Path writes it: on the blog's
-// list by year, in any language and format, the list filtered by the one filter its query names, by tag or by series;
-// every other key, and the query of any other path, passed over, as a link's tracking words are. A query that names a
-// filter twice, or both, is read with its filters alone, an address Path never writes, so it reaches no page.
+// list by year, in any language and format, the list filtered by the tag its query names; every other key, and the
+// query of any other path, passed over, as a link's tracking words are. A query that names a tag twice is read with
+// its tags alone, an address Path never writes, so it reaches no page.
 func (site Site) Requested(path string, query url.Values) string {
-	named := url.Values{}
-	for _, key := range filterKeys() {
-		if values, isNamed := query[key]; isNamed {
-			named[key] = values
-		}
-	}
+	tags, isNamed := query[tagKey]
 	_, own := site.LanguageFolderOf(path)
-	if len(named) == 0 || !slices.ContainsFunc(Formats(), func(format Format) bool { return ownPath(document.PageOf(document.PageBlog), format) == own }) {
+	if !isNamed || !slices.ContainsFunc(Formats(), func(format Format) bool { return ownPath(document.PageOf(document.PageBlog), format) == own }) {
 		return path
 	}
-	return path + queryStart + named.Encode()
+	return path + queryStart + url.Values{tagKey: tags}.Encode()
 }
 
 // NumberPath is where a post's number reaches it in a language (D26), which answers by sending the reader on to the

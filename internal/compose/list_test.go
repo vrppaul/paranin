@@ -154,23 +154,19 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	}
 }
 
-// The blog's list is filtered by each tag its head names, in its order, then by each series with a part out, the one
-// whose latest part came out last first: each a list by year of the posts the list names that carry the tag or are
-// parts of the series, newest first, its head the list's, every tag of the blog among it, with the filter in the
-// site's words beside the blog's name. No tag of a post the list leaves out, and no series with no part out, filters
-// it.
-func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
+// The blog's list is filtered by each tag its head names, in its order: each a list by year of the posts the list
+// names that carry the tag, newest first, its head the list's, every tag of the blog among it, with the filter in the
+// site's words beside the blog's name. No tag of a post the list leaves out filters it.
+func TestTheListIsFilteredByEachTag(test *testing.T) {
 	posts := []writtenPost{
 		{slug: "first", id: 3, status: "published", published: earlier, tags: "terminals, tools"},
 		{slug: "old-one", id: 4, status: "published", published: yearBefore, tags: "tools"},
 		{slug: "toolbox", id: 5, status: "published", published: latest, tags: ""},
 		{slug: "drafted", id: 6, status: "draft", published: later, tags: "secret"},
-		{slug: "idle", id: 7, status: "draft", published: later, tags: ""},
 	}
 	series := []writtenSeries{
 		{name: fixtureSeriesName, title: fixtureSeriesTitle, parts: "first, reading-slowly", toCome: "Reading aloud"},
 		{name: "tools", title: "Tools", parts: "toolbox, old-one", toCome: ""},
-		{name: "quiet", title: "Quiet", parts: "idle", toCome: ""},
 	}
 	tags := []string{"terminals", "tools", "reading"}
 	fixturePost := seenListed{
@@ -181,7 +177,6 @@ func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
 		readiness: outAt(test, "first", earlier), title: "first", part: "part 1", series: fixtureSeriesTitle, seriesName: fixtureSeriesName, tags: "terminals,tools",
 	}
 	oldOne := seenListed{readiness: outAt(test, "old-one", yearBefore), title: "old-one", part: "part 2", series: "Tools", seriesName: "tools", tags: "tools"}
-	toolbox := seenListed{readiness: outAt(test, "toolbox", latest), title: "toolbox", part: "part 1", series: "Tools", seriesName: "tools", tags: ""}
 	cases := []struct {
 		page     document.Page
 		subtitle string
@@ -201,17 +196,6 @@ func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
 		{
 			page: document.TagFilter("reading"), subtitle: "posts tagged reading",
 			groups: []seenGroup{{title: "2026", name: "", line: "", count: "1 post", posts: []seenListed{fixturePost}}},
-		},
-		{
-			page: document.SeriesFilter("tools"), subtitle: "parts of Tools",
-			groups: []seenGroup{
-				{title: "2026", name: "", line: "", count: "1 post", posts: []seenListed{toolbox}},
-				{title: "2025", name: "", line: "", count: "1 post", posts: []seenListed{oldOne}},
-			},
-		},
-		{
-			page: document.SeriesFilter(fixtureSeriesName), subtitle: "parts of Reading",
-			groups: []seenGroup{{title: "2026", name: "", line: "", count: "2 posts", posts: []seenListed{fixturePost, first}}},
 		},
 	}
 	filtered := SiteOf(Prepare(withPostsAndSeries(test, posts, series)), publicOnTheDay()).Own.Filtered
@@ -234,18 +218,14 @@ func TestTheListIsFilteredByEachTagThenEachSeries(test *testing.T) {
 
 // A head of the blog's list offers its filters, each leading to the list it filters: every tag of the posts the list
 // names, in the head's order; on a list filtered by a tag that tag current, leading back to the whole list, named to a
-// screen reader as the way there; on a list filtered by a series that series first, in the site's words, current and
-// leading back too.
+// screen reader as the way there.
 func TestAListsHeadOffersItsFilters(test *testing.T) {
 	site := SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay())
 	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
 	whole := document.PageOf(document.PageBlog)
-	reading := document.Filter{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: document.TagFilter("reading"), Current: false, WayOut: ""}
-	terminals := document.Filter{Kind: document.FilterTag, Name: "terminals", Words: textSpans("terminals"), Page: document.TagFilter("terminals"), Current: false, WayOut: ""}
-	readingShown := document.Filter{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: whole, Current: true, WayOut: "posts tagged reading, show all posts"}
-	seriesShown := document.Filter{
-		Kind: document.FilterSeries, Name: fixtureSeriesName, Words: textSpans("parts of Reading"), Page: whole, Current: true, WayOut: "parts of Reading, show all posts",
-	}
+	reading := document.Filter{Tag: "reading", Page: document.TagFilter("reading"), Current: false, WayOut: ""}
+	terminals := document.Filter{Tag: "terminals", Page: document.TagFilter("terminals"), Current: false, WayOut: ""}
+	readingShown := document.Filter{Tag: "reading", Page: whole, Current: true, WayOut: "posts tagged reading, show all posts"}
 	cases := []struct {
 		name string
 		page document.Page
@@ -254,7 +234,6 @@ func TestAListsHeadOffersItsFilters(test *testing.T) {
 		{name: "the list", page: whole, want: []document.Filter{reading, terminals}},
 		{name: "the list by series", page: document.PageOf(document.PageBlogSeries), want: []document.Filter{reading, terminals}},
 		{name: "filtered by a tag", page: document.TagFilter("reading"), want: []document.Filter{readingShown, terminals}},
-		{name: "filtered by a series", page: document.SeriesFilter(fixtureSeriesName), want: []document.Filter{seriesShown, reading, terminals}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -323,7 +302,7 @@ func TestAListsPlacesAreItsPostsThenItsTagsThenItsSeries(test *testing.T) {
 
 // Every face's :e opens each project's page by its slug, then the blog's list in each grouping and each post the list
 // names, newest first, which Tab offers; then a post served and no list names, by its slug, and every post served by
-// its number, and the list filtered by each tag and each series, which Tab never offers; never a draft, a preview or a
+// its number, and the list filtered by each tag, which Tab never offers; never a draft, a preview or a
 // post that comes later than its reader, each by the name a terminal reaches it by; then the same of the blog in each
 // other language, in its folder. Every language's frame holds that one list.
 func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
@@ -348,14 +327,12 @@ func TestThePagesEditOpensAreTheProjectsThenTheBlogs(test *testing.T) {
 		{Place: document.Place{Name: "blog/reading-slowly/2026-11-10", Kind: document.PlaceVersion, Page: document.PostPage(fixturePostSlug).OlderVersion("2026-11-10"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals"), Section: ""}, Offered: false},
-		{Place: document.Place{Name: "blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading"), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "ru/blog", Kind: document.PlaceList, Page: document.PageOf(document.PageBlog).InLanguage(russian), Section: ""}, Offered: true},
 		{Place: document.Place{Name: "ru/blog/series", Kind: document.PlaceList, Page: document.PageOf(document.PageBlogSeries).InLanguage(russian), Section: ""}, Offered: true},
 		{Place: document.Place{Name: "ru/blog/" + fixturePostSlug, Kind: document.PlacePost, Page: read.InLanguage(russian), Section: ""}, Offered: true},
 		{Place: document.Place{Name: "ru/blog/1", Kind: document.PlacePost, Page: read.InLanguage(russian), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "ru/blog?tag=reading", Kind: document.PlaceList, Page: document.TagFilter("reading").InLanguage(russian), Section: ""}, Offered: false},
 		{Place: document.Place{Name: "ru/blog?tag=terminals", Kind: document.PlaceList, Page: document.TagFilter("terminals").InLanguage(russian), Section: ""}, Offered: false},
-		{Place: document.Place{Name: "ru/blog?series=reading", Kind: document.PlaceList, Page: document.SeriesFilter("reading").InLanguage(russian), Section: ""}, Offered: false},
 	}
 	for _, blog := range SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Blogs() {
 		if got := blog.Frame.Pages; !reflect.DeepEqual(got, want) {

@@ -49,7 +49,7 @@ func PlacesOf(composed Document) []Place {
 	switch head.Page.Kind {
 	case PagePost:
 		return slices.Concat(headingPlaces(head.Page, composed.Blocks), partPlaces(head.Post), versionPlaces(head.Version), languagePlaces(head.Languages))
-	case PageBlog, PageBlogSeries, PageTagFilter, PageSeriesFilter:
+	case PageBlog, PageBlogSeries, PageTagFilter:
 		return listPlaces(head, composed.Blocks)
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
 	}
@@ -122,20 +122,9 @@ func listPlaces(head Head, blocks []Block) []Place {
 		}
 	}
 	for _, filter := range head.Filters {
-		tags = append(tags, tagPlaces(filter)...)
+		tags = append(tags, Place{Name: filter.Tag, Kind: PlaceTag, Page: filter.Page, Section: ""})
 	}
 	return slices.Concat(posts, tags, series)
-}
-
-// tagPlaces are the places of a filter of a list's head: a tag, by its name, where the filter leads; none for a
-// series, which its group stands for as a place of its own. exhaustive holds the switch to every kind.
-func tagPlaces(filter Filter) []Place {
-	switch filter.Kind {
-	case FilterTag:
-		return []Place{{Name: filter.Name, Kind: PlaceTag, Page: filter.Page, Section: ""}}
-	case FilterSeries:
-	}
-	return nil
 }
 
 // postOut is a post out the blog's list names, as its places read it: its page, and its series' name, none outside one.

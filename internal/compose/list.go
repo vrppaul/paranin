@@ -21,36 +21,22 @@ func blogLists(read blog) []document.Document {
 	}
 }
 
-// listFilter is a filter of the blog's list: the list it makes; what it filters by and the name it goes by, a tag or a
-// series' name; the phrase that writes it and the title the phrase takes, the tag or the series' title; and the posts
-// it keeps, newest first.
+// listFilter is a filter of the blog's list: the list it makes, the tag it filters by, and the posts it keeps, newest
+// first.
 type listFilter struct {
-	page   document.Page
-	kind   document.FilterKind
-	name   string
-	phrase content.Phrase
-	title  string
-	posts  []content.Post
+	page  document.Page
+	tag   string
+	posts []content.Post
 }
 
-// filtersOf are the filters of the blog's list (D25): by each tag its head names, in its order, then by each series
-// with a part out, the one whose latest part came out last first; each keeping the posts the list names that carry the
-// tag or are parts of the series.
+// filtersOf are the filters of the blog's list (D25), by each tag its head names, in its order, each keeping the posts
+// the list names that carry the tag.
 func (read blog) filtersOf() []listFilter {
 	translation := read.words.Translation()
 	filters := make([]listFilter, 0, len(read.tags))
 	for _, tag := range read.tags {
 		kept := slices.DeleteFunc(slices.Clone(read.newest), func(post content.Post) bool { return !slices.Contains(post.Tags, tag) })
-		filters = append(filters, listFilter{
-			page: document.TagFilter(tag).InLanguage(translation), kind: document.FilterTag, name: tag, phrase: content.PhraseTagFilter, title: tag,
-			posts: kept,
-		})
-	}
-	for _, series := range read.seriesNewestFirst() {
-		filters = append(filters, listFilter{
-			page: document.SeriesFilter(series.Name).InLanguage(translation), kind: document.FilterSeries, name: series.Name, phrase: content.PhraseSeriesFilter,
-			title: series.Title, posts: read.partsOut(series),
-		})
+		filters = append(filters, listFilter{page: document.TagFilter(tag).InLanguage(translation), tag: tag, posts: kept})
 	}
 	return filters
 }
@@ -71,33 +57,26 @@ func filteredLists(read blog) []document.Document {
 	return lists
 }
 
-// words are a filter in the site's words: "posts tagged go", "parts of Stint".
+// words are a filter in the site's words: "posts tagged go".
 func (filter listFilter) words(words content.Words) []document.Span {
-	return textSpans(words.Phrase(filter.phrase, filter.title))
+	return textSpans(words.Phrase(content.PhraseTagFilter, filter.tag))
 }
 
-// listFilters are the filters the head of the blog's list offers on a page of it (DESIGN.md, BlogHead): on a list
-// filtered by a series that series; then every tag of the posts the list names. The filter the list shown is filtered
-// by leads back to the whole list, every other to the list it filters.
+// listFilters are the filters the head of the blog's list offers on a page of it (DESIGN.md, BlogHead), every tag of
+// the posts the list names. The filter the list shown is filtered by leads back to the whole list, every other to the
+// list it filters.
 func (read blog) listFilters(shown document.Page, words content.Words) []document.Filter {
-	series, tags := []document.Filter{}, []document.Filter{}
+	filters := make([]document.Filter, 0, len(read.filters))
 	for _, filter := range read.filters {
-		switch filter.kind {
-		case document.FilterTag:
-			tags = append(tags, filter.offered(shown, textSpans(filter.title), words))
-		case document.FilterSeries:
-			if filter.page == shown {
-				series = append(series, filter.offered(shown, filter.words(words), words))
-			}
-		}
+		filters = append(filters, filter.offered(shown, words))
 	}
-	return slices.Concat(series, tags)
+	return filters
 }
 
-// offered is a filter as a head on a page offers it, in its words there: leading to the list it filters, or, on that
-// list, where it is the filter shown, back to the whole list, named as the way there.
-func (filter listFilter) offered(shown document.Page, written []document.Span, words content.Words) document.Filter {
-	offered := document.Filter{Kind: filter.kind, Name: filter.name, Words: written, Page: filter.page, Current: false, WayOut: ""}
+// offered is a filter as a head on a page offers it: leading to the list it filters, or, on that list, where it is
+// the filter shown, back to the whole list, named as the way there.
+func (filter listFilter) offered(shown document.Page, words content.Words) document.Filter {
+	offered := document.Filter{Tag: filter.tag, Page: filter.page, Current: false, WayOut: ""}
 	if filter.page == shown {
 		offered.Page, _ = filter.page.Unfiltered()
 		offered.Current, offered.WayOut = true, words.Phrase(content.PhraseFilterWayOut, document.PlainText(filter.words(words)))
@@ -114,7 +93,7 @@ func (read blog) postFilters(post content.Post) []document.Filter {
 		if read.audience.lists(post) {
 			leads = document.TagFilter(tag).InLanguage(read.words.Translation())
 		}
-		filters = append(filters, document.Filter{Kind: document.FilterTag, Name: tag, Words: textSpans(tag), Page: leads, Current: false, WayOut: ""})
+		filters = append(filters, document.Filter{Tag: tag, Page: leads, Current: false, WayOut: ""})
 	}
 	return filters
 }
@@ -155,7 +134,7 @@ func (read blog) listHead(page document.Page, filter []document.Span, words cont
 		Repository:  nil,
 		Post:        nil,
 		Description: line,
-		Feeds:       read.feedLinks(seriesShownBy(page)),
+		Feeds:       read.feedLinks(noSeries),
 		Languages:   nil,
 	}
 }

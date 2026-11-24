@@ -44,7 +44,7 @@ Each decision carries one of three marks:
 | D22 | The one front-end build of ADR-0004 is accepted as its bullet is written: one Vite build writing hashed files, one manifest and each widget's props as JSON Schema, files served from a folder and none embedded, the manifest and the props checked when a snapshot loads, `vite build --watch` in development. Embedding would ship a post's widgets only with a new binary (D5), Vite's dev server breaks the CSP (§2), and two builds would ship Svelte twice. | 2026-11-03 |
 | D23 | The blog holds the author's own thoughts and what he learned, each written up as an article; the original in English, translations beside it (D12). Interactive parts at least on the web, a reduced post over SSH (§5.4). | 2026-11-22 |
 | D24 | A post has revisions: the reader sees which date's version they read and can open an older one (§5.4, Revisions). | 2026-11-22 |
-| D25 | Posts group into series, and carry tags; the blog lists its posts by year or by series, and a tag or a series filters the list (§5.4, Series, tags and lists). | 2026-11-22 |
+| D25 | Posts group into series, and carry tags; the blog lists its posts by year or by series, and a tag filters the list (§5.4, Series, tags and lists; the tag alone, owner, 2026-11-24). | 2026-11-22 |
 | D26 | A post has a slug and a short number, both reached as `blog/…` in every face: `paran.in/blog/12`, `:e blog/12`, `ssh blog/12@paran.in` (§5.4, Addresses). | 2026-11-22 |
 | D27 | The whole site, the blog among it, has good SEO and Open Graph (§5.4, SEO and Open Graph). | 2026-11-22 |
 
@@ -686,30 +686,30 @@ and SSH to the host: "without a new binary" does not mean without a build.
 - **Tags** stand in a post's front matter: `tags: [payments, agents]`.
 - **One list, no pages of its own for a tag or a series** (owner,
   2026-11-22): `/blog`, every post by year, newest first, with its date,
-  series and tags; `/blog/series`, the same posts by series. A tag or a
-  series filters the list, the filter reversed in the list's head; a
-  filtered list is sent with `noindex` and names no canonical address,
-  as a preview names none (2026-11-24): a part of the list is no copy of
+  series and tags; `/blog/series`, the same posts by series. A tag
+  filters the list, the filter reversed in the list's head; a filtered
+  list is sent with `noindex` and names no canonical address, as a
+  preview names none (2026-11-24): a part of the list is no copy of
   `/blog`, and a search engine reads `noindex` beside a canonical address
-  as two signs that disagree. Its
-  address is the site's first with a query, `/blog?tag=payments` and
-  `/blog?series=stint` (owner, 2026-11-23): a filter is a view of the
-  list, not a page to index. A filtered list is the list by year of the
-  posts the list names that carry the tag or are parts of the series,
-  its head the list's with the filter beside the blog's name; there is
-  one for each tag of a post the list names and each series with a part
-  out, composed with the site, and the web host draws each the first
-  time a reader asks for it, since few are read; every face draws
-  it: the page and its markdown and manual at `/blog.md?tag=` and
+  as two signs that disagree. Its address is the site's first with a
+  query, `/blog?tag=payments` (owner, 2026-11-23): a filter is a view of
+  the list, not a page to index. A filtered list is the list by year of
+  the posts the list names that carry the tag, its head the list's with
+  the filter beside the blog's name; there is one for each tag of a post
+  the list names, composed with the site, and the web host draws each
+  the first time a reader asks for it, since few are read; every face
+  draws it: the page and its markdown and manual at `/blog.md?tag=` and
   `/blog.txt?tag=`, the TUI in the list's window. One rule reads the
-  query: on the list by year the one filter it names; any other key, and
-  the query of any other page, passed over, as a link's tracking words
-  are; a filter named twice, both, or one no list has (a tag no post the
-  list names carries) is an address of no page, `404`, as any other,
-  quoting the address as it was asked for.
+  query: on the list by year the tag it names; any other key, and the
+  query of any other page, passed over, as a link's tracking words are;
+  a tag named twice, or one no list has (a tag no post the list names
+  carries), is an address of no page, `404`, as any other, quoting the
+  address as it was asked for.
   Ways weighed: an empty list for an unknown filter, a page that says
   nothing found where nothing is; the filters read per request, which
-  composes in a request. The head's tags and a post's lead to the list
+  composes in a request; a series filtering the list too, which nothing
+  led to and which repeated the series' group on `/blog/series` (owner,
+  2026-11-24). The head's tags and a post's lead to the list
   they filter, but a draft's, a preview's and an unlisted post's, which
   the lists name nowhere and whose tag may filter none; on a filtered
   list the filter leads back to the list; a tile's series leads to its
@@ -817,7 +817,7 @@ For every page of the site, the blog's among them:
   a post may link to a translation, which the check holds as it holds any
   link inside the site.
 - **The blog in a language is a blog of its own** (2026-11-24): its list
-  at `/ru/blog`, by year and by series, filtered by its tags and series,
+  at `/ru/blog`, by year and by series, filtered by its tags,
   names the posts out in that language alone, in its words, with its
   feeds; a translation's series and neighbours are the posts translated
   beside it, counted among themselves. The simplest rule that holds

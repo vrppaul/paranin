@@ -696,8 +696,8 @@ func TestAPersonWorkingNowhereNamesNoEmployer(test *testing.T) {
 // The blog's list is read as a browser, a screen reader and a search engine read it: the blog's name the page's one
 // h1, in block letters, its line, the Switch of its groupings and its tags, each a link to the list it filters; each
 // group under its name, an h2, its posts in order, each a link to its post, a part to come no link; then the foot line
-// of the blog's session. Each grouping is held to its golden file, named after its own address, and each filter of the
-// list by tag and by series to its own, named by the filter, since the list's path holds a query.
+// of the blog's session. Each grouping is held to its golden file, named after its own address, and the list filtered
+// by a tag to its own, named by the filter, since the list's path holds a query.
 func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
 	cases := []struct {
@@ -707,7 +707,6 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 		{page: document.PageOf(document.PageBlog), file: "blog.html"},
 		{page: document.PageOf(document.PageBlogSeries), file: "blog/series.html"},
 		{page: document.TagFilter("reading"), file: "filtered/tag-reading.html"},
-		{page: document.SeriesFilter("reading"), file: "filtered/series-reading.html"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
@@ -733,10 +732,6 @@ func TestAFilteredListIsIndexedByNoSearchEngine(test *testing.T) {
 			holds: []string{noIndexTag, `<title>blog — posts tagged reading</title>`}, lacks: []string{`rel="canonical"`, `og:url`},
 		},
 		{
-			name: "filtered by a series", page: document.SeriesFilter("reading"),
-			holds: []string{noIndexTag, `<title>blog — parts of Reading</title>`}, lacks: []string{`rel="canonical"`, `og:url`},
-		},
-		{
 			name: "the list", page: document.PageOf(document.PageBlog),
 			holds: []string{`<link rel="canonical" href="https://example.test/blog">`, `<title>blog</title>`}, lacks: []string{noIndexTag},
 		},
@@ -760,7 +755,7 @@ func TestAFilteredListIsIndexedByNoSearchEngine(test *testing.T) {
 
 // A head's filters stand in their order, the list's and a post's alike: each a link to where it leads, a tag's word
 // after a hash a screen reader skips; the filter shown current, named to a screen reader as the way to the whole list;
-// a series' words with no hash; and a filter that leads nowhere, as a tag of a post the lists name nowhere, as words.
+// and a filter that leads nowhere, as a tag of a post the lists name nowhere, as words.
 func TestAHeadsFiltersLeadWhereTheyLead(test *testing.T) {
 	whole, nowhere := document.PageOf(document.PageBlog), document.PageOf(document.PageNone)
 	cases := []struct {
@@ -776,14 +771,9 @@ func TestAHeadsFiltersLeadWhereTheyLead(test *testing.T) {
 		},
 		{
 			name: "the tag shown, the way to the whole list", page: document.TagFilter("go"),
-			filters: []document.Filter{{Kind: document.FilterTag, Name: "go", Words: textOf("go"), Page: whole, Current: true, WayOut: "posts tagged go, show all posts"}},
+			filters: []document.Filter{{Tag: "go", Page: whole, Current: true, WayOut: "posts tagged go, show all posts"}},
 			want: `<ul class="tags"><li><a class="tag" href="/blog" aria-current="true" aria-label="posts tagged go, show all posts">` +
 				`<span class="tag-mark" aria-hidden="true">#</span>go</a></li></ul>`,
-		},
-		{
-			name: "the series shown", page: document.SeriesFilter("stint"),
-			filters: []document.Filter{{Kind: document.FilterSeries, Name: "stint", Words: textOf("parts of Stint"), Page: whole, Current: true, WayOut: "away"}},
-			want:    `<ul class="tags"><li><a class="tag" href="/blog" aria-current="true" aria-label="away">parts of Stint</a></li></ul>`,
 		},
 		{
 			name: "a tag that leads nowhere", page: document.PostPage("one"),
@@ -802,9 +792,9 @@ func TestAHeadsFiltersLeadWhereTheyLead(test *testing.T) {
 	}
 }
 
-// tagFilter is a tag a head offers, by its name, leading to a page, not the filter shown.
-func tagFilter(name string, leads document.Page) document.Filter {
-	return document.Filter{Kind: document.FilterTag, Name: name, Words: textOf(name), Page: leads, Current: false, WayOut: ""}
+// tagFilter is a tag a head offers, leading to a page, not the filter shown.
+func tagFilter(tag string, leads document.Page) document.Filter {
+	return document.Filter{Tag: tag, Page: leads, Current: false, WayOut: ""}
 }
 
 // tagLink is a tag as a head's filters write it, by its word and the address it leads to.
@@ -843,7 +833,7 @@ func TestTheSwitchMarksTheGroupingShown(test *testing.T) {
 			want: `<span class="switch"><a class="switch-way" href="/blog">years</a><a class="switch-way" href="/blog/series" aria-current="page">series</a></span>`,
 		},
 		{
-			name: "filtered", page: document.SeriesFilter("stint"),
+			name: "filtered", page: document.TagFilter("go"),
 			want: `<span class="switch"><a class="switch-way" href="/blog" aria-current="true">years</a><a class="switch-way" href="/blog/series">series</a></span>`,
 		},
 	}

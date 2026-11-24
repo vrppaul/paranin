@@ -57,9 +57,6 @@ const (
 	PageBlogSeries
 	// PageTagFilter is the blog's list by year filtered to the posts of a tag, by the tag; it has no tabs
 	PageTagFilter
-	// PageSeriesFilter is the blog's list by year filtered to the parts of a series, by the series' name; it has no
-	// tabs
-	PageSeriesFilter
 )
 
 // PageOf is the page of a kind that has no slug and is shown whole: the résumé, the index, a hidden page, the blog's
@@ -76,11 +73,6 @@ func PostPage(slug string) Page {
 // TagFilter is the blog's list filtered by a tag (docs/FOUNDATION.md §5.4, Series, tags and lists).
 func TagFilter(tag string) Page {
 	return Page{Kind: PageTagFilter, Slug: tag, Tab: "", Revision: "", Translation: Untranslated}
-}
-
-// SeriesFilter is the blog's list filtered by a series, by its name.
-func SeriesFilter(name string) Page {
-	return Page{Kind: PageSeriesFilter, Slug: name, Tab: "", Revision: "", Translation: Untranslated}
 }
 
 // OlderVersion is the older version of the post a page is, in its language, by its revision's name (docs/FOUNDATION.md
@@ -100,7 +92,7 @@ func (page Page) InLanguage(translation string) Page {
 // the blog's session, as tmux keeps a session apart. exhaustive holds the switch to every kind.
 func (page Page) InBlog() bool {
 	switch page.Kind {
-	case PagePost, PageBlog, PageBlogSeries, PageTagFilter, PageSeriesFilter:
+	case PagePost, PageBlog, PageBlogSeries, PageTagFilter:
 		return true
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills:
 	}
@@ -121,7 +113,7 @@ func (page Page) Indexed() bool {
 // filtered list. exhaustive holds the switch to every kind.
 func (page Page) Unfiltered() (Page, bool) {
 	switch page.Kind {
-	case PageTagFilter, PageSeriesFilter:
+	case PageTagFilter:
 		return PageOf(PageBlog).InLanguage(page.Translation), true
 	case PageNone, PageResume, PageProject, PageIndex, PageHealth, PageSkills, PagePost, PageBlog, PageBlogSeries:
 	}

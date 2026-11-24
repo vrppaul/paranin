@@ -49,52 +49,26 @@ func GroupOf(block Block) (Group, bool) {
 	return Group{Title: section.Title, Name: section.Name, Posts: posts}, isPosts
 }
 
-// Filter is a way a head offers to filter the blog's list (DESIGN.md, Tag and BlogHead), in the order a face shows
-// them: what it filters by, a tag or a series; the name it goes by, a tag or a series' name; its words, a tag as it
-// is, a series in the site's words; where it leads, the list it filters, or the whole list where it is the filter
-// shown, none where it leads nowhere, as a tag of a post the lists name nowhere; whether it is the filter the list
-// shown is filtered by, which a face shows reversed; and then what names it to a screen reader, in the site's words,
-// as the way to the whole list, empty elsewhere.
+// Filter is a tag a head offers to filter the blog's list by (DESIGN.md, Tag and BlogHead), in the order a face shows
+// them: the tag, which a face writes after its hash; where it leads, the list it filters, or the whole list where it
+// is the filter shown, none where it leads nowhere, as a tag of a post the lists name nowhere; whether it is the
+// filter the list shown is filtered by, which a face shows reversed; and then what names it to a screen reader, in the
+// site's words, as the way to the whole list, empty elsewhere.
 type Filter struct {
-	Kind    FilterKind
-	Name    string
-	Words   []Span
+	Tag     string
 	Page    Page
 	Current bool
 	WayOut  string
 }
 
-// FilterKind is what a filter of the blog's list filters by.
-type FilterKind int
-
-const (
-	// FilterTag keeps the posts that carry a tag, which a face writes after its hash
-	FilterTag FilterKind = iota
-	// FilterSeries keeps the parts of a series
-	FilterSeries
-)
-
 // ListedWords are the words a head lists under its title, as a face that writes no filter as a link writes them: what a
-// project's page says the project is made of, or the tags among the filters a post's or the list's head offers.
+// project's page says the project is made of, or the tags a post's or the list's head offers to filter by.
 func (head Head) ListedWords() []string {
 	names := slices.Clone(head.MadeOf)
 	for _, filter := range head.Filters {
-		if filter.MarkedAsTag() {
-			names = append(names, filter.Name)
-		}
+		names = append(names, filter.Tag)
 	}
 	return names
-}
-
-// MarkedAsTag is whether a face writes the filter's words after a tag's mark, as readers know a tag that gathers posts
-// (DESIGN.md, Content); a series' words name what it is. exhaustive holds the switch to every kind.
-func (filter Filter) MarkedAsTag() bool {
-	switch filter.Kind {
-	case FilterTag:
-		return true
-	case FilterSeries:
-	}
-	return false
 }
 
 // InItsSeriesGroup is whether a post stands in its own series' group, which names the series, so its part alone says

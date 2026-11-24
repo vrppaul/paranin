@@ -93,8 +93,8 @@ func (model Model) showing(page document.Page) Model {
 }
 
 // listIn is the blog's list shown in a language, by the language a page is translated into: in the same grouping and
-// filter where the session holds the list so there, and else by year, as the filter is a tag or a series the
-// language's posts may not have.
+// filter where the session holds the list so there, and else by year, as the filter is a tag the language's posts may
+// not have.
 func (model Model) listIn(translation string) document.Page {
 	list := model.blog.list.InLanguage(translation)
 	if model.holds(list) {

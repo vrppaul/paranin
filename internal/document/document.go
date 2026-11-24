@@ -32,8 +32,7 @@ type Head struct {
 	// the filter in the site's words on a filtered list
 	Subtitle []Span
 	Place    string
-	// Filters are the ways a post's head and the blog's list's offer to filter the list: on a list filtered by a series
-	// that series, then each tag; none on any other page
+	// Filters are the tags a post's head and the blog's list's offer to filter the list by; none on any other page
 	Filters []Filter
 	// MadeOf is what a project's page says the project is made of, by name: the language it is written in, then what
 	// it is built on; none on another page, a post's and the list's tags standing among their Filters

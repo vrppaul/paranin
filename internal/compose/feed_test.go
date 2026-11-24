@@ -122,9 +122,9 @@ func TestABlogListingNothingHasNoFeed(test *testing.T) {
 	}
 }
 
-// Each page of the blog names in its head the feeds that follow it: the blog's, and first a series' on the series'
-// filtered list and on a post whose page shows its series. The résumé and its tabs name the blog's, so a feed reader
-// handed the site's address finds it; a project's page names none.
+// Each page of the blog names in its head the feeds that follow it: the blog's, and first a series' on a post whose
+// page shows its series. The résumé and its tabs name the blog's, so a feed reader handed the site's address finds it;
+// a project's page names none.
 func TestEachPageNamesTheFeedsThatFollowThePage(test *testing.T) {
 	posts := []writtenPost{{slug: "hidden", id: 5, status: "unlisted", published: later, tags: ""}}
 	series := fixtureSeriesOf("reading-slowly, hidden", "")
@@ -138,7 +138,6 @@ func TestEachPageNamesTheFeedsThatFollowThePage(test *testing.T) {
 		{name: "the list by year", page: document.PageOf(document.PageBlog), want: []string{blogFeed}},
 		{name: "the list by series", page: document.PageOf(document.PageBlogSeries), want: []string{blogFeed}},
 		{name: "the list filtered by a tag", page: document.TagFilter("reading"), want: []string{blogFeed}},
-		{name: "the list filtered by a series", page: document.SeriesFilter(fixtureSeriesName), want: []string{readingFeed, blogFeed}},
 		{name: "a part of a series", page: document.PostPage(fixturePostSlug), want: []string{readingFeed, blogFeed}},
 		{name: "an unlisted part, whose page shows no series", page: document.PostPage("hidden"), want: []string{blogFeed}},
 		{name: "the résumé", page: document.PageOf(document.PageResume), want: []string{blogFeed}},

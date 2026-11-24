@@ -60,12 +60,6 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "the list filtered by a tag in markdown", target: document.TagFilter("go"), format: FormatMarkdown, want: "https://example.test/blog.md?tag=go"},
 		{name: "the list filtered by a tag as a manual", target: document.TagFilter("go"), format: FormatManual, want: "https://example.test/blog.txt?tag=go"},
 		{name: "the list filtered by a tag as the reader asks", target: document.TagFilter("go"), format: FormatChosen, want: "https://example.test/blog?tag=go"},
-		{name: "the list filtered by a series in markdown", target: document.SeriesFilter("stint"), format: FormatMarkdown, want: "https://example.test/blog.md?series=stint"},
-		{name: "the list filtered by a series as a manual", target: document.SeriesFilter("stint"), format: FormatManual, want: "https://example.test/blog.txt?series=stint"},
-		{
-			name: "the list filtered by a series as the reader asks", target: document.SeriesFilter("stint"), format: FormatChosen,
-			want: "https://example.test/blog?series=stint",
-		},
 		{name: "a filtered list in no format", target: document.TagFilter("go"), format: 0, want: ""},
 		{name: "no page", target: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, format: FormatMarkdown, want: ""},
 		{name: "a post's picture, in any format", target: document.File{Page: post, Name: "margin.png"}, format: FormatManual, want: "https://example.test/blog/reading-slowly/margin.png"},
@@ -317,9 +311,9 @@ func TestABlogsNameIsItsListsOrInItsFolder(test *testing.T) {
 	}
 }
 
-// A request reaches the blog's list filtered by the one filter its query names, by tag or by series, in each format,
-// at the address Path writes; every other key passes over, as does a query of any other path. A query naming a filter
-// twice, or both, reaches an address of its filters alone, which no page has.
+// A request reaches the blog's list filtered by the tag its query names, in each format, at the address Path writes;
+// every other key passes over, as does a query of any other path. A query naming a tag twice reaches an address of its
+// tags alone, which no page has.
 func TestARequestsQueryNamesTheFilterOfTheList(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -329,16 +323,12 @@ func TestARequestsQueryNamesTheFilterOfTheList(test *testing.T) {
 	}{
 		{name: "the list", path: "/blog", query: url.Values{}, want: "/blog"},
 		{name: "a tag", path: "/blog", query: url.Values{"tag": {"go"}}, want: Path(document.TagFilter("go"), FormatChosen)},
-		{name: "a series", path: "/blog", query: url.Values{"series": {"stint"}}, want: Path(document.SeriesFilter("stint"), FormatChosen)},
 		{name: "a tag in markdown", path: "/blog.md", query: url.Values{"tag": {"go"}}, want: Path(document.TagFilter("go"), FormatMarkdown)},
-		{name: "a series as a manual", path: "/blog.txt", query: url.Values{"series": {"stint"}}, want: Path(document.SeriesFilter("stint"), FormatManual)},
 		{name: "a tag among other keys", path: "/blog", query: url.Values{"tag": {"go"}, "ref": {"feed"}}, want: "/blog?tag=go"},
 		{name: "other keys alone", path: "/blog", query: url.Values{"ref": {"feed"}}, want: "/blog"},
 		{name: "a tag twice", path: "/blog", query: url.Values{"tag": {"go", "rust"}}, want: "/blog?tag=go&tag=rust"},
-		{name: "a tag and a series", path: "/blog", query: url.Values{"tag": {"go"}, "series": {"stint"}}, want: "/blog?series=stint&tag=go"},
 		{name: "a tag of the list by series", path: "/blog/series", query: url.Values{"tag": {"go"}}, want: "/blog/series"},
 		{name: "a tag of the list in a language", path: "/ru/blog", query: url.Values{"tag": {"go"}}, want: Path(document.TagFilter("go").InLanguage("ru"), FormatChosen)},
-		{name: "a series of the list in a language, in markdown", path: "/ru/blog.md", query: url.Values{"series": {"stint"}}, want: "/ru/blog.md?series=stint"},
 		{name: "a tag in a language the site is not translated into", path: "/de/blog", query: url.Values{"tag": {"go"}}, want: "/de/blog"},
 		{name: "a tag of the résumé", path: "/", query: url.Values{"tag": {"go"}}, want: "/"},
 	}
@@ -361,7 +351,7 @@ func TestTheAddressAskedForReadsAsWritten(test *testing.T) {
 		want     string
 	}{
 		{name: "a path alone", path: "/no thing", rawQuery: "", want: "/no thing"},
-		{name: "a path and its query", path: "/blog", rawQuery: "tag=go&series=stint&ref=feed", want: "/blog?tag=go&series=stint&ref=feed"},
+		{name: "a path and its query", path: "/blog", rawQuery: "tag=go&ref=feed", want: "/blog?tag=go&ref=feed"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

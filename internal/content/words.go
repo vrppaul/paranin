@@ -101,11 +101,11 @@ const (
 // name and what the toast says once it has copied, each with the command; a code block's button's name, with the
 // block's number; and of a series, a part's place in it, with its number and the count of parts, the panes' heading,
 // with the series' title, and a part's name, with its number; and of the blog's list, the list's name in a grouping,
-// with its title and the grouping's word, and the filter of a filtered list, by a tag, with the tag, or by a series,
-// with the series' title, and that filter as the way back to the whole list, with its words; what an older version of
-// a post says of the newer, with that version's day; and the title of the blog's feed, with the author's name, and of
-// a series', with the series' title and the blog's feed's. A catalogue writes each place as phrasePlace, where its
-// language puts the value, the values in the order the site hands them.
+// with its title and the grouping's word, and the filter of a list filtered by a tag, with the tag, and that filter as
+// the way back to the whole list, with its words; what an older version of a post says of the newer, with that
+// version's day; and the title of the blog's feed, with the author's name, and of a series', with the series' title
+// and the blog's feed's. A catalogue writes each place as phrasePlace, where its language puts the value, the values
+// in the order the site hands them.
 type Phrase int
 
 const (
@@ -119,7 +119,6 @@ const (
 	PhrasePart
 	PhraseGroupedList
 	PhraseTagFilter
-	PhraseSeriesFilter
 	PhraseFilterWayOut
 	PhraseNewerVersion
 	PhraseBlogFeed
@@ -152,7 +151,6 @@ func phraseForms() map[Phrase]phraseForm {
 		PhrasePart:          {key: "part", values: oneValue},
 		PhraseGroupedList:   {key: "grouped_list", values: twoValues},
 		PhraseTagFilter:     {key: "tag_filter", values: oneValue},
-		PhraseSeriesFilter:  {key: "series_filter", values: oneValue},
 		PhraseFilterWayOut:  {key: "filter_way_out", values: oneValue},
 		PhraseNewerVersion:  {key: "newer_version", values: oneValue},
 		PhraseBlogFeed:      {key: "blog_feed", values: oneValue},

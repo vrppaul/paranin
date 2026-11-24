@@ -31,7 +31,7 @@ type Composed struct {
 // one. The site's index lists them.
 func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	profile := snapshot.Profile
-	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks("")), personRecord(profile))}
+	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks(noSeries)), personRecord(profile))}
 	for _, project := range projectsWithPages(profile.Projects) {
 		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Own.Words), workRecord(project, profile.Person)))
 	}

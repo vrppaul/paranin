@@ -105,7 +105,7 @@ func (writer manualWriter) pageName(page document.Page) string {
 		return page.Slug
 	case document.PageBlog, document.PageBlogSeries:
 		return strings.ReplaceAll(strings.TrimPrefix(routes.Path(page, routes.FormatChosen), pathRoot), pathRoot, nameJoint)
-	case document.PageTagFilter, document.PageSeriesFilter:
+	case document.PageTagFilter:
 		list, _ := page.Unfiltered()
 		return writer.pageName(list)
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills:

@@ -159,7 +159,7 @@ func tabsOf(composed document.Document) []tab {
 	switch page.Kind {
 	case document.PagePost:
 		return []tab{{page: page, place: 0, title: title, slug: "", body: postBody{post: composed}}}
-	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
+	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
 		return []tab{{page: page, place: 0, title: title, slug: "", body: listBody{head: head, groups: composed.Blocks}}}
 	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
 	}
@@ -188,7 +188,7 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 	case document.PageSkills:
 		return skillsOpening{head: head, blocks: blocks}
 	case document.PageNone, document.PageResume, document.PageIndex, document.PagePost, document.PageBlog, document.PageBlogSeries,
-		document.PageTagFilter, document.PageSeriesFilter:
+		document.PageTagFilter:
 	}
 	return plainOpening{head: head, blocks: blocks}
 }
@@ -200,7 +200,7 @@ func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	case document.PageResume, document.PageProject:
 		return titledSection{blocks: blocks}
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost, document.PageBlog, document.PageBlogSeries,
-		document.PageTagFilter, document.PageSeriesFilter:
+		document.PageTagFilter:
 	}
 	return plainSection{blocks: blocks}
 }
@@ -296,7 +296,7 @@ func carriesCursor(kind document.PageKind) bool {
 	case document.PageResume:
 		return true
 	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost,
-		document.PageBlog, document.PageBlogSeries, document.PageTagFilter, document.PageSeriesFilter:
+		document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
 	}
 	return false
 }

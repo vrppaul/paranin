@@ -126,7 +126,7 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 			body:   "[a](/) [b](/experience) [c](/p/tidy-tool) [d](/p/tidy-tool/why) [e](/blog) [f](/blog/series#reading) [g](/blog/reading-slowly#what-a-reader-keeps) [h](/blog/reading-slowly#in-a-terminal)",
 			change: fixtures.KeepFolder, want: []faultSpot{},
 		},
-		{name: "the list filtered by a tag and by a series", body: "[a](/blog?tag=terminals) [b](/blog?series=reading)", change: fixtures.KeepFolder, want: []faultSpot{}},
+		{name: "the list filtered by a tag", body: "[a](/blog?tag=terminals)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "an older version and its heading", body: "[a](/blog/reading-slowly/2026-11-10) [b](/blog/reading-slowly/2026-11-10#what-a-reader-keeps)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{name: "the blog's feed and a series'", body: "[a](/blog.atom) [b](/blog/series/reading.atom)", change: fixtures.KeepFolder, want: []faultSpot{}},
 		{

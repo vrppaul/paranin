@@ -34,8 +34,8 @@ type Site struct {
 type Blog struct {
 	// Lists are the blog's list by year and by series
 	Lists []document.Document
-	// Filtered are the blog's list by year filtered by each tag its head names, then by each series with a part out:
-	// views of the list, which a reader opens from its head and no index lists
+	// Filtered are the blog's list by year filtered by each tag its head names: views of the list, which a reader opens
+	// from its head and no index lists
 	Filtered []document.Document
 	// Posts are the posts the blog serves, in the snapshot's order, each link inside the site read into its page
 	Posts []document.Document

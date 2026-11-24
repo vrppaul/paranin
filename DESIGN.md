@@ -583,10 +583,8 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 
 - BlogHead: BLOG in the title font, the gradient across it, in the names' column; beside it the blog's line in `lead`, and under it `by` in
   `muted`, the Switch of `years` and `series`, and the Tags, each a filter of the list. On a phone the tags take a row
-  of their own. On a filtered list the Switch shows `years`, the grouping it filters; a list filtered by a series
-  opens its tags with the filter in the site's words, `parts of Stint`, reversed and bold as the tag a list is
-  filtered by, with no hash, leading back to the list: the plainest form the tokens give, standing until the owner
-  draws one. A filtered list's page is called `blog — posts tagged go`.
+  of their own. On a filtered list the Switch shows `years`, the grouping it filters. A filtered list's page is called
+  `blog — posts tagged go`.
 - Group: its name in `title_text_mid` (`title_text` from `wide`), `title_soft`, staying in sight at the top while its
   own tiles scroll, but on a phone, where it stands over them; under it what it
   holds, `small` in `muted`: `6 posts`, or a series' line and `6 of 11 out`. By year, newest first, at `/blog`;
@@ -609,8 +607,7 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 - The address of no page: its status in block letters, in English as HTTP writes it, the address quoted as Code, a
   link to the start, the foot line in the words of the language whose folder the address opens with; no apology and
   no joke. The foot line stands as on every page, with no windows.
-- The blog's list: the BlogHead, then its Groups of Tiles; a tag or a series filters it, the filter reversed in the
-  head.
+- The blog's list: the BlogHead, then its Groups of Tiles; a tag filters it, the filter reversed in the head.
 - A post: the PostHead, the Outline beside the Article, the Panes; an older version the same, its head saying a newer
   stands.
 

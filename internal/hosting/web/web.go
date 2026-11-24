@@ -9,7 +9,7 @@
 // agent that asks for it, and the manual for `curl` and everyone else; the index at llms.txt, sent as plain text, as
 // a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
 // revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
-// groupings and filtered by each tag and series, at the address the request's query names (routes.Requested). The
+// groupings and filtered by each tag, at the address the request's query names (routes.Requested). The
 // blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body as the HTML face draws it
 // for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again. Each
 // format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a

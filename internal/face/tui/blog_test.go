@@ -250,8 +250,8 @@ func contentWith(test *testing.T, files ...fixtureFile) *content.Snapshot {
 }
 
 // A tag's name shows the list filtered by it in the list's window, and on that list, where it is the filter, the list
-// whole again; another tag's filters the list anew. :e opens the list filtered by a tag or by a series, the series'
-// filter said beside the blog's name, by the name a terminal reaches it by.
+// whole again; another tag's filters the list anew. :e opens the list filtered by a tag, by the name a terminal reaches
+// it by.
 func TestATagsPlaceFiltersTheList(test *testing.T) {
 	list := New(sessionDrawing(contentWith(test, secondPost()), false), "blog", commonWidth, tallHeight, fixtures.Day())
 	cases := []struct {
@@ -261,13 +261,11 @@ func TestATagsPlaceFiltersTheList(test *testing.T) {
 		lacks    []string
 	}{
 		{name: "a tag", commands: []string{"tools"}, holds: []string{"The second post"}, lacks: []string{"Reading slowly"}},
+		// the chip the list is filtered by, read beside the head's tag before it, since a tile shows #tools too
+		{name: "the tag shown in the list's head", commands: []string{"tools"}, holds: []string{"#terminals   #tools"}, lacks: nil},
 		{name: "the tag filtering it", commands: []string{"tools", "tools"}, holds: []string{"The second post", "Reading slowly"}, lacks: nil},
 		{name: "another tag", commands: []string{"tools", "terminals"}, holds: []string{"Reading slowly"}, lacks: []string{"The second post"}},
 		{name: "a tag's filter by :e", commands: []string{"e blog?tag=tools"}, holds: []string{"The second post"}, lacks: []string{"Reading slowly"}},
-		{
-			name: "a series' filter by :e", commands: []string{"e blog?series=reading"}, holds: []string{"parts of Reading", "Reading slowly"},
-			lacks: []string{"The second post"},
-		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -287,22 +285,6 @@ func TestATagsPlaceFiltersTheList(test *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-// The filter a list is filtered by stands reversed as one chip, and where it is too long for its line it breaks only
-// at a space between its words, never inside one.
-func TestALongFilterBreaksOnlyBetweenItsWords(test *testing.T) {
-	// a filter whose line at 80 columns ends inside a word, "th|e"
-	const filterWords = "parts of Notes from a long series whose title runs past one line, as the web has it"
-	resume := document.Document{Head: fixtures.HeadOf(document.PageOf(document.PageResume), textOf("home")), Blocks: nil}
-	head := fixtures.HeadOf(document.PageOf(document.PageBlog), textOf("blog"))
-	head.Filters = []document.Filter{{
-		Kind: document.FilterSeries, Name: "notes", Words: textOf(filterWords), Page: document.PageOf(document.PageBlog), Current: true, WayOut: "",
-	}}
-	model := commanded(test, handModel(test, assumedWidth, tallHeight, resume, document.Document{Head: head, Blocks: nil}), "e blog")
-	if read := strings.Join(strings.Fields(screenOf(test, model)), space); !strings.Contains(read, filterWords) {
-		test.Errorf("the screen, its words read in order, = %q, want %q whole among them", read, filterWords)
 	}
 }
 

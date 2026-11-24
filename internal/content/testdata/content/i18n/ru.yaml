@@ -69,7 +69,6 @@ parts_out:
   many: "вышло {} из {}"
 grouped_list: "{} по {}"
 tag_filter: "посты с тегом {}"
-series_filter: "части серии {}"
 filter_way_out: "{}, показать все посты"
 versions: версии
 current: текущая

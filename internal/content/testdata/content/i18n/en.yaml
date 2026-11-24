@@ -66,7 +66,6 @@ parts_out:
   other: "{} of {} out"
 grouped_list: "{} by {}"
 tag_filter: "posts tagged {}"
-series_filter: "parts of {}"
 filter_way_out: "{}, show all posts"
 versions: versions
 current: current

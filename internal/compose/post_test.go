@@ -686,8 +686,8 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 		Page: page, Number: 1, Language: "en",
 		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "", MadeOf: nil,
 		Filters: []document.Filter{
-			{Kind: document.FilterTag, Name: "reading", Words: textSpans("reading"), Page: document.TagFilter("reading"), Current: false, WayOut: ""},
-			{Kind: document.FilterTag, Name: "terminals", Words: textSpans("terminals"), Page: document.TagFilter("terminals"), Current: false, WayOut: ""},
+			{Tag: "reading", Page: document.TagFilter("reading"), Current: false, WayOut: ""},
+			{Tag: "terminals", Page: document.TagFilter("terminals"), Current: false, WayOut: ""},
 		},
 		Lead: description, Version: nil, Repository: nil,
 		Post: &document.PostPlace{
@@ -764,7 +764,7 @@ func TestAPostsTagsLeadToTheListWhereTheListsNameThePost(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			snapshot := withSamplePost(test, samplePostFields+"tags: [tools]\nstatus: "+string(testCase.status)+"\n---\nIts text.\n")
 			head := postNamed(test, postsAndPreviews(SiteOf(Prepare(snapshot), Audience{At: fixtures.Day(), Drafts: true})), samplePostSlug).Head
-			want := []document.Filter{{Kind: document.FilterTag, Name: "tools", Words: textSpans("tools"), Page: testCase.leads, Current: false, WayOut: ""}}
+			want := []document.Filter{{Tag: "tools", Page: testCase.leads, Current: false, WayOut: ""}}
 			if !reflect.DeepEqual(head.Filters, want) {
 				test.Errorf("the filters of %s = %+v, want %+v", testCase.name, head.Filters, want)
 			}

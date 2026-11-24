@@ -13,6 +13,9 @@ import (
 // and one who subscribes the last months'; every poll fetches the feed whole, which this bounds as the posts grow
 const feedLength = 20
 
+// The name of no series: the series a page shows where it shows none, and the one the blog's feed follows
+const noSeries = ""
+
 // Feed is a feed of the blog as a feed reader polls it (docs/FOUNDATION.md §5.4, Feeds): the feed a link names; the
 // language it is written in; its title and its line; its author and the page that is theirs; where a person reads what
 // it holds; when it last changed, as its newest version did; and its posts, newest first.
@@ -45,7 +48,7 @@ func (read blog) feedsOf(snapshot *content.Snapshot) ([]Feed, map[document.Feed]
 	}
 	words, translation, author := read.words, read.words.Translation(), plainText(snapshot.Profile.Person.Name)
 	blogTitle := words.Phrase(content.PhraseBlogFeed, author)
-	ofBlog := document.Feed{Series: "", Translation: translation}
+	ofBlog := document.Feed{Series: noSeries, Translation: translation}
 	feeds := []Feed{feedOf(ofBlog, blogTitle, words.Text(content.WordBlogLine), document.PageOf(document.PageBlog).InLanguage(translation), read.words, author)}
 	posts := map[document.Feed][]content.Post{ofBlog: newestOf(read.newest)}
 	for _, series := range read.seriesNewestFirst() {
@@ -77,8 +80,7 @@ func (read blog) feedLinks(seriesShown string) []document.Link {
 	ofSeries, ofBlog := []document.Link{}, []document.Link{}
 	for _, feed := range read.feeds {
 		switch feed.Target.Series {
-		// the blog's feed follows no series
-		case "":
+		case noSeries:
 			ofBlog = append(ofBlog, document.Link{Target: feed.Target, Spans: feed.Title})
 		case seriesShown:
 			ofSeries = append(ofSeries, document.Link{Target: feed.Target, Spans: feed.Title})
@@ -91,21 +93,9 @@ func (read blog) feedLinks(seriesShown string) []document.Link {
 // showsItsSeries) or the post is a part of none.
 func (read blog) seriesShownOn(post content.Post) string {
 	if !read.audience.showsItsSeries(post) {
-		return ""
+		return noSeries
 	}
 	return read.seriesOf[post.Slug].Name
-}
-
-// seriesShownBy is the name of the series a page of the blog's list shows, a series' filter's; none on any other.
-// exhaustive holds the switch to every kind.
-func seriesShownBy(page document.Page) string {
-	switch page.Kind {
-	case document.PageSeriesFilter:
-		return page.Slug
-	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills,
-		document.PagePost, document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
-	}
-	return ""
 }
 
 // feedsAt are the blog's feeds by their paths, which a post's link inside the site may name.

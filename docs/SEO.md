@@ -45,16 +45,16 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
 
 - **A title of its own**, no two alike: the résumé its person's name; a tab its title and the person's name,
   `Experience — Pavel Paranin`; the list by series its own, `blog · series`, beside the list by year's `blog`, each in
-  its language's words (owner, 2026-11-24); a project and a post their titles. A project's tab, whose title another
-  project's may share (`How it works`), its title and the project's name (not approved).
+  its language's words (owner, 2026-11-24); a project and a post their titles; a project's tab, whose title another
+  project's may share, its title and the project's name, `How it works — semantic-code-mcp` (the author's choice, on
+  the owner's leave, 2026-11-24).
 - **A description:** the check requires one of a post.
 - **Its markup:** one `h1`, `<article>`, `<time datetime>`, alt text required of every picture.
 - **One address**, whole, as `routes` writes it: the canonical link in the head, the `Link` header every format sends
   (WEB, "Negotiation"), `og:url`, the record's `url` and the sitemap's entry.
 - **Its languages:** a post read in more than one, `hreflang` to each, itself among them, and `x-default` to the
   English original; the blog's lists so too, between `/blog` and each language's.
-- **Open Graph:** `og:type`, `og:site_name`, the site's host until the owner names the site's name (Records),
-  `og:locale` from its catalogue, `og:locale:alternate` for a post's other
+- **Open Graph:** `og:type`, `og:site_name` the site's name (Records), `og:locale` from its catalogue, `og:locale:alternate` for a post's other
   languages, `og:title`, `og:description`, `og:url`. A post is an `article` (owner, 2026-11-24), with
   `article:published_time`, `article:modified_time` its current version's day, `article:author` the résumé's address
   and an `article:tag` for each tag ([ogp.me](https://ogp.me/#type_article)); every other page a `website`.
@@ -63,9 +63,8 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
 - **A card**, `og:image`, 1200×630, the page's own, which Typst draws (ADR-0005), with `max-image-preview:large` so
   Google may show it large. LinkedIn wants
   [at least 1200×627](https://www.linkedin.com/help/linkedin/answer/46687), and a post's record takes it as its
-  `image`. When the cards come, before hosting or with it, is the owner's word (not approved).
-- `fediverse:creator`, which credits the author in a Mastodon preview, only once the owner names an account (not
-  approved).
+  `image`. The cards come before hosting, as everything the site serves does (owner, 2026-11-24).
+- No `fediverse:creator` (owner, 2026-11-24): the posts go where D13 names, and Mastodon is not among them.
 
 ## Records
 
@@ -73,8 +72,8 @@ Each page indexed carries its record as JSON-LD, in schema.org's words, through 
 One `Person` stands for the author, by the `@id` `https://paran.in/#person`, so every record names the same one.
 
 - **The résumé, `/`:** `ProfilePage` about the person; beside it `WebSite`, its `name` the name Google shows for the
-  site ([Google](https://developers.google.com/search/docs/appearance/site-names)) (owner, 2026-11-24). Which name,
-  the person's or `paran.in`, is the owner's word (not approved).
+  site ([Google](https://developers.google.com/search/docs/appearance/site-names)): the person's, as the profile
+  writes it, its host, `paran.in`, as its `alternateName` (owner, 2026-11-24).
 - **A tab of the résumé:** `WebPage` about the person: the profile is `/` alone.
 - **A project's page:** `SoftwareSourceCode`, its author the person.
 - **A post:** `BlogPosting` with `headline`, `description`, `url`, `datePublished`, `dateModified` its current
@@ -119,6 +118,8 @@ alone. Whether a page is indexed is worked out once, where its page is composed,
 - **The feeds** stand in for a sitemap of new posts: Google takes an Atom feed as one
   ([Google](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)).
 - **`llms.txt`** stays for agents that read it, coding agents among them; Google says its Search reads none.
+- **IndexNow** names each post to Bing, Yandex, Seznam and Naver as it comes out, which Google does not read, by a
+  key file at the site's root (owner, 2026-11-24): built before hosting, it sends once the site is served.
 
 ## Addresses
 
@@ -129,9 +130,9 @@ alone. Whether a page is indexed is worked out once, where its page is composed,
 
 ## At hosting
 
-HTTPS and HSTS; the site verified in Google's and Bing's consoles by a DNS record, with the sitemap and the feeds
-submitted there; IndexNow for each post as it comes out, which Bing, Yandex, Seznam and Naver read and Google does
-not, by a key file at the site's root; Lighthouse on its pages.
+Everything above is built before hosting (owner, 2026-11-24). Hosting does only what needs the site served at its
+address: the site verified in Google's and Bing's consoles by a DNS record, the sitemap and the feeds submitted
+there, and the previews looked at in LinkedIn's Post Inspector.
 
 ## How it is checked
 
@@ -140,6 +141,7 @@ not, by a key file at the site's root; Lighthouse on its pages.
 - A record, pasted into [the Schema Markup Validator](https://validator.schema.org) and
   [the Rich Results Test](https://search.google.com/test/rich-results).
 - A preview, once the site is served, in [LinkedIn's Post Inspector](https://www.linkedin.com/post-inspector/).
+- Each kind of page by Lighthouse's SEO audit, against the server run locally.
 - Where it is at hand, a second look by [Front-End Checklist](https://frontendchecklist.io/rules/seo)'s MCP (owner,
   2026-11-24), `review_code` over a golden page: a finding is weighed against this model, since some are not faults
   here (a page with no `robots` line is indexed, as it should be).

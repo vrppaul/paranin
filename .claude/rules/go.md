@@ -41,3 +41,4 @@ The rules for code in any language are in `.claude/rules/code.md`.
 ## Generated code
 
 - Generated code (templ, the design tokens, the client data's types) is never edited by hand: change its source and run its generator. A hook fails when the two disagree.
+- The formatting the hook `golangci-fmt` shows is written by `golangci-lint fmt`, at the version `.pre-commit-config.yaml` pins, never by hand.

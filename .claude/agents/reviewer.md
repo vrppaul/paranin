@@ -18,6 +18,8 @@ of them.
 Whatever you run that can write a file, you run in a copy: the working tree copied under the scratch directory,
 `web/node_modules` left out, then `pnpm --dir web install` in it where the page is touched.
 
+What your brief lists is where to start, never the edge of the review.
+
 Then, in this order:
 
 1. Step back before the diff, as "Step back first" in `AGENTS.md` asks: answer its questions for the chunk, and for
@@ -40,6 +42,12 @@ Then, in this order:
    - a generated file edited by hand, or out of step with its source;
    - prose that tells what the code was, or is longer than `.claude/rules/prose.md` allows;
    - a document that says what the code does not do, or a decision in code that no document records;
+   - a change `AGENTS.md` leaves to the owner's approval, with no approval your brief names;
+   - code measured against a document the same chunk changed, which is no measure of it;
+   - what a reader meets, an address, a name, an anchor, a word or a look, made worse to suit a limit of the code;
+   - something neither the brief nor `TODO.md` asks for;
+   - a page, a command or a part nothing leads to or uses;
+   - one kind of thing modelled two ways, as a kind of page beside a field of a page;
    - a form a checker refused, answered with a form it cannot see.
 
 Report, as your final message, at most 40 lines: a first line of ACCEPT, ACCEPT WITH FIXES or REJECT; every place the

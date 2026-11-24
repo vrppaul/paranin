@@ -716,37 +716,49 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 	}
 }
 
-// A filtered list is a view of the list and no page of its own: its page tells a search engine not to index it, names
-// no address it is known by, since a part of the list is no copy of it, and is called by the blog's name and its
-// filter; the list itself is indexed and known at its own address.
-func TestAFilteredListIsIndexedByNoSearchEngine(test *testing.T) {
+// A page no search engine may index tells it so and names no address it is known by, no record and no languages: a
+// filtered list, a view of the list and no page of its own, called by the blog's name and its filter, with no preview
+// either, since a part of the list is no copy of it; an unlisted post, which keeps its preview at its own address. The
+// list and a post published are indexed and known at their own addresses.
+func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
+	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
+	writer := fixtureWriter(test)
 	cases := []struct {
 		name  string
-		page  document.Page
+		page  string
 		holds []string
 		lacks []string
 	}{
 		{
-			name: "filtered by a tag", page: document.TagFilter("reading"),
+			name: "filtered by a tag", page: writer.List(fixtures.DocumentOf(test, lists, document.TagFilter("reading"))),
 			holds: []string{noIndexTag, `<title>blog — posts tagged reading</title>`}, lacks: []string{`rel="canonical"`, `og:url`},
 		},
 		{
-			name: "the list", page: document.PageOf(document.PageBlog),
+			name: "the list", page: writer.List(fixtures.DocumentOf(test, lists, document.PageOf(document.PageBlog))),
 			holds: []string{`<link rel="canonical" href="https://example.test/blog">`, `<title>blog</title>`}, lacks: []string{noIndexTag},
+		},
+		{
+			name: "an unlisted post", page: writer.Post(unlistedPost(test)),
+			holds: []string{noIndexTag, fixturePostAddress},
+			lacks: []string{`rel="canonical"`, `<link rel="alternate" hreflang=`, `application/ld+json`},
+		},
+		{
+			name: "a post published", page: writer.Post(fixturePost(test)),
+			holds: []string{`<link rel="canonical" href="https://example.test/blog/reading-slowly">`, fixturePostAddress, `<link rel="alternate" hreflang="ru"`},
+			lacks: []string{noIndexTag},
 		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			page := fixtureWriter(test).List(fixtures.DocumentOf(test, slices.Concat(site.Own.Lists, site.Own.Filtered), testCase.page))
 			for _, held := range testCase.holds {
-				if !strings.Contains(page, held) {
-					test.Errorf("the page %q holds no %q", page, held)
+				if !strings.Contains(testCase.page, held) {
+					test.Errorf("the page %q holds no %q", testCase.page, held)
 				}
 			}
 			for _, lacked := range testCase.lacks {
-				if strings.Contains(page, lacked) {
-					test.Errorf("the page %q holds %q", page, lacked)
+				if strings.Contains(testCase.page, lacked) {
+					test.Errorf("the page %q holds %q", testCase.page, lacked)
 				}
 			}
 		})
@@ -1003,6 +1015,9 @@ func TestADraftsPageIsMarkedAsADraft(test *testing.T) {
 // The robots' tag that keeps a search engine from indexing a page
 const noIndexTag = `<meta name="robots" content="noindex">`
 
+// The fixture post's own address, as a link's preview shows it
+const fixturePostAddress = `<meta property="og:url" content="https://example.test/blog/reading-slowly">`
+
 // A pre whole, and a tag of markup, which a browser shows none of
 const (
 	preformatted = `(?s)<pre[^>]*>.*?</pre>`
@@ -1133,7 +1148,7 @@ func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
 		{Number: 3, Title: textOf("Three"), State: document.PartNext, Page: document.PostPage("three")},
 		{Number: 4, Title: textOf("Four"), State: document.PartToCome, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
 	}}
-	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil}
+	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil, Listed: true}
 	page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
 	cases := []struct {
 		name  string
@@ -1318,7 +1333,7 @@ func TestThePanesLeadToThePostsBesideThePost(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			head := fixtures.HeadOf(document.PostPage("two"), textOf("Two"))
-			head.Post = &document.PostPlace{Series: testCase.series, Neighbours: testCase.neighbours, Discussions: testCase.discussions}
+			head.Post = &document.PostPlace{Series: testCase.series, Neighbours: testCase.neighbours, Discussions: testCase.discussions, Listed: true}
 			page := fixtureWriter(test).Post(document.Document{Head: head, Blocks: nil})
 			for _, want := range testCase.want {
 				if !strings.Contains(page, want) {
@@ -1345,7 +1360,7 @@ func seriesPost(blocks ...document.Block) document.Document {
 		{Number: 3, Title: textOf("Third"), State: document.PartNext, Page: document.PostPage("third")},
 		{Number: 4, Title: textOf("Fourth"), State: document.PartToCome, Page: none},
 	}}
-	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil}
+	head.Post = &document.PostPlace{Series: series, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil, Listed: true}
 	return document.Document{Head: head, Blocks: blocks}
 }
 
@@ -1363,6 +1378,15 @@ func emptySection(title string) document.Block {
 func fixturePost(test *testing.T) document.Document {
 	posts := siteOnTheDay(fixtures.LoadedContent(test)).Own.Posts
 	return fixtures.DocumentOf(test, posts, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})
+}
+
+// unlistedPost is the fixture's post as compose makes it, unlisted.
+func unlistedPost(test *testing.T) document.Document {
+	post := fixturePost(test)
+	place := *post.Head.Post
+	place.Listed = false
+	post.Head.Post = &place
+	return post
 }
 
 // siteOnTheDay is the site of a snapshot as the public reads it on the tests' day.

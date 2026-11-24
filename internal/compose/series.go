@@ -70,10 +70,13 @@ func blogOf(snapshot *content.Snapshot, edition content.Edition, audience Audien
 	return read
 }
 
-// placeOf is where a post stands in the blog: its series and the posts beside it, and where it is discussed.
+// placeOf is where a post stands in the blog: its series and the posts beside it, where it is discussed, and whether
+// the lists name it.
 func (read blog) placeOf(post content.Post) *document.PostPlace {
 	series, neighbours := read.seriesAndNeighbours(post)
-	return &document.PostPlace{Series: series, Neighbours: neighbours, Discussions: discussionLinks(post.Discussions)}
+	return &document.PostPlace{
+		Series: series, Neighbours: neighbours, Discussions: discussionLinks(post.Discussions), Listed: read.audience.lists(post),
+	}
 }
 
 // seriesAndNeighbours are the series a post is a part of, with every part where it stands for the post's reader, and

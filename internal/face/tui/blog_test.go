@@ -356,7 +356,7 @@ func handSeriesModel(test *testing.T, height int) Model {
 		{Number: 1, Title: textOf("The fourth post"), State: document.PartReading, Page: fourth},
 		{Number: 2, Title: textOf("The fifth post"), State: document.PartNext, Page: fifth},
 	}}
-	postPlaces := map[string]*document.PostPlace{"fourth": {Series: late, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil}}
+	postPlaces := map[string]*document.PostPlace{"fourth": {Series: late, Neighbours: document.Neighbours{Before: nil, After: nil}, Discussions: nil, Listed: true}}
 	seriesOf := map[string]string{"first": "early", "second": "early", "third": "early", "fourth": "late", "fifth": "late"}
 	documents := []document.Document{resume}
 	listed := []document.ListedPost{}

@@ -94,8 +94,8 @@ published and out, in each language. Not indexed: a filtered list, an older vers
 (owner, 2026-11-24), each sent with `noindex` in every format, with no canonical address or record, and out of the
 sitemap. A filtered list and an older version carry no Open Graph either, since they have no address of their own to
 show; an unlisted post keeps its preview, since it is read by whoever is sent its link. A draft is served to its author
-alone. Whether a page is indexed is worked out once, where its page is composed, from its address
-(`document.Page`'s `Indexed`) and a post's status, and every place that says it reads that.
+alone. Whether a page is indexed is worked out once, where its page is composed, as `document.Head`'s `Indexed`: from
+its own address (`document.Page`'s `OwnAddress`) and whether a post is listed. Every place that says it reads that.
 
 ## Crawling
 
@@ -150,7 +150,7 @@ there, and the previews looked at in LinkedIn's Post Inspector.
 ## What stands and what is to build
 
 Stands: each page's title, description, canonical address and Open Graph as a `website`; a post's languages;
-the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list and an
-older version; `/blog/<number>`'s `301`; the feeds; `llms.txt`.
+the résumé's and its tabs' `ProfilePage` and a project's `SoftwareSourceCode`; `noindex` on a filtered list, an
+older version and an unlisted post; `/blog/<number>`'s `301`; the feeds; `llms.txt`.
 
 The rest is to build, as the SEO item of `TODO.md` lists it, "At hosting" with hosting.

@@ -231,9 +231,9 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 
 // Each format of a page names the address the page is known by, whole, so a search engine counts its markdown and
 // its manual as that page; the index, which is no page a person reads, names none, nor a filtered list, a part of the
-// list and no copy of it.
+// list and no copy of it, nor an unlisted post, which no search engine indexes.
 func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
-	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := unlistedPostServer(test)
 	cases := []struct {
 		name   string
 		path   string
@@ -254,6 +254,9 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a filtered list in markdown, a part of the list and no copy of it", path: "/blog.md?tag=reading", accept: "", want: ""},
 		{name: "a filtered list as a manual", path: "/blog.txt?tag=reading", accept: "", want: ""},
 		{name: "a filtered list in a browser", path: "/blog?tag=terminals", accept: "text/html", want: ""},
+		{name: "an unlisted post in a browser", path: unlistedPostPath, accept: "text/html", want: ""},
+		{name: "an unlisted post in markdown", path: unlistedPostPath + ".md", accept: "", want: ""},
+		{name: "an unlisted post as a manual", path: unlistedPostPath + ".txt", accept: "", want: ""},
 		{name: "the index", path: "/llms.txt", accept: "", want: ""},
 		{name: "no page", path: "/nothing", accept: "", want: ""},
 	}
@@ -267,10 +270,11 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 	}
 }
 
-// A filtered list, a view of the list and no page of its own, and an older version of a post, which a newer stands
-// over, tell a search engine not to index them, in each format; the list itself, and any other page, leaves it free to.
+// A filtered list, a view of the list and no page of its own, an older version of a post, which a newer stands over,
+// and an unlisted post, read by whoever has its address, tell a search engine not to index them, in each format; the
+// list itself, and any other page, leaves it free to.
 func TestAPageOfNoIndexIsSentForNoSearchEngineToIndex(test *testing.T) {
-	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	server := unlistedPostServer(test)
 	cases := []struct {
 		name   string
 		path   string
@@ -286,6 +290,9 @@ func TestAPageOfNoIndexIsSentForNoSearchEngineToIndex(test *testing.T) {
 		{name: "an older version, in a browser", path: "/blog/reading-slowly/2026-11-10", accept: "text/html", want: "noindex"},
 		{name: "an older version, in markdown", path: "/blog/reading-slowly/2026-11-10.md", accept: "", want: "noindex"},
 		{name: "an older version, as a manual", path: "/blog/reading-slowly/2026-11-10.txt", accept: "", want: "noindex"},
+		{name: "an unlisted post, in a browser", path: unlistedPostPath, accept: "text/html", want: "noindex"},
+		{name: "an unlisted post, in markdown", path: unlistedPostPath + ".md", accept: "", want: "noindex"},
+		{name: "an unlisted post, as a manual", path: unlistedPostPath + ".txt", accept: "", want: "noindex"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -710,6 +717,21 @@ func pngOfTwoByOne(test *testing.T) []byte {
 // composition root prepares it.
 func serverOf(store *release.Store, drafts bool) *Server {
 	return New(store, release.DeriveFromContent(store, compose.Prepare), drafts)
+}
+
+// An unlisted post, out long before any test runs: its file in the content's folder, its text and the path it is
+// served at
+const (
+	unlistedPostFile = "posts/aside/post.en.md"
+	unlistedPostText = "---\nid: 3\ntitle: Aside\ndescription: A note for those sent it.\nstatus: unlisted\npublished: 2000-01-01T00:00+00:00\n---\nIts text.\n"
+	unlistedPostPath = "/blog/aside"
+)
+
+// unlistedPostServer is a server of the fixture content with an unlisted post beside its own.
+func unlistedPostServer(test *testing.T) *Server {
+	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
+	fixtures.WriteIn(test, folder, unlistedPostFile, unlistedPostText)
+	return serverOf(fixtureStore(test, folder), false)
 }
 
 // fixtureStore is a store of a release of the content in a folder and the build's fixture.

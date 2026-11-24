@@ -56,6 +56,16 @@ type Head struct {
 	Languages []Language
 }
 
+// Indexed is whether a search engine may index the page, which then names the address it is known by (docs/SEO.md,
+// What is indexed): every page with an address of its own, a post only where the blog's lists name it. Not indexed: a
+// filtered list, a view of the list, and an older version of a post, which a newer stands over, neither with an
+// address of its own (docs/FOUNDATION.md §5.4); an unlisted post, which its author hands to whom they choose; and a
+// draft its author reads. A page not indexed names no address it is known by, since a search engine reads noindex
+// beside one as two signs that disagree.
+func (head Head) Indexed() bool {
+	return head.Page.OwnAddress() && (head.Post == nil || head.Post.Listed)
+}
+
 // Language is a language a post is read in (DESIGN.md, Switch): its tag, which every face names it by, its locale, the
 // post's page in it, and whether it is the language read.
 type Language struct {

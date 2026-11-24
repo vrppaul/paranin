@@ -71,11 +71,13 @@ two alike the manual goes first, then markdown, then HTML, so `curl`, which send
 Every negotiated response sets `Vary: Accept` alone, the page of no page among them: a filter's query is part of the
 address a cache keys on already. Every format of a page, at its own path and where the reader chooses, sets
 `Link: <canonical URL>; rel="canonical"`, the URL where the reader chooses; the HTML names it in its head too, with
-`rel="alternate"` to its markdown. A filtered list, a view of the list and no page of its own (`docs/FOUNDATION.md`
-§5.4), and an older version of a post, which a newer stands over, name no canonical URL, since a part of the list is no
-copy of `/blog` nor an older version of its post, and send `X-Robots-Tag: noindex` in every format, which their HTML
-says in its head too (`<meta name="robots">`), with no Open Graph tags. Links inside the HTML lead to the site's pages
-by their path from the root; the canonical URL and the text formats' links are whole.
+`rel="alternate"` to its markdown. Three kinds of page are not indexed: a filtered list, a view of the list and no
+page of its own (`docs/FOUNDATION.md` §5.4); an older version of a post, which a newer stands over; and an unlisted
+post, read by whoever has its address (owner, 2026-11-24). Each sends `X-Robots-Tag: noindex` in every format, and its
+HTML says so in its head too (`<meta name="robots">`). None names a canonical URL. A filtered list and an older
+version have no address of their own, so they carry no Open Graph tags. An unlisted post keeps its preview. Links
+inside the HTML lead to the site's pages by their path from the root; the canonical URL and the text formats' links
+are whole.
 
 ## What each format holds
 
@@ -125,9 +127,9 @@ left out, and a gap among written words stands marked as one.
 - **The HTML** of every page holds, in its head, the page's title, its description where it has one, the site's icon
   and what runs the site's script; `<html lang>` is its language's tag, and the frame's own words, Neovim's and tmux's
   (`vim keys`, `esc close`, the command line's keys, kinds and names, Neovim's words on its line), stand in
-  `lang="en"` on every page, and what the reader types and the line echoes in the page's own. A page with an address adds
-  what a search engine and a link preview read of it: its canonical link, Open Graph, its languages and its record
-  (`docs/SEO.md`). A page of the blog names the feeds that follow it,
+  `lang="en"` on every page, and what the reader types and the line echoes in the page's own. A page with an address of
+  its own adds Open Graph, which a link preview reads, and, where a search engine may index it, its canonical link, its
+  languages and its record (`docs/SEO.md`). A page of the blog names the feeds that follow it,
   `<link rel="alternate" type="application/atom+xml">` with each feed's title, a series' first on a post's page that
   shows the series, then the blog's, which the résumé and its tabs name too, for a feed
   reader handed the page, or the site's address, to find them. A post's page is the post whole: its title the one

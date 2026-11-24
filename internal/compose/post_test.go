@@ -744,6 +744,7 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 				After:  &document.Neighbour{Part: 2, Title: textSpans("Reading aloud"), Lead: nil, Page: toCome, Published: time.Time{}},
 			},
 			Discussions: []document.Link{{Target: document.Address{URL: "https://lobsters.example.test/s/slow"}, Spans: textSpans("Lobsters")}},
+			Listed:      true,
 		},
 		Description: description,
 		Feeds: []document.Link{
@@ -810,6 +811,27 @@ func TestAPostsTagsLeadToTheListWhereTheListsNameThePost(test *testing.T) {
 			want := []document.Filter{{Tag: "tools", Page: testCase.leads, Current: false, WayOut: ""}}
 			if !reflect.DeepEqual(head.Filters, want) {
 				test.Errorf("the filters of %s = %+v, want %+v", testCase.name, head.Filters, want)
+			}
+		})
+	}
+}
+
+// A post published may be indexed by a search engine; an unlisted post, read by whoever has its address, may not.
+func TestAnUnlistedPostIsIndexedByNoSearchEngine(test *testing.T) {
+	cases := []struct {
+		name    string
+		status  content.Status
+		indexed bool
+	}{
+		{name: "published", status: content.StatusPublished, indexed: true},
+		{name: "unlisted", status: content.StatusUnlisted, indexed: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			snapshot := withSamplePost(test, samplePostFields+"status: "+string(testCase.status)+"\n---\nIts text.\n")
+			head := postNamed(test, SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Posts, samplePostSlug).Head
+			if got := head.Indexed(); got != testCase.indexed {
+				test.Errorf("whether the %s post is indexed = %t, want %t", testCase.name, got, testCase.indexed)
 			}
 		})
 	}

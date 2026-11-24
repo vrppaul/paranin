@@ -99,12 +99,9 @@ func (page Page) InBlog() bool {
 	return false
 }
 
-// Indexed is whether a search engine may index a page, which then names the address it is known by: every page served
-// but a filtered list, a view of the list and no page of its own, and an older version of a post, which a newer
-// stands over; neither names a canonical address, since a part of the list is no copy of it, nor is an older version
-// of its post's current one, and a search engine reads noindex beside a canonical address as two signs that disagree
-// (docs/FOUNDATION.md §5.4).
-func (page Page) Indexed() bool {
+// OwnAddress is whether a page has an address of its own, which a link's preview shows (Head's Indexed names the pages
+// that have none).
+func (page Page) OwnAddress() bool {
 	_, isFilter := page.Unfiltered()
 	return !isFilter && page.Revision == ""
 }

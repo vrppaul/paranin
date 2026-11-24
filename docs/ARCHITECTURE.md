@@ -429,9 +429,9 @@ and web routes.
     the list's with the filter in the site's words as its subtitle: every
     face draws it as the list. The page says it filters the list
     (`Page.Unfiltered`), and so that no search engine indexes it
-    (`Page.Indexed`), which a face and the web host read to send it with
-    `noindex` and name no canonical address, since a part of the list is
-    no copy of it. The head of a list and of
+    (`Page.OwnAddress`, `Head.Indexed`), which a face and the web host
+    read to send it with `noindex` and name no canonical address, since a
+    part of the list is no copy of it. The head of a list and of
     a post holds its filters (`Head.Filters`), which `compose` works out
     once: each tag, where it leads and whether it is the filter shown,
     then named to a screen reader as the way to the whole list; a tag of a
@@ -701,8 +701,8 @@ and web routes.
   formats beside it, `/blog/<slug>/<date>.md` (amended 2026-11-24), and a
   picture by its name, which ends in its type's ending: neither reads as
   the other. A page says whether a search engine indexes it
-  (`Page.Indexed`), which a filtered list and an older version do not, so
-  the web host and the page read one rule. `compose` composes each older
+  (`Page.OwnAddress`, `Head.Indexed`), which a filtered list and an
+  older version do not, so the web host and the page read one rule. `compose` composes each older
   version of a post out with the site (`Site.Versions`), its links read
   among the pages served, a link to it among them, and the web host draws
   each the first time a request asks for it, as it draws a filtered list.

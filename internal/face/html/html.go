@@ -226,20 +226,44 @@ type PageWriter struct {
 }
 
 // pageMetadata is what a page says of itself to whoever reads it without showing it: its title and description
-// as plain text, the address it is known by, whole, and the path of its markdown, each empty where it has none;
-// whether a search engine may index it; the feeds that follow it, which a feed reader finds it by; and the page in
-// each language it is read in, which a search engine reads beside its own address.
+// as plain text and the path of its markdown, each empty where it has none; the address it names; the feeds that
+// follow it, which a feed reader finds it by; and the page in each language it is read in, which a search engine reads
+// beside the address it is known by.
 type pageMetadata struct {
 	title       string
 	description string
-	canonical   string
+	address     pageAddress
 	markdown    string
-	indexed     bool
 	feeds       []headFeed
 	alternates  []alternate
 	// otherLocales are the locales of the languages a post is read in but the one read, which Open Graph names too
 	otherLocales []string
 }
+
+// pageAddress is the address a page names in its head, by whether it has one of its own and whether a search engine
+// may index it (document.Head's Indexed).
+//
+//sumtype:decl
+type pageAddress interface {
+	pageAddress()
+}
+
+// noAddress is no address of the page's own: no search engine indexes it and no preview shows it.
+type noAddress struct{}
+
+// shownAddress is the page's own address, whole, which a link's preview shows and no search engine indexes.
+type shownAddress struct {
+	url string
+}
+
+// knownAddress is the address, whole, a search engine knows the page by, which a link's preview shows too.
+type knownAddress struct {
+	url string
+}
+
+func (noAddress) pageAddress()    {}
+func (shownAddress) pageAddress() {}
+func (knownAddress) pageAddress() {}
 
 // headFeed is a feed a page names in its head: its title, as plain text, and its path from the root.
 type headFeed struct {
@@ -325,17 +349,14 @@ func rendered(component templ.Component) string {
 	return builder.String()
 }
 
-// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab. A
-// page no search engine indexes, a filtered list or an older version of a post, is known at no address
-// (document.Page's Indexed).
+// metadataOf is what a page of a head says of itself, the page shown under a title: its document's whole or a tab.
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span) pageMetadata {
 	site := writer.frame.site
 	metadata := pageMetadata{
 		title:        document.PlainText(title),
 		description:  document.PlainText(head.Description),
-		canonical:    site.Address(shown, routes.FormatChosen),
+		address:      addressOf(head, shown, site),
 		markdown:     routes.Reference(shown, routes.FormatMarkdown),
-		indexed:      true,
 		feeds:        make([]headFeed, 0, len(head.Feeds)),
 		alternates:   alternatesOf(head.Languages, site),
 		otherLocales: otherLocalesOf(head.Languages),
@@ -343,10 +364,19 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 	for _, feed := range head.Feeds {
 		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: routes.Reference(feed.Target, routes.FormatChosen)})
 	}
-	if !shown.Indexed() {
-		metadata.canonical, metadata.indexed = "", false
-	}
 	return metadata
+}
+
+// addressOf is the address a page of a head names, the page shown: its document's whole or a tab (document.Head's
+// Indexed).
+func addressOf(head document.Head, shown document.Page, site routes.Site) pageAddress {
+	if !shown.OwnAddress() {
+		return noAddress{}
+	}
+	if !head.Indexed() {
+		return shownAddress{url: site.Address(shown, routes.FormatChosen)}
+	}
+	return knownAddress{url: site.Address(shown, routes.FormatChosen)}
 }
 
 // block is the component of a block, at the depth of its headings.

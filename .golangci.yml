@@ -100,6 +100,8 @@ linters:
         - ^github\.com/vrppaul/paranin/internal/document\.Version$
         # the TUI's openingBody and sectionBody
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
+        # the page's addressOf
+        - ^github\.com/vrppaul/paranin/internal/face/html\.pageAddress$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return
         - ^charm\.land/bubbletea/v2\.Model$
         # x/crypto's interface, which its NewChannel's Accept is typed to return

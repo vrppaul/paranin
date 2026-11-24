@@ -261,15 +261,15 @@ func picturesOf(icons []html.Icon) map[string]answer {
 	return pictures
 }
 
-// knownAs is a page's answer naming the address the page is known by, as a Link header writes it (RFC 8288, RFC 6596);
-// a page no search engine indexes, a filtered list or an older version of a post, names none and tells a search engine
-// not to index it (document.Page's Indexed, docs/FOUNDATION.md §5.4).
-func (sent answer) knownAs(page document.Page, site routes.Site) answer {
-	if !page.Indexed() {
+// knownAs is a page's answer, by the page's head, naming the address the page is known by, as a Link header writes it
+// (RFC 8288, RFC 6596); a page no search engine indexes (document.Head's Indexed) names none and tells a search engine
+// not to index it.
+func (sent answer) knownAs(head document.Head, site routes.Site) answer {
+	if !head.Indexed() {
 		sent.robots = noIndex
 		return sent
 	}
-	sent.link = linkOpening + site.Address(page, routes.FormatChosen) + canonicalRelation
+	sent.link = linkOpening + site.Address(head.Page, routes.FormatChosen) + canonicalRelation
 	return sent
 }
 
@@ -364,7 +364,7 @@ func laterPageOf(shown document.Document, writer textWriter, browse func() strin
 		manual:   lazyFormat{mediaType: routes.PlainType, draw: sync.OnceValue(func() answer { return writer.manualOf(shown) })},
 		markdown: lazyFormat{mediaType: routes.MarkdownType, draw: sync.OnceValue(func() answer { return writer.markdownOf(shown) })},
 		browsed: lazyFormat{
-			mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(page, writer.site) }),
+			mediaType: routes.PageType, draw: sync.OnceValue(func() answer { return drawnAs(routes.PageType, browse()).knownAs(shown.Head, writer.site) }),
 		},
 	}
 }
@@ -564,7 +564,7 @@ func (served answers) serveEveryFormat(shown document.Document, browsed string, 
 	markdown, manual := writer.markdownOf(shown), writer.manualOf(shown)
 	served.fixed[routes.Path(page, routes.FormatMarkdown)] = markdown
 	served.fixed[routes.Path(page, routes.FormatManual)] = manual
-	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(page, writer.site))
+	served.chosen[routes.Path(page, routes.FormatChosen)] = inTieOrder(manual, markdown, drawnAs(routes.PageType, browsed).knownAs(shown.Head, writer.site))
 }
 
 // textWriter is what the text faces write a page with: the site, which writes its addresses, and the manual's own
@@ -576,10 +576,10 @@ type textWriter struct {
 
 // markdownOf is a page in markdown, as the site writes its addresses, naming the address the page is known by.
 func (writer textWriter) markdownOf(shown document.Document) answer {
-	return drawnAs(routes.MarkdownType, text.Markdown(shown, writer.site)).knownAs(shown.Head.Page, writer.site)
+	return drawnAs(routes.MarkdownType, text.Markdown(shown, writer.site)).knownAs(shown.Head, writer.site)
 }
 
 // manualOf is a page as a manual, as the site writes its addresses, naming the address the page is known by.
 func (writer textWriter) manualOf(shown document.Document) answer {
-	return drawnAs(routes.PlainType, text.Manual(shown, writer.site, writer.manual)).knownAs(shown.Head.Page, writer.site)
+	return drawnAs(routes.PlainType, text.Manual(shown, writer.site, writer.manual)).knownAs(shown.Head, writer.site)
 }

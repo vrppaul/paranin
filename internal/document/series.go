@@ -3,12 +3,14 @@ package document
 import "time"
 
 // PostPlace is where a post stands in the blog, which only a post has: the series it is a part of, none outside a
-// series; the posts its foot leads to; and where it is discussed, each a link by its site's name, standing in for
-// comments (D13).
+// series; the posts its foot leads to; where it is discussed, each a link by its site's name, standing in for
+// comments (D13); and whether the blog's lists name it.
 type PostPlace struct {
 	Series      *Series
 	Neighbours  Neighbours
 	Discussions []Link
+	// Listed is whether the blog's lists name the post: one published and out, never an unlisted post or a draft (D7)
+	Listed bool
 }
 
 // Series is a run of posts read in order (D25), as a post that is a part of it shows it: its title, and every part,

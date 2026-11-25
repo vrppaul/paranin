@@ -10,15 +10,15 @@ The decisions, D1 onward, and the order of work are in `docs/FOUNDATION.md`; eac
 go test ./...                     # the tests, Typst from go run ./scripts/typst ~/.local/bin
 go run ./scripts/coderules ./...  # the code rules no linter here holds
 pnpm --dir web install            # the page's tools, pinned by web/pnpm-lock.yaml
-pnpm --dir web build              # the page's build into build/web; `watch` builds on each change, the site reloading
+pnpm --dir web build              # the page's build into build/web; `watch` builds on each change, and the site reloads
 pnpm --dir web test               # the page's tests, in jsdom
 go generate ./internal/look       # the design's tokens in Go and CSS, from design/tokens.yaml
 go generate ./internal/face/html  # format the templ templates, write their Go
 pre-commit run --all-files        # every gate a commit runs, over every tracked file
 pre-commit run --files $(git ls-files -co --exclude-standard)   # the same over files not yet tracked
 
-go run ./cmd/paranin cards content build/cards            # each page's card; `--watch` draws on each change
-go run ./cmd/paranin serve content build/web build/cards  # the site: curl localhost:8080, ssh -p 23234 localhost
+go run ./cmd/paranin cards content build/cards           # each page's card; `--watch` draws on each change
+go run ./cmd/paranin serve content build/web build/cards # the site: curl localhost:8080, ssh -p 23234 localhost
 ```
 
 - The gates are one list, `.pre-commit-config.yaml`, each with its command. A hook that cannot run fails: leave one out only on purpose, by naming it in `SKIP`.

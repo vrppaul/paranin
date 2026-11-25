@@ -116,28 +116,55 @@ func writeTestCards(test *testing.T, folder string, drawn []drawnCard) {
 	}
 }
 
+// A name shaped as a card's, the start of a sha256 in small hex digits and the picture's ending
+const cardShapedName = "0123456789abcdef.png"
+
 // A folder that holds anything a drawing of the cards does not write is refused before anything in it changes, so a
-// folder named by mistake, as a build's or the repository's, loses nothing: a folder in it, or a file of another name.
+// folder named by mistake, as a build's or the repository's, loses nothing: a folder in it, a file of another name, a
+// picture not named by its hash, a name of sixteen letters not hex digits or of seventeen hex digits, and a folder or a
+// link named as a card.
 func TestAFolderHoldingMoreThanCardsIsRefused(test *testing.T) {
 	cases := []struct {
-		name    string
-		foreign string
+		name  string
+		place func(test *testing.T, folder string)
 	}{
-		{name: "a folder in it, as a build's", foreign: "web/manifest.json"},
-		{name: "a file of another name", foreign: "notes.txt"},
+		{name: "a folder in it, as a build's", place: writtenAt("web/manifest.json")},
+		{name: "a file of another name", place: writtenAt("notes.txt")},
+		{name: "a picture not named by its hash", place: writtenAt("photo.png")},
+		{name: "sixteen letters not hex digits", place: writtenAt("ghijklmnopqrstuv.png")},
+		{name: "seventeen hex digits", place: writtenAt("0123456789abcdef0.png")},
+		{name: "a folder named as a card", place: writtenAt(cardShapedName + "/inside.png")},
+		{name: "a link named as a card", place: linkedAsACard},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			folder := test.TempDir()
-			fixtures.WriteIn(test, folder, testCase.foreign, resumePicture)
+			testCase.place(test, folder)
+			before := folderFiles(test, folder)
 			err := writeCards(folder, []drawnCard{{path: "/", picture: []byte(resumePicture)}})
-			if files := folderFiles(test, folder); !errors.Is(err, errForeignFile) || len(files) != 1 {
-				test.Errorf("writeCards beside %q = %v, the folder holding %q; want %v, the folder as it was", testCase.foreign, err,
-					files, errForeignFile)
+			if files := folderFiles(test, folder); !errors.Is(err, errForeignFile) || !slices.Equal(files, before) {
+				test.Errorf("writeCards = %v, the folder holding %q; want %v, the folder holding %q", err, files, errForeignFile, before)
 			}
 		})
 	}
 }
+
+// writtenAt places a file at a path of a folder, made with the folders it stands in.
+func writtenAt(path string) func(test *testing.T, folder string) {
+	return func(test *testing.T, folder string) { fixtures.WriteIn(test, folder, path, resumePicture) }
+}
+
+// linkedAsACard places a link named as a card in a folder, leading to a file beside the folder.
+func linkedAsACard(test *testing.T, folder string) {
+	target := filepath.Join(test.TempDir(), resumeCardFile)
+	fixtures.WriteIn(test, filepath.Dir(target), resumeCardFile, resumePicture)
+	if err := os.Symlink(target, filepath.Join(folder, cardShapedName)); err != nil {
+		test.Fatalf("link %s: %v", cardShapedName, err)
+	}
+}
+
+// The file a link named as a card leads to
+const resumeCardFile = "resume.png"
 
 // A drawing that changes no card writes no file, so a site watching the folder loads nothing again.
 func TestADrawingThatChangesNoCardWritesNoFile(test *testing.T) {

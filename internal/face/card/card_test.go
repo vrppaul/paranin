@@ -1,7 +1,6 @@
 package card
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
@@ -24,20 +23,30 @@ const (
 	fixtureDraft    = "notes-on-tools"
 	olderVersion    = "2026-11-10"
 	russian         = "ru"
-	fixtureWayIn    = "ssh example.test"
 )
 
-// Each page a preview shows has the facts of its card, read off its document in its language's words: the résumé, a
-// project, the blog's list by year and by series alike, a post, its series the one its page shows, an unlisted post,
-// which a preview shows too, and a translation. A tab has none of its own: its page's card stands for it.
+// The cards' mark in the fixture, the blog's name in the site's own language, and the commands that reach its pages
+// over ssh: the site's own, the list's, the post's by its number and its translation's
+const (
+	fixtureMark   = "blog"
+	fixtureWayIn  = "ssh example.test"
+	listWay       = "ssh blog@example.test"
+	postWay       = "ssh blog/1@example.test"
+	translatedWay = "ssh ru/blog/1@example.test"
+)
+
+// Each page a preview shows has the facts of its card, read off its document in its language's words, the command that
+// reaches it over ssh its way in: the résumé, a project, the blog's list by year and by series, a post, its series the
+// one its page shows, an unlisted post, which a preview shows too, and a translation, under the cards' mark in the
+// site's own language. A tab has none of its own: its page's card stands for it.
 func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 	site := siteOf(fixtures.LoadedContent(test), false)
 	unlisted := siteOf(fixtures.LoadedFrom(test, unlistedCopy(test)), false)
 	post := Post{
-		Blog: "blog", Day: "10 Nov 2026", Series: "Reading", Title: "Reading slowly", Lead: "Why a page read twice is read once.",
-		WayIn: fixtureWayIn,
+		Mark: fixtureMark, Day: "10 Nov 2026", Series: "Reading", Title: "Reading slowly", Lead: "Why a page read twice is read once.",
+		WayIn: postWay,
 	}
-	list := List{Title: "blog", Line: "What the writer reads, and how.", WayIn: fixtureWayIn}
+	list := List{Mark: fixtureMark, Line: "What the writer reads, and how.", WayIn: listWay}
 	cases := []struct {
 		name string
 		site compose.Site
@@ -53,22 +62,25 @@ func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 			want: Project{Name: "tidy-tool", Line: "Tidies files.", WayIn: fixtureWayIn},
 		},
 		{name: "the list by year", site: site, page: document.PageOf(document.PageBlog), want: list},
-		{name: "the list by series", site: site, page: document.PageOf(document.PageBlogSeries), want: list},
+		{
+			name: "the list by series", site: site, page: document.PageOf(document.PageBlogSeries),
+			want: List{Mark: fixtureMark, Line: list.Line, WayIn: "ssh blog/series@example.test"},
+		},
 		{name: "a post", site: site, page: document.PostPage(fixturePostSlug), want: post},
 		{
 			name: "an unlisted post, whose page shows no series", site: unlisted, page: document.PostPage(fixturePostSlug),
-			want: Post{Blog: post.Blog, Day: post.Day, Series: "", Title: post.Title, Lead: post.Lead, WayIn: fixtureWayIn},
+			want: Post{Mark: fixtureMark, Day: post.Day, Series: "", Title: post.Title, Lead: post.Lead, WayIn: postWay},
 		},
 		{
 			name: "a translation", site: site, page: document.PostPage(fixturePostSlug).InLanguage(russian),
 			want: Post{
-				Blog: "блог", Day: "15 нояб. 2026", Series: "Чтение", Title: "Медленное чтение",
-				Lead: "Почему страницу, прочитанную дважды, читают один раз.", WayIn: fixtureWayIn,
+				Mark: fixtureMark, Day: "15 нояб. 2026", Series: "Чтение", Title: "Медленное чтение",
+				Lead: "Почему страницу, прочитанную дважды, читают один раз.", WayIn: translatedWay,
 			},
 		},
 		{
 			name: "the list in a translation", site: site, page: document.PageOf(document.PageBlog).InLanguage(russian),
-			want: List{Title: "блог", Line: "Что читает автор, и как.", WayIn: fixtureWayIn},
+			want: List{Mark: fixtureMark, Line: "Что читает автор, и как.", WayIn: "ssh ru/blog@example.test"},
 		},
 		{name: "a tab of the résumé", site: site, page: resumeTab("experience"), want: nil},
 		{name: "a tab of a project", site: site, page: projectPage("tidy-tool", "why"), want: nil},
@@ -76,7 +88,7 @@ func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			composed := fixtures.DocumentOf(test, servedOf(testCase.site), testCase.page)
-			got, _ := NewWriter(frameOf(testCase.site, testCase.page)).FactsOf(composed)
+			got, _ := NewWriter(testCase.site).FactsOf(composed)
 			if got != testCase.want {
 				test.Errorf("the facts of %+v = %+v, want %+v", testCase.page, got, testCase.want)
 			}
@@ -137,13 +149,6 @@ func servedOf(site compose.Site) []document.Document {
 		served = append(served, blog.Served()...)
 	}
 	return served
-}
-
-// frameOf is the frame of a page's language: its blog's, the site's own for a page of no blog.
-func frameOf(site compose.Site, page document.Page) compose.Frame {
-	blogs := site.Blogs()
-	found := slices.IndexFunc(blogs, func(blog compose.Blog) bool { return blog.Frame.Translation == page.Translation })
-	return blogs[found].Frame
 }
 
 // resumeTab is a tab of the résumé, by its name.

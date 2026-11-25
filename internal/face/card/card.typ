@@ -44,14 +44,14 @@
 #let line-lines = 2
 
 // A cell of the block letters on each card of the résumé's side: the résumé's name and a project's at one size, so
-// the two read as one set and a project's line of two fits over the way in; BLOG larger, as one short word
+// the two read as one set and a project's line of two fits over the way in; the cards' mark larger, as one short word
 #let letter-cells = (resume: 22pt, project: 22pt, list: 40pt)
 
 // A drawing's cell is three fifths as wide as a row is tall, as the page draws one, so a half row is five sixths of a
 // cell's width
 #let half-row-share = 5 / 6
 
-// A post's header: its height, to its rule, and BLOG's cell at its left
+// A post's header: its height, to its rule, and the cell of the cards' mark at its left
 #let header-height = 132pt
 #let mark-cell = 11pt
 
@@ -211,8 +211,8 @@
   text(size: words-style.size)[#text(fill: colours.prompt)[❯] #text(fill: colours.text, command)],
 ))
 
-// The résumé's side: the title in block letters at its kind's cell, set as a post's title is where the font does not
-// draw every letter of it, the line under it, then the way in
+// The résumé's side: the title in block letters at its kind's cell, the cards' mark on the list's, a name set as a
+// post's title is where the font does not draw every letter of it; the line under it, then the way in
 #let side-card(facts) = {
   place(dx: side, dy: space-over-title, block(width: room, {
     if facts.title.lines.len() > 0 {
@@ -226,15 +226,11 @@
   way-in(facts.way_in)
 }
 
-// A post's header: BLOG at its left, as words where the font does not draw every letter, the day and the series at its
-// right, each in the middle of the header's height by what it shows, the letters by their ink and the words from the
-// cap line to the baseline; a quiet rule under it across the whole card
+// A post's header: the cards' mark at its left, the day and the series at its right, each in the middle of the
+// header's height by what it shows, the letters by their ink and the words from the cap line to the baseline; a quiet
+// rule under it across the whole card
 #let post-header(facts) = {
-  let mark = if facts.mark.lines.len() > 0 {
-    block-letters(facts.mark, mark-cell, colours.faint)
-  } else {
-    styled(words-style, colours.faint, facts.mark.words)
-  }
+  let mark = block-letters(facts.mark, mark-cell, colours.faint)
   let day = text(fill: colours.muted, facts.day)
   let series = text(fill: colours.faint, " · ") + text(fill: colours.muted, facts.series)
   let when = if facts.series == "" { day } else { day + series }

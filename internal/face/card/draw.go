@@ -62,7 +62,10 @@ const (
 const nameBreak = "-"
 
 // The faults of drawing a card
-var errTypstVersion = errors.New("typst is not the version the cards are drawn with")
+var (
+	errTypstVersion = errors.New("typst is not the version the cards are drawn with")
+	errUndrawnMark  = errors.New("the block letters cannot draw the cards' mark")
+)
 
 // Drawer draws cards with Typst: the program, at TypstVersion, and the folder of the faces the cards are set in, which
 // alone Typst reads, so no face of the machine's reaches a card.
@@ -86,7 +89,11 @@ func NewDrawer(ctx context.Context, program, faces string) (Drawer, error) {
 
 // Draw draws a card's facts as a PNG, 1200×630.
 func (drawer Drawer) Draw(ctx context.Context, facts Facts) ([]byte, error) {
-	input, err := json.Marshal(inputOf(facts))
+	read, err := inputOf(facts)
+	if err != nil {
+		return nil, err
+	}
+	input, err := json.Marshal(read)
 	if err != nil {
 		return nil, fmt.Errorf("write a card's facts: %w", err)
 	}
@@ -139,7 +146,7 @@ type postInput struct {
 }
 
 // letters are words in the name's block letters (look.NameFont) as the template draws them: the words, which it sets as
-// text where the font does not draw every letter of them and so gives no lines; the lines they stand on, each of the
+// text where the font does not draw every letter of a name and so gives no lines; the lines they stand on, each of the
 // pieces it may break between, as a project's name breaks after a hyphen; the cells of the cursor after them, none
 // where none follows; and the font's gaps, of columns between two pieces and of half rows between two lines.
 type letters struct {
@@ -160,23 +167,34 @@ type letterPiece struct {
 	HalfRows [][]bool `json:"half_rows"`
 }
 
-// inputOf is a card's facts as the template reads them. gochecksumtype holds the switch to every kind.
-func inputOf(facts Facts) any {
+// inputOf is a card's facts as the template reads them; a fault where the block letters cannot draw the cards' mark,
+// which no card sets in words. gochecksumtype holds the switch to every kind.
+func inputOf(facts Facts) (any, error) {
 	switch typed := facts.(type) {
 	case Resume:
-		return sideInput{Kind: kindResume, Title: nameLetters(typed.Name), Line: typed.Line, WayIn: typed.WayIn}
+		return sideInput{Kind: kindResume, Title: nameLetters(typed.Name), Line: typed.Line, WayIn: typed.WayIn}, nil
 	case Project:
 		pieces := slices.DeleteFunc(strings.SplitAfter(strings.ToUpper(typed.Name), nameBreak), func(piece string) bool { return piece == "" })
-		return sideInput{Kind: kindProject, Title: lettersOf(typed.Name, [][]string{pieces}), Line: typed.Line, WayIn: typed.WayIn}
+		return sideInput{Kind: kindProject, Title: lettersOf(typed.Name, [][]string{pieces}), Line: typed.Line, WayIn: typed.WayIn}, nil
 	case List:
-		return sideInput{Kind: kindList, Title: lettersOf(typed.Title, [][]string{{strings.ToUpper(typed.Title)}}), Line: typed.Line, WayIn: typed.WayIn}
+		mark, err := markLetters(typed.Mark)
+		return sideInput{Kind: kindList, Title: mark, Line: typed.Line, WayIn: typed.WayIn}, err
 	case Post:
+		mark, err := markLetters(typed.Mark)
 		return postInput{
-			Kind: kindPost, Mark: lettersOf(typed.Blog, [][]string{{strings.ToUpper(typed.Blog)}}), Day: typed.Day, Series: typed.Series,
-			Title: typed.Title, Lead: typed.Lead, WayIn: typed.WayIn,
-		}
+			Kind: kindPost, Mark: mark, Day: typed.Day, Series: typed.Series, Title: typed.Title, Lead: typed.Lead, WayIn: typed.WayIn,
+		}, err
 	}
-	return nil
+	return nil, nil
+}
+
+// markLetters are the cards' mark in block letters; a fault where the font does not draw every letter of it.
+func markLetters(mark string) (letters, error) {
+	drawn := lettersOf(mark, [][]string{{strings.ToUpper(mark)}})
+	if len(drawn.Lines) == 0 {
+		return drawn, fmt.Errorf("%w: %q", errUndrawnMark, mark)
+	}
+	return drawn, nil
 }
 
 // lettersOf are words in the name's font, on lines, each of its pieces: no lines where the font does not draw every

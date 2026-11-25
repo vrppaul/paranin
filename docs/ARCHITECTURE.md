@@ -919,7 +919,7 @@ description on request, and every page and post needs a card of its own.
 ```
 cmd/paranin
   hosting/web · hosting/ssh · hosting/indexnow
-    face/html · face/text · face/feed · face/tui
+    face/html · face/text · face/feed · face/tui · face/card
       compose · routes · release
         document · content · look · assets
 ```
@@ -930,8 +930,8 @@ the content they are made from, nor the release a host hands it; `release`
 stands beside `compose` and `routes`, `compose` building on `routes` to find
 two pages at one address, and the hosts bring them together. The parts
 still to come land with their steps of [FOUNDATION](FOUNDATION.md) §8, where
-§5.2 places them: `face/card` and `face/print` beside the faces, `inbox`
-beside `compose`, the brain beside the faces.
+§5.2 places them: `face/print` beside the faces, `inbox` beside
+`compose`, the brain beside the faces.
 
 ## Phase 1 component design (SSH TUI)
 
@@ -1036,6 +1036,7 @@ internal/face/tui/       # Bubble Tea model: a buffer per document, its tabs lai
 internal/face/html/      # templ pages: each document, its record as JSON-LD, the page of no page, the icon
 internal/face/text/      # markdown, the manual for curl, llms.txt, the page of no page as text
 internal/face/feed/      # what a machine polls: the blog's feeds in Atom, the sitemap, robots.txt
+internal/face/card/      # a page's card: its facts from the document, drawn by a pinned Typst on the template beside them
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
 internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch
@@ -1045,13 +1046,14 @@ internal/look/           # the design's colours, generated from design/tokens.ya
 internal/assets/         # the page's build: its manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone
 internal/fixtures/       # the shared fixtures, the content's and the build's, for tests alone
-scripts/tokens/          # the generator of internal/look and the page's tokens.css, and its check
+scripts/tokens/          # the generator of internal/look, the page's tokens.css and the cards' tokens.typ, and its check
+scripts/typst/           # Typst at the version face/card pins, its download held to its sha256
 scripts/templates/       # templ's format and generated Go, checked or written
 scripts/coderules/       # the code rules no linter here holds
 scripts/check_instruction_files.py  # claude-review's gate of the instruction files
 scripts/cut_extrabold.sh # the mail's ExtraBold, cut to a mail's characters from the face as released
 content/                 # the site's content: the profile, the site's words
-design/fonts/            # the faces, each under its own licence, as released: those the site serves, the ExtraBold its cut is made from, and, to come, the TTF Typst reads, which reads no woff2
+design/fonts/            # the faces, each under its own licence, as released: those the site serves, the ExtraBold its cut is made from, and the TTF Typst reads, which reads no woff2
 design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from, and the page's mixes of them, faces, text styles, lengths, times and layers, which only the page takes
 web/                     # the page: Vite, its stylesheet, the tokens' CSS; built into build/web
 ```

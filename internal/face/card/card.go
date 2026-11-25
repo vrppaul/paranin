@@ -33,19 +33,19 @@ type Project struct {
 	WayIn string
 }
 
-// List is the blog's list's card, by year or by series alike: the blog's name, in block letters, its line under it,
-// and the way in.
+// List is the blog's list's card, by year or by series: the cards' mark, in block letters, the list's line under it in
+// its language, and the way in.
 type List struct {
-	Title string
+	Mark  string
 	Line  string
 	WayIn string
 }
 
-// Post is a post's card: the blog's name, in small block letters at the left of its header, the day the post came out
+// Post is a post's card: the cards' mark, in small block letters at the left of its header, the day the post came out
 // as the page writes a day and its series' title at the right, none where its page shows none; its title, its lead
 // under it, and the way in.
 type Post struct {
-	Blog   string
+	Mark   string
 	Day    string
 	Series string
 	Title  string
@@ -58,17 +58,31 @@ func (Project) facts() {}
 func (List) facts()    {}
 func (Post) facts()    {}
 
-// Writer writes the facts of the cards of pages framed in one language: the way a terminal reaches the site, how a day
-// is written, and the site's sessions, the blog's among them, by the names the foot line gives them.
+// Writer writes the facts of the cards of a site's pages: the frame of each language, by the translation its pages are
+// in, which writes a page's day and the command that reaches it; and the cards' mark, the blog's name in the site's own
+// language, which stands in block letters on every language's card, since they draw no other alphabet.
 type Writer struct {
-	wayIn    string
-	days     compose.DayWords
-	sessions []compose.Session
+	frames map[string]compose.Frame
+	mark   string
 }
 
-// NewWriter writes the facts of the cards of pages framed so.
-func NewWriter(frame compose.Frame) Writer {
-	return Writer{wayIn: frame.SSH.Command.Text, days: frame.Days, sessions: frame.Sessions}
+// NewWriter writes the facts of the cards of a site's pages.
+func NewWriter(site compose.Site) Writer {
+	frames := map[string]compose.Frame{}
+	for _, blog := range site.Blogs() {
+		frames[blog.Frame.Translation] = blog.Frame
+	}
+	return Writer{frames: frames, mark: blogName(site.Own.Frame)}
+}
+
+// blogName is the blog's name in a frame's language, as the foot line names the blog's session.
+func blogName(frame compose.Frame) string {
+	for _, session := range frame.Sessions {
+		if session.Start.InBlog() {
+			return session.Name
+		}
+	}
+	return ""
 }
 
 // PageOf is the page whose card a page of a head shows, and whether it shows one (DESIGN.md, Social cards): its own, a
@@ -89,42 +103,34 @@ func (writer Writer) FactsOf(composed document.Document) (Facts, bool) {
 	if carded, shown := PageOf(head); !shown || carded != head.Page {
 		return nil, false
 	}
+	frame := writer.frames[head.Page.Translation]
+	wayIn := frame.SSHCommandTo(head)
 	switch head.Page.Kind {
 	case document.PageResume:
-		return Resume{Name: document.PlainText(head.Title), Line: document.PlainText(head.Subtitle), WayIn: writer.wayIn}, true
+		return Resume{Name: document.PlainText(head.Title), Line: document.PlainText(head.Subtitle), WayIn: wayIn}, true
 	case document.PageProject:
-		return Project{Name: document.PlainText(head.Title), Line: document.PlainText(head.Subtitle), WayIn: writer.wayIn}, true
+		return Project{Name: document.PlainText(head.Title), Line: document.PlainText(head.Subtitle), WayIn: wayIn}, true
 	case document.PageBlog, document.PageBlogSeries:
-		return List{Title: document.PlainText(head.Title), Line: document.PlainText(head.Lead), WayIn: writer.wayIn}, true
+		return List{Mark: writer.mark, Line: document.PlainText(head.Lead), WayIn: wayIn}, true
 	case document.PagePost:
-		return writer.postFacts(head)
+		return writer.postFacts(head, frame.Days, wayIn)
 	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PageTagFilter:
 	}
 	return nil, false
 }
 
-// postFacts are the facts of a post's card, its current version's: an older version and a draft show no preview.
-// gochecksumtype holds the switch to every kind of version.
-func (writer Writer) postFacts(head document.Head) (Facts, bool) {
+// postFacts are the facts of a post's card, its current version's, its day written in its language's words: an older
+// version and a draft show no preview. gochecksumtype holds the switch to every kind of version.
+func (writer Writer) postFacts(head document.Head, days compose.DayWords, wayIn string) (Facts, bool) {
 	switch version := head.Version.(type) {
 	case document.VersionOut:
 		return Post{
-			Blog: writer.sessionOf(head.Page), Day: writer.days.Of(version.Published), Series: seriesTitle(head.Post),
-			Title: document.PlainText(head.Title), Lead: document.PlainText(head.Lead), WayIn: writer.wayIn,
+			Mark: writer.mark, Day: days.Of(version.Published), Series: seriesTitle(head.Post),
+			Title: document.PlainText(head.Title), Lead: document.PlainText(head.Lead), WayIn: wayIn,
 		}, true
 	case document.VersionOlder, document.VersionDraft:
 	}
 	return nil, false
-}
-
-// sessionOf is the name of the session a page belongs to, as the foot line names it: the blog's, for a post.
-func (writer Writer) sessionOf(page document.Page) string {
-	for _, session := range writer.sessions {
-		if session.Holds(page) {
-			return session.Name
-		}
-	}
-	return ""
 }
 
 // seriesTitle is the title of the series a post's page shows, none where it shows none.

@@ -425,6 +425,26 @@ func (copyWords CopyWords) CodeButton(number int) CopyButton {
 	}
 }
 
+// What stands between the user an ssh command reaches the site as and the site's host
+const sshUserEnd = "@"
+
+// SSHCommandTo is the command a terminal reaches a page by over ssh. A page of the blog is reached as the user the
+// session opens it for (D26), the name :e opens it by too (blogPages): a post's current version by its number, any
+// other page of the blog by its path, each in its language's folder. Any other page is reached by the site's own
+// command, which opens the résumé.
+func (frame Frame) SSHCommandTo(head document.Head) string {
+	page := head.Page
+	if !page.InBlog() {
+		return frame.SSH.Command.Text
+	}
+	path := routes.Path(page, routes.FormatChosen)
+	if page.Kind == document.PagePost && page.Revision == "" {
+		path = routes.NumberPath(page.Translation, head.Number)
+	}
+	host := strings.TrimPrefix(frame.SSH.Command.Text, frame.SSH.Program+programEnd)
+	return frame.SSH.Program + programEnd + routes.TerminalName(path) + sshUserEnd + host
+}
+
 // Way is the way a command reaches the site, giving what the words say: named by its program, the command's first
 // word.
 func (copyWords CopyWords) Way(command, gives string) Way {

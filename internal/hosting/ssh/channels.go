@@ -23,10 +23,10 @@ const (
 
 // How fast a session's input reaches the TUI, in bytes a second, and how much of it may come at once. A reader
 // typing, or holding a key down, sends under two hundred bytes a second, and an ordinary paste, or the terminal's
-// answers to the TUI's questions as it opens, a few kilobytes at most at once; each key costs the TUI about half a
-// millisecond, so a client sending faster spends a tenth of a core at most, and a paste it leaves open grows by
-// under a megabyte an hour. The rate holds while the TUI asks for no mouse: a wheel or a motion reported sends ten to
-// fifteen bytes an event, up to sixty a second.
+// answers to the TUI's questions as it opens, a few kilobytes at most at once. A step of the wheel reports ten to
+// fifteen bytes, so the burst carries about three hundred steps, and the wheel then goes on at about fifteen a second.
+// On the largest terminal the costliest key, a letter typed in a search of a long post, costs the TUI 2.8 ms, so a
+// client flooding at this pace spends up to half a core, and a paste it leaves open grows by under a megabyte an hour.
 const (
 	inputRate  = 192
 	inputBurst = 4 << 10

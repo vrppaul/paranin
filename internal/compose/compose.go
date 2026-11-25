@@ -193,7 +193,7 @@ func ways(person content.Person, site content.Site, words content.Words) []docum
 	for _, link := range person.Links {
 		list = append(list, document.Fact{Label: link.Label, Value: linkSpans(document.Address{URL: link.URL}, link.Text)})
 	}
-	return append(list, document.Fact{Label: words.Text(content.WordSSH), Value: []document.Span{document.Code{Text: site.SSH}}})
+	return append(list, document.Fact{Label: words.Text(content.WordSSH), Value: []document.Span{document.Code{Text: sshCommand(site.SSHHost, anyUser)}}})
 }
 
 func experienceSection(roles []content.Role, words content.Words) document.Section {

@@ -26,13 +26,6 @@ const (
 	floatBits        = 64
 )
 
-// The column of nothing between the last letter and the cursor, as between two letters, and how tall the cursor is, a
-// half row on the letters' foot: an underscore
-const (
-	cursorGapCells = 1
-	cursorHalves   = 1
-)
-
 // How a drawing's gradient is named on the page, before the words it draws, which name it apart from the page's other
 // drawings; and the classes the stylesheet sizes a drawing by, a cell of the name's font or of the titles'
 const (
@@ -67,9 +60,9 @@ func (writer PageWriter) drawnTitle(head document.Head) templ.Component {
 	if head.Page.Kind == document.PageResume {
 		lines := look.NameLines(words)
 		font := look.NameFont()
-		if drawing, drawn := drawLetters(font, lines, words, nameLetters); drawn {
+		if drawing, drawn := font.Draw(lines); drawn {
 			last := []rune(lines[len(lines)-1])
-			return letteredHeadingOne(withCursor(drawing, font.LetterWidth(last[len(last)-1])))
+			return letteredHeadingOne(drawingOf(drawing.WithCursor(font.LetterWidth(last[len(last)-1])), words, nameLetters))
 		}
 		return headingOne(writer.spans(head.Title))
 	}
@@ -88,7 +81,8 @@ func titleHeading(words string, title templ.Component) templ.Component {
 // titleDrawing is words in the titles' block letters, which have capitals alone: a page's title or a section's of the
 // résumé; not drawn where the font does not draw every letter of them.
 func titleDrawing(words string) (letterDrawing, bool) {
-	return drawLetters(look.TitleFont(), []string{strings.ToUpper(words)}, words, titleLetters)
+	drawing, drawn := look.TitleFont().Draw([]string{strings.ToUpper(words)})
+	return drawingOf(drawing, words, titleLetters), drawn
 }
 
 // openingSection is the résumé's first section, under its first screen: under its title in block letters where the
@@ -101,63 +95,28 @@ func (writer PageWriter) openingSection(section document.Section) templ.Componen
 	return writer.resumeSection(section.Blocks, title, firstHeadingDepth+1)
 }
 
-// drawLetters is texts in a font as a drawing of the words they show, of the font's class, a row of nothing between
-// two texts; not drawn where the font does not draw every letter of them.
-func drawLetters(font look.Font, texts []string, words, class string) (letterDrawing, bool) {
-	banner := font.Banner(texts)
-	if len(banner) == 0 {
-		return letterDrawing{words: "", class: "", rectangles: nil, cursor: nil, width: 0, height: 0}, false
+// drawingOf is a drawing of block letters in the SVG's units, the words it shows, and the class of its font.
+func drawingOf(drawing look.Drawing, words, class string) letterDrawing {
+	drawn := letterDrawing{
+		words: words, class: class, rectangles: make([]letterRectangle, 0, len(drawing.Rectangles)), cursor: nil,
+		width: drawing.Width * cellUnits, height: drawing.Height * halfRowUnits,
 	}
-	drawing := letterDrawing{words: words, class: class, rectangles: nil, cursor: nil, width: 0, height: 0}
-	halves := look.HalfRows(banner)
-	for halfRow, filled := range halves {
-		drawing.width = max(drawing.width, len(filled)*cellUnits)
-		drawing.rectangles = append(drawing.rectangles, halfRowRectangles(filled, halfRow)...)
+	for _, rectangle := range drawing.Rectangles {
+		drawn.rectangles = append(drawn.rectangles, unitsOf(rectangle))
 	}
-	drawing.height = len(halves) * halfRowUnits
-	return drawing, true
+	if drawing.Cursor != nil {
+		cursor := unitsOf(*drawing.Cursor)
+		drawn.cursor = &cursor
+	}
+	return drawn
 }
 
-// halfRowRectangles are the runs of a half row's filled cells, as rectangles of the half row they stand on.
-func halfRowRectangles(filled []bool, halfRow int) []letterRectangle {
-	rectangles := []letterRectangle{}
-	start := -1
-	for column := 0; column <= len(filled); column++ {
-		on := column < len(filled) && filled[column]
-		if on && start < 0 {
-			start = column
-		}
-		if !on && start >= 0 {
-			rectangles = append(rectangles, letterRectangle{
-				left: start * cellUnits, top: halfRow * halfRowUnits,
-				width: (column - start) * cellUnits, height: halfRowUnits,
-			})
-			start = -1
-		}
+// unitsOf is a rectangle of a drawing in the SVG's units.
+func unitsOf(rectangle look.Rectangle) letterRectangle {
+	return letterRectangle{
+		left: rectangle.Left * cellUnits, top: rectangle.Top * halfRowUnits,
+		width: rectangle.Width * cellUnits, height: rectangle.Height * halfRowUnits,
 	}
-	return rectangles
-}
-
-// withCursor is a drawing with the cursor after its last line, a column apart, as wide as a letter and a half row
-// tall on the foot of the letters' ink, which their last half row may leave empty.
-func withCursor(drawing letterDrawing, letterCells int) letterDrawing {
-	foot := 0
-	lastLineRight := 0
-	for _, rectangle := range drawing.rectangles {
-		foot = max(foot, rectangle.top+rectangle.height)
-	}
-	for _, rectangle := range drawing.rectangles {
-		if rectangle.top+rectangle.height == foot {
-			lastLineRight = max(lastLineRight, rectangle.left+rectangle.width)
-		}
-	}
-	cursor := letterRectangle{
-		left: lastLineRight + cursorGapCells*cellUnits, top: foot - cursorHalves*halfRowUnits,
-		width: letterCells * cellUnits, height: cursorHalves * halfRowUnits,
-	}
-	drawing.cursor = &cursor
-	drawing.width = max(drawing.width, cursor.left+cursor.width)
-	return drawing
 }
 
 // viewBoxOf is a drawing's own units, a width and a height from its corner, as an SVG's viewBox writes them.

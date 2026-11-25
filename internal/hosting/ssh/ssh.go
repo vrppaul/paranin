@@ -154,12 +154,11 @@ func (server *Server) Shutdown(ctx context.Context) error {
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (tui.Drawing, time.Time) {
 	facts := snapshot.Content
 	composition := compose.SiteOf(prepared, audience)
-	documents, frames := slices.Concat(compose.DocumentsOf(composition.Pages), compose.Extras(facts)), []compose.Frame{}
+	documents := slices.Concat(compose.DocumentsOf(composition.Pages), compose.Extras(facts))
 	for _, blog := range composition.Blogs() {
 		documents = append(documents, blog.Served()...)
-		frames = append(frames, blog.Frame)
 	}
-	return tui.Drawing{Documents: documents, Frames: frames, Site: composition.Addresses}, composition.Until
+	return tui.Drawing{Documents: documents, Frames: composition.Frames(), Site: composition.Addresses}, composition.Until
 }
 
 // open is a session's TUI, of the size its terminal said it is, opened on the page its user's name reaches (D26).

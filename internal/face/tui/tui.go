@@ -25,10 +25,11 @@ const (
 )
 
 // Drawing is what a session draws, as its host hands it: the documents it holds, in every language; the site's words of
-// the frame round them in each language, the site's own first; and the site that writes their addresses.
+// the frame round them in each language, by the translation its pages are in (compose.Site's Frames); and the site
+// that writes their addresses.
 type Drawing struct {
 	Documents []document.Document
-	Frames    []compose.Frame
+	Frames    map[string]compose.Frame
 	Site      routes.Site
 }
 
@@ -98,7 +99,7 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 	if width <= 0 || height <= 0 {
 		width, height = assumedWidth, assumedHeight
 	}
-	buffers, frames := buffersOf(drawing.Documents), framesOf(drawing.Frames)
+	buffers, frames := buffersOf(drawing.Documents), drawing.Frames
 	own := frames[document.Untranslated]
 	model := Model{
 		buffers:    buffers,

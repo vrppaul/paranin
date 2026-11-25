@@ -5,27 +5,22 @@ import (
 	"unicode/utf8"
 )
 
-// How a glyph's rows are written in a font's table
+// How a banner stands in a block font: a column between two glyphs, and how a glyph's rows are written in its table
 const (
+	glyphGap   = 1
 	glyphBreak = "\n"
 	glyphSpace = " "
 )
 
-// How a banner stands in a block font, in every face that draws one: the columns of nothing between two glyphs, and the
-// rows of nothing between two lines
-const (
-	GlyphGap      = 1
-	BannerLineGap = 1
-)
+// BannerLineGap is the rows of nothing between two lines of a banner, in every face that draws one.
+const BannerLineGap = 1
 
-// HalvesInRow are the half rows a row of cells holds, each a cell's upper half or its lower.
-const HalvesInRow = 2
-
-// The half blocks a glyph's cell is made of: the upper half, the lower, both
+// The half blocks a glyph's cell is made of: the upper half, the lower, both; and the halves a row of cells holds
 const (
-	upperHalf = '▀'
-	lowerHalf = '▄'
-	fullBlock = '█'
+	upperHalf   = '▀'
+	lowerHalf   = '▄'
+	fullBlock   = '█'
+	halvesInRow = 2
 )
 
 // Font is a block font, the design's letters for a name and a title (DESIGN.md, Block letters): how many rows its
@@ -105,7 +100,7 @@ func (font Font) blockRows(text string) []string {
 	for index, letter := range text {
 		for row, glyphRow := range font.glyphs[letter] {
 			if index > 0 {
-				rows[row] += strings.Repeat(glyphSpace, GlyphGap)
+				rows[row] += strings.Repeat(glyphSpace, glyphGap)
 			}
 			rows[row] += glyphRow
 		}
@@ -113,13 +108,96 @@ func (font Font) blockRows(text string) []string {
 	return rows
 }
 
-// HalfRows are a banner's cells as half rows, top to bottom, each a column's half filled or empty, two empty half rows
+// Drawing is lines of block letters as a face that draws shapes lays them out (DESIGN.md, Block letters): the runs of
+// each half row's filled cells, the cursor after the last line where one follows, and how wide and tall the drawing
+// is, in cells and half rows.
+type Drawing struct {
+	Rectangles []Rectangle
+	Cursor     *Rectangle
+	Width      int
+	Height     int
+}
+
+// Rectangle is a run of a drawing's filled cells on one half row, or its cursor: its left, in cells, its top, in half
+// rows, and its width and height in the same.
+type Rectangle struct {
+	Left   int
+	Top    int
+	Width  int
+	Height int
+}
+
+// How tall a run of filled cells is, on one half row, and the cursor after the name, a half row, an underscore on the
+// letters' foot, a glyph's gap after them
+const (
+	runHalves    = 1
+	cursorHalves = 1
+)
+
+// Draw is texts in the font as a drawing, a row of nothing between two; not drawn where the font does not draw every
+// letter of them.
+func (font Font) Draw(texts []string) (Drawing, bool) {
+	banner := font.Banner(texts)
+	if len(banner) == 0 {
+		return Drawing{Rectangles: nil, Cursor: nil, Width: 0, Height: 0}, false
+	}
+	halves := halfRows(banner)
+	drawing := Drawing{Rectangles: nil, Cursor: nil, Width: 0, Height: len(halves)}
+	for halfRow, filled := range halves {
+		drawing.Width = max(drawing.Width, len(filled))
+		drawing.Rectangles = append(drawing.Rectangles, halfRowRectangles(filled, halfRow)...)
+	}
+	return drawing, true
+}
+
+// Foot is how far down the drawing's ink reaches, in half rows from its top: a font may leave its last half row empty.
+func (drawing Drawing) Foot() int {
+	foot := 0
+	for _, rectangle := range drawing.Rectangles {
+		foot = max(foot, rectangle.Top+rectangle.Height)
+	}
+	return foot
+}
+
+// WithCursor is the drawing with the cursor after its last line, a glyph's gap apart, as wide as a letter and a half
+// row tall on the foot of the letters' ink.
+func (drawing Drawing) WithCursor(letterCells int) Drawing {
+	foot, lastLineRight := drawing.Foot(), 0
+	for _, rectangle := range drawing.Rectangles {
+		if rectangle.Top+rectangle.Height == foot {
+			lastLineRight = max(lastLineRight, rectangle.Left+rectangle.Width)
+		}
+	}
+	cursor := Rectangle{Left: lastLineRight + glyphGap, Top: foot - cursorHalves, Width: letterCells, Height: cursorHalves}
+	drawing.Cursor = &cursor
+	drawing.Width = max(drawing.Width, cursor.Left+cursor.Width)
+	return drawing
+}
+
+// halfRowRectangles are the runs of a half row's filled cells, as rectangles of the half row they stand on.
+func halfRowRectangles(filled []bool, halfRow int) []Rectangle {
+	rectangles := []Rectangle{}
+	start := -1
+	for column := 0; column <= len(filled); column++ {
+		on := column < len(filled) && filled[column]
+		if on && start < 0 {
+			start = column
+		}
+		if !on && start >= 0 {
+			rectangles = append(rectangles, Rectangle{Left: start, Top: halfRow, Width: column - start, Height: runHalves})
+			start = -1
+		}
+	}
+	return rectangles
+}
+
+// halfRows are a banner's cells as half rows, top to bottom, each a column's half filled or empty, two empty half rows
 // for each row of nothing between two of its lines: the glyphs' ▀, ▄ and █ read as what they fill.
-func HalfRows(banner [][]string) [][]bool {
+func halfRows(banner [][]string) [][]bool {
 	halves := [][]bool{}
 	for index, rows := range banner {
 		if index > 0 {
-			for range HalvesInRow * BannerLineGap {
+			for range halvesInRow * BannerLineGap {
 				halves = append(halves, nil)
 			}
 		}

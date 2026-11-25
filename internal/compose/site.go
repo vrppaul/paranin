@@ -105,6 +105,15 @@ func (site Site) Blogs() []Blog {
 	return append([]Blog{site.Own}, site.Translations...)
 }
 
+// Frames are the frame of every language, by the translation its pages are in, document.Untranslated the site's own.
+func (site Site) Frames() map[string]Frame {
+	frames := make(map[string]Frame, len(site.Translations)+1)
+	for _, blog := range site.Blogs() {
+		frames[blog.Frame.Translation] = blog.Frame
+	}
+	return frames
+}
+
 // blogPagesOf is a blog as a snapshot reads it in a language, but its posts: its lists, filtered or not, its posts'
 // pictures and its frame, with the pages :e opens in every language.
 func blogPagesOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Blog {

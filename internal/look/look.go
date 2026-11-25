@@ -3,8 +3,9 @@
 // length a terminal lays out by, in cells, and shares.go each share of the screen's height it measures by, in percent;
 // this file holds the types the palette fills, and how a day reads. No colour of the design is written anywhere else
 // in Go. Its generate writes the page's tokens.css, times.ts, shares.ts and colours.ts too, under web/src/tokens, from
-// the same tokens. letters.go holds the design's block fonts, in which the TUI and the page both draw the author's name
-// and the titles, each its own way; glyphs.go the terminal's glyphs both faces draw.
+// the same tokens. letters.go holds the design's block fonts, in which the TUI, the page and the cards draw the
+// author's name and the titles, and the drawing of them as shapes the page and the cards both lay out; glyphs.go the
+// terminal's glyphs both faces draw.
 package look
 
 import (

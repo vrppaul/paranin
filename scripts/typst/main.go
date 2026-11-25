@@ -8,7 +8,8 @@
 //	go run ./scripts/typst ~/.local/bin
 //
 // It prints the path of the program it installed, and exits 0 when it is installed, 1 when the download, its check or
-// the unpacking failed, and 2 when the command is written wrong or no release is pinned for this machine.
+// the unpacking failed or the whole took longer than five minutes, and 2 when the command is written wrong or no
+// release is pinned for this machine.
 package main
 
 import (
@@ -24,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/face/card"
 )
@@ -35,16 +37,19 @@ const (
 	usageMistaken = 2
 )
 
-// How the command is written, what it says on a machine no release is pinned for, and where a release is downloaded
-// from, by its version and its name
+// How the command is written, what it says on a machine no release is pinned for, how a machine is named, as Go names
+// its system and its processor with a slash between, where a release is downloaded from, by its version and its name,
+// and how long the install may take, its download among it
 const (
-	usage      = "usage: go run ./scripts/typst <folder>"
-	noRelease  = "no release of Typst is pinned for %s\n"
-	releaseURL = "https://github.com/typst/typst/releases/download/v%s/%s.tar.xz"
+	usage          = "usage: go run ./scripts/typst <folder>"
+	noRelease      = "no release of Typst is pinned for %s\n"
+	platformJoint  = "/"
+	releaseURL     = "https://github.com/typst/typst/releases/download/v%s/%s.tar.xz"
+	installTimeout = 5 * time.Minute
 )
 
 // How tar unpacks the program from the release read on its standard input to its standard output: the release's folder
-// holds it under the program's name; and how the program is installed, for anyone to run
+// holds it under the program's name, a slash between them; and how the program is installed, for anyone to run
 const (
 	unpacker      = "tar"
 	extractOption = "--extract"
@@ -52,9 +57,9 @@ const (
 	toOutput      = "--to-stdout"
 	fileOption    = "--file"
 	standardInput = "-"
+	memberJoint   = "/"
 	programName   = "typst"
 	programMode   = 0o755
-	pathJoint     = "/"
 )
 
 // The faults of an install
@@ -74,7 +79,10 @@ func releases() map[string]release {
 }
 
 func main() {
-	os.Exit(run(context.Background(), os.Args[1:], runtime.GOOS+pathJoint+runtime.GOARCH, download))
+	ctx, stop := context.WithTimeout(context.Background(), installTimeout)
+	code := run(ctx, os.Args[1:], runtime.GOOS+platformJoint+runtime.GOARCH, download)
+	stop()
+	os.Exit(code)
 }
 
 // run installs the release of a machine into the folder the arguments name, from what fetch downloads.
@@ -108,7 +116,7 @@ func install(ctx context.Context, pinned release, folder string, fetch func(cont
 		return "", fmt.Errorf("%w: %s is %x, want %s", errSum, address, sum, pinned.sha256)
 	}
 	var program, said bytes.Buffer
-	member := pinned.name + pathJoint + programName
+	member := pinned.name + memberJoint + programName
 	unpack := exec.CommandContext(ctx, unpacker, extractOption, unpackOption, toOutput, fileOption, standardInput, member) //nolint:gosec // a release's name of the table above
 	unpack.Stdin, unpack.Stdout, unpack.Stderr = bytes.NewReader(archive), &program, &said
 	if err := unpack.Run(); err != nil {

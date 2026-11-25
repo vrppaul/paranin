@@ -7,12 +7,7 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
-	"github.com/vrppaul/paranin/internal/golden"
 )
-
-func TestMain(tests *testing.M) {
-	golden.Main(tests)
-}
 
 // The fixture's post, its folder and its file, and where it says it is published
 const (
@@ -118,7 +113,7 @@ func TestAPageShowsItsOwnCardOrItsPagesOrNone(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got, _ := PageOf(fixtures.DocumentOf(test, servedOf(testCase.site), testCase.page).Head); got != testCase.want {
+			if got := PageOf(fixtures.DocumentOf(test, servedOf(testCase.site), testCase.page).Head); got != testCase.want {
 				test.Errorf("the card %+v shows = %+v, want %+v", testCase.page, got, testCase.want)
 			}
 		})

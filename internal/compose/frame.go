@@ -22,7 +22,8 @@ type OpenedPage struct {
 // Frame is what a face lays round the documents it draws in one language, on every page alike, in the site's words in
 // it: the site's name, the language's tag, the language its pages are translated into, the name of the theme button,
 // which is pressed while the page is dark, the locale Open Graph marks a page in, the words of the button that copies a
-// command or a block of code, the way a terminal reaches the site over ssh, what reading a page in a terminal gives,
+// command or a block of code, the way a terminal reaches the site over ssh, and the host it reaches, which a page's own
+// ssh command names too (SSHCommandTo), the blog's name, what reading a page in a terminal gives,
 // whose command a face writes with the page's address, the words of the button that writes to the author, the page of
 // each project that has one, in the profile's order, a place of every page's command line by its slug, and every page
 // :e opens, in every language, by each name it reads, the projects' among them, the site's sessions, the labels of a
@@ -41,6 +42,8 @@ type Frame struct {
 	Locale       string
 	CopyWords    CopyWords
 	SSH          Way
+	sshHost      string
+	BlogName     string
 	ReadingGives string
 	WriteTo      string
 	Projects     []document.Place
@@ -215,7 +218,9 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 		DarkTheme:    words.Text(content.WordDarkTheme),
 		Locale:       words.Text(content.WordLocale),
 		CopyWords:    copyWords,
-		SSH:          copyWords.Way(snapshot.Profile.Site.SSH, words.Text(content.WordSSHGives)),
+		SSH:          copyWords.Way(sshCommand(snapshot.Profile.Site.SSHHost, anyUser), words.Text(content.WordSSHGives)),
+		sshHost:      snapshot.Profile.Site.SSHHost,
+		BlogName:     words.Text(content.WordBlog),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
 		Projects:     projectPlaces(snapshot.Profile.Projects),
@@ -425,8 +430,21 @@ func (copyWords CopyWords) CodeButton(number int) CopyButton {
 	}
 }
 
-// What stands between the user an ssh command reaches the site as and the site's host
-const sshUserEnd = "@"
+// The program a terminal reaches the site by over ssh; what stands between the user it reaches the site as and the
+// host; and the user of the site's own command, any, which the session opens at the résumé
+const (
+	sshProgram = "ssh"
+	sshUserEnd = "@"
+	anyUser    = ""
+)
+
+// sshCommand is the ssh command that reaches a host as a user, any where it names none.
+func sshCommand(host, user string) string {
+	if user == anyUser {
+		return sshProgram + programEnd + host
+	}
+	return sshProgram + programEnd + user + sshUserEnd + host
+}
 
 // SSHCommandTo is the command a terminal reaches a page by over ssh. A page of the blog is reached as the user the
 // session opens it for (D26), the name :e opens it by too (blogPages): a post's current version by its number, any
@@ -435,14 +453,13 @@ const sshUserEnd = "@"
 func (frame Frame) SSHCommandTo(head document.Head) string {
 	page := head.Page
 	if !page.InBlog() {
-		return frame.SSH.Command.Text
+		return sshCommand(frame.sshHost, anyUser)
 	}
 	path := routes.Path(page, routes.FormatChosen)
 	if page.Kind == document.PagePost && page.Revision == "" {
 		path = routes.NumberPath(page.Translation, head.Number)
 	}
-	host := strings.TrimPrefix(frame.SSH.Command.Text, frame.SSH.Program+programEnd)
-	return frame.SSH.Program + programEnd + routes.TerminalName(path) + sshUserEnd + host
+	return sshCommand(frame.sshHost, routes.TerminalName(path))
 }
 
 // Way is the way a command reaches the site, giving what the words say: named by its program, the command's first

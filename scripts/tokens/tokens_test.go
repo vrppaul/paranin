@@ -354,9 +354,9 @@ func TestEachColourReachesThePagesScriptInEachTheme(test *testing.T) {
 	}
 }
 
-// The page's face reaches the cards' template by its first family, and each colour in the dark theme, the one the cards
+// The page's face reaches the cards' template by its first family; each colour in the dark theme, the one the cards
 // are drawn in, the page's own colour first and each mix after the colours: its value #rrggbb, under what it is for,
-// named as the token is.
+// named as the token is; and each length in rem, which the cards scale by their own rem.
 func TestThePagesFaceAndEachColourReachTheCards(test *testing.T) {
 	cases := []struct {
 		name string
@@ -366,6 +366,7 @@ func TestThePagesFaceAndEachColourReachTheCards(test *testing.T) {
 		{name: "the page's own colour first", want: "#let colours = (\n  // the page itself\n  background: \"#000000\",\n"},
 		{name: "a colour in the dark theme", want: "  // what the eye goes to first\n  accent: \"#ff8700\",\n"},
 		{name: "a mix in the dark theme", want: "  // the accent softened\n  soft: \"#cc6c00\",\n)\n"},
+		{name: "each length in rem, a number of rems, the others left out", want: "#let rems = (\n  // the grid's one row\n  row: 1.5,\n)\n"},
 	}
 	read, err := readTokens([]byte(fixtureTokens))
 	if err != nil {

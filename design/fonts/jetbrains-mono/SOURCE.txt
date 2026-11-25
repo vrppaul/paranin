@@ -1,0 +1,6 @@
+JetBrains Mono 2.304, as JetBrains released it, under the OFL beside it:
+https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
+sha256 6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf
+
+The woff2 here are its fonts/webfonts/, the TTFs its fonts/ttf/, byte for byte. The ExtraBold-ASCII woff2 is cut from
+its ExtraBold by scripts/cut_extrabold.sh.

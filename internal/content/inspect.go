@@ -128,6 +128,12 @@ const kindSeparator = ", "
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
 
+// The host a terminal reaches the site at over ssh: its field, and what it is where it is no domain
+const (
+	sshHostField   = "site.ssh_host"
+	sshHostProblem = "%q is no host: a domain alone, as example.org, with no command, user or port"
+)
+
 // The site's tag authority (RFC 4151): its field; what parts its domain from the day its author held it on; how a
 // domain is written, words of small letters and digits joined by hyphens, two or more parted by dots; and how its day
 // is written, a year alone, which RFC 4151 reads as its 1 January, or a date
@@ -232,8 +238,19 @@ func inspectSite(inspection *inspection, site Site) {
 	if strings.HasSuffix(site.BaseURL.Written(), "/") {
 		inspection.add(baseAddressField, slashProblem, site.BaseURL.Written())
 	}
-	inspection.require("site.ssh", site.SSH)
+	inspectSSHHost(inspection, site.SSHHost)
 	inspectTagAuthority(inspection, site.TagAuthority)
+}
+
+// inspectSSHHost holds the host a terminal reaches the site at over ssh to a domain alone, which the site writes every
+// ssh command from: no command, user or port.
+func inspectSSHHost(inspection *inspection, host string) {
+	switch {
+	case blank(host):
+		inspection.add(sshHostField, emptyProblem)
+	case !regexp.MustCompile(domainPattern).MatchString(host):
+		inspection.add(sshHostField, sshHostProblem, host)
+	}
 }
 
 // inspectTagAuthority holds the site's tag authority to the one form of RFC 4151's it takes: a domain, a comma, and a

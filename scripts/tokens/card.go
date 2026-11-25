@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -22,9 +23,18 @@ const (
 	cardColour         = "  // %s\n  %s: %q,\n"
 )
 
+// How the cards' lengths open, under what they are, close, and how a length is written among them, under what it is
+// for: a number of rems, which the cards scale by their own rem
+const (
+	cardLengthsOpening = "\n// The design's lengths in rem, each a number of rems, by its token's name\n#let rems = (\n"
+	cardLengthsClosing = ")\n"
+	cardLength         = "  // %s\n  %s: %s,\n"
+)
+
 // cardTokens are the cards' tokens as Typst reads them: the page's face, by its first family, which the cards are set
-// in; and the page's own colour, each colour and each mix in the dark theme, #rrggbb, each by its token's name, under
-// what it is for. A blend stays the stylesheet's until a card lays one.
+// in; the page's own colour, each colour and each mix in the dark theme, #rrggbb; and each length in rem; each by its
+// token's name, under what it is for. A blend stays the stylesheet's until a card lays one, and a length in cells or
+// in em the page's, since a card measures its cell off its face.
 func cardTokens(read tokens) []byte {
 	var builder strings.Builder
 	builder.WriteString(cardsFileOpening)
@@ -39,5 +49,12 @@ func cardTokens(read tokens) []byte {
 		fmt.Fprintf(&builder, cardColour, mix.about, mix.name, hexColour(mix.values.Dark))
 	}
 	builder.WriteString(cardColoursClosing)
+	builder.WriteString(cardLengthsOpening)
+	for _, length := range read.page.lengths {
+		if size, inRem := length.value.(remSize); inRem {
+			fmt.Fprintf(&builder, cardLength, length.about, length.name, strconv.FormatFloat(float64(size), 'f', shortestDecimals, sizeFloatBits))
+		}
+	}
+	builder.WriteString(cardLengthsClosing)
 	return []byte(builder.String())
 }

@@ -226,8 +226,7 @@ faces:
     families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
     # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them; the ExtraBold, which
     # draws the mail alone, served cut to the characters a mail address holds, by scripts/cut_extrabold.sh. Beside them
-    # its Regular and Bold TTFs, which Typst sets the cards in, as the same release holds them:
-    # JetBrainsMono-2.304.zip, sha256 6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf
+    # its Regular and Bold TTFs, which Typst sets the cards in; the release they come from is in SOURCE.txt there
     files:
       - weight: 400
         path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2

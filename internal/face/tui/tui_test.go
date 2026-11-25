@@ -885,12 +885,11 @@ func sessionModel(snapshot *content.Snapshot, width, height int) Model {
 // and its posts, with the site's words in each and its site.
 func sessionDrawing(snapshot *content.Snapshot, drafts bool) Drawing {
 	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: drafts})
-	documents, frames := slices.Concat(compose.DocumentsOf(site.Pages), compose.Extras(snapshot)), []compose.Frame{}
+	documents := slices.Concat(compose.DocumentsOf(site.Pages), compose.Extras(snapshot))
 	for _, blog := range site.Blogs() {
 		documents = append(documents, blog.Served()...)
-		frames = append(frames, blog.Frame)
 	}
-	return Drawing{Documents: documents, Frames: frames, Site: fixtures.Site(snapshot)}
+	return Drawing{Documents: documents, Frames: site.Frames(), Site: fixtures.Site(snapshot)}
 }
 
 // handModel is a session on documents a test builds by hand, the résumé among them, with the fixture's words and site,

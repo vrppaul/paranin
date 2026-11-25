@@ -618,29 +618,36 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 ## Social cards
 
 Each page's `og:image`, as the owner picked it from a storyboard (owner, 2026-11-25): 1200×630, Macchiato alone,
-drawn by Typst (ADR-0005). A card is read on a phone in a feed, about 500px wide, so it holds only what reads there:
-every word at least 40px, about 17px on the phone, and nothing in the outer 40px, which a feed may crop. Its rem is
-28px, the page's grown by 1.75.
+drawn by Typst (ADR-0005). A card is read on a phone in a feed, 500px wide, so it holds only what reads there: every
+word at least 42px, 17.5px on the phone, and nothing in the outer 40px, which a feed may crop. Its rem is 28px, the
+page's 16px grown by 1.75; its row, `radius` and hairline are the page's tokens at that rem, and its cell the face's
+`0`, 16.8px.
 
 - Two looks, so the résumé and the blog read as two sides of the site:
   - **The résumé's side**, the résumé, a project and the blog's list: a title in the name's block letters, the
     gradient across it, and the line under it. The résumé's title is the name on two lines as the profile breaks it,
     the cursor an underscore after it as on the page; a project's its name, on one line where it fits, else broken
-    after a hyphen onto two lines, as few as fit; the résumé's name and a project's both in cells of 22px, smaller
-    only where a line would not fit; the blog's BLOG in cells of 40px. The line under it, in `text`: the role, a
-    project's tagline, the blog's line.
+    after one hyphen onto two lines, where the wider of the two is narrowest; the résumé's name and a project's both
+    in cells of 22px, smaller only where a line would not fit; the list's BLOG in cells of 40px. A name the block
+    letters cannot draw stands in words, as a post's title (not approved). The line under it, in `text`: the role, a
+    project's tagline, none where it has none, the blog's line.
   - **A post**: a header, BLOG in `faint` block letters at its left, cells of 11px, and the day the post came out ·
     its series in `muted` at its right, the dot `faint`, each centred on the header's height by its ink, and a
-    `quiet` hairline under it, 132px down, across the whole card. Under it the title in `title_soft`: 104px where it
-    stands whole on one line, else 90px on two lines at most; the lead under it in `text`, two lines under a title
-    of one line, one under a title of two.
+    `quiet` hairline under it, 132px down, across the whole card. Under it the title in `title_soft`: 103.6px where
+    it stands whole on one line, else 89.6px on two lines at most; the lead under it in `text`, two lines under a
+    title of one line, one under a title of two.
+- BLOG, the cards' mark, is the blog's name in the site's own language, in block letters on every language's card,
+  since they draw no Cyrillic (owner, 2026-11-25); a mark they cannot draw is refused as the card is drawn.
 - One set of spaces and sizes on every card: 64px over the title, from the card's top or from the header's rule; one
-  gap, 38px, between the title and its line; every word but a title at 42px; the way in, `ssh` as the page's Command
-  chip, ❯ in `prompt` and the command in `text` on `sunk` in a `muted` hairline with the `radius`, 37px of room at
-  its sides and 23px over and under its words, 506px down, 40px over the card's foot; all of it from the left
-  margin, 101px in.
+  gap, 37.8px, between the title and its line; every word but a title at 42px; the way in, the command that reaches
+  the page over ssh, `ssh paran.in` on the résumé and a project, the user the session opens a page of the blog for
+  on the blog's, `ssh blog@paran.in` on the list and `ssh blog/1@paran.in` on a post (D26), as the page's Command
+  chip, ❯ in `prompt` and the command in `text` on `sunk` in a `muted` hairline with the `radius`, 36.96px of room
+  at its sides and 23.1px over and under its words, 506px down, clear of the outer 40px; all of it from the left
+  margin, 100.8px in.
 - Words longer than their lines, a post's title, a line, a lead, are cut after the last whole word that fits, an
-  ellipsis after it. Block letters are never cut.
+  ellipsis after it; a word wider than the card is cut inside it, the ellipsis after the last letter that fits.
+  Block letters are never cut.
 - No foot line, greeting, headline, place or corner crosses: on a phone each is 12px or a speck.
 - A tab of the résumé or of a project shows its page's card. An older version, a filtered list, a draft and the
   address of no page show no preview and have no card.

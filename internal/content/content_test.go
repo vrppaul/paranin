@@ -244,6 +244,30 @@ func TestATagAuthorityIsADomainAndAYearOrADate(test *testing.T) {
 	}
 }
 
+// The host a terminal reaches the site at over ssh is a domain alone, which every ssh command the site writes names: a
+// command, a user or a port written into it is refused, as is none.
+func TestTheSSHHostIsADomain(test *testing.T) {
+	cases := []struct {
+		name  string
+		host  string
+		loads bool
+	}{
+		{name: "a domain", host: "example.test", loads: true},
+		{name: "none", host: `""`, loads: false},
+		{name: "a command", host: "ssh example.test", loads: false},
+		{name: "a user", host: "mira@example.test", loads: false},
+		{name: "a port", host: "example.test:2222", loads: false},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			_, err := Load(changedProfile(test, "ssh_host: example.test", "ssh_host: "+testCase.host))
+			if loads := err == nil; loads != testCase.loads {
+				test.Errorf("a profile whose ssh host is %q loads: %t (%v), want %t", testCase.host, loads, err, testCase.loads)
+			}
+		})
+	}
+}
+
 // The site's base address is read once, as the content writes it, and keeps its host, which names the site.
 func TestTheBaseAddressKeepsItsHost(test *testing.T) {
 	cases := []struct {
@@ -300,9 +324,9 @@ func TestEveryUnknownKeyIsAFault(test *testing.T) {
 }
 
 func TestEveryFaultIsReportedAtOnceOneALine(test *testing.T) {
-	folder := changedProfile(test, "ssh: ssh example.test", `ssh: ""`)
+	folder := changedProfile(test, "ssh_host: example.test", `ssh_host: ""`)
 	_, err := Load(changedFile(test, folder, profileFile, "title: Software Engineer", `title: ""`))
-	want := "profile.yaml: site.ssh is empty\nprofile.yaml: person.title is empty"
+	want := "profile.yaml: site.ssh_host is empty\nprofile.yaml: person.title is empty"
 	if err == nil || err.Error() != want {
 		test.Errorf("Load = %v, want %q", err, want)
 	}

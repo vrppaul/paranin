@@ -1,12 +1,11 @@
 // Package golden holds what a face writes to a golden file in its package's testdata folder, rewritten where a run
 // asks for it with -update and read in the diff (.claude/rules/tests.md). Tests alone import it, as depguard's rule
 // tests-alone-read-golden holds: each face's test package runs through Main, which knows the flag, and holds a text
-// to its file with Match, a picture with MatchPicture. Every file is read and written inside the testdata folder,
-// opened as a root, so no path leads out of it.
+// to its file with Match. Every file is read and written inside the testdata folder, opened as a root, so no path
+// leads out of it.
 package golden
 
 import (
-	"bytes"
 	"flag"
 	"os"
 	"path"
@@ -37,24 +36,6 @@ func Main(tests *testing.M) {
 // writes a page's path, its opening slash or not; after rewriting the file where the run asks to.
 func Match(test *testing.T, written, got string) {
 	test.Helper()
-	if want := held(test, written, []byte(got)); got != string(want) {
-		test.Errorf("%s =\n%s\nwant\n%s", written, got, want)
-	}
-}
-
-// MatchPicture holds a picture to its golden file, as Match holds a text. A picture's bytes read as nothing in a log,
-// so a failure names the file alone: rewrite it with -update and look at the two.
-func MatchPicture(test *testing.T, written string, got []byte) {
-	test.Helper()
-	if want := held(test, written, got); !bytes.Equal(got, want) {
-		test.Errorf("%s differs from its golden picture, %d bytes where it holds %d: rewrite it with -%s and look at both",
-			written, len(got), len(want), updateFlag)
-	}
-}
-
-// held is the golden file at a path, after rewriting it with what came where the run asks to.
-func held(test *testing.T, written string, got []byte) []byte {
-	test.Helper()
 	rewriting := updating()
 	root := openFolder(test, rewriting)
 	inside := strings.TrimPrefix(written, pathRoot)
@@ -65,7 +46,9 @@ func held(test *testing.T, written string, got []byte) []byte {
 	if err != nil {
 		test.Fatalf("read %s/%s: %v", folder, inside, err)
 	}
-	return want
+	if got != string(want) {
+		test.Errorf("%s =\n%s\nwant\n%s", written, got, want)
+	}
 }
 
 // openFolder is the testdata folder opened as a root, closed when the test ends; made first where the run rewrites
@@ -95,12 +78,12 @@ func updating() bool {
 	return flag.Lookup(updateFlag).Value.String() == "true"
 }
 
-func write(test *testing.T, root *os.Root, inside string, got []byte) {
+func write(test *testing.T, root *os.Root, inside, text string) {
 	test.Helper()
 	if err := root.MkdirAll(path.Dir(inside), folderMode); err != nil {
 		test.Fatalf("make the folder of %s/%s: %v", folder, inside, err)
 	}
-	if err := root.WriteFile(inside, got, fileMode); err != nil {
+	if err := root.WriteFile(inside, []byte(text), fileMode); err != nil {
 		test.Fatalf("write %s/%s: %v", folder, inside, err)
 	}
 }

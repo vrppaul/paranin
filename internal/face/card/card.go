@@ -68,39 +68,25 @@ type Writer struct {
 
 // NewWriter writes the facts of the cards of a site's pages.
 func NewWriter(site compose.Site) Writer {
-	frames := map[string]compose.Frame{}
-	for _, blog := range site.Blogs() {
-		frames[blog.Frame.Translation] = blog.Frame
-	}
-	return Writer{frames: frames, mark: blogName(site.Own.Frame)}
+	return Writer{frames: site.Frames(), mark: site.Own.Frame.BlogName}
 }
 
-// blogName is the blog's name in a frame's language, as the foot line names the blog's session.
-func blogName(frame compose.Frame) string {
-	for _, session := range frame.Sessions {
-		if session.Start.InBlog() {
-			return session.Name
-		}
-	}
-	return ""
-}
-
-// PageOf is the page whose card a page of a head shows, and whether it shows one (DESIGN.md, Social cards): its own, a
-// tab its page's; none on a page no preview shows, an older version, a filtered list, a draft.
-func PageOf(head document.Head) (document.Page, bool) {
+// PageOf is the page whose card a page of a head shows (DESIGN.md, Social cards): its own, a tab its page's; none, the
+// page of no kind, on a page no preview shows, an older version, a filtered list, a draft.
+func PageOf(head document.Head) document.Page {
 	if !head.Previewed() {
-		return document.PageOf(document.PageNone), false
+		return document.PageOf(document.PageNone)
 	}
 	whole := head.Page
 	whole.Tab = ""
-	return whole, true
+	return whole
 }
 
 // FactsOf are the facts of a page's card, where the document is the page that card stands for: none for a tab, which
 // shows its page's, or a page no preview shows. exhaustive holds the switch to every kind of page.
 func (writer Writer) FactsOf(composed document.Document) (Facts, bool) {
 	head := composed.Head
-	if carded, shown := PageOf(head); !shown || carded != head.Page {
+	if PageOf(head) != head.Page {
 		return nil, false
 	}
 	frame := writer.frames[head.Page.Translation]

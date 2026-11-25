@@ -63,3 +63,55 @@
   // the end of a title set in text, the host's colour a fifth toward the text
   title_soft_end: "#c7aaf6",
 )
+
+// The design's lengths in rem, each a number of rems, by its token's name
+#let rems = (
+  // how wide a focus ring is, and how far it stands from what it rings; twice it, the room under the foot line
+  focus_width: 0.125,
+  // a cell of the author's name in block letters at its natural size, which shrinks to its column
+  name_cell: 1,
+  // a cell of a title in block letters at its natural size, which shrinks to its column
+  title_cell: 0.75,
+  // the grid's row, which the text read sits on; how tall the foot line is
+  row: 1.5,
+  // two rows, how far clear of the foot line a part the keyboard reaches scrolls on a wide screen
+  row_2: 3,
+  // half a row, the gap inside a component
+  row_half: 0.75,
+  // three rows, between the name's column and the brief's, and under the first screen
+  row_3: 4.5,
+  // four rows, above the first screen; how far clear of the foot line a part the keyboard reaches scrolls on a phone
+  row_4: 6,
+  // how wide the first screen's brief is beside the name
+  brief: 27.5,
+  // how wide the brief is below the wide screen's width
+  brief_mid: 23.75,
+  // the longest line of an article's words, in the reading face
+  column: 43,
+  // how big the square of the cross at each corner of the first screen is
+  cross: 0.8125,
+  // how thick a role's bar is in the phone's career list
+  span_thin: 0.375,
+  // how tall a regular control is, two rows
+  control: 3,
+  // the widest the page's content runs
+  content: 80,
+  // the widest a window over the page runs, a dialog's or a hint's
+  dialog: 35,
+  // the room either side of the content
+  gutter: 3,
+  // the room either side of the content on a phone
+  gutter_phone: 1,
+  // an offset inside a row, as far as a tooltip stands from its control
+  nudge: 0.25,
+  // how tall a compact control is, one row, and how wide its square
+  control_compact: 1.5,
+  // the square a drawn mark stands in
+  box: 1,
+  // the corner of a button, a chip, a field, a dialog and a tooltip
+  radius: 0.125,
+  // how wide every line is, a border's or a rule's
+  hairline: 0.0625,
+  // how thick a link's underline is under the pointer, two hairlines, and the line under the letters typed on the command line's menu and under a search's matches
+  underline_hover: 0.125,
+)

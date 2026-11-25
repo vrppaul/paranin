@@ -2,7 +2,7 @@
 
 site:
   base_url: https://example.test
-  ssh: ssh example.test
+  ssh_host: example.test
   tag_authority: example.test,2026
 
 person:

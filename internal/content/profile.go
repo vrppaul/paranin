@@ -25,11 +25,12 @@ type Profile struct {
 	Contact     Contact         `yaml:"contact"`
 }
 
-// Site is where the résumé is found: its address, with no slash at the end, and the command that reaches it; and the
-// tag authority the feeds and their posts are named by for good, wherever the site moves (RFC 4151).
+// Site is where the résumé is found: its address, with no slash at the end, and the host a terminal reaches it at over
+// ssh, which every ssh command the site writes names; and the tag authority the feeds and their posts are named by for
+// good, wherever the site moves (RFC 4151).
 type Site struct {
 	BaseURL      WebAddress `yaml:"base_url"`
-	SSH          string     `yaml:"ssh"`
+	SSHHost      string     `yaml:"ssh_host"`
 	TagAuthority string     `yaml:"tag_authority"`
 }
 

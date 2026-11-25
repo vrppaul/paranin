@@ -248,15 +248,6 @@ func (model Model) edit(name string) (Model, tea.Cmd) {
 	return model.showing(page), nil
 }
 
-// framesOf are the site's words of the frame in each language, by the language a page is translated into.
-func framesOf(frames []compose.Frame) map[string]compose.Frame {
-	byTranslation := make(map[string]compose.Frame, len(frames))
-	for _, frame := range frames {
-		byTranslation[frame.Translation] = frame
-	}
-	return byTranslation
-}
-
 // openedPages are the pages :e opens, by every name it reads.
 func openedPages(pages []compose.OpenedPage) map[string]document.Page {
 	opened := make(map[string]document.Page, len(pages))

@@ -26,28 +26,31 @@ const TypstVersion = "0.15.1"
 //go:embed card.typ tokens.typ
 var templateFiles embed.FS
 
-// How Typst is run: the template it compiles, the folder a drawing lays it out in, the input the facts are handed in
-// as, which the template reads as sys.inputs.facts, and the words of its command: how it says its version, the word
-// after its name, and how it draws, at 72 ppi so a point of the card is a pixel, with the repository's faces alone,
-// into the PNG it writes to its standard output
+// How Typst is run: the template it reads, the folder a run lays it out in, the input the facts are handed in as,
+// which the template reads as sys.inputs.facts, and the words of its command: how it says its version, the word after
+// its name, and what every run of the template names, its root and the repository's faces alone
 const (
 	templateFile     = "card.typ"
 	drawingFolder    = "paranin-card-*"
 	factsKey         = "facts"
 	inputJoint       = "="
 	versionCommand   = "--version"
-	compileCommand   = "compile"
+	versionWordIndex = 1
 	rootOption       = "--root"
 	fontsOption      = "--font-path"
-	pixelsOption     = "--ppi"
-	pixelsPerInch    = "72"
-	formatOption     = "--format"
-	pictureFormat    = "png"
 	inputOption      = "--input"
 	noSystemFonts    = "--ignore-system-fonts"
 	noEmbeddedFonts  = "--ignore-embedded-fonts"
-	standardOutput   = "-"
-	versionWordIndex = 1
+)
+
+// How Typst draws a card: at 72 ppi, so a point of the card is a pixel, into the PNG it writes to its standard output
+const (
+	compileCommand = "compile"
+	pixelsOption   = "--ppi"
+	pixelsPerInch  = "72"
+	formatOption   = "--format"
+	pictureFormat  = "png"
+	standardOutput = "-"
 )
 
 // The kinds of card as the template tells them apart (card.typ)
@@ -77,18 +80,29 @@ type Drawer struct {
 // NewDrawer draws cards with a Typst program, set in the faces of a folder; it refuses a program at another version
 // than TypstVersion.
 func NewDrawer(ctx context.Context, program, faces string) (Drawer, error) {
+	noDrawer := Drawer{program: "", faces: ""}
 	said, err := run(ctx, program, versionCommand)
 	if err != nil {
-		return Drawer{program: "", faces: ""}, fmt.Errorf("ask %s its version: %w", program, err)
+		return noDrawer, fmt.Errorf("ask %s its version: %w", program, err)
 	}
 	if words := strings.Fields(string(said)); len(words) <= versionWordIndex || words[versionWordIndex] != TypstVersion {
-		return Drawer{program: "", faces: ""}, fmt.Errorf("%w: %s says %q, want %s", errTypstVersion, program, strings.TrimSpace(string(said)), TypstVersion)
+		return noDrawer, fmt.Errorf("%w: %s says %q, want %s", errTypstVersion, program, strings.TrimSpace(string(said)), TypstVersion)
 	}
 	return Drawer{program: program, faces: faces}, nil
 }
 
 // Draw draws a card's facts as a PNG, 1200×630.
 func (drawer Drawer) Draw(ctx context.Context, facts Facts) ([]byte, error) {
+	drawn, err := drawer.typst(ctx, facts, compileCommand, []string{standardOutput}, pixelsOption, pixelsPerInch, formatOption, pictureFormat)
+	if err != nil {
+		return nil, fmt.Errorf("draw the card of %+v: %w", facts, err)
+	}
+	return drawn, nil
+}
+
+// typst runs a command of Typst's on the template with a card's facts, the words its command takes after the template
+// and then its options, and is what it writes to its standard output.
+func (drawer Drawer) typst(ctx context.Context, facts Facts, command string, after []string, options ...string) ([]byte, error) {
 	read, err := inputOf(facts)
 	if err != nil {
 		return nil, err
@@ -105,12 +119,10 @@ func (drawer Drawer) Draw(ctx context.Context, facts Facts) ([]byte, error) {
 	if err := os.CopyFS(folder, templateFiles); err != nil {
 		return nil, fmt.Errorf("lay the cards' template out in %s: %w", folder, err)
 	}
-	drawn, err := run(ctx, drawer.program, compileCommand, rootOption, folder, noSystemFonts, noEmbeddedFonts, fontsOption, drawer.faces,
-		pixelsOption, pixelsPerInch, formatOption, pictureFormat, inputOption, factsKey+inputJoint+string(input), filepath.Join(folder, templateFile), standardOutput)
-	if err != nil {
-		return nil, fmt.Errorf("draw the card of %+v: %w", facts, err)
-	}
-	return drawn, nil
+	arguments := slices.Concat([]string{command, filepath.Join(folder, templateFile)}, after, []string{
+		rootOption, folder, noSystemFonts, noEmbeddedFonts, fontsOption, drawer.faces, inputOption, factsKey + inputJoint + string(input),
+	}, options)
+	return run(ctx, drawer.program, arguments...)
 }
 
 // run runs a program with arguments, and is what it writes to its standard output; a fault says what it wrote to its
@@ -125,46 +137,50 @@ func run(ctx context.Context, program string, arguments ...string) ([]byte, erro
 	return written.Bytes(), nil
 }
 
-// sideInput is a card of the résumé's side as the template reads it: its kind, its title in block letters, its line
-// and the way in.
+// sideInput is a card of the résumé's side as the template reads it: its kind, its title, its line and the way in.
 type sideInput struct {
-	Kind  string  `json:"kind"`
-	Title letters `json:"title"`
-	Line  string  `json:"line"`
-	WayIn string  `json:"way_in"`
+	Kind  string     `json:"kind"`
+	Title titleInput `json:"title"`
+	Line  string     `json:"line"`
+	WayIn string     `json:"way_in"`
 }
 
-// postInput is a post's card as the template reads it.
+// postInput is a post's card as the template reads it: the cards' mark in block letters, and its words.
 type postInput struct {
-	Kind   string  `json:"kind"`
-	Mark   letters `json:"mark"`
-	Day    string  `json:"day"`
-	Series string  `json:"series"`
-	Title  string  `json:"title"`
-	Lead   string  `json:"lead"`
-	WayIn  string  `json:"way_in"`
+	Kind   string      `json:"kind"`
+	Mark   arrangement `json:"mark"`
+	Day    string      `json:"day"`
+	Series string      `json:"series"`
+	Title  string      `json:"title"`
+	Lead   string      `json:"lead"`
+	WayIn  string      `json:"way_in"`
 }
 
-// letters are words in the name's block letters (look.NameFont) as the template draws them: the words, which it sets as
-// text where the font does not draw every letter of a name and so gives no lines; the lines they stand on, each of the
-// pieces it may break between, as a project's name breaks after a hyphen; the cells of the cursor after them, none
-// where none follows; and the font's gaps, of columns between two pieces and of half rows between two lines.
-type letters struct {
-	Words           string       `json:"words"`
-	Lines           []letterLine `json:"lines"`
-	CursorCells     int          `json:"cursor_cells"`
-	GapCells        int          `json:"gap_cells"`
-	LineGapHalfRows int          `json:"line_gap_half_rows"`
+// titleInput is a title of the résumé's side: its words, and the arrangements it may stand in, in block letters, the
+// first on one line, of which the template takes the first that fits; none where the font does not draw every letter
+// of a name, which the template then sets in words.
+type titleInput struct {
+	Words        string        `json:"words"`
+	Arrangements []arrangement `json:"arrangements"`
 }
 
-// letterLine is a line of block letters: the pieces it is made of, side by side.
-type letterLine struct {
-	Pieces []letterPiece `json:"pieces"`
+// arrangement is block letters on lines as the template places them (look.Drawing): the lines' words, the drawing's
+// width, in cells, how far down its ink reaches, in half rows, its runs of filled cells, and its cursor, none where
+// none follows.
+type arrangement struct {
+	Lines      []string    `json:"lines"`
+	Width      int         `json:"width"`
+	Foot       int         `json:"foot"`
+	Rectangles []rectangle `json:"rectangles"`
+	Cursor     *rectangle  `json:"cursor"`
 }
 
-// letterPiece is a piece of block letters as its half rows, top to bottom, each a column's half filled or empty.
-type letterPiece struct {
-	HalfRows [][]bool `json:"half_rows"`
+// rectangle is a run of a drawing's filled cells, or its cursor, in cells across and half rows down.
+type rectangle struct {
+	Left   int `json:"left"`
+	Top    int `json:"top"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
 }
 
 // inputOf is a card's facts as the template reads them; a fault where the block letters cannot draw the cards' mark,
@@ -172,15 +188,15 @@ type letterPiece struct {
 func inputOf(facts Facts) (any, error) {
 	switch typed := facts.(type) {
 	case Resume:
-		return sideInput{Kind: kindResume, Title: nameLetters(typed.Name), Line: typed.Line, WayIn: typed.WayIn}, nil
+		return sideInput{Kind: kindResume, Title: nameTitle(typed.Name), Line: typed.Line, WayIn: typed.WayIn}, nil
 	case Project:
-		pieces := slices.DeleteFunc(strings.SplitAfter(strings.ToUpper(typed.Name), nameBreak), func(piece string) bool { return piece == "" })
-		return sideInput{Kind: kindProject, Title: lettersOf(typed.Name, [][]string{pieces}), Line: typed.Line, WayIn: typed.WayIn}, nil
+		return sideInput{Kind: kindProject, Title: projectTitle(typed.Name), Line: typed.Line, WayIn: typed.WayIn}, nil
 	case List:
-		mark, err := markLetters(typed.Mark)
-		return sideInput{Kind: kindList, Title: mark, Line: typed.Line, WayIn: typed.WayIn}, err
+		mark, err := markArrangement(typed.Mark)
+		title := titleInput{Words: typed.Mark, Arrangements: []arrangement{mark}}
+		return sideInput{Kind: kindList, Title: title, Line: typed.Line, WayIn: typed.WayIn}, err
 	case Post:
-		mark, err := markLetters(typed.Mark)
+		mark, err := markArrangement(typed.Mark)
 		return postInput{
 			Kind: kindPost, Mark: mark, Day: typed.Day, Series: typed.Series, Title: typed.Title, Lead: typed.Lead, WayIn: typed.WayIn,
 		}, err
@@ -188,50 +204,70 @@ func inputOf(facts Facts) (any, error) {
 	return nil, nil
 }
 
-// markLetters are the cards' mark in block letters; a fault where the font does not draw every letter of it.
-func markLetters(mark string) (letters, error) {
-	drawn := lettersOf(mark, [][]string{{strings.ToUpper(mark)}})
-	if len(drawn.Lines) == 0 {
-		return drawn, fmt.Errorf("%w: %q", errUndrawnMark, mark)
-	}
-	return drawn, nil
-}
-
-// lettersOf are words in the name's font, on lines, each of its pieces: no lines where the font does not draw every
-// letter of them.
-func lettersOf(words string, lines [][]string) letters {
-	drawn := letters{
-		Words: words, Lines: make([]letterLine, 0, len(lines)), CursorCells: 0,
-		GapCells: look.GlyphGap, LineGapHalfRows: look.HalvesInRow * look.BannerLineGap,
-	}
-	font := look.NameFont()
-	for _, line := range lines {
-		pieces := make([]letterPiece, 0, len(line))
-		for _, piece := range line {
-			banner := font.Banner([]string{piece})
-			if len(banner) == 0 {
-				drawn.Lines = []letterLine{}
-				return drawn
-			}
-			pieces = append(pieces, letterPiece{HalfRows: look.HalfRows(banner)})
-		}
-		drawn.Lines = append(drawn.Lines, letterLine{Pieces: pieces})
-	}
-	return drawn
-}
-
-// nameLetters are the author's name in block letters on the lines the profile breaks it into, each whole, the cursor
-// after it as wide as its last letter, as the page draws the name; no cursor where it is set as text.
-func nameLetters(name string) letters {
+// nameTitle is the author's name in block letters on the lines the profile breaks it into, the cursor after it, as
+// wide as its last letter, as the page draws the name.
+func nameTitle(name string) titleInput {
 	lines := look.NameLines(name)
-	pieces := make([][]string, 0, len(lines))
-	for _, line := range lines {
-		pieces = append(pieces, []string{line})
+	font := look.NameFont()
+	drawing, drawn := font.Draw(lines)
+	if !drawn {
+		return titleInput{Words: name, Arrangements: []arrangement{}}
 	}
-	drawn := lettersOf(name, pieces)
-	if len(drawn.Lines) > 0 {
-		last, _ := utf8.DecodeLastRuneInString(lines[len(lines)-1])
-		drawn.CursorCells = look.NameFont().LetterWidth(last)
+	last, _ := utf8.DecodeLastRuneInString(lines[len(lines)-1])
+	return titleInput{Words: name, Arrangements: []arrangement{arrangementOf(lines, drawing.WithCursor(font.LetterWidth(last)))}}
+}
+
+// projectTitle is a project's name in block letters: on one line, then broken once after each hyphen in turn, onto two.
+func projectTitle(name string) titleInput {
+	words := strings.ToUpper(name)
+	pieces := slices.DeleteFunc(strings.SplitAfter(words, nameBreak), func(piece string) bool { return piece == "" })
+	arrangements := []arrangement{}
+	for _, lines := range slices.Concat([][]string{{words}}, breaksOf(pieces)) {
+		drawing, drawn := look.NameFont().Draw(lines)
+		if !drawn {
+			return titleInput{Words: name, Arrangements: []arrangement{}}
+		}
+		arrangements = append(arrangements, arrangementOf(lines, drawing))
 	}
-	return drawn
+	return titleInput{Words: name, Arrangements: arrangements}
+}
+
+// breaksOf are pieces broken once onto two lines, at each place between two of them in turn.
+func breaksOf(pieces []string) [][]string {
+	breaks := [][]string{}
+	for at := 1; at < len(pieces); at++ {
+		breaks = append(breaks, []string{strings.Join(pieces[:at], ""), strings.Join(pieces[at:], "")})
+	}
+	return breaks
+}
+
+// markArrangement is the cards' mark in block letters, on one line; a fault where the font does not draw every letter
+// of it.
+func markArrangement(mark string) (arrangement, error) {
+	lines := []string{strings.ToUpper(mark)}
+	drawing, drawn := look.NameFont().Draw(lines)
+	if !drawn {
+		return arrangementOf(nil, drawing), fmt.Errorf("%w: %q", errUndrawnMark, mark)
+	}
+	return arrangementOf(lines, drawing), nil
+}
+
+// arrangementOf is a drawing of lines of block letters as the template places it.
+func arrangementOf(lines []string, drawing look.Drawing) arrangement {
+	placed := arrangement{
+		Lines: lines, Width: drawing.Width, Foot: drawing.Foot(), Rectangles: make([]rectangle, 0, len(drawing.Rectangles)), Cursor: nil,
+	}
+	for _, run := range drawing.Rectangles {
+		placed.Rectangles = append(placed.Rectangles, rectangleOf(run))
+	}
+	if drawing.Cursor != nil {
+		cursor := rectangleOf(*drawing.Cursor)
+		placed.Cursor = &cursor
+	}
+	return placed
+}
+
+// rectangleOf is a rectangle of a drawing as the template places it.
+func rectangleOf(drawn look.Rectangle) rectangle {
+	return rectangle{Left: drawn.Left, Top: drawn.Top, Width: drawn.Width, Height: drawn.Height}
 }

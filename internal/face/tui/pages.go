@@ -28,9 +28,9 @@ type readerPlace struct {
 }
 
 // tabPosition is where a reader stands in a tab: how far down it they scrolled; on the blog's list the link the keys
-// stand on, counted from its first tile, so nought stands on that tile as the list opens and the head's links count
-// below it; and the section the command line last went to, by its anchor, none where it went to none, as a page's
-// address names the place a link went to.
+// stand on, counted from the link it opens on, so nought stands there as the list opens and the head's links before
+// its first tile count below it; and the section the command line last went to, by its anchor, none where it went to
+// none, as a page's address names the place a link went to.
 type tabPosition struct {
 	scroll int
 	link   int

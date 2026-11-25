@@ -50,19 +50,19 @@ type tab struct {
 }
 
 // laidTab is a tab laid out: its lines; on the blog's list the links a key goes to, in reading order, the head's then
-// the tiles', the place of the first tile among them, where the keys stand as the list opens, and the groups whose
-// names stay in sight while their tiles scroll; the column what stays in sight over the lines' left part ends at, gap
-// and all, the groups' names' column or a post's Outline's, where the tab has one; and the line each named section
-// starts at, a post's heading's and a series' group's, which a place of the page goes to; and on a post its Outline,
-// none on any other tab.
+// the tiles', the place among them of the one the keys stand on as the list opens, and the groups whose names stay in
+// sight while their tiles scroll; the column what stays in sight over the lines' left part ends at, gap and all, the
+// groups' names' column or a post's Outline's, where the tab has one; and the line each named section starts at, a
+// post's heading's and a series' group's, which a place of the page goes to; and on a post its Outline, none on any
+// other tab.
 type laidTab struct {
-	lines     []line
-	links     []laidLink
-	firstTile int
-	groups    []laidGroup
-	split     int
-	sections  map[string]int
-	outline   laidOutline
+	lines    []line
+	links    []laidLink
+	opening  int
+	groups   []laidGroup
+	split    int
+	sections map[string]int
+	outline  laidOutline
 }
 
 // overLines are the spans of a tab's lines what stays in sight may stand over: each group's of the blog's list, and
@@ -247,7 +247,7 @@ func (layout layout) tab(shown tab) laidTab {
 
 // linesAlone is a tab laid out in lines, with no link, no group of the blog's list and no named section.
 func linesAlone(lines []line) laidTab {
-	return laidTab{lines: lines, links: nil, firstTile: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
+	return laidTab{lines: lines, links: nil, opening: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
 }
 
 // stacked is lines above others, a row of nothing between where there are lines on both sides.

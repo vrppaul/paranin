@@ -124,6 +124,13 @@ func plainRun(text string, shown kind) run {
 	return run{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
 }
 
+// linkRun is a text of a kind as one run that opens a page where the keys stand on it, none where the page is none.
+func linkRun(text string, shown kind, opens document.Page) run {
+	linked := plainRun(text, shown)
+	linked.opens = opens
+	return linked
+}
+
 // opensPage is whether a run is part of a link of the blog's list, which Enter follows.
 func (piece run) opensPage() bool {
 	return piece.opens.Kind != document.PageNone

@@ -144,7 +144,7 @@ func (layout layout) list(head document.Head, blocks []document.Block) laidTab {
 	column := nameColumnOf(layout.width)
 	headLines := layout.blogHead(head, column)
 	links := headLinks(headLines)
-	laid := laidTab{lines: headLines, links: links, firstTile: len(links), groups: []laidGroup{}, split: 0, sections: map[string]int{}, outline: noOutline()}
+	laid := laidTab{lines: headLines, links: links, opening: 0, groups: []laidGroup{}, split: 0, sections: map[string]int{}, outline: noOutline()}
 	if column > 0 {
 		laid.split = column + nameGap
 	}
@@ -162,6 +162,10 @@ func (layout layout) list(head document.Head, blocks []document.Block) laidTab {
 		default:
 			laid = layout.groupBeside(laid, group, column)
 		}
+	}
+	// the list opens on its first tile, after the head's links, or on its first link where it has no tile
+	if len(laid.links) > len(links) {
+		laid.opening = len(links)
 	}
 	return laid
 }
@@ -208,11 +212,11 @@ func (layout layout) waysLines(head document.Head) []line {
 		if way.List == grouped {
 			shown = kindChosen
 		}
-		grouping = append(grouping, opening(chipWord(way.Words, shown), way.List))
+		grouping = append(grouping, chipWord(way.Words, shown, way.List))
 	}
 	filters := make([]word, 0, len(head.Filters))
 	for _, filter := range head.Filters {
-		filters = append(filters, opening(filterWord(filter), filter.Page))
+		filters = append(filters, filterWord(filter, filter.Page))
 	}
 	ways, tags := wordRuns(grouping), tagRuns(filters)
 	if len(tags) == 0 {
@@ -224,51 +228,39 @@ func (layout layout) waysLines(head document.Head) []line {
 	return slices.Concat([]line{ways}, blankLines(), layout.fill(filters, 0))
 }
 
-// filterWord is a filter a head offers as the page writes it (DESIGN.md, BlogHead and Tag): its tag's muted word after
-// a faint hash; the filter the list is filtered by chosen whole, hash and all, a space either side, so it stands as
-// one chip.
-func filterWord(filter document.Filter) word {
+// filterWord is a filter a head offers as the page writes it (DESIGN.md, BlogHead and Tag), opening a page, none where
+// the keys never stand on it: its tag's muted word after a faint hash; the filter the list is filtered by chosen whole,
+// hash and all, a space either side, so it stands as one chip.
+func filterWord(filter document.Filter, opens document.Page) word {
 	if !filter.Current {
-		return tagWord(filter.Tag, kindMuted)
+		return tagWord(filter.Tag, kindMuted, opens)
 	}
-	chosen := chipWord(tagMark+filter.Tag, kindChosen)
+	chosen := chipWord(tagMark+filter.Tag, kindChosen, opens)
 	chosen.spaceBefore = kindChosen
 	return chosen
 }
 
-// chipWord is a text of a kind standing as a chip, a space either side, each space a run of its own, so a link's ground
-// and underline keep to the text: lipgloss draws the spaces of an underlined run without their reversal.
-func chipWord(text string, shown kind) word {
+// chipWord is a text of a kind standing as a chip, opening a page: a space either side, each a run of its own that
+// opens none, so a link's ground and underline keep to the text, as lipgloss draws the spaces of an underlined run
+// without their reversal.
+func chipWord(text string, shown kind, opens document.Page) word {
 	padding := plainRun(space, shown)
-	return word{runs: []run{padding, plainRun(text, shown), padding}, highlightBefore: false, spaceBefore: kindText}
+	return word{runs: []run{padding, linkRun(text, shown, opens), padding}, highlightBefore: false, spaceBefore: kindText}
 }
 
-// opening is a word that opens a page where the keys stand on it, each of its runs that holds a letter, so a chip's
-// padding stays out of the link.
-func opening(shown word, page document.Page) word {
-	runs := make([]run, 0, len(shown.runs))
-	for _, piece := range shown.runs {
-		if strings.TrimSpace(piece.text) != "" {
-			piece.opens = page
-		}
-		runs = append(runs, piece)
-	}
-	shown.runs = runs
-	return shown
-}
-
-// tagWords are tags as the page writes them (DESIGN.md, Tag), each tag's word of a kind.
+// tagWords are tags as the page writes them (DESIGN.md, Tag), each tag's word of a kind, opening no page.
 func tagWords(tags []string, wordKind kind) []word {
 	words := make([]word, 0, len(tags))
 	for _, tag := range tags {
-		words = append(words, tagWord(tag, wordKind))
+		words = append(words, tagWord(tag, wordKind, document.PageOf(document.PageNone)))
 	}
 	return words
 }
 
-// tagWord is a tag as the page writes it (DESIGN.md, Tag): its word after a faint hash, the word of a kind.
-func tagWord(tag string, wordKind kind) word {
-	return word{runs: []run{plainRun(tagMark, kindFaint), plainRun(tag, wordKind)}, highlightBefore: false, spaceBefore: kindText}
+// tagWord is a tag as the page writes it (DESIGN.md, Tag), opening a page: its word after a faint hash, the word of a
+// kind.
+func tagWord(tag string, wordKind kind, opens document.Page) word {
+	return word{runs: []run{linkRun(tagMark, kindFaint, opens), linkRun(tag, wordKind, opens)}, highlightBefore: false, spaceBefore: kindText}
 }
 
 // tagRuns are filters on one line, each two the page's gap apart.
@@ -350,7 +342,7 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 		rows = append(rows, row)
 	}
 	framed := grid.framed(rows)
-	laid := laidTab{lines: framed.lines, links: []laidLink{}, firstTile: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
+	laid := laidTab{lines: framed.lines, links: []laidLink{}, opening: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
 	for index, post := range posts {
 		if out, isOut := post.Readiness.(document.PostOut); isOut {
 			row, left := index/grid.columns, index%grid.columns*grid.width+textWidth(frameDown)
@@ -475,9 +467,7 @@ func titleLines(lines []line, page document.Page) []line {
 		for _, piece := range shown[1:] {
 			text.WriteString(piece.text)
 		}
-		title := plainRun(text.String(), kindStrong)
-		title.opens = page
-		whole = append(whole, line{shown[0], title})
+		whole = append(whole, line{shown[0], linkRun(text.String(), kindStrong, page)})
 	}
 	return whole
 }
@@ -617,11 +607,10 @@ func stuckNames(groups []paintedGroup, scroll, pageRows int) []stuckLine {
 	return stuck
 }
 
-// linkStoodOn is the place among a tab's links of the one the keys stand on: the tab's position counts it from the
-// first tile, held among them.
+// linkStoodOn is the place among a list's links of the one the keys stand on, which the tab's position counts from the
+// link the list opens on.
 func (model Model) linkStoodOn(place int) int {
-	laid := model.laid[place]
-	return min(max(laid.firstTile+model.positions[place].link, 0), len(laid.links)-1)
+	return model.laid[place].opening + model.positions[place].link
 }
 
 // pointedLink is the link the keys stand on in a tab, the zero link where the tab holds no links.
@@ -678,7 +667,7 @@ func (model Model) choseLink(chosen int) Model {
 	marks := model.drawn.tabs[model.chosen].marks
 	marks.pointed = link
 	model.positions = slices.Clone(model.positions)
-	model.positions[model.chosen].link = chosen - laid.firstTile
+	model.positions[model.chosen].link = chosen - laid.opening
 	return model.repaintedLines(slices.Concat(linesBetween(left.top, left.bottom), linesBetween(link.top, link.bottom)), marks)
 }
 

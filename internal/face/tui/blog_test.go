@@ -595,13 +595,15 @@ func TestTheLinkTheKeysStandOnStaysInSight(test *testing.T) {
 		moved   Model
 		resized int
 		// seen is what shows the link in sight: the day set into a tile's top edge, or a grouping's word
-		seen   string
-		footer string
+		seen string
+		// opened is what the screen shows after Enter: the post's window in the footer, or the day of the first tile of
+		// the list by year, which the list by series shows out of sight
+		opened string
 	}{
-		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, seen: "5 Nov 2026", footer: "2:first*"},
-		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, seen: "years", footer: listAlone},
-		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, seen: "3 Nov 2026", footer: "2:third*"},
-		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, seen: "4 Nov 2026", footer: "2:second*"},
+		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, seen: "5 Nov 2026", opened: "2:first*"},
+		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, seen: "years", opened: "1 Nov 2026"},
+		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, seen: "3 Nov 2026", opened: "2:third*"},
+		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, seen: "4 Nov 2026", opened: "2:second*"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -610,8 +612,8 @@ func TestTheLinkTheKeysStandOnStaysInSight(test *testing.T) {
 			if screen := screenOf(test, model); !strings.Contains(screen, testCase.seen) {
 				test.Errorf("the screen =\n%s\nwant %q in sight", screen, testCase.seen)
 			}
-			if footer := footerOf(screenOf(test, pressed(test, model, "enter"))); !strings.Contains(footer, testCase.footer) {
-				test.Errorf("after Enter the footer = %q, want %q", footer, testCase.footer)
+			if screen := screenOf(test, pressed(test, model, "enter")); !strings.Contains(screen, testCase.opened) {
+				test.Errorf("after Enter the screen =\n%s\nwant %q on it", screen, testCase.opened)
 			}
 		})
 	}
@@ -707,6 +709,39 @@ func TestTheKeysGoFromLinkToLink(test *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// A list with no post out, as the blog before its first, opens on its first link, the grouping by year, as gg goes to
+// it: Enter there opens the list by year, and after j the list by series.
+func TestAListWithNoPostOpensOnItsFirstLink(test *testing.T) {
+	// the lead of each list, which tells the two apart
+	const (
+		byYearLead   = "Every post by its year."
+		bySeriesLead = "Every post by its series."
+	)
+	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
+	byYear := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlog, Slug: "", Tab: ""}, textOf("blog")), Blocks: nil}
+	byYear.Head.Lead = textOf(byYearLead)
+	bySeries := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageBlogSeries, Slug: "", Tab: ""}, textOf("blog")), Blocks: nil}
+	bySeries.Head.Lead = textOf(bySeriesLead)
+	list := commanded(test, handModel(test, leastWidth, leastHeight, resume, byYear, bySeries), "e blog")
+	cases := []struct {
+		name  string
+		keys  []string
+		holds string
+		lacks string
+	}{
+		{name: "Enter where it opens", keys: []string{"enter"}, holds: byYearLead, lacks: bySeriesLead},
+		{name: "j to the second grouping", keys: []string{"j", "enter"}, holds: bySeriesLead, lacks: byYearLead},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			screen := screenOf(test, pressed(test, list, testCase.keys...))
+			if !strings.Contains(screen, testCase.holds) || strings.Contains(screen, testCase.lacks) {
+				test.Errorf("after %q the screen =\n%s\nwant %q on it and no %q", testCase.keys, screen, testCase.holds, testCase.lacks)
+			}
+		})
 	}
 }
 

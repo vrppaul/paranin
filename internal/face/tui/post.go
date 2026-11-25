@@ -146,7 +146,7 @@ func (layout layout) post(post document.Document) laidTab {
 		lines = slices.Concat(lines, make([]line, partRows), shiftedLines(footed.panes(*place, shape.sourcesBeside()), shape.articleStart()))
 	}
 	shift := (layout.width - width) / sides
-	laid := laidTab{lines: shiftedLines(lines, shift), links: nil, firstTile: 0, groups: nil, split: 0, sections: body.headings, outline: noOutline()}
+	laid := laidTab{lines: shiftedLines(lines, shift), links: nil, opening: 0, groups: nil, split: 0, sections: body.headings, outline: noOutline()}
 	if shape == outlinedPost {
 		outlined := layout
 		outlined.width = outlineHang + look.Rail
@@ -223,7 +223,7 @@ func (layout layout) postFacts(head document.Head) []line {
 	if len(head.Filters) > 0 {
 		tags := []word{}
 		for _, filter := range head.Filters {
-			tags = append(tags, filterWord(filter))
+			tags = append(tags, filterWord(filter, document.PageOf(document.PageNone)))
 		}
 		facts = append(facts, postFact{label: labels.Tags, value: tags})
 	}

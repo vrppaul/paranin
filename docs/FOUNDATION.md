@@ -295,10 +295,9 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
 - **Typst replaces headless Chrome** (Decided, D10) for `cv.pdf`, the tailored CV (phase 5)
   and a social card per page and post. One tool makes PDF and PNG from
   markup, with no browser. It runs as a program beside ours, so the runtime
-  image and CI carry a pinned `typst` and the fonts. The cards are drawn by
-  the build, beside the page's files, so the server draws none (ADR-0005;
-  owner, 2026-11-25). `cv.pdf` is drawn when a snapshot loads, into a disk
-  cache, by a worker, never inline in the reload. A tailored CV is drawn on
+  image and CI carry a pinned `typst` and the fonts. The cards and
+  `cv.pdf` are drawn by the build, beside the page's files, so the server
+  draws neither (ADR-0005; owner, 2026-11-25). A tailored CV is drawn on
   request by a bounded worker with a per-IP limit. The `pdftotext` check
   from `scripts/build-assets.sh` becomes a test.
 - **Runtime state.** The contact form delivers to Telegram and appends to a

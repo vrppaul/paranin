@@ -843,7 +843,7 @@ included (D8). Their widgets are code, built by the page's toolchain.
 ## ADR-0005 — Typst for the PDF and the cards
 
 **Status:** accepted (2026-11-01); amended (owner, 2026-11-25): the build
-draws the cards. [FOUNDATION](FOUNDATION.md) §5.2, D10.
+draws the cards and `cv.pdf`. [FOUNDATION](FOUNDATION.md) §5.2, D10.
 
 ### Context
 
@@ -872,10 +872,9 @@ description on request, and every page and post needs a card of its own.
   its way in, written from the document model like any face's. Typst
   measures the words it sets, so the template, not Go, fits a title to its
   lines.
-- `cv.pdf` is drawn when a snapshot loads, into a disk cache, by a worker,
-  never inline in the reload. A tailored CV is drawn on request by a
-  bounded worker with a per-IP limit, and Typst, pinned in the runtime
-  image, comes to the server with it.
+- `cv.pdf` is drawn by the build as the cards are (owner, 2026-11-25). A
+  tailored CV is drawn on request by a bounded worker with a per-IP limit,
+  and Typst, pinned in the runtime image, comes to the server with it.
 - Typst is pinned in CI and in development; the command refuses another
   version.
 - The text of the PDF is checked by a test, as `pdftotext` checked it.
@@ -885,7 +884,7 @@ description on request, and every page and post needs a card of its own.
 - One tool for PDF and PNG, with no browser in production or in the build.
 - A card shows only what the content says, so it is a build's output, as
   the page's files are: the server reads a finished folder and builds
-  nothing (ADR-0004), with no worker or cache for the cards.
+  nothing (ADR-0004), with no worker or cache for the cards or `cv.pdf`.
 - A template is Typst written once and read as Typst; facts as data need no
   escaping of what an author writes into Typst's markup.
 

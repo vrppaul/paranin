@@ -360,7 +360,7 @@ templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
 		@writer.facts(parts.brief)
 		<div class="actions">
 			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
-			@command(writer.frame.composed.SSH.Command)
+			@command(writer.frame.ssh.Command)
 		</div>
 		if len(parts.profiles) > 0 {
 			<p class="profiles">

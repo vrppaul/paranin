@@ -34,7 +34,7 @@ func (writer PageWriter) List(composed document.Document) string {
 	page := head.Page
 	around := writer.frame
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(page, document.PageOf(document.PageNone)), page)
-	foot := footLineOf(around, around.composed.SSHWayTo(head), around.sessionsOf(page), windows, page, document.PlacesOf(composed))
+	foot := footLineOf(around, around.sshWays.SSHWayTo(head), around.sessionsOf(page), windows, page, document.PlacesOf(composed))
 	main := writer.listMain(head, around.groupingsOf(around.groupings, page), composed.Blocks)
 	return rendered(writer.page(head.Language, writer.metadataOf(head, page, around.listTitle(head), nil), main, foot))
 }

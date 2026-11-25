@@ -160,7 +160,7 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 func (writer PageWriter) postFoot(head document.Head, own []document.Place) footLine {
 	around, page := writer.frame, head.Page
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(around.blogList, page), page)
-	return footLineOf(around, around.composed.SSHWayTo(head), around.sessionsOf(page), windows, page, own)
+	return footLineOf(around, around.sshWays.SSHWayTo(head), around.sessionsOf(page), windows, page, own)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from

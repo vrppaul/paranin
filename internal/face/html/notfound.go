@@ -38,7 +38,7 @@ func NewNotFound(site routes.Site, status string, build *assets.Build, composed 
 		status:   status,
 		language: composed.Language,
 		included: build.Includes(assets.Site),
-		foot:     footLineOf(around, composed.SSH, around.sessionsOf(resume), nil, resume, nil),
+		foot:     footLineOf(around, around.ssh, around.sessionsOf(resume), nil, resume, nil),
 		heading:  titleHeading(status, text(status)),
 	}
 }

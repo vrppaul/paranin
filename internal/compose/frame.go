@@ -453,12 +453,15 @@ func sshCommand(host, user string) string {
 
 // SSHCommandTo is the command a terminal reaches a page by over ssh. A page of the blog is reached as the user the
 // session opens it for (D26), the name :e opens it by too (blogPages): a post's current version by its number, any
-// other page of the blog by its path, each in its language's folder. Any other page is reached by the site's own
-// command, which opens the résumé.
+// other page of the blog by its path, each in its language's folder; a filtered list, which has no name of its own,
+// by the list it filters. Any other page is reached by the site's own command, which opens the résumé.
 func (frame Frame) SSHCommandTo(head document.Head) string {
 	page := head.Page
 	if !page.InBlog() {
 		return sshCommand(frame.sshHost, anyUser)
+	}
+	if page.Kind == document.PageTagFilter {
+		page = document.PageOf(document.PageBlog).InLanguage(page.Translation)
 	}
 	path := routes.Path(page, routes.FormatChosen)
 	if page.Kind == document.PagePost && page.Revision == "" {

@@ -22,6 +22,7 @@ func TestAPageIsReachedOverSSHByTheNameItsSessionOpens(test *testing.T) {
 		{name: "a project", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "", Revision: "", Translation: ""}, want: "ssh example.test", gives: "The résumé as an app in a terminal."},
 		{name: "the list", page: document.PageOf(document.PageBlog), want: "ssh blog@example.test", gives: "The blog in a terminal."},
 		{name: "the list by series", page: document.PageOf(document.PageBlogSeries), want: "ssh blog/series@example.test", gives: "The blog in a terminal."},
+		{name: "the list filtered by a tag", page: document.TagFilter("reading"), want: "ssh blog@example.test", gives: "The blog in a terminal."},
 		{name: "a post", page: document.PostPage(fixturePostSlug), want: "ssh blog/1@example.test", gives: "This post in a terminal."},
 		{name: "a translation", page: document.PostPage(fixturePostSlug).InLanguage("ru"), want: "ssh ru/blog/1@example.test", gives: "Этот пост в терминале."},
 	}

@@ -1745,6 +1745,11 @@ a.tag {
     color var(--quick);
 }
 
+/* its ring stands clear of the ground its shadows paint, as far again as any ring stands from what it rings */
+a.tag:focus-visible {
+  outline-offset: calc(var(--nudge) + var(--focus-width));
+}
+
 a.tag:not([aria-current]):hover {
   background: var(--sunk);
   box-shadow:

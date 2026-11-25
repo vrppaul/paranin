@@ -8,7 +8,7 @@ paths:
 
 How the page is built is read in `web/vite.config.ts`; how the server reads the build, in `internal/assets`. What eslint and stylelint refuse, and why, is in `web/eslint.config.js` and `web/stylelint.config.js`.
 
-- Every entry the site names is an input of `web/vite.config.ts` and a constant of `internal/assets`, and only there: a build that lacks one is refused when it loads, and CI loads each build it makes (`paranin check content build/web`).
+- Every entry the site names is an input of `web/vite.config.ts` and a constant of `internal/assets`, and only there: a build that lacks one is refused when it loads, and CI loads each build (`paranin check content build/web build/cards`).
 - The look of a part is its section of `DESIGN.md`, a reference read for the part in hand, not whole.
 - A colour, a size, a time or a weight with a meaning is a token of `design/tokens.yaml`, which `scripts/tokens` writes into `web/src/tokens/tokens.css`; every other stylesheet names a token, never a value.
 - A unit, a media query's width or a container query joins stylelint's lists with its first user, in the chunk that writes it; a kind of token the generator does not take yet, it learns with the token's first user.

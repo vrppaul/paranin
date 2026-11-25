@@ -14,6 +14,7 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -169,9 +170,8 @@ func (site notifiedSite) reload(test *testing.T) {
 func notify(test *testing.T, toldAt endpoint, start func(test *testing.T, folder string)) notifiedSite {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	start(test, folder)
-	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, func(loaded *content.Snapshot) error {
-		return compose.Check(loaded, time.Now())
-	})
+	folders := release.Folders{Content: folder, Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
+	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

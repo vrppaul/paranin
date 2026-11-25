@@ -11,12 +11,14 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// How often a test's watch looks at the folders, and the files of the content a test renames and hides beside
+// How often a test's watch looks at the folders, the files of the content a test renames and hides beside, and the
+// card it draws
 const (
 	lookInterval = time.Second
 	wordsFile    = "i18n/en.yaml"
 	renamedWords = "i18n/en.renamed.yaml"
 	swapFile     = ".profile.yaml.swp"
+	drawnCard    = "0123456789abcdef.png"
 )
 
 // A change in the folders is taken once it has held still for one look, and once only; folders that do not change
@@ -30,13 +32,14 @@ func TestAChangeIsTakenOnceHeldStill(test *testing.T) {
 		{name: "a file written", change: writeAnotherAuthor, want: 1},
 		{name: "a file renamed, its time kept", change: renameWords, want: 1},
 		{name: "a hidden file written", change: writeSwap, want: 0},
+		{name: "a card written", change: writeCard, want: 1},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			synctest.Test(test, func(test *testing.T) {
 				folders := fixtureCopies(test)
 				watching, stop := context.WithCancel(context.Background())
-				changes := Watch(watching, folders, lookInterval)
+				changes := Watch(watching, folders.Paths(), lookInterval)
 				time.Sleep(2 * lookInterval)
 				synctest.Wait()
 				unchanged := len(changes)
@@ -70,7 +73,7 @@ func TestAChangeMadeAsTheWatchBeginsIsTaken(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		folders := fixtureCopies(test)
 		watching, stop := context.WithCancel(context.Background())
-		changes := Watch(watching, folders, lookInterval)
+		changes := Watch(watching, folders.Paths(), lookInterval)
 		writeAnotherAuthor(test, folders)
 		time.Sleep(2 * lookInterval)
 		synctest.Wait()
@@ -88,7 +91,7 @@ func TestAChangeStillGoingOnIsTakenAfterItsLastWrite(test *testing.T) {
 	synctest.Test(test, func(test *testing.T) {
 		folders := fixtureCopies(test)
 		watching, stop := context.WithCancel(context.Background())
-		changes := Watch(watching, folders, lookInterval)
+		changes := Watch(watching, folders.Paths(), lookInterval)
 		for _, write := range []struct{ original, replacement string }{
 			{original: authorName, replacement: "name: Mira Other"},
 			{original: "name: Mira Other", replacement: "name: Mira Third"},
@@ -122,6 +125,13 @@ func renameWords(test *testing.T, folders Folders) {
 	if err := os.Rename(filepath.Join(folders.Content, wordsFile), filepath.Join(folders.Content, renamedWords)); err != nil {
 		test.Fatalf("rename %s: %v", wordsFile, err)
 	}
+}
+
+// writeCard writes a card in the cards' folder, as their drawing does.
+//
+//wrapper:a case of the table names the change it writes
+func writeCard(test *testing.T, folders Folders) {
+	fixtures.WriteIn(test, folders.Cards, drawnCard, authorName)
 }
 
 // writeSwap writes a swap file beside the profile, as an editor keeps one.

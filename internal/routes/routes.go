@@ -1,6 +1,6 @@
-// Package routes writes every address of the site, from a document's link target and a format, or a picture of the
-// site, and reads a request's query into the address of the filtered list it names, so no face and no host writes a
-// path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
+// Package routes writes every address of the site, from a document's link target and a format, a picture of the
+// site or a page's card, and reads a request's query into the address of the filtered list it names, so no face and
+// no host writes a path of its own (docs/ARCHITECTURE.md, ADR-0003). It reads document alone.
 package routes
 
 import (
@@ -443,6 +443,15 @@ func PicturePath(picture Picture) string {
 		return askedByNameFile
 	}
 	return ""
+}
+
+// The folder the cards stand in, from the site's root, which no page's path opens with: a tab of the résumé stands at
+// the root by its name alone, and a language's folder is named by two or three letters
+const cardsFolder = "/cards/"
+
+// CardPath is where a page's card is served, by the name of its file, which changes with what the card shows.
+func CardPath(name string) string {
+	return cardsFolder + name
 }
 
 // CrawlerPath is where a file a crawler asks for by name is served, from the site's root; the zero file has none.

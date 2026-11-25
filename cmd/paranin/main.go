@@ -1,32 +1,39 @@
 // Command paranin is the composition root of the site: it builds every part and hands each what it needs.
 //
-//	paranin check content              loads a content folder as the site would and lists every fault in it
-//	paranin check content build/web    loads a content folder and the page's build as one release, the same way
-//	paranin serve content build/web    serves the site from a content folder and the page's build over HTTP and SSH
-//	paranin serve --drafts content build/web    the same, the drafts and posts dated later too, for their author
-//	                                            to read, a draft marked as one and a post dated later by its day
-//	paranin revise content <slug>               takes a revision of a post out, its current version, beside it
+//	paranin check content                        loads a content folder as the site would and lists every fault in it
+//	paranin check content build/web build/cards  loads it, the page's build and the cards as one release, the same way
+//	paranin serve content build/web build/cards  serves the site from a release's folders over HTTP and SSH
+//	paranin serve --drafts content ...           the same, the drafts and posts dated later too, for their author to
+//	                                             read, a draft marked as one and a post dated later by its day
+//	paranin cards content build/cards            draws each page's card into the cards' folder, with their manifest
+//	paranin revise content <slug>                takes a revision of a post out, its current version, beside it
 //
-// revise takes --language and a language's tag, as ru, for a post's translation into it.
+// cards takes --watch to draw them again each time the content changes, until stopped; revise takes --language and a
+// language's tag, as ru, for a post's translation into it.
 //
 // check prints the faults, one a line, and where there are none what the content warns of, a translation older than its
 // original, which refuses nothing; serve logs it at each load. The commit's hook checks the content alone, and CI the
 // release it builds. Every load, check's and serve's, holds the content to no two of the site's pages sharing an
 // address, and to no post's link inside the site leading to no page or no section of one, now or as each post dated
 // later comes out, the drafts' among them, which the content alone cannot know, since routes writes the addresses and
-// compose names the anchors.
+// compose names the anchors; a release's load holds its cards to one for every page a preview shows, now or as a post
+// dated later comes out, which cards draws: it composes the site as the public reads it once the last such post is
+// out, has face/card draw each page's card with Typst at its pinned version, set in design/fonts/jetbrains-mono, and
+// writes the folder whole, each card by the hash of what it shows, then the manifest naming each page's, then every
+// other file of the folder taken away; where the content has faults or a card is not drawn, it writes nothing.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). Where PARANIN_INDEXNOW_KEY sets a key, of IndexNow's form, and the drafts are not served,
 // serve serves the key's file and tells IndexNow each address to read again as a reload takes or a post dated later
-// comes out. serve loads both folders again, as one release, on SIGHUP and once a change in either holds
-// still, as `pnpm --dir web watch` writes the page again, keeping what it serves when either has faults, and stops
-// on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or the wait for
-// them runs out. revise writes the post's title, lead and text as they stand to revisions/<day>.<language>.md beside
-// it, the day its current version came out, dates the post as updated on the day it runs, and prints the file's path:
-// its author then rewrites the post, which loads as its new version. The program exits 0 when it did what it was
-// asked, 1 when the content or the build has faults, the IndexNow key is of another form, the server failed, or no
-// revision could be taken, and 2 when the command itself is written wrong.
+// comes out. serve loads the three folders again, as one release, on SIGHUP and once a change in any holds still, as
+// `pnpm --dir web watch` writes the page again and `cards --watch` the cards, keeping what it serves when any has
+// faults, and stops on SIGINT or SIGTERM once the requests in hand are answered and the sessions open have ended, or
+// the wait for them runs out. revise writes the post's title, lead and text as they stand to
+// revisions/<day>.<language>.md beside it, the day its current version came out, dates the post as updated on the day
+// it runs, and prints the file's path: its author then rewrites the post, which loads as its new version. The program
+// exits 0 when it did what it was asked, 1 when the content, the build or the cards have faults, the IndexNow key is
+// of another form, the server failed, no card could be drawn, or no revision could be taken, and 2 when the command
+// itself is written wrong.
 package main
 
 import (
@@ -63,19 +70,22 @@ const (
 	usageMistaken = 2
 )
 
-// How the command is written: the program, the command, the content folder, and the build folder a site is served
-// with
+// How the command is written: the program, the command, the content folder, and the build folder and the cards' folder
+// a site is served with
 const (
 	checkCommand  = "check"
 	serveCommand  = "serve"
+	cardsCommand  = "cards"
 	reviseCommand = "revise"
-	usage         = "usage: paranin check <content folder> [<build folder>] | paranin serve [--drafts] <content folder> <build folder> | " +
+	usage         = "usage: paranin check <content folder> [<build folder> <cards folder>] | " +
+		"paranin serve [--drafts] <content folder> <build folder> <cards folder> | paranin cards [--watch] <content folder> <cards folder> | " +
 		"paranin revise [--language ru] <content folder> <slug>"
-	commandArgument  = 1
-	contentArgument  = 2
-	buildArgument    = 3
-	contentArguments = 3
-	releaseArguments = 4
+	commandArgument      = 1
+	contentArgument      = 2
+	buildArgument        = 3
+	releaseCardsArgument = 4
+	contentArguments     = 3
+	releaseArguments     = 5
 )
 
 // How revise names a post's translation, by the flag of its language; the original, in English, where none is asked
@@ -86,11 +96,12 @@ const (
 	translationName = "%q in %q"
 )
 
-// Who may read and write what revise writes in the content folder, as git checks a file of the repository out: its
-// owner reads and writes, anyone reads, and a folder's owner lists and enters it too
+// Who may read and write what the program writes, a revision in the content folder and a card, as git checks a file of
+// the repository out and a build writes one: its owner reads and writes, anyone reads, and a folder's owner lists and
+// enters it too
 const (
-	revisionMode        = 0o644
-	revisionsFolderMode = 0o755
+	writtenFileMode   = 0o644
+	writtenFolderMode = 0o755
 )
 
 // How revise writes its revision's file: once, and only where none is there yet
@@ -103,14 +114,15 @@ const (
 	postArguments = 2
 )
 
-// How serve is written after its command: the flag that serves the drafts too, then the content folder and the build
-// folder, by their places among the words past the flags
+// How serve is written after its command: the flag that serves the drafts too, then the content folder, the build
+// folder and the cards' folder, by their places among the words past the flags
 const (
-	draftsFlag      = "drafts"
-	draftsUsage     = "serve the drafts too, marked as drafts, for their author to read"
-	contentPlace    = 0
-	buildPlace      = 1
-	servedArguments = 2
+	draftsFlag       = "drafts"
+	draftsUsage      = "serve the drafts too, marked as drafts, for their author to read"
+	contentPlace     = 0
+	buildPlace       = 1
+	servedCardsPlace = 2
+	servedArguments  = 3
 )
 
 // Where the site is served, and the SSH server's host key, unless the environment says otherwise; and over what.
@@ -147,6 +159,7 @@ const (
 	sshKey      = "ssh"
 	contentKey  = "content"
 	buildKey    = "build"
+	cardsKey    = "cards"
 	draftsKey   = "drafts"
 	errorKey    = "error"
 	faultsKey   = "faults"
@@ -193,13 +206,20 @@ func run(arguments []string) int {
 	case command == checkCommand && len(arguments) == contentArguments:
 		return check(arguments[contentArgument], os.Stderr)
 	case command == checkCommand && len(arguments) == releaseArguments:
-		return checkRelease(arguments[contentArgument], arguments[buildArgument], os.Stderr)
+		folders := release.Folders{Content: arguments[contentArgument], Build: arguments[buildArgument], Cards: arguments[releaseCardsArgument]}
+		return checkRelease(folders, os.Stderr)
 	case command == serveCommand:
 		asked, isWritten := servingOf(arguments[contentArgument:])
 		if !isWritten {
 			return usageWrong()
 		}
 		return serve(asked)
+	case command == cardsCommand:
+		asked, isWritten := cardsAskedOf(arguments[contentArgument:])
+		if !isWritten {
+			return usageWrong()
+		}
+		return drawCards(asked)
 	case command == reviseCommand:
 		asked, isWritten := postAskedOf(arguments[contentArgument:])
 		if !isWritten {
@@ -230,9 +250,10 @@ func servingOf(words []string) (servingAsked, bool) {
 	flags.SetOutput(io.Discard)
 	drafts := flags.Bool(draftsFlag, false, draftsUsage)
 	if err := flags.Parse(words); err != nil || flags.NArg() != servedArguments {
-		return servingAsked{folders: release.Folders{Content: "", Build: ""}, drafts: false}, false
+		return servingAsked{folders: release.Folders{Content: "", Build: "", Cards: ""}, drafts: false}, false
 	}
-	return servingAsked{folders: release.Folders{Content: flags.Arg(contentPlace), Build: flags.Arg(buildPlace)}, drafts: *drafts}, true
+	folders := release.Folders{Content: flags.Arg(contentPlace), Build: flags.Arg(buildPlace), Cards: flags.Arg(servedCardsPlace)}
+	return servingAsked{folders: folders, drafts: *drafts}, true
 }
 
 // commandOf is the command the arguments name, or nothing where they name none.
@@ -256,12 +277,14 @@ func check(contentFolder string, warned io.Writer) int {
 	return checked(err, contentFolder)
 }
 
-func checkRelease(contentFolder, buildFolder string, warned io.Writer) int {
-	loaded, err := release.Load(release.Folders{Content: contentFolder, Build: buildFolder}, checkedNow)
+// checkRelease loads a release's folders as the site would, printing to warned what its content warns of where it
+// loads.
+func checkRelease(folders release.Folders, warned io.Writer) int {
+	loaded, err := release.Load(folders, releaseCheckedNow)
 	if err == nil {
-		warn(warned, loaded.Content.Warnings, contentFolder)
+		warn(warned, loaded.Content.Warnings, folders.Content)
 	}
-	return checked(err, contentFolder, buildFolder)
+	return checked(err, folders.Paths()...)
 }
 
 // warn prints what a content folder holds wrong that refuses nothing, after the folder, quoted, one a line; nothing
@@ -361,10 +384,10 @@ func saveRevision(contentFolder string, post content.Post, taken content.Revisio
 // it as it refuses the whole one, which the post's current version's day names, until the post is dated by a later
 // update.
 func writeRevisionIn(root *os.Root, taken content.RevisionFile) error {
-	if err := root.MkdirAll(path.Dir(taken.Path), revisionsFolderMode); err != nil {
+	if err := root.MkdirAll(path.Dir(taken.Path), writtenFolderMode); err != nil {
 		return fmt.Errorf("make the revisions folder of %q: %w", taken.Path, err)
 	}
-	file, err := root.OpenFile(taken.Path, newFileOnly, revisionMode)
+	file, err := root.OpenFile(taken.Path, newFileOnly, writtenFileMode)
 	if err != nil {
 		return fmt.Errorf("make the revision %q: %w", taken.Path, err)
 	}
@@ -395,7 +418,8 @@ func datePostIn(root *os.Root, post content.Post, moment time.Time) error {
 }
 
 // What a file written in place of another is called beside it until it takes the other's place: the other's name and
-// this ending, which a reload refuses as a stray file of a post's folder where one is left
+// this ending, which a reload refuses as a stray file of a post's folder where one is left, and the next drawing of the
+// cards takes away from theirs
 const replacementEnding = ".replacing"
 
 // How a file written in place of another is opened beside it: to write, made new, or emptied where one was left
@@ -445,10 +469,10 @@ func serve(asked servingAsked) int {
 	defer stop()
 	folders := asked.folders
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
-	changes := release.Watch(stopping, folders, lookInterval)
-	store, err := release.Open(folders, checkedNow)
+	changes := release.Watch(stopping, folders.Paths(), lookInterval)
+	store, err := release.Open(folders, releaseCheckedNow)
 	if err != nil {
-		return refused(err, folders.Content, folders.Build)
+		return refused(err, folders.Paths()...)
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	indexNowKey, err := indexNowKeyOf(asked.drafts)
@@ -495,8 +519,8 @@ func serve(asked servingAsked) int {
 		notifier := indexnow.New(store, prepared, logger, indexnow.Settings{Key: indexNowKey, Endpoint: indexNowEndpoint, Client: &http.Client{}})
 		go notifier.Run(stopping, reloaded)
 	}
-	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, draftsKey, asked.drafts,
-		indexNowToldKey, indexNowKey != "")
+	logger.Info("serving", webKey, webAddress, sshKey, sshAddress, contentKey, folders.Content, buildKey, folders.Build, cardsKey, folders.Cards,
+		draftsKey, asked.drafts, indexNowToldKey, indexNowKey != "")
 	return running.watch(stopping)
 }
 

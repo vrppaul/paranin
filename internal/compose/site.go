@@ -105,6 +105,11 @@ func (site Site) Blogs() []Blog {
 	return append([]Blog{site.Own}, site.Translations...)
 }
 
+// Served are the documents of every page the site serves, in every language, each tab and older version among them.
+func (site Site) Served() []document.Document {
+	return site.served
+}
+
 // Frames are the frame of every language, by the translation its pages are in, document.Untranslated the site's own.
 func (site Site) Frames() map[string]Frame {
 	frames := make(map[string]Frame, len(site.Translations)+1)

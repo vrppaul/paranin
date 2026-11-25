@@ -23,6 +23,7 @@ import (
 const (
 	contentFromRoot = "internal/content/testdata/content"
 	buildFromRoot   = "internal/assets/testdata/build"
+	cardsFromRoot   = "internal/assets/testdata/cards"
 	cardFacesFrom   = "design/fonts/jetbrains-mono"
 	moduleFile      = "go.mod"
 	fileMode        = 0o600
@@ -41,6 +42,13 @@ func ContentFolder(test *testing.T) string {
 // the widget's props' schema, as the build writes it from web/tests/widgets/ReadingPace.props.ts.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
+}
+
+// CardsFolder is the folder of the cards' fixture: a manifest naming a card of each page of the fixture content that a
+// preview shows, at the fixture's day and after, the résumé's a file of its own and every other page's one file they
+// share; and a file the manifest names not.
+func CardsFolder(test *testing.T) string {
+	return filepath.Join(moduleRoot(test), cardsFromRoot)
 }
 
 // CardFaces is the folder of the faces the cards are set in, the design's own, not a fixture: a card's drawing is held
@@ -117,6 +125,16 @@ func LoadedBuild(test *testing.T) *assets.Build {
 		test.Fatalf("load the build's fixture: %v", err)
 	}
 	return build
+}
+
+// LoadedCards is the cards' fixture, loaded.
+func LoadedCards(test *testing.T) *assets.Cards {
+	test.Helper()
+	cards, err := assets.LoadCards(os.DirFS(CardsFolder(test)))
+	if err != nil {
+		test.Fatalf("load the cards' fixture: %v", err)
+	}
+	return cards
 }
 
 // moduleRoot is the folder of the module: the nearest above the test's own folder, where go test runs it, that

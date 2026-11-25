@@ -8,6 +8,7 @@ package card
 import (
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 // Facts are what a card shows of its page, in one of two looks, so the résumé and the blog read as two sides of the
@@ -69,6 +70,24 @@ type Writer struct {
 // NewWriter writes the facts of the cards of a site's pages.
 func NewWriter(site compose.Site) Writer {
 	return Writer{frames: site.Frames(), mark: site.Own.Frame.BlogName}
+}
+
+// Card is a page's card to draw: the path its page is served at, which the cards' manifest names it by, and its facts.
+type Card struct {
+	Path  string
+	Facts Facts
+}
+
+// CardsOf are the cards of every page of a site that has one of its own (FactsOf), in the order the site serves them.
+func CardsOf(site compose.Site) []Card {
+	writer := NewWriter(site)
+	cards := []Card{}
+	for _, served := range site.Served() {
+		if facts, isOwn := writer.FactsOf(served); isOwn {
+			cards = append(cards, Card{Path: routes.Path(served.Head.Page, routes.FormatChosen), Facts: facts})
+		}
+	}
+	return cards
 }
 
 // PageOf is the page whose card a page of a head shows (DESIGN.md, Social cards): its own, a tab its page's; none, the

@@ -2,19 +2,19 @@
 // snapshot once, the first time a request meets that snapshot (release.Derived), as the site stands at the request's
 // moment, and serves the drawing until the store holds another or a post dated later comes out, so no request
 // composes or draws a page; a draft it serves only where its author runs it to read them. Beside the pages it serves
-// every file of the snapshot's build at its path, from memory, for a cache to keep for good, each picture of a post
-// served, beside it, for a cache to ask for again, and each picture of the site, which the HTML face draws once and a
-// cache asks for again. Each page, and each of its tabs alone, is served at the path routes writes for it in each
-// format, and at its own address in the format the reader's request asks for: HTML for a browser and a request that
-// names no format, crawlers and link previews among them, markdown for an agent that asks for it, and the manual for
-// whoever asks for plain text and a terminal's client, `curl` among them; the index at llms.txt, sent as plain text,
-// as a name ending in .txt promises. A post served is drawn whole in every format, each of its older versions at its
-// revision's address, and its number sends the reader on to its address; so is the blog's list, in each of its
-// groupings and filtered by each tag, at the address the request's query names (routes.Requested). The
-// blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body as the HTML face draws it
-// for a feed reader, and served at the path routes writes for each, for a reader to poll and ask again; so are
-// robots.txt and the sitemap, at the paths a crawler asks for them by, whatever the request asks. Each
-// format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
+// every file of the snapshot's build at its path and each card of its pages at its address, from memory, for a cache
+// to keep for good, each picture of a post served, beside it, for a cache to ask for again, and each picture of the
+// site, which the HTML face draws once and a cache asks for again. Each page, and each of its tabs alone, is served at
+// the path routes writes for it in each format, and at its own address in the format the reader's request asks for:
+// HTML for a browser and a request that names no format, crawlers and link previews among them, markdown for an agent
+// that asks for it, and the manual for whoever asks for plain text and a terminal's client, `curl` among them; the
+// index at llms.txt, sent as plain text, as a name ending in .txt promises. A post served is drawn whole in every
+// format, each of its older versions at its revision's address, and its number sends the reader on to its address; so
+// is the blog's list, in each of its groupings and filtered by each tag, at the address the request's query names
+// (routes.Requested). The blog's feeds, its own and each series', are drawn with the pages, in Atom, each post's body
+// as the HTML face draws it for a feed reader, and served at the path routes writes for each, for a reader to poll and
+// ask again; so are robots.txt and the sitemap, at the paths a crawler asks for them by, whatever the request asks.
+// Each format of a page names in a Link header the address the page is known by, the one where the reader chooses, so a
 // search engine counts its markdown and its manual as the page; a filtered list and an older version name none, and
 // tell a search engine not to index them. A path with a slash at its end sends its reader on to the path without it,
 // where that is served, so a search engine counts one address. Any other address is answered with the page of no
@@ -589,9 +589,9 @@ func statusLine(status int) string {
 }
 
 // draw draws every page of a snapshot, as Prepare read it, as an audience reads it, at the address it is served at,
-// beside every file of its build, every picture of its posts served and each feed; and says until when it holds:
-// until the next post dated later comes out, the résumé's career line running to the audience's day until then, or the
-// store holds another snapshot.
+// beside every file of its build, every card, every picture of its posts served and each feed; and says until when it
+// holds: until the next post dated later comes out, the résumé's career line running to the audience's day until then,
+// or the store holds another snapshot.
 func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compose.Audience) (*drawing, time.Time) {
 	build := snapshot.Build
 	composition := compose.SiteOf(prepared, audience)
@@ -603,6 +603,9 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	served.fixed[routes.CrawlerPath(routes.CrawlerSitemap)] = drawnAs(routes.SitemapType, feed.Sitemap(composition.IndexedPages(), addresses))
 	for path, file := range build.Files() {
 		served.fixed[path] = builtAs(file)
+	}
+	for name, card := range snapshot.Cards.Files() {
+		served.fixed[routes.CardPath(name)] = builtAs(card)
 	}
 	for _, composed := range composition.Pages {
 		// a text face writes the page whole at its own address and each tab alone at its own; the HTML face draws the

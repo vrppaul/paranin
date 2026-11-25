@@ -1,6 +1,7 @@
-// Package assets reads the page's front-end build (docs/ARCHITECTURE.md, ADR-0004, D22) from a folder on disk, whole,
-// so a release holds every file its pages name and every widget's code and props' schema its posts need. It knows no
-// face: a face asks it what an entry includes in a page.
+// Package assets reads what the build makes for the site (docs/ARCHITECTURE.md, ADR-0004, ADR-0005, D22), each from a
+// folder on disk, whole: the page's front-end build, so a release holds every file its pages name and every widget's
+// code and props' schema its posts need, and the pages' cards, by the manifest their drawing writes (cards.go). It
+// knows no face: a face asks it what an entry includes in a page.
 package assets
 
 import (
@@ -66,6 +67,9 @@ func contentTypes() map[string]string {
 // The faults a build can hold
 var errBuild = errors.New("the build has a fault")
 
+// How a file a manifest names that cannot be read is refused: its folder's kind of fault, the file, and why
+const unreadFile = "%w: read %q: %w"
+
 // File is a built file as the site serves it: the type it is sent as, from its name, and what it holds.
 type File struct {
 	ContentType string
@@ -108,7 +112,7 @@ type chunk struct {
 // Load reads a build from a folder: a build, or every fault that keeps the site from being served from it.
 func Load(folder fs.FS) (*Build, error) {
 	// the manifest: each chunk by its key, an entry's the source it was built from
-	manifest, err := readJSON[map[string]chunk](folder, manifestFile)
+	manifest, err := readJSON[map[string]chunk](folder, manifestFile, errBuild)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +138,7 @@ func WidgetSource(name string) string {
 // or that does not compile. A schema reads no other schema but JSON Schema's own, which the validator holds: none
 // from disk, which would read past the folder the build is read through.
 func readWidgets(folder fs.FS, manifest map[string]chunk) (map[string]*jsonschema.Schema, error) {
-	schemas, err := readJSON[map[string]json.RawMessage](folder, propsSchemaFile)
+	schemas, err := readJSON[map[string]json.RawMessage](folder, propsSchemaFile, errBuild)
 	if err != nil {
 		return nil, err
 	}
@@ -189,15 +193,16 @@ func compiledSchema(compiler *jsonschema.Compiler, name string, written json.Raw
 	return schema, nil
 }
 
-// readJSON is a file of JSON at the build's root, the manifest or the widgets' props' schemas, read into its type.
-func readJSON[Value any](folder fs.FS, file string) (Value, error) {
+// readJSON is a file of JSON at a folder's root, a manifest or the widgets' props' schemas, read into its type; a
+// fault of the folder's kind where it is missing or does not read.
+func readJSON[Value any](folder fs.FS, file string, folderFault error) (Value, error) {
 	var value Value
 	written, err := fs.ReadFile(folder, file)
 	if err == nil {
 		err = json.Unmarshal(written, &value)
 	}
 	if err != nil {
-		return value, fmt.Errorf("%w: read %s: %w", errBuild, file, err)
+		return value, fmt.Errorf("%w: read %s: %w", folderFault, file, err)
 	}
 	return value, nil
 }
@@ -217,7 +222,7 @@ func readFiles(folder fs.FS, manifest map[string]chunk) (map[string]File, error)
 		}
 		body, err := fs.ReadFile(folder, name)
 		if err != nil {
-			faults = append(faults, fmt.Errorf("%w: read %q: %w", errBuild, name, err))
+			faults = append(faults, fmt.Errorf(unreadFile, errBuild, name, err))
 			continue
 		}
 		files[servedPath(name)] = File{ContentType: contentType, Body: body}

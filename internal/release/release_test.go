@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
@@ -18,6 +19,7 @@ const (
 	manifestFile = "manifest.json"
 	schemasFile  = "props.schema.json"
 	authorName   = "name: Mira Example"
+	cardFile     = "page-fixture.png"
 )
 
 // The fixture post's picture, by its name and its file in the content's folder, and who may read the copy a case
@@ -28,8 +30,8 @@ const (
 	pictureMode = 0o600
 )
 
-// A site cannot open on a release with a fault in either part, and says each fault: the content's, among them those the
-// check it is handed finds, and the build's.
+// A site cannot open on a release with a fault in any part, and says each fault: the content's, among them those the
+// check it is handed finds, the build's and the cards'.
 func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -40,6 +42,7 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 		{name: "faulty content", change: faultyContent, check: passes, want: "person.name"},
 		{name: "content its check refuses", change: keepFolders, check: refuses, want: refusal},
 		{name: "a faulty build", change: faultyBuild, check: passes, want: manifestFile},
+		{name: "a card missing", change: cardLeftOut, check: passes, want: cardFile},
 		{name: "a picture linking out of the content's folder", change: pictureLinkedOut, check: passes, want: pictureName},
 		{name: "a post showing a widget the build holds no code for", change: widgetLeftOut, check: passes, want: widgetPlace},
 		{name: "a build holding the component in another folder", change: componentMoved, check: passes, want: widgetPlace},
@@ -170,27 +173,30 @@ func (counter *workCounter) contentName(loaded *content.Snapshot) string {
 	return loaded.Profile.Person.Name
 }
 
-// fixtureCopies are copies of both fixtures on disk, which a test may change.
+// fixtureCopies are copies of the three fixtures on disk, which a test may change.
 func fixtureCopies(test *testing.T) Folders {
-	return Folders{Content: fixtures.Copy(test, fixtures.ContentFolder(test)), Build: fixtures.Copy(test, fixtures.BuildFolder(test))}
+	return Folders{
+		Content: fixtures.Copy(test, fixtures.ContentFolder(test)), Build: fixtures.Copy(test, fixtures.BuildFolder(test)),
+		Cards: fixtures.Copy(test, fixtures.CardsFolder(test)),
+	}
 }
 
 // What the check a case hands in says where it refuses the content
 const refusal = "the check refuses it"
 
 // passes is a check that finds no fault.
-func passes(*content.Snapshot) error {
+func passes(*content.Snapshot, *assets.Cards) error {
 	return nil
 }
 
-// refuses is a check that finds a fault in any content.
+// refuses is a check that finds a fault in any content and cards.
 //
 //wrapper:a case of the table names the check it hands the release
-func refuses(*content.Snapshot) error {
+func refuses(*content.Snapshot, *assets.Cards) error {
 	return errors.New(refusal)
 }
 
-// keepFolders leaves both fixtures as they are.
+// keepFolders leaves the fixtures as they are.
 func keepFolders(*testing.T, Folders) {}
 
 // faultyContent leaves the author with no name.
@@ -310,4 +316,11 @@ func paceOfAddresses(test *testing.T, folders Folders) {
 //wrapper:a case of the table names the fault it writes
 func faultyBuild(test *testing.T, folders Folders) {
 	fixtures.ReplaceIn(test, folders.Build, manifestFile, "{", "[")
+}
+
+// cardLeftOut takes a card the cards' manifest names away.
+//
+//wrapper:a case of the table names the fault it writes
+func cardLeftOut(test *testing.T, folders Folders) {
+	fixtures.RemoveIn(test, folders.Cards, cardFile)
 }

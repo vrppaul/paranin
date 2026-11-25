@@ -22,31 +22,30 @@ type stamp struct {
 	written int64
 }
 
-// sight is what a look sees of a release: the stamps of each folder's files, apart.
-type sight struct {
-	content []stamp
-	build   []stamp
-}
+// sight is what a look sees of folders: the stamps of each folder's files, apart, in the folders' order.
+type sight [][]stamp
 
 // same is whether two looks saw the same.
+//
+//wrapper:names a look matching another, which the watch asks twice a look and a sight answers folder by folder
 func (seen sight) same(other sight) bool {
-	return slices.Equal(seen.content, other.content) && slices.Equal(seen.build, other.build)
+	return slices.EqualFunc(seen, other, slices.Equal[[]stamp])
 }
 
-// Watch sends on the channel it returns each time the release's folders change and then hold still for one look,
-// looking at them at every interval until the context ends (ADR-0003). It takes its first look before it returns,
-// so a change made after that is seen. A change still going on at a look waits for the next: an editor's save or a
-// build that writes many files makes one change, taken at most two looks after its last write. Changes that pile
-// up before the receiver takes one are sent as one.
-func Watch(ctx context.Context, folders Folders, interval time.Duration) <-chan struct{} {
+// Watch sends on the channel it returns each time folders change and then hold still for one look, looking at them at
+// every interval until the context ends (ADR-0003): a release's, for a site that loads it again, or the content alone,
+// for the cards drawn from it. It takes its first look before it returns, so a change made after that is seen. A change
+// still going on at a look waits for the next: an editor's save or a build that writes many files makes one change,
+// taken at most two looks after its last write. Changes that pile up before the receiver takes one are sent as one.
+func Watch(ctx context.Context, folderPaths []string, interval time.Duration) <-chan struct{} {
 	changes := make(chan struct{}, 1)
-	go watch(ctx, folders, interval, look(folders), changes)
+	go watch(ctx, folderPaths, interval, look(folderPaths), changes)
 	return changes
 }
 
 // watch looks at the folders at every interval until the context ends, and sends a change once a look sees what
 // the look before saw, and that is not what was last taken.
-func watch(ctx context.Context, folders Folders, interval time.Duration, taken sight, changes chan<- struct{}) {
+func watch(ctx context.Context, folderPaths []string, interval time.Duration, taken sight, changes chan<- struct{}) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	previous := taken
@@ -56,7 +55,7 @@ func watch(ctx context.Context, folders Folders, interval time.Duration, taken s
 			return
 		case <-ticker.C:
 		}
-		current := look(folders)
+		current := look(folderPaths)
 		if current.same(previous) && !current.same(taken) {
 			taken = current
 			SendUnlessWaiting(changes)
@@ -74,9 +73,13 @@ func SendUnlessWaiting(wakes chan<- struct{}) {
 	}
 }
 
-// look is what both folders hold, each file stamped, in the order a walk finds them.
-func look(folders Folders) sight {
-	return sight{content: stamped(folders.Content), build: stamped(folders.Build)}
+// look is what every folder holds, each file stamped, in the order a walk finds them.
+func look(folderPaths []string) sight {
+	seen := make(sight, 0, len(folderPaths))
+	for _, folderPath := range folderPaths {
+		seen = append(seen, stamped(folderPath))
+	}
+	return seen
 }
 
 // stamped is every file of a folder on disk but the hidden ones, stamped, read as a load reads it (ReadFolder). A file

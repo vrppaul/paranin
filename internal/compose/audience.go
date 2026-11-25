@@ -106,3 +106,11 @@ func (audience Audience) nextChange(posts []content.Post) time.Time {
 	}
 	return changes[nextChangePlace]
 }
+
+// LastChange is when the site the public reads from a moment on last changes, as the last of a snapshot's posts dated
+// later comes out; the moment itself where none comes later. No post leaves the site as time passes, so the site the
+// public reads then holds every page it reads from the moment on.
+func LastChange(snapshot *content.Snapshot, from time.Time) time.Time {
+	changes := Audience{At: from, Drafts: false}.changes(allPosts(snapshot))
+	return changes[len(changes)-1]
+}

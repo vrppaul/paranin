@@ -1,6 +1,7 @@
 package card
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/vrppaul/paranin/internal/compose"
@@ -82,7 +83,7 @@ func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			composed := fixtures.DocumentOf(test, servedOf(testCase.site), testCase.page)
+			composed := fixtures.DocumentOf(test, testCase.site.Served(), testCase.page)
 			got, _ := NewWriter(testCase.site).FactsOf(composed)
 			if got != testCase.want {
 				test.Errorf("the facts of %+v = %+v, want %+v", testCase.page, got, testCase.want)
@@ -113,8 +114,34 @@ func TestAPageShowsItsOwnCardOrItsPagesOrNone(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := PageOf(fixtures.DocumentOf(test, servedOf(testCase.site), testCase.page).Head); got != testCase.want {
+			if got := PageOf(fixtures.DocumentOf(test, testCase.site.Served(), testCase.page).Head); got != testCase.want {
 				test.Errorf("the card %+v shows = %+v, want %+v", testCase.page, got, testCase.want)
+			}
+		})
+	}
+}
+
+// A site's cards are one for each page a preview shows, by the path the page is served at, in each language: a tab
+// shares its page's, and a draft, which its author alone reads, an older version and a filtered list have none.
+func TestASiteHasACardForEachPageAPreviewShows(test *testing.T) {
+	want := []string{
+		"/", "/p/tidy-tool", "/blog", "/blog/series", "/blog/reading-slowly", "/ru/blog", "/ru/blog/series", "/ru/blog/reading-slowly",
+	}
+	cases := []struct {
+		name   string
+		drafts bool
+	}{
+		{name: "the public's site", drafts: false},
+		{name: "the author's site, with the drafts", drafts: true},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			got := []string{}
+			for _, drawn := range CardsOf(siteOf(fixtures.LoadedContent(test), testCase.drafts)) {
+				got = append(got, drawn.Path)
+			}
+			if !slices.Equal(got, want) {
+				test.Errorf("the cards' paths = %q, want %q", got, want)
 			}
 		})
 	}
@@ -131,19 +158,6 @@ func unlistedCopy(test *testing.T) string {
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	fixtures.ReplaceIn(test, folder, fixturePostFile, publishedStatus, unlistedStatus)
 	return folder
-}
-
-// servedOf are the documents of every page a site serves: the index, the résumé and the projects' pages and their tabs,
-// and every blog's lists, filtered or not, posts and older versions.
-func servedOf(site compose.Site) []document.Document {
-	served := []document.Document{site.Index}
-	for _, page := range site.Pages {
-		served = append(served, page.PageAndTabs()...)
-	}
-	for _, blog := range site.Blogs() {
-		served = append(served, blog.Served()...)
-	}
-	return served
 }
 
 // resumeTab is a tab of the résumé, by its name.

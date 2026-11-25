@@ -46,9 +46,10 @@ jobs:
       # pre-commit and everything it needs, each file checked against its hash
       - run: pip install --require-hashes -r .github/pre-commit-requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure
-      # The page builds, as a release would build it, and the site loads the release it makes
+      # The page builds and the cards are drawn, as a release would build them, and the site loads the release they make
       - run: pnpm --dir web build
-      - run: go run ./cmd/paranin check content build/web
+      - run: go run ./cmd/paranin cards content build/cards
+      - run: go run ./cmd/paranin check content build/web build/cards
 
   vulnerabilities:
     runs-on: ubuntu-latest

@@ -103,7 +103,7 @@ func TestABuildNoSiteServesFromIsRefused(test *testing.T) {
 		{
 			name: "a file of no type the site serves",
 			change: func(test *testing.T, folder string) {
-				renameBuilt(test, folder, stylesheetPath, "assets/site-fixture.png")
+				renameNamed(test, folder, stylesheetPath, "assets/site-fixture.png")
 			},
 			want: `"assets/site-fixture.png"`,
 		},
@@ -162,8 +162,9 @@ func schemaReachingOut(test *testing.T, folder string) {
 	fixtures.ReplaceIn(test, folder, schemasPath, widgetSchemaKey, widgetSchemaKey+`"$ref": "`+outside.String()+`",`)
 }
 
-// renameBuilt moves a built file to another name, and the manifest's name for it with it.
-func renameBuilt(test *testing.T, folder, from, to string) {
+// renameNamed moves a file a folder's manifest names, a built file or a card, to another name, and the manifest's name
+// for it with it.
+func renameNamed(test *testing.T, folder, from, to string) {
 	if err := os.Rename(filepath.Join(folder, from), filepath.Join(folder, to)); err != nil {
 		test.Fatalf("rename %s: %v", from, err)
 	}

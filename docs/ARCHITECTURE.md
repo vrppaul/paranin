@@ -993,9 +993,9 @@ sessions on a stop.
 ```
 
 - `cmd/paranin` runs the SSH and HTTP servers in one process over one
-  `release.Store`, the content folder and the page's build, reloads it on
-  `SIGHUP` and once a change in the folders holds still for a look
-  (`release.Watch`), and stops both on `SIGINT` or `SIGTERM`.
+  `release.Store`, the content folder, the page's build and the cards,
+  reloads it on `SIGHUP` and once a change in the folders holds still for
+  a look (`release.Watch`), and stops both on `SIGINT` or `SIGTERM`.
 - `hosting/web` composes each snapshot of the store with `compose` and
   `routes`, the first time a request meets it, and hands the documents and
   the build to the faces to draw (two requests meeting a new snapshot at
@@ -1016,9 +1016,11 @@ sessions on a stop.
   site's script, `src/entries/site.ts`, is the build's one entry so far, the
   stylesheet among what it imports; `assets` works out once what a page
   includes for it, as Vite's guide to backend integration walks a manifest.
-  The islands come with the blog's first widget; the cards, which the
-  build draws with Typst, in a folder of their own; the CV with hosting
-  (ADR-0005).
+  The islands come with the blog's first widget. The cards, which
+  `paranin cards` draws with Typst (ADR-0005), stand in a folder of their
+  own, `build/cards`, with a manifest naming each page's; `assets` reads
+  every card it names, and `hosting/web` serves each at `/cards/`, kept
+  for good as a built file is. The CV comes with hosting.
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md): each
@@ -1028,7 +1030,8 @@ sessions on a stop.
 ## Project layout
 
 ```
-cmd/paranin/main.go      # check the content, or serve it with the build: both servers, IndexNow, the signals, the stop
+cmd/paranin/main.go      # check the content, or serve it with the build and the cards: both servers, IndexNow, the signals, the stop
+cmd/paranin/cards.go     # draw the cards into their folder, and hold a release's cards to every page a preview shows
 internal/hosting/indexnow/ # tells IndexNow each address that changes, as a reload takes or a post comes out
 internal/hosting/ssh/    # Wish server construction, middleware, security policy
 internal/hosting/web/    # HTTP: each page drawn once a snapshot, the format the reader's Accept ranks, else its agent (D21)
@@ -1039,11 +1042,11 @@ internal/face/feed/      # what a machine polls: the blog's feeds in Atom, the s
 internal/face/card/      # a page's card: its facts from the document, drawn by a pinned Typst on the template beside them
 internal/compose/        # content → documents and their records
 internal/routes/         # every address of the site
-internal/release/        # the content and the build as one snapshot: load, the store, what is derived once, the watch
+internal/release/        # the content, the build and the cards as one snapshot: load, the store, what is derived once, the watch
 internal/document/       # the face-neutral model
 internal/content/        # the content folder: load, check; a post's markdown parsed once
 internal/look/           # the design's colours, generated from design/tokens.yaml, and its block fonts
-internal/assets/         # the page's build: its manifest and files, read and checked
+internal/assets/         # the page's build and the cards: each folder's manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone
 internal/fixtures/       # the shared fixtures, the content's and the build's, for tests alone
 scripts/tokens/          # the generator of internal/look, the page's tokens.css and the cards' tokens.typ, and its check

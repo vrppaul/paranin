@@ -1,11 +1,11 @@
-// Package release holds what the site serves: a release's content and its front-end build, loaded together and held
-// as one snapshot that nothing changes after, which a store swaps whole (docs/ARCHITECTURE.md, ADR-0003, ADR-0004).
-// A page names the files of the build it was drawn with, so the two parts are never swapped apart: a load that
-// fails in either keeps both as they were. The content is held, beside its own load, to a check the composition root
-// hands in from the parts over a release, which it knows nothing of. What a host draws from a snapshot is worked out
-// once for each, and again once what it drew lapses (Derived). Watch looks at the folders in a goroutine of its own,
-// until its context ends, and says when they changed and held still, for whoever reloads (watch.go). A folder on disk
-// is read so no read leaves it (ReadFolder).
+// Package release holds what the site serves: a release's content, its front-end build and its pages' cards, loaded
+// together and held as one snapshot that nothing changes after, which a store swaps whole (docs/ARCHITECTURE.md,
+// ADR-0003, ADR-0004, ADR-0005). A page names the files of the build it was drawn with, so the parts are never swapped
+// apart: a load that fails in any keeps all as they were. The content and the cards are held, beside their own loads,
+// to a check the composition root hands in from the parts over a release, which it knows nothing of. What a host
+// draws from a snapshot is worked out once for each, and again once what it drew lapses (Derived). Watch looks at
+// folders in a goroutine of its own, until its context ends, and says when they changed and held still, for whoever
+// reloads or draws again (watch.go). A folder on disk is read so no read leaves it (ReadFolder).
 package release
 
 import (
@@ -21,10 +21,17 @@ import (
 	"github.com/vrppaul/paranin/internal/content"
 )
 
-// Folders are where a release is read from on disk, by their paths: its content, and its front-end build.
+// Folders are where a release is read from on disk, by their paths: its content, its front-end build, and the cards the
+// build drew of its pages.
 type Folders struct {
 	Content string
 	Build   string
+	Cards   string
+}
+
+// Paths are the paths of every folder of a release, which a watch looks at.
+func (folders Folders) Paths() []string {
+	return []string{folders.Content, folders.Build, folders.Cards}
 }
 
 // ReadFolder reads a folder on disk through one root (os.Root), opened for the read and closed after it: no read
@@ -44,29 +51,32 @@ func ReadFolder[Value any](folderPath string, read func(fs.FS) (Value, error)) (
 type Snapshot struct {
 	Content *content.Snapshot
 	Build   *assets.Build
+	Cards   *assets.Cards
 }
 
-// Check is what the parts over a release hold its content to beyond its own load, which the composition root hands
-// in: that no two of the pages it makes share an address, and that each link of a post inside the site leads to a page
-// and, where it names one, a section of it. It hands back the faults it finds, none where it finds none.
-type Check func(*content.Snapshot) error
+// Check is what the parts over a release hold its content and its cards to beyond their own loads, which the
+// composition root hands in: that no two of the pages the content makes share an address, that each link of a post
+// inside the site leads to a page and, where it names one, a section of it, and that every page a preview shows, now or
+// as a post dated later comes out, has its card. It hands back the faults it finds, none where it finds none.
+type Check func(*content.Snapshot, *assets.Cards) error
 
-// Load reads both parts of a release and checks each whole, the content by the check too: a snapshot, or every fault
-// of either part. Once both load, it holds the two together: a snapshot, or the faults of every widget a post shows
-// whose code the build lacks or whose props its schema refuses.
+// Load reads the three parts of a release and checks each whole, the content and the cards by the check too once both
+// load: a snapshot, or every fault of any part. Once all load, it holds the content and the build together: a
+// snapshot, or the faults of every widget a post shows whose code the build lacks or whose props its schema refuses.
 func Load(folders Folders, check Check) (*Snapshot, error) {
 	loaded, contentErr := ReadFolder(folders.Content, content.Load)
-	if contentErr == nil {
-		contentErr = check(loaded)
-	}
 	build, buildErr := ReadFolder(folders.Build, assets.Load)
-	if err := errors.Join(contentErr, buildErr); err != nil {
+	cards, cardsErr := ReadFolder(folders.Cards, assets.LoadCards)
+	if contentErr == nil && cardsErr == nil {
+		contentErr = check(loaded, cards)
+	}
+	if err := errors.Join(contentErr, buildErr, cardsErr); err != nil {
 		return nil, err
 	}
 	if err := widgetFaults(loaded, build); err != nil {
 		return nil, err
 	}
-	return &Snapshot{Content: loaded, Build: build}, nil
+	return &Snapshot{Content: loaded, Build: build, Cards: cards}, nil
 }
 
 // What a post is refused with that shows a widget the build holds no code for, by the widget's name and its

@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	gossh "golang.org/x/crypto/ssh"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -731,9 +732,8 @@ func drawnServer(test *testing.T) *Server {
 
 // newServer is a server of the fixture, not yet serving, its sessions reading the drafts where drafts says.
 func newServer(test *testing.T, logger *slog.Logger, drafts bool) *Server {
-	store, err := release.Open(release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test)}, func(loaded *content.Snapshot) error {
-		return compose.Check(loaded, time.Now())
-	})
+	folders := release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
+	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

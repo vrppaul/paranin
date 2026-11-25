@@ -36,6 +36,7 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		{name: sshAddressVariable, value: anyPort},
 		{name: hostKeyVariable, value: filepath.Join(test.TempDir(), "host_key")},
 	}
+	contentFolder, buildFolder, cardsFolder := fixtures.ContentFolder(test), fixtures.BuildFolder(test), fixtures.CardsFolder(test)
 	cases := []struct {
 		name        string
 		arguments   []string
@@ -43,27 +44,33 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		want        int
 	}{
 		{
-			name: "a site with an IndexNow key of another form", arguments: []string{"paranin", "serve", fixtures.ContentFolder(test), fixtures.BuildFolder(test)},
+			name: "a site with an IndexNow key of another form", arguments: []string{"paranin", "serve", contentFolder, buildFolder, cardsFolder},
 			environment: append([]environmentVariable{{name: indexNowKeyVariable, value: "key_of_another_form"}}, startedAside...), want: failed,
 		},
 		// the fixture's translation was made from an older version of its original, which the check warns of alone
-		{name: "content that loads, a translation older than its original", arguments: []string{"paranin", "check", fixtures.ContentFolder(test)}, want: succeeded},
+		{name: "content that loads, a translation older than its original", arguments: []string{"paranin", "check", contentFolder}, want: succeeded},
 		{name: "content with faults", arguments: []string{"paranin", "check", faulty}, want: failed},
 		{name: "content whose pages share an address", arguments: []string{"paranin", "check", sharing}, want: failed},
-		{name: "a release whose pages share an address", arguments: []string{"paranin", "check", sharing, fixtures.BuildFolder(test)}, want: failed},
+		{name: "a release whose pages share an address", arguments: []string{"paranin", "check", sharing, buildFolder, cardsFolder}, want: failed},
 		{name: "content whose post links to no page", arguments: []string{"paranin", "check", leading}, want: failed},
-		{name: "a release whose post links to no page", arguments: []string{"paranin", "check", leading, fixtures.BuildFolder(test)}, want: failed},
+		{name: "a release whose post links to no page", arguments: []string{"paranin", "check", leading, buildFolder, cardsFolder}, want: failed},
 		{name: "content whose draft links to no page", arguments: []string{"paranin", "check", drafting}, want: failed},
 		{name: "no folder named", arguments: []string{"paranin", "check"}, want: usageMistaken},
-		{name: "a release that loads, a translation older than its original", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test)}, want: succeeded},
-		{name: "a release whose build has faults", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), faulty}, want: failed},
-		{name: "a check of three folders", arguments: []string{"paranin", "check", fixtures.ContentFolder(test), fixtures.BuildFolder(test), faulty}, want: usageMistaken},
-		{name: "a site on content with faults", arguments: []string{"paranin", "serve", faulty, fixtures.BuildFolder(test)}, want: failed},
-		{name: "a site on a build with faults", arguments: []string{"paranin", "serve", fixtures.ContentFolder(test), faulty}, want: failed},
-		{name: "a site with no build named", arguments: []string{"paranin", "serve", fixtures.ContentFolder(test)}, want: usageMistaken},
-		{name: "a site with its drafts on content with faults", arguments: []string{"paranin", "serve", "--drafts", faulty, fixtures.BuildFolder(test)}, want: failed},
-		{name: "a site with a flag it has not", arguments: []string{"paranin", "serve", "--everything", fixtures.ContentFolder(test), fixtures.BuildFolder(test)}, want: usageMistaken},
-		{name: "a site with three folders", arguments: []string{"paranin", "serve", fixtures.ContentFolder(test), fixtures.BuildFolder(test), faulty}, want: usageMistaken},
+		{name: "a release that loads, a translation older than its original", arguments: []string{"paranin", "check", contentFolder, buildFolder, cardsFolder}, want: succeeded},
+		{name: "a release whose build has faults", arguments: []string{"paranin", "check", contentFolder, faulty, cardsFolder}, want: failed},
+		{name: "a release whose cards have faults", arguments: []string{"paranin", "check", contentFolder, buildFolder, faulty}, want: failed},
+		{name: "a check of the content and a build alone", arguments: []string{"paranin", "check", contentFolder, buildFolder}, want: usageMistaken},
+		{name: "a check of four folders", arguments: []string{"paranin", "check", contentFolder, buildFolder, cardsFolder, faulty}, want: usageMistaken},
+		{name: "a site on content with faults", arguments: []string{"paranin", "serve", faulty, buildFolder, cardsFolder}, want: failed},
+		{name: "a site on a build with faults", arguments: []string{"paranin", "serve", contentFolder, faulty, cardsFolder}, want: failed},
+		{name: "a site on cards with faults", arguments: []string{"paranin", "serve", contentFolder, buildFolder, faulty}, want: failed},
+		{name: "a site with no cards named", arguments: []string{"paranin", "serve", contentFolder, buildFolder}, want: usageMistaken},
+		{name: "a site with its drafts on content with faults", arguments: []string{"paranin", "serve", "--drafts", faulty, buildFolder, cardsFolder}, want: failed},
+		{name: "a site with a flag it has not", arguments: []string{"paranin", "serve", "--everything", contentFolder, buildFolder, cardsFolder}, want: usageMistaken},
+		{name: "a site with four folders", arguments: []string{"paranin", "serve", contentFolder, buildFolder, cardsFolder, faulty}, want: usageMistaken},
+		{name: "cards of content with faults", arguments: []string{"paranin", "cards", faulty, test.TempDir()}, want: failed},
+		{name: "cards with no folder to draw them into", arguments: []string{"paranin", "cards", contentFolder}, want: usageMistaken},
+		{name: "cards with a flag they have not", arguments: []string{"paranin", "cards", "--drafts", contentFolder, test.TempDir()}, want: usageMistaken},
 		{name: "no command", arguments: []string{"paranin"}, want: usageMistaken},
 		{name: "a command it has not", arguments: []string{"paranin", "render", faulty}, want: usageMistaken},
 	}
@@ -77,6 +84,11 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 			}
 		})
 	}
+}
+
+// fixtureRelease are the folders of a release of the content in a folder, the build's fixture and the cards'.
+func fixtureRelease(test *testing.T, contentFolder string) release.Folders {
+	return release.Folders{Content: contentFolder, Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
 }
 
 // environmentVariable is a variable of the environment a test sets for the command it runs.
@@ -126,7 +138,7 @@ func TestACheckPrintsWhatTheContentWarnsOfAndPasses(test *testing.T) {
 	}{
 		{name: "the content alone", check: func(warned io.Writer) int { return check(fixtures.ContentFolder(test), warned) }},
 		{name: "a release", check: func(warned io.Writer) int {
-			return checkRelease(fixtures.ContentFolder(test), fixtures.BuildFolder(test), warned)
+			return checkRelease(fixtureRelease(test, fixtures.ContentFolder(test)), warned)
 		}},
 	}
 	for _, testCase := range cases {
@@ -273,16 +285,16 @@ func TestReviseTakesAFolderAndASlugAlone(test *testing.T) {
 	}
 }
 
-// serve serves the drafts too only where its flag asks, before the content folder and the build folder.
+// serve serves the drafts too only where its flag asks, before the content folder, the build folder and the cards'.
 func TestServeServesTheDraftsWhereAsked(test *testing.T) {
-	folders := release.Folders{Content: "content", Build: "build/web"}
+	folders := release.Folders{Content: "content", Build: "build/web", Cards: "build/cards"}
 	cases := []struct {
 		name  string
 		words []string
 		want  servingAsked
 	}{
-		{name: "the folders alone", words: []string{"content", "build/web"}, want: servingAsked{folders: folders, drafts: false}},
-		{name: "the drafts asked", words: []string{"--drafts", "content", "build/web"}, want: servingAsked{folders: folders, drafts: true}},
+		{name: "the folders alone", words: []string{"content", "build/web", "build/cards"}, want: servingAsked{folders: folders, drafts: false}},
+		{name: "the drafts asked", words: []string{"--drafts", "content", "build/web", "build/cards"}, want: servingAsked{folders: folders, drafts: true}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

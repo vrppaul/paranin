@@ -14,6 +14,7 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -25,6 +26,9 @@ const (
 	stylesheetPath = "/assets/site-fixture.css"
 	scriptPath     = "/assets/site-fixture.js"
 )
+
+// The cards' fixture's card of every page but the résumé, where the site serves it
+const cardPath = "/cards/page-fixture.png"
 
 // The fixture post's slug, and its picture: its file in the content's folder, and where the site serves it
 const (
@@ -584,6 +588,35 @@ func TestABuiltFileIsServedForCachesToKeepForGood(test *testing.T) {
 	}
 }
 
+// A card is served at its address as a PNG, whatever the request asks for, for a cache to keep for good: a card changed
+// is drawn under another name.
+func TestACardIsServedForCachesToKeepForGood(test *testing.T) {
+	response := serve(serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false), http.MethodGet, cardPath, "text/plain", curlAgent)
+	header := response.Header()
+	const (
+		wantType  = "image/png"
+		wantCache = "public, max-age=31536000, immutable"
+		wantBody  = "PNG page fixture\n"
+	)
+	if response.Code != http.StatusOK || header.Get("Content-Type") != wantType || header.Get("Cache-Control") != wantCache ||
+		response.Body.String() != wantBody {
+		test.Errorf("GET %s = %d %q, Cache-Control %q, %q; want %d %q, %q, %q", cardPath, response.Code, header.Get("Content-Type"),
+			header.Get("Cache-Control"), response.Body.String(), http.StatusOK, wantType, wantCache, wantBody)
+	}
+}
+
+// Nothing of the cards' folder is served but the cards: neither its manifest nor a file it names not.
+func TestNothingOfTheCardsFolderIsServedButTheCards(test *testing.T) {
+	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	for _, path := range []string{"/cards/manifest.json", "/cards/stray-fixture.png"} {
+		test.Run(path, func(test *testing.T) {
+			if got := serve(server, http.MethodGet, path, "", "").Code; got != http.StatusNotFound {
+				test.Errorf("GET %s = %d, want %d", path, got, http.StatusNotFound)
+			}
+		})
+	}
+}
+
 // A page a browser reads, and the page of no page, are drawn in the build's stylesheet and run its script.
 func TestABrowsedPageIsDrawnInTheStylesheetAndRunsTheScript(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
@@ -883,11 +916,10 @@ func unlistedPostServer(test *testing.T) *Server {
 	return serverOf(fixtureStore(test, folder), false)
 }
 
-// fixtureStore is a store of a release of the content in a folder and the build's fixture.
+// fixtureStore is a store of a release of the content in a folder, the build's fixture and the cards'.
 func fixtureStore(test *testing.T, folder string) *release.Store {
-	store, err := release.Open(release.Folders{Content: folder, Build: fixtures.BuildFolder(test)}, func(loaded *content.Snapshot) error {
-		return compose.Check(loaded, time.Now())
-	})
+	folders := release.Folders{Content: folder, Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
+	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

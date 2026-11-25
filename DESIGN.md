@@ -279,7 +279,9 @@ a pane, is told by its frame, and underlines its title under the pointer.
 
 One line of tmux's at the foot of every page, after its main part: it sticks to the screen's foot as the page scrolls
 under it, and on a page shorter than the screen stands at the screen's foot. `sunk` ground, a `quiet` hairline over
-it, one `row` tall and twice `focus_width` under it, so a ring is never cut, `small`, on the content's grid. A part
+it, one `row` tall as tmux's status line is, `small`, on the content's grid. Every part stands in the line's middle,
+as much room above it as below, and the window shown is reversed from the line's top to its foot. A ring on a part of
+the line stands inside what it rings, at its edge, so the screen's foot never cuts it (owner, 2026-11-25). A part
 wraps whole to a row more where the screen is too narrow for the line; a part of the main part the keyboard reaches
 scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, always in sight, scroll nothing.
 

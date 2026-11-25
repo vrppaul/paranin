@@ -129,9 +129,9 @@ mark .gap {
   background: var(--sunk);
 }
 
-/* the line's parts in its small words, two cells apart, with room under them for a focus ring the screen's foot would
- * cut; a part whose words never break wraps whole to a row more where the screen is too narrow for the line. A hint's
- * window takes its right edge from it */
+/* the line's parts in its small words, two cells apart, each in the middle of a row as tmux's status line, which is a
+ * row tall; a part whose words never break wraps whole to a row more where the screen is too narrow for the line. A
+ * hint's window takes its right edge from it */
 .foot-row {
   anchor-name: --foot-row;
   display: flex;
@@ -139,11 +139,16 @@ mark .gap {
   align-items: center;
   gap: 0 var(--cell-2);
   min-height: var(--row);
-  padding-bottom: calc(2 * var(--focus-width));
   font-size: var(--type-small-size);
   font-weight: var(--type-small-weight);
   line-height: var(--row);
   white-space: nowrap;
+}
+
+/* a ring on a part of the line stands inside what it rings, at its edge, so the screen's foot, which the line stands
+ * on, never cuts it (DESIGN.md, FootLine); a window the line opens over the page rings as the page does */
+.foot-row :focus-visible:not([popover] *) {
+  outline-offset: calc(-1 * var(--focus-width));
 }
 
 /* a part of the main part the keyboard reaches scrolls clear of the foot line, which stands over the page's end, its
@@ -669,7 +674,8 @@ a.tag[aria-current] .tag-mark {
 }
 
 /* the theme: one quiet square button, a drawn mark and no words, compact in size, no border and no ground (DESIGN.md,
- * ThemeSwitch); the words that name it show as its tooltip under the pointer and on focus */
+ * ThemeSwitch); the words that name it show as its tooltip under the pointer and on focus. A row tall, it stands at
+ * the top of its line, which a row tall holds; set by its middle, it would push the line past a row */
 .theme-button {
   display: inline-flex;
   align-items: center;
@@ -681,7 +687,7 @@ a.tag[aria-current] .tag-mark {
   border-radius: var(--radius);
   background: none;
   color: var(--muted);
-  vertical-align: middle;
+  vertical-align: top;
   cursor: pointer;
   transition: color var(--quick);
 }

@@ -146,7 +146,7 @@ func (layout layout) post(post document.Document) laidTab {
 		lines = slices.Concat(lines, make([]line, partRows), shiftedLines(footed.panes(*place, shape.sourcesBeside()), shape.articleStart()))
 	}
 	shift := (layout.width - width) / sides
-	laid := laidTab{lines: shiftedLines(lines, shift), tiles: nil, groups: nil, split: 0, sections: body.headings, outline: noOutline()}
+	laid := laidTab{lines: shiftedLines(lines, shift), links: nil, firstTile: 0, groups: nil, split: 0, sections: body.headings, outline: noOutline()}
 	if shape == outlinedPost {
 		outlined := layout
 		outlined.width = outlineHang + look.Rail
@@ -223,7 +223,7 @@ func (layout layout) postFacts(head document.Head) []line {
 	if len(head.Filters) > 0 {
 		tags := []word{}
 		for _, filter := range head.Filters {
-			tags = append(tags, filterWords(filter)...)
+			tags = append(tags, filterWord(filter))
 		}
 		facts = append(facts, postFact{label: labels.Tags, value: tags})
 	}
@@ -251,7 +251,7 @@ func (layout layout) languageWords(languages []document.Language) []word {
 // the arrow in the accent, then the note's words, a link to that version, bold on the tint. An older version's note
 // names the newer that stands over it, and a translation's older than its original names the original.
 func (layout layout) versionNoteWords(note []document.Span) []word {
-	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation}
+	form := run{text: "", kind: kindStrong, highlighted: true, address: "", copied: "", tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
 	return append([]word{wordOf(look.VersionNoteMark, kindLookMark)}, layout.formWords(note, form)...)
 }
 
@@ -496,7 +496,7 @@ func codeRows(block document.CodeBlock, width int) []line {
 	copied := block.Text()
 	rows := codeRowing{width: max(width, textWidth(codeGoesOnMark)+spaceWidth), rows: []line{}, current: line{}, used: 0, column: 0}
 	for _, written := range block.Runs {
-		shown := run{text: "", kind: codeKindOf(written.Kind), highlighted: false, address: "", copied: copied, tone: 0, cites: noCitation}
+		shown := run{text: "", kind: codeKindOf(written.Kind), highlighted: false, address: "", copied: copied, tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
 		for _, letter := range written.Text {
 			rows.add(letter, shown)
 		}

@@ -75,8 +75,6 @@ const (
 	kindEmphasis
 	// kindChosen is the one chosen of a few ways to show a thing, as the grouping the blog's list is shown in
 	kindChosen
-	// kindTileTitle is a post's title on its tile of the blog's list, which the tile the keys stand on marks
-	kindTileTitle
 	// kindQuietLine is a line that parts or holds a page's parts without drawing the eye: the rule over a post's
 	// sources, the frame round its code
 	kindQuietLine
@@ -105,7 +103,8 @@ const (
 // where it is a link, and carrying the value y copies from its line where it is part of a fact's value; and, for a
 // kind painted in several colours, its tone: which of them it takes, the name's going along it, the swatches' round
 // the design's; and where it is a note's number citing the note, the note's number, by which a post's source stands
-// beside the line that cites it.
+// beside the line that cites it; and on the blog's list the page Enter opens where the keys stand on the link it is
+// part of, a way the head offers or a tile's title, no page on any other run.
 type run struct {
 	text        string
 	kind        kind
@@ -114,10 +113,21 @@ type run struct {
 	copied      string
 	tone        int
 	cites       int
+	opens       document.Page
 }
 
 // The note a run that cites none names, since a note's number counts from one
 const noCitation = 0
+
+// plainRun is a text of a kind, as one run with no mark of its own.
+func plainRun(text string, shown kind) run {
+	return run{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
+}
+
+// opensPage is whether a run is part of a link of the blog's list, which Enter follows.
+func (piece run) opensPage() bool {
+	return piece.opens.Kind != document.PageNone
+}
 
 // line is one line of a tab, the runs it is made of; every line a layout makes opens with its indent.
 type line []run
@@ -134,13 +144,13 @@ type word struct {
 // words are the words of spans read as a kind of text: marks become runs of their own kind, a link carries its
 // address, and a command stays one word, its spaces and all, so it never breaks.
 func (layout layout) words(spans []document.Span, base kind) []word {
-	return layout.formWords(spans, run{text: "", kind: base, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation})
+	return layout.formWords(spans, plainRun("", base))
 }
 
 // valueWords are the words of a fact's value, read as text, each run carrying the value they read as, which y
 // copies from any line of them.
 func (layout layout) valueWords(value []document.Span) []word {
-	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value), tone: 0, cites: noCitation})
+	return layout.formWords(value, run{text: "", kind: kindText, highlighted: false, address: "", copied: document.PlainText(value), tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)})
 }
 
 // formWords are the words of spans read in the form a run gives them.
@@ -161,9 +171,7 @@ func textWords(text string, base kind) []word {
 
 // wordOf is a text as one word of a kind, which no line breaks inside, its spaces and all: a check's cell, a count.
 func wordOf(text string, shown kind) word {
-	return word{
-		runs: []run{{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}}, highlightBefore: false, spaceBefore: kindText,
-	}
+	return word{runs: []run{plainRun(text, shown)}, highlightBefore: false, spaceBefore: kindText}
 }
 
 // wordReader gathers words from spans read one by one: a word goes on until a space ends it.
@@ -366,7 +374,7 @@ func cutWord(whole word, width int) (word, word) {
 
 // spaceRun is the space before a word, highlighted where the space was.
 func spaceRun(next word) run {
-	return run{text: space, kind: next.spaceBefore, highlighted: next.highlightBefore, address: "", copied: "", tone: 0, cites: noCitation}
+	return run{text: space, kind: next.spaceBefore, highlighted: next.highlightBefore, address: "", copied: "", tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
 }
 
 // wordRuns are words laid in one line, a space between each two.
@@ -406,7 +414,7 @@ func linesWidth(lines []line) int {
 
 // gapRun is a run of blanks a width wide: an indent, or the room between two columns.
 func gapRun(width int) run {
-	return run{text: strings.Repeat(space, max(width, 0)), kind: kindText, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
+	return plainRun(strings.Repeat(space, max(width, 0)), kindText)
 }
 
 // padded is a text with spaces after it to a width.

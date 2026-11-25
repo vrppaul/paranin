@@ -165,7 +165,7 @@ type paintedTab struct {
 
 // paintedPage is a tab's lines painted with the search it marks, and marked, unpainted, for the two rows a key fades;
 // the line of each match, in order: a line holding two matches is there twice; and what sets runs of its lines apart,
-// the match its count names and the tile the keys stand on.
+// the match its count names and the link the keys stand on.
 type paintedPage struct {
 	lines   []paintedLine
 	marked  []markedLine
@@ -234,12 +234,12 @@ func (model Model) paintedTab(place int) paintedTab {
 }
 
 // paintedPage paints a tab's lines, each match of the search it marks marked, the one its count names apart, and on
-// the blog's list the tile the keys stand on.
+// the blog's list the link the keys stand on.
 func (model Model) paintedPage(place int) paintedPage {
 	laid := model.laid[place]
 	marked := markedLines(laid.lines, model.markedQuery(place))
 	matches := matchLines(marked)
-	marks := pageMarks{named: model.namedMatchOf(place, matches), pointed: model.pointedTile(place), split: laid.split, overLines: laid.overLines()}
+	marks := pageMarks{named: model.namedMatchOf(place, matches), pointed: model.pointedLink(place), split: laid.split, overLines: laid.overLines()}
 	return paintedPage{lines: model.paint.tab(marked, model.frame, marks), marked: marked, matches: matches, marks: marks}
 }
 

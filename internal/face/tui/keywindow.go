@@ -30,13 +30,13 @@ func windowKeys() []string {
 }
 
 // keyNotes are the rows of the window of keys on a tab, the keys of normal mode in the order a reader learns them: on
-// the blog's list j and k go from post to post and Enter reads one; the keys between tabs only where more than one
-// tab shows; and what q does on the tab's page. The arrows, Home, End, Shift+Tab and Ctrl+C, which only stand in for
-// keys the window names, are left out.
+// the blog's list j and k go from link to link, its ways, its tags and its posts, and Enter follows one; the keys
+// between tabs only where more than one tab shows; and what q does on the tab's page. The arrows, Home, End, Shift+Tab
+// and Ctrl+C, which only stand in for keys the window names, are left out.
 func (model Model) keyNotes(place int) []hint {
 	moving := []hint{{key: downKey + space + upKey, does: "line down / up"}}
-	if len(model.laid[place].tiles) > 0 {
-		moving = []hint{{key: downKey + space + upKey, does: "post after / before"}, {key: enterMark, does: "read the post"}}
+	if len(model.laid[place].links) > 0 {
+		moving = []hint{{key: downKey + space + upKey, does: "link after / before"}, {key: enterMark, does: "follow the link"}}
 	}
 	notes := append(moving, hint{key: topKey + topKey + space + bottomKey, does: "top / bottom"})
 	if lastTab := len(model.tabs) - 1 + firstTabNumber; lastTab > firstTabNumber {

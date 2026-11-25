@@ -27,12 +27,13 @@ type readerPlace struct {
 	positions []tabPosition
 }
 
-// tabPosition is where a reader stands in a tab: how far down it they scrolled; on the blog's list the tile the keys
-// stand on; and the section the command line last went to, by its anchor, none where it went to none, as a page's
+// tabPosition is where a reader stands in a tab: how far down it they scrolled; on the blog's list the link the keys
+// stand on, counted from its first tile, so nought stands on that tile as the list opens and the head's links count
+// below it; and the section the command line last went to, by its anchor, none where it went to none, as a page's
 // address names the place a link went to.
 type tabPosition struct {
 	scroll int
-	tile   int
+	link   int
 	goneTo string
 }
 
@@ -270,7 +271,7 @@ func (model Model) wentTo(place document.Place) Model {
 	}
 	model.positions = slices.Clone(model.positions)
 	model.positions[model.chosen].goneTo = place.Section
-	return model.scrolledTo(line).withFirstTileFrom(line)
+	return model.scrolledTo(line).withFirstLinkFrom(line)
 }
 
 // notFound is what the command line says of a name no page goes by, as Neovim says it of a file.

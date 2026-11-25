@@ -29,7 +29,7 @@ func (layout layout) repositoryWords(repository *document.Repository) []word {
 		return nil
 	}
 	written := repository.Address.URL
-	link := run{text: written, kind: kindText, highlighted: false, address: layout.site.Address(repository.Address, routes.FormatChosen), copied: written, tone: 0, cites: noCitation}
+	link := run{text: written, kind: kindText, highlighted: false, address: layout.site.Address(repository.Address, routes.FormatChosen), copied: written, tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}
 	parts := pathParts(written)
 	if len(parts) == 0 {
 		return []word{{runs: []run{link}, highlightBefore: false, spaceBefore: kindText}}

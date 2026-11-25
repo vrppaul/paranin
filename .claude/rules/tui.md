@@ -13,8 +13,8 @@ The rules for Go are in `.claude/rules/go.md`.
 - Nothing else is laid out or painted for a key, but for the search and a buffer shown.
 - A key that changes what the search line holds, or opens or leaves it, paints the chosen tab's page again; a search confirmed or taken away paints every tab again, once.
 - n and N, naming another match, paint again only the lines of the match named before and of the one named now.
-- On the blog's list, j, k or a move that takes the page from the tile chosen, choosing another, paint again only the lines of the tile left and of the one chosen.
-- Showing another buffer, by `:e`, `:checkhealth` or `:Lazy`, by Enter on a tile of the blog's list, or by the key `q` or `:q` on any page but the résumé, lays out and paints the buffer shown, once.
+- On the blog's list, j, k or a move that takes the page from the link chosen, choosing another, paint again only the lines of the link left and of the one chosen.
+- Showing another buffer, by `:e`, `:checkhealth` or `:Lazy`, by Enter on a link of the blog's list, or by the key `q` or `:q` on any page but the résumé, lays out and paints the buffer shown, once.
 - A tab shown before a buffer is shown, and still shown after, keeps its layout and its paint.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.
 - The layout says what a piece of text is, a kind; the paint says how each kind looks. No colour, weight or style is written in the layout.

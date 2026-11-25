@@ -579,10 +579,11 @@ func TestEachListKeepsTheTileItsKeysStoodOn(test *testing.T) {
 	}
 }
 
-// The keys never stand on a tile out of sight: a move that takes the page from the tile they stand on has them stand
-// on the tile in sight nearest where the page went, G on the last, gg on the first, a search's match on its own; and a
-// screen made smaller keeps the tile they stand on in sight. Enter then reads the post of a tile the reader sees.
-func TestTheTileTheKeysStandOnStaysInSight(test *testing.T) {
+// The keys never stand on a link out of sight: a move that takes the page from the link they stand on has them stand
+// on the link in sight nearest where the page went, G on the last tile, gg on the first grouping, a search's match on
+// its own tile; and a screen made smaller keeps the link they stand on in sight. Enter then follows a link the reader
+// sees.
+func TestTheLinkTheKeysStandOnStaysInSight(test *testing.T) {
 	// a screen too short for the list whole, and one shorter still
 	const (
 		shortScreen  = 14
@@ -593,24 +594,24 @@ func TestTheTileTheKeysStandOnStaysInSight(test *testing.T) {
 		name    string
 		moved   Model
 		resized int
-		post    string
-		// date is the day set into the post's tile's top edge, which shows where the tile is in sight at all
-		date string
+		// seen is what shows the link in sight: the day set into a tile's top edge, or a grouping's word
+		seen   string
+		footer string
 	}{
-		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, post: "first", date: "5 Nov 2026"},
-		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, post: "fifth", date: "1 Nov 2026"},
-		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, post: "third", date: "3 Nov 2026"},
-		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, post: "second", date: "4 Nov 2026"},
+		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, seen: "5 Nov 2026", footer: "2:first*"},
+		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, seen: "years", footer: listAlone},
+		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, seen: "3 Nov 2026", footer: "2:third*"},
+		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, seen: "4 Nov 2026", footer: "2:second*"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			next, _ := testCase.moved.Update(tea.WindowSizeMsg{Width: commonWidth, Height: testCase.resized})
 			model := as[Model](test, next)
-			if seen := screenOf(test, model); !strings.Contains(seen, testCase.date) {
-				test.Errorf("the screen =\n%s\nwant the %s post's tile in sight", seen, testCase.post)
+			if screen := screenOf(test, model); !strings.Contains(screen, testCase.seen) {
+				test.Errorf("the screen =\n%s\nwant %q in sight", screen, testCase.seen)
 			}
-			if footer := footerOf(screenOf(test, pressed(test, model, "enter"))); !strings.Contains(footer, "2:"+testCase.post+"*") {
-				test.Errorf("after Enter the footer = %q, want the %s post read", footer, testCase.post)
+			if footer := footerOf(screenOf(test, pressed(test, model, "enter"))); !strings.Contains(footer, testCase.footer) {
+				test.Errorf("after Enter the footer = %q, want %q", footer, testCase.footer)
 			}
 		})
 	}
@@ -630,28 +631,82 @@ func TestTheListOpensAtItsTopAndASearchShowsItsTilesDate(test *testing.T) {
 	}
 }
 
-// On the blog's list j and k go from tile to tile in reading order, newest first, staying on the first and the last,
-// and Enter opens the post of the tile the keys stand on beside the list.
-func TestTheKeysGoFromTileToTile(test *testing.T) {
+// The terminals the keys walk the blog's list on: the least a terminal opens at, and a roomy one, wide enough for the
+// groups' names' column
+const (
+	leastWidth  = 80
+	leastHeight = 24
+	roomyWidth  = 200
+	roomyHeight = 50
+)
+
+// On the blog's list j and k go from link to link in reading order: the ways the list is grouped, its tags, then its
+// tiles, newest first, staying on the first and the last; the list opens on its first tile. Enter follows the link the
+// keys stand on, as the page's links lead: a grouping to the list grouped so, a tag to the list it filters, the tag the
+// list is filtered by to the whole list, a tile to its post beside the list. So on the list by year, by series and
+// filtered, on the least terminal and a roomy one.
+func TestTheKeysGoFromLinkToLink(test *testing.T) {
+	// what tells the lists apart on their first screen: how many posts the list by year holds, the series' line on
+	// the list by series, and the tile each tag keeps
+	const (
+		byYear       = "2 posts"
+		bySeries     = "1 of 2 out"
+		taggedTools  = "The second post"
+		taggedReader = "Reading slowly"
+	)
 	cases := []struct {
-		name string
-		keys []string
-		post string
+		name    string
+		opening string
+		keys    []string
+		footer  string
+		holds   []string
+		lacks   []string
 	}{
-		{name: "Enter on the first tile", keys: []string{"enter"}, post: "2:fifth*"},
-		{name: "j to the next, in the next group", keys: []string{"j", "enter"}, post: "2:fourth*"},
-		{name: "past the last", keys: []string{"j", "j", "j", "j", "j", "enter"}, post: "2:first*"},
-		{name: "k back", keys: []string{"j", "j", "k", "enter"}, post: "2:fourth*"},
-		{name: "past the first", keys: []string{"k", "enter"}, post: "2:fifth*"},
-		{name: "the down arrow", keys: []string{"down", "enter"}, post: "2:fourth*"},
+		{name: "Enter on the first tile, where the list opens", opening: "e blog", keys: []string{"enter"}, footer: "2:second*", holds: nil, lacks: nil},
+		{name: "j to the next tile", opening: "e blog", keys: []string{"j", "enter"}, footer: postRead, holds: nil, lacks: nil},
+		{name: "j past the last", opening: "e blog", keys: []string{"j", "j", "enter"}, footer: postRead, holds: nil, lacks: nil},
+		{name: "the down arrow", opening: "e blog", keys: []string{"down", "enter"}, footer: postRead, holds: nil, lacks: nil},
+		{name: "k to the last tag", opening: "e blog", keys: []string{"k", "enter"}, footer: listAlone, holds: []string{taggedTools}, lacks: []string{taggedReader}},
+		{name: "k to the first tag", opening: "e blog", keys: []string{"k", "k", "k", "enter"}, footer: listAlone, holds: []string{taggedReader}, lacks: []string{taggedTools}},
+		{name: "k to the second grouping", opening: "e blog", keys: []string{"k", "k", "k", "k", "enter"}, footer: listAlone, holds: []string{bySeries}, lacks: nil},
+		{name: "k past the first", opening: "e blog", keys: []string{"k", "k", "k", "k", "k", "k", "enter"}, footer: listAlone, holds: []string{byYear}, lacks: nil},
+		{name: "the up arrow", opening: "e blog", keys: []string{"up", "enter"}, footer: listAlone, holds: []string{taggedTools}, lacks: []string{taggedReader}},
+		{name: "j from the head to the first tile", opening: "e blog", keys: []string{"k", "j", "enter"}, footer: "2:second*", holds: nil, lacks: nil},
+		{name: "by series, Enter on its first tile", opening: "e blog/series", keys: []string{"enter"}, footer: postRead, holds: nil, lacks: nil},
+		{name: "by series, k to the first grouping", opening: "e blog/series", keys: []string{"k", "k", "k", "k", "k", "enter"}, footer: listAlone, holds: []string{byYear}, lacks: nil},
+		{name: "filtered, Enter on its tile", opening: "e blog?tag=tools", keys: []string{"enter"}, footer: "2:second*", holds: nil, lacks: nil},
+		{name: "filtered, k to its filter", opening: "e blog?tag=tools", keys: []string{"k", "enter"}, footer: listAlone, holds: []string{byYear}, lacks: nil},
+		{name: "filtered, k to another tag", opening: "e blog?tag=tools", keys: []string{"k", "k", "enter"}, footer: listAlone, holds: []string{taggedReader}, lacks: []string{taggedTools}},
 	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			model := pressed(test, handBlogModel(test, commonWidth, tallHeight), testCase.keys...)
-			if footer := footerOf(screenOf(test, model)); !strings.Contains(footer, testCase.post) {
-				test.Errorf("on the list after %q the footer = %q, want %q", testCase.keys, footer, testCase.post)
-			}
-		})
+	terminals := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "the least", width: leastWidth, height: leastHeight},
+		{name: "a roomy one", width: roomyWidth, height: roomyHeight},
+	}
+	drawing := sessionDrawing(contentWith(test, secondPost()), false)
+	for _, terminal := range terminals {
+		for _, testCase := range cases {
+			test.Run(terminal.name+"/"+testCase.name, func(test *testing.T) {
+				list := commanded(test, New(drawing, "blog", terminal.width, terminal.height, fixtures.Day()), testCase.opening)
+				screen := screenOf(test, pressed(test, list, testCase.keys...))
+				if footer := footerOf(screen); !strings.Contains(footer, testCase.footer) {
+					test.Errorf("after :%s and %q the footer = %q, want %q", testCase.opening, testCase.keys, footer, testCase.footer)
+				}
+				for _, want := range testCase.holds {
+					if !strings.Contains(screen, want) {
+						test.Errorf("after :%s and %q the screen =\n%s\nwant %q on it", testCase.opening, testCase.keys, screen, want)
+					}
+				}
+				for _, unwanted := range testCase.lacks {
+					if strings.Contains(screen, unwanted) {
+						test.Errorf("after :%s and %q the screen =\n%s\nwant no %q on it", testCase.opening, testCase.keys, screen, unwanted)
+					}
+				}
+			})
+		}
 	}
 }
 

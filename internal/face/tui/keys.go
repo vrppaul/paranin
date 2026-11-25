@@ -86,7 +86,7 @@ func normalActions() map[string]action {
 		downArrow:    Model.downward,
 		upKey:        Model.upward,
 		upArrow:      Model.upward,
-		enterKey:     Model.openTile,
+		enterKey:     Model.followLink,
 		topKey:       Model.home,
 		homeKey:      Model.home,
 		bottomKey:    Model.end,

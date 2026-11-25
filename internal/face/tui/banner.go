@@ -44,7 +44,7 @@ func tonedRows(rows []string, shown kind, width int) []line {
 				toned[last].text += string(letter)
 				continue
 			}
-			toned = append(toned, run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: tone, cites: noCitation})
+			toned = append(toned, tonedRun(string(letter), shown, tone))
 		}
 		lines = append(lines, toned)
 	}
@@ -61,8 +61,7 @@ func gradientWords(text string, shown kind) []word {
 			words, current = appendWord(words, current), word{runs: nil, highlightBefore: false, spaceBefore: kindText}
 			continue
 		}
-		piece := run{text: string(letter), kind: shown, highlighted: false, address: "", copied: "", tone: toneAt(index, len(letters)), cites: noCitation}
-		current.runs = append(current.runs, piece)
+		current.runs = append(current.runs, tonedRun(string(letter), shown, toneAt(index, len(letters))))
 	}
 	return appendWord(words, current)
 }
@@ -73,6 +72,13 @@ func appendWord(words []word, next word) []word {
 		return words
 	}
 	return append(words, next)
+}
+
+// tonedRun is a text of a kind painted in several colours, in the one its tone names.
+func tonedRun(text string, shown kind, tone int) run {
+	toned := plainRun(text, shown)
+	toned.tone = tone
+	return toned
 }
 
 // toneAt is the tone of a column along a width: the first at its start, the last at its end.

@@ -38,7 +38,7 @@ type Drawing struct {
 type Model struct {
 	// buffers are the tabs of each page the session holds, in every language. sitePage is the page the site's session
 	// shows, blog what the blog's session shows, in one language, and inBlog whether the blog's is the session shown;
-	// tabs are its windows. left is where the reader stood in each page, as they left it, and chosen, scrolls and tiles
+	// tabs are its windows. left is where the reader stood in each page, as they left it, and chosen, scrolls and links
 	// below where they stand in the tabs shown
 	buffers  map[document.Page][]tab
 	sitePage document.Page
@@ -177,7 +177,7 @@ func themeOf(dark bool) look.Theme {
 }
 
 // relaid is the model with every tab laid out again for the terminal's size, then painted, each list scrolled to
-// keep the tile the keys stand on in sight.
+// keep the link the keys stand on in sight.
 func (model Model) relaid() Model {
 	model.frame = frameOf(model.terminal.width, model.terminal.height, widestPageOf(model.inBlog))
 	model.laid = make([]laidTab, 0, len(model.tabs))
@@ -186,7 +186,7 @@ func (model Model) relaid() Model {
 	}
 	// the matches shown were places among the matches of the layout gone
 	model.search.shown = make([]shownMatch, len(model.tabs))
-	model = model.repainted().withTilesInSight()
+	model = model.repainted().withLinksInSight()
 	// the line a search began at is a scroll of the chosen tab, held to the new layout as every scroll is
 	model.search.begunAt = model.scrollWithin(model.chosen, model.search.begunAt)
 	// the menu over the command line keeps the item chosen in sight and stays full in the rows the new size has
@@ -249,8 +249,8 @@ func wrapped(place, count int) int {
 	return (place%count + count) % count
 }
 
-// scrolledTo is the chosen tab scrolled to a line; on the blog's list, where the tile the keys stand on goes out of
-// sight, they stand on the tile in sight nearest the line, the later of a row going down and the earlier going up.
+// scrolledTo is the chosen tab scrolled to a line; on the blog's list, where the link the keys stand on goes out of
+// sight, they stand on the link in sight nearest the line, the later of a row going down and the earlier going up.
 func (model Model) scrolledTo(line int) Model {
 	column := 0
 	if line > model.positions[model.chosen].scroll {
@@ -259,12 +259,12 @@ func (model Model) scrolledTo(line int) Model {
 	return model.scrolledToward(line, spot{line: line, column: column})
 }
 
-// scrolledToward is the chosen tab scrolled to a line; on the blog's list, where the tile the keys stand on goes out
-// of sight, they stand on the tile in sight nearest a spot the move went to.
+// scrolledToward is the chosen tab scrolled to a line; on the blog's list, where the link the keys stand on goes out
+// of sight, they stand on the link in sight nearest a spot the move went to.
 func (model Model) scrolledToward(line int, near spot) Model {
 	model.positions = slices.Clone(model.positions)
 	model.positions[model.chosen].scroll = line
-	return model.clamped().withChosenTileNear(near)
+	return model.clamped().withChosenLinkNear(near)
 }
 
 // clamped is the model with each tab scrolled within it, as the tab is drawn now.

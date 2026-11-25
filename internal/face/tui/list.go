@@ -39,22 +39,51 @@ const (
 // The mark before a post's tag, as readers know a tag that gathers posts (DESIGN.md, Content)
 const tagMark = "#"
 
-// laidTile is a post's tile on the blog's list, as a key goes to it: the post's page; the lines of its top edge and
-// its bottom edge; and the columns between its left edge and its right one. The zero tile is none.
-type laidTile struct {
+// laidLink is a link of the blog's list a key goes to (DESIGN.md, The TUI), a way its head offers or a post's tile:
+// the page Enter opens; its first line and its last, which a key shows whole, a tile's edges among them; and the
+// ground the keys' mark lays on it. The zero link is none.
+type laidLink struct {
 	page   document.Page
 	top    int
 	bottom int
-	left   int
-	right  int
+	ground linkGround
 }
 
-// groundOn is the columns the tile takes on a line, the rows between its edges: none on any other line.
-func (tile laidTile) groundOn(line int) columnSpan {
-	if line <= tile.top || line >= tile.bottom {
+// linkGround is the cells a link's mark lays the panel's ground on: a way's words, or the rows between a tile's edges
+// over the columns between them.
+type linkGround struct {
+	lines   lineSpan
+	columns columnSpan
+}
+
+// tileLink is a post's tile as a link: from its top edge to its bottom edge, its ground the rows between them over
+// columns.
+func tileLink(page document.Page, top, bottom int, columns columnSpan) laidLink {
+	return laidLink{page: page, top: top, bottom: bottom, ground: linkGround{lines: lineSpan{first: top + 1, end: bottom}, columns: columns}}
+}
+
+// wordsLink is words on a line that open a page as a link, its ground the columns they take.
+func wordsLink(page document.Page, line int, columns columnSpan) laidLink {
+	return laidLink{page: page, top: line, bottom: line, ground: linkGround{lines: lineSpan{first: line, end: line + 1}, columns: columns}}
+}
+
+// groundOn is the columns the link's ground takes on a line: none on a line it does not cross.
+func (link laidLink) groundOn(line int) columnSpan {
+	if !link.ground.lines.holds(line) {
 		return columnSpan{start: 0, end: 0}
 	}
-	return columnSpan{start: tile.left, end: tile.right}
+	return link.ground.columns
+}
+
+// shifted is the link a number of lines lower and of columns further right.
+func (link laidLink) shifted(lines, columns int) laidLink {
+	ground := link.ground
+	link.top, link.bottom = link.top+lines, link.bottom+lines
+	link.ground = linkGround{
+		lines:   lineSpan{first: ground.lines.first + lines, end: ground.lines.end + lines},
+		columns: columnSpan{start: ground.columns.start + columns, end: ground.columns.end + columns},
+	}
+	return link
 }
 
 // spot is a place on a tab's lines, its line and its column, which a move went to.
@@ -63,13 +92,14 @@ type spot struct {
 	column int
 }
 
-// nearer is whether the tile lies nearer a spot than another: fewer lines between them, or as few and fewer columns.
-func (tile laidTile) nearer(than laidTile, near spot) bool {
-	lines, otherLines := max(tile.top-near.line, near.line-tile.bottom, 0), max(than.top-near.line, near.line-than.bottom, 0)
+// nearer is whether the link lies nearer a spot than another: fewer lines between them, or as few and fewer columns.
+func (link laidLink) nearer(than laidLink, near spot) bool {
+	lines, otherLines := max(link.top-near.line, near.line-link.bottom, 0), max(than.top-near.line, near.line-than.bottom, 0)
 	if lines != otherLines {
 		return lines < otherLines
 	}
-	return max(tile.left-near.column, near.column-tile.right, 0) < max(than.left-near.column, near.column-than.right, 0)
+	columns, otherColumns := link.ground.columns, than.ground.columns
+	return max(columns.start-near.column, near.column-columns.end, 0) < max(otherColumns.start-near.column, near.column-otherColumns.end, 0)
 }
 
 // laidGroup is a group of the blog's list whose name stands in the names' column: the lines its tiles take, from its
@@ -107,12 +137,14 @@ func junctionMarks() map[junction]string {
 }
 
 // list lays out the blog's list (DESIGN.md, The TUI): its head, then each group's tiles, the group's name in the
-// column at its left where the page is wide enough, over its tiles where not; with the tiles a key goes to and the
-// groups whose names stay in sight, and the line each series' group starts at. A block that is no group, which compose
-// writes none of, stands as any page lays it out, as the page draws it.
+// column at its left where the page is wide enough, over its tiles where not; with the links a key goes to, the head's
+// and the tiles', and the groups whose names stay in sight, and the line each series' group starts at. A block that is
+// no group, which compose writes none of, stands as any page lays it out, as the page draws it.
 func (layout layout) list(head document.Head, blocks []document.Block) laidTab {
 	column := nameColumnOf(layout.width)
-	laid := laidTab{lines: layout.blogHead(head, column), tiles: []laidTile{}, groups: []laidGroup{}, split: 0, sections: map[string]int{}, outline: noOutline()}
+	headLines := layout.blogHead(head, column)
+	links := headLinks(headLines)
+	laid := laidTab{lines: headLines, links: links, firstTile: len(links), groups: []laidGroup{}, split: 0, sections: map[string]int{}, outline: noOutline()}
 	if column > 0 {
 		laid.split = column + nameGap
 	}
@@ -166,7 +198,7 @@ func (layout layout) blogHead(head document.Head, column int) []line {
 
 // waysLines are the ways the list is grouped (compose.ListWords.Groupings), after the site's word before them, the
 // grouping shown chosen, a filtered list's the one it filters; then its filters, the tags of the posts it lists; the
-// filters on lines of their own where both do not fit a line.
+// filters on lines of their own where both do not fit a line. Each way and each filter opens the list it leads to.
 func (layout layout) waysLines(head document.Head) []line {
 	listWords := layout.siteWords.ListWords
 	grouped, _ := head.Page.Unfiltered()
@@ -176,11 +208,11 @@ func (layout layout) waysLines(head document.Head) []line {
 		if way.List == grouped {
 			shown = kindChosen
 		}
-		grouping = append(grouping, wordOf(space+way.Words+space, shown))
+		grouping = append(grouping, opening(chipWord(way.Words, shown), way.List))
 	}
-	filters := make([][]word, 0, len(head.Filters))
+	filters := make([]word, 0, len(head.Filters))
 	for _, filter := range head.Filters {
-		filters = append(filters, filterWords(filter))
+		filters = append(filters, opening(filterWord(filter), filter.Page))
 	}
 	ways, tags := wordRuns(grouping), tagRuns(filters)
 	if len(tags) == 0 {
@@ -189,45 +221,94 @@ func (layout layout) waysLines(head document.Head) []line {
 	if runsWidth(ways)+waysGap+runsWidth(tags) <= layout.width {
 		return []line{slices.Concat(ways, line{gapRun(waysGap)}, tags)}
 	}
-	return slices.Concat([]line{ways}, blankLines(), layout.fill(slices.Concat(filters...), 0))
+	return slices.Concat([]line{ways}, blankLines(), layout.fill(filters, 0))
 }
 
-// filterWords are a filter the list's head offers as the page writes it (DESIGN.md, BlogHead and Tag): its tag's muted
-// word after a faint hash; the filter the list is filtered by chosen whole, hash and all, a space either side, so it
-// stands as one chip.
-func filterWords(filter document.Filter) []word {
+// filterWord is a filter a head offers as the page writes it (DESIGN.md, BlogHead and Tag): its tag's muted word after
+// a faint hash; the filter the list is filtered by chosen whole, hash and all, a space either side, so it stands as
+// one chip.
+func filterWord(filter document.Filter) word {
 	if !filter.Current {
-		return tagWords([]string{filter.Tag}, kindMuted)
+		return tagWord(filter.Tag, kindMuted)
 	}
-	chosen := wordOf(space+tagMark+filter.Tag+space, kindChosen)
+	chosen := chipWord(tagMark+filter.Tag, kindChosen)
 	chosen.spaceBefore = kindChosen
-	return []word{chosen}
+	return chosen
 }
 
-// tagWords are tags as the page writes them (DESIGN.md, Tag): each its word after a faint hash, the word of a kind.
+// chipWord is a text of a kind standing as a chip, a space either side, each space a run of its own, so a link's ground
+// and underline keep to the text: lipgloss draws the spaces of an underlined run without their reversal.
+func chipWord(text string, shown kind) word {
+	padding := plainRun(space, shown)
+	return word{runs: []run{padding, plainRun(text, shown), padding}, highlightBefore: false, spaceBefore: kindText}
+}
+
+// opening is a word that opens a page where the keys stand on it, each of its runs that holds a letter, so a chip's
+// padding stays out of the link.
+func opening(shown word, page document.Page) word {
+	runs := make([]run, 0, len(shown.runs))
+	for _, piece := range shown.runs {
+		if strings.TrimSpace(piece.text) != "" {
+			piece.opens = page
+		}
+		runs = append(runs, piece)
+	}
+	shown.runs = runs
+	return shown
+}
+
+// tagWords are tags as the page writes them (DESIGN.md, Tag), each tag's word of a kind.
 func tagWords(tags []string, wordKind kind) []word {
 	words := make([]word, 0, len(tags))
 	for _, tag := range tags {
-		words = append(words, word{runs: []run{plainRun(tagMark, kindFaint), plainRun(tag, wordKind)}, highlightBefore: false, spaceBefore: kindText})
+		words = append(words, tagWord(tag, wordKind))
 	}
 	return words
 }
 
-// tagRuns are filters on one line, each two the page's gap apart, the words of each a space apart.
-func tagRuns(filters [][]word) line {
+// tagWord is a tag as the page writes it (DESIGN.md, Tag): its word after a faint hash, the word of a kind.
+func tagWord(tag string, wordKind kind) word {
+	return word{runs: []run{plainRun(tagMark, kindFaint), plainRun(tag, wordKind)}, highlightBefore: false, spaceBefore: kindText}
+}
+
+// tagRuns are filters on one line, each two the page's gap apart.
+func tagRuns(filters []word) line {
 	runs := line{}
 	for index, filter := range filters {
 		if index > 0 {
 			runs = append(runs, gapRun(tagGap))
 		}
-		runs = append(runs, wordRuns(filter)...)
+		runs = append(runs, filter.runs...)
 	}
 	return runs
 }
 
-// plainRun is a text of a kind, as one run with no mark of its own.
-func plainRun(text string, shown kind) run {
-	return run{text: text, kind: shown, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
+// headLinks are the links among the lines of the list's head, in reading order: runs side by side on a line that open
+// one page, as a tag's hash and word, are one link.
+func headLinks(lines []line) []laidLink {
+	links := []laidLink{}
+	for row, shown := range lines {
+		column := 0
+		for _, piece := range shown {
+			end := column + textWidth(piece.text)
+			if piece.opensPage() {
+				links = withLinkRun(links, piece.opens, row, columnSpan{start: column, end: end})
+			}
+			column = end
+		}
+	}
+	return links
+}
+
+// withLinkRun is links with a run that opens a page at columns of a row: the last link widened over it where the run
+// goes on from it, opening the same page; else a link of its own after them.
+func withLinkRun(links []laidLink, opens document.Page, row int, columns columnSpan) []laidLink {
+	last := len(links) - 1
+	if last >= 0 && links[last].page == opens && links[last].top == row && links[last].ground.columns.end == columns.start {
+		links[last].ground.columns.end = columns.end
+		return links
+	}
+	return append(links, wordsLink(opens, row, columns))
 }
 
 // groupOver lays out a group on a page with no names' column: its name in the gradient and how many posts it holds on
@@ -237,7 +318,7 @@ func (layout layout) groupOver(laid laidTab, group document.Group) laidTab {
 	heading := slices.Concat(layout.continued(name, layout.words(group.Posts.Count, kindMuted), 0), layout.fill(layout.words(group.Posts.Line, kindMuted), 0))
 	laid.lines = slices.Concat(laid.lines, heading, blankLines())
 	tiles := layout.tiles(group.Posts.List)
-	return laid.joined(tiles.lines, tiles.tiles, 0)
+	return laid.joined(tiles.lines, tiles.links, 0)
 }
 
 // groupBeside lays out a group beside its name, in the names' column of a width: the name in the titles' font, a
@@ -248,13 +329,13 @@ func (layout layout) groupBeside(laid laidTab, group document.Group, column int)
 	about := slices.Concat(named.fill(named.words(group.Posts.Line, kindMuted), 0), named.fill(named.words(group.Posts.Count, kindMuted), 0))
 	name := stacked(named.titleRows(document.PlainText(group.Title)), about)
 	first, tiles := len(laid.lines), tiled.tiles(group.Posts.List)
-	laid = laid.joined(besideLines(name, column+nameGap, tiles.lines), tiles.tiles, column+nameGap)
+	laid = laid.joined(besideLines(name, column+nameGap, tiles.lines), tiles.links, column+nameGap)
 	laid.groups = append(laid.groups, laidGroup{first: first, end: len(laid.lines), name: name})
 	return laid
 }
 
 // tiles lays out posts as a grid of tiles: each row of tiles as tall as its tallest, the tiles sharing their edges, as
-// tmux's panes share theirs. A post out is a tile a key goes to; a part to come is none.
+// tmux's panes share theirs. A post out is a tile a key goes to, a link; a part to come is none.
 func (layout layout) tiles(posts []document.ListedPost) laidTab {
 	grid := gridOf(layout.width)
 	inside := layout
@@ -269,11 +350,12 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 		rows = append(rows, row)
 	}
 	framed := grid.framed(rows)
-	laid := laidTab{lines: framed.lines, tiles: []laidTile{}, groups: nil, split: 0, sections: nil, outline: noOutline()}
+	laid := laidTab{lines: framed.lines, links: []laidLink{}, firstTile: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
 	for index, post := range posts {
 		if out, isOut := post.Readiness.(document.PostOut); isOut {
 			row, left := index/grid.columns, index%grid.columns*grid.width+textWidth(frameDown)
-			laid.tiles = append(laid.tiles, laidTile{page: out.Page, top: framed.edges[row], bottom: framed.edges[row+1], left: left, right: left + grid.width - textWidth(frameDown)})
+			columns := columnSpan{start: left, end: left + grid.width - textWidth(frameDown)}
+			laid.links = append(laid.links, tileLink(out.Page, framed.edges[row], framed.edges[row+1], columns))
 		}
 	}
 	return laid
@@ -311,13 +393,12 @@ func (grid tileGrid) framed(rows [][]gridCell) framedGrid {
 	return laid
 }
 
-// joined is a laid list with lines after its own, among them tiles laid out from the lines' top, standing a number of
-// columns in from the page's left edge.
-func (laid laidTab) joined(lines []line, tiles []laidTile, left int) laidTab {
+// joined is a laid list with lines after its own, among them tiles' links laid out from the lines' top, standing a
+// number of columns in from the page's left edge.
+func (laid laidTab) joined(lines []line, tiles []laidLink, left int) laidTab {
 	first := len(laid.lines)
 	for _, tile := range tiles {
-		tile.top, tile.bottom, tile.left, tile.right = tile.top+first, tile.bottom+first, tile.left+left, tile.right+left
-		laid.tiles = append(laid.tiles, tile)
+		laid.links = append(laid.links, tile.shifted(first, left))
 	}
 	laid.lines = append(laid.lines, lines...)
 	return laid
@@ -367,12 +448,13 @@ type tileWords struct {
 
 // tileWordsOf lays out a tile's words (DESIGN.md, Tile): a post out by its title bold and its lead muted, a part to
 // come by its title faint and not bold; at its foot its part and its series where its group does not name the series,
-// and its tags, faint.
+// and its tags, faint. A post out's title opens it.
 func (layout layout) tileWordsOf(post document.ListedPost) tileWords {
 	top := []line{}
-	switch post.Readiness.(type) {
+	switch typed := post.Readiness.(type) {
 	case document.PostOut:
-		top = slices.Concat(titleLines(layout.fill(textWords(document.PlainText(post.Title), kindTileTitle), 0)), layout.fill(layout.words(post.Lead, kindMuted), 0))
+		title := titleLines(layout.fill(textWords(document.PlainText(post.Title), kindStrong), 0), typed.Page)
+		top = slices.Concat(title, layout.fill(layout.words(post.Lead, kindMuted), 0))
 	case document.ComingPart:
 		top = layout.fill(layout.words(post.Title, kindFaint), 0)
 	}
@@ -384,16 +466,18 @@ func (layout layout) tileWordsOf(post document.ListedPost) tileWords {
 	return tileWords{top: top, foot: append(foot, layout.fill(tagWords(post.Tags, kindFaint), 0)...)}
 }
 
-// titleLines are a tile's title's lines, each one run after its indent, so the tile the keys stand on underlines
-// the spaces between its words too, as the page underlines a link whole.
-func titleLines(lines []line) []line {
+// titleLines are a tile's title's lines, opening its post's page, each one run after its indent, so the tile the keys
+// stand on underlines the spaces between its words too, as the page underlines a link whole.
+func titleLines(lines []line, page document.Page) []line {
 	whole := make([]line, 0, len(lines))
 	for _, shown := range lines {
 		var text strings.Builder
 		for _, piece := range shown[1:] {
 			text.WriteString(piece.text)
 		}
-		whole = append(whole, line{shown[0], plainRun(text.String(), kindTileTitle)})
+		title := plainRun(text.String(), kindStrong)
+		title.opens = page
+		whole = append(whole, line{shown[0], title})
 	}
 	return whole
 }
@@ -533,122 +617,130 @@ func stuckNames(groups []paintedGroup, scroll, pageRows int) []stuckLine {
 	return stuck
 }
 
-// pointedTile is the tile the keys stand on in a tab, the zero tile where the tab holds no tiles.
-func (model Model) pointedTile(place int) laidTile {
-	tiles := model.laid[place].tiles
-	if len(tiles) == 0 {
-		return laidTile{page: document.PageOf(document.PageNone), top: 0, bottom: 0, left: 0, right: 0}
+// linkStoodOn is the place among a tab's links of the one the keys stand on: the tab's position counts it from the
+// first tile, held among them.
+func (model Model) linkStoodOn(place int) int {
+	laid := model.laid[place]
+	return min(max(laid.firstTile+model.positions[place].link, 0), len(laid.links)-1)
+}
+
+// pointedLink is the link the keys stand on in a tab, the zero link where the tab holds no links.
+func (model Model) pointedLink(place int) laidLink {
+	links := model.laid[place].links
+	if len(links) == 0 {
+		noGround := linkGround{lines: lineSpan{first: 0, end: 0}, columns: columnSpan{start: 0, end: 0}}
+		return laidLink{page: document.PageOf(document.PageNone), top: 0, bottom: 0, ground: noGround}
 	}
-	return tiles[model.positions[place].tile]
+	return links[model.linkStoodOn(place)]
 }
 
-// onList is whether the tab chosen is the blog's list, whose keys go from tile to tile.
+// onList is whether the tab chosen is the blog's list, whose keys go from link to link.
 func (model Model) onList() bool {
-	return len(model.laid[model.chosen].tiles) > 0
+	return len(model.laid[model.chosen].links) > 0
 }
 
-// downward is j's and the down arrow's: on the blog's list a tile on, else a line down.
+// downward is j's and the down arrow's: on the blog's list a link on, else a line down.
 func (model Model) downward() (Model, tea.Cmd) {
 	return model.movedBy(forwardStep), nil
 }
 
-// upward is k's and the up arrow's: on the blog's list a tile back, else a line up.
+// upward is k's and the up arrow's: on the blog's list a link back, else a line up.
 func (model Model) upward() (Model, tea.Cmd) {
 	return model.movedBy(backwardStep), nil
 }
 
-// movedBy is the model a step on or back: on the blog's list a tile, else a line.
+// movedBy is the model a step on or back: on the blog's list a link, else a line.
 func (model Model) movedBy(step int) Model {
 	if model.onList() {
-		return model.toTile(model.positions[model.chosen].tile + step)
+		return model.toLink(model.linkStoodOn(model.chosen) + step)
 	}
 	return model.scrolledTo(model.positions[model.chosen].scroll + step)
 }
 
-// toTile has the keys stand on a tile of the chosen list, in reading order, and the page scrolled to show it whole;
-// past the first tile or the last the keys stay and the page scrolls by the line the step went past, so the list's
-// head and foot come in sight.
-func (model Model) toTile(wanted int) Model {
-	tiles, scroll := model.laid[model.chosen].tiles, model.positions[model.chosen].scroll
-	chosen := min(max(wanted, 0), len(tiles)-1)
-	if chosen == model.positions[model.chosen].tile {
+// toLink has the keys stand on a link of the chosen list, by its place in reading order, and the page scrolled to show
+// it whole; past the first link or the last the keys stay and the page scrolls by the line the step went past, so the
+// list's head and foot come in sight.
+func (model Model) toLink(wanted int) Model {
+	links, scroll := model.laid[model.chosen].links, model.positions[model.chosen].scroll
+	chosen := min(max(wanted, 0), len(links)-1)
+	if chosen == model.linkStoodOn(model.chosen) {
 		return model.scrolledTo(scroll + wanted - chosen)
 	}
-	model = model.choseTile(chosen)
-	return model.scrolledTo(model.scrollShowing(model.chosen, tiles[chosen]))
+	model = model.choseLink(chosen)
+	return model.scrolledTo(model.scrollShowing(model.chosen, links[chosen]))
 }
 
-// choseTile has the keys stand on a tile of the chosen list, the tile left and the tile chosen painted again and no
-// other line.
-func (model Model) choseTile(chosen int) Model {
-	tiles := model.laid[model.chosen].tiles
-	left, tile := tiles[model.positions[model.chosen].tile], tiles[chosen]
+// choseLink has the keys stand on a link of the chosen list, by its place, the link left and the link chosen painted
+// again and no other line.
+func (model Model) choseLink(chosen int) Model {
+	laid := model.laid[model.chosen]
+	left, link := model.pointedLink(model.chosen), laid.links[chosen]
 	marks := model.drawn.tabs[model.chosen].marks
-	marks.pointed = tile
+	marks.pointed = link
 	model.positions = slices.Clone(model.positions)
-	model.positions[model.chosen].tile = chosen
-	return model.repaintedLines(slices.Concat(linesBetween(left.top, left.bottom), linesBetween(tile.top, tile.bottom)), marks)
+	model.positions[model.chosen].link = chosen - laid.firstTile
+	return model.repaintedLines(slices.Concat(linesBetween(left.top, left.bottom), linesBetween(link.top, link.bottom)), marks)
 }
 
-// withChosenTileNear is the model where, on the blog's list chosen, the tile the keys stand on has gone out of sight:
-// the keys stand on the tile nearest a spot the page went to, among those in sight where any is.
-func (model Model) withChosenTileNear(near spot) Model {
-	tiles, chosen := model.laid[model.chosen].tiles, model.chosen
-	if len(tiles) == 0 || model.inSight(chosen, tiles[model.positions[chosen].tile]) {
+// withChosenLinkNear is the model where, on the blog's list chosen, the link the keys stand on has gone out of sight:
+// the keys stand on the link nearest a spot the page went to, among those in sight where any is.
+func (model Model) withChosenLinkNear(near spot) Model {
+	links, chosen := model.laid[model.chosen].links, model.chosen
+	if len(links) == 0 || model.inSight(chosen, model.pointedLink(chosen)) {
 		return model
 	}
 	nearest := 0
-	for index, tile := range tiles {
-		best := tiles[nearest]
-		if model.inSight(chosen, tile) != model.inSight(chosen, best) {
-			if model.inSight(chosen, tile) {
+	for index, link := range links {
+		best := links[nearest]
+		if model.inSight(chosen, link) != model.inSight(chosen, best) {
+			if model.inSight(chosen, link) {
 				nearest = index
 			}
 			continue
 		}
-		if tile.nearer(best, near) {
+		if link.nearer(best, near) {
 			nearest = index
 		}
 	}
-	return model.choseTile(nearest)
+	return model.choseLink(nearest)
 }
 
-// withFirstTileFrom is the model, on the blog's list chosen, with the keys on the first tile at or after a line, where
+// withFirstLinkFrom is the model, on the blog's list chosen, with the keys on the first link at or after a line, where
 // any is.
-func (model Model) withFirstTileFrom(line int) Model {
-	first := slices.IndexFunc(model.laid[model.chosen].tiles, func(tile laidTile) bool { return tile.top >= line })
-	if first < 0 || first == model.positions[model.chosen].tile {
+func (model Model) withFirstLinkFrom(line int) Model {
+	first := slices.IndexFunc(model.laid[model.chosen].links, func(link laidLink) bool { return link.top >= line })
+	if first < 0 || first == model.linkStoodOn(model.chosen) {
 		return model
 	}
-	return model.choseTile(first)
+	return model.choseLink(first)
 }
 
-// inSight is whether a line of a tile shows on a tab's page at its scroll.
-func (model Model) inSight(place int, tile laidTile) bool {
+// inSight is whether a line of a link shows on a tab's page at its scroll.
+func (model Model) inSight(place int, link laidLink) bool {
 	scroll := model.positions[place].scroll
-	return tile.bottom >= scroll && tile.top < scroll+model.frame.rows
+	return link.bottom >= scroll && link.top < scroll+model.frame.rows
 }
 
-// withTilesInSight is the model with each list among the tabs whose tile the keys stand on is out of sight scrolled
-// as little as shows it whole; a list whose tile shows stays where it stands, at its top as it opens.
-func (model Model) withTilesInSight() Model {
+// withLinksInSight is the model with each list among the tabs whose link the keys stand on is out of sight scrolled
+// as little as shows it whole; a list whose link shows stays where it stands, at its top as it opens.
+func (model Model) withLinksInSight() Model {
 	model.positions = slices.Clone(model.positions)
 	for place := range model.tabs {
-		if tiles := model.laid[place].tiles; len(tiles) > 0 && !model.inSight(place, tiles[model.positions[place].tile]) {
-			model.positions[place].scroll = model.scrollShowing(place, tiles[model.positions[place].tile])
+		if pointed := model.pointedLink(place); len(model.laid[place].links) > 0 && !model.inSight(place, pointed) {
+			model.positions[place].scroll = model.scrollShowing(place, pointed)
 		}
 	}
 	return model.clamped()
 }
 
-// withMatchTileTop is the model, on the blog's list, with the page scrolled up where it shows a line of the tile the
-// keys stand on but not its top edge, so the tile shows its date, as j shows it.
-func (model Model) withMatchTileTop(line int) Model {
-	tile := model.pointedTile(model.chosen)
-	if !model.onList() || line < tile.top || line > tile.bottom || tile.top >= model.positions[model.chosen].scroll {
+// withMatchLinkTop is the model, on the blog's list, with the page scrolled up where it shows a line of the link the
+// keys stand on but not its first, so a tile shows its date, as j shows it.
+func (model Model) withMatchLinkTop(line int) Model {
+	link := model.pointedLink(model.chosen)
+	if !model.onList() || line < link.top || line > link.bottom || link.top >= model.positions[model.chosen].scroll {
 		return model
 	}
-	return model.scrolledTo(tile.top)
+	return model.scrolledTo(link.top)
 }
 
 // linesBetween are the lines from a first to a last, both among them.
@@ -660,16 +752,17 @@ func linesBetween(first, last int) []int {
 	return lines
 }
 
-// scrollShowing is the scroll of a tab nearest its own that shows a tile whole, its edges with it, or its top where the
-// page is too short for the whole.
-func (model Model) scrollShowing(place int, tile laidTile) int {
-	return min(max(model.positions[place].scroll, tile.bottom+1-model.frame.rows), tile.top)
+// scrollShowing is the scroll of a tab nearest its own that shows a link whole, a tile's edges with it, or its top
+// where the page is too short for the whole.
+func (model Model) scrollShowing(place int, link laidLink) int {
+	return min(max(model.positions[place].scroll, link.bottom+1-model.frame.rows), link.top)
 }
 
-// openTile is Enter's: on the blog's list the post of the tile the keys stand on, beside the list.
-func (model Model) openTile() (Model, tea.Cmd) {
+// followLink is Enter's: on the blog's list the page the link the keys stand on opens, as the page's link leads: a
+// grouping's list or a tag's, shown in the list's window, or a tile's post, beside the list.
+func (model Model) followLink() (Model, tea.Cmd) {
 	if !model.onList() {
 		return model, nil
 	}
-	return model.showing(model.pointedTile(model.chosen).page), nil
+	return model.showing(model.pointedLink(model.chosen).page), nil
 }

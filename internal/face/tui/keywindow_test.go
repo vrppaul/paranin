@@ -31,8 +31,8 @@ func TestTheWindowOfKeysNamesTheKeys(test *testing.T) {
 	}
 }
 
-// The window of keys names the keys of the tab shown: on the blog's list j and k go from post to post and Enter reads
-// one; where the list shows alone, no key between tabs; beside a post, the keys between the two.
+// The window of keys names the keys of the tab shown: on the blog's list j and k go from link to link and Enter
+// follows one; where the list shows alone, no key between tabs; beside a post, the keys between the two.
 func TestTheWindowOfKeysNamesTheKeysOfTheTabShown(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -41,9 +41,9 @@ func TestTheWindowOfKeysNamesTheKeysOfTheTabShown(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "the list alone", user: "blog", keys: []string{"?"}, holds: []string{"post after / before", "read the post", "close"}, lacks: []string{"line down / up", "go to a tab", "tab before / after"}},
-		{name: "the list beside a post", user: "blog/1", keys: []string{"h", "?"}, holds: []string{"post after / before", "1-2", "go to a tab"}, lacks: []string{"line down / up"}},
-		{name: "the post", user: "blog/1", keys: []string{"?"}, holds: []string{"line down / up", "1-2", "go to a tab"}, lacks: []string{"post after / before", "read the post"}},
+		{name: "the list alone", user: "blog", keys: []string{"?"}, holds: []string{"link after / before", "follow the link", "close"}, lacks: []string{"line down / up", "go to a tab", "tab before / after"}},
+		{name: "the list beside a post", user: "blog/1", keys: []string{"h", "?"}, holds: []string{"link after / before", "1-2", "go to a tab"}, lacks: []string{"line down / up"}},
+		{name: "the post", user: "blog/1", keys: []string{"?"}, holds: []string{"line down / up", "1-2", "go to a tab"}, lacks: []string{"link after / before", "follow the link"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

@@ -96,7 +96,7 @@ type completionState struct {
 
 // The place of the item chosen where none is, the line holding what the reader typed; the places what was typed
 // takes in the round Tab goes, its first, the items after it; and a step on and a step back, which Tab and Shift+Tab
-// take through that round, and j and k through a tab's lines or the blog's tiles
+// take through that round, and j and k through a tab's lines or the blog's links
 const (
 	noneChosen   = -1
 	typedPlaces  = 1

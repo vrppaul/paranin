@@ -688,9 +688,13 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
 - The list: BLOG in the title font, as the page's; the groups' names in a column, 22 cells wide, 18 under 132, the
   year in the title font in the gradient,
   staying in sight at the top while its tiles scroll; under 100 cells the name stands over its tiles as one line in the
-  gradient. The tiles as the page's, at least 31 cells each. j and k go from tile to tile in reading order, newest
-  first; the tile chosen stands on `sunk`, its title underlined in `accent`; Enter opens its post. A move that takes
-  the page from the tile chosen chooses one in sight: G the last, gg the first, a search's match its own.
+  gradient. The tiles as the page's, at least 31 cells each. j and k go from link to link in reading order: the
+  head's groupings, its tags, then the tiles, newest first; the list opens on its first tile. The link chosen stands
+  on `sunk`, its words underlined in `accent`, a tile's its title; the grouping shown and the tag the list is filtered
+  by keep their reversal under it. Enter follows it as the page's link leads: a grouping to the list grouped so, a tag
+  to the list it filters, the tag filtering it to the whole list, a tile to its post (owner, 2026-11-25). A move that
+  takes the page from the link chosen chooses one in sight: G the last tile, gg the first grouping, a search's match
+  its own tile.
 - A post's version is its date among its facts, as the page's; the TUI has no Pick, so the other versions are places of
   the `:` menu, `version`, each by its date as its address writes it. An older version says under its date that a newer
   stands, as the page's: `↑` in `accent`, then `newer: 21 Nov 2026` bold on `tint`, painted as a result worth seeing

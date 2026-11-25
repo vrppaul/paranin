@@ -76,8 +76,9 @@ type paint struct {
 	// with none underlined
 	highlightGround color.Color
 	highlightText   color.Color
-	// the tile the keys stand on stands on the panel's ground, its title underlined in the accent, or in the
-	// terminal's own colour where it shows few colours or none, whose panel is the terminal's own ground
+	// the link the keys stand on stands on the panel's ground, its words, a tile's its title, underlined in the
+	// accent, or in the terminal's own colour where it shows few colours or none, whose panel is the terminal's own
+	// ground
 	pointedGround    color.Color
 	pointedUnderline color.Color
 	// the match of the search the count names stands on the accent, its text laid on it, and with few colours or none
@@ -132,7 +133,6 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindEmphasis: plain.Foreground(colour(look.ColourText)).Italic(true),
 			// the way chosen reversed and bold, as the tab shown is
 			kindChosen:    plain.Foreground(colour(look.ColourText)).Bold(true).Reverse(true),
-			kindTileTitle: plain.Foreground(colour(look.ColourText)).Bold(true),
 			kindQuietLine: plain.Foreground(colour(look.ColourQuiet)),
 			kindOff:       plain.Foreground(colour(look.ColourQuietHalf)),
 			kindQuoteBar:  plain.Foreground(colour(look.ColourEdge)),
@@ -239,7 +239,7 @@ func (paint paint) tonesOf(shown kind) []color.Color {
 		return paint.swatches
 	case kindText, kindMuted, kindFaint, kindStrong, kindCode, kindCursor, kindPassed, kindWarned, kindFailed, kindLabel,
 		kindMailbox, kindHost, kindCurrent, kindPast, kindOwner, kindRepository, kindPrompt, kindBar, kindEmphasis,
-		kindChosen, kindTileTitle, kindQuietLine, kindOff, kindQuoteBar, kindLookMark, kindLiveMark, kindCodeKeyword, kindCodeString, kindCodeNumber,
+		kindChosen, kindQuietLine, kindOff, kindQuoteBar, kindLookMark, kindLiveMark, kindCodeKeyword, kindCodeString, kindCodeNumber,
 		kindCodeFunction, kindCodeType, kindCodeBuiltin, kindCodeOperator, kindCodeVariable:
 	}
 	return nil
@@ -284,7 +284,7 @@ func colourIn(shade look.Shade, profile colorprofile.Profile) color.Color {
 }
 
 // lineMarks are what sets runs of a line apart beside their kinds: which match of the line the search's count names,
-// noMatch where none; the columns the tile the keys stand on takes on it, none where the line crosses no such tile;
+// noMatch where none; the columns the ground of the link the keys stand on takes on it, none where it takes none;
 // and the column its part right of what stays in sight over its left part starts at, the groups' names or a post's
 // Outline, 0 on a tab with neither.
 type lineMarks struct {
@@ -305,11 +305,11 @@ func (span columnSpan) holds(column int) bool {
 }
 
 // pageMarks are what sets runs of a tab's lines apart beside their kinds: the match the search's count names; the
-// tile the keys stand on, the zero tile where the tab holds none; the column the lines' parts right of what stays in
+// link the keys stand on, the zero link where the tab holds none; the column the lines' parts right of what stays in
 // sight over their left part start at; and the lines it may stand over, the only ones parted there.
 type pageMarks struct {
 	named     namedMatch
-	pointed   laidTile
+	pointed   laidLink
 	split     int
 	overLines []lineSpan
 }
@@ -397,8 +397,9 @@ func (paint paint) line(shown []matchedRun, from, width int, faded color.Color, 
 }
 
 // style is the look of a run: its kind's, its text in a faded colour where one is given, highlighted where it is a
-// result, on the panel's ground where it lies in the tile the keys stand on, its title then underlined, marked where
-// it matches the search, apart where it is the match the count names, carrying its address where it links.
+// result, on the panel's ground where it lies in the link the keys stand on, underlined where it is part of the link's
+// words, marked where it matches the search, apart where it is the match the count names, carrying its address where
+// it links.
 func (paint paint) style(piece matchedRun, faded color.Color, named, pointed bool) lipgloss.Style {
 	style := paint.kinds[piece.kind]
 	if tones := paint.tonesOf(piece.kind); len(tones) > 0 {
@@ -410,7 +411,7 @@ func (paint paint) style(piece matchedRun, faded color.Color, named, pointed boo
 	if pointed {
 		style = style.Background(paint.pointedGround)
 	}
-	if pointed && piece.kind == kindTileTitle {
+	if pointed && piece.opensPage() {
 		style = style.Underline(true).UnderlineColor(paint.pointedUnderline)
 	}
 	if piece.highlighted {

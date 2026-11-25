@@ -90,7 +90,7 @@ func nameBanner(texts []string) []line {
 	last := rows[len(rows)-1]
 	lines := tonedBanner(rows, kindName, max(rowsWidth(rows[0]), rowsWidth(last)+textWidth(space+blockCursor)))
 	for row := len(lines) - len(last); row < len(lines); row++ {
-		lines[row] = append(lines[row], gapRun(spaceWidth), run{text: blockCursor, kind: kindCursor, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation})
+		lines[row] = append(lines[row], gapRun(spaceWidth), plainRun(blockCursor, kindCursor))
 	}
 	return lines
 }
@@ -121,13 +121,13 @@ func (layout layout) brief(head document.Head, facts []document.Fact, address []
 		if mail, isMail := document.MailOf(address); isMail {
 			addressLine = mailRuns(addressLine, mail)
 		}
-		rule := run{text: strings.Repeat(briefRuleMark, runsWidth(addressLine)), kind: kindFaint, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation}
+		rule := plainRun(strings.Repeat(briefRuleMark, runsWidth(addressLine)), kindFaint)
 		lines = append(lines, addressLine, line{rule})
 	}
 	lines = slices.Concat(lines, layout.subtitleLines(head), layout.facts(facts, 0, kindLabel))
 	swatches := line{}
 	for tone := range len(swatchColours()) {
-		swatches = append(swatches, run{text: swatchMark, kind: kindSwatch, highlighted: false, address: "", copied: "", tone: tone, cites: noCitation})
+		swatches = append(swatches, tonedRun(swatchMark, kindSwatch, tone))
 	}
 	return slices.Concat(lines, blankLines(), []line{swatches})
 }
@@ -257,7 +257,7 @@ func cellRuns(row []cell) line {
 			shown[last].text += written.letter
 			continue
 		}
-		shown = append(shown, run{text: written.letter, kind: written.kind, highlighted: false, address: "", copied: "", tone: 0, cites: noCitation})
+		shown = append(shown, plainRun(written.letter, written.kind))
 	}
 	return shown
 }

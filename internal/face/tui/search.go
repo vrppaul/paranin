@@ -105,7 +105,7 @@ func (model Model) retyped() Model {
 	model = model.repaintedChosen()
 	drawn := model.drawn.tabs[model.chosen]
 	if named := drawn.marks.named; named.occurrence != noMatch {
-		return model.scrolledToward(named.line, drawn.spotOf(named)).withMatchTileTop(named.line)
+		return model.scrolledToward(named.line, drawn.spotOf(named)).withMatchLinkTop(named.line)
 	}
 	return model.scrolledTo(model.search.begunAt)
 }
@@ -183,7 +183,7 @@ func (model Model) toMatch(choose func(matches []int) int) Model {
 	}
 	place := choose(matches)
 	model.said = commandMessage{text: searchMark + query + space + matchCount(place, len(matches)), failed: false}
-	model = model.scrolledToward(matches[place], model.drawn.tabs[model.chosen].spotOf(namedAt(matches, place))).withMatchTileTop(matches[place])
+	model = model.scrolledToward(matches[place], model.drawn.tabs[model.chosen].spotOf(namedAt(matches, place))).withMatchLinkTop(matches[place])
 	model.search.shown = slices.Clone(model.search.shown)
 	model.search.shown[model.chosen] = shownMatch{place: place, scroll: model.positions[model.chosen].scroll, shown: true}
 	return model.renamed()

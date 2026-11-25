@@ -307,7 +307,7 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
 A window of tmux's over the foot line, which a way's chip opens: the way's command whole to copy and what it gives.
 `ssh` holds the command that opens the page shown over ssh (D26): on a post `ssh blog/1@…`, giving "This post in your
 terminal." (owner, 2026-11-25); on the blog's lists `ssh blog@…` or `ssh blog/series@…`, giving "The blog in your
-terminal." (not approved); on any other page the site's `ssh …`, giving the résumé as an app. `curl` gives the page
+terminal." (owner, 2026-11-25); on any other page the site's `ssh …`, giving the résumé as an app. `curl` gives the page
 shown, whole, as a manual. The chip in the line reads `❯ ssh` on every page. It stands a `nudge` over the foot line's
 hairline, whatever its panel holds, the open command line too, its right edge at the ways' chips', on whatever row
 the line wraps them to, so the ThemeSwitch's Tooltip, past the VimKeys switch, shows beside it, never under it; where
@@ -635,7 +635,7 @@ page's 16px grown by 1.75.
     the cursor an underscore after it as on the page; a project's its name, on one line where it fits, else broken
     after one hyphen onto two lines, where the wider of the two is narrowest; the résumé's name and a project's both
     in cells of 22px, smaller only where a line would not fit; the list's BLOG in cells of 40px. A name the block
-    letters cannot draw stands in words, as a post's title (not approved). The line under it, in `text`: the role, a
+    letters cannot draw stands in words, as a post's title (owner, 2026-11-25). The line under it, in `text`: the role, a
     project's tagline, none where it has none, the blog's line.
   - **A post**: a header, BLOG in `faint` block letters at its left, cells of 11px, and the day the post came out ·
     its series in `muted` at its right, the dot `faint`, each centred on the header's height by its ink, and a

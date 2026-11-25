@@ -5,5 +5,20 @@
       "maxFindings": 5,
       "maxChars": 8000
     }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "web/src/ui/ui.css"
+        ],
+        "createdAt": "2026-11-25T13:49:01.242Z",
+        "reason": "the post and group titles' gradient is the owner's approved design (DESIGN.md)"
+      }
+    ]
   }
 }

@@ -245,10 +245,11 @@ the host underline, `underline_hover` thick, `nudge` below.
 
 ### Favicon
 
-A square of the name's gradient and nothing more: `accent` at its left edge to `host` at its right, filling it edge to
-edge, in the light theme's colours for every reader, since they stand apart from a light tab and a dark one alike. One
-picture at every size: as SVG, a PNG of 180px for a phone's home screen, whose corners the phone rounds, and one of
-32px at /favicon.ico. The picture a shared link shows is its Social card.
+A square of the name's gradient and nothing more: `accent` at its top-left corner to `host` at its bottom-right, the
+way the name reads (owner, 2026-11-25), filling it edge to edge, in the light theme's colours for every reader, since
+they stand apart from a light tab and a dark one alike. One picture at every size: as SVG, a PNG of 180px for a phone's
+home screen, whose corners the phone rounds, and one of 32px at /favicon.ico. The picture a shared link shows is its
+Social card.
 
 ### Button
 

@@ -6,8 +6,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"image/color"
 	"image/png"
 	"io"
+	"math"
+	"strconv"
 	"testing"
 )
 
@@ -41,6 +44,62 @@ const (
 	iconFileKind     = 1
 	iconFilePictures = 1
 )
+
+// How far a pixel's colour may stand from the colour at the place it covers, in steps of a channel: the fixture's
+// channels part by less than a step a pixel, so the half pixel between a corner and its pixel's middle moves a
+// channel by under half a step, and rounding by at most half another
+const colourStepsAllowed = 1
+
+// gradientFixture is a gradient the raster's test draws, and the colour halfway along it.
+type gradientFixture struct {
+	gradient iconGradient
+	midpoint color.RGBA
+}
+
+// rasterPlace is a pixel of the raster by where it stands, its column and its row, and the colour it should hold.
+type rasterPlace struct {
+	name   string
+	column int
+	row    int
+	want   color.RGBA
+}
+
+// drawnIcon is the icon's drawing as SVG writes it, read for the line its gradient runs along.
+type drawnIcon struct {
+	Gradient drawnGradientLine `xml:"linearGradient"`
+}
+
+// drawnGradientLine is the line a drawing's gradient runs along, from the point it starts at to the one it ends at,
+// each across and down, as the SVG writes them.
+type drawnGradientLine struct {
+	StartAcross string `xml:"x1,attr"`
+	StartDown   string `xml:"y1,attr"`
+	EndAcross   string `xml:"x2,attr"`
+	EndDown     string `xml:"y2,attr"`
+}
+
+// diagonalFixture is a gradient whose channels part by 30 at most, under a step a pixel at either side the site
+// draws, and its midpoint.
+func diagonalFixture() gradientFixture {
+	return gradientFixture{
+		gradient: iconGradient{
+			start: color.RGBA{R: 64, G: 96, B: 128, A: math.MaxUint8},
+			end:   color.RGBA{R: 94, G: 126, B: 98, A: math.MaxUint8},
+		},
+		midpoint: color.RGBA{R: 79, G: 111, B: 113, A: math.MaxUint8},
+	}
+}
+
+// withinColourSteps is whether every channel of one colour stands within the steps allowed of the other's.
+func withinColourSteps(got, want color.RGBA) bool {
+	return channelGap(got.R, want.R) <= colourStepsAllowed && channelGap(got.G, want.G) <= colourStepsAllowed &&
+		channelGap(got.B, want.B) <= colourStepsAllowed && got.A == want.A
+}
+
+// channelGap is how many steps part two values of a channel.
+func channelGap(first, second uint8) int {
+	return max(int(first)-int(second), int(second)-int(first))
+}
 
 // pictureReaders are how a browser reads each picture of the site, by the media type it is served as.
 func pictureReaders() map[string]func(body []byte) error {
@@ -120,5 +179,44 @@ func TestABrowserReadsEveryPictureOfTheSite(test *testing.T) {
 				test.Errorf("reading the picture at %q as %q = %v, want no fault", icon.Path, icon.MediaType, err)
 			}
 		})
+	}
+}
+
+// The icon in pixels runs its gradient on the diagonal, at every side the site draws it: its top-left corner holds
+// the gradient's start, its bottom-right the end, and the two other corners and its middle the midpoint.
+func TestTheRasterIconRunsItsGradientOnTheDiagonal(test *testing.T) {
+	fixture := diagonalFixture()
+	for _, side := range []int{homeScreenSide, askedByNameSide} {
+		test.Run(strconv.Itoa(side), func(test *testing.T) {
+			canvas := rasterIcon(fixture.gradient, side)
+			first, middle, last := 0, side/2, side-1
+			places := []rasterPlace{
+				{name: "top-left corner", column: first, row: first, want: fixture.gradient.start},
+				{name: "top-right corner", column: last, row: first, want: fixture.midpoint},
+				{name: "middle", column: middle, row: middle, want: fixture.midpoint},
+				{name: "bottom-left corner", column: first, row: last, want: fixture.midpoint},
+				{name: "bottom-right corner", column: last, row: last, want: fixture.gradient.end},
+			}
+			for _, place := range places {
+				got := canvas.RGBAAt(place.column, place.row)
+				if !withinColourSteps(got, place.want) {
+					test.Errorf("the %d-pixel icon's %s, pixel (%d, %d) = %v, want %v within %d steps", side,
+						place.name, place.column, place.row, got, place.want, colourStepsAllowed)
+				}
+			}
+		})
+	}
+}
+
+// The icon's drawing names its gradient's line from the square's top-left corner to its bottom-right, in shares of
+// the square, so a browser draws it on the diagonal as the raster does.
+func TestTheDrawingRunsItsGradientOnTheDiagonal(test *testing.T) {
+	var drawing drawnIcon
+	if err := xml.Unmarshal(drawingIcon(diagonalFixture().gradient), &drawing); err != nil {
+		test.Fatalf("reading the drawing = %v, want no fault", err)
+	}
+	want := drawnGradientLine{StartAcross: "0", StartDown: "0", EndAcross: "1", EndDown: "1"}
+	if drawing.Gradient != want {
+		test.Errorf("the drawing's gradient runs along %+v, want %+v", drawing.Gradient, want)
 	}
 }

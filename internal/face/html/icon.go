@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"image/png"
 	"math"
 	"strconv"
@@ -36,12 +35,20 @@ const (
 // tab and a dark one alike, where the dark theme's paler pair fades into a light tab
 const iconTheme = look.ThemeLight
 
-// The drawing's square, a unit a side, which the gradient crosses from its left edge to its right; the name the
-// gradient goes by; and how the drawing writes a colour
+// The drawing's square, a unit a side; the name the gradient goes by; and how the drawing writes a colour
 const (
 	drawingSide     = 1
 	iconGradientID  = "name-gradient"
 	hexColourLayout = "#%02x%02x%02x"
+)
+
+// The gradient's line across the square, in shares of its side, as SVG reads a gradient's line on the box it fills:
+// from the top-left corner to the bottom-right, the way the name reads
+const (
+	gradientStartAcross = 0
+	gradientStartDown   = 0
+	gradientEndAcross   = 1
+	gradientEndDown     = 1
 )
 
 // Where a pixel's middle stands from its edge
@@ -90,8 +97,8 @@ func iconKinds() []iconKind {
 	}
 }
 
-// iconGradient is the site's icon (DESIGN.md, Favicon): the colour at the square's left edge and the one at its
-// right, which fill it edge to edge, mixed across it.
+// iconGradient is the site's icon (DESIGN.md, Favicon): the colour at the start of the gradient's line and the one
+// at its end, which fill the square edge to edge, mixed along that line.
 type iconGradient struct {
 	start color.RGBA
 	end   color.RGBA
@@ -172,19 +179,30 @@ func askedByNameIcon(gradient iconGradient) []byte {
 	return file.Bytes()
 }
 
-// rasterIcon is the icon in pixels, a square of a side, each column the gradient's colour at its middle, as SVG
+// rasterIcon is the icon in pixels, a square of a side, each pixel the gradient's colour at its middle, as SVG
 // paints it there.
 func rasterIcon(gradient iconGradient, side int) *image.RGBA {
 	canvas := image.NewRGBA(image.Rect(0, 0, side, side))
-	for column := range side {
-		colour := gradient.at((float64(column) + halfPixel) / float64(side))
-		strip := image.Rect(column, 0, column+1, side)
-		draw.Draw(canvas, strip, image.NewUniform(colour), image.Point{}, draw.Src)
+	for row := range side {
+		down := (float64(row) + halfPixel) / float64(side)
+		for column := range side {
+			across := (float64(column) + halfPixel) / float64(side)
+			canvas.SetRGBA(column, row, gradient.at(gradientShare(across, down)))
+		}
 	}
 	return canvas
 }
 
-// at is the gradient's colour a share of the way across the square, as SVG mixes it, each channel on its own.
+// gradientShare is how far along the gradient's line a point of the square stands, each of its coordinates a share
+// of the side, as SVG mixes a linear gradient: the point's projection on the line, as a share of the line's length.
+func gradientShare(across, down float64) float64 {
+	lineAcross := float64(gradientEndAcross - gradientStartAcross)
+	lineDown := float64(gradientEndDown - gradientStartDown)
+	projected := (across-gradientStartAcross)*lineAcross + (down-gradientStartDown)*lineDown
+	return projected / (lineAcross*lineAcross + lineDown*lineDown)
+}
+
+// at is the gradient's colour a share of the way along its line, as SVG mixes it, each channel on its own.
 func (gradient iconGradient) at(share float64) color.RGBA {
 	start, end := gradient.start, gradient.end
 	return color.RGBA{

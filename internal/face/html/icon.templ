@@ -7,10 +7,16 @@ import (
 )
 
 // iconDrawing is the site's icon as SVG (DESIGN.md, Favicon): its square filled edge to edge with the gradient,
-// which crosses it from left to right, as a gradient does unless told otherwise.
+// which a browser mixes along its line as gradientShare works it out for the raster.
 templ iconDrawing(gradient iconGradient) {
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox={ viewBoxOf(drawingSide, drawingSide) }>
-		<linearGradient id={ iconGradientID }>
+		<linearGradient
+			id={ iconGradientID }
+			x1={ strconv.Itoa(gradientStartAcross) }
+			y1={ strconv.Itoa(gradientStartDown) }
+			x2={ strconv.Itoa(gradientEndAcross) }
+			y2={ strconv.Itoa(gradientEndDown) }
+		>
 			<stop offset="0" stop-color={ hexColour(gradient.start) }></stop>
 			<stop offset="1" stop-color={ hexColour(gradient.end) }></stop>
 		</linearGradient>

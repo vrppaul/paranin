@@ -44,15 +44,15 @@ type WorkRecord struct {
 	Page        document.Page
 }
 
-// PostRecord is the record of a post's current version: its title and lead, its page, when it came out, the zero time
-// for a draft not yet dated, the day its current version came out, the zero time where none is known, its author, the
-// language it is written in, its tags, and its series, none where its page shows none.
+// PostRecord is the record of a post's current version: its title and lead, its page, when the post came out and when
+// its current version did, each the zero time for a draft not yet dated, its author, the language it is written in,
+// its tags, and its series, none where its page shows none.
 type PostRecord struct {
 	Title       string
 	Description string
 	Page        document.Page
 	Published   time.Time
-	VersionDay  time.Time
+	VersionOut  time.Time
 	Author      Author
 	Language    string
 	Tags        []string
@@ -159,7 +159,7 @@ func (read blog) postRecord(post content.Post, author Author) PostRecord {
 		Description: post.Description,
 		Page:        postPage(post),
 		Published:   post.Published.At(),
-		VersionDay:  post.VersionDay().Start(),
+		VersionOut:  versionOutAt(post),
 		Author:      author,
 		Language:    read.words.Language(),
 		Tags:        post.Tags,

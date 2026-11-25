@@ -126,26 +126,3 @@ func (read blog) withPosts(composed []document.Document) []Feed {
 	}
 	return feeds
 }
-
-// versionOutAt is when a post's current version came out: the start of its day in the post's own zone, but never
-// before the post itself came out, so a version of the day it came out came out with it.
-func versionOutAt(post content.Post) time.Time {
-	published, day := post.Published.At(), post.VersionDay().Start()
-	start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, published.Location())
-	if start.Before(published) {
-		return published
-	}
-	return start
-}
-
-// latestVersionOut is when the latest current version among posts came out, which a feed and a list holding them last
-// changed at; the zero time where there are none.
-func latestVersionOut(posts []content.Post) time.Time {
-	latest := time.Time{}
-	for _, post := range posts {
-		if out := versionOutAt(post); out.After(latest) {
-			latest = out
-		}
-	}
-	return latest
-}

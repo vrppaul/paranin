@@ -42,12 +42,12 @@ func (site Site) changedDays() map[document.Page]time.Time {
 	return days
 }
 
-// changedOn is the day the text of a page with a record last changed: a post's current version's day; none for the
-// résumé's and a project's, which no day of the content dates. gochecksumtype holds the switch to every kind.
+// changedOn is when the text of a page with a record last changed: when a post's current version came out; none for
+// the résumé's and a project's, which no day of the content dates. gochecksumtype holds the switch to every kind.
 func changedOn(record Record) time.Time {
 	switch typed := record.(type) {
 	case PostRecord:
-		return typed.VersionDay
+		return typed.VersionOut
 	case PersonRecord, WorkRecord:
 	}
 	return time.Time{}

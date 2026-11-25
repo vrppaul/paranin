@@ -1020,7 +1020,7 @@ func oneVersionPost(test *testing.T) document.Document {
 func TestAnUndatedDraftsPageNamesNoDay(test *testing.T) {
 	page := document.PostPage("undated")
 	record := compose.PostRecord{
-		Title: "Undated", Description: "", Page: page, Published: time.Time{}, VersionDay: time.Time{},
+		Title: "Undated", Description: "", Page: page, Published: time.Time{}, VersionOut: time.Time{},
 		Author: compose.Author{Name: "Mira Example", Page: document.PageOf(document.PageResume)}, Language: "en", Tags: nil, Series: nil,
 	}
 	written := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(page, textOf("Undated")), Blocks: nil}, record)

@@ -233,7 +233,7 @@ func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 func (writer PageWriter) writtenPostOf(record compose.PostRecord) writtenPost {
 	return writtenPost{
 		published: machineTime(record.Published, time.RFC3339),
-		modified:  machineTime(record.VersionDay, machineDayLayout),
+		modified:  machineTime(record.VersionOut, time.RFC3339),
 		author:    writer.personReferenceOf(record.Author),
 		tags:      record.Tags,
 	}

@@ -13,10 +13,10 @@ import (
 
 // Each page a person reads has its record, the facts a search engine reads as data: the résumé the person, with
 // where they work now, the schools, the skills they use and not those still learning, the languages and the public
-// profiles; a project's page the project, with its author; a post its current version, when it came out and the day
-// that version did, its author, its language, its tags and the series its page shows, by its group on the list by
-// series in its language. An unlisted part of a series, which its series leaves out, names none; a draft not yet dated
-// names no moment and no day. Each names its own page.
+// profiles; a project's page the project, with its author; a post its current version, when it came out and when that
+// version did, at the start of its day in the post's zone but never before the post, its author, its language, its
+// tags and the series its page shows, by its group on the list by series in its language. An unlisted part of a
+// series, which its series leaves out, names none; a draft not yet dated names no moment. Each names its own page.
 func TestEachPageHasItsRecord(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	resume := document.PageOf(document.PageResume)
@@ -45,7 +45,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 	}
 	postOfASeries := PostRecord{
 		Title: "Reading slowly", Description: "Why a page read twice is read once.", Page: post,
-		Published: fixtures.MomentOf(test, "2026-11-10T09:00+01:00"), VersionDay: fixtures.MomentOf(test, "2026-11-12T00:00Z"),
+		Published: fixtures.MomentOf(test, "2026-11-10T09:00+01:00"), VersionOut: fixtures.MomentOf(test, "2026-11-12T00:00+01:00"),
 		Author: author, Language: "en", Tags: []string{"reading", "terminals"},
 		Series: &PostSeries{Title: "Reading", Group: document.Anchor{Page: document.PageOf(document.PageBlogSeries), Name: "reading"}},
 	}
@@ -65,7 +65,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 			name: "a translation", snapshot: snapshot, audience: publicOnTheDay(), page: translation,
 			want: PostRecord{
 				Title: "Медленное чтение", Description: "Почему страницу, прочитанную дважды, читают один раз.", Page: translation,
-				Published: fixtures.MomentOf(test, "2026-11-15T10:00+03:00"), VersionDay: fixtures.MomentOf(test, "2026-11-15T00:00Z"),
+				Published: fixtures.MomentOf(test, "2026-11-15T10:00+03:00"), VersionOut: fixtures.MomentOf(test, "2026-11-15T10:00+03:00"),
 				Author: author, Language: russian, Tags: []string{"reading", "terminals"},
 				Series: &PostSeries{Title: "Чтение", Group: document.Anchor{Page: document.PageOf(document.PageBlogSeries).InLanguage(russian), Name: "reading"}},
 			},
@@ -75,7 +75,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 			name: "a draft its author reads", snapshot: snapshot, audience: Audience{At: fixtures.Day(), Drafts: true}, page: document.PostPage(samplePostSlug),
 			want: PostRecord{
 				Title: "Notes on tools", Description: "The tools a writer keeps.", Page: document.PostPage(samplePostSlug),
-				Published: time.Time{}, VersionDay: time.Time{}, Author: author, Language: "en", Tags: nil, Series: nil,
+				Published: time.Time{}, VersionOut: time.Time{}, Author: author, Language: "en", Tags: nil, Series: nil,
 			},
 		},
 	}

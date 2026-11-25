@@ -144,8 +144,8 @@ other size: a control that seems to need one is the wrong control.
 
 - The page's one `h1`, a tab's title among them, and the `h2` of the résumé's first section under its first screen are
   block letters; a post's title is its page's `h1` in `title_text`, since a sentence in block letters would not fit;
-  another page's `h2` is `heading`; every heading below is `strong`, its level shown by the space before it (`row_2`
-  before `h3`, `row` before `h4` to `h6`). Levels never skip.
+  another page's `h2` is `heading`; every heading below is `strong`, its depth shown by the space before it: `row_2`
+  before a subsection's heading, `row` before an entry's or a card's. Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
 - Weights: 400 for text, 700 for what names (a role, a company, a button) and for a word made strong, wherever it
   stands, 800 only for the mail, its @ left at 400.
@@ -388,10 +388,10 @@ month still to fill is left out of both.
 
 ### Entry
 
-One role or school: its dates in a column of their own (`when`), then its heading, `strong` at any level (`h3` for a
-role, `h4` for a school), its place in `muted`, its points. The current role's dates bold in `text`, ended ones
-`muted`. Points start with a `faint` dash, at most `measure` wide. Entries are set apart by a `quiet` hairline, never
-boxed.
+One role or school: its dates in a column of their own (`when`), then its heading, `strong`, a level below the heading
+it stands under: a role's an `h2` on its tab, under the page's `h1`; a school's one deeper, under its subsection's
+heading. Its place in `muted`, its points. The current role's dates bold in `text`, ended ones `muted`. Points start
+with a `faint` dash, at most `measure` wide. Entries are set apart by a `quiet` hairline, never boxed.
 
 ### Card
 

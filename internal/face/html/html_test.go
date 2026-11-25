@@ -14,6 +14,7 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
 	"github.com/vrppaul/paranin/internal/golden"
+	"github.com/vrppaul/paranin/internal/routes"
 )
 
 func TestMain(tests *testing.M) {
@@ -127,37 +128,97 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 	}
 }
 
-// What a heading's level is read from, the digit of its tag, which the pattern's first group holds; the level of a
-// page's title, and the one before it, where a page's headings start from
+// What a heading is read from, its tag, whose name the pattern's first group holds and its level's digit the second;
+// the level of a page's title, and the one before it, where a page's headings start from
 const (
-	headingTag      = `<h([1-6])[\s>]`
-	headingDigit    = 1
+	headingTag      = `<(h([1-6]))[\s>]`
+	headingName     = 1
+	headingDigit    = 2
 	titleLevel      = 1
 	levelAboveTitle = titleLevel - 1
+	headingsBetween = " "
 )
 
 // A page reads as an outline, as a screen reader lists its headings: its title the h1, and each heading after it at
-// most one level below the one before it, at its own address and at each of its tabs'.
+// most one level below the one before it. Every page the face writes for the fixture's site is held to it, and a
+// résumé whose opening holds a subsection, which no profile writes, so the opening's blocks are held under its h2.
 func TestEveryPageStepsDownItsHeadingsOneLevelAtATime(test *testing.T) {
-	writer := fixtureWriter(test)
+	about := document.Section{
+		Title:  textOf("About"),
+		Name:   "",
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: textOf("here")}}}, emptySection("More")},
+	}
+	subsectioned := writtenPage{name: "a résumé whose opening holds a subsection", markup: fixtureWriter(test).Page(resumeOf(about), blankPerson(), "")}
 	heading := regexp.MustCompile(headingTag)
-	for _, composed := range siteOnTheDay(fixtures.LoadedContent(test)).Pages {
-		tabs := document.TabsOf(composed.Document)
-		for _, tab := range slices.Concat([]document.Tab{tabs.Opening.Tab}, tabs.Rest) {
-			test.Run(document.PlainText(composed.Document.Head.Title)+" "+tab.Slug, func(test *testing.T) {
-				page := writer.Page(composed.Document, composed.Record, tab.Slug)
-				previous := levelAboveTitle
-				for _, match := range heading.FindAllStringSubmatch(page, everyMatch) {
-					// the pattern's group is one digit, which always reads as a number
-					level, _ := strconv.Atoi(match[headingDigit])
-					if level > previous+1 {
-						test.Errorf("the page %q writes an h%s after an h%d, want at most an h%d", page, match[headingDigit], previous, previous+1)
-					}
-					previous = level
+	for _, page := range append(everyWrittenPage(test), subsectioned) {
+		test.Run(page.name, func(test *testing.T) {
+			run := []string{}
+			previous := levelAboveTitle
+			for _, match := range heading.FindAllStringSubmatch(page.markup, everyMatch) {
+				// the pattern's group is one digit, which always reads as a number
+				level, _ := strconv.Atoi(match[headingDigit])
+				run = append(run, match[headingName])
+				if level > previous+1 {
+					test.Errorf("the headings run %s: an h%d after an h%d, want at most an h%d", strings.Join(run, headingsBetween), level, previous, previous+1)
 				}
-			})
+				previous = level
+			}
+		})
+	}
+}
+
+// writtenPage is a page the HTML face writes, named by its path.
+type writtenPage struct {
+	name   string
+	markup string
+}
+
+// everyWrittenPage is every page the HTML face writes for the fixture's site, through the writers its golden files
+// are written by: the résumé's and each project's opening and tabs, and in each language the blog's posts, their older
+// versions, its lists, filtered or not, and the page of an address the site has none at.
+func everyWrittenPage(test *testing.T) []writtenPage {
+	snapshot := fixtures.LoadedContent(test)
+	site := siteOnTheDay(snapshot)
+	writer := fixtureWriter(test)
+	pages := []writtenPage{}
+	for _, composed := range site.Pages {
+		opening := composed.Document.Head.Page
+		pages = append(pages, writtenPage{name: routes.Path(opening, routes.FormatChosen), markup: writer.Page(composed.Document, composed.Record, "")})
+		for _, tab := range document.TabsOf(composed.Document).Rest {
+			shown := opening
+			shown.Tab = tab.Slug
+			pages = append(pages, writtenPage{name: routes.Path(shown, routes.FormatChosen), markup: writer.Page(composed.Document, composed.Record, tab.Slug)})
 		}
 	}
+	for _, blog := range slices.Concat([]compose.Blog{site.Own}, site.Translations) {
+		pages = append(pages, blogPages(test, snapshot, blog)...)
+	}
+	return pages
+}
+
+// The path asked for where the site has no page, and the status its page names
+const (
+	missingPath   = "/nothing"
+	missingStatus = "404 Not Found"
+)
+
+// blogPages are the pages the HTML face writes of the blog in one language, in its frame: its posts, their older
+// versions, its lists, filtered or not, and the page of an address the site has none at.
+func blogPages(test *testing.T, snapshot *content.Snapshot, blog compose.Blog) []writtenPage {
+	build := fixtures.LoadedBuild(test)
+	writer := NewPageWriter(fixtures.Site(snapshot), build, blog.Frame, fixtures.Day())
+	pages := []writtenPage{}
+	for _, post := range blog.Posts {
+		pages = append(pages, writtenPage{name: routes.Path(post.Document.Head.Page, routes.FormatChosen), markup: writer.Post(post.Document, post.Record)})
+	}
+	for _, older := range blog.Versions {
+		pages = append(pages, writtenPage{name: routes.Path(older.Head.Page, routes.FormatChosen), markup: writer.Post(older, nil)})
+	}
+	for _, list := range slices.Concat(blog.Lists, blog.Filtered) {
+		pages = append(pages, writtenPage{name: routes.Path(list.Head.Page, routes.FormatChosen), markup: writer.List(list)})
+	}
+	missing := NewNotFound(fixtures.Site(snapshot), missingStatus, build, blog.Frame).For(missingPath)
+	return append(pages, writtenPage{name: missingStatus + " in " + blog.Frame.Language, markup: missing})
 }
 
 // A link whose target has no address, as a hidden page has none, reads as its words, never as a link to nowhere.
@@ -262,7 +323,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	resume := composedOf(test, pages, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := composedOf(test, pages, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	post := fixturePost(test)
-	missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame)
+	missing := NewNotFound(fixtures.Site(snapshot), missingStatus, fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame)
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
@@ -337,7 +398,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			holds: slices.Concat(every, []string{siteSessions, projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
 		},
 		{
-			name: "the page of no page", page: missing.For("/nothing"),
+			name: "the page of no page", page: missing.For(missingPath),
 			holds: slices.Concat(every, []string{siteSessions, resumeMarkdown, resumeReading, projectPlace}),
 			lacks: []string{`class="window"`, `data-place="tab"`},
 		},
@@ -714,7 +775,7 @@ func TestAMissingPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
-			missing := NewNotFound(fixtures.Site(snapshot), "404 Not Found", fixtures.LoadedBuild(test), testCase.frame).For(testCase.path)
+			missing := NewNotFound(fixtures.Site(snapshot), missingStatus, fixtures.LoadedBuild(test), testCase.frame).For(testCase.path)
 			golden.Match(test, testCase.file, lined(missing))
 		})
 	}

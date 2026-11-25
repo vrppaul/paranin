@@ -120,7 +120,7 @@ func New(drawing Drawing, reachedBy string, width, height int, today time.Time) 
 		paint:      paint{kinds: nil, parts: nil, gradient: nil, swatches: nil, fadedLess: nil, fadedMost: nil, highlightGround: nil, highlightText: nil, pointedGround: nil, pointedUnderline: nil, matchGround: nil, matchText: nil, matchUnderline: nil, cursorColour: nil, fewColours: false, noColours: false},
 		drawn: drawnScreen{
 			tabs: nil, crossRow: "", blankRow: "", track: "", thumb: "",
-			footer: paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: paintedBar{text: "", width: 0}},
+			footer: paintedFooter{place: footerPlace{margin: 0, keysShown: false, room: 0}, gutter: "", keys: footerBar{painted: paintedBar{text: "", width: 0}, spots: nil}},
 		},
 		chosen:     0,
 		positions:  nil,
@@ -140,7 +140,7 @@ func (model Model) Init() tea.Cmd {
 	return tea.RequestBackgroundColor
 }
 
-// Update takes what the terminal says: its size, its background, its colours, or a key.
+// Update takes what the terminal says: its size, its background, its colours, a key, a click or a step of the wheel.
 func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch typed := message.(type) {
 	case tea.WindowSizeMsg:
@@ -156,6 +156,10 @@ func (model Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return model.repainted(), nil
 	case tea.KeyPressMsg:
 		return model.pressed(typed)
+	case tea.MouseClickMsg:
+		return model.clicked(tea.Mouse(typed))
+	case tea.MouseWheelMsg:
+		return model.wheeled(tea.Mouse(typed))
 	}
 	return model, nil
 }
@@ -166,6 +170,8 @@ func (model Model) View() tea.View {
 	view := tea.NewView(screen)
 	view.AltScreen = true
 	view.Cursor = cursor
+	// clicks and the wheel; all motion would report each move of the pointer, which nothing here draws
+	view.MouseMode = tea.MouseModeCellMotion
 	return view
 }
 

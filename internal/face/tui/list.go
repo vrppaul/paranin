@@ -86,7 +86,7 @@ func (link laidLink) shifted(lines, columns int) laidLink {
 	return link
 }
 
-// spot is a place on a tab's lines, its line and its column, which a move went to.
+// spot is a place on a tab's lines, its line and its column, which a move went to or a click fell on.
 type spot struct {
 	line   int
 	column int
@@ -100,6 +100,12 @@ func (link laidLink) nearer(than laidLink, near spot) bool {
 	}
 	columns, otherColumns := link.ground.columns, than.ground.columns
 	return max(columns.start-near.column, near.column-columns.end, 0) < max(otherColumns.start-near.column, near.column-otherColumns.end, 0)
+}
+
+// holds is whether a spot lies on the link: on a line from its first to its last, a tile's edges among them, and in its
+// ground's columns.
+func (link laidLink) holds(at spot) bool {
+	return at.line >= link.top && at.line <= link.bottom && link.ground.columns.holds(at.column)
 }
 
 // laidGroup is a group of the blog's list whose name stands in the names' column: the lines its tiles take, from its

@@ -93,6 +93,25 @@ func (model Model) showing(page document.Page) Model {
 	return model.windowed()
 }
 
+// switchedTo is the model showing a session as its reader left it, as tmux switches a client to a session: the site's
+// on the page it showed, the blog's on the window they stood at, its list or the post read. A session holding no page
+// it could show, a blog the site has none of, stays unshown.
+func (model Model) switchedTo(session compose.Session) Model {
+	// the window the reader stands at in the session shown is kept first, so the blog's is never read stale
+	model = model.kept()
+	left := model.sitePage
+	switch {
+	case session.Start.InBlog() && model.blog.atPost:
+		left = model.blog.post
+	case session.Start.InBlog():
+		left = model.blog.list
+	}
+	if !model.holds(left) {
+		return model
+	}
+	return model.showing(left)
+}
+
 // listIn is the blog's list shown in a language, by the language a page is translated into: in the same grouping and
 // filter where the session holds the list so there, and else by year, as the filter is a tag the language's posts may
 // not have.

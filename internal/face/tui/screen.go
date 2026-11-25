@@ -110,6 +110,19 @@ func frameOf(width, height, widest int) frame {
 	return frame{width: width, height: height, left: left, inner: inner, above: above, rows: max(rows, 0), under: under, crosses: crosses}
 }
 
+// pageTop is the row the page's first row stands on, from the screen's top: under the rows of nothing and the crosses.
+func (frame frame) pageTop() int {
+	if frame.crosses {
+		return frame.above + topCrossRows
+	}
+	return frame.above
+}
+
+// footerAt is the row the footer stands on, from the screen's top: the last.
+func (frame frame) footerAt() int {
+	return frame.height - footerRows
+}
+
 // commandRow is the row the command line stands on, over the footer, from the screen's top, and whether the screen
 // has it.
 func (frame frame) commandRow() (int, bool) {
@@ -149,12 +162,13 @@ type drawnScreen struct {
 }
 
 // drawnTab is one tab painted: its page; what stays in sight over its lines' left part; and while it is shown the
-// footer's sessions and tabs and the window of keys.
+// footer's sessions and tabs, where a click on each part of the footer goes, and the window of keys.
 type drawnTab struct {
 	paintedPage
-	stuck      stuckPaint
-	footerTabs paintedBar
-	keyWindow  paintedWindow
+	stuck       stuckPaint
+	footerTabs  paintedBar
+	footerSpots []footerSpot
+	keyWindow   paintedWindow
 }
 
 // paintedTab is a tab's page painted, and what stays in sight over it.
@@ -212,7 +226,11 @@ func (model Model) drawnScreen(painted []paintedTab) drawnScreen {
 		if found < 0 {
 			found, windows = len(windows), append(windows, keysPainted{notes: notes, window: model.paint.keyWindow(notes)})
 		}
-		tabs = append(tabs, drawnTab{paintedPage: page.page, stuck: page.stuck, footerTabs: model.footerTabs(place, footer.place), keyWindow: windows[found].window})
+		footerTabs := model.footerTabs(place, footer.place)
+		tabs = append(tabs, drawnTab{
+			paintedPage: page.page, stuck: page.stuck, footerTabs: footerTabs.painted, footerSpots: slices.Concat(footerTabs.spots, footer.keys.spots),
+			keyWindow: windows[found].window,
+		})
 	}
 	crossRow := ""
 	if model.frame.crosses {

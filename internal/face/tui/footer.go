@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/vrppaul/paranin/internal/compose"
 )
 
 // The marks of the footer, as tmux's status line writes them: what holds the session's name; what parts a window's
@@ -41,7 +43,77 @@ type footerPlace struct {
 type paintedFooter struct {
 	place  footerPlace
 	gutter string
-	keys   paintedBar
+	keys   footerBar
+}
+
+// footerTarget is where a click on a part of the footer goes, as the key that part names goes: a window, a session not
+// shown, the window of keys, or nowhere.
+//
+//sumtype:decl
+type footerTarget interface {
+	footerTarget()
+}
+
+// windowTarget is a window of the session shown, by its place among the tabs, which a click chooses as its digit does.
+type windowTarget struct {
+	place int
+}
+
+// sessionTarget is a session not shown, which a click shows as its reader left it.
+type sessionTarget struct {
+	session compose.Session
+}
+
+// keysTarget is the window of keys, which a click opens as ? does.
+type keysTarget struct{}
+
+// noTarget is a part of the footer a click does nothing on: a gap, the mark of windows given way, the session shown.
+type noTarget struct{}
+
+func (windowTarget) footerTarget()  {}
+func (sessionTarget) footerTarget() {}
+func (keysTarget) footerTarget()    {}
+func (noTarget) footerTarget()      {}
+
+// footerItem is pieces of the footer that a click on goes one way.
+type footerItem struct {
+	pieces []piece
+	leads  footerTarget
+}
+
+// footerSpot is the screen's columns an item of the footer stands in, and where a click on them goes.
+type footerSpot struct {
+	columns columnSpan
+	leads   footerTarget
+}
+
+// footerBar is items of the footer painted, and the spot each stands in.
+type footerBar struct {
+	painted paintedBar
+	spots   []footerSpot
+}
+
+// footerItems paints items of the footer cut at a width, standing a number of columns in from the screen's left edge,
+// and says where each stands, in the one walk that paints them, so where a click finds an item is where it shows.
+func (paint paint) footerItems(items []footerItem, width, left int) footerBar {
+	var builder strings.Builder
+	used, spots := 0, make([]footerSpot, 0, len(items))
+	for _, item := range items {
+		painted := paint.cut(item.pieces, width-used)
+		builder.WriteString(painted.text)
+		spots = append(spots, footerSpot{columns: columnSpan{start: left + used, end: left + used + painted.width}, leads: item.leads})
+		used += painted.width
+	}
+	return footerBar{painted: paintedBar{text: builder.String(), width: used}, spots: spots}
+}
+
+// itemsWidth is the columns items of the footer take, uncut.
+func itemsWidth(items []footerItem) int {
+	width := 0
+	for _, item := range items {
+		width += piecesWidth(item.pieces)
+	}
+	return width
 }
 
 // footerPlaceOf is where a footer of a width, the key to the window of keys aside, stands on a frame: on the page's
@@ -71,15 +143,17 @@ func placeAt(frame frame, margin int, keysShown bool, keysWidth int) footerPlace
 
 // paintedFooter paints what the footer holds on any tab, where the session and the tabs leave it room.
 func (model Model) paintedFooter() paintedFooter {
-	keys := []piece{
-		{text: keyWindowKey, part: partPanelKey},
-		{text: space + keysTitle + strings.Repeat(space, keysGap), part: partPanelNote},
+	keys := []footerItem{
+		{pieces: []piece{{text: keyWindowKey, part: partPanelKey}, {text: space + keysTitle, part: partPanelNote}}, leads: keysTarget{}},
+		{pieces: []piece{{text: strings.Repeat(space, keysGap), part: partPanelNote}}, leads: noTarget{}},
 	}
-	whole := slices.Concat(model.sessionPieces(), slices.Concat(model.tabItems(anyTab)...))
-	place := footerPlaceOf(model.frame, piecesWidth(whole), piecesWidth(keys))
-	shownKeys := paintedBar{text: "", width: 0}
+	whole := slices.Concat(model.sessionItems(), slices.Concat(model.tabItems(anyTab)...))
+	keysWidth := itemsWidth(keys)
+	place := footerPlaceOf(model.frame, itemsWidth(whole), keysWidth)
+	shownKeys := footerBar{painted: paintedBar{text: "", width: 0}, spots: nil}
 	if place.keysShown {
-		shownKeys = model.paint.cut(keys, piecesWidth(keys))
+		// the key stands just before the ruler's cell (footerRow)
+		shownKeys = model.paint.footerItems(keys, keysWidth, model.frame.width-place.margin-widestRuler-keysWidth)
 	}
 	return paintedFooter{place: place, gutter: model.paint.parts[partPanel].Render(strings.Repeat(space, place.margin)), keys: shownKeys}
 }
@@ -87,37 +161,37 @@ func (model Model) paintedFooter() paintedFooter {
 // A tab whose items the footer's width is worked out from: the tabs take as many columns whichever is shown
 const anyTab = 0
 
-// sessionPieces are the sessions the footer opens with, as tmux names its sessions (compose.Frame.Sessions), in the
-// language the blog's session reads, a space between each two, the one shown standing out.
-func (model Model) sessionPieces() []piece {
+// sessionItems are the sessions the footer opens with, as tmux names its sessions (compose.Frame.Sessions), in the
+// language the blog's session reads, a space between each two, the one shown standing out and leading nowhere.
+func (model Model) sessionItems() []footerItem {
 	shown := model.tabs[model.chosen].page
-	pieces := []piece{}
+	items := []footerItem{}
 	for _, session := range model.sessionWords().Sessions {
-		if len(pieces) > 0 {
-			pieces = append(pieces, piece{text: space, part: partPanel})
+		if len(items) > 0 {
+			items = append(items, footerItem{pieces: []piece{{text: space, part: partPanel}}, leads: noTarget{}})
 		}
-		named := piece{text: sessionOpening + session.Name + sessionClosing, part: partSession}
+		part, leads := partSession, footerTarget(sessionTarget{session: session})
 		if session.Holds(shown) {
-			named.part = partHost
+			part, leads = partHost, noTarget{}
 		}
-		pieces = append(pieces, named)
+		items = append(items, footerItem{pieces: []piece{{text: sessionOpening + session.Name + sessionClosing, part: part}}, leads: leads})
 	}
-	return pieces
+	return items
 }
 
 // tabItems are each tab as the footer shows it while one is shown, as tmux shows each window: a gap, then its number
-// and its name, the one shown marked, on a plate.
-func (model Model) tabItems(shown int) [][]piece {
-	gap := piece{text: strings.Repeat(space, tabGap), part: partPanel}
+// and its name, the one shown marked, on a plate that leads to the window.
+func (model Model) tabItems(shown int) [][]footerItem {
+	gap := footerItem{pieces: []piece{{text: strings.Repeat(space, tabGap), part: partPanel}}, leads: noTarget{}}
 	padding := strings.Repeat(space, tabPadding)
-	items := make([][]piece, 0, len(model.tabs))
+	items := make([][]footerItem, 0, len(model.tabs))
 	for place, named := range model.tabs {
 		number := strconv.Itoa(place+firstTabNumber) + numberMark
+		plate := []piece{{text: padding + number, part: partTabNumber}, {text: named.slug + padding, part: partTabName}}
 		if place == shown {
-			items = append(items, []piece{gap, {text: padding + number + named.slug + shownTabMark + padding, part: partTabShown}})
-			continue
+			plate = []piece{{text: padding + number + named.slug + shownTabMark + padding, part: partTabShown}}
 		}
-		items = append(items, []piece{gap, {text: padding + number, part: partTabNumber}, {text: named.slug + padding, part: partTabName}})
+		items = append(items, []footerItem{gap, {pieces: plate, leads: windowTarget{place: place}}})
 	}
 	return items
 }
@@ -125,20 +199,20 @@ func (model Model) tabItems(shown int) [][]piece {
 // footerTabs paints the footer's left part while a tab is shown: the session, then the tabs that fit the room a place
 // of the footer has; where the session leaves the tab shown no room, the tabs alone, their marks kept over the
 // session, since they say more tabs lie beside the one shown.
-func (model Model) footerTabs(shown int, place footerPlace) paintedBar {
-	session, items := model.sessionPieces(), model.tabItems(shown)
-	opening := slices.Concat(session, fittedTabs(items, shown, place.room-piecesWidth(session)))
-	if piecesWidth(opening) > place.room {
+func (model Model) footerTabs(shown int, place footerPlace) footerBar {
+	session, items := model.sessionItems(), model.tabItems(shown)
+	opening := slices.Concat(session, fittedTabs(items, shown, place.room-itemsWidth(session)))
+	if itemsWidth(opening) > place.room {
 		opening = fittedTabs(items, shown, place.room)
 	}
-	return model.paint.cut(opening, place.room)
+	return model.paint.footerItems(opening, place.room, place.margin)
 }
 
 // fittedTabs are the items of the tabs that fit a room, the one shown always among them: where all do not, those
 // farthest from it give way, the later first where two stand as far, a mark standing for those given way on each side.
-func fittedTabs(items [][]piece, shown, room int) []piece {
+func fittedTabs(items [][]footerItem, shown, room int) []footerItem {
 	first, last := 0, len(items)-1
-	for first < last && piecesWidth(tabsBetween(items, first, last)) > room {
+	for first < last && itemsWidth(tabsBetween(items, first, last)) > room {
 		if last-shown >= shown-first {
 			last--
 		} else {
@@ -149,15 +223,15 @@ func fittedTabs(items [][]piece, shown, room int) []piece {
 }
 
 // tabsBetween are the items of the tabs from a first to a last, a mark on each side where tabs there give way.
-func tabsBetween(items [][]piece, first, last int) []piece {
-	mark := []piece{{text: strings.Repeat(space, tabGap), part: partPanel}, {text: givenWayMark, part: partTabNumber}}
-	row := []piece{}
+func tabsBetween(items [][]footerItem, first, last int) []footerItem {
+	mark := footerItem{pieces: []piece{{text: strings.Repeat(space, tabGap), part: partPanel}, {text: givenWayMark, part: partTabNumber}}, leads: noTarget{}}
+	row := []footerItem{}
 	if first > 0 {
-		row = append(row, mark...)
+		row = append(row, mark)
 	}
 	row = append(row, slices.Concat(items[first:last+1]...)...)
 	if last < len(items)-1 {
-		row = append(row, mark...)
+		row = append(row, mark)
 	}
 	return row
 }
@@ -167,7 +241,12 @@ func tabsBetween(items [][]piece, first, last int) []piece {
 func (model Model) footerRow(drawn drawnTab) string {
 	footer := model.drawn.footer
 	inside := model.frame.width - sides*footer.place.margin
-	ruler := model.paint.cut([]piece{{text: model.position(), part: partRuler}}, inside-drawn.footerTabs.width-footer.keys.width)
-	fill := strings.Repeat(space, max(inside-drawn.footerTabs.width-footer.keys.width-ruler.width, 0))
-	return footer.gutter + drawn.footerTabs.text + model.paint.parts[partPanel].Render(fill) + footer.keys.text + ruler.text + footer.gutter
+	keys, panel := footer.keys.painted, model.paint.parts[partPanel]
+	// the ruler takes a cell as wide as its widest word, its word at the right, so the key before it stands where
+	// paintedFooter placed it however far the page has scrolled
+	rulerCell := max(min(widestRuler, inside-drawn.footerTabs.width-keys.width), 0)
+	ruler := model.paint.cut([]piece{{text: model.position(), part: partRuler}}, rulerCell)
+	fill := strings.Repeat(space, max(inside-drawn.footerTabs.width-keys.width-rulerCell, 0))
+	rulerPadding := strings.Repeat(space, rulerCell-ruler.width)
+	return footer.gutter + drawn.footerTabs.text + panel.Render(fill) + keys.text + panel.Render(rulerPadding) + ruler.text + footer.gutter
 }

@@ -166,9 +166,8 @@ func withoutLastLetter(text string) string {
 
 // normalKey is the model after a key in normal mode: a digit choosing its tab, a first g, or a key's action.
 func (model Model) normalKey(key string) (Model, tea.Cmd) {
-	model.said = commandMessage{text: "", failed: false}
 	topPending := model.keys.topPending
-	model.keys.topPending = false
+	model = model.pendingAndSaidCleared()
 	if digit, isDigit := digitOf(key); isDigit {
 		return model.numbered(digit), nil
 	}
@@ -181,6 +180,14 @@ func (model Model) normalKey(key string) (Model, tea.Cmd) {
 		return model, nil
 	}
 	return act(model)
+}
+
+// pendingAndSaidCleared is the model as any input in normal mode leaves it, a key, a click or the wheel: a first g
+// dropped, and what the command line said cleared.
+func (model Model) pendingAndSaidCleared() Model {
+	model.said = commandMessage{text: "", failed: false}
+	model.keys.topPending = false
+	return model
 }
 
 // numbered chooses the tab of a digit's number at once, as tmux's prefix and a digit chooses a window; a digit no tab

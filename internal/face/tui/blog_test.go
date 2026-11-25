@@ -581,13 +581,15 @@ func TestEachListKeepsTheTileItsKeysStoodOn(test *testing.T) {
 
 // The keys never stand on a link out of sight: a move that takes the page from the link they stand on has them stand
 // on the link in sight nearest where the page went, G on the last tile, gg on the first grouping, a search's match on
-// its own tile; and a screen made smaller keeps the link they stand on in sight. Enter then follows a link the reader
-// sees.
+// its own tile, the wheel on the later tile of the row it brings in; and a screen made smaller keeps the link they
+// stand on in sight. Enter then follows a link the reader sees.
 func TestTheLinkTheKeysStandOnStaysInSight(test *testing.T) {
-	// a screen too short for the list whole, and one shorter still
+	// a screen too short for the list whole, and one shorter still; and the steps of the wheel that take it past the
+	// first tile
 	const (
-		shortScreen  = 14
-		shorterStill = 10
+		shortScreen                = 14
+		shorterStill               = 10
+		wheelStepsPastTheFirstTile = 5
 	)
 	list := handBlogModel(test, commonWidth, shortScreen)
 	cases := []struct {
@@ -603,6 +605,7 @@ func TestTheLinkTheKeysStandOnStaysInSight(test *testing.T) {
 		{name: "G", moved: pressed(test, list, "G"), resized: shortScreen, seen: "5 Nov 2026", opened: "2:first*"},
 		{name: "gg after G", moved: pressed(test, list, "G", "g", "g"), resized: shortScreen, seen: "years", opened: "1 Nov 2026"},
 		{name: "a search", moved: pressed(test, typed(test, pressed(test, list, "/"), "third"), "enter"), resized: shortScreen, seen: "3 Nov 2026", opened: "2:third*"},
+		{name: "the wheel", moved: updated(test, list, slices.Repeat([]tea.Msg{wheelStep(tea.MouseWheelDown)}, wheelStepsPastTheFirstTile)...), resized: shortScreen, seen: "3 Nov 2026", opened: "2:third*"},
 		{name: "the screen made smaller", moved: pressed(test, list, "j", "j", "j"), resized: shorterStill, seen: "4 Nov 2026", opened: "2:second*"},
 	}
 	for _, testCase := range cases {

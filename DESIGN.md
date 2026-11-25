@@ -716,6 +716,13 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   diagram is drawn in box marks, as mermaid-ascii draws a flowchart, in `muted`.
 - A digit chooses its tab at once; no key takes a count before it, as the page's vim keys take none (owner,
   2026-11-23).
+- The TUI takes the mouse, as Neovim and tmux do with theirs on (owner, 2026-11-25). A click on a window of the footer
+  chooses it, as its digit does; on the session not shown, `[blog]` or `[paran.in]`, shows it as the reader left it,
+  as tmux switches a client; on `? keys` opens the window of keys. A click on a link of the blog's list stands the keys
+  on it and follows it, as Enter does. The wheel scrolls three lines a step, as Neovim's `mousescroll`. The mouse
+  works in normal mode alone: typing after `:` or `/` a click does nothing, and with the window of keys open a click
+  closes it. A reader selects text with Shift held, and follows a link with Shift added to the terminal's own click
+  for it, Option in iTerm2, as in any terminal program that takes the mouse.
 - The `:` menu names each place by its kind: on a post `tab`, `heading`, `part`, `version` and `language`; on the list
   `post`, `tag` and `series`. The page's CommandLine offers the same places on the blog's pages. A heading goes to its
   heading, a series to its group on the list by series, a tag to the list it filters, shown in the list's window, and

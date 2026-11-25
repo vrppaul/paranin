@@ -16,6 +16,8 @@ The rules for Go are in `.claude/rules/go.md`.
 - On the blog's list, j, k or a move that takes the page from the link chosen, choosing another, paint again only the lines of the link left and of the one chosen.
 - Showing another buffer, by `:e`, `:checkhealth` or `:Lazy`, by Enter on a link of the blog's list, or by the key `q` or `:q` on any page but the résumé, lays out and paints the buffer shown, once.
 - A tab shown before a buffer is shown, and still shown after, keeps its layout and its paint.
+- A click or a step of the wheel does what the key it stands for does, and lays out and paints no more than that key.
+- Where each part of the footer stands, and where a click on it goes, is worked out as the footer is painted, never at a click.
 - What the reader types reaches the screen only as letters a terminal shows as they are: a control character typed is passed over, never echoed.
 - The layout says what a piece of text is, a kind; the paint says how each kind looks. No colour, weight or style is written in the layout.
 - With sixteen colours or none, what colour alone would tell is told by reversing or underlining as well.

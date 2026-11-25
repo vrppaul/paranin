@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
@@ -206,7 +207,7 @@ const (
 // versions, its lists, filtered or not, and the page of an address the site has none at.
 func blogPages(test *testing.T, snapshot *content.Snapshot, blog compose.Blog) []writtenPage {
 	build := fixtures.LoadedBuild(test)
-	writer := NewPageWriter(fixtures.Site(snapshot), build, blog.Frame, fixtures.Day())
+	writer := NewPageWriter(fixtures.Site(snapshot), build, fixtures.LoadedCards(test), blog.Frame, fixtures.Day())
 	pages := []writtenPage{}
 	for _, post := range blog.Posts {
 		pages = append(pages, writtenPage{name: routes.Path(post.Document.Head.Page, routes.FormatChosen), markup: writer.Post(post.Document, post.Record)})
@@ -889,6 +890,109 @@ func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 	}
 }
 
+// A page a preview shows names its card, the cards' manifest's for its page, a tab's its page's: the card's whole
+// address, its type, its size and the page's title as its alt, and X's large card where the card is named, the small
+// one where it is not. An indexed page lets a search engine show the card large, a page not indexed keeps its noindex
+// and says no more, a post's record names the card as its image, and a page no preview shows names none.
+func TestAPageThatShowsAPreviewNamesItsCard(test *testing.T) {
+	site := siteOnTheDay(fixtures.LoadedContent(test))
+	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
+	writer := fixtureWriter(test)
+	resume := composedOf(test, site.Pages, document.PageOf(document.PageResume))
+	published, unlisted := fixturePost(test), unlistedPost(test)
+	undated := document.Document{Head: fixtures.HeadOf(document.PostPage("undated"), textOf("Undated")), Blocks: nil}
+	draftsSite := compose.SiteOf(compose.Prepare(fixtures.LoadedContent(test)), compose.Audience{At: fixtures.Day(), Drafts: true})
+	draft := composedOf(test, draftsSite.Own.Posts, document.PostPage("notes-on-tools"))
+	cases := []struct {
+		name  string
+		page  string
+		holds []string
+		lacks []string
+	}{
+		{
+			name: "the résumé", page: writer.Page(resume.Document, resume.Record, ""),
+			holds: slices.Concat(cardTags(resumeCardAddress, "Mira Example"), []string{twitterLargeCard, indexedImageRule}),
+			lacks: []string{twitterSmallCard, noIndexTag},
+		},
+		{
+			name: "a tab of the résumé shows its page's card", page: writer.Page(resume.Document, resume.Record, "experience"),
+			holds: slices.Concat(cardTags(resumeCardAddress, "Experience — Mira Example"), []string{twitterLargeCard, indexedImageRule}),
+		},
+		{
+			name: "the list", page: writer.List(fixtures.DocumentOf(test, lists, document.PageOf(document.PageBlog))),
+			holds: slices.Concat(cardTags(pageCardAddress, "blog"), []string{twitterLargeCard, indexedImageRule}), lacks: []string{noIndexTag},
+		},
+		{
+			name: "a post published", page: writer.Post(published.Document, published.Record),
+			holds: slices.Concat(cardTags(pageCardAddress, "Reading slowly"), []string{twitterLargeCard, indexedImageRule, `"image":"` + pageCardAddress + `"`}),
+		},
+		{
+			name: "an unlisted post", page: writer.Post(unlisted.Document, unlisted.Record),
+			holds: slices.Concat(cardTags(pageCardAddress, "Reading slowly"), []string{twitterLargeCard, noIndexTag}), lacks: []string{"max-image-preview"},
+		},
+		{
+			name: "a post whose card the manifest does not name", page: writer.Post(undated, undatedRecord(undated.Head.Page)),
+			holds: []string{twitterSmallCard}, lacks: []string{"og:image", twitterLargeCard, "max-image-preview", `"image"`},
+		},
+		{
+			name: "a filtered list", page: writer.List(fixtures.DocumentOf(test, lists, document.TagFilter("reading"))),
+			holds: []string{noIndexTag}, lacks: []string{"og:image", "twitter:card", "max-image-preview"},
+		},
+		{
+			name: "a draft", page: writer.Post(draft.Document, draft.Record),
+			holds: []string{noIndexTag}, lacks: []string{"og:image", "twitter:card", "max-image-preview"},
+		},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, held := range testCase.holds {
+				if !strings.Contains(testCase.page, held) {
+					test.Errorf("the page %q holds no %q", testCase.page, held)
+				}
+			}
+			for _, lacked := range testCase.lacks {
+				if strings.Contains(testCase.page, lacked) {
+					test.Errorf("the page %q holds %q", testCase.page, lacked)
+				}
+			}
+		})
+	}
+}
+
+// cardTags are the tags a head names a card by: its address, its alt, its type and its size.
+func cardTags(address, alt string) []string {
+	return []string{
+		openGraphTag("og:image", address), openGraphTag("og:image:alt", alt), openGraphTag("og:image:type", assets.CardType),
+		openGraphTag("og:image:width", strconv.Itoa(assets.CardWidth)), openGraphTag("og:image:height", strconv.Itoa(assets.CardHeight)),
+	}
+}
+
+// openGraphTag is the tag of an Open Graph property with its content.
+func openGraphTag(property, content string) string {
+	return `<meta property="` + property + `" content="` + content + `">`
+}
+
+// undatedRecord is the record of a post of a page that has no day.
+func undatedRecord(page document.Page) compose.PostRecord {
+	return compose.PostRecord{
+		Title: "Undated", Description: "", Page: page, Published: time.Time{}, VersionOut: time.Time{},
+		Author: compose.Author{Name: "Mira Example", Page: document.PageOf(document.PageResume)}, Language: "en", Tags: nil, Series: nil,
+	}
+}
+
+// The two cards X shows, and the robots' line of an indexed page, which lets a search engine show the card large
+const (
+	twitterLargeCard = `<meta name="twitter:card" content="summary_large_image">`
+	twitterSmallCard = `<meta name="twitter:card" content="summary">`
+	indexedImageRule = `<meta name="robots" content="max-image-preview:large">`
+)
+
+// The addresses of the résumé's card and of every other page's in the cards' fixture
+const (
+	resumeCardAddress = "https://example.test/cards/resume-fixture.png"
+	pageCardAddress   = "https://example.test/cards/page-fixture.png"
+)
+
 // A head's filters stand in their order, the list's and a post's alike: each a link to where it leads, a tag's word
 // after a hash a screen reader skips; the filter shown current, named to a screen reader as the way to the whole list;
 // and a filter that leads nowhere, as a tag of a post the lists name nowhere, as words.
@@ -1058,7 +1162,7 @@ func TestATranslationReadsAsItsGoldenMarkupInItsLanguage(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	// the fixture is translated into Russian alone
 	translated := siteOnTheDay(snapshot).Translations[0]
-	writer := NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), translated.Frame, fixtures.Day())
+	writer := NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), fixtures.LoadedCards(test), translated.Frame, fixtures.Day())
 	post := composedOf(test, translated.Posts, document.PostPage("reading-slowly").InLanguage("ru"))
 	list := fixtures.DocumentOf(test, translated.Lists, document.PageOf(document.PageBlog).InLanguage("ru"))
 	golden.Match(test, "ru/blog/reading-slowly.html", lined(writer.Post(post.Document, post.Record)))
@@ -1132,10 +1236,7 @@ func oneVersionPost(test *testing.T) document.Document {
 // linked data or its Open Graph, rather than a day that never was; its author and its kind it still names.
 func TestAnUndatedDraftsPageNamesNoDay(test *testing.T) {
 	page := document.PostPage("undated")
-	record := compose.PostRecord{
-		Title: "Undated", Description: "", Page: page, Published: time.Time{}, VersionOut: time.Time{},
-		Author: compose.Author{Name: "Mira Example", Page: document.PageOf(document.PageResume)}, Language: "en", Tags: nil, Series: nil,
-	}
+	record := undatedRecord(page)
 	written := fixtureWriter(test).Post(document.Document{Head: fixtures.HeadOf(page, textOf("Undated")), Blocks: nil}, record)
 	for _, want := range []string{`"@type":"BlogPosting"`, `<meta property="article:author" content="https://example.test/">`} {
 		if !strings.Contains(written, want) {
@@ -1574,7 +1675,7 @@ func lined(page string) string {
 // fixtureWriter writes the pages of the fixture's site, with the build's fixture and the fixture's words.
 func fixtureWriter(test *testing.T) PageWriter {
 	snapshot := fixtures.LoadedContent(test)
-	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), siteOnTheDay(snapshot).Own.Frame, fixtures.Day())
+	return NewPageWriter(fixtures.Site(snapshot), fixtures.LoadedBuild(test), fixtures.LoadedCards(test), siteOnTheDay(snapshot).Own.Frame, fixtures.Day())
 }
 
 // composedOf is a page of the fixture among those compose made, its document and its record.

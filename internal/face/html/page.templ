@@ -28,6 +28,9 @@ templ (writer PageWriter) page(language string, metadata pageMetadata, main temp
 			switch address := metadata.address.(type) {
 				case knownAddress:
 					<link rel="canonical" href={ address.url }/>
+					if metadata.card != nil {
+						<meta name="robots" content={ largeImagePreview }/>
+					}
 					@writer.openGraph(metadata, address.url)
 					@metadata.record
 					for _, alternate := range metadata.alternates {
@@ -231,7 +234,8 @@ templ themeMark() {
 
 // openGraph is how a page reads where a link to it is shared (ogp.me): what it is, the site it is of, the locale it is
 // marked up in and a post's others, its title and description, its own address, and a post's days, author and tags
-// where it has a record; then the card X shows of it. Its picture comes with the cards Typst draws (ADR-0005).
+// where it has a record; then its card, drawn by the build (ADR-0005), and the card X shows of it: the large one where
+// the page names a card.
 templ (writer PageWriter) openGraph(metadata pageMetadata, address string) {
 	<meta property="og:type" content={ metadata.openGraphType }/>
 	<meta property="og:site_name" content={ writer.frame.siteName }/>
@@ -247,7 +251,22 @@ templ (writer PageWriter) openGraph(metadata pageMetadata, address string) {
 	if metadata.post != nil {
 		@articleProperties(*metadata.post)
 	}
-	<meta name="twitter:card" content={ twitterCard }/>
+	if metadata.card != nil {
+		@cardProperties(*metadata.card)
+	} else {
+		<meta name="twitter:card" content={ twitterSummary }/>
+	}
+}
+
+// cardProperties are what Open Graph says of a page's card: where it is, what it shows to whoever cannot see it, its
+// type and its size; and that X shows it large.
+templ cardProperties(card socialCard) {
+	<meta property="og:image" content={ card.url }/>
+	<meta property="og:image:alt" content={ card.alt }/>
+	<meta property="og:image:type" content={ assets.CardType }/>
+	<meta property="og:image:width" content={ strconv.Itoa(assets.CardWidth) }/>
+	<meta property="og:image:height" content={ strconv.Itoa(assets.CardHeight) }/>
+	<meta name="twitter:card" content={ twitterLargeImage }/>
 }
 
 // articleProperties are what Open Graph says of a post as an article past every page's own: when it came out and when

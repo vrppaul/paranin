@@ -27,7 +27,14 @@ const (
 	cardHashLetters = 16
 	hexDigits       = "0123456789abcdef"
 	cardEnding      = ".png"
-	cardType        = "image/png"
+)
+
+// What every card is: the type it is drawn and served in, and its size in pixels, the one a link's preview wants
+// (docs/SEO.md, A card), which the drawing sets the template to and a page's head names the card by
+const (
+	CardType   = "image/png"
+	CardWidth  = 1200
+	CardHeight = 630
 )
 
 // The faults the cards' folder can hold
@@ -85,7 +92,7 @@ func readCard(folder fs.FS, name string) (File, error) {
 	if err != nil {
 		return File{ContentType: "", Body: nil}, fmt.Errorf(unreadFile, errCards, name, err)
 	}
-	return File{ContentType: cardType, Body: body}, nil
+	return File{ContentType: CardType, Body: body}, nil
 }
 
 // NameOf is the name of the file of a page's card, by the path the page is served at, and whether the page has one.

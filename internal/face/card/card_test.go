@@ -114,7 +114,7 @@ func TestAPageShowsItsOwnCardOrItsPagesOrNone(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := PageOf(fixtures.DocumentOf(test, testCase.site.Served(), testCase.page).Head); got != testCase.want {
+			if got := fixtures.DocumentOf(test, testCase.site.Served(), testCase.page).Head.CardPage(); got != testCase.want {
 				test.Errorf("the card %+v shows = %+v, want %+v", testCase.page, got, testCase.want)
 			}
 		})

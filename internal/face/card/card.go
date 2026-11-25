@@ -90,22 +90,11 @@ func CardsOf(site compose.Site) []Card {
 	return cards
 }
 
-// PageOf is the page whose card a page of a head shows (DESIGN.md, Social cards): its own, a tab its page's; none, the
-// page of no kind, on a page no preview shows, an older version, a filtered list, a draft.
-func PageOf(head document.Head) document.Page {
-	if !head.Previewed() {
-		return document.PageOf(document.PageNone)
-	}
-	whole := head.Page
-	whole.Tab = ""
-	return whole
-}
-
 // FactsOf are the facts of a page's card, where the document is the page that card stands for: none for a tab, which
 // shows its page's, or a page no preview shows. exhaustive holds the switch to every kind of page.
 func (writer Writer) FactsOf(composed document.Document) (Facts, bool) {
 	head := composed.Head
-	if PageOf(head) != head.Page {
+	if head.CardPage() != head.Page {
 		return nil, false
 	}
 	frame := writer.frames[head.Page.Translation]

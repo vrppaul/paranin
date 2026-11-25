@@ -157,10 +157,12 @@ there, and the previews looked at in LinkedIn's Post Inspector.
 ## What stands and what is to build
 
 Stands: the formats of D21; each page's title, a tab's and the list by series' among them, its description and
-canonical address; Open Graph, a post as an `article`, with the site's name, and `twitter:card` `summary`; a post's
+canonical address; Open Graph, a post as an `article`, with the site's name; each page a preview shows naming its card,
+a tab's its page's, by the cards' manifest (`og:image` and its type, size and alt, `twitter:card`
+`summary_large_image`, `max-image-preview:large` on an indexed page, a post's record `image`); a post's
 languages; every record naming the one `Person`, the résumé's `ProfilePage` beside `WebSite`, a tab's `WebPage`, a
 project's `SoftwareSourceCode` and a post's `BlogPosting`; `noindex` on a filtered list, an older version and an
 unlisted post; `/blog/<number>`'s `301`, and that of a path with a slash at its end; `robots.txt` and `sitemap.xml`;
 IndexNow and its key file; the feeds; `llms.txt`.
 
-To build: the cards, as the SEO item of `TODO.md` lists them; "At hosting", with hosting.
+To build: "At hosting", with hosting.

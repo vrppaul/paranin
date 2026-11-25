@@ -596,7 +596,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	build := snapshot.Build
 	composition := compose.SiteOf(prepared, audience)
 	addresses, frame := composition.Addresses, composition.Own.Frame
-	pageWriter := html.NewPageWriter(addresses, build, frame, audience.At)
+	pageWriter := html.NewPageWriter(addresses, build, snapshot.Cards, frame, audience.At)
 	served := answersOf()
 	served.fixed[routes.Path(composition.Index.Head.Page, routes.FormatMarkdown)] = drawnAs(routes.PlainType, text.Markdown(composition.Index, addresses))
 	served.fixed[routes.CrawlerPath(routes.CrawlerRules)] = drawnAs(routes.PlainType, feed.Robots(addresses))
@@ -617,7 +617,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 	drawn := blogDrawing{served: served, moved: map[string]move{}}
 	missing, notFound := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}, map[string]byFormat[missingFormat]{}
 	for _, blog := range composition.Blogs() {
-		drawn.draw(blog, html.NewPageWriter(addresses, build, blog.Frame, audience.At), textWriter{site: addresses, manual: blog.Frame.Manual})
+		drawn.draw(blog, html.NewPageWriter(addresses, build, snapshot.Cards, blog.Frame, audience.At), textWriter{site: addresses, manual: blog.Frame.Manual})
 		notFound[blog.Frame.Translation] = missing.choice(blog.Frame)
 	}
 	return &drawing{served: served, moved: drawn.moved, notFound: notFound, site: addresses}, composition.Until

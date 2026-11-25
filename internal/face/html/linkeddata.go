@@ -111,6 +111,7 @@ type blogPosting struct {
 	URL           string             `json:"url"`
 	DatePublished string             `json:"datePublished,omitempty"`
 	DateModified  string             `json:"dateModified,omitempty"`
+	Image         string             `json:"image,omitempty"`
 	Author        personReference    `json:"author"`
 	InLanguage    string             `json:"inLanguage"`
 	Keywords      []string           `json:"keywords,omitempty"`
@@ -135,8 +136,9 @@ type writtenPost struct {
 
 // recordOf is a page's record as the page writes it, for the page shown at an address: its script of linked data, in
 // schema.org's words, and a post's as its Open Graph reads it too, none where the record is no post's. The person's
-// own page is their profile, with the site beside it, each a script of its own; a tab of it is a page about them.
-func (writer PageWriter) recordOf(record compose.Record, shown document.Page, address string) (templ.Component, *writtenPost) {
+// own page is their profile, with the site beside it, each a script of its own; a tab of it is a page about them. A
+// post's names the card the page shows, where it shows one, as its image.
+func (writer PageWriter) recordOf(record compose.Record, shown document.Page, address string, card *socialCard) (templ.Component, *writtenPost) {
 	switch typed := record.(type) {
 	case compose.PersonRecord:
 		if shown != typed.Page {
@@ -147,7 +149,7 @@ func (writer PageWriter) recordOf(record compose.Record, shown document.Page, ad
 		return linkedScript(writer.sourceCodeOf(typed)), nil
 	case compose.PostRecord:
 		post := writer.writtenPostOf(typed)
-		return linkedScript(writer.blogPostingOf(typed, post)), &post
+		return linkedScript(writer.blogPostingOf(typed, post, card)), &post
 	}
 	// a list, filtered or not, and an older version of a post have no record and write none
 	return templ.NopComponent, nil
@@ -242,12 +244,17 @@ func (writer PageWriter) writtenPostOf(record compose.PostRecord) writtenPost {
 	}
 }
 
-// blogPostingOf is a post at its page, as its page writes it, in the series its record names, where it names one.
-func (writer PageWriter) blogPostingOf(record compose.PostRecord, post writtenPost) blogPosting {
+// blogPostingOf is a post at its page, as its page writes it, in the series its record names, where it names one, and
+// with the card the page shows, where it shows one, as its image.
+func (writer PageWriter) blogPostingOf(record compose.PostRecord, post writtenPost, card *socialCard) blogPosting {
 	site := writer.frame.site
 	var series creativeWorkSeries
 	if record.Series != nil {
 		series = creativeWorkSeries{Kind: seriesKind, Name: record.Series.Title, URL: site.Address(record.Series.Group, routes.FormatChosen)}
+	}
+	image := ""
+	if card != nil {
+		image = card.url
 	}
 	return blogPosting{
 		Context:       vocabulary,
@@ -257,6 +264,7 @@ func (writer PageWriter) blogPostingOf(record compose.PostRecord, post writtenPo
 		URL:           site.Address(record.Page, routes.FormatChosen),
 		DatePublished: post.published,
 		DateModified:  post.modified,
+		Image:         image,
 		Author:        post.author,
 		InLanguage:    record.Language,
 		Keywords:      post.tags,

@@ -11,8 +11,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/look"
 )
 
@@ -32,6 +34,8 @@ const (
 	templateFile     = "card.typ"
 	drawingFolder    = "paranin-card-*"
 	factsKey         = "facts"
+	widthKey         = "width"
+	heightKey        = "height"
 	inputJoint       = "="
 	versionCommand   = "--version"
 	versionWordIndex = 1
@@ -105,7 +109,7 @@ func NewDrawer(ctx context.Context, program, faces string) (Drawer, error) {
 	return Drawer{program: program, faces: faces}, nil
 }
 
-// Draw draws a card's facts as a PNG, 1200×630.
+// Draw draws a card's facts as a PNG of the size assets names.
 func (drawer Drawer) Draw(ctx context.Context, facts Facts) ([]byte, error) {
 	drawn, err := drawer.typst(ctx, facts, compileCommand, []string{standardOutput}, pixelsOption, pixelsPerInch, formatOption, pictureFormat)
 	if err != nil {
@@ -134,7 +138,10 @@ func (drawer Drawer) typst(ctx context.Context, facts Facts, command string, aft
 		return nil, fmt.Errorf("lay the cards' template out in %s: %w", folder, err)
 	}
 	arguments := slices.Concat([]string{command, filepath.Join(folder, templateFile)}, after, []string{
-		rootOption, folder, noSystemFonts, noEmbeddedFonts, fontsOption, drawer.faces, inputOption, factsKey + inputJoint + string(input),
+		rootOption, folder, noSystemFonts, noEmbeddedFonts, fontsOption, drawer.faces,
+		inputOption, factsKey + inputJoint + string(input),
+		inputOption, widthKey + inputJoint + strconv.Itoa(assets.CardWidth),
+		inputOption, heightKey + inputJoint + strconv.Itoa(assets.CardHeight),
 	}, options)
 	return run(ctx, drawer.program, arguments...)
 }

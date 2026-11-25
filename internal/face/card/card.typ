@@ -2,7 +2,8 @@
 // card's facts as JSON in sys.inputs.facts, block letters already laid out as rectangles, and the template fits them to
 // the card: it measures the words it sets and cuts them where they run past their lines, chooses a title's size, and
 // chooses how a name in block letters stands and at what cell. It states each choice as metadata labelled <choice>,
-// which the face's tests query. A card is 1200×630 at 72 ppi, so a point is a pixel.
+// which the face's tests query. A card's size in pixels is handed in as sys.inputs.width and height; at 72 ppi a point
+// is a pixel.
 //
 // Two looks, so the résumé and the blog read as two sides of the site: the résumé's side, the résumé, a project and
 // the blog's list, a title in the name's block letters over the line under it; and a post, a header across the top,
@@ -15,8 +16,8 @@
 // The design's colours, as the tokens write each, #rrggbb, read as colours
 #let colours = written-colours.pairs().map(((name, written)) => (name, rgb(written))).to-dict()
 
-#let card-width = 1200pt
-#let card-height = 630pt
+#let card-width = int(sys.inputs.width) * 1pt
+#let card-height = int(sys.inputs.height) * 1pt
 
 // The page's rem at a browser's own text size, and the card's, grown by 1.75, so a card shown 500px wide on a phone
 // keeps its words at least 17px

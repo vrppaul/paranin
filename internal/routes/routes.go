@@ -454,6 +454,11 @@ func CardPath(name string) string {
 	return cardsFolder + name
 }
 
+// CardAddress is where a page's card is served, written whole, as a link's preview is told it.
+func (site Site) CardAddress(name string) string {
+	return site.base + CardPath(name)
+}
+
 // CrawlerPath is where a file a crawler asks for by name is served, from the site's root; the zero file has none.
 func CrawlerPath(file CrawlerFile) string {
 	switch file {

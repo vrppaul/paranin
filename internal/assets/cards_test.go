@@ -9,12 +9,10 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// The cards' fixture's cards a test reads and changes, from its root, beside its manifest, and the type every card is
-// served as
+// The cards' fixture's cards a test reads and changes, from its root, beside its manifest
 const (
 	resumeCard = "resume-fixture.png"
 	pageCard   = "page-fixture.png"
-	cardType   = "image/png"
 )
 
 // The cards are every file their manifest names, each once, by its name, as a PNG, and each page's card is the file the
@@ -22,8 +20,8 @@ const (
 func TestTheCardsAreTheFilesTheirManifestNames(test *testing.T) {
 	cards := fixtures.LoadedCards(test)
 	wantFiles := map[string]assets.File{
-		resumeCard: {ContentType: cardType, Body: []byte("PNG résumé fixture\n")},
-		pageCard:   {ContentType: cardType, Body: []byte("PNG page fixture\n")},
+		resumeCard: {ContentType: assets.CardType, Body: []byte("PNG résumé fixture\n")},
+		pageCard:   {ContentType: assets.CardType, Body: []byte("PNG page fixture\n")},
 	}
 	if got := maps.Collect(cards.Files()); !maps.EqualFunc(got, wantFiles, sameFile) {
 		test.Errorf("Files() = %q, want %q", got, wantFiles)

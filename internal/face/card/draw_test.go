@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
@@ -25,12 +26,6 @@ const (
 	choiceLabel  = "<choice>"
 	fieldOption  = "--field"
 	valueField   = "value"
-)
-
-// How big a card is, as Open Graph's image of a page, in pixels
-const (
-	cardWidth  = 1200
-	cardHeight = 630
 )
 
 // How the template says whether words were cut and whether block letters shrank
@@ -87,8 +82,8 @@ func TestACardIsDrawnAsAPictureOfItsSize(test *testing.T) {
 		test.Fatalf("Draw = %v, want a picture", err)
 	}
 	size, err := png.DecodeConfig(bytes.NewReader(drawn))
-	if err != nil || size.Width != cardWidth || size.Height != cardHeight {
-		test.Errorf("the card drawn = %d×%d (%v), want a PNG %d×%d", size.Width, size.Height, err, cardWidth, cardHeight)
+	if err != nil || size.Width != assets.CardWidth || size.Height != assets.CardHeight {
+		test.Errorf("the card drawn = %d×%d (%v), want a PNG %d×%d", size.Width, size.Height, err, assets.CardWidth, assets.CardHeight)
 	}
 }
 

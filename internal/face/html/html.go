@@ -66,8 +66,15 @@ const (
 	websiteType = "website"
 )
 
-// The card X shows of a page, which reads the rest of it from Open Graph: a summary, until the page has a picture
-const twitterCard = "summary"
+// The card X shows of a page, which reads the rest of it from Open Graph: a summary, or, where the page names a card of
+// its own, the card large
+const (
+	twitterSummary    = "summary"
+	twitterLargeImage = "summary_large_image"
+)
+
+// What the robots' line of an indexed page says where it names a card: a search engine may show the card large
+const largeImagePreview = "max-image-preview:large"
 
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6; the name of a heading no
 // reader links to, which carries none, the attribute a named one carries its name in, and the one a heading the site's
@@ -225,10 +232,12 @@ const (
 
 // PageWriter writes the pages of one snapshot, from what is the same on each, worked out once: how it writes text
 // inside a block, each link by its path from the root; what each includes to run the site's script, the frame round
-// each, whose site writes their addresses, and the day they are drawn on, which the résumé's career line runs to.
+// each, whose site writes their addresses, the cards the pages name, and the day they are drawn on, which the résumé's
+// career line runs to.
 type PageWriter struct {
 	spanWriter
 	included assets.Included
+	cards    *assets.Cards
 	frame    frame
 	today    time.Time
 }
@@ -244,6 +253,8 @@ type pageMetadata struct {
 	markdown      string
 	openGraphType string
 	record        templ.Component
+	// card is the card the page shows; none where the page shows none or the cards' manifest names none for it
+	card *socialCard
 	// post is a post's record as its Open Graph and its linked data both write it; none where the page's record is no
 	// post's
 	post       *writtenPost
@@ -251,6 +262,12 @@ type pageMetadata struct {
 	alternates []alternate
 	// otherLocales are the locales of the languages a post is read in but the one read, which Open Graph names too
 	otherLocales []string
+}
+
+// socialCard is the card a page names: its address, whole, and the words that stand for it where it is not seen.
+type socialCard struct {
+	url string
+	alt string
 }
 
 // pageAddress is the address a page names in its head, by whether it has one of its own and whether a search engine
@@ -318,11 +335,12 @@ func otherLocalesOf(languages []document.Language) []string {
 	return locales
 }
 
-// NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, with the frame
-// round each, on a day the host reads off its clock.
-func NewPageWriter(site routes.Site, build *assets.Build, composed compose.Frame, today time.Time) PageWriter {
+// NewPageWriter writes the pages of a site, drawn in a build's stylesheet and running its script, naming each page's
+// card as the cards' manifest has it, with the frame round each, on a day the host reads off its clock.
+func NewPageWriter(site routes.Site, build *assets.Build, cards *assets.Cards, composed compose.Frame, today time.Time) PageWriter {
 	return PageWriter{
-		spanWriter: spanWriter{addressOf: routes.Reference}, included: build.Includes(assets.Site), frame: frameOf(site, composed), today: today,
+		spanWriter: spanWriter{addressOf: routes.Reference}, included: build.Includes(assets.Site), cards: cards, frame: frameOf(site, composed),
+		today: today,
 	}
 }
 
@@ -374,14 +392,17 @@ func rendered(component templ.Component) string {
 func (writer PageWriter) metadataOf(head document.Head, shown document.Page, title []document.Span, record compose.Record) pageMetadata {
 	site := writer.frame.site
 	url := site.Address(shown, routes.FormatChosen)
-	linked, post := writer.recordOf(record, shown, url)
+	words := document.PlainText(title)
+	card := writer.cardOf(head, words)
+	linked, post := writer.recordOf(record, shown, url, card)
 	metadata := pageMetadata{
-		title:         document.PlainText(title),
+		title:         words,
 		description:   document.PlainText(head.Description),
 		address:       addressOf(head, url),
 		markdown:      routes.Reference(shown, routes.FormatMarkdown),
 		openGraphType: openGraphTypeOf(shown.Kind),
 		record:        linked,
+		card:          card,
 		post:          post,
 		feeds:         make([]headFeed, 0, len(head.Feeds)),
 		alternates:    alternatesOf(head.Languages, site),
@@ -391,6 +412,16 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 		metadata.feeds = append(metadata.feeds, headFeed{title: document.PlainText(feed.Spans), path: routes.Reference(feed.Target, routes.FormatChosen)})
 	}
 	return metadata
+}
+
+// cardOf is the card a page of a head shows, by the name the cards' manifest gives its page's, with the page's title as
+// its alt; none where the page shows no card or the manifest names none.
+func (writer PageWriter) cardOf(head document.Head, alt string) *socialCard {
+	name, named := writer.cards.NameOf(routes.Path(head.CardPage(), routes.FormatChosen))
+	if !named {
+		return nil
+	}
+	return &socialCard{url: writer.frame.site.CardAddress(name), alt: alt}
 }
 
 // addressOf is the address a page of a head names, the page shown at a URL: its document's whole or a tab, which

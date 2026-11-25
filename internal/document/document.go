@@ -63,6 +63,17 @@ func (head Head) Previewed() bool {
 	return head.Page.OwnAddress() && !draft
 }
 
+// CardPage is the page whose card a page of a head shows (DESIGN.md, Social cards): its own, a tab its page's; none,
+// the page of no kind, on a page no preview shows, an older version, a filtered list, a draft.
+func (head Head) CardPage() Page {
+	if !head.Previewed() {
+		return PageOf(PageNone)
+	}
+	whole := head.Page
+	whole.Tab = ""
+	return whole
+}
+
 // Indexed is whether a search engine may index the page, which then names the address it is known by (docs/SEO.md,
 // What is indexed): every page a preview shows, a post only where the blog's lists name it. Not indexed: the index and
 // the hidden pages, which no browser reads as a page of the site; a filtered list, a view of the list, and an older

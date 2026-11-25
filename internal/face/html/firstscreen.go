@@ -44,12 +44,12 @@ func (writer PageWriter) openingPart(composed document.Document, opening documen
 }
 
 // tabPart is what the main part holds where a page shows a tab past its opening, its blocks under its title in block
-// letters as the page's h1: on the résumé the tab stands as a section, the title beside its blocks; on any other page
-// the title heads its blocks, as a page's head does.
+// letters as the page's h1: on the résumé the tab stands as a section, the title beside its blocks, whose headings
+// stand under the h1; on any other page the title heads its blocks, as a page's head does.
 func (writer PageWriter) tabPart(kind document.PageKind, title []document.Span, blocks []document.Block) templ.Component {
 	heading := titleHeading(document.PlainText(title), writer.spans(title))
 	if kind == document.PageResume {
-		return writer.resumeSection(blocks, heading)
+		return writer.resumeSection(blocks, heading, firstHeadingDepth)
 	}
 	return writer.tabMain(heading, blocks)
 }

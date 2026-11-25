@@ -40,7 +40,7 @@ const NOWHERE = "rust";
 // side by side with nothing between, as the golden page, set out a tag a line, does not
 const PARTED = "the queue";
 const ACROSS_BLOCKS = "engineerbrno";
-const ROLE_HEADING = "main h3";
+const ROLE_HEADING = "main h2";
 const ROLE_PLACE = "main .entry-place";
 
 // Each test opens its first page in a session of its own, which the pages it opens after share

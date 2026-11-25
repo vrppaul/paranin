@@ -4,6 +4,7 @@ import (
 	"html"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +124,39 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// What a heading's level is read from, the digit of its tag, which the pattern's first group holds; the level of a
+// page's title, and the one before it, where a page's headings start from
+const (
+	headingTag      = `<h([1-6])[\s>]`
+	headingDigit    = 1
+	titleLevel      = 1
+	levelAboveTitle = titleLevel - 1
+)
+
+// A page reads as an outline, as a screen reader lists its headings: its title the h1, and each heading after it at
+// most one level below the one before it, at its own address and at each of its tabs'.
+func TestEveryPageStepsDownItsHeadingsOneLevelAtATime(test *testing.T) {
+	writer := fixtureWriter(test)
+	heading := regexp.MustCompile(headingTag)
+	for _, composed := range siteOnTheDay(fixtures.LoadedContent(test)).Pages {
+		tabs := document.TabsOf(composed.Document)
+		for _, tab := range slices.Concat([]document.Tab{tabs.Opening.Tab}, tabs.Rest) {
+			test.Run(document.PlainText(composed.Document.Head.Title)+" "+tab.Slug, func(test *testing.T) {
+				page := writer.Page(composed.Document, composed.Record, tab.Slug)
+				previous := levelAboveTitle
+				for _, match := range heading.FindAllStringSubmatch(page, everyMatch) {
+					// the pattern's group is one digit, which always reads as a number
+					level, _ := strconv.Atoi(match[headingDigit])
+					if level > previous+1 {
+						test.Errorf("the page %q writes an h%s after an h%d, want at most an h%d", page, match[headingDigit], previous, previous+1)
+					}
+					previous = level
+				}
+			})
+		}
 	}
 }
 

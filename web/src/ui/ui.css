@@ -1288,9 +1288,9 @@ a.tile-title:focus-visible {
   width: 100%;
 }
 
-/* a heading below a section's title names in the strong style, its level shown by the space before it, never by its
- * size (DESIGN.md, Type) */
-.section :is(h3, h4, h5, h6) {
+/* a heading among a section's blocks names in the strong style, its level shown by the space before it, never by its
+ * size (DESIGN.md, Type): an h2 on a tab, under the page's h1, an h3 under a section's h2 on the résumé's opening */
+.section .blocks :is(h2, h3, h4, h5, h6) {
   font-size: var(--type-strong-size);
   font-weight: var(--type-strong-weight);
   line-height: var(--type-strong-line);

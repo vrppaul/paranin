@@ -92,13 +92,13 @@ func titleDrawing(words string) (letterDrawing, bool) {
 }
 
 // openingSection is the résumé's first section, under its first screen: under its title in block letters where the
-// titles' font draws every letter of it, as words where it does not.
+// titles' font draws every letter of it, as words where it does not; an h2 either way, its blocks' headings under it.
 func (writer PageWriter) openingSection(section document.Section) templ.Component {
-	words := document.PlainText(section.Title)
-	if drawing, drawn := titleDrawing(words); drawn {
-		return writer.resumeSection(section.Blocks, letteredHeadingTwo(drawing))
+	title := heading(firstHeadingDepth, unnamed, writer.spans(section.Title))
+	if drawing, drawn := titleDrawing(document.PlainText(section.Title)); drawn {
+		title = letteredHeadingTwo(drawing)
 	}
-	return writer.resumeSection(section.Blocks, heading(firstHeadingDepth, unnamed, writer.spans(section.Title)))
+	return writer.resumeSection(section.Blocks, title, firstHeadingDepth+1)
 }
 
 // drawLetters is texts in a font as a drawing of the words they show, of the font's class, a row of nothing between

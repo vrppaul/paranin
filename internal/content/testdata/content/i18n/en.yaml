@@ -25,6 +25,8 @@ copy_command: "copy {}"
 copied_command: "Copied {}"
 write_to: Write to me
 ssh_gives: The résumé as an app in a terminal.
+ssh_post_gives: This post in a terminal.
+ssh_blog_gives: The blog in a terminal.
 reading_gives: The page as a manual in a terminal.
 blog: blog
 version: version

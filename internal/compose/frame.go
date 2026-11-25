@@ -23,12 +23,13 @@ type OpenedPage struct {
 // it: the site's name, the language's tag, the language its pages are translated into, the name of the theme button,
 // which is pressed while the page is dark, the locale Open Graph marks a page in, the words of the button that copies a
 // command or a block of code, the way a terminal reaches the site over ssh, and the host it reaches, which a page's own
-// ssh command names too (SSHCommandTo), the blog's name, what reading a page in a terminal gives,
-// whose command a face writes with the page's address, the words of the button that writes to the author, the page of
-// each project that has one, in the profile's order, a place of every page's command line by its slug, and every page
-// :e opens, in every language, by each name it reads, the projects' among them, the site's sessions, the labels of a
-// post's facts, the words of its series and of the panes at its foot, the name of its outline, the words of the blog's
-// list, how a day is written, the manual's own words, and the word in a widget's edge that says it runs.
+// ssh way names too (SSHWayTo), with what it gives of a post and of the blog, the blog's name, what reading a page in
+// a terminal gives, whose command a face writes with the page's address, the words of the button that writes to the
+// author, the page of each project that has one, in the profile's order, a place of every page's command line by its
+// slug, and every page :e opens, in every language, by each name it reads, the projects' among them, the site's
+// sessions, the labels of a post's facts, the words of its series and of the panes at its foot, the name of its
+// outline, the words of the blog's list, how a day is written, the manual's own words, and the word in a widget's edge
+// that says it runs.
 type Frame struct {
 	// SiteName is the name a search engine and a link preview show for the site: its person's, as plain text
 	SiteName string
@@ -43,6 +44,8 @@ type Frame struct {
 	CopyWords    CopyWords
 	SSH          Way
 	sshHost      string
+	sshPostGives string
+	sshBlogGives string
 	BlogName     string
 	ReadingGives string
 	WriteTo      string
@@ -220,6 +223,8 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 		CopyWords:    copyWords,
 		SSH:          copyWords.Way(sshCommand(snapshot.Profile.Site.SSHHost, anyUser), words.Text(content.WordSSHGives)),
 		sshHost:      snapshot.Profile.Site.SSHHost,
+		sshPostGives: words.Text(content.WordSSHPostGives),
+		sshBlogGives: words.Text(content.WordSSHBlogGives),
 		BlogName:     words.Text(content.WordBlog),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
@@ -460,6 +465,20 @@ func (frame Frame) SSHCommandTo(head document.Head) string {
 		path = routes.NumberPath(page.Translation, head.Number)
 	}
 	return sshCommand(frame.sshHost, routes.TerminalName(path))
+}
+
+// SSHWayTo is the way a terminal reaches a page over ssh, by SSHCommandTo's command, giving what the page is: a post,
+// the blog or, as the site's own command opens it, the résumé. exhaustive holds the switch to every kind of page.
+func (frame Frame) SSHWayTo(head document.Head) Way {
+	gives := frame.SSH.Gives
+	switch head.Page.Kind {
+	case document.PagePost:
+		gives = frame.sshPostGives
+	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
+		gives = frame.sshBlogGives
+	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
+	}
+	return frame.CopyWords.Way(frame.SSHCommandTo(head), gives)
 }
 
 // Way is the way a command reaches the site, giving what the words say: named by its program, the command's first

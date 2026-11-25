@@ -57,6 +57,8 @@ const (
 	WordCopied
 	WordWriteTo
 	WordSSHGives
+	WordSSHPostGives
+	WordSSHBlogGives
 	WordReadingGives
 	WordBlog
 	WordVersion
@@ -185,6 +187,8 @@ func wordKeys() map[Word]string {
 		WordCopied:            "copied",
 		WordWriteTo:           "write_to",
 		WordSSHGives:          "ssh_gives",
+		WordSSHPostGives:      "ssh_post_gives",
+		WordSSHBlogGives:      "ssh_blog_gives",
 		WordReadingGives:      "reading_gives",
 		WordBlog:              "blog",
 		WordVersion:           "version",

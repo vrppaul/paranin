@@ -327,8 +327,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
-		`<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint"><p id="_hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh example.test</code>`,
-		`<p class="hint-gives">The résumé as an app in a terminal.</p>`,
+		`<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint"><p id="_hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh `,
 		`<p class="hint-gives">The page as a manual in a terminal.</p>`,
 		`popovertarget="_hint-ssh" popovertargetaction="hide"`, `popovertarget="_hint-curl" popovertargetaction="hide"`,
 		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
@@ -344,6 +343,19 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	const (
 		projectPlace = `data-place="project" data-name="tidy-tool" data-address="/p/tidy-tool"`
 		noPagePlace  = `data-name="other-tool"`
+	)
+	// the ssh hint of the pages the site's own command opens, the résumé's and the page of no page's, of a post's, which
+	// its number opens, and of the blog's lists (D26): each its page's command and what it gives
+	const (
+		resumeSSH = `<code data-part="command-words">ssh example.test</code>`
+		postSSH   = `<code data-part="command-words">ssh blog/1@example.test</code>`
+		blogSSH   = `<code data-part="command-words">ssh blog@example.test</code>`
+		seriesSSH = `<code data-part="command-words">ssh blog/series@example.test</code>`
+	)
+	const (
+		resumeGives = `<p class="hint-gives">The résumé as an app in a terminal.</p>`
+		postGives   = `<p class="hint-gives">This post in a terminal.</p>`
+		blogGives   = `<p class="hint-gives">The blog in a terminal.</p>`
 	)
 	// the résumé's markdown, which the page of no page offers too
 	const resumeMarkdown = `<a class="way-chip" href="/index.md">index.md</a>`
@@ -365,7 +377,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
 			holds: slices.Concat(every, []string{
-				siteSessions, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
+				siteSessions, resumeSSH, resumeGives, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
 				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
@@ -377,7 +389,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
 			holds: slices.Concat(every, []string{
-				siteSessions, resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
+				siteSessions, resumeSSH, resumeGives, resumeMarkdown, resumeReading, `<a class="window" href="/"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience" aria-current="page"><span class="window-number">2:</span>experience</a>`,
 			}),
 			lacks: nil,
@@ -385,7 +397,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "a project's page", page: writer.Page(project.Document, project.Record, ""),
 			holds: slices.Concat(every, []string{
-				siteSessions, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
+				siteSessions, resumeSSH, resumeGives, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
 				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
 				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
@@ -399,13 +411,13 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		},
 		{
 			name: "the page of no page", page: missing.For(missingPath),
-			holds: slices.Concat(every, []string{siteSessions, resumeMarkdown, resumeReading, projectPlace}),
+			holds: slices.Concat(every, []string{siteSessions, resumeSSH, resumeGives, resumeMarkdown, resumeReading, projectPlace}),
 			lacks: []string{`class="window"`, `data-place="tab"`},
 		},
 		{
 			name: "a post's page", page: writer.Post(post.Document, post.Record),
 			holds: slices.Concat(every, []string{
-				blogSessions, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
+				blogSessions, postSSH, postGives, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog/reading-slowly</code>`,
 				`<a class="window" href="/blog"><span class="window-number">1:</span>posts</a>`,
 				`<a class="window" href="/blog/reading-slowly" aria-current="page"><span class="window-number">2:</span>reading-slowly</a>`,
@@ -419,7 +431,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the blog's list by year", page: writer.List(lists[0]),
 			holds: slices.Concat(every, []string{
-				blogSessions, `<a class="way-chip" href="/blog.md">blog.md</a>`,
+				blogSessions, blogSSH, blogGives, `<a class="way-chip" href="/blog.md">blog.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog</code>`,
 				`<a class="window" href="/blog" aria-current="page"><span class="window-number">1:</span>posts</a>`,
 				`data-place="tab" data-name="posts" data-address="/blog" data-current`,
@@ -433,7 +445,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 		{
 			name: "the blog's list by series", page: writer.List(lists[1]),
 			holds: slices.Concat(every, []string{
-				blogSessions, `<a class="way-chip" href="/blog/series.md">series.md</a>`,
+				blogSessions, seriesSSH, blogGives, `<a class="way-chip" href="/blog/series.md">series.md</a>`,
 				`<code data-part="command-words">curl https://example.test/blog/series</code>`,
 				`<a class="window" href="/blog/series" aria-current="page"><span class="window-number">1:</span>posts</a>`,
 				`data-place="series" data-name="reading" data-address="/blog/series#reading"`,

@@ -303,7 +303,10 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
 ### Hint
 
 A window of tmux's over the foot line, which a way's chip opens: the way's command whole to copy and what it gives.
-`ssh` gives the résumé as an app, `curl` the page shown, whole, as a manual. It stands a `nudge` over the foot line's
+`ssh` holds the command that opens the page shown over ssh (D26): on a post `ssh blog/1@…`, giving "This post in your
+terminal." (owner, 2026-11-25); on the blog's lists `ssh blog@…` or `ssh blog/series@…`, giving "The blog in your
+terminal." (not approved); on any other page the site's `ssh …`, giving the résumé as an app. `curl` gives the page
+shown, whole, as a manual. The chip in the line reads `❯ ssh` on every page. It stands a `nudge` over the foot line's
 hairline, whatever its panel holds, the open command line too, its right edge at the ways' chips', on whatever row
 the line wraps them to, so the ThemeSwitch's Tooltip, past the VimKeys switch, shows beside it, never under it; where
 the screen leaves it no room there, it starts at the content's left edge. On `sunk` with an `edge` hairline, as all

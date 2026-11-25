@@ -2636,7 +2636,7 @@ func (writer PageWriter) introduction(head document.Head, parts resumeParts) tem
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = command(writer.frame.ssh.Command).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = command(writer.frame.composed.SSH.Command).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

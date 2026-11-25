@@ -54,7 +54,7 @@ const (
 // and its series' other parts too.
 func (writer PageWriter) Post(composed document.Document, record compose.Record) string {
 	head := composed.Head
-	foot := writer.postFoot(head.Page, document.PlacesOf(composed))
+	foot := writer.postFoot(head, document.PlacesOf(composed))
 	drawn := writer.articleOf(composed.Blocks)
 	parts := postParts{
 		head:    head,
@@ -157,10 +157,10 @@ func (writer PageWriter) paneSideOf(words compose.SideWords, neighbour *document
 // postFoot is the foot line of a post's page, in the blog's session: the blog's list by year its first window, since a
 // page keeps no grouping a reader chose, and the post its second, and the post to read in a terminal and as markdown;
 // its command line going to the post's own places too.
-func (writer PageWriter) postFoot(page document.Page, own []document.Place) footLine {
-	around := writer.frame
+func (writer PageWriter) postFoot(head document.Head, own []document.Place) footLine {
+	around, page := writer.frame, head.Page
 	windows := around.blogWindowsOf(around.listWords.BlogWindows(around.blogList, page), page)
-	return footLineOf(around, around.sessionsOf(page), windows, page, own)
+	return footLineOf(around, around.composed.SSHWayTo(head), around.sessionsOf(page), windows, page, own)
 }
 
 // article draws a post's body, each part as it is met: each paragraph at the body's top or a section's numbered, from

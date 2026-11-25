@@ -343,7 +343,7 @@ func (writer PageWriter) Page(composed document.Document, record compose.Record,
 	} else {
 		main = writer.openingPart(composed, tabs.Opening)
 	}
-	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, record), main, writer.footOf(page, tabs, document.PlacesOf(composed))))
+	return rendered(writer.page(head.Language, writer.metadataOf(head, page, title, record), main, writer.footOf(head, page, tabs, document.PlacesOf(composed))))
 }
 
 // joinedTitle is a title a page says of itself made of two, a mark between them.

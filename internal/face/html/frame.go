@@ -28,13 +28,13 @@ const (
 // the site, which writes a page's addresses whole and names the site, and where it begins, which the page of no
 // address leads to; the name a search engine and a link preview show for the site; the theme button's name; the
 // locale Open Graph marks a page in; the words of the button that copies a command or a block of code; the way a
-// terminal reaches the site over ssh, whose command the first screen offers as a chip too; what reading a page in a
-// terminal gives; the words of the first screen's button that writes to the author; the projects' pages, places of
-// every page's command line, the pages its :e opens in every language, and the blog's folder in each, where :e opens a
-// post a page does not list; the site's sessions, which the foot line names; the labels of a post's facts, the words of
-// its versions, of its series and of the panes at its foot, the name of its outline, the words round the blog's list,
-// the list and its groupings, how a day is written, and the word in a widget's edge that says it runs. Each is in the
-// language of the pages it frames.
+// terminal reaches the site and each page over ssh, which the composed frame writes, the site's command being the first
+// screen's chip; what reading a page in a terminal gives; the words of the first screen's button that writes to the
+// author; the projects' pages, places of every page's command line, the pages its :e opens in every language, and the
+// blog's folder in each, where :e opens a post a page does not list; the site's sessions, which the foot line names;
+// the labels of a post's facts, the words of its versions, of its series and of the panes at its foot, the name of its
+// outline, the words round the blog's list, the list and its groupings, how a day is written, and the word in a
+// widget's edge that says it runs. Each is in the language of the pages it frames.
 type frame struct {
 	site         routes.Site
 	start        string
@@ -42,7 +42,7 @@ type frame struct {
 	darkTheme    string
 	locale       string
 	copyWords    compose.CopyWords
-	ssh          compose.Way
+	composed     compose.Frame
 	readingGives string
 	writeTo      string
 	projects     []document.Place
@@ -125,7 +125,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		darkTheme:    composed.DarkTheme,
 		locale:       composed.Locale,
 		copyWords:    composed.CopyWords,
-		ssh:          composed.SSH,
+		composed:     composed,
 		readingGives: composed.ReadingGives,
 		writeTo:      composed.WriteTo,
 		projects:     composed.Projects,
@@ -167,7 +167,7 @@ func (around frame) sessionsOf(page document.Page) []session {
 // footOf is the foot line of a page showing one of its document's tabs: every tab a window, the opening at the page's
 // own address, the page whole to read in a terminal and as markdown, and its command line going to the page's own
 // places too.
-func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []document.Place) footLine {
+func (writer PageWriter) footOf(head document.Head, shown document.Page, tabs document.Tabs, own []document.Place) footLine {
 	whole := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: "", Revision: "", Translation: shown.Translation}
 	around := writer.frame
 	windows := []window{around.windowOf(firstWindowNumber, tabs.Opening.Slug, whole, shown)}
@@ -175,7 +175,7 @@ func (writer PageWriter) footOf(shown document.Page, tabs document.Tabs, own []d
 		page := document.Page{Kind: shown.Kind, Slug: shown.Slug, Tab: tab.Slug, Revision: "", Translation: shown.Translation}
 		windows = append(windows, around.windowOf(firstWindowNumber+len(windows), tab.Slug, page, shown))
 	}
-	return footLineOf(around, around.sessionsOf(whole), windows, whole, own)
+	return footLineOf(around, around.composed.SSHWayTo(head), around.sessionsOf(whole), windows, whole, own)
 }
 
 // blogWindowsOf are the blog session's windows as the foot line shows them, numbered in their order, the one showing
@@ -188,16 +188,16 @@ func (around frame) blogWindowsOf(windows []compose.Window, shown document.Page)
 	return shownWindows
 }
 
-// footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by curl
-// at its address, and as markdown; its command line going to the page's own places too.
-func footLineOf(around frame, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
+// footLineOf is a frame's foot line with sessions and windows, offering a page of the site to read: over ssh, by the
+// way given, by curl at its address, and as markdown; its command line going to the page's own places too.
+func footLineOf(around frame, ssh compose.Way, sessions []session, windows []window, page document.Page, own []document.Place) footLine {
 	markdown := routes.Reference(page, routes.FormatMarkdown)
 	reading := around.copyWords.Way(around.site.ReadCommand(page), around.readingGives)
 	return footLine{
 		frame:        around,
 		sessions:     sessions,
 		windows:      windows,
-		hints:        []hint{hintOf(around.ssh), hintOf(reading)},
+		hints:        []hint{hintOf(ssh), hintOf(reading)},
 		markdown:     markdown,
 		markdownName: path.Base(markdown),
 		places:       placesOf(windows, own, around, page),

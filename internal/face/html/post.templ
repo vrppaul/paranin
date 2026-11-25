@@ -258,10 +258,11 @@ templ tagWords(tag string) {
 
 // seriesPick is the series' Pick (DESIGN.md, Pick): the chip, its words, the count after them and a mark saying it
 // opens a window, which it does as the browser's popover, with no script, Esc closing it; the window, titled by the
-// series, lists every part, its close button last, so the keyboard reaches the parts first.
+// series, lists every part, its close button last, so the keyboard reaches the parts first. The words stand in an
+// element of their own, which the stylesheet cuts short where the chip lacks room, whole for a screen reader.
 templ (writer PageWriter) seriesPick(shown pick) {
 	<button type="button" class="way-chip series-pick" popovertarget={ shown.id }>
-		{ shown.words }
+		<span class="series-name">{ shown.words }</span>
 		if shown.count != "" {
 			<span class="series-count">{ shown.count }</span>
 		}

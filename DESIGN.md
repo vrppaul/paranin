@@ -506,7 +506,8 @@ A word that opens a window over the page, as the Hint's chip does: a post's vers
   sight.
 - The series: the FootLine's chip, its name, then `1 of 11` in `muted` and `▾` in `faint`; reversed while its window
   is open, as a way's chip. In the Panes' heading, which names the series already, it says what it opens, `all 11
-  parts`.
+  parts`. The chip stays on one line: a name longer than its room is cut with an ellipsis, `1 of 11` and `▾` never;
+  the whole name stands in the window it opens, and a screen reader reads it whole (owner, 2026-11-25).
 - The window stands as the Hint does, on `sunk` in an `edge` hairline, `radius`, `small`, its title bold and `esc
   close` set into its top edge. A row a line: a part's number `faint` and its title, or a version's date; its state
   at the right (`reading`, `current`, `next`, `soon`). The row read is reversed and bold; a part out is a

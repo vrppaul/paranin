@@ -1354,7 +1354,8 @@ func tagWords(tag string) templ.Component {
 
 // seriesPick is the series' Pick (DESIGN.md, Pick): the chip, its words, the count after them and a mark saying it
 // opens a window, which it does as the browser's popover, with no script, Esc closing it; the window, titled by the
-// series, lists every part, its close button last, so the keyboard reaches the parts first.
+// series, lists every part, its close button last, so the keyboard reaches the parts first. The words stand in an
+// element of their own, which the stylesheet cuts short where the chip lacks room, whole for a screen reader.
 func (writer PageWriter) seriesPick(shown pick) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -1379,26 +1380,26 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 263, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 264, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\"><span class=\"series-name\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var62 string
 		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(shown.words)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 264, Col: 15}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 265, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, " ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1410,7 +1411,7 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 			var templ_7745c5c3_Var63 string
 			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(shown.count)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 266, Col: 43}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 267, Col: 43}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
@@ -1428,7 +1429,7 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 		var templ_7745c5c3_Var64 string
 		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(pickMark)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 268, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 269, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
@@ -1441,7 +1442,7 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 270, Col: 19}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 271, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 		if templ_7745c5c3_Err != nil {
@@ -1454,7 +1455,7 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 		var templ_7745c5c3_Var66 string
 		templ_7745c5c3_Var66, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.titleID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 270, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 271, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var66)
 		if templ_7745c5c3_Err != nil {
@@ -1467,7 +1468,7 @@ func (writer PageWriter) seriesPick(shown pick) templ.Component {
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.titleID).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 271, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 272, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
@@ -1580,7 +1581,7 @@ func (writer PageWriter) pickPart(part document.Part) templ.Component {
 			var templ_7745c5c3_Var71 string
 			templ_7745c5c3_Var71, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(part.Page, routes.FormatChosen)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 293, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 294, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 			if templ_7745c5c3_Err != nil {
@@ -1645,7 +1646,7 @@ func (writer PageWriter) partRow(part document.Part) templ.Component {
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(part.Number))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 306, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 307, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var73))
 		if templ_7745c5c3_Err != nil {
@@ -1666,7 +1667,7 @@ func (writer PageWriter) partRow(part document.Part) templ.Component {
 		var templ_7745c5c3_Var74 string
 		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.seriesWords.State(part.State))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 310, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 311, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 		if templ_7745c5c3_Err != nil {
@@ -1707,7 +1708,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 		var templ_7745c5c3_Var76 string
 		templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(ownID(panesHeadingID)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 319, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 320, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 		if templ_7745c5c3_Err != nil {
@@ -1720,7 +1721,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 		var templ_7745c5c3_Var77 string
 		templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(foot.heading)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 319, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 320, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 		if templ_7745c5c3_Err != nil {
@@ -1744,7 +1745,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templruntime.NewAttributeExpression(foot.allPosts).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 324, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 325, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var78)
 			if templ_7745c5c3_Err != nil {
@@ -1757,7 +1758,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 			var templ_7745c5c3_Var79 string
 			templ_7745c5c3_Var79, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.listWords.AllPosts)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 324, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 325, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var79))
 			if templ_7745c5c3_Err != nil {
@@ -1775,7 +1776,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 		var templ_7745c5c3_Var80 string
 		templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(ownID(panesHeadingID)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 327, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 328, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 		if templ_7745c5c3_Err != nil {
@@ -1805,7 +1806,7 @@ func (writer PageWriter) panes(foot panesFoot) templ.Component {
 			var templ_7745c5c3_Var81 string
 			templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.paneWords.Discuss)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 333, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 334, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 			if templ_7745c5c3_Err != nil {
@@ -1900,7 +1901,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(side.name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 347, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 348, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -1913,7 +1914,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 			var templ_7745c5c3_Var86 string
 			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(side.none)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 348, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 349, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 			if templ_7745c5c3_Err != nil {
@@ -1967,7 +1968,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 			var templ_7745c5c3_Var89 string
 			templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(side.name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 352, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 353, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 			if templ_7745c5c3_Err != nil {
@@ -1992,7 +1993,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 			var templ_7745c5c3_Var90 string
 			templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.seriesWords.State(document.PartToCome))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 356, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 357, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 			if templ_7745c5c3_Err != nil {
@@ -2032,7 +2033,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 				var templ_7745c5c3_Var93 string
 				templ_7745c5c3_Var93, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(side.neighbour.Page, routes.FormatChosen)).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 360, Col: 123}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 361, Col: 123}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
 				if templ_7745c5c3_Err != nil {
@@ -2059,7 +2060,7 @@ func (writer PageWriter) pane(side paneSide) templ.Component {
 			var templ_7745c5c3_Var94 string
 			templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(side.name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 361, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 362, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 			if templ_7745c5c3_Err != nil {
@@ -2175,7 +2176,7 @@ func (writer PageWriter) numberedParagraph(number, id string, spans []document.S
 		var templ_7745c5c3_Var97 string
 		templ_7745c5c3_Var97, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fragmentMark + id).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 391, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 392, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var97)
 		if templ_7745c5c3_Err != nil {
@@ -2188,7 +2189,7 @@ func (writer PageWriter) numberedParagraph(number, id string, spans []document.S
 		var templ_7745c5c3_Var98 string
 		templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(number)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 391, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 392, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 		if templ_7745c5c3_Err != nil {
@@ -2201,7 +2202,7 @@ func (writer PageWriter) numberedParagraph(number, id string, spans []document.S
 		var templ_7745c5c3_Var99 string
 		templ_7745c5c3_Var99, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 392, Col: 11}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 393, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var99)
 		if templ_7745c5c3_Err != nil {
@@ -2285,7 +2286,7 @@ func (writer PageWriter) note(note document.Note) templ.Component {
 		var templ_7745c5c3_Var102 string
 		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(note.Number))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 410, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 411, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 		if templ_7745c5c3_Err != nil {
@@ -2336,7 +2337,7 @@ func citation(number int) templ.Component {
 		var templ_7745c5c3_Var104 string
 		templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(number))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 418, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 419, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 		if templ_7745c5c3_Err != nil {
@@ -2378,7 +2379,7 @@ func postList(ordered bool, start int, items []listedItem) templ.Component {
 			var templ_7745c5c3_Var106 string
 			templ_7745c5c3_Var106, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(start)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 426, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 427, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var106)
 			if templ_7745c5c3_Err != nil {
@@ -2482,7 +2483,7 @@ func listedItems(items []listedItem, ordered bool) templ.Component {
 				var templ_7745c5c3_Var110 string
 				templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(item.mark)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 442, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 443, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var110))
 				if templ_7745c5c3_Err != nil {
@@ -2500,7 +2501,7 @@ func listedItems(items []listedItem, ordered bool) templ.Component {
 				var templ_7745c5c3_Var111 string
 				templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs(item.mark)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 444, Col: 59}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 445, Col: 59}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 				if templ_7745c5c3_Err != nil {
@@ -2590,7 +2591,7 @@ func pause() templ.Component {
 		var templ_7745c5c3_Var114 string
 		templ_7745c5c3_Var114, templ_7745c5c3_Err = templruntime.NewAttributeExpression(look.PauseMark).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 464, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 465, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var114)
 		if templ_7745c5c3_Err != nil {
@@ -2631,7 +2632,7 @@ func (writer PageWriter) figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var116 string
 		templ_7745c5c3_Var116, templ_7745c5c3_Err = templruntime.NewAttributeExpression(routes.Reference(shown.Picture, routes.FormatChosen)).ResolveURL(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 472, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 473, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var116)
 		if templ_7745c5c3_Err != nil {
@@ -2644,7 +2645,7 @@ func (writer PageWriter) figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var117 string
 		templ_7745c5c3_Var117, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.Alt).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 472, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 473, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var117)
 		if templ_7745c5c3_Err != nil {
@@ -2657,7 +2658,7 @@ func (writer PageWriter) figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var118 string
 		templ_7745c5c3_Var118, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(shown.Width)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 472, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 473, Col: 119}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var118)
 		if templ_7745c5c3_Err != nil {
@@ -2670,7 +2671,7 @@ func (writer PageWriter) figure(shown document.Figure) templ.Component {
 		var templ_7745c5c3_Var119 string
 		templ_7745c5c3_Var119, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(shown.Height)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 472, Col: 157}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 473, Col: 157}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var119)
 		if templ_7745c5c3_Err != nil {
@@ -2688,7 +2689,7 @@ func (writer PageWriter) figure(shown document.Figure) templ.Component {
 			var templ_7745c5c3_Var120 string
 			templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(shown.Caption)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 474, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 475, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 			if templ_7745c5c3_Err != nil {
@@ -2737,7 +2738,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var122 string
 		templ_7745c5c3_Var122, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.Live.Name).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 486, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 487, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var122)
 		if templ_7745c5c3_Err != nil {
@@ -2750,7 +2751,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var123 string
 		templ_7745c5c3_Var123, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shown.Name).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 486, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 487, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var123)
 		if templ_7745c5c3_Err != nil {
@@ -2769,7 +2770,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 				var templ_7745c5c3_Var124 string
 				templ_7745c5c3_Var124, templ_7745c5c3_Err = templ.JoinStringErrs(word)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 492, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 493, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var124))
 				if templ_7745c5c3_Err != nil {
@@ -2779,7 +2780,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 				var templ_7745c5c3_Var125 string
 				templ_7745c5c3_Var125, templ_7745c5c3_Err = templ.JoinStringErrs(word)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 494, Col: 13}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 495, Col: 13}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var125))
 				if templ_7745c5c3_Err != nil {
@@ -2794,7 +2795,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var126 string
 		templ_7745c5c3_Var126, templ_7745c5c3_Err = templruntime.NewAttributeExpression(widgetLivePart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 498, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 499, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var126)
 		if templ_7745c5c3_Err != nil {
@@ -2807,7 +2808,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var127 string
 		templ_7745c5c3_Var127, templ_7745c5c3_Err = templ.JoinStringErrs(look.LiveMark)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 499, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 500, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var127))
 		if templ_7745c5c3_Err != nil {
@@ -2820,7 +2821,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var128 string
 		templ_7745c5c3_Var128, templ_7745c5c3_Err = templ.JoinStringErrs(writer.frame.liveWord)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 500, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 501, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var128))
 		if templ_7745c5c3_Err != nil {
@@ -2833,7 +2834,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var129 string
 		templ_7745c5c3_Var129, templ_7745c5c3_Err = templruntime.NewAttributeExpression(widgetBodyPart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 503, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 504, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var129)
 		if templ_7745c5c3_Err != nil {
@@ -2846,7 +2847,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var130 string
 		templ_7745c5c3_Var130, templ_7745c5c3_Err = templruntime.NewAttributeExpression(ownID(shown.Live.Name + widgetAltEnd)).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 504, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 505, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var130)
 		if templ_7745c5c3_Err != nil {
@@ -2859,7 +2860,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var131 string
 		templ_7745c5c3_Var131, templ_7745c5c3_Err = templruntime.NewAttributeExpression(widgetAltPart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 504, Col: 96}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 505, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var131)
 		if templ_7745c5c3_Err != nil {
@@ -2872,7 +2873,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 		var templ_7745c5c3_Var132 string
 		templ_7745c5c3_Var132, templ_7745c5c3_Err = templ.JoinStringErrs(shown.Alt)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 504, Col: 110}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 505, Col: 110}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var132))
 		if templ_7745c5c3_Err != nil {
@@ -2898,7 +2899,7 @@ func (writer PageWriter) widget(shown document.Widget) templ.Component {
 			var templ_7745c5c3_Var133 string
 			templ_7745c5c3_Var133, templ_7745c5c3_Err = templ.JoinStringErrs(shown.Caption)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 509, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 510, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var133))
 			if templ_7745c5c3_Err != nil {
@@ -2945,7 +2946,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var135 string
 		templ_7745c5c3_Var135, templ_7745c5c3_Err = templruntime.NewAttributeExpression(codePart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 519, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 520, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var135)
 		if templ_7745c5c3_Err != nil {
@@ -2963,7 +2964,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 			var templ_7745c5c3_Var136 string
 			templ_7745c5c3_Var136, templ_7745c5c3_Err = templ.JoinStringErrs(code.Language)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 522, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 523, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var136))
 			if templ_7745c5c3_Err != nil {
@@ -2981,7 +2982,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var137 string
 		templ_7745c5c3_Var137, templ_7745c5c3_Err = templruntime.NewAttributeExpression(copyPart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 524, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 525, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var137)
 		if templ_7745c5c3_Err != nil {
@@ -2994,7 +2995,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var138 string
 		templ_7745c5c3_Var138, templ_7745c5c3_Err = templruntime.NewAttributeExpression(button.CopyName).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 524, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 525, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var138)
 		if templ_7745c5c3_Err != nil {
@@ -3007,7 +3008,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var139 string
 		templ_7745c5c3_Var139, templ_7745c5c3_Err = templruntime.NewAttributeExpression(button.Copied).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 524, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 525, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var139)
 		if templ_7745c5c3_Err != nil {
@@ -3020,7 +3021,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var140 string
 		templ_7745c5c3_Var140, templ_7745c5c3_Err = templruntime.NewAttributeExpression(button.Toast).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 524, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 525, Col: 152}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var140)
 		if templ_7745c5c3_Err != nil {
@@ -3033,7 +3034,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var141 string
 		templ_7745c5c3_Var141, templ_7745c5c3_Err = templ.JoinStringErrs(button.Copy)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 524, Col: 175}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 525, Col: 175}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var141))
 		if templ_7745c5c3_Err != nil {
@@ -3046,7 +3047,7 @@ func copyableCode(code document.CodeBlock, button compose.CopyButton) templ.Comp
 		var templ_7745c5c3_Var142 string
 		templ_7745c5c3_Var142, templ_7745c5c3_Err = templruntime.NewAttributeExpression(codeWordsPart).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 527, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `face/html/post.templ`, Line: 528, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var142)
 		if templ_7745c5c3_Err != nil {

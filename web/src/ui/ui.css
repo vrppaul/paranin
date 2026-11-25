@@ -221,7 +221,7 @@ a.session:hover {
 
 /* a way as the line's chip (DESIGN.md, Sizes and FootLine): the prompt's mark, then its name, on the ground a shade
  * below the line's, a quiet hairline round it, a nudge clear of the row's top and foot; under the pointer the hairline
- * turns the text's colour */
+ * turns the text's colour. A row tall, its words never wrap */
 .way-chip {
   display: inline-flex;
   align-items: center;
@@ -236,6 +236,7 @@ a.session:hover {
   font-size: var(--type-caption-size);
   font-weight: var(--type-caption-weight);
   line-height: var(--type-caption-line);
+  white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
   transition: border-color var(--quick);
@@ -2053,11 +2054,19 @@ ol.post-list .point-mark {
 }
 
 /* the series' pick (DESIGN.md, Pick): the foot line's chip at a line's size in the small style, the count muted and
- * the mark that it opens a window faint; reversed and bold while its window is open, as a way's chip (above) */
+ * the mark that it opens a window faint; reversed and bold while its window is open, as a way's chip (above). No wider
+ * than its fact's value, it cuts the series' name with an ellipsis, never the count or the mark */
 .series-pick {
+  max-width: 100%;
   font-size: var(--type-small-size);
   font-weight: var(--type-small-weight);
   line-height: var(--type-caption-line);
+}
+
+.series-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .series-count {

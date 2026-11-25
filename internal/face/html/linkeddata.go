@@ -29,6 +29,9 @@ const (
 // The name the author goes by in the résumé's linked data, after its address, so every record names the one person
 const personNode = "person"
 
+// How a post's record and its Open Graph write a moment: whole, with its zone, as Google reads a datetime
+const momentLayout = time.RFC3339
+
 // profilePage is the résumé as schema.org has a page about one person.
 type profilePage struct {
 	Context    string `json:"@context"`
@@ -232,8 +235,8 @@ func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {
 // writtenPostOf is a post's record as its page writes it.
 func (writer PageWriter) writtenPostOf(record compose.PostRecord) writtenPost {
 	return writtenPost{
-		published: machineTime(record.Published, time.RFC3339),
-		modified:  machineTime(record.VersionOut, time.RFC3339),
+		published: machineTime(record.Published),
+		modified:  machineTime(record.VersionOut),
 		author:    writer.personReferenceOf(record.Author),
 		tags:      record.Tags,
 	}
@@ -270,10 +273,10 @@ func (writer PageWriter) personReferenceOf(named compose.Author) personReference
 	}
 }
 
-// machineTime is a time as a machine reads it, in a layout; empty where the time is not known.
-func machineTime(moment time.Time, layout string) string {
+// machineTime is a moment as a machine reads it, whole with its zone; empty where the moment is not known.
+func machineTime(moment time.Time) string {
 	if moment.IsZero() {
 		return ""
 	}
-	return moment.Format(layout)
+	return moment.Format(momentLayout)
 }

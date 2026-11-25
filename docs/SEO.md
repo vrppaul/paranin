@@ -55,9 +55,9 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
   another's translation.
 - **Open Graph:** `og:type`, `og:site_name` the site's name (Records), `og:locale` from its catalogue, `og:locale:alternate` for a post's other
   languages, `og:title`, `og:description`, `og:url`. A post is an `article` (owner, 2026-11-24), with
-  `article:published_time`, `article:modified_time` when its current version came out (the start of its day in the
-  post's zone, never before it was published), `article:author` the résumé's address and an `article:tag` for each
-  tag ([ogp.me](https://ogp.me/#type_article)); every other page a `website`.
+  `article:published_time`, `article:modified_time` its current version's, each written as its record's (Records),
+  `article:author` the résumé's address and an `article:tag` for each tag ([ogp.me](https://ogp.me/#type_article));
+  every other page a `website`.
 - **X:** `twitter:card`, `summary`, `summary_large_image` once the page has a card (owner, 2026-11-24); X reads the
   rest from Open Graph ([X](https://developer.x.com/cards/markup)).
 - **A card**, `og:image`, 1200×630, the page's own, which Typst draws (ADR-0005), with `max-image-preview:large` so
@@ -76,11 +76,12 @@ One `Person` stands for the author, by the `@id` `https://paran.in/#person`, so 
   writes it, its host, `paran.in`, as its `alternateName` (owner, 2026-11-24).
 - **A tab of the résumé:** `WebPage` about the person: the profile is `/` alone.
 - **A project's page:** `SoftwareSourceCode`, its author the person.
-- **A post:** `BlogPosting` with `headline`, `description`, `url`, `datePublished`, `dateModified` when its current
-  version came out (the start of its day in the post's zone, never before it was published), its author the person
-  with the résumé's address as `url`, `inLanguage`, `keywords` from its tags, `isPartOf` its series, and its card as
-  `image` once cards come (owner, 2026-11-24). Google requires none of them and recommends the author's `url` and both
-  dates ([Google](https://developers.google.com/search/docs/appearance/structured-data/article)).
+- **A post:** `BlogPosting` with `headline`, `description`, `url`, `datePublished`, `dateModified` its current
+  version's, its author the person with the résumé's address as `url`, `inLanguage`, `keywords` from its tags,
+  `isPartOf` its series, and its card as `image` once cards come (owner, 2026-11-24). Each moment is written whole
+  with its zone, as Google reads one; a version's stands at the start of its day in the post's zone, never before the
+  post came out. Google requires none of them and recommends the author's `url` and both dates
+  ([Google](https://developers.google.com/search/docs/appearance/structured-data/article)).
 - **The lists:** none.
 - **No `BreadcrumbList`** (owner, 2026-11-24): Google shows a page's crumbs on a desktop alone since
   [January 2025](https://developers.google.com/search/blog/2025/01/simplifying-breadcrumbs), and the site is two

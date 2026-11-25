@@ -44,9 +44,9 @@ type WorkRecord struct {
 	Page        document.Page
 }
 
-// PostRecord is the record of a post's current version: its title and lead, its page, when the post came out and when
-// its current version did, each the zero time for a draft not yet dated, its author, the language it is written in,
-// its tags, and its series, none where its page shows none.
+// PostRecord is the record of a post's current version: its title and lead, its page, when the post came out, the zero
+// time for a draft not yet dated, when its current version did, the zero time where neither the post nor an update is
+// dated, its author, the language it is written in, its tags, and its series, none where its page shows none.
 type PostRecord struct {
 	Title       string
 	Description string

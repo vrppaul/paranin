@@ -1705,8 +1705,10 @@ a.tile-title:focus-visible {
 /* a tag that filters the blog's list is a link, told by its hash, not an underline: its ground under the pointer
  * reaches a nudge past its words, which keep the line of the words beside them, and its word turns the text's colour.
  * The filter the list shows stands reversed with the window shown; under the pointer it takes a link's underline, as
- * the way back to the whole list it is */
+ * the way back to the whole list it is. A box of its own, so its margins, pulled back past its ground, count in its
+ * line as in its room: as a run of words Firefox counts them in its room alone and breaks the word inside it */
 a.tag {
+  display: inline-block;
   margin-inline: calc(-1 * var(--nudge));
   padding: 0 var(--nudge);
   color: inherit;

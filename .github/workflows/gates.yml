@@ -37,6 +37,12 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm --dir web install --frozen-lockfile
+      # Typst at the version the cards are drawn with, its download checked against the sha256 pinned with it
+      # (scripts/typst), on the path, where the cards' tests find it
+      - run: |
+          mkdir -p "$RUNNER_TEMP/typst"
+          go run ./scripts/typst "$RUNNER_TEMP/typst"
+          echo "$RUNNER_TEMP/typst" >> "$GITHUB_PATH"
       # pre-commit and everything it needs, each file checked against its hash
       - run: pip install --require-hashes -r .github/pre-commit-requirements.txt
       - run: pre-commit run --all-files --show-diff-on-failure

@@ -378,7 +378,7 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 	metadata := pageMetadata{
 		title:         document.PlainText(title),
 		description:   document.PlainText(head.Description),
-		address:       addressOf(head, shown, url),
+		address:       addressOf(head, url),
 		markdown:      routes.Reference(shown, routes.FormatMarkdown),
 		openGraphType: openGraphTypeOf(shown.Kind),
 		record:        linked,
@@ -393,10 +393,10 @@ func (writer PageWriter) metadataOf(head document.Head, shown document.Page, tit
 	return metadata
 }
 
-// addressOf is the address a page of a head names, the page shown at a URL: its document's whole or a tab
-// (document.Head's Indexed).
-func addressOf(head document.Head, shown document.Page, url string) pageAddress {
-	if !shown.OwnAddress() {
+// addressOf is the address a page of a head names, the page shown at a URL: its document's whole or a tab, which
+// shares its document's address of its own (document.Head's Previewed and Indexed).
+func addressOf(head document.Head, url string) pageAddress {
+	if !head.Previewed() {
 		return noAddress{}
 	}
 	if !head.Indexed() {

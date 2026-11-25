@@ -18,7 +18,9 @@
 //   - web/src/tokens/shares.ts, for the page's script too: each share of the screen's height in percent, which no
 //     stylesheet lays out by, so tokens.css holds none;
 //   - web/src/tokens/colours.ts, for a widget drawing on a canvas, which reads no custom property: the page's own
-//     colour and each colour in each theme, #rrggbb.
+//     colour and each colour in each theme, #rrggbb;
+//   - internal/face/card/tokens.typ, for the cards' template: the page's face, by its first family, and the page's own
+//     colour, each colour and each mix in the dark theme, the one the cards are drawn in, #rrggbb.
 //
 // Its usage:
 //
@@ -60,6 +62,7 @@ const (
 	timesPath         = "web/src/tokens/times.ts"
 	sharesScriptPath  = "web/src/tokens/shares.ts"
 	coloursScriptPath = "web/src/tokens/colours.ts"
+	cardTokensPath    = "internal/face/card/tokens.typ"
 	// a generated file may be read by anyone, as the rest of the tree
 	generatedMode = 0o644
 )
@@ -146,6 +149,7 @@ func generate(folder fs.FS) ([]generatedFile, error) {
 		{path: timesPath, body: timesScript(read)},
 		{path: sharesScriptPath, body: sharesScript(read)},
 		{path: coloursScriptPath, body: coloursScript(read)},
+		{path: cardTokensPath, body: cardTokens(read)},
 	}, nil
 }
 

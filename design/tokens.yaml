@@ -1,7 +1,7 @@
 # The design's tokens. First its colours, each named for what it does, in the light theme (Catppuccin Latte) and
 # the dark one (Catppuccin Macchiato), the palettes the first version kept (docs/FOUNDATION.md §3.4). scripts/tokens
-# writes them into internal/look, where the TUI reads them, and into web/src/tokens/tokens.css, where the page does:
-# `go generate ./internal/look`.
+# writes them into internal/look, where the TUI reads them, into web/src/tokens/tokens.css, where the page does, and
+# into internal/face/card/tokens.typ, where the cards do, in the dark theme alone: `go generate ./internal/look`.
 #
 # A colour has its value in each theme, and `basic`: the one of a terminal's sixteen colours it falls back to,
 # 0 to 15, or `own` where the terminal's own colour serves; and where it must read, `least_contrast`: the ratio, as
@@ -225,7 +225,9 @@ faces:
     about: the face the page is written in, monospace as a terminal's, then what stands in for it where it is missing
     families: [JetBrains Mono, ui-monospace, SFMono-Regular, menlo, monospace]
     # JetBrains Mono 2.304, its webfonts as JetBrains released them, under the OFL beside them; the ExtraBold, which
-    # draws the mail alone, served cut to the characters a mail address holds, by scripts/cut_extrabold.sh
+    # draws the mail alone, served cut to the characters a mail address holds, by scripts/cut_extrabold.sh. Beside them
+    # its Regular and Bold TTFs, which Typst sets the cards in, as the same release holds them:
+    # JetBrainsMono-2.304.zip, sha256 6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf
     files:
       - weight: 400
         path: fonts/jetbrains-mono/JetBrainsMono-Regular.woff2

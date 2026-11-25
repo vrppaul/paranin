@@ -1,0 +1,3 @@
+#!/bin/sh
+# A Typst of another version than the cards are drawn with, as it says its version
+echo "typst 0.14.0 (b33de9de)"

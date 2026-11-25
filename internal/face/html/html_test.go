@@ -819,12 +819,14 @@ func TestTheListReadsAsItsGoldenMarkup(test *testing.T) {
 // filtered list, a view of the list and no page of its own, called by the blog's name and its filter, with no preview
 // either, since a part of the list is no copy of it; an unlisted post, which keeps its preview at its own address. The
 // list, the list by series, called by the blog's name and its grouping so no two lists share a title, and a post
-// published are indexed and known at their own addresses.
+// published are indexed and known at their own addresses. A draft, which its author alone reads, shows no preview.
 func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 	site := siteOnTheDay(fixtures.LoadedContent(test))
 	lists := slices.Concat(site.Own.Lists, site.Own.Filtered)
 	writer := fixtureWriter(test)
 	unlisted, published := unlistedPost(test), fixturePost(test)
+	draftsSite := compose.SiteOf(compose.Prepare(fixtures.LoadedContent(test)), compose.Audience{At: fixtures.Day(), Drafts: true})
+	draft := composedOf(test, draftsSite.Own.Posts, document.PostPage("notes-on-tools"))
 	cases := []struct {
 		name  string
 		page  string
@@ -848,6 +850,10 @@ func TestAPageNotIndexedNamesNoAddress(test *testing.T) {
 			name: "an unlisted post", page: writer.Post(unlisted.Document, unlisted.Record),
 			holds: []string{noIndexTag, fixturePostAddress},
 			lacks: []string{`rel="canonical"`, `<link rel="alternate" hreflang=`, `application/ld+json`},
+		},
+		{
+			name: "a draft", page: writer.Post(draft.Document, draft.Record),
+			holds: []string{noIndexTag}, lacks: []string{`rel="canonical"`, `og:url`, `application/ld+json`},
 		},
 		{
 			name: "a post published", page: writer.Post(published.Document, published.Record),

@@ -87,7 +87,9 @@ func (read blog) versionOf(version postVersion, words content.Words, languages [
 	}
 	day, versions := version.text.Day.Start(), read.versionsOf(version.post, version.page)
 	if version.page.Revision == "" {
-		return document.VersionOut{Day: day, Versions: versions, Outdated: outdatedOf(version.post, words, languages)}
+		return document.VersionOut{
+			Day: day, Published: version.post.Published.At(), Versions: versions, Outdated: outdatedOf(version.post, words, languages),
+		}
 	}
 	newer := listedVersion(currentOf(version.post), version.page)
 	before, after := words.Around(content.PhraseNewerVersion)

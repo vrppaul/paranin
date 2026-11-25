@@ -102,6 +102,8 @@ linters:
         - ^github\.com/vrppaul/paranin/internal/face/tui\.tabBody$
         # the page's addressOf
         - ^github\.com/vrppaul/paranin/internal/face/html\.pageAddress$
+        # the cards' FactsOf and postFacts
+        - ^github\.com/vrppaul/paranin/internal/face/card\.Facts$
         # Bubble Tea's own interface, which its Update and wish's session handler are typed to return
         - ^charm\.land/bubbletea/v2\.Model$
         # x/crypto's interface, which its NewChannel's Accept is typed to return
@@ -411,6 +413,15 @@ linters:
             - "**/internal/face/tui/**"
           allow:
             - github.com/vrppaul/paranin/internal/face/tui
+          deny:
+            - pkg: github.com/vrppaul/paranin/internal/face/
+              desc: *face-alone
+        face-card-alone:
+          list-mode: lax
+          files:
+            - "**/internal/face/card/**"
+          allow:
+            - github.com/vrppaul/paranin/internal/face/card
           deny:
             - pkg: github.com/vrppaul/paranin/internal/face/
               desc: *face-alone

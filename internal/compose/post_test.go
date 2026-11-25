@@ -759,13 +759,15 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	if !reflect.DeepEqual(head, want) {
 		test.Errorf("the head = %+v, want %+v", head, want)
 	}
-	if want := fmt.Sprint(document.VersionOut{Day: dayOf(test, fixtureCurrentDay), Versions: fixtureVersions(test, page)}); version != want {
+	published := fixtures.MomentOf(test, "2026-11-10T09:00+01:00")
+	if want := fmt.Sprint(document.VersionOut{Day: dayOf(test, fixtureCurrentDay), Published: published, Versions: fixtureVersions(test, page)}); version != want {
 		test.Errorf("the head's version = %s, want %s", version, want)
 	}
 }
 
 // A draft's head, as its author reads it, gives its version as a draft in the site's words, not the day it is dated;
-// a post out gives the day it came out, and lists itself alone where it has no older version.
+// a post out gives the day its version came out and the moment the post did, and lists itself alone where it has no
+// older version.
 func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -775,7 +777,7 @@ func TestADraftsHeadIsMarkedAsADraft(test *testing.T) {
 		{name: "a draft", status: content.StatusDraft, want: document.VersionDraft{Word: "draft"}},
 		{
 			name: "a post out", status: content.StatusPublished,
-			want: document.VersionOut{Day: dayOf(test, "2026-11-10"), Versions: []document.PostVersion{
+			want: document.VersionOut{Day: dayOf(test, "2026-11-10"), Published: fixtures.MomentOf(test, sampleMoment), Versions: []document.PostVersion{
 				{Page: document.PostPage(samplePostSlug), Day: dayOf(test, "2026-11-10"), Name: "2026-11-10", Current: true, Read: true},
 			}},
 		},

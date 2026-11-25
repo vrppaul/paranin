@@ -56,14 +56,21 @@ type Head struct {
 	Languages []Language
 }
 
+// Previewed is whether a link's preview shows the page, its address and its card (DESIGN.md, Social cards): every page
+// with an address of its own but a draft, which only its author reads.
+func (head Head) Previewed() bool {
+	_, draft := head.Version.(VersionDraft)
+	return head.Page.OwnAddress() && !draft
+}
+
 // Indexed is whether a search engine may index the page, which then names the address it is known by (docs/SEO.md,
-// What is indexed): every page with an address of its own, a post only where the blog's lists name it. Not indexed: the
-// index and the hidden pages, which no browser reads as a page of the site; a filtered list, a view of the list, and an
-// older version of a post, which a newer stands over, neither with an address of its own (docs/FOUNDATION.md §5.4); an
+// What is indexed): every page a preview shows, a post only where the blog's lists name it. Not indexed: the index and
+// the hidden pages, which no browser reads as a page of the site; a filtered list, a view of the list, and an older
+// version of a post, which a newer stands over, neither with an address of its own (docs/FOUNDATION.md §5.4); an
 // unlisted post, which its author hands to whom they choose; and a draft its author reads. A page not indexed names no
 // address it is known by, since a search engine reads noindex beside one as two signs that disagree.
 func (head Head) Indexed() bool {
-	return head.Page.OwnAddress() && (head.Post == nil || head.Post.Listed)
+	return head.Previewed() && (head.Post == nil || head.Post.Listed)
 }
 
 // Language is a language a post is read in (DESIGN.md, Switch): its tag, which every face names it by, its locale, the

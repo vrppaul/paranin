@@ -5,22 +5,27 @@ import (
 	"unicode/utf8"
 )
 
-// How a banner stands in a block font: a column between two glyphs, and how a glyph's rows are written in its table
+// How a glyph's rows are written in a font's table
 const (
-	glyphGap   = 1
 	glyphBreak = "\n"
 	glyphSpace = " "
 )
 
-// BannerLineGap is the rows of nothing between two lines of a banner, in every face that draws one.
-const BannerLineGap = 1
-
-// The half blocks a glyph's cell is made of: the upper half, the lower, both; and the halves a row of cells holds
+// How a banner stands in a block font, in every face that draws one: the columns of nothing between two glyphs, and the
+// rows of nothing between two lines
 const (
-	upperHalf   = '▀'
-	lowerHalf   = '▄'
-	fullBlock   = '█'
-	halvesInRow = 2
+	GlyphGap      = 1
+	BannerLineGap = 1
+)
+
+// HalvesInRow are the half rows a row of cells holds, each a cell's upper half or its lower.
+const HalvesInRow = 2
+
+// The half blocks a glyph's cell is made of: the upper half, the lower, both
+const (
+	upperHalf = '▀'
+	lowerHalf = '▄'
+	fullBlock = '█'
 )
 
 // Font is a block font, the design's letters for a name and a title (DESIGN.md, Block letters): how many rows its
@@ -100,7 +105,7 @@ func (font Font) blockRows(text string) []string {
 	for index, letter := range text {
 		for row, glyphRow := range font.glyphs[letter] {
 			if index > 0 {
-				rows[row] += strings.Repeat(glyphSpace, glyphGap)
+				rows[row] += strings.Repeat(glyphSpace, GlyphGap)
 			}
 			rows[row] += glyphRow
 		}
@@ -114,7 +119,7 @@ func HalfRows(banner [][]string) [][]bool {
 	halves := [][]bool{}
 	for index, rows := range banner {
 		if index > 0 {
-			for range halvesInRow * BannerLineGap {
+			for range HalvesInRow * BannerLineGap {
 				halves = append(halves, nil)
 			}
 		}

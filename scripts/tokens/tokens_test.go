@@ -354,6 +354,32 @@ func TestEachColourReachesThePagesScriptInEachTheme(test *testing.T) {
 	}
 }
 
+// The page's face reaches the cards' template by its first family, and each colour in the dark theme, the one the cards
+// are drawn in, the page's own colour first and each mix after the colours: its value #rrggbb, under what it is for,
+// named as the token is.
+func TestThePagesFaceAndEachColourReachTheCards(test *testing.T) {
+	cases := []struct {
+		name string
+		want string
+	}{
+		{name: "the page's face, by its first family", want: "// the one face\n#let face = \"Mono Face\"\n"},
+		{name: "the page's own colour first", want: "#let colours = (\n  // the page itself\n  background: \"#000000\",\n"},
+		{name: "a colour in the dark theme", want: "  // what the eye goes to first\n  accent: \"#ff8700\",\n"},
+		{name: "a mix in the dark theme", want: "  // the accent softened\n  soft: \"#cc6c00\",\n)\n"},
+	}
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens = %v, want no fault", err)
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := string(cardTokens(read)); !strings.Contains(got, testCase.want) {
+				test.Errorf("the cards' tokens = %q, want them to hold %q", got, testCase.want)
+			}
+		})
+	}
+}
+
 // A share of the screen's height reaches both the faces' Go and the page's script as its whole percent, under what it
 // is for, each named as its language names a constant.
 func TestAShareOfTheScreenReachesTheTerminalAndThePagesScript(test *testing.T) {
@@ -693,6 +719,7 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 		{name: "the terminal's shares edited by hand", path: sharesPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the script's shares edited by hand", path: sharesScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the script's colours edited by hand", path: coloursScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the cards' tokens edited by hand", path: cardTokensPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -735,7 +762,7 @@ func fixtureRoot(test *testing.T) string {
 	test.Helper()
 	root := test.TempDir()
 	writeFixture(test, filepath.Join(root, tokensPath), fixtureTokens)
-	for _, folder := range []string{filepath.Dir(palettePath), filepath.Dir(stylesheetPath)} {
+	for _, folder := range []string{filepath.Dir(palettePath), filepath.Dir(stylesheetPath), filepath.Dir(cardTokensPath)} {
 		if err := os.MkdirAll(filepath.Join(root, folder), 0o750); err != nil {
 			test.Fatalf("make the folder %s: %v", folder, err)
 		}

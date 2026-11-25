@@ -14,9 +14,11 @@ type Version interface {
 // written in; every version of the post, newest first, itself first, alone where it has no older one; and, on a
 // translation older than its original, what it says of that, none on any other.
 type VersionOut struct {
-	Day      time.Time
-	Versions []PostVersion
-	Outdated *Outdated
+	Day time.Time
+	// Published is when the post itself came out, its first version, as the blog's list dates it, in its own zone
+	Published time.Time
+	Versions  []PostVersion
+	Outdated  *Outdated
 }
 
 // Outdated is what a translation older than its original says under its day (docs/FOUNDATION.md §5.4, Translations):

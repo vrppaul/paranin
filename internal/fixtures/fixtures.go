@@ -18,11 +18,12 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// Where the fixtures live, from the module's root, the file the root is known by, and who may write a changed file
-// of a copy and a folder made in it
+// Where the fixtures and the cards' faces live, from the module's root, the file the root is known by, and who may
+// write a changed file of a copy and a folder made in it
 const (
 	contentFromRoot = "internal/content/testdata/content"
 	buildFromRoot   = "internal/assets/testdata/build"
+	cardFacesFrom   = "design/fonts/jetbrains-mono"
 	moduleFile      = "go.mod"
 	fileMode        = 0o600
 	folderMode      = 0o700
@@ -40,6 +41,12 @@ func ContentFolder(test *testing.T) string {
 // the widget's props' schema, as the build writes it from web/tests/widgets/ReadingPace.props.ts.
 func BuildFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), buildFromRoot)
+}
+
+// CardFaces is the folder of the faces the cards are set in, the design's own, not a fixture: a card's drawing is held
+// to the face a release draws it in.
+func CardFaces(test *testing.T) string {
+	return filepath.Join(moduleRoot(test), cardFacesFrom)
 }
 
 // The year and the day of the month the tests draw on, in November

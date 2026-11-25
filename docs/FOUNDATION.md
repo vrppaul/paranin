@@ -259,7 +259,8 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
     face/text          markdown, the man page for curl, llms.txt; also the brain's Grounding
     face/feed          Atom, sitemap, robots.txt
     face/tui           Bubble Tea
-    face/print         Typst: cv.pdf, the tailored CV, social cards as PNG
+    face/card          a social card's facts, which the build's Typst draws as PNG
+    face/print         Typst: cv.pdf, the tailored CV
       compose          content → documents, and the records no person reads (ADR-0003)
       routes           every address, written from a document's link target in each format
       inbox            contact messages: delivery to Telegram
@@ -294,11 +295,12 @@ cmd/paranin            composition root: config, wiring; commands serve | check 
 - **Typst replaces headless Chrome** (Decided, D10) for `cv.pdf`, the tailored CV (phase 5)
   and a social card per page and post. One tool makes PDF and PNG from
   markup, with no browser. It runs as a program beside ours, so the runtime
-  image and CI carry a pinned `typst` and the fonts. Cards and `cv.pdf` are
-  drawn when a snapshot loads, into a disk cache, by a worker, never inline
-  in the reload. A tailored CV is drawn on request by a bounded worker with
-  a per-IP limit. The `pdftotext` check from `scripts/build-assets.sh`
-  becomes a test.
+  image and CI carry a pinned `typst` and the fonts. The cards are drawn by
+  the build, beside the page's files, so the server draws none (ADR-0005;
+  owner, 2026-11-25). `cv.pdf` is drawn when a snapshot loads, into a disk
+  cache, by a worker, never inline in the reload. A tailored CV is drawn on
+  request by a bounded worker with a per-IP limit. The `pdftotext` check
+  from `scripts/build-assets.sh` becomes a test.
 - **Runtime state.** The contact form delivers to Telegram and appends to a
   file until the brain arrives. With the brain comes SQLite
   (`modernc.org/sqlite`, pure Go) for chat sessions, cost caps and
@@ -529,7 +531,7 @@ laptop or GitHub's web editor on a phone, live in a minute or two.
 
 1. A push to `content/` or `web/` runs CI: `paranin check`; the types and
    the one Vite build, with unchanged widgets from the cache; Typst draws
-   the cards of the posts that changed.
+   the cards (ADR-0005).
 2. rsync copies the result into a new folder,
    `/srv/paranin/releases/<commit>/`. The `current` link switches to it at
    once, and the server gets SIGHUP.
@@ -923,8 +925,9 @@ Each goes through a sheet of states in both themes before code:
   on a real article.
 - Constant navigation: résumé, projects, blog.
 - The layout bugs of §3.4 and a favicon.
-- JetBrains Mono served from our own server (OFL), in the repository, so
-  the web and Typst use one copy.
+- JetBrains Mono served from our own server (OFL), in the repository as
+  JetBrains releases it, so the web and Typst draw one face: woff2 for the
+  web, TTF for Typst, which reads no woff2.
 
 ### 5.7 Distribution — **Proposed**
 

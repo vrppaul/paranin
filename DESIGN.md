@@ -248,7 +248,7 @@ the host underline, `underline_hover` thick, `nudge` below.
 A square of the name's gradient and nothing more: `accent` at its left edge to `host` at its right, filling it edge to
 edge, in the light theme's colours for every reader, since they stand apart from a light tab and a dark one alike. One
 picture at every size: as SVG, a PNG of 180px for a phone's home screen, whose corners the phone rounds, and one of
-32px at /favicon.ico. The picture a shared link shows is Typst's, drawn with the CV (ADR-0005).
+32px at /favicon.ico. The picture a shared link shows is its Social card.
 
 ### Button
 
@@ -614,6 +614,36 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 - The blog's list: the BlogHead, then its Groups of Tiles; a tag filters it, the filter reversed in the head.
 - A post: the PostHead, the Outline beside the Article, the Panes; an older version the same, its head saying a newer
   stands.
+
+## Social cards
+
+Each page's `og:image`, as the owner picked it from a storyboard (owner, 2026-11-25): 1200×630, Macchiato alone,
+drawn by Typst (ADR-0005). A card is read on a phone in a feed, about 500px wide, so it holds only what reads there:
+every word at least 40px, about 17px on the phone, and nothing in the outer 40px, which a feed may crop. Its rem is
+28px, the page's grown by 1.75.
+
+- Two looks, so the résumé and the blog read as two sides of the site:
+  - **The résumé's side**, the résumé, a project and the blog's list: a title in the name's block letters, the
+    gradient across it, and the line under it. The résumé's title is the name on two lines as the profile breaks it,
+    the cursor an underscore after it as on the page; a project's its name, on one line where it fits, else broken
+    after a hyphen onto two lines, as few as fit; the résumé's name and a project's both in cells of 22px, smaller
+    only where a line would not fit; the blog's BLOG in cells of 40px. The line under it, in `text`: the role, a
+    project's tagline, the blog's line.
+  - **A post**: a header, BLOG in `faint` block letters at its left, cells of 11px, and the day the post came out ·
+    its series in `muted` at its right, the dot `faint`, each centred on the header's height by its ink, and a
+    `quiet` hairline under it, 132px down, across the whole card. Under it the title in `title_soft`: 104px where it
+    stands whole on one line, else 90px on two lines at most; the lead under it in `text`, two lines under a title
+    of one line, one under a title of two.
+- One set of spaces and sizes on every card: 64px over the title, from the card's top or from the header's rule; one
+  gap, 38px, between the title and its line; every word but a title at 42px; the way in, `ssh` as the page's Command
+  chip, ❯ in `prompt` and the command in `text` on `sunk` in a `muted` hairline with the `radius`, 37px of room at
+  its sides and 23px over and under its words, 506px down, 40px over the card's foot; all of it from the left
+  margin, 101px in.
+- Words longer than their lines, a post's title, a line, a lead, are cut after the last whole word that fits, an
+  ellipsis after it. Block letters are never cut.
+- No foot line, greeting, headline, place or corner crosses: on a phone each is 12px or a speck.
+- A tab of the résumé or of a project shows its page's card. An older version, a filtered list, a draft and the
+  address of no page show no preview and have no card.
 
 ## The TUI
 

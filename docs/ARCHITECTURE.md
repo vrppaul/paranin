@@ -842,7 +842,8 @@ included (D8). Their widgets are code, built by the page's toolchain.
 
 ## ADR-0005 — Typst for the PDF and the cards
 
-**Status:** accepted (2026-11-01). [FOUNDATION](FOUNDATION.md) §5.2, D10.
+**Status:** accepted (2026-11-01); amended (owner, 2026-11-25): the build
+draws the cards. [FOUNDATION](FOUNDATION.md) §5.2, D10.
 
 ### Context
 
@@ -853,18 +854,40 @@ description on request, and every page and post needs a card of its own.
 ### Decision
 
 - **Typst** draws `cv.pdf`, the tailored CV and a social card per page and
-  post, from markup `face/print` writes out of documents, as PDF and PNG.
-- It runs as a program beside ours, pinned in the runtime image and in CI,
-  with JetBrains Mono from the repository.
-- Cards and `cv.pdf` are drawn when a snapshot loads, into a disk cache, by a
-  worker, never inline in the reload. A tailored CV is drawn on request by a
-  bounded worker with a per-IP limit.
+  post, as PDF and PNG, with JetBrains Mono from the repository.
+- **The cards are drawn by the build**, beside the page's (ADR-0004): a
+  command of ours composes the site as a release would and has Typst draw
+  each card into a folder of its own, which the release holds and
+  `hosting/web` serves, each at an address that changes with what it shows,
+  so a cache keeps it for good and a preview fetches a changed card anew.
+  It draws a card for every page that will show a preview, a post dated
+  later among them, which comes out on the clock with no build (ADR-0004);
+  loading a snapshot checks each has its card, as it checks every widget
+  has its code. CI draws them on every push; development keeps them as it
+  keeps the page's build, by the same command watching. The server draws
+  nothing and runs no Typst.
+- **A card is a template and its facts**: the template, in Typst, lives in
+  the repository and holds the look (`DESIGN.md`, Social cards); `face/card`
+  hands it a card's facts as data, its title, its line, its day and series,
+  its way in, written from the document model like any face's. Typst
+  measures the words it sets, so the template, not Go, fits a title to its
+  lines.
+- `cv.pdf` is drawn when a snapshot loads, into a disk cache, by a worker,
+  never inline in the reload. A tailored CV is drawn on request by a
+  bounded worker with a per-IP limit, and Typst, pinned in the runtime
+  image, comes to the server with it.
+- Typst is pinned in CI and in development; the command refuses another
+  version.
 - The text of the PDF is checked by a test, as `pdftotext` checked it.
 
 ### Rationale
 
 - One tool for PDF and PNG, with no browser in production or in the build.
-- Typst's markup is text Go writes from the document model like any face.
+- A card shows only what the content says, so it is a build's output, as
+  the page's files are: the server reads a finished folder and builds
+  nothing (ADR-0004), with no worker or cache for the cards.
+- A template is Typst written once and read as Typst; facts as data need no
+  escaping of what an author writes into Typst's markup.
 
 ### Alternatives considered
 
@@ -872,12 +895,19 @@ description on request, and every page and post needs a card of its own.
   production, and a browser in the path of every card. Rejected.
 - **Drawing the cards with a Go image library.** Possible for cards, but the
   PDF would still need a second tool. Rejected.
+- **The server draws the cards** when a snapshot loads, into a disk cache,
+  by a worker, or on a card's first request into memory. Either puts Typst, a worker and a cache on the server for
+  what the build can draw once. Rejected (owner, 2026-11-25).
+- **Go writes each card's Typst markup**: every author's word escaped into
+  markup, and the look split between Go and Typst. Rejected.
 
 ### Consequences
 
 - A second program in the runtime image, with its version to pin; a new
   version can move the layout, so its text check and a look at the PDF come
   with every bump.
+- Typst in every developer's setup, for the cards; a bump of it is looked
+  at on the cards as on the PDF.
 
 ---
 
@@ -901,7 +931,7 @@ the content they are made from, nor the release a host hands it; `release`
 stands beside `compose` and `routes`, `compose` building on `routes` to find
 two pages at one address, and the hosts bring them together. The parts
 still to come land with their steps of [FOUNDATION](FOUNDATION.md) §8, where
-§5.2 places them: `face/print` beside the faces, `inbox`
+§5.2 places them: `face/card` and `face/print` beside the faces, `inbox`
 beside `compose`, the brain beside the faces.
 
 ## Phase 1 component design (SSH TUI)
@@ -987,7 +1017,9 @@ sessions on a stop.
   site's script, `src/entries/site.ts`, is the build's one entry so far, the
   stylesheet among what it imports; `assets` works out once what a page
   includes for it, as Vite's guide to backend integration walks a manifest.
-  The islands come with the blog's first widget, the CV and the cards with Typst (ADR-0005).
+  The islands come with the blog's first widget; the cards, which the
+  build draws with Typst, in a folder of their own; the CV with hosting
+  (ADR-0005).
 - Every answer tells a browser what it may do: a strict
   `Content-Security-Policy` and `nosniff`, set where every request passes.
 - The contract between the server and its readers is [WEB](WEB.md): each
@@ -1020,7 +1052,7 @@ scripts/coderules/       # the code rules no linter here holds
 scripts/check_instruction_files.py  # claude-review's gate of the instruction files
 scripts/cut_extrabold.sh # the mail's ExtraBold, cut to a mail's characters from the face as released
 content/                 # the site's content: the profile, the site's words
-design/fonts/            # the faces, each under its own licence, for the page and, to come, Typst: those the site serves, and the ExtraBold as released, which its cut is made from
+design/fonts/            # the faces, each under its own licence, as released: those the site serves, the ExtraBold its cut is made from, and, to come, the TTF Typst reads, which reads no woff2
 design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from, and the page's mixes of them, faces, text styles, lengths, times and layers, which only the page takes
 web/                     # the page: Vite, its stylesheet, the tokens' CSS; built into build/web
 ```

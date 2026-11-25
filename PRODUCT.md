@@ -38,8 +38,8 @@ These hold in every face: TUI, web, PDF and social cards (docs/FOUNDATION.md §3
 
 - Monospace type on a grid of cells and rows.
 - Catppuccin Latte for the light theme and Macchiato for the dark one; every colour comes from `design/tokens.yaml`.
-- The cursor after the author's name: `▎` in the TUI, PDF and cards; on the web page an underscore that blinks, since beside the block letters `▎` read as one more letter (owner, 2026-11-17).
-- Corner crosses `+`.
+- The cursor after the author's name: `▎` in the TUI and PDF; on the web page an underscore that blinks, since beside the block letters `▎` read as one more letter (owner, 2026-11-17), and on the social cards an underscore, as the page's (owner, 2026-11-25).
+- Corner crosses `+`, except on the social cards, where a phone shows them as specks (owner, 2026-11-25).
 - The vim and tmux metaphor: modes, a status line, `:` commands and tabs.
 
 The owner confirmed these as binding on 2026-11-06. A redesign changes the look inside them.

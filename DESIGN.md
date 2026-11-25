@@ -181,7 +181,7 @@ other size: a control that seems to need one is the wrong control.
 | rest | as its component says |
 | hover | a quiet control one shade down (`sunk`); the primary turns `host`; a link's underline turns `accent` and `underline_hover` thick; a field's border `text` |
 | pressed | one shade further (`deep`); the primary turns `text` |
-| focus | a `focus_width` ring in `label`, as far from what it rings, on every control, by keyboard |
+| focus | a `focus_width` ring in `label`, as far from what it rings, on every control, by keyboard; in the FootLine, on the screen's foot, inside what it rings, at its edge, and on a part reversed with a band of `background` inside it, so it reads at 3:1 or more there too (owner, 2026-11-25) |
 | current, chosen | reversed, `text` ground and `background` words, bold, as the TUI's tab: a mark of form, not of colour alone |
 | disabled | `sunk` ground or `quiet` border, `faint` words, `aria-disabled`, and the page says why; a pane or a tile its frame in `quiet_half` and no ground, a shade down being the live ones' hover |
 | error | an `error` border and words under the control saying what to fix |

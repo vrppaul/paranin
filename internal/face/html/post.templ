@@ -262,7 +262,7 @@ templ tagWords(tag string) {
 // element of their own, which the stylesheet cuts short where the chip lacks room, whole for a screen reader.
 templ (writer PageWriter) seriesPick(shown pick) {
 	<button type="button" class="way-chip series-pick" popovertarget={ shown.id }>
-		<span class="series-name">{ shown.words }</span>
+		<span class="pick-words">{ shown.words }</span>
 		if shown.count != "" {
 			<span class="series-count">{ shown.count }</span>
 		}

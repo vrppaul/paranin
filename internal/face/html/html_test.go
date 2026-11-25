@@ -1303,8 +1303,8 @@ func TestTheSeriesPickListsEveryPartAndWhereEachStands(test *testing.T) {
 		want  string
 		count int
 	}{
-		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="_parts"><span class="series-name">Stint</span> <span class="series-count">2 of 4</span>`, count: 1},
-		{name: "the foot's chip, the count of parts", want: `popovertarget="_parts-foot"><span class="series-name">all 4 parts</span> <span class="pick-mark"`, count: 1},
+		{name: "the head's chip, the series and the post's place in it", want: `popovertarget="_parts"><span class="pick-words">Stint</span> <span class="series-count">2 of 4</span>`, count: 1},
+		{name: "the foot's chip, the count of parts", want: `popovertarget="_parts-foot"><span class="pick-words">all 4 parts</span> <span class="pick-mark"`, count: 1},
 		{name: "each window titled by the series", want: `class="pick-title">Stint</p>`, count: 2},
 		{
 			name:  "a part out, a link",

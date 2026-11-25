@@ -310,6 +310,18 @@ a.tag[aria-current] .tag-mark {
   border-color: var(--text);
 }
 
+/* on a part of the foot line reversed, the window shown or a chip whose hint is open, the ring stands on a band of the
+ * page's ground inside it, as it would on the page: the label's blue on the text's ground reads at under 3:1. The
+ * band is the ring's width on the window; on a chip, whose words stand close to its edge, a hairline, past the
+ * chip's own hairline the shadow starts inside */
+.foot-row .window[aria-current]:focus-visible {
+  box-shadow: inset 0 0 0 calc(2 * var(--focus-width)) var(--background);
+}
+
+.foot-row .way-chip:has(+ .hint:popover-open):focus-visible {
+  box-shadow: inset 0 0 0 var(--focus-width) var(--background);
+}
+
 /* a window a chip opens over the page, a way's hint (DESIGN.md, Hint) or a series' pick (Pick): on the panel's ground
  * with an edge hairline as all that lies over the page */
 .hint,
@@ -371,8 +383,6 @@ a.tag[aria-current] .tag-mark {
 .hint-title,
 .pick-title,
 .hint-close {
-  position: absolute;
-  top: calc(-0.5 * var(--row));
   margin: 0;
   padding: 0 var(--cell);
   background: var(--sunk);
@@ -383,13 +393,11 @@ a.tag[aria-current] .tag-mark {
 
 .hint-title,
 .pick-title {
-  left: var(--cell-2);
   font-weight: var(--type-strong-weight);
 }
 
 /* the close button: Esc's cap, then the word, muted, turning the text's colour under the pointer */
 .hint-close {
-  right: var(--cell-2);
   display: inline-flex;
   gap: var(--cell);
   align-items: center;
@@ -402,6 +410,21 @@ a.tag[aria-current] .tag-mark {
 
 .hint-close:hover {
   color: var(--text);
+}
+
+/* a hint's title, a program's name, is short: both stand over the hint's own words, at either end of its edge */
+.hint-title,
+.hint > .hint-close {
+  position: absolute;
+  top: calc(-0.5 * var(--row));
+}
+
+.hint-title {
+  left: var(--cell-2);
+}
+
+.hint > .hint-close {
+  right: var(--cell-2);
 }
 
 /* what the way gives, under the command, as small words beside it */
@@ -1711,22 +1734,29 @@ a.tile-title:focus-visible {
 /* a tag that filters the blog's list is a link, told by its hash, not an underline: its ground under the pointer
  * reaches a nudge past its words, which keep the line of the words beside them, and its word turns the text's colour.
  * The filter the list shows stands reversed with the window shown; under the pointer it takes a link's underline, as
- * the way back to the whole list it is. A box of its own, so its margins, pulled back past its ground, count in its
- * line as in its room: as a run of words Firefox counts them in its room alone and breaks the word inside it */
+ * the way back to the whole list it is. The nudge of ground either side is painted, two shadows of its colour, so
+ * the tag takes no room past its words, which Firefox would count in its room but not in its line, breaking them */
 a.tag {
-  display: inline-block;
-  margin-inline: calc(-1 * var(--nudge));
-  padding: 0 var(--nudge);
   color: inherit;
   text-decoration: none;
   transition:
     background var(--quick),
+    box-shadow var(--quick),
     color var(--quick);
 }
 
 a.tag:not([aria-current]):hover {
   background: var(--sunk);
+  box-shadow:
+    calc(-1 * var(--nudge)) 0 0 var(--sunk),
+    var(--nudge) 0 0 var(--sunk);
   color: var(--text);
+}
+
+a.tag[aria-current] {
+  box-shadow:
+    calc(-1 * var(--nudge)) 0 0 var(--text),
+    var(--nudge) 0 0 var(--text);
 }
 
 a.tag[aria-current]:hover {
@@ -2063,7 +2093,7 @@ ol.post-list .point-mark {
 
 /* the series' pick (DESIGN.md, Pick): the foot line's chip at a line's size in the small style, the count muted and
  * the mark that it opens a window faint; reversed and bold while its window is open, as a way's chip (above). No wider
- * than its fact's value, it cuts the series' name with an ellipsis, never the count or the mark */
+ * than its fact's value, it cuts its words, the series' name, with an ellipsis, never the count or the mark */
 .series-pick {
   max-width: 100%;
   font-size: var(--type-small-size);
@@ -2071,7 +2101,7 @@ ol.post-list .point-mark {
   line-height: var(--type-caption-line);
 }
 
-.series-name {
+.pick-words {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2123,10 +2153,38 @@ ol.post-list .point-mark {
  * it puts a popover, mid-screen */
 .pick {
   min-width: var(--pick);
-  padding: var(--row) 0 var(--row-half);
+  padding: 0 0 var(--row-half);
   font-size: var(--type-small-size);
   font-weight: var(--type-small-weight);
   line-height: var(--type-small-line);
+}
+
+/* its title, a series' name of any length, stands in its flow, so the window widens to hold it and the close beside
+ * it, up to a dialog's width, and the title wraps past that, the close never over it; the two stand half above the
+ * edge and the parts a row under it, as a hint's */
+.pick:popover-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--cell-2);
+}
+
+.pick-title,
+.pick > .hint-close {
+  grid-row: 1;
+  align-self: start;
+  margin-block: calc(-0.5 * var(--row)) var(--row-half);
+}
+
+.pick-title {
+  grid-column: 1;
+  justify-self: start;
+  margin-left: var(--cell-2);
+}
+
+.pick > .hint-close {
+  grid-column: 2;
+  justify-self: end;
+  margin-right: var(--cell-2);
 }
 
 @supports (position-area: bottom span-left) {
@@ -2152,6 +2210,7 @@ ol.post-list .point-mark {
 }
 
 .pick-parts {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 0;
   list-style: none;

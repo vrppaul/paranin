@@ -17,10 +17,8 @@
 // address, and to no post's link inside the site leading to no page or no section of one, now or as each post dated
 // later comes out, the drafts' among them, which the content alone cannot know, since routes writes the addresses and
 // compose names the anchors; a release's load holds its cards to one for every page a preview shows, now or as a post
-// dated later comes out, which cards draws: it composes the site as the public reads it once the last such post is
-// out, has face/card draw each page's card with Typst at its pinned version, set in design/fonts/jetbrains-mono, and
-// writes the folder whole, each card by the hash of what it shows, then the manifest naming each page's, then every
-// other file of the folder taken away; where the content has faults or a card is not drawn, it writes nothing.
+// dated later comes out. cards draws those cards, run in the repository's root, where it finds the faces they are set
+// in, and takes away the cards no page shows any more; it refuses a folder that holds anything but cards.
 // serve listens for HTTP at PARANIN_HTTP_ADDR (localhost:8080 when unset) and for SSH at PARANIN_SSH_ADDR
 // (localhost:23234), with the host key in the file PARANIN_SSH_HOST_KEY names (.paranin/ssh_host_ed25519_key,
 // made there when missing). Where PARANIN_INDEXNOW_KEY sets a key, of IndexNow's form, and the drafts are not served,
@@ -280,7 +278,7 @@ func check(contentFolder string, warned io.Writer) int {
 // checkRelease loads a release's folders as the site would, printing to warned what its content warns of where it
 // loads.
 func checkRelease(folders release.Folders, warned io.Writer) int {
-	loaded, err := release.Load(folders, releaseCheckedNow)
+	loaded, err := release.Load(folders, releaseChecks())
 	if err == nil {
 		warn(warned, loaded.Content.Warnings, folders.Content)
 	}
@@ -470,7 +468,7 @@ func serve(asked servingAsked) int {
 	folders := asked.folders
 	// The watch looks before the first load, so a change made while the site starts is a change it sees
 	changes := release.Watch(stopping, folders.Paths(), lookInterval)
-	store, err := release.Open(folders, releaseCheckedNow)
+	store, err := release.Open(folders, releaseChecks())
 	if err != nil {
 		return refused(err, folders.Paths()...)
 	}

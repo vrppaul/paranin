@@ -919,7 +919,12 @@ func unlistedPostServer(test *testing.T) *Server {
 // fixtureStore is a store of a release of the content in a folder, the build's fixture and the cards'.
 func fixtureStore(test *testing.T, folder string) *release.Store {
 	folders := release.Folders{Content: folder, Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
-	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
+	checks := release.Checks{
+		Content: func(loaded *content.Snapshot) error { return compose.Check(loaded, time.Now()) },
+		// a post a test adds has no card in the cards' fixture, which no test here reads of that post
+		Cards: func(*content.Snapshot, *assets.Cards) error { return nil },
+	}
+	store, err := release.Open(folders, checks)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

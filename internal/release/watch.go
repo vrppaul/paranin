@@ -25,13 +25,6 @@ type stamp struct {
 // sight is what a look sees of folders: the stamps of each folder's files, apart, in the folders' order.
 type sight [][]stamp
 
-// same is whether two looks saw the same.
-//
-//wrapper:names a look matching another, which the watch asks twice a look and a sight answers folder by folder
-func (seen sight) same(other sight) bool {
-	return slices.EqualFunc(seen, other, slices.Equal[[]stamp])
-}
-
 // Watch sends on the channel it returns each time folders change and then hold still for one look, looking at them at
 // every interval until the context ends (ADR-0003): a release's, for a site that loads it again, or the content alone,
 // for the cards drawn from it. It takes its first look before it returns, so a change made after that is seen. A change
@@ -56,7 +49,7 @@ func watch(ctx context.Context, folderPaths []string, interval time.Duration, ta
 		case <-ticker.C:
 		}
 		current := look(folderPaths)
-		if current.same(previous) && !current.same(taken) {
+		if slices.EqualFunc(current, previous, slices.Equal[[]stamp]) && !slices.EqualFunc(current, taken, slices.Equal[[]stamp]) {
 			taken = current
 			SendUnlessWaiting(changes)
 		}

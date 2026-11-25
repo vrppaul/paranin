@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/face/card"
@@ -72,8 +73,8 @@ const (
 )
 
 // Cards are written into their folder whole, each page's by a name that changes with what it shows, two pages that show
-// the same sharing one, under a manifest naming each; a card no page shows any more leaves the folder, which holds
-// nothing else.
+// the same sharing one, under a manifest naming each; a card no page shows any more leaves the folder, and so does a
+// file a drawing that stopped left beside its place, so the folder holds nothing else.
 func TestTheCardsFolderHoldsTheCardsDrawnAlone(test *testing.T) {
 	folder := filepath.Join(test.TempDir(), "cards")
 	before := []drawnCard{{path: "/", picture: []byte(resumePicture)}, {path: "/blog", picture: []byte(listPicture)}}
@@ -82,11 +83,9 @@ func TestTheCardsFolderHoldsTheCardsDrawnAlone(test *testing.T) {
 		{path: "/p/tidy-tool", picture: []byte(projectPicture)},
 		{path: "/blog/series", picture: []byte(projectPicture)},
 	}
-	for _, drawn := range [][]drawnCard{before, after} {
-		if err := writeCards(folder, drawn); err != nil {
-			test.Fatalf("writeCards(%q) = %v, want no error", folder, err)
-		}
-	}
+	writeTestCards(test, folder, before)
+	fixtures.WriteIn(test, folder, assets.CardFile([]byte(listPicture))+replacementEnding, listPicture)
+	writeTestCards(test, folder, after)
 	cards, err := assets.LoadCards(os.DirFS(folder))
 	if err != nil {
 		test.Fatalf("LoadCards(%q) = %v, want the cards", folder, err)
@@ -107,6 +106,61 @@ func TestTheCardsFolderHoldsTheCardsDrawnAlone(test *testing.T) {
 	if files := folderFiles(test, folder); !maps.Equal(shown, wantShown) || listKept || !slices.Equal(files, wantFiles) {
 		test.Errorf("the cards shown = %q, the list's kept: %t, the folder holding %q; want %q, none, %q", shown, listKept, files,
 			wantShown, wantFiles)
+	}
+}
+
+// writeTestCards writes cards into a folder, or ends the test where they cannot be written.
+func writeTestCards(test *testing.T, folder string, drawn []drawnCard) {
+	if err := writeCards(folder, drawn); err != nil {
+		test.Fatalf("writeCards(%q) = %v, want no error", folder, err)
+	}
+}
+
+// A folder that holds anything a drawing of the cards does not write is refused before anything in it changes, so a
+// folder named by mistake, as a build's or the repository's, loses nothing: a folder in it, or a file of another name.
+func TestAFolderHoldingMoreThanCardsIsRefused(test *testing.T) {
+	cases := []struct {
+		name    string
+		foreign string
+	}{
+		{name: "a folder in it, as a build's", foreign: "web/manifest.json"},
+		{name: "a file of another name", foreign: "notes.txt"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			folder := test.TempDir()
+			fixtures.WriteIn(test, folder, testCase.foreign, resumePicture)
+			err := writeCards(folder, []drawnCard{{path: "/", picture: []byte(resumePicture)}})
+			if files := folderFiles(test, folder); !errors.Is(err, errForeignFile) || len(files) != 1 {
+				test.Errorf("writeCards beside %q = %v, the folder holding %q; want %v, the folder as it was", testCase.foreign, err,
+					files, errForeignFile)
+			}
+		})
+	}
+}
+
+// A drawing that changes no card writes no file, so a site watching the folder loads nothing again.
+func TestADrawingThatChangesNoCardWritesNoFile(test *testing.T) {
+	folder := test.TempDir()
+	drawn := []drawnCard{{path: "/", picture: []byte(resumePicture)}}
+	writeTestCards(test, folder, drawn)
+	written := fixtures.Day()
+	for _, name := range folderFiles(test, folder) {
+		if err := os.Chtimes(filepath.Join(folder, name), written, written); err != nil {
+			test.Fatalf("set the time of %s: %v", name, err)
+		}
+	}
+	writeTestCards(test, folder, drawn)
+	times := []time.Time{}
+	for _, name := range folderFiles(test, folder) {
+		info, err := os.Stat(filepath.Join(folder, name))
+		if err != nil {
+			test.Fatalf("stat %s: %v", name, err)
+		}
+		times = append(times, info.ModTime().UTC())
+	}
+	if want := []time.Time{written, written}; !slices.Equal(times, want) {
+		test.Errorf("the files written at %v, want %v: untouched", times, want)
 	}
 }
 
@@ -169,17 +223,52 @@ func leavePostCardOut(test *testing.T, folder string) {
 
 // The cards drawn over the fixture content, by the Typst found on the path, are the cards a release of it takes.
 func TestTheCardsDrawnAreTheCardsAReleaseTakes(test *testing.T) {
-	drawer, err := card.NewDrawer(test.Context(), typstProgram, fixtures.CardFaces(test))
-	if err != nil {
-		test.Fatalf("NewDrawer(%s) = %v, want a drawer", typstProgram, err)
-	}
 	folders := release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test), Cards: test.TempDir()}
-	drawing := cardDrawing{drawer: drawer, content: folders.Content, cards: folders.Cards}
+	drawing := cardDrawing{drawer: typstDrawer(test), content: folders.Content, cards: folders.Cards}
 	drawn, err := drawing.draw(test.Context(), fixtures.Day())
 	if err != nil {
 		test.Fatalf("draw = %v, want the cards drawn", err)
 	}
-	if _, err := release.Load(folders, releaseCheckedNow); drawn != len(fixtureCardPaths()) || err != nil {
+	if _, err := release.Load(folders, releaseChecks()); drawn != len(fixtureCardPaths()) || err != nil {
 		test.Errorf("drew %d cards, and a release of them loads with %v; want %d, and no fault", drawn, err, len(fixtureCardPaths()))
 	}
+}
+
+// A drawing refused leaves the cards' folder as it was: of content the site's own check refuses, its résumé's tab
+// titled as the blog takes the blog's address, and of a card that cannot be drawn, its mark in letters the block
+// letters do not draw.
+func TestARefusedDrawingLeavesTheCardsAsTheyWere(test *testing.T) {
+	cases := []struct {
+		name        string
+		original    string
+		replacement string
+	}{
+		{name: "content the site's check refuses", original: "experience: Experience", replacement: "experience: Blog"},
+		{name: "a card that cannot be drawn", original: "blog: blog", replacement: "blog: блог"},
+	}
+	drawer := typstDrawer(test)
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			contentFolder, cardsFolder := fixtures.Copy(test, fixtures.ContentFolder(test)), test.TempDir()
+			fixtures.ReplaceIn(test, contentFolder, wordsFile, testCase.original, testCase.replacement)
+			writeTestCards(test, cardsFolder, []drawnCard{{path: "/", picture: []byte(resumePicture)}})
+			before := folderFiles(test, cardsFolder)
+			drawing := cardDrawing{drawer: drawer, content: contentFolder, cards: cardsFolder}
+			if _, err := drawing.draw(test.Context(), fixtures.Day()); err == nil || !slices.Equal(folderFiles(test, cardsFolder), before) {
+				test.Errorf("draw = %v, the folder holding %q; want a fault, the folder holding %q", err, folderFiles(test, cardsFolder), before)
+			}
+		})
+	}
+}
+
+// The site's words in its own language, in the content's folder
+const wordsFile = "i18n/en.yaml"
+
+// typstDrawer draws with the Typst found on the path, in the faces the cards are set in, or ends the test.
+func typstDrawer(test *testing.T) card.Drawer {
+	drawer, err := card.NewDrawer(test.Context(), typstProgram, fixtures.InModule(test, card.FacesFolder))
+	if err != nil {
+		test.Fatalf("NewDrawer(%s) = %v, want a drawer", typstProgram, err)
+	}
+	return drawer
 }

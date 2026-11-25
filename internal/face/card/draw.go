@@ -63,9 +63,19 @@ const (
 // What a project's name breaks after where it does not fit on one line
 const nameBreak = "-"
 
+// FacesFolder is the folder of the faces the cards are set in, from the repository's root, where the build draws them
+const FacesFolder = "design/fonts/jetbrains-mono"
+
+// faceFiles are the faces of the folder the template sets its words and its titles in, as Typst reads them: it reads
+// no woff2.
+func faceFiles() []string {
+	return []string{"JetBrainsMono-Regular.ttf", "JetBrainsMono-Bold.ttf"}
+}
+
 // The faults of drawing a card
 var (
 	errTypstVersion = errors.New("typst is not the version the cards are drawn with")
+	errNoFaces      = errors.New("a face the cards are set in is missing")
 	errUndrawnMark  = errors.New("the block letters cannot draw the cards' mark")
 )
 
@@ -77,7 +87,7 @@ type Drawer struct {
 }
 
 // NewDrawer draws cards with a Typst program, set in the faces of a folder; it refuses a program at another version
-// than TypstVersion.
+// than TypstVersion, and a folder that lacks a face the template sets, where Typst would set another.
 func NewDrawer(ctx context.Context, program, faces string) (Drawer, error) {
 	noDrawer := Drawer{program: "", faces: ""}
 	said, err := run(ctx, program, versionCommand)
@@ -86,6 +96,11 @@ func NewDrawer(ctx context.Context, program, faces string) (Drawer, error) {
 	}
 	if words := strings.Fields(string(said)); len(words) <= versionWordIndex || words[versionWordIndex] != TypstVersion {
 		return noDrawer, fmt.Errorf("%w: %s says %q, want %s", errTypstVersion, program, strings.TrimSpace(string(said)), TypstVersion)
+	}
+	for _, face := range faceFiles() {
+		if info, err := os.Stat(filepath.Join(faces, face)); err != nil || !info.Mode().IsRegular() {
+			return noDrawer, fmt.Errorf("%w: %q holds no %s", errNoFaces, faces, face)
+		}
 	}
 	return Drawer{program: program, faces: faces}, nil
 }

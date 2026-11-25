@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,8 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,18 +33,17 @@ const (
 	cardsArguments = 2
 )
 
-// What the cards are drawn with, from the repository's root, where the command runs: Typst, found on the path, and the
-// faces the cards are set in
-const (
-	typstProgram    = "typst"
-	cardFacesFolder = "design/fonts/jetbrains-mono"
-)
+// The program the cards are drawn with, found on the path
+const typstProgram = "typst"
 
 // How the cards' manifest is written, for a person to read: each page on a line of its own
 const manifestIndent = "  "
 
 // The key of how many cards a drawing drew, which it logs
 const drawnKey = "drawn"
+
+// What a cards' folder is refused for: holding a file no drawing of the cards writes, which a drawing would take away
+var errForeignFile = errors.New("the cards' folder holds what is no card")
 
 // cardsAsked is what cards is asked to draw: the content folder the cards show, the folder they are written to, and
 // whether to draw them again as the content changes.
@@ -74,7 +76,7 @@ type cardDrawing struct {
 func drawCards(asked cardsAsked) int {
 	stopping, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	drawer, err := card.NewDrawer(stopping, typstProgram, cardFacesFolder)
+	drawer, err := card.NewDrawer(stopping, typstProgram, card.FacesFolder)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return failed
@@ -144,9 +146,7 @@ type drawnCard struct {
 	picture []byte
 }
 
-// writeCards writes cards into their folder, made where it is missing: each card's file by what it holds, then the
-// manifest naming them, then every other file of the folder taken away. A file is written beside its place and renamed
-// into it whole, so a reader meets a manifest whose cards are all there, the one before or this one.
+// writeCards writes cards into their folder, made where it is missing, as writeCardsIn has it.
 func writeCards(folder string, drawn []drawnCard) error {
 	if err := os.MkdirAll(folder, writtenFolderMode); err != nil {
 		return fmt.Errorf("make the cards' folder %q: %w", folder, err)
@@ -158,13 +158,21 @@ func writeCards(folder string, drawn []drawnCard) error {
 	return errors.Join(writeCardsIn(root, drawn), root.Close())
 }
 
-// writeCardsIn writes cards and their manifest in a root, and takes away every other file of it, as writeCards has it.
+// writeCardsIn writes cards in a root: each card's file by what it holds, then the manifest naming them, each written
+// beside its place and renamed into it whole, so a reader meets a manifest whose cards are all there, the one before
+// or this one; then it takes away every card the manifest names no more. A root that holds any file a drawing does not
+// write is refused before anything is written, so a folder named by mistake, a build's or the repository's, loses
+// nothing.
 func writeCardsIn(root *os.Root, drawn []drawnCard) error {
+	held, err := heldFiles(root)
+	if err != nil {
+		return err
+	}
 	names := assets.CardNames{}
 	for _, written := range drawn {
 		name := assets.CardFile(written.picture)
 		names[written.path] = name
-		if err := replaceIn(root, name, written.picture, writtenFileMode); err != nil {
+		if err := writeChanged(root, name, written.picture); err != nil {
 			return err
 		}
 	}
@@ -172,46 +180,90 @@ func writeCardsIn(root *os.Root, drawn []drawnCard) error {
 	if err != nil {
 		return fmt.Errorf("write the cards' manifest: %w", err)
 	}
-	if err := replaceIn(root, assets.CardsManifest, manifest, writtenFileMode); err != nil {
+	if err := writeChanged(root, assets.CardsManifest, manifest); err != nil {
 		return err
 	}
-	return removeAllBut(root, names)
+	return removeStale(root, held, names)
 }
 
-// removeAllBut takes away every file of a root but the cards' manifest and the cards it names.
-func removeAllBut(root *os.Root, names assets.CardNames) error {
+// heldFiles are the files a cards' folder holds, each one a drawing writes; a fault where it holds anything else.
+func heldFiles(root *os.Root) ([]string, error) {
+	entries, err := fs.ReadDir(root.FS(), ".")
+	if err != nil {
+		return nil, fmt.Errorf("list the cards' folder %q: %w", root.Name(), err)
+	}
+	held := []string{}
+	for _, entry := range entries {
+		if !entry.Type().IsRegular() || !isDrawingsFile(entry.Name()) {
+			return nil, fmt.Errorf("%w: %q holds %q; name a folder of the cards alone", errForeignFile, root.Name(), entry.Name())
+		}
+		held = append(held, entry.Name())
+	}
+	return held, nil
+}
+
+// isDrawingsFile is whether a file's name is one a drawing of the cards writes: the manifest or a card, or either left
+// beside its place by a drawing that stopped before renaming it.
+func isDrawingsFile(name string) bool {
+	written, _ := strings.CutSuffix(name, replacementEnding)
+	return written == assets.CardsManifest || assets.IsCardFile(written)
+}
+
+// writeChanged writes a file of a root whole where it does not hold those bytes already, so a drawing that changes no
+// card touches no file, and a site watching the folder loads nothing again.
+func writeChanged(root *os.Root, name string, text []byte) error {
+	if held, err := root.ReadFile(name); err == nil && bytes.Equal(held, text) {
+		return nil
+	}
+	return replaceIn(root, name, text, writtenFileMode)
+}
+
+// removeStale takes away the files a cards' folder held that its manifest names no more: cards no page shows, and any
+// left beside its place by a drawing that stopped.
+func removeStale(root *os.Root, held []string, names assets.CardNames) error {
 	kept := map[string]bool{assets.CardsManifest: true}
 	for _, name := range names {
 		kept[name] = true
 	}
-	entries, err := fs.ReadDir(root.FS(), ".")
-	if err != nil {
-		return fmt.Errorf("list the cards' folder: %w", err)
-	}
 	var faults []error
-	for _, entry := range entries {
-		if !kept[entry.Name()] {
-			faults = append(faults, root.RemoveAll(entry.Name()))
+	for _, name := range slices.DeleteFunc(held, func(name string) bool { return kept[name] }) {
+		// a file left beside its place may have been written again and renamed into it since
+		if err := root.Remove(name); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			faults = append(faults, err)
 		}
 	}
 	return errors.Join(faults...)
 }
 
-// releaseCheckedNow holds a release's content to the site's own check, and its cards to a card for every page a
-// preview shows, now or as a post dated later comes out, from the moment it is loaded on.
-func releaseCheckedNow(loaded *content.Snapshot, cards *assets.Cards) error {
-	now := time.Now()
-	return errors.Join(compose.Check(loaded, now), missingCardsOf(loaded, cards, now))
+// releaseChecks are what a release is held to beyond each part's own load: its content to the site's own check, and
+// its cards to one for every page a preview shows, now or as a post dated later comes out, each from the moment it is
+// loaded on.
+func releaseChecks() release.Checks {
+	return release.Checks{Content: checkedNow, Cards: cardsCheckedNow}
+}
+
+// cardsCheckedNow holds a release's cards to one for every page a preview shows from the moment they are loaded on.
+//
+//wrapper:reads the clock as each load is checked, which the check takes as a value
+func cardsCheckedNow(loaded *content.Snapshot, cards *assets.Cards) error {
+	return missingCardsOf(loaded, cards, time.Now())
 }
 
 // missingCards are the pages a preview shows, by the path each is served at, whose card a release lacks.
 type missingCards []string
 
-// How a release lacking cards is refused: the pages, each quoted, then the command that draws the cards
-const missingCardsProblem = "no card of %q: draw the cards with paranin cards <content folder> <cards folder>"
+// How a page with no card is refused, the page quoted, and the faults' separator
+const (
+	missingCardProblem = "%q has no card: paranin cards draws them"
+	missingCardJoint   = "\n"
+)
 
 func (missing missingCards) Error() string {
-	return fmt.Sprintf(missingCardsProblem, []string(missing))
+	lines := make([]string, 0, len(missing))
+	for _, path := range missing {
+		lines = append(lines, fmt.Sprintf(missingCardProblem, path))
+	}
+	return strings.Join(lines, missingCardJoint)
 }
 
 // missingCardsOf are the pages a preview shows from a moment on whose card a release's cards lack; none where they hold

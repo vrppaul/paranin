@@ -171,7 +171,12 @@ func notify(test *testing.T, toldAt endpoint, start func(test *testing.T, folder
 	folder := fixtures.Copy(test, fixtures.ContentFolder(test))
 	start(test, folder)
 	folders := release.Folders{Content: folder, Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
-	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
+	checks := release.Checks{
+		Content: func(loaded *content.Snapshot) error { return compose.Check(loaded, time.Now()) },
+		// a post a test adds has no card in the cards' fixture, which no test here reads
+		Cards: func(*content.Snapshot, *assets.Cards) error { return nil },
+	}
+	store, err := release.Open(folders, checks)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

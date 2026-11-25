@@ -36,32 +36,37 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 	cases := []struct {
 		name   string
 		change func(test *testing.T, folders Folders)
-		check  Check
+		checks Checks
 		want   string
 	}{
-		{name: "faulty content", change: faultyContent, check: passes, want: "person.name"},
-		{name: "content its check refuses", change: keepFolders, check: refuses, want: refusal},
-		{name: "a faulty build", change: faultyBuild, check: passes, want: manifestFile},
-		{name: "a card missing", change: cardLeftOut, check: passes, want: cardFile},
-		{name: "a picture linking out of the content's folder", change: pictureLinkedOut, check: passes, want: pictureName},
-		{name: "a post showing a widget the build holds no code for", change: widgetLeftOut, check: passes, want: widgetPlace},
-		{name: "a build holding the component in another folder", change: componentMoved, check: passes, want: widgetPlace},
-		{name: "an older version showing a widget the build holds no code for", change: revisionWidget, check: passes, want: revisionWidgetPlace},
-		{name: "a translation showing a widget the build holds no code for", change: translationWidget, check: passes, want: translationWidgetPlace},
-		{name: "a widget's prop of a type its schema refuses", change: propsWritten("pace: 4"), check: passes, want: widgetPlace},
-		{name: "a widget's prop of a value its schema does not list", change: propsWritten("pace: brisk"), check: passes, want: widgetPlace},
-		{name: "a widget's prop its schema does not name", change: propsWritten("pace: slow\ntempo: slow"), check: passes, want: widgetPlace},
-		{name: "a widget's prop misspelt", change: propsWritten("Pace: slow"), check: passes, want: widgetPlace},
-		{name: "a widget's prop its schema requires left out", change: propsWritten(""), check: passes, want: widgetPlace},
-		{name: "an older version's widget's props its schema refuses", change: revisionProps, check: passes, want: revisionWidgetPlace},
-		{name: "a translation's widget's props its schema refuses", change: translationProps, check: passes, want: translationWidgetPlace},
-		{name: "a widget's prop of a format its schema refuses", change: paceOfAddresses, check: passes, want: widgetPlace},
+		{name: "faulty content", change: faultyContent, checks: passing(), want: "person.name"},
+		{name: "content its check refuses", change: keepFolders, checks: Checks{Content: refusesContent, Cards: passesCards}, want: refusal},
+		{
+			name: "content its check refuses, with no cards' folder", change: cardsLeftOut,
+			checks: Checks{Content: refusesContent, Cards: passesCards}, want: refusal,
+		},
+		{name: "cards their check refuses", change: keepFolders, checks: Checks{Content: passesContent, Cards: refusesCards}, want: refusal},
+		{name: "a faulty build", change: faultyBuild, checks: passing(), want: manifestFile},
+		{name: "a card missing", change: cardLeftOut, checks: passing(), want: cardFile},
+		{name: "a picture linking out of the content's folder", change: pictureLinkedOut, checks: passing(), want: pictureName},
+		{name: "a post showing a widget the build holds no code for", change: widgetLeftOut, checks: passing(), want: widgetPlace},
+		{name: "a build holding the component in another folder", change: componentMoved, checks: passing(), want: widgetPlace},
+		{name: "an older version showing a widget the build holds no code for", change: revisionWidget, checks: passing(), want: revisionWidgetPlace},
+		{name: "a translation showing a widget the build holds no code for", change: translationWidget, checks: passing(), want: translationWidgetPlace},
+		{name: "a widget's prop of a type its schema refuses", change: propsWritten("pace: 4"), checks: passing(), want: widgetPlace},
+		{name: "a widget's prop of a value its schema does not list", change: propsWritten("pace: brisk"), checks: passing(), want: widgetPlace},
+		{name: "a widget's prop its schema does not name", change: propsWritten("pace: slow\ntempo: slow"), checks: passing(), want: widgetPlace},
+		{name: "a widget's prop misspelt", change: propsWritten("Pace: slow"), checks: passing(), want: widgetPlace},
+		{name: "a widget's prop its schema requires left out", change: propsWritten(""), checks: passing(), want: widgetPlace},
+		{name: "an older version's widget's props its schema refuses", change: revisionProps, checks: passing(), want: revisionWidgetPlace},
+		{name: "a translation's widget's props its schema refuses", change: translationProps, checks: passing(), want: translationWidgetPlace},
+		{name: "a widget's prop of a format its schema refuses", change: paceOfAddresses, checks: passing(), want: widgetPlace},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			folders := fixtureCopies(test)
 			testCase.change(test, folders)
-			if store, err := Open(folders, testCase.check); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
+			if store, err := Open(folders, testCase.checks); store != nil || err == nil || !strings.Contains(err.Error(), testCase.want) {
 				test.Errorf("Open = %v, %v; want no store and a fault naming %q", store, err, testCase.want)
 			}
 		})
@@ -72,7 +77,7 @@ func TestASiteCannotOpenOnAFaultyRelease(test *testing.T) {
 // swapped apart; a good one swaps in the new snapshot.
 func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(folders, passes)
+	store, err := Open(folders, passing())
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -92,7 +97,7 @@ func TestTheStoreKeepsTheLastGoodSnapshot(test *testing.T) {
 // ask for the store's current one or hand that snapshot in, and a reload brings the next reader a value of the new one.
 func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(folders, passes)
+	store, err := Open(folders, passing())
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -113,7 +118,7 @@ func TestADerivedValueIsWorkedOutOnceForEachSnapshot(test *testing.T) {
 // A value derived is held until the moment its work says it lapses at and worked out again from then; one that never
 // lapses is held for as long as its snapshot.
 func TestADerivedValueIsWorkedOutAgainOnceLapsed(test *testing.T) {
-	store, err := Open(fixtureCopies(test), passes)
+	store, err := Open(fixtureCopies(test), passing())
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -135,7 +140,7 @@ func TestADerivedValueIsWorkedOutAgainOnceLapsed(test *testing.T) {
 // until a reload brings another.
 func TestAValueOfTheContentAloneLapsesWithItsSnapshot(test *testing.T) {
 	folders := fixtureCopies(test)
-	store, err := Open(folders, passes)
+	store, err := Open(folders, passing())
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}
@@ -181,18 +186,35 @@ func fixtureCopies(test *testing.T) Folders {
 	}
 }
 
-// What the check a case hands in says where it refuses the content
+// What a check a case hands in says where it refuses the content or the cards
 const refusal = "the check refuses it"
 
-// passes is a check that finds no fault.
-func passes(*content.Snapshot, *assets.Cards) error {
+// passing are checks that find no fault.
+func passing() Checks {
+	return Checks{Content: passesContent, Cards: passesCards}
+}
+
+// passesContent is a check of the content that finds no fault.
+func passesContent(*content.Snapshot) error {
 	return nil
 }
 
-// refuses is a check that finds a fault in any content and cards.
+// passesCards is a check of the cards that finds no fault.
+func passesCards(*content.Snapshot, *assets.Cards) error {
+	return nil
+}
+
+// refusesContent is a check that finds a fault in any content.
 //
 //wrapper:a case of the table names the check it hands the release
-func refuses(*content.Snapshot, *assets.Cards) error {
+func refusesContent(*content.Snapshot) error {
+	return errors.New(refusal)
+}
+
+// refusesCards is a check that finds a fault in any cards.
+//
+//wrapper:a case of the table names the check it hands the release
+func refusesCards(*content.Snapshot, *assets.Cards) error {
 	return errors.New(refusal)
 }
 
@@ -316,6 +338,13 @@ func paceOfAddresses(test *testing.T, folders Folders) {
 //wrapper:a case of the table names the fault it writes
 func faultyBuild(test *testing.T, folders Folders) {
 	fixtures.ReplaceIn(test, folders.Build, manifestFile, "{", "[")
+}
+
+// cardsLeftOut takes the cards' folder away.
+func cardsLeftOut(test *testing.T, folders Folders) {
+	if err := os.RemoveAll(folders.Cards); err != nil {
+		test.Fatalf("remove %s: %v", folders.Cards, err)
+	}
 }
 
 // cardLeftOut takes a card the cards' manifest names away.

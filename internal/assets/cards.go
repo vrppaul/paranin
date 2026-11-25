@@ -10,6 +10,7 @@ import (
 	"maps"
 	"path"
 	"slices"
+	"strings"
 )
 
 // The cards' manifest, at their folder's root, which their drawing writes last and the site never serves
@@ -19,10 +20,12 @@ const CardsManifest = manifestFile
 // them: two pages whose cards are the same picture name one file.
 type CardNames map[string]string
 
-// How a card's file is named: by the start of the sha256 of what it holds, 64 bits, so its name changes with what the
-// card shows and no two cards of a site share one, then the ending of the one type a card is drawn in
+// How a card's file is named: by the start of the sha256 of what it holds, 64 bits in small hex digits, so its name
+// changes with what the card shows and no two cards of a site share one, then the ending of the one type a card is
+// drawn in
 const (
 	cardHashLetters = 16
+	hexDigits       = "0123456789abcdef"
 	cardEnding      = ".png"
 	cardType        = "image/png"
 )
@@ -41,6 +44,12 @@ type Cards struct {
 func CardFile(drawn []byte) string {
 	sum := sha256.Sum256(drawn)
 	return hex.EncodeToString(sum[:])[:cardHashLetters] + cardEnding
+}
+
+// IsCardFile is whether a name is one CardFile gives.
+func IsCardFile(name string) bool {
+	hash, isPicture := strings.CutSuffix(name, cardEnding)
+	return isPicture && len(hash) == cardHashLetters && strings.Trim(hash, hexDigits) == ""
 }
 
 // LoadCards reads the cards from their folder: the cards, or every fault that keeps the site from serving them: no

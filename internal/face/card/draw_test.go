@@ -6,6 +6,7 @@ import (
 	"errors"
 	"image/png"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -53,8 +54,29 @@ type choice struct {
 
 // A Typst of another version than the cards are drawn with is refused before it draws a card.
 func TestATypstOfAnotherVersionIsRefused(test *testing.T) {
-	if _, err := NewDrawer(test.Context(), otherTypst, fixtures.CardFaces(test)); !errors.Is(err, errTypstVersion) {
+	if _, err := NewDrawer(test.Context(), otherTypst, fixtures.InModule(test, FacesFolder)); !errors.Is(err, errTypstVersion) {
 		test.Errorf("NewDrawer(%s) = %v, want %v", otherTypst, err, errTypstVersion)
+	}
+}
+
+// A folder that lacks a face the cards are set in is refused before a card is drawn, where Typst would set another
+// face and the template's measures would fail: none at all, and one of other files.
+func TestAFolderLackingTheCardsFacesIsRefused(test *testing.T) {
+	otherFiles := test.TempDir()
+	fixtures.WriteIn(test, otherFiles, "JetBrainsMono-Regular.woff2", "wOF2")
+	cases := []struct {
+		name  string
+		faces string
+	}{
+		{name: "no folder", faces: filepath.Join(test.TempDir(), "none")},
+		{name: "a folder of other files", faces: otherFiles},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if _, err := NewDrawer(test.Context(), typstProgram, testCase.faces); !errors.Is(err, errNoFaces) {
+				test.Errorf("NewDrawer(%s, %q) = %v, want %v", typstProgram, testCase.faces, err, errNoFaces)
+			}
+		})
 	}
 }
 
@@ -212,7 +234,7 @@ func typstDrawer(test *testing.T) Drawer {
 	if err != nil {
 		test.Fatalf("find %s: %v; install it with go run ./scripts/typst", typstProgram, err)
 	}
-	drawer, err := NewDrawer(test.Context(), program, fixtures.CardFaces(test))
+	drawer, err := NewDrawer(test.Context(), program, fixtures.InModule(test, FacesFolder))
 	if err != nil {
 		test.Fatalf("NewDrawer(%s) = %v", program, err)
 	}

@@ -733,7 +733,12 @@ func drawnServer(test *testing.T) *Server {
 // newServer is a server of the fixture, not yet serving, its sessions reading the drafts where drafts says.
 func newServer(test *testing.T, logger *slog.Logger, drafts bool) *Server {
 	folders := release.Folders{Content: fixtures.ContentFolder(test), Build: fixtures.BuildFolder(test), Cards: fixtures.CardsFolder(test)}
-	store, err := release.Open(folders, func(loaded *content.Snapshot, _ *assets.Cards) error { return compose.Check(loaded, time.Now()) })
+	checks := release.Checks{
+		Content: func(loaded *content.Snapshot) error { return compose.Check(loaded, time.Now()) },
+		// a session draws no card, so the cards' fixture is held to nothing here
+		Cards: func(*content.Snapshot, *assets.Cards) error { return nil },
+	}
+	store, err := release.Open(folders, checks)
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

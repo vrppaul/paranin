@@ -209,7 +209,7 @@ type siteUnderTest struct {
 // testSite is a site on a folder of content and the build's and the cards' fixtures that listens nowhere, its reloads
 // and changes unbuffered so a test knows when one is taken.
 func testSite(test *testing.T, folder string) siteUnderTest {
-	store, err := release.Open(fixtureRelease(test, folder), releaseCheckedNow)
+	store, err := release.Open(fixtureRelease(test, folder), releaseChecks())
 	if err != nil {
 		test.Fatalf("Open(fixtures) = %v, want no error", err)
 	}

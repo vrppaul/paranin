@@ -18,13 +18,12 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
-// Where the fixtures and the cards' faces live, from the module's root, the file the root is known by, and who may
-// write a changed file of a copy and a folder made in it
+// Where the fixtures live, from the module's root, the file the root is known by, and who may write a changed file of
+// a copy and a folder made in it
 const (
 	contentFromRoot = "internal/content/testdata/content"
 	buildFromRoot   = "internal/assets/testdata/build"
 	cardsFromRoot   = "internal/assets/testdata/cards"
-	cardFacesFrom   = "design/fonts/jetbrains-mono"
 	moduleFile      = "go.mod"
 	fileMode        = 0o600
 	folderMode      = 0o700
@@ -51,10 +50,12 @@ func CardsFolder(test *testing.T) string {
 	return filepath.Join(moduleRoot(test), cardsFromRoot)
 }
 
-// CardFaces is the folder of the faces the cards are set in, the design's own, not a fixture: a card's drawing is held
-// to the face a release draws it in.
-func CardFaces(test *testing.T) string {
-	return filepath.Join(moduleRoot(test), cardFacesFrom)
+// InModule is a path from the module's root made whole, for a test that reads a folder of the repository itself, as the
+// faces the cards are set in, which a card's drawing is held to as a release draws it.
+//
+//wrapper:names a path of the repository a test reads, whatever folder go test runs it in
+func InModule(test *testing.T, fromRoot string) string {
+	return filepath.Join(moduleRoot(test), fromRoot)
 }
 
 // The year and the day of the month the tests draw on, in November

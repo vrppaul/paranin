@@ -2,7 +2,7 @@
 // together and held as one snapshot that nothing changes after, which a store swaps whole (docs/ARCHITECTURE.md,
 // ADR-0003, ADR-0004, ADR-0005). A page names the files of the build it was drawn with, so the parts are never swapped
 // apart: a load that fails in any keeps all as they were. The content and the cards are held, beside their own loads,
-// to a check the composition root hands in from the parts over a release, which it knows nothing of. What a host
+// to checks the composition root hands in from the parts over a release, which it knows nothing of. What a host
 // draws from a snapshot is worked out once for each, and again once what it drew lapses (Derived). Watch looks at
 // folders in a goroutine of its own, until its context ends, and says when they changed and held still, for whoever
 // reloads or draws again (watch.go). A folder on disk is read so no read leaves it (ReadFolder).
@@ -54,26 +54,31 @@ type Snapshot struct {
 	Cards   *assets.Cards
 }
 
-// Check is what the parts over a release hold its content and its cards to beyond their own loads, which the
-// composition root hands in: that no two of the pages the content makes share an address, that each link of a post
-// inside the site leads to a page and, where it names one, a section of it, and that every page a preview shows, now or
-// as a post dated later comes out, has its card. It hands back the faults it finds, none where it finds none.
-type Check func(*content.Snapshot, *assets.Cards) error
+// Checks are what the parts over a release hold it to beyond each part's own load, which the composition root hands
+// in, since a release knows nothing of them. Each hands back the faults it finds, none where it finds none.
+type Checks struct {
+	// Content holds the content, as soon as it loads, to no two of its pages sharing an address, and to each link of a
+	// post inside the site leading to a page and, where it names one, a section of it
+	Content func(*content.Snapshot) error
+	// Cards holds the cards, once they and the content load, to one for every page a preview shows, now or as a post
+	// dated later comes out
+	Cards func(*content.Snapshot, *assets.Cards) error
+}
 
-// Load reads the three parts of a release and checks each whole, the content and the cards by the check too once both
-// load: a snapshot, or every fault of any part. Once all load, it holds the content and the build together: a
-// snapshot, or the faults of every widget a post shows whose code the build lacks or whose props its schema refuses.
-func Load(folders Folders, check Check) (*Snapshot, error) {
+// Load reads the three parts of a release and checks each whole, the content by its check too: a snapshot, or every
+// fault of any part. Once all load, it holds them together: a snapshot, or the faults of every page whose card the
+// cards lack, and of every widget a post shows whose code the build lacks or whose props its schema refuses.
+func Load(folders Folders, checks Checks) (*Snapshot, error) {
 	loaded, contentErr := ReadFolder(folders.Content, content.Load)
+	if contentErr == nil {
+		contentErr = checks.Content(loaded)
+	}
 	build, buildErr := ReadFolder(folders.Build, assets.Load)
 	cards, cardsErr := ReadFolder(folders.Cards, assets.LoadCards)
-	if contentErr == nil && cardsErr == nil {
-		contentErr = check(loaded, cards)
-	}
 	if err := errors.Join(contentErr, buildErr, cardsErr); err != nil {
 		return nil, err
 	}
-	if err := widgetFaults(loaded, build); err != nil {
+	if err := errors.Join(checks.Cards(loaded, cards), widgetFaults(loaded, build)); err != nil {
 		return nil, err
 	}
 	return &Snapshot{Content: loaded, Build: build, Cards: cards}, nil
@@ -122,16 +127,16 @@ func shownWidgets(loaded *content.Snapshot) []content.ShownWidget {
 // reader sees the old one or the new one, never one half loaded; a load that fails leaves the old in place.
 type Store struct {
 	folders Folders
-	check   Check
+	checks  Checks
 	current atomic.Pointer[Snapshot]
 	// reloading lets one load run at a time, so an older read never lands after a newer one
 	reloading sync.Mutex
 }
 
-// Open loads the folders for the first time, its content held to the check at each load; a site cannot start on a
-// release that does not load.
-func Open(folders Folders, check Check) (*Store, error) {
-	store := &Store{folders: folders, check: check, current: atomic.Pointer[Snapshot]{}, reloading: sync.Mutex{}}
+// Open loads the folders for the first time, held to the checks at each load; a site cannot start on a release that
+// does not load.
+func Open(folders Folders, checks Checks) (*Store, error) {
+	store := &Store{folders: folders, checks: checks, current: atomic.Pointer[Snapshot]{}, reloading: sync.Mutex{}}
 	if err := store.Reload(); err != nil {
 		return nil, err
 	}
@@ -148,7 +153,7 @@ func (store *Store) Current() *Snapshot {
 func (store *Store) Reload() error {
 	store.reloading.Lock()
 	defer store.reloading.Unlock()
-	snapshot, err := Load(store.folders, store.check)
+	snapshot, err := Load(store.folders, store.checks)
 	if err != nil {
 		return err
 	}

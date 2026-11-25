@@ -68,7 +68,8 @@ func TestTheExitCodeSaysWhatTheCommandDid(test *testing.T) {
 		{name: "a site with its drafts on content with faults", arguments: []string{"paranin", "serve", "--drafts", faulty, buildFolder, cardsFolder}, want: failed},
 		{name: "a site with a flag it has not", arguments: []string{"paranin", "serve", "--everything", contentFolder, buildFolder, cardsFolder}, want: usageMistaken},
 		{name: "a site with four folders", arguments: []string{"paranin", "serve", contentFolder, buildFolder, cardsFolder, faulty}, want: usageMistaken},
-		{name: "cards of content with faults", arguments: []string{"paranin", "cards", faulty, test.TempDir()}, want: failed},
+		// go test runs the command in its package's folder, where no faces the cards are set in stand
+		{name: "cards drawn outside the repository's root", arguments: []string{"paranin", "cards", contentFolder, test.TempDir()}, want: failed},
 		{name: "cards with no folder to draw them into", arguments: []string{"paranin", "cards", contentFolder}, want: usageMistaken},
 		{name: "cards with a flag they have not", arguments: []string{"paranin", "cards", "--drafts", contentFolder, test.TempDir()}, want: usageMistaken},
 		{name: "no command", arguments: []string{"paranin"}, want: usageMistaken},

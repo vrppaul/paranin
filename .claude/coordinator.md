@@ -16,6 +16,10 @@ answers for what an agent writes as if it wrote it.
   to him before a merge. A technical construction you are sure of is yours: decide it and name it in a line.
 - Two review rounds at most: the second reads the first round's fixes alone, and only where a fix changes logic; you
   check the rest of the fixes yourself.
+- Every agent's model is chosen for its task, named in the call (owner, 2026-11-25): Sonnet for a small, clear task
+  whose construction the brief settles; Opus for a hard construction and for the review of one; Haiku only for a
+  task plainly trivial, as a lookup or a check of facts, or where the owner names it; Fable only where the owner
+  names it.
 - A brief to an author gives the goal, the whole it serves and the rules to read. A change `AGENTS.md` leaves to the
   owner's approval is in it only with that approval named; a chunk that finds it needs one stops and hands the
   question back.

@@ -61,8 +61,8 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
 - **X:** `twitter:card`, `summary`, `summary_large_image` once the page has a card (owner, 2026-11-24); X reads the
   rest from Open Graph ([X](https://developer.x.com/cards/markup)).
 - **A card**, `og:image`, 1200×630, the page's own, a tab's its page's, which the build draws with Typst (ADR-0005)
-  as `DESIGN.md`'s Social cards has it (owner, 2026-11-25), with its size and the page's title as its `alt` (not
-  approved), and
+  as `DESIGN.md`'s Social cards has it (owner, 2026-11-25), with its size and the page's title as its `alt` (owner,
+  2026-11-25), and
   `max-image-preview:large` so Google may show it large. LinkedIn wants
   [at least 1200×627](https://www.linkedin.com/help/linkedin/answer/46687), and a post's record takes it as its
   `image`. Every page that shows a preview has one: an unlisted post among them. The cards come before hosting, as

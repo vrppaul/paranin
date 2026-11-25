@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/vrppaul/paranin/internal/look"
 )
@@ -165,14 +164,16 @@ type titleInput struct {
 }
 
 // arrangement is block letters on lines as the template places them (look.Drawing): the lines' words, the drawing's
-// width, in cells, how far down its ink reaches, in half rows, its runs of filled cells, and its cursor, none where
-// none follows.
+// width, in cells, how far down its ink reaches, in half rows, its runs of filled cells, its cursor, none where none
+// follows, and a cell's shape, as wide and as tall as these units.
 type arrangement struct {
-	Lines      []string    `json:"lines"`
-	Width      int         `json:"width"`
-	Foot       int         `json:"foot"`
-	Rectangles []rectangle `json:"rectangles"`
-	Cursor     *rectangle  `json:"cursor"`
+	Lines        []string    `json:"lines"`
+	Width        int         `json:"width"`
+	Foot         int         `json:"foot"`
+	Rectangles   []rectangle `json:"rectangles"`
+	Cursor       *rectangle  `json:"cursor"`
+	CellUnits    int         `json:"cell_units"`
+	HalfRowUnits int         `json:"half_row_units"`
 }
 
 // rectangle is a run of a drawing's filled cells, or its cursor, in cells across and half rows down.
@@ -204,17 +205,13 @@ func inputOf(facts Facts) (any, error) {
 	return nil, nil
 }
 
-// nameTitle is the author's name in block letters on the lines the profile breaks it into, the cursor after it, as
-// wide as its last letter, as the page draws the name.
+// nameTitle is the author's name in block letters with the cursor after it, as the page draws the name.
 func nameTitle(name string) titleInput {
-	lines := look.NameLines(name)
-	font := look.NameFont()
-	drawing, drawn := font.Draw(lines)
+	drawing, drawn := look.NameDrawing(name)
 	if !drawn {
 		return titleInput{Words: name, Arrangements: []arrangement{}}
 	}
-	last, _ := utf8.DecodeLastRuneInString(lines[len(lines)-1])
-	return titleInput{Words: name, Arrangements: []arrangement{arrangementOf(lines, drawing.WithCursor(font.LetterWidth(last)))}}
+	return titleInput{Words: name, Arrangements: []arrangement{arrangementOf(drawing)}}
 }
 
 // projectTitle is a project's name in block letters: on one line, then broken once after each hyphen in turn, onto two.
@@ -227,7 +224,7 @@ func projectTitle(name string) titleInput {
 		if !drawn {
 			return titleInput{Words: name, Arrangements: []arrangement{}}
 		}
-		arrangements = append(arrangements, arrangementOf(lines, drawing))
+		arrangements = append(arrangements, arrangementOf(drawing))
 	}
 	return titleInput{Words: name, Arrangements: arrangements}
 }
@@ -244,18 +241,18 @@ func breaksOf(pieces []string) [][]string {
 // markArrangement is the cards' mark in block letters, on one line; a fault where the font does not draw every letter
 // of it.
 func markArrangement(mark string) (arrangement, error) {
-	lines := []string{strings.ToUpper(mark)}
-	drawing, drawn := look.NameFont().Draw(lines)
+	drawing, drawn := look.NameFont().Draw([]string{strings.ToUpper(mark)})
 	if !drawn {
-		return arrangementOf(nil, drawing), fmt.Errorf("%w: %q", errUndrawnMark, mark)
+		return arrangementOf(drawing), fmt.Errorf("%w: %q", errUndrawnMark, mark)
 	}
-	return arrangementOf(lines, drawing), nil
+	return arrangementOf(drawing), nil
 }
 
 // arrangementOf is a drawing of lines of block letters as the template places it.
-func arrangementOf(lines []string, drawing look.Drawing) arrangement {
+func arrangementOf(drawing look.Drawing) arrangement {
 	placed := arrangement{
-		Lines: lines, Width: drawing.Width, Foot: drawing.Foot(), Rectangles: make([]rectangle, 0, len(drawing.Rectangles)), Cursor: nil,
+		Lines: drawing.Lines, Width: drawing.Width, Foot: drawing.Foot(), Rectangles: make([]rectangle, 0, len(drawing.Rectangles)),
+		Cursor: nil, CellUnits: look.CellUnits, HalfRowUnits: look.HalfRowUnits,
 	}
 	for _, run := range drawing.Rectangles {
 		placed.Rectangles = append(placed.Rectangles, rectangleOf(run))

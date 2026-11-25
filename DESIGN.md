@@ -620,8 +620,7 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
 Each page's `og:image`, as the owner picked it from a storyboard (owner, 2026-11-25): 1200×630, Macchiato alone,
 drawn by Typst (ADR-0005). A card is read on a phone in a feed, 500px wide, so it holds only what reads there: every
 word at least 42px, 17.5px on the phone, and nothing in the outer 40px, which a feed may crop. Its rem is 28px, the
-page's 16px grown by 1.75; its row, `radius` and hairline are the page's tokens at that rem, and its cell the face's
-`0`, 16.8px.
+page's 16px grown by 1.75.
 
 - Two looks, so the résumé and the blog read as two sides of the site:
   - **The résumé's side**, the résumé, a project and the blog's list: a title in the name's block letters, the
@@ -643,8 +642,7 @@ page's 16px grown by 1.75; its row, `radius` and hairline are the page's tokens 
   the page over ssh, `ssh paran.in` on the résumé and a project, the user the session opens a page of the blog for
   on the blog's, `ssh blog@paran.in` on the list and `ssh blog/1@paran.in` on a post (D26), as the page's Command
   chip, ❯ in `prompt` and the command in `text` on `sunk` in a `muted` hairline with the `radius`, 36.96px of room
-  at its sides and 23.1px over and under its words, 506px down, clear of the outer 40px; all of it from the left
-  margin, 100.8px in.
+  at its sides and 23.1px over and under its words, 506px down; all of it from the left margin, 100.8px in.
 - Words longer than their lines, a post's title, a line, a lead, are cut after the last whole word that fits, an
   ellipsis after it; a word wider than the card is cut inside it, the ellipsis after the last letter that fits.
   Block letters are never cut.

@@ -58,8 +58,8 @@ repos:
         files: (\.go|^go\.mod|^go\.sum)$
         pass_filenames: false
       # The design's colours in Go, in CSS, for a canvas and for the cards, the page's faces, text styles and lengths in
-      # CSS, and the lengths and the shares of the screen both faces measure by, are the ones design/tokens.yaml makes
-      # (scripts/tokens/main.go)
+      # CSS, its lengths in rem for the cards, and the lengths and the shares of the screen both faces measure by, are
+      # the ones design/tokens.yaml makes (scripts/tokens/main.go)
       - id: design-tokens
         name: design tokens (internal/look, the page's tokens.css, times.ts, shares.ts and colours.ts, and the cards' tokens.typ as design/tokens.yaml makes them)
         entry: go run ./scripts/tokens

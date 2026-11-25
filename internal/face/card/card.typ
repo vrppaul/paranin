@@ -32,7 +32,7 @@
 #let margin-cells = 6
 
 // The space over a title, from the card's top, or from a post's header rule; the gap between a title and its line;
-// and where the way in stands, from the card's top, its foot clear of the outer 40px a feed may crop
+// and where the way in stands, from the card's top
 #let space-over-title = 64pt
 #let title-gap = row * 0.9
 #let way-top = 506pt
@@ -46,10 +46,6 @@
 // A cell of the block letters on each card of the résumé's side: the résumé's name and a project's at one size, so
 // the two read as one set and a project's line of two fits over the way in; the cards' mark larger, as one short word
 #let letter-cells = (resume: 22pt, project: 22pt, list: 40pt)
-
-// A drawing's cell is three fifths as wide as a row is tall, as the page draws one, so a half row is five sixths of a
-// cell's width
-#let half-row-share = 5 / 6
 
 // A post's header: its height, to its rule, and the cell of the cards' mark at its left
 #let header-height = 132pt
@@ -89,11 +85,8 @@
 #let side() = cell() * margin-cells
 #let room() = card-width - 2 * side()
 
-// A choice the card made, stated for whoever queries it: the part it made it for and what it chose; and a length it
-// chose, as it states it: in points, to the hundredth
+// A choice the card made, stated for whoever queries it: the part it made it for and what it chose
 #let chosen(choice) = [#metadata(choice) <choice>]
-#let stated-digits = 2
-#let stated(length) = calc.round(length / 1pt, digits: stated-digits)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Words fitted to their lines
@@ -129,18 +122,34 @@
   if count < words.len() { kept.trim(stop-before-ellipsis) + ellipsis } else { kept }
 }
 
+// How tall some lines of words in a style stand in the room, measured on as many lines of one letter
+#let lines-height(style, ink, lines) = {
+  measure(block(width: room(), styled(style, ink, range(lines).map(_ => "X").join(linebreak())))).height
+}
+
+// How many lines words balanced in a style take
+#let line-count(style, ink, shown) = {
+  let height = measure(balanced(style, ink, shown)).height
+  let count = 1
+  while lines-height(style, ink, count) < height {
+    count += 1
+  }
+  count
+}
+
 // Words balanced in a style on some lines at most, for a part of the card: past them, cut after the last whole word
-// that leaves room for an ellipsis; nothing where there are none
+// that leaves room for an ellipsis; nothing where there are none. It states the words shown, whether they were cut and
+// how many lines they take
 #let fitted(part, style, ink, words, lines) = context {
-  if words == "" { return chosen((part: part, words: words, size: stated(style.size))) }
-  let most = measure(block(width: room(), styled(style, ink, range(lines).map(_ => "X").join(linebreak())))).height
+  if words == "" { return chosen((part: part, words: words, cut: false, lines: 0)) }
+  let most = lines-height(style, ink, lines)
   let all = within-room(style, ink, words.split(" "))
   let count = all.len()
   while count > 1 and measure(balanced(style, ink, words-shown(all, count))).height > most {
     count -= 1
   }
   let shown = words-shown(all, count)
-  chosen((part: part, words: shown, size: stated(style.size)))
+  chosen((part: part, words: shown, cut: shown != words, lines: line-count(style, ink, shown)))
   balanced(style, ink, shown)
 }
 
@@ -156,7 +165,8 @@
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Block letters, each arrangement of them laid out by face/card from internal/look as the page's are: its lines'
-// words, its width in cells, how far down its ink reaches in half rows, its runs of filled cells and its cursor
+// words, its width in cells, how far down its ink reaches in half rows, its runs of filled cells, its cursor, and a
+// cell's shape, as wide and as tall as its units
 
 // The arrangement block letters stand in at a width in cells: the first, on one line, where it fits or is the only
 // one; else the narrowest of the rest, the name broken onto two lines where the wider of them is narrowest
@@ -167,12 +177,13 @@
 }
 
 // Block letters for a part of the card in an arrangement at a cell, smaller only where it would not fit, in a block as
-// tall as their ink, the cursor among it where one follows them
+// tall as their ink, the cursor among it where one follows them. It states the rows they stand on and whether they
+// shrank
 #let block-letters(part, arrangements, letter-cell, ink) = context {
   let drawing = arranged(arrangements, room() / letter-cell)
   let shown-cell = calc.min(letter-cell, room() / drawing.width)
-  let half = shown-cell * half-row-share
-  chosen((part: part, lines: drawing.lines, cell: stated(shown-cell)))
+  let half = shown-cell * drawing.half_row_units / drawing.cell_units
+  chosen((part: part, rows: drawing.lines, shrank: shown-cell < letter-cell))
   block(width: drawing.width * shown-cell, height: drawing.foot * half, {
     for run in drawing.rectangles {
       place(dx: run.left * shown-cell, dy: run.top * half,

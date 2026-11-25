@@ -11,13 +11,10 @@ import (
 	"github.com/vrppaul/paranin/internal/look"
 )
 
-// How block letters stand in their SVG (DESIGN.md, Block letters): a cell is cellUnits wide and half a row
-// halfRowUnits tall in the drawing's own units, a mono face's cell three fifths as wide as its row is tall. The SVG is
-// as many font sizes wide as it has cells, so the stylesheet sets a cell's width by the SVG's font size, which a
-// token holds
+// How block letters stand in their SVG (DESIGN.md, Block letters): in the drawing's own units, a cell look.CellUnits
+// wide and half a row look.HalfRowUnits tall. The SVG is as many font sizes wide as it has cells, so the stylesheet
+// sets a cell's width by the SVG's font size, which a token holds
 const (
-	cellUnits    = 6
-	halfRowUnits = 5
 	fontSizeUnit = "em"
 	// how a size in font sizes is written: as many decimals as it takes for a width, four for a height, enough that
 	// no row of a block falls between pixels; a float of 64 bits
@@ -58,11 +55,8 @@ type letterRectangle struct {
 func (writer PageWriter) drawnTitle(head document.Head) templ.Component {
 	words := document.PlainText(head.Title)
 	if head.Page.Kind == document.PageResume {
-		lines := look.NameLines(words)
-		font := look.NameFont()
-		if drawing, drawn := font.Draw(lines); drawn {
-			last := []rune(lines[len(lines)-1])
-			return letteredHeadingOne(drawingOf(drawing.WithCursor(font.LetterWidth(last[len(last)-1])), words, nameLetters))
+		if drawing, drawn := look.NameDrawing(words); drawn {
+			return letteredHeadingOne(drawingOf(drawing, words, nameLetters))
 		}
 		return headingOne(writer.spans(head.Title))
 	}
@@ -99,7 +93,7 @@ func (writer PageWriter) openingSection(section document.Section) templ.Componen
 func drawingOf(drawing look.Drawing, words, class string) letterDrawing {
 	drawn := letterDrawing{
 		words: words, class: class, rectangles: make([]letterRectangle, 0, len(drawing.Rectangles)), cursor: nil,
-		width: drawing.Width * cellUnits, height: drawing.Height * halfRowUnits,
+		width: drawing.Width * look.CellUnits, height: drawing.Height * look.HalfRowUnits,
 	}
 	for _, rectangle := range drawing.Rectangles {
 		drawn.rectangles = append(drawn.rectangles, unitsOf(rectangle))
@@ -114,8 +108,8 @@ func drawingOf(drawing look.Drawing, words, class string) letterDrawing {
 // unitsOf is a rectangle of a drawing in the SVG's units.
 func unitsOf(rectangle look.Rectangle) letterRectangle {
 	return letterRectangle{
-		left: rectangle.Left * cellUnits, top: rectangle.Top * halfRowUnits,
-		width: rectangle.Width * cellUnits, height: rectangle.Height * halfRowUnits,
+		left: rectangle.Left * look.CellUnits, top: rectangle.Top * look.HalfRowUnits,
+		width: rectangle.Width * look.CellUnits, height: rectangle.Height * look.HalfRowUnits,
 	}
 }
 
@@ -126,12 +120,12 @@ func viewBoxOf(width, height int) string {
 
 // svgWidth is the drawing's width in font sizes, a cell one, as its SVG's width.
 func (drawing letterDrawing) svgWidth() string {
-	return strconv.FormatFloat(float64(drawing.width)/cellUnits, 'f', shortestDecimals, floatBits) + fontSizeUnit
+	return strconv.FormatFloat(float64(drawing.width)/look.CellUnits, 'f', shortestDecimals, floatBits) + fontSizeUnit
 }
 
 // svgHeight is the drawing's height in font sizes, a cell's width one, as its SVG's height.
 func (drawing letterDrawing) svgHeight() string {
-	return strconv.FormatFloat(float64(drawing.height)/cellUnits, 'f', heightDecimals, floatBits) + fontSizeUnit
+	return strconv.FormatFloat(float64(drawing.height)/look.CellUnits, 'f', heightDecimals, floatBits) + fontSizeUnit
 }
 
 // gradientID is the id of the drawing's gradient on the page, one of the page's own: its words, in small letters and

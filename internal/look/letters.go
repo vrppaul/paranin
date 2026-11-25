@@ -108,15 +108,23 @@ func (font Font) blockRows(text string) []string {
 	return rows
 }
 
-// Drawing is lines of block letters as a face that draws shapes lays them out (DESIGN.md, Block letters): the runs of
-// each half row's filled cells, the cursor after the last line where one follows, and how wide and tall the drawing
-// is, in cells and half rows.
+// Drawing is lines of block letters as a face that draws shapes lays them out (DESIGN.md, Block letters): the lines'
+// words, the runs of each half row's filled cells, the cursor after the last line where one follows, and how wide and
+// tall the drawing is, in cells and half rows.
 type Drawing struct {
+	Lines      []string
 	Rectangles []Rectangle
 	Cursor     *Rectangle
 	Width      int
 	Height     int
 }
+
+// A cell of a drawing's shape, in units of its own: a mono face's cell three fifths as wide as its row is tall, so a
+// cell is CellUnits wide and a half row HalfRowUnits tall
+const (
+	CellUnits    = 6
+	HalfRowUnits = 5
+)
 
 // Rectangle is a run of a drawing's filled cells on one half row, or its cursor: its left, in cells, its top, in half
 // rows, and its width and height in the same.
@@ -139,10 +147,10 @@ const (
 func (font Font) Draw(texts []string) (Drawing, bool) {
 	banner := font.Banner(texts)
 	if len(banner) == 0 {
-		return Drawing{Rectangles: nil, Cursor: nil, Width: 0, Height: 0}, false
+		return Drawing{Lines: nil, Rectangles: nil, Cursor: nil, Width: 0, Height: 0}, false
 	}
 	halves := halfRows(banner)
-	drawing := Drawing{Rectangles: nil, Cursor: nil, Width: 0, Height: len(halves)}
+	drawing := Drawing{Lines: texts, Rectangles: nil, Cursor: nil, Width: 0, Height: len(halves)}
 	for halfRow, filled := range halves {
 		drawing.Width = max(drawing.Width, len(filled))
 		drawing.Rectangles = append(drawing.Rectangles, halfRowRectangles(filled, halfRow)...)
@@ -159,9 +167,22 @@ func (drawing Drawing) Foot() int {
 	return foot
 }
 
-// WithCursor is the drawing with the cursor after its last line, a glyph's gap apart, as wide as a letter and a half
+// NameDrawing is the author's name in the name's font, on the lines the profile breaks it into (NameLines), with the
+// cursor after it as wide as its last letter; not drawn where the font does not draw every letter of it.
+func NameDrawing(name string) (Drawing, bool) {
+	lines := NameLines(name)
+	font := NameFont()
+	drawing, drawn := font.Draw(lines)
+	if !drawn {
+		return drawing, false
+	}
+	last, _ := utf8.DecodeLastRuneInString(lines[len(lines)-1])
+	return drawing.withCursor(font.LetterWidth(last)), true
+}
+
+// withCursor is the drawing with the cursor after its last line, a glyph's gap apart, as wide as a letter and a half
 // row tall on the foot of the letters' ink.
-func (drawing Drawing) WithCursor(letterCells int) Drawing {
+func (drawing Drawing) withCursor(letterCells int) Drawing {
 	foot, lastLineRight := drawing.Foot(), 0
 	for _, rectangle := range drawing.Rectangles {
 		if rectangle.Top+rectangle.Height == foot {

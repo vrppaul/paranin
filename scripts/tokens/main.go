@@ -19,8 +19,9 @@
 //     stylesheet lays out by, so tokens.css holds none;
 //   - web/src/tokens/colours.ts, for a widget drawing on a canvas, which reads no custom property: the page's own
 //     colour and each colour in each theme, #rrggbb;
-//   - internal/face/card/tokens.typ, for the cards' template: the page's face, by its first family, and the page's own
-//     colour, each colour and each mix in the dark theme, the one the cards are drawn in, #rrggbb.
+//   - internal/face/card/tokens.typ, for the cards' template: the page's face, by its first family; the page's own
+//     colour, each colour and each mix in the dark theme, the one the cards are drawn in, #rrggbb; and each length in
+//     rem, a number of rems, which the cards scale by their own rem.
 //
 // Its usage:
 //

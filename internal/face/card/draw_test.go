@@ -32,30 +32,23 @@ const (
 	cardHeight = 630
 )
 
-// The sizes the template sets words in, as it states them, in points: every word but a title, a title on one line and
-// a title on two
+// How the template says whether words were cut and whether block letters shrank
 const (
-	wordsSize        = 42
-	titleOneLineSize = 103.6
-	titleTwoLineSize = 89.6
+	whole    = false
+	cut      = true
+	asDrawn  = false
+	shrunken = true
 )
 
-// The cells of block letters the template draws in, in points: the résumé's name and a project's, the list's mark and
-// the mark in a post's header
-const (
-	nameCell = 22
-	listCell = 40
-	markCell = 11
-)
-
-// choice is what the template states it chose for a part of a card: the words it shows, cut or not, with the size it
-// sets them at, or the lines block letters stand on, with the cell it draws them at.
+// choice is what the template states it chose for a part of a card: the words it shows, whether it cut them and how
+// many lines they take; or the rows block letters stand on and whether they shrank to fit.
 type choice struct {
-	Part  string   `json:"part"`
-	Words string   `json:"words"`
-	Size  float64  `json:"size"`
-	Lines []string `json:"lines"`
-	Cell  float64  `json:"cell"`
+	Part   string   `json:"part"`
+	Words  string   `json:"words"`
+	Cut    bool     `json:"cut"`
+	Lines  int      `json:"lines"`
+	Rows   []string `json:"rows"`
+	Shrank bool     `json:"shrank"`
 }
 
 // A Typst of another version than the cards are drawn with is refused before it draws a card.
@@ -98,10 +91,10 @@ func TestAMarkTheBlockLettersCannotDrawIsRefused(test *testing.T) {
 }
 
 // The template fits each card's words and letters to it, and says what it chose: the résumé's name on the lines the
-// profile breaks it into; a project's name on one line where it fits, else broken after a hyphen onto two, at a smaller
-// cell only where two would not fit, or set in words where the block letters cannot draw it; the cards' mark; a post's
-// title on one line at its larger size, or on two at its smaller, cut after its last whole word that fits, and its lead
-// on the lines left; a word wider than the card cut inside it; and no words where there are none.
+// profile breaks it into; a project's name on one line where it fits, else broken after a hyphen onto two, shrunk only
+// where two would not fit, or set in words where the block letters cannot draw it; the cards' mark; a post's title on
+// one line, or on two, cut after its last whole word that fits, and its lead on the lines left; a word wider than the
+// card cut inside it; and no words where there are none.
 func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 	cases := []struct {
 		name  string
@@ -111,37 +104,37 @@ func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 		{
 			name:  "the résumé",
 			facts: Resume{Name: "Mira Example", Line: "Software Engineer", WayIn: fixtureWayIn},
-			want:  []choice{lettersChosen("title", nameCell, "MIRA", "EXAMPLE"), wordsChosen("line", "Software Engineer", wordsSize)},
+			want:  []choice{lettersChosen("title", asDrawn, "MIRA", "EXAMPLE"), wordsChosen("line", "Software Engineer", whole, 1)},
 		},
 		{
 			name:  "a project's name that fits on one line",
 			facts: Project{Name: "tidy-tool", Line: "Tidies files.", WayIn: fixtureWayIn},
-			want:  []choice{lettersChosen("title", nameCell, "TIDY-TOOL"), wordsChosen("line", "Tidies files.", wordsSize)},
+			want:  []choice{lettersChosen("title", asDrawn, "TIDY-TOOL"), wordsChosen("line", "Tidies files.", whole, 1)},
 		},
 		{
 			name:  "a project's name broken after a hyphen",
 			facts: Project{Name: "tidy-tool-for-files", Line: "Tidies files.", WayIn: fixtureWayIn},
-			want:  []choice{lettersChosen("title", nameCell, "TIDY-TOOL-", "FOR-FILES"), wordsChosen("line", "Tidies files.", wordsSize)},
+			want:  []choice{lettersChosen("title", asDrawn, "TIDY-TOOL-", "FOR-FILES"), wordsChosen("line", "Tidies files.", whole, 1)},
 		},
 		{
 			name:  "a project's name too long for two lines at its cell",
 			facts: Project{Name: "tidy-tool-for-every-folder", Line: "Tidies files.", WayIn: fixtureWayIn},
-			want:  []choice{lettersChosen("title", 15.85, "TIDY-TOOL-FOR-", "EVERY-FOLDER"), wordsChosen("line", "Tidies files.", wordsSize)},
+			want:  []choice{lettersChosen("title", shrunken, "TIDY-TOOL-FOR-", "EVERY-FOLDER"), wordsChosen("line", "Tidies files.", whole, 1)},
 		},
 		{
 			name:  "a project's name the block letters cannot draw",
 			facts: Project{Name: "tidy.tool", Line: "Tidies files.", WayIn: fixtureWayIn},
-			want:  []choice{wordsChosen("title", "tidy.tool", titleOneLineSize), wordsChosen("line", "Tidies files.", wordsSize)},
+			want:  []choice{wordsChosen("title", "tidy.tool", whole, 1), wordsChosen("line", "Tidies files.", whole, 1)},
 		},
 		{
 			name:  "a project with no tagline",
 			facts: Project{Name: "tidy-tool", Line: "", WayIn: fixtureWayIn},
-			want:  []choice{lettersChosen("title", nameCell, "TIDY-TOOL"), wordsChosen("line", "", wordsSize)},
+			want:  []choice{lettersChosen("title", asDrawn, "TIDY-TOOL"), wordsChosen("line", "", whole, 0)},
 		},
 		{
 			name:  "the list",
 			facts: List{Mark: fixtureMark, Line: "What the writer reads, and how.", WayIn: listWay},
-			want:  []choice{lettersChosen("title", listCell, "BLOG"), wordsChosen("line", "What the writer reads, and how.", wordsSize)},
+			want:  []choice{lettersChosen("title", asDrawn, "BLOG"), wordsChosen("line", "What the writer reads, and how.", whole, 1)},
 		},
 		{
 			name: "a post whose title stands on one line",
@@ -150,8 +143,8 @@ func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 				WayIn: postWay,
 			},
 			want: []choice{
-				lettersChosen("mark", markCell, "BLOG"), wordsChosen("title", "Reading slowly", titleOneLineSize),
-				wordsChosen("lead", "Why a page read twice is read once.", wordsSize),
+				lettersChosen("mark", asDrawn, "BLOG"), wordsChosen("title", "Reading slowly", whole, 1),
+				wordsChosen("lead", "Why a page read twice is read once.", whole, 1),
 			},
 		},
 		{
@@ -161,8 +154,8 @@ func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 				Lead: "A page read twice is read once, if the first reading was slow, and the margins kept what it said.", WayIn: postWay,
 			},
 			want: []choice{
-				lettersChosen("mark", markCell, "BLOG"), wordsChosen("title", "Why a page read twice is read…", titleTwoLineSize),
-				wordsChosen("lead", "A page read twice is read once, if the…", wordsSize),
+				lettersChosen("mark", asDrawn, "BLOG"), wordsChosen("title", "Why a page read twice is read…", cut, 2),
+				wordsChosen("lead", "A page read twice is read once, if the…", cut, 1),
 			},
 		},
 		{
@@ -172,8 +165,8 @@ func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 				WayIn: postWay,
 			},
 			want: []choice{
-				lettersChosen("mark", markCell, "BLOG"), wordsChosen("title", "Internationalizat…", titleTwoLineSize),
-				wordsChosen("lead", "Why a page read twice is read once.", wordsSize),
+				lettersChosen("mark", asDrawn, "BLOG"), wordsChosen("title", "Internationalizat…", cut, 1),
+				wordsChosen("lead", "Why a page read twice is read once.", whole, 1),
 			},
 		},
 	}
@@ -187,14 +180,14 @@ func TestTheTemplateFitsEachCardsWordsAndStatesTheChoices(test *testing.T) {
 	}
 }
 
-// wordsChosen is the choice of words shown for a part of a card, at a size.
-func wordsChosen(part, words string, size float64) choice {
-	return choice{Part: part, Words: words, Size: size, Lines: nil, Cell: 0}
+// wordsChosen is the choice of the words shown for a part of a card, whether they were cut and the lines they take.
+func wordsChosen(part, words string, wasCut bool, lines int) choice {
+	return choice{Part: part, Words: words, Cut: wasCut, Lines: lines, Rows: nil, Shrank: false}
 }
 
-// lettersChosen is the choice of the lines block letters stand on for a part of a card, at a cell.
-func lettersChosen(part string, cell float64, lines ...string) choice {
-	return choice{Part: part, Words: "", Size: 0, Lines: lines, Cell: cell}
+// lettersChosen is the choice of the rows block letters stand on for a part of a card, and whether they shrank.
+func lettersChosen(part string, shrank bool, rows ...string) choice {
+	return choice{Part: part, Words: "", Cut: false, Lines: 0, Rows: rows, Shrank: shrank}
 }
 
 // choicesOf are the choices the template states for a card's facts, as Typst's query of them says.

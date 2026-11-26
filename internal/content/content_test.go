@@ -46,7 +46,6 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a role ended by the old word", original: "end: 2023-03", replacement: "end: present", want: `profile.yaml: experience.roles[1].end "present" is no month, YYYY-MM, nor current`},
 		{name: "a role whose end is left empty", original: "end: 2023-03", replacement: "end:", want: `profile.yaml: experience.roles[1].end "" is no month, YYYY-MM, nor current`},
 		{name: "a role that ends before it starts", original: "end: 2023-03", replacement: "end: 2019-01", want: `profile.yaml: experience.roles[1].end "2019-01" comes before the start, "2020-01"`},
-		{name: "a technology with no name", original: "technologies: [Go, ", replacement: `technologies: ["", `, want: "profile.yaml: experience.roles[0].technologies[0] is empty"},
 		{name: "a slug with capitals", original: "slug: tidy-tool", replacement: "slug: Tidy-Tool", want: `profile.yaml: projects[1].slug "Tidy-Tool" is no slug: small letters and digits, joined by hyphens`},
 		{name: "a slug two projects share", original: "slug: other-tool", replacement: "slug: tidy-tool", want: `profile.yaml: projects[1].slug "tidy-tool" names another project too`},
 		{name: "a stack with no name", original: "stack: [Penlight, LPeg]", replacement: `stack: [Penlight, ""]`, want: "profile.yaml: projects[1].stack[1] is empty"},

@@ -32,7 +32,6 @@ experience:
       title: Senior Engineer
       start: 2023-04
       end: current
-      technologies: [Go, Docker]
       bullets:
         - "Kept the ==queue== moving"
       details:

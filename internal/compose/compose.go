@@ -194,7 +194,7 @@ func ways(person content.Person, site content.Site, words content.Words) []docum
 }
 
 // experienceSection is the author's work: its line, where the profile writes one, and the skills it puts forward,
-// each by its name and how long it was used, where it puts any; then each role.
+// each by its name and how long it was used, where it puts any; then each role, with the technologies it worked with.
 func experienceSection(experience content.Experience, groups []content.SkillGroup, words content.Words) document.Section {
 	blocks := make([]document.Block, 0, len(experience.Roles))
 	if experience.Line != "" {
@@ -208,12 +208,28 @@ func experienceSection(experience content.Experience, groups []content.SkillGrou
 			Period:       periodOf(role.Start, role.End, words),
 			Title:        markedSpans(role.Company),
 			Subtitle:     markedSpans(role.Title),
-			Technologies: role.Technologies,
+			Technologies: technologiesOf(role.Company, groups),
 			Points:       points(role.Bullets),
 			Details:      paragraphs(role.Details),
 		})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: blocks}
+}
+
+// technologiesOf are the names of the skills whose sources name a company, in the profile's order of groups and
+// skills, a skill still being learnt among them: a skill's sources are the one place the profile says where it was
+// used, a role or anything else.
+func technologiesOf(company string, groups []content.SkillGroup) []string {
+	named := plainText(company)
+	technologies := []string{}
+	for _, group := range groups {
+		for _, skill := range group.Skills {
+			if slices.ContainsFunc(skill.Sources, func(source string) bool { return plainText(source) == named }) {
+				technologies = append(technologies, skill.Name)
+			}
+		}
+	}
+	return technologies
 }
 
 // putForward are the skills of names the groups list, each labelled by its name, its value how long it was used, as

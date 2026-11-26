@@ -126,6 +126,23 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 	}
 }
 
+// A role's technologies are the skills whose sources name its company, in the profile's order of groups and skills,
+// a skill still being learnt among them.
+func TestARolesTechnologiesAreTheSkillsItsCompanyIsASourceOf(test *testing.T) {
+	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil).Blocks)
+	got := map[string][]string{}
+	for _, role := range document.BriefOf(sections).Roles {
+		got[document.PlainText(role.Title)] = role.Technologies
+	}
+	want := map[string][]string{
+		"Northwind": {"Shell scripts for the build machines", "Docker"},
+		"Southwind": {"Shell scripts for the build machines"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("technologies by company = %q, want %q", got, want)
+	}
+}
+
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {

@@ -29,7 +29,7 @@ Ships tools a team **leans on** every day.
 
 04/2023 – present
 
-Go · Docker
+Shell scripts for the build machines · Docker
 
 - Kept the **queue** moving
 
@@ -40,6 +40,8 @@ Joined a team of four that ran a **message queue** for every service.
 ### Southwind — Engineer
 
 01/2020 – 03/2023
+
+Shell scripts for the build machines
 
 - Wrote the first parser
 - Kept the build green through three moves of the office, two mergers and one long winter of outages

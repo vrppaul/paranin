@@ -65,16 +65,15 @@ type Experience struct {
 	Roles      []Role   `yaml:"roles"`
 }
 
-// Role is one place of work: its technologies by name, its points, and its details, paragraphs that tell it at
-// length. A role still held ends "current".
+// Role is one place of work: its points, and its details, paragraphs that tell it at length. A role still held ends
+// "current".
 type Role struct {
-	Company      string   `yaml:"company"`
-	Title        string   `yaml:"title"`
-	Start        Month    `yaml:"start"`
-	End          Month    `yaml:"end"`
-	Technologies []string `yaml:"technologies"`
-	Bullets      []string `yaml:"bullets"`
-	Details      []string `yaml:"details"`
+	Company string   `yaml:"company"`
+	Title   string   `yaml:"title"`
+	Start   Month    `yaml:"start"`
+	End     Month    `yaml:"end"`
+	Bullets []string `yaml:"bullets"`
+	Details []string `yaml:"details"`
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of

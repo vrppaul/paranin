@@ -310,14 +310,10 @@ func listsSkill(groups []SkillGroup, name string) bool {
 	return false
 }
 
-// inspectRole holds a role at a place to its company, its title and a name for each technology, and its months to
-// known ones in order.
+// inspectRole holds a role at a place to its company, its title, and its months to known ones in order.
 func inspectRole(inspection *inspection, place string, role Role) {
 	inspection.require(place+".company", role.Company)
 	inspection.require(place+".title", role.Title)
-	for index, technology := range role.Technologies {
-		inspection.require(fmt.Sprintf("%s.technologies[%d]", place, index), technology)
-	}
 	if role.Start.Kind() != MonthKnown {
 		inspection.add(place+".start", unknownMonth, role.Start.Written())
 	}

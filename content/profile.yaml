@@ -56,7 +56,8 @@ facts:
   - {label: open source, value: 2 tools for AI agents}
 
 # The experience's line is the one thing a reader should keep; it puts forward skills by their names in skill_groups,
-# whose durations say how long. A role names its technologies as written, and tells itself at length in its details.
+# whose durations say how long. A role's technologies are the skills whose sources name its company, and it tells
+# itself at length in its details.
 experience:
   line: "[the one thing you want a reader to keep]"
   put_forward: [Python, Kubernetes, LLM agents, MCP]
@@ -84,7 +85,6 @@ experience:
       title: Backend Developer
       start: 2020-08
       end: 2022-01
-      technologies: [Python, Kubernetes]
       bullets:
         - Built new services from scratch with business stakeholders, from first idea to production
         - Migrated services from Python 2 to Python 3, added Kubernetes support, moved legacy databases to new infrastructure
@@ -96,7 +96,6 @@ experience:
       title: Machine Learning Developer
       start: 2019-01
       end: 2020-07
-      technologies: [Python, Kotlin, scikit-learn]
       bullets:
         - NLP topic extraction with scikit-learn behind a C# / ASP.NET backend; context search in Python
         - "Logistics optimisation: data analysis in Python, solver in Kotlin"
@@ -108,7 +107,6 @@ experience:
       title: UX Designer
       start: 2017-11
       end: 2018-09
-      technologies: [UX design]
       bullets:
         - Personas, prototypes and usability testing for a major web app in an agile team
     - company: Freelance

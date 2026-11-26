@@ -55,18 +55,18 @@ func TestASearchScrollsToItsFirstMatch(test *testing.T) {
 }
 
 // n and N show the next match and the one before, round from the last to the first, each match a step of its own.
-// The experience tab holds "the" four times, the last two on one line.
+// The experience tab holds "the" six times, the last two on one line.
 func TestTheMatchKeysGoRoundTheMatches(test *testing.T) {
 	cases := []struct {
 		name  string
 		keys  []string
 		holds string
 	}{
-		{name: "n shows the next match", keys: []string{"n"}, holds: "/the [2/4]"},
-		{name: "two matches of one line are two steps", keys: []string{"n", "n", "n"}, holds: "/the [4/4]"},
-		{name: "n goes round to the first", keys: []string{"n", "n", "n", "n"}, holds: "/the [1/4]"},
-		{name: "N goes round to the last", keys: []string{"N"}, holds: "/the [4/4]"},
-		{name: "N goes back", keys: []string{"n", "n", "N"}, holds: "/the [2/4]"},
+		{name: "n shows the next match", keys: []string{"n"}, holds: "/the [2/6]"},
+		{name: "two matches of one line are two steps", keys: []string{"n", "n", "n", "n", "n"}, holds: "/the [6/6]"},
+		{name: "n goes round to the first", keys: []string{"n", "n", "n", "n", "n", "n"}, holds: "/the [1/6]"},
+		{name: "N goes round to the last", keys: []string{"N"}, holds: "/the [6/6]"},
+		{name: "N goes back", keys: []string{"n", "n", "N"}, holds: "/the [2/6]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -90,7 +90,7 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 		holds string
 	}{
 		{name: "a match after the top line", keys: slices.Repeat([]string{"j"}, pastTheFirstKept), query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
-		{name: "a match on the top line", keys: []string{"j"}, query: "the", after: []string{"enter"}, holds: "/the [1/4]"},
+		{name: "a match on the top line", keys: []string{"j"}, query: "the", after: []string{"enter"}, holds: "/the [1/6]"},
 		{name: "the count while the reader types", keys: slices.Repeat([]string{"j"}, pastTheFirstKept), query: "kept", after: nil, holds: "[2/2]"},
 	}
 	for _, testCase := range cases {
@@ -105,7 +105,7 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 
 // n and N go on from the match shown even where the page can scroll no further, so no match is skipped; each tab
 // keeps the match it showed while the reader looks at another; and a tab that has shown none starts at its top line,
-// as Enter does, and N there goes to the match before it. The experience tab holds an e 48 times, four of them on its
+// as Enter does, and N there goes to the match before it. The experience tab holds an e 54 times, four of them on its
 // top line, and the projects tab 11 times, its top line among them.
 func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 	cases := []struct {
@@ -113,8 +113,8 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 		keys  []string
 		holds string
 	}{
-		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [47/48]"},
-		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/48]"},
+		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [53/54]"},
+		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/54]"},
 		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/11]"},
 		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [11/11]"},
 	}
@@ -149,7 +149,7 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 		lacks string
 	}{
 		{name: "typing shows after the slash", text: "pars", keys: nil, holds: "/pars", lacks: "tab next"},
-		{name: "the matches are counted as the reader types", text: "the", keys: nil, holds: "[1/4]", lacks: "E486"},
+		{name: "the matches are counted as the reader types", text: "the", keys: nil, holds: "[1/6]", lacks: "E486"},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
 		{name: "a backspace takes a letter of two code points back whole", text: "parser" + accentedLetter, keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "E486"},
 		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: experienceTop, lacks: "esc cancel"},
@@ -175,7 +175,7 @@ func TestTheSearchAndWhatTheCommandLineSaidEnd(test *testing.T) {
 		keys  []string
 		lacks string
 	}{
-		{name: "a key wipes what the command line said", keys: []string{"j"}, lacks: "[1/4]"},
+		{name: "a key wipes what the command line said", keys: []string{"j"}, lacks: "[1/6]"},
 		{name: "Esc takes the search away", keys: []string{"esc", "n"}, lacks: "/the"},
 		{name: "a second slash opens on nothing typed", keys: []string{"/"}, lacks: "the"},
 	}
@@ -221,8 +221,8 @@ func TestTheNextMatchFollowsThePage(test *testing.T) {
 		keys  []string
 		holds string
 	}{
-		{name: "from the match shown", keys: []string{"n"}, holds: "/the [2/4]"},
-		{name: "from the top line after a scroll to the end", keys: []string{"G", "n"}, holds: "/the [3/4]"},
+		{name: "from the match shown", keys: []string{"n"}, holds: "/the [2/6]"},
+		{name: "from the top line after a scroll to the end", keys: []string{"G", "n"}, holds: "/the [5/6]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -251,7 +251,7 @@ func TestANewSearchForgetsTheMatchesShown(test *testing.T) {
 func TestAResizeForgetsTheMatchesShown(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 	resized, _ := pressed(test, typed(test, model, "e"), "enter").Update(tea.WindowSizeMsg{Width: commonWidth, Height: shortHeight})
-	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/48]") {
+	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/54]") {
 		test.Errorf("after a resize and n the screen =\n%s\nwant the match on the top line", screen)
 	}
 }
@@ -262,7 +262,7 @@ func TestEscapeGluedToAKeyIsReadAsBoth(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 	model = pressed(test, pressed(test, typed(test, model, "the"), "enter"), "/")
 	next, _ := model.Update(tea.KeyPressMsg{Code: 'n', Mod: tea.ModAlt})
-	if screen := screenOf(test, as[Model](test, next)); !strings.Contains(screen, "/the [2/4]") {
+	if screen := screenOf(test, as[Model](test, next)); !strings.Contains(screen, "/the [2/6]") {
 		test.Errorf("after Esc glued to n the screen =\n%s\nwant the search ended and the next match", screen)
 	}
 }
@@ -314,7 +314,7 @@ func TestASearchLeftKeepsTheOneBefore(test *testing.T) {
 		test.Run(testCase.name, func(test *testing.T) {
 			model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 			model = pressed(test, typed(test, pressed(test, typed(test, model, "the"), "enter", "/"), testCase.text), testCase.keys...)
-			if screen := screenOf(test, pressed(test, model, "n")); !strings.Contains(screen, "/the [2/4]") {
+			if screen := screenOf(test, pressed(test, model, "n")); !strings.Contains(screen, "/the [2/6]") {
 				test.Errorf("after typing %q, %q and n the screen =\n%s\nwant the second match of the search before", testCase.text,
 					testCase.keys, screen)
 			}

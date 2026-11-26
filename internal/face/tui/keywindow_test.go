@@ -111,7 +111,7 @@ func TestTheWindowOfKeysOpensOnlyWhole(test *testing.T) {
 					testCase.width, testCase.height, below, !testCase.opened)
 			}
 			model = pressed(test, model, "esc", "n")
-			if below := atTheFoot(screenOf(test, model)); strings.Contains(below, "/the [2/4]") != testCase.opened {
+			if below := atTheFoot(screenOf(test, model)); strings.Contains(below, "/the [2/6]") != testCase.opened {
 				test.Errorf("at %dx%d after a search, ?, Esc and n the footer = %q, want the window opened: %t",
 					testCase.width, testCase.height, below, testCase.opened)
 			}

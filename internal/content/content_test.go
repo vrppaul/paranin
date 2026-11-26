@@ -63,6 +63,23 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a release with no changelog", original: "\n      changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md", replacement: "", want: `profile.yaml: projects[1].release.changelog "" is no absolute web address`},
 		{name: "a section with no title", original: "title: Why", replacement: `title: ""`, want: "profile.yaml: projects[1].sections[0].title is empty"},
 		{name: "a detail with no title", original: "title: Flags", replacement: `title: ""`, want: "profile.yaml: projects[1].details[0].title is empty"},
+		{name: "a clip that shows nothing", original: "shows: \"`tidy .` tidying a folder\"", replacement: `shows: ""`, want: "profile.yaml: projects[1].sections[1].clip.shows is empty"},
+		{
+			name: "a clip of no MP4", original: "file: tidying.mp4", replacement: "file: tidying.mov",
+			want: `profile.yaml: projects[1].sections[1].clip.file "tidying.mov" is no recording of the project's own folder, named in small letters and digits, joined by hyphens, then .mp4: the site plays an MP4 alone`,
+		},
+		{
+			name: "a clip whose recording is missing", original: "file: tidying.mp4", replacement: "file: untidy.mp4",
+			want: `profile.yaml: projects[1].sections[1].clip.file "untidy.mp4" cannot be read from the project's folder, projects/tidy-tool: file does not exist`,
+		},
+		{
+			name: "a clip whose recording holds no length", original: "file: tidying.mp4", replacement: "file: unmeasured.mp4",
+			want: `profile.yaml: projects[1].sections[1].clip.file "unmeasured.mp4" holds no length a reader can read: no "moov" box`,
+		},
+		{
+			name: "a clip whose still is of no picture's type", original: "still: tidying.png", replacement: "still: tidying.gif",
+			want: `profile.yaml: projects[1].sections[1].clip.still "tidying.gif" is of no type the site serves a picture as: .jpeg, .jpg, .png, .svg, .webp`,
+		},
 		{name: "a link with no name", original: "name: source", replacement: `name: ""`, want: "profile.yaml: projects[1].sections[1].links[0].name is empty"},
 		{name: "a link with no line", original: "line: where the code lives", replacement: `line: ""`, want: "profile.yaml: projects[1].sections[1].links[0].line is empty"},
 		{

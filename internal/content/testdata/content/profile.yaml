@@ -79,6 +79,7 @@ projects:
         points:
           - Sorts the lines
           - Keeps the ==blank== ones
+        clip: {file: tidying.mp4, still: tidying.png, shows: "`tidy .` tidying a folder"}
         links:
           - {name: source, url: https://github.test/mira/tidy, line: where the code lives}
           - {name: manual, url: https://docs.example.test/tidy, line: every flag it takes}

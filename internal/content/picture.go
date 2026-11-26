@@ -107,7 +107,7 @@ func (checked *bodyInspection) inspectPictureName(name string, line int) (pictur
 	switch {
 	case !known:
 		checked.inspection.addAtLine(line, pictureTypeProblem, name, strings.Join(slices.Sorted(maps.Keys(types)), kindSeparator))
-	case !regexp.MustCompile(slugPattern).MatchString(strings.TrimSuffix(name, ending)):
+	case !namedInFolder(name, ending):
 		checked.inspection.addAtLine(line, pictureNameProblem, name)
 	default:
 		return format, true
@@ -115,10 +115,16 @@ func (checked *bodyInspection) inspectPictureName(name string, line int) (pictur
 	return format, false
 }
 
+// namedInFolder is whether a file's name is a file of its folder's own, a picture's or a recording's: a slug, then the
+// ending of its type, so no name leads out of the folder and each is served as it is named.
+func namedInFolder(name, ending string) bool {
+	return regexp.MustCompile(slugPattern).MatchString(strings.TrimSuffix(name, ending))
+}
+
 // readPicture reads a picture of the post's folder by its name, of a format the site serves, and keeps it; or finds it
 // unread, missing among others, past the size a picture may hold, or reading as no picture of its format.
 func (checked *bodyInspection) readPicture(name string, format pictureType, line int) {
-	body, err := readHeld(checked.folder, path.Join(checked.place, name))
+	body, err := readHeld(checked.folder, path.Join(checked.place, name), largestPicture)
 	switch {
 	case errors.Is(err, errIrregularFile):
 		checked.inspection.addAtLine(line, pictureFileProblem, name)
@@ -141,10 +147,10 @@ func (checked *bodyInspection) readPicture(name string, format pictureType, line
 // The fault of a picture that is no regular file, which no read opens
 var errIrregularFile = errors.New("no regular file")
 
-// readHeld is what a regular file of a folder holds, opened once and read no further than one byte past the most a
-// picture may hold, however large it is or grows while it is read; anything else, as a named pipe, whose read would
-// wait for a writer, is never opened. A fault is its cause alone, since whoever asked names the file.
-func readHeld(folder fs.FS, file string) ([]byte, error) {
+// readHeld is what a regular file of a folder holds, opened once and read no further than one byte past the most it
+// may hold, a picture or a recording, however large it is or grows while it is read; anything else, as a named pipe,
+// whose read would wait for a writer, is never opened. A fault is its cause alone, since whoever asked names the file.
+func readHeld(folder fs.FS, file string, most int) ([]byte, error) {
 	info, err := fs.Stat(folder, file)
 	if err != nil {
 		return nil, causeOf(err)
@@ -156,7 +162,7 @@ func readHeld(folder fs.FS, file string) ([]byte, error) {
 	if err != nil {
 		return nil, causeOf(err)
 	}
-	body, err := io.ReadAll(io.LimitReader(opened, largestPicture+1))
+	body, err := io.ReadAll(io.LimitReader(opened, int64(most)+1))
 	if err := errors.Join(err, opened.Close()); err != nil {
 		return nil, causeOf(err)
 	}

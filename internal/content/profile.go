@@ -1,5 +1,7 @@
 package content
 
+import "time"
+
 // The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, [text] a gap
 // the author has still to fill, and `text` code, inside which no mark is read. Prose and titles carry them: a name, a
 // title, a line, a point, a paragraph, a description, a value. A label, a place, a language's name, a stack's or a
@@ -125,12 +127,34 @@ type Release struct {
 	Changelog WebAddress `yaml:"changelog"`
 }
 
-// Section is a titled part of a project's page: its paragraphs, then its points; and the links that add to it.
+// Section is a titled part of a project's page: its paragraphs, then its points; and what adds to it, its clip and its
+// links.
 type Section struct {
 	Title      string   `yaml:"title"`
 	Paragraphs []string `yaml:"paragraphs"`
 	Points     []string `yaml:"points"`
+	Clip       *Clip    `yaml:"clip"`
 	Links      []Link   `yaml:"links"`
+}
+
+// Clip is a recording of a project at work a section of its page plays (DESIGN.md, ProjectSection): its file, an MP4,
+// and its still, a picture, both files of the project's own folder, and a line on what it shows. The load reads both
+// files whole, and the recording's length from its file.
+type Clip struct {
+	File  string `yaml:"file"`
+	Still string `yaml:"still"`
+	Shows string `yaml:"shows"`
+	// Recording and Picture are the clip's two files as the load reads them
+	Recording Recording `yaml:"-"`
+	Picture   Picture   `yaml:"-"`
+}
+
+// Recording is a recording a project's page plays, read whole as the content loads: the type it is sent as, how long
+// it runs, read from the file, and what it holds.
+type Recording struct {
+	MediaType string
+	Length    time.Duration
+	Body      []byte
 }
 
 // Link is a place outside the site a section of a project's page leads to: its name, its address and a line on what

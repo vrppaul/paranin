@@ -124,7 +124,9 @@ experience:
 
 # A project's install is its command, and its alternatives, each a note on when to take it instead and a command. Its
 # release names its newest release and its changelog, both or none; its licence is a word. A section of its page takes
-# its title, then its paragraphs: and its points:, one of them at least.
+# its title, then its paragraphs: and its points:, one of them at least; its clip:, a recording (an MP4) and its still,
+# files of projects/<slug>/, and what it shows, the length read from the file; and its links:. The details: after its
+# sections take the same.
 projects:
   - slug: claude-review
     name: claude-review

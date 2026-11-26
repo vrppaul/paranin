@@ -92,6 +92,7 @@ func Load(folder fs.FS) (*Snapshot, error) {
 	}
 	words, wordFaults := inspectCatalogues(catalogues)
 	faults = inspectProfile(profile)
+	faults = append(faults, readClips(folder, profile.Projects)...)
 	faults = append(faults, inspectCharacters(profileFile, profileDocument)...)
 	faults = append(faults, wordFaults...)
 	faults = append(faults, misplacedWords...)

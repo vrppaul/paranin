@@ -28,7 +28,7 @@ func writtenBlock(block Block) (Block, bool) {
 		typed.Blocks = WrittenBlocks(typed.Blocks)
 		return typed, true
 	case Facts:
-		typed.List = writtenFacts(typed.List)
+		typed.List = WrittenFacts(typed.List)
 		return typed, len(typed.List) > 0
 	case ExperienceHead:
 		if !written(typed.Line) {
@@ -52,15 +52,16 @@ func writtenBlock(block Block) (Block, bool) {
 		typed.Sections = sections
 		return typed, true
 	case Card:
-		typed.Facts = writtenFacts(typed.Facts)
+		typed.Facts = WrittenFacts(typed.Facts)
 		return typed, true
 	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Side, Contents, Checks, Skills, Posts:
 	}
 	return block, true
 }
 
-// writtenFacts are the facts whose values hold a written word, in their order.
-func writtenFacts(facts []Fact) []Fact {
+// WrittenFacts are the facts whose values hold a written word, in their order, as WrittenBlocks keeps them: a brief's
+// among them.
+func WrittenFacts(facts []Fact) []Fact {
 	return slices.DeleteFunc(slices.Clone(facts), func(fact Fact) bool { return !written(fact.Value) })
 }
 

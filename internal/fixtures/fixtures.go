@@ -89,6 +89,21 @@ func HeadOf(page document.Page, title []document.Span) document.Head {
 	}
 }
 
+// TabPhrases are the phrases of a document a face that shows it tab by tab (document.TabsOf) must show, as the page
+// and the TUI show it: the head's; on an opening with a brief, the brief's facts and the ways to reach the author; then
+// every tab's blocks, each past the opening under its title.
+func TabPhrases(composed document.Document) []string {
+	tabs := document.TabsOf(composed)
+	blocks := slices.Clone(tabs.Opening.Blocks)
+	if briefed := tabs.Opening.Brief; briefed != nil {
+		blocks = append(blocks, briefed.Brief, document.Facts{Kind: document.FactsWays, List: briefed.Ways})
+	}
+	for _, tab := range tabs.Rest {
+		blocks = append(blocks, document.Section{Title: tab.Title, Name: "", Blocks: tab.Blocks})
+	}
+	return document.Phrases(document.Document{Head: composed.Head, Blocks: blocks})
+}
+
 // DocumentOf is the document among documents that is a page, or the test's end where none is.
 func DocumentOf(test *testing.T, documents []document.Document, page document.Page) document.Document {
 	test.Helper()

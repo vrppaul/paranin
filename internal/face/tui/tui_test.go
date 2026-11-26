@@ -35,7 +35,7 @@ const (
 
 // The résumé's first tab holds its facts as a brief beside the name, as neofetch prints a system's, each once, as
 // written: the address, the subtitle and the place, the facts; the career's line under them, each role by its
-// company, the one still held running to the present; then the summary.
+// company, the one still held running to the present.
 func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 	screen := screenOf(test, fixtureModel(test, commonWidth, tallHeight))
 	cases := []struct {
@@ -48,7 +48,6 @@ func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 		{name: "the role still held", want: "Northwind"},
 		{name: "a role before it", want: "Southwind"},
 		{name: "the present", want: "present"},
-		{name: "the summary", want: "Writes software for people who read it."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -61,27 +60,41 @@ func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 
 // A brief taller than the name's column stands whole beside it.
 func TestABriefTallerThanTheNameStandsWhole(test *testing.T) {
-	// more facts than the name's column has rows
-	const keptFacts = 12
-	facts := append(slices.Repeat([]document.Fact{{Label: "kept", Value: textOf("a value")}}, keptFacts), document.Fact{Label: "last", Value: textOf("the last value")})
+	// the facts before the brief's last, each value wrapping onto more lines than the name's column has rows
+	const (
+		keptFacts     = 2
+		valueRepeated = 40
+		repeatedValue = "a value "
+	)
+	long := document.Fact{Label: "kept", Value: textOf(strings.Repeat(repeatedValue, valueRepeated))}
+	facts := append(slices.Repeat([]document.Fact{long}, keptFacts), document.Fact{Label: "last", Value: textOf("the last value")})
 	model := handResume(test, "home", commonWidth, tallHeight, document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: facts}}})
 	if page := aboveTheFooter(screenOf(test, model)); !strings.Contains(page, "the last value") {
 		test.Errorf("the first tab =\n%s\nwant the brief's last fact, %q", page, "the last value")
 	}
 }
 
-// The blocks the first section holds beside its facts, before them and after them, stand on the first tab under the
-// brief.
-func TestTheBlocksBesideTheBriefStandOnTheFirstTab(test *testing.T) {
+// The first tab briefs the reader with the first three facts the first section holds, and holds nothing more of it:
+// the blocks beside the facts and the facts after the third stand on no tab.
+func TestTheFirstTabBriefsTheFirstThreeFactsAlone(test *testing.T) {
+	facts := []document.Fact{}
+	for _, label := range []string{"first", "second", "third", "fourth"} {
+		facts = append(facts, document.Fact{Label: label, Value: textOf(label + " value")})
+	}
 	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{
 		document.Paragraph{Spans: textOf("said before")},
-		document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}},
+		document.Facts{Kind: document.FactsDetails, List: facts},
 		document.Paragraph{Spans: textOf("said after")},
 	}}
 	page := aboveTheFooter(screenOf(test, handResume(test, "home", commonWidth, tallHeight, section)))
-	for _, want := range []string{"said before", "said after"} {
+	for _, want := range []string{"first value", "second value", "third value"} {
 		if !strings.Contains(page, want) {
 			test.Errorf("the first tab =\n%s\nholds no %q", page, want)
+		}
+	}
+	for _, unwanted := range []string{"fourth value", "said before", "said after"} {
+		if strings.Contains(page, unwanted) {
+			test.Errorf("the first tab =\n%s\nholds %q", page, unwanted)
 		}
 	}
 }
@@ -175,28 +188,23 @@ func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
 	}
 }
 
-// The first section the first tab takes in names the tab, and what it holds beside its facts stands on the tab
-// under the career's line; where none joins, the tab is named by the author.
+// The first section the first tab takes in names the tab; where none joins, the tab is named by the author.
 func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	paragraph := document.Paragraph{Spans: textOf("the door")}
 	cases := []struct {
-		name       string
-		blocks     []document.Block
-		window     string
-		doorInside bool
+		name   string
+		blocks []document.Block
+		window string
 	}{
-		{name: "a section of facts", blocks: []document.Block{document.Section{Title: textOf("Brief"), Blocks: []document.Block{paragraph, facts}}}, window: "1:brief*", doorInside: true},
-		{name: "no section of facts", blocks: []document.Block{document.Section{Title: textOf("Work"), Blocks: []document.Block{paragraph}}}, window: "1:home*", doorInside: false},
+		{name: "a section of facts", blocks: []document.Block{document.Section{Title: textOf("Brief"), Blocks: []document.Block{paragraph, facts}}}, window: "1:brief*"},
+		{name: "no section of facts", blocks: []document.Block{document.Section{Title: textOf("Work"), Blocks: []document.Block{paragraph}}}, window: "1:home*"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			screen := screenOf(test, handResume(test, "home", commonWidth, tallHeight, testCase.blocks...))
 			if footer := footerOf(screen); !strings.Contains(footer, testCase.window) {
 				test.Errorf("the footer = %q, want the first tab named %q", footer, testCase.window)
-			}
-			if inside := strings.Contains(aboveTheFooter(screen), document.PlainText(paragraph.Spans)); inside != testCase.doorInside {
-				test.Errorf("the first tab =\n%s\nholds the section's paragraph: %t, want %t", screen, inside, testCase.doorInside)
 			}
 		})
 	}
@@ -701,9 +709,10 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 	}
 }
 
-// Every phrase of a page reaches the TUI on one tab or another: of the résumé and of a project's page, so a terminal
-// reader reads every fact a browser reader reads, and of the health report and the list of skills :checkhealth and
-// :Lazy show, each at any width. A word wider than a narrow terminal breaks across lines, so the phrases are read
+// Every phrase of a page's tabs reaches the TUI on one tab or another: of the résumé and of a project's page, so a
+// terminal reader reads every fact a browser reader reads, and of the health report and the list of skills
+// :checkhealth and :Lazy show, each at any width. A word wider than a narrow terminal breaks across lines, so the
+// phrases are read
 // with every space and break taken out. The screen is read row by row, so the résumé is read where it is narrow:
 // wider, its brief stands beside the name, and a row holds a piece of each. Its opening shows two phrases by its form
 // (ADR-0003): the address heads the brief without its label, and the facts stand in the brief without their
@@ -762,7 +771,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 				model = pressed(test, model, "l")
 			}
 			read := strings.Join(strings.Fields(strings.NewReplacer(frameDown, "", codeGoesOnMark, "").Replace(strings.Join(screens, " "))), "")
-			for _, phrase := range document.Phrases(testCase.shown) {
+			for _, phrase := range fixtures.TabPhrases(testCase.shown) {
 				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) && !slices.Contains(testCase.byForm, phrase) {
 					test.Errorf("no tab of %s holds %q", testCase.name, phrase)
 				}

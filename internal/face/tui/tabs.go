@@ -86,14 +86,12 @@ type tabBody interface {
 
 // briefOpening is the résumé's opening as neofetch prints a system, where its first section holds details: the head,
 // beside it those details as the brief, headed by the address, the first way to reach the author, the other ways after
-// them; the roles for the career's line under them; then the blocks before the first section and those the section
-// holds beside its details.
+// them; and the roles for the career's line under them.
 type briefOpening struct {
 	head    document.Head
 	brief   []document.Fact
 	address []document.Span
 	career  []document.Entry
-	blocks  []document.Block
 	ways    []document.Fact
 }
 
@@ -176,7 +174,7 @@ func tabsOf(composed document.Document) []tab {
 func openingBody(composed document.Document, opening document.Opening) tabBody {
 	head, blocks := composed.Head, opening.Blocks
 	if briefed := opening.Brief; briefed != nil {
-		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, blocks: blocks, ways: briefed.OtherWays()}
+		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, ways: briefed.OtherWays()}
 	}
 	switch head.Page.Kind {
 	case document.PageProject:
@@ -218,12 +216,13 @@ type layout struct {
 	today time.Time
 }
 
-// tab lays out a tab as its body says: an opening's head, then its blocks; a section under its title, in the titles'
-// font; another section as it is; the blog's list and a post as list.go and post.go lay them out.
+// tab lays out a tab as its body says: the résumé's brief alone, as about.go lays it out; another opening's head, then
+// its blocks; a section under its title, in the titles' font; another section as it is; the blog's list and a post as
+// list.go and post.go lay them out.
 func (layout layout) tab(shown tab) laidTab {
 	switch body := shown.body.(type) {
 	case briefOpening:
-		return linesAlone(stacked(layout.about(body), layout.blocks(body.blocks, 0)))
+		return linesAlone(layout.about(body))
 	case projectOpening:
 		return linesAlone(stacked(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)), layout.projectEnd(body.head)))
 	case reportOpening:

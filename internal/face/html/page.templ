@@ -309,20 +309,11 @@ templ (writer PageWriter) pageBlocks(blocks []document.Block, ownClasses ...stri
 	</div>
 }
 
-// resumeMain is the résumé's opening: its first screen, then the blocks that are no section, then its first section.
-templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
-	@writer.firstScreen(head, parts)
-	for _, block := range parts.others {
-		@writer.block(block, firstHeadingDepth)
-	}
-	@writer.openingSection(parts.first)
-}
-
-// firstScreen is the résumé's first screen (DESIGN.md, Pages): the greeting, the author's name in block letters and
-// the lead in one column; beside it the brief, its parts a row apart: the address heading it, the subtitle and the
-// place; the facts; and what the brief offers to do, side by side: the primary button that writes to the author,
-// which opens the form once there is one (TODO, Hosting) and does nothing until then, and the command that reaches the
-// site over ssh, to copy.
+// firstScreen is the résumé's first screen (DESIGN.md, Pages), its opening whole: the greeting, the author's name in
+// block letters and the lead in one column; beside it the brief, its parts a row apart: the address heading it, the
+// subtitle and the place; the facts, where any is written; and what the brief offers to do, side by side: the primary
+// button that writes to the author, which opens the form once there is one (TODO, Hosting) and does nothing until
+// then, and the command that reaches the site over ssh, to copy.
 templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 	<div class="first-screen">
 		<div class="introduction">
@@ -377,7 +368,9 @@ templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
 				<p class="place">{ head.Place }</p>
 			}
 		</div>
-		@writer.facts(parts.brief)
+		if len(parts.brief) > 0 {
+			@writer.facts(parts.brief)
+		}
 		<div class="actions">
 			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
 			@command(writer.frame.ssh.Command)
@@ -924,13 +917,6 @@ templ (writer PageWriter) resumeSection(blocks []document.Block, heading templ.C
 			}
 		</div>
 	</section>
-}
-
-// letteredHeadingTwo is a section's title in block letters, named by its words.
-templ letteredHeadingTwo(title letterDrawing) {
-	<h2 aria-label={ title.words }>
-		@blockLetters(title)
-	</h2>
 }
 
 // letteredHeadingOne is a page's title in block letters, named by its words.

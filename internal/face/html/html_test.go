@@ -47,8 +47,8 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}
 }
 
-// Every phrase of a document as written, all but a fact or a point that is only a gap, reaches one of its pages, its
-// opening's or a tab's, as HTML writes text: the facts a browser shows are the facts the written document holds.
+// Every phrase of a document's tabs as written, all but a fact or a point that is only a gap, reaches one of its pages,
+// its opening's or a tab's, as HTML writes text: the facts a browser shows are the facts the written tabs hold.
 func TestEveryPhraseReachesThePage(test *testing.T) {
 	for _, composed := range siteOnTheDay(fixtures.LoadedContent(test)).Pages {
 		pages := fixtureWriter(test).Page(composed.Document, composed.Record, "")
@@ -56,7 +56,7 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 			pages += fixtureWriter(test).Page(composed.Document, composed.Record, tab.Slug)
 		}
 		written := document.Document{Head: composed.Document.Head, Blocks: document.WrittenBlocks(composed.Document.Blocks)}
-		for _, phrase := range document.Phrases(written) {
+		for _, phrase := range fixtures.TabPhrases(written) {
 			if !strings.Contains(pages, html.EscapeString(phrase)) {
 				test.Errorf("the pages of %+v hold no %q", composed.Document.Head.Page, phrase)
 			}
@@ -64,8 +64,8 @@ func TestEveryPhraseReachesThePage(test *testing.T) {
 	}
 }
 
-// A page shows one tab of its document, as the TUI does: at its own address its opening, the résumé's first screen and
-// first section, another page's head and the blocks before its first section; at a tab's address that tab alone,
+// A page shows one tab of its document, as the TUI does: at its own address its opening, the résumé's first screen
+// alone, another page's head and the blocks before its first section; at a tab's address that tab alone,
 // under its title, which titles the page with its page's after it, the address it is known by and its markdown the
 // tab's own.
 func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
@@ -75,7 +75,7 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 	project := composedOf(test, pages, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	writer := fixtureWriter(test)
 	const (
-		// a line of the résumé's first screen, of its first section, and of its experience
+		// a line of the résumé's first screen, of its first section, which stands on no page, and of its experience
 		greeting   = "Hello, my name is"
 		summary    = "Writes software for people who read it."
 		experience = "Northwind — Senior Engineer"
@@ -91,7 +91,7 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 	}{
 		{
 			name: "the résumé's opening", page: writer.Page(resume.Document, resume.Record, ""),
-			holds: []string{greeting, summary, `<link rel="canonical" href="https://example.test/">`}, lacks: []string{experience},
+			holds: []string{greeting, `<link rel="canonical" href="https://example.test/">`}, lacks: []string{summary, experience},
 		},
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),
@@ -134,17 +134,10 @@ const (
 )
 
 // A page reads as an outline, as a screen reader lists its headings: its title the h1, and each heading after it at
-// most one level below the one before it. Every page the face writes for the fixture's site is held to it, and a
-// résumé whose opening holds a subsection, which no profile writes, so the opening's blocks are held under its h2.
+// most one level below the one before it. Every page the face writes for the fixture's site is held to it.
 func TestEveryPageStepsDownItsHeadingsOneLevelAtATime(test *testing.T) {
-	about := document.Section{
-		Title:  textOf("About"),
-		Name:   "",
-		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: textOf("here")}}}, emptySection("More")},
-	}
-	subsectioned := writtenPage{name: "a résumé whose opening holds a subsection", markup: fixtureWriter(test).Page(resumeOf(about), blankPerson(), "")}
 	heading := regexp.MustCompile(headingTag)
-	for _, page := range append(everyWrittenPage(test), subsectioned) {
+	for _, page := range everyWrittenPage(test) {
 		test.Run(page.name, func(test *testing.T) {
 			run := []string{}
 			previous := levelAboveTitle
@@ -457,11 +450,11 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	}
 }
 
-// The résumé's first screen briefs the reader with the first four facts its first section holds, in their order; the
-// facts after them stay in that section, under the first screen, where the facts stood.
-func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
+// The résumé's first screen briefs the reader with the first three facts its first section holds, in their order, and
+// stands alone: what else that section holds, the facts after the third among it, stands on no page.
+func TestTheFirstScreenBriefsTheFirstThreeFactsAlone(test *testing.T) {
 	facts := []document.Fact{}
-	for _, label := range []string{"first", "second", "third", "fourth", "fifth"} {
+	for _, label := range []string{"first", "second", "third", "fourth"} {
 		facts = append(facts, document.Fact{Label: label, Value: []document.Span{document.Text{Text: label + " value"}}})
 	}
 	about := document.Section{
@@ -472,33 +465,14 @@ func TestTheFirstScreenBriefsTheFirstFourFacts(test *testing.T) {
 			document.Paragraph{Spans: []document.Span{document.Text{Text: "after"}}},
 		},
 	}
-	firstScreen, aboutSection, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about), blankPerson(), ""), `<section class="section"`)
-	cases := []struct {
-		name  string
-		part  string
-		holds string
-		lacks string
-	}{
-		{
-			name: "the first screen", part: firstScreen,
-			holds: "<dt>first</dt><dd>first value</dd><dt>second</dt><dd>second value</dd><dt>third</dt><dd>third value</dd><dt>fourth</dt><dd>fourth value</dd></dl>",
-			lacks: "<dt>fifth</dt>",
-		},
-		{
-			name: "the section", part: aboutSection,
-			holds: `<p>before</p><dl class="facts"><dt>fifth</dt><dd>fifth value</dd></dl><p>after</p>`,
-			lacks: "<dt>first</dt>",
-		},
+	page := fixtureWriter(test).Page(resumeOf(about), blankPerson(), "")
+	if brief := "<dt>first</dt><dd>first value</dd><dt>second</dt><dd>second value</dd><dt>third</dt><dd>third value</dd></dl>"; !strings.Contains(page, brief) {
+		test.Errorf("the page %q holds no %q", page, brief)
 	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if !strings.Contains(testCase.part, testCase.holds) {
-				test.Errorf("%s %q holds no %q", testCase.name, testCase.part, testCase.holds)
-			}
-			if strings.Contains(testCase.part, testCase.lacks) {
-				test.Errorf("%s %q holds %q", testCase.name, testCase.part, testCase.lacks)
-			}
-		})
+	for _, unwanted := range []string{"<dt>fourth</dt>", "<p>before</p>", "<p>after</p>"} {
+		if strings.Contains(page, unwanted) {
+			test.Errorf("the page %q holds %q", page, unwanted)
+		}
 	}
 }
 
@@ -583,8 +557,8 @@ func TestTheCareerLineHoldsTheRoles(test *testing.T) {
 }
 
 // The page shows a document as a reader of the finished work sees it (document.WrittenBlocks): a fact or a point that
-// is only a gap still to fill is left out, on the first screen, which briefs the reader with the first four facts
-// written, in a tab, and in another page's opening; a gap among written words stays, marked as a gap.
+// is only a gap still to fill is left out, on the first screen, which briefs the reader with those of the first three
+// facts written, in a tab, and in another page's opening; a gap among written words stays, marked as a gap.
 func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 	about := document.Section{
 		Title: []document.Span{document.Text{Text: "About"}},
@@ -592,9 +566,7 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 			{Label: "first", Value: []document.Span{document.Text{Text: "first value"}}},
 			{Label: "later", Value: []document.Span{document.Gap{Text: "[later]"}}},
 			{Label: "where", Value: []document.Span{document.Text{Text: "Prague · "}, document.Gap{Text: "[remote?]"}}},
-			{Label: "third", Value: []document.Span{document.Text{Text: "third value"}}},
 			{Label: "fourth", Value: []document.Span{document.Text{Text: "fourth value"}}},
-			{Label: "fifth", Value: []document.Span{document.Text{Text: "fifth value"}}},
 		}}},
 	}
 	role := roleOf("Northwind", monthOf(2023, time.April), document.CurrentMonth{Text: "present"})
@@ -603,7 +575,7 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 		{Spans: []document.Span{document.Text{Text: "Owned "}, document.Gap{Text: "[service]"}}},
 	}
 	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: []document.Block{role}}
-	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), ""), `<section class="section"`)
+	firstScreen := fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), "")
 	workTab := fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), "work")
 	project := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, nil),
@@ -617,9 +589,8 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 		lacks string
 	}{
 		{
-			name: "the brief, of the first four facts written", part: firstScreen,
-			holds: `<dt>first</dt><dd>first value</dd><dt>where</dt><dd>Prague · <span class="gap">[remote?]</span></dd>` +
-				"<dt>third</dt><dd>third value</dd><dt>fourth</dt><dd>fourth value</dd></dl>",
+			name: "the brief, those of the first three facts written", part: firstScreen,
+			holds: `<dt>first</dt><dd>first value</dd><dt>where</dt><dd>Prague · <span class="gap">[remote?]</span></dd></dl>`,
 			lacks: "[later]",
 		},
 		{
@@ -640,20 +611,17 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 	}
 }
 
-// A résumé whose brief would hold nothing but gaps keeps its tabs as every face parts them: its first section stays
-// the opening, its words written at the page's own address, and the foot line names the tabs the site serves.
-func TestAnOpeningOfGapsStaysTheOpening(test *testing.T) {
+// A résumé whose brief would hold nothing but gaps keeps its tabs as every face parts them: it opens on its first
+// screen, which briefs the reader with no fact, and the foot line names the tabs the site serves.
+func TestAnOpeningOfGapsStaysTheFirstScreen(test *testing.T) {
 	about := document.Section{
-		Title: []document.Span{document.Text{Text: "About"}},
-		Blocks: []document.Block{
-			document.Paragraph{Spans: []document.Span{document.Text{Text: "Writes software."}}},
-			document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "later", Value: []document.Span{document.Gap{Text: "[later]"}}}}},
-		},
+		Title:  []document.Span{document.Text{Text: "About"}},
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "later", Value: []document.Span{document.Gap{Text: "[later]"}}}}}},
 	}
 	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: nil}
 	page := fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), "")
 	for _, want := range []string{
-		"<p>Writes software.</p>",
+		`<div class="first-screen">`,
 		`<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about`,
 		`<a class="window" href="/work"><span class="window-number">2:</span>work</a>`,
 	} {

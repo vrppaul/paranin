@@ -79,16 +79,6 @@ func titleDrawing(words string) (letterDrawing, bool) {
 	return drawingOf(drawing, words, titleLetters), drawn
 }
 
-// openingSection is the résumé's first section, under its first screen: under its title in block letters where the
-// titles' font draws every letter of it, as words where it does not; an h2 either way, its blocks' headings under it.
-func (writer PageWriter) openingSection(section document.Section) templ.Component {
-	title := heading(firstHeadingDepth, unnamed, writer.spans(section.Title))
-	if drawing, drawn := titleDrawing(document.PlainText(section.Title)); drawn {
-		title = letteredHeadingTwo(drawing)
-	}
-	return writer.resumeSection(section.Blocks, title, firstHeadingDepth+1)
-}
-
 // drawingOf is a drawing of block letters in the SVG's units, the words it shows, and the class of its font.
 func drawingOf(drawing look.Drawing, words, class string) letterDrawing {
 	drawn := letterDrawing{

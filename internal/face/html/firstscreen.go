@@ -1,7 +1,6 @@
 package html
 
 import (
-	"slices"
 	"time"
 
 	"github.com/a-h/templ"
@@ -9,27 +8,19 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The most facts the first screen briefs the reader with (DESIGN.md, Facts): the first the résumé's first section
-// holds, in the order the profile writes them, which is the author's choice; that section keeps the rest where they
-// stood
-const briefFacts = 4
-
 // resumeParts are the résumé's opening as the page lays it out (DESIGN.md, Pages): the facts its first screen briefs
 // the reader with, the address heading them and the profiles ending them, beside the head, and the career line under
-// them; then the blocks that are no section, and the first section, holding the facts the brief leaves.
+// them.
 type resumeParts struct {
 	brief    []document.Fact
 	address  []document.Span
 	profiles []document.Link
 	career   careerDrawing
-	others   []document.Block
-	first    document.Section
 }
 
 // openingPart is what the main part holds where a page shows its opening (document.TabsOf), as a reader of the
 // finished work sees it: on a project's page its head and its blocks on the project's grid; on the résumé that opens
-// with a brief, the first screen of the facts written and the résumé's parts under it; on any other page, and on a
-// résumé whose brief would hold nothing but gaps, its head, then the opening's blocks.
+// with a brief, the first screen of the facts written; on any other page its head, then the opening's blocks.
 func (writer PageWriter) openingPart(composed document.Document, opening document.Opening) templ.Component {
 	blocks := document.WrittenBlocks(opening.Blocks)
 	if composed.Head.Page.Kind == document.PageProject {
@@ -38,12 +29,7 @@ func (writer PageWriter) openingPart(composed document.Document, opening documen
 	if opening.Brief == nil {
 		return writer.plainMain(composed.Head, blocks)
 	}
-	others, sections := document.SectionsOf(document.WrittenBlocks(composed.Blocks))
-	briefed := document.BriefOf(sections)
-	if briefed == nil {
-		return writer.plainMain(composed.Head, blocks)
-	}
-	return writer.resumeMain(composed.Head, partsOf(briefed, others, writer.today))
+	return writer.firstScreen(composed.Head, partsOf(opening.Brief, writer.today))
 }
 
 // tabPart is what the main part holds where a page shows a tab past its opening, its blocks under its title in block
@@ -57,19 +43,12 @@ func (writer PageWriter) tabPart(kind document.PageKind, title []document.Span, 
 	return writer.tabMain(heading, blocks)
 }
 
-// partsOf are the résumé's parts round its brief, on a day: the first facts briefed, the rest kept in their section
-// where the brief stood, and the roles on the career line, which runs to the day.
-func partsOf(briefed *document.Briefed, others []document.Block, today time.Time) resumeParts {
-	list := briefed.Brief.List
-	shown := min(briefFacts, len(list))
-	kept := []document.Block{}
-	if shown < len(list) {
-		kept = append(kept, document.Facts{Kind: briefed.Brief.Kind, List: list[shown:]})
-	}
+// partsOf are the résumé's parts round its brief, on a day: the brief's facts written, and the roles on the career
+// line, which runs to the day.
+func partsOf(briefed *document.Briefed, today time.Time) resumeParts {
 	return resumeParts{
-		brief: list[:shown], address: briefed.Address(), profiles: profilesOf(briefed.Ways),
+		brief: document.WrittenFacts(briefed.Brief.List), address: briefed.Address(), profiles: profilesOf(briefed.Ways),
 		career: careerDrawingOf(document.CareerOf(briefed.Roles, today)),
-		others: others, first: document.Section{Title: briefed.Title, Name: "", Blocks: slices.Concat(briefed.Before, kept, briefed.After)},
 	}
 }
 

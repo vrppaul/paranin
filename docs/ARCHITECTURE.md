@@ -305,18 +305,17 @@ and web routes.
   where it is discussed. `compose` reads them once from every post and
   series of a snapshot, so no face picks a post's neighbours again
   (FOUNDATION §5.4). The ways to reach the author (mail, the profiles,
-  `ssh`, the CV) left the head (amended 2026-11-15, the owner's word):
-  they are facts of their own kind, in the résumé's last section under the
-  site's word for contact, which a face finds by that kind and shows where
-  it chooses.
+  `ssh`, the CV) are facts of their own kind, in the résumé's first
+  section, about the author, which a face finds by that kind and shows
+  where it chooses: on the first screen, and at the experience's end once
+  it lands (amended 2026-11-26, the owner's word).
   One more is the site's word, which a face shows only where it has a use
   for it, so `Phrases` leaves it out: a greeting before the title. The
   résumé carries it; the TUI and the page show it.
-  The résumé has five sections, as a reader asks of its author (amended
-  2026-11-15, the owner's word, after the TUI's storyboard E): about them,
-  the summary and the facts; their experience; their projects; their
-  skills, the groups and then the languages and the education, each a
-  section nested in it; and how to reach them. Every face follows them.
+  The résumé has three sections, each a tab, as a reader asks of its
+  author (amended 2026-11-26, the owner's word): about them, the summary,
+  the facts and the ways to reach them; their experience; and their
+  projects. Every face follows them.
   The TUI's opening shows three phrases by its form, as neofetch prints a
   system (amended 2026-11-06, with the look the owner chose): the name in
   the block font where the page has room for it and the font draws every
@@ -325,10 +324,10 @@ and web routes.
   tab, which its title names, its facts as a brief beside the name and
   what else it holds under the lead; and the first way to reach the
   author, the mail, at the brief's head without its label, the other ways
-  on the contact section's tab alone. Under them a career's line lays out
-  the roles, the entries of a role's kind in any of its top-level
-  sections, and the lead comes last. The brief is found by its place in
-  the document, the roles and the ways by their kind (amended 2026-11-15,
+  at the first tab's end. Under them a career's line lays out the roles,
+  the entries in any of its top-level sections, and the lead comes last.
+  The brief is found by its place in the document, and the ways by their
+  kind (amended 2026-11-15,
   the owner's word). The page's first screen opens from the same reading,
   which `document.BriefOf` makes for both faces: beside the name the
   mail, the title, the place and the first four facts in the profile's

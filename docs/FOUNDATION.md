@@ -907,8 +907,8 @@ stylelint holds: colours, sizes, times and weights only from the tokens.
 now `DESIGN.md`, which settles the first, second and fifth items below as it
 says (a role's dates stand in their own column, the page one column under
 the width `phone`), and the fourth for the résumé, whose top bar holds its
-five sections. Since 2026-11-18 every size of the page is in rem, none in
-pixels (`DESIGN.md`).
+tabs: about, experience and projects (owner, 2026-11-26). Since 2026-11-18
+every size of the page is in rem, none in pixels (`DESIGN.md`).
 2026-11-22: the owner approved the blog's design, on the page and in the
 TUI, with the two faces made one style, now `DESIGN.md` too: the reading
 layout, its second face iA Writer Duo, and the blog as a session of its own

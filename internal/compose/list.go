@@ -271,17 +271,15 @@ func partInItsGroup(part listedPart, number int, group document.Anchor, words co
 }
 
 // latestPosts are the blog's latest posts as the résumé's first screen names them (DESIGN.md, LatestPosts): the blog's
-// name and the way to its list by year, in its words, then the latest posts its lists name, newest first, each a post
-// out by its title alone, as a small tile holds it; none where the lists name none.
+// name and the way to its list by year, in its words, then the latest posts its lists name, newest first, each when it
+// came out, its title and its page, as a small tile holds it; none where the lists name none.
 func (read blog) latestPosts() *document.LatestPosts {
 	if len(read.newest) == 0 {
 		return nil
 	}
-	posts := make([]document.ListedPost, 0, look.LatestPosts)
+	posts := make([]document.LatestPost, 0, look.LatestPosts)
 	for _, post := range read.newest[:min(look.LatestPosts, len(read.newest))] {
-		listed := listedPost(post)
-		listed.Lead, listed.Tags = nil, nil
-		posts = append(posts, listed)
+		posts = append(posts, document.LatestPost{Day: post.Published.At(), Title: textSpans(post.Title), Page: postPage(post)})
 	}
 	words := read.words
 	list := document.PageOf(document.PageBlog).InLanguage(words.Translation())

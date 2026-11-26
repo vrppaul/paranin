@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 )
 
 // Document is one page as every face draws it.
@@ -81,11 +82,19 @@ func (location *Location) Parts() []string {
 
 // LatestPosts are the blog's latest posts as the résumé's first screen hints at the blog (DESIGN.md, LatestPosts), no
 // part of the résumé, which a text face leaves out: the blog's name, the way to its list, and its latest posts out,
-// newest first, each a post out by its title alone.
+// newest first.
 type LatestPosts struct {
 	Title []Span
 	All   Link
-	Posts []ListedPost
+	Posts []LatestPost
+}
+
+// LatestPost is a post out as a small tile under the résumé's first screen names it (DESIGN.md, LatestPosts): when it
+// came out, in the zone it was written in, its title alone, and its page.
+type LatestPost struct {
+	Day   time.Time
+	Title []Span
+	Page  Page
 }
 
 // Previewed is whether a link's preview shows the page, its address and its card (DESIGN.md, Social cards): every page

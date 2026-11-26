@@ -3,6 +3,7 @@ package tui
 import (
 	"slices"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -475,6 +476,13 @@ func titleLines(lines []line, page document.Page) []line {
 	return whole
 }
 
+// tileDay is the day a post came out as a tile sets it into its top edge, in the site's words for a day, muted.
+//
+//wrapper:the one look a tile's day takes, a tile's of the blog's list and a small one's under the résumé alike
+func (layout layout) tileDay(day time.Time) run {
+	return plainRun(layout.siteWords.Days.Of(day), kindMuted)
+}
+
 // edgeLabel is what a tile's top edge holds (DESIGN.md, Tile): when its post came out, in the site's words for a day,
 // muted, after its part, bold, where it stands in its series' own group; for a part to come, its part and the word
 // saying it comes, faint.
@@ -488,7 +496,7 @@ func (layout layout) edgeLabel(post document.ListedPost) line {
 	}
 	switch typed := post.Readiness.(type) {
 	case document.PostOut:
-		return append(label, plainRun(layout.siteWords.Days.Of(typed.Published), kindMuted))
+		return append(label, layout.tileDay(typed.Published))
 	case document.ComingPart:
 		return append(label, plainRun(document.PlainText(typed.Coming), kindFaint))
 	}

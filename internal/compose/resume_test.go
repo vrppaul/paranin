@@ -536,12 +536,20 @@ func TestTheResumeHeadSaysWhereTheAuthorWorksFrom(test *testing.T) {
 }
 
 // seenLatest are the latest posts the résumé ends with as a test reads them: the blog's name, the way to its list, the
-// page it leads to, and the posts, as a list names them.
+// page it leads to, and the posts.
 type seenLatest struct {
 	title string
 	all   string
 	list  document.Target
-	posts []seenListed
+	posts []seenLatestPost
+}
+
+// seenLatestPost is a post the résumé ends with as a test reads it: the moment it came out, as RFC 3339 writes it, its
+// title, and its page.
+type seenLatestPost struct {
+	out   string
+	title string
+	page  document.Page
 }
 
 // The résumé's first screen ends with the blog's latest posts out in the site's language as its reader reads the site,
@@ -569,10 +577,10 @@ func TestTheResumeEndsWithTheLatestPostsOut(test *testing.T) {
 			name: "the three latest of the posts out", snapshot: withPostsAndSeries(test, posts, nil), reader: publicOnTheDay(),
 			want: &seenLatest{
 				title: "blog", all: "all posts", list: document.PageOf(document.PageBlog),
-				posts: []seenListed{
-					{readiness: outAt(test, "newest", latest), title: "newest", part: "", series: "", seriesName: "", tags: ""},
-					{readiness: outAt(test, fixturePostSlug, fixturePostMoment), title: fixturePostTitle, part: "", series: "", seriesName: "", tags: ""},
-					{readiness: outAt(test, "second", earlier), title: "second", part: "", series: "", seriesName: "", tags: ""},
+				posts: []seenLatestPost{
+					{out: "2026-11-21T09:00:00+01:00", title: "newest", page: document.PostPage("newest")},
+					{out: "2026-11-10T09:00:00+01:00", title: fixturePostTitle, page: document.PostPage(fixturePostSlug)},
+					{out: "2026-11-02T09:00:00+01:00", title: "second", page: document.PostPage("second")},
 				},
 			},
 		},
@@ -593,9 +601,9 @@ func seenLatestOf(latest *document.LatestPosts) *seenLatest {
 	if latest == nil {
 		return nil
 	}
-	seen := &seenLatest{title: document.PlainText(latest.Title), all: document.PlainText(latest.All.Spans), list: latest.All.Target, posts: []seenListed{}}
+	seen := &seenLatest{title: document.PlainText(latest.Title), all: document.PlainText(latest.All.Spans), list: latest.All.Target, posts: []seenLatestPost{}}
 	for _, post := range latest.Posts {
-		seen.posts = append(seen.posts, seenListedOf(post))
+		seen.posts = append(seen.posts, seenLatestPost{out: post.Day.Format(time.RFC3339), title: document.PlainText(post.Title), page: post.Page})
 	}
 	return seen
 }

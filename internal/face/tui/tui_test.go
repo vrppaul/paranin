@@ -208,7 +208,7 @@ func TestTheFirstTabEndsWithTheLatestPosts(test *testing.T) {
 	ending.Head.Latest = &document.LatestPosts{
 		Title: textOf("blog"),
 		All:   document.Link{Target: document.PageOf(document.PageBlog), Spans: textOf("all posts")},
-		Posts: []document.ListedPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost(longTitle, longDaysBefore)},
+		Posts: []document.LatestPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost(longTitle, longDaysBefore)},
 	}
 	holds := []string{"blog", "all posts", "┌", "21 Nov 2026", "newest", longTitleStart}
 	cases := []struct {

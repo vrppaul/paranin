@@ -89,3 +89,12 @@ func (writer PageWriter) tile(post document.ListedPost) templ.Component {
 	}
 	return templ.NopComponent
 }
+
+// edgePart is the part a tile sets into its edge before its day: its part where it stands in its series' own group,
+// which names the series; none elsewhere.
+func edgePart(post document.ListedPost) []document.Span {
+	if post.InItsSeriesGroup() {
+		return post.Part
+	}
+	return nil
+}

@@ -2579,7 +2579,7 @@ func (writer PageWriter) latestPosts(latest document.LatestPosts) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.tiles(latest.Posts).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.smallTiles(latest.Posts).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

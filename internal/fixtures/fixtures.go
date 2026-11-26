@@ -90,13 +90,9 @@ func HeadOf(page document.Page, title []document.Span) document.Head {
 }
 
 // LatestPost is a post out as the résumé's latest posts name it, for a test that hands them by hand: by its slug, which
-// titles it too, out a number of days before the tests' day, its title alone.
-func LatestPost(slug string, daysBefore int) document.ListedPost {
-	out := document.PostOut{Page: document.PostPage(slug), Published: Day().AddDate(0, 0, -daysBefore)}
-	return document.ListedPost{
-		Readiness: out, Title: []document.Span{document.Text{Text: slug}}, Lead: nil, Part: nil, Series: nil,
-		SeriesGroup: document.Anchor{Page: document.PageOf(document.PageNone), Name: ""}, Tags: nil,
-	}
+// titles it too, out a number of days before the tests' day.
+func LatestPost(slug string, daysBefore int) document.LatestPost {
+	return document.LatestPost{Day: Day().AddDate(0, 0, -daysBefore), Title: []document.Span{document.Text{Text: slug}}, Page: document.PostPage(slug)}
 }
 
 // TabPhrases are the phrases of a document a face that shows it tab by tab (document.TabsOf) must show, as the page

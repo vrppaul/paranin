@@ -495,7 +495,7 @@ func TestTheFirstScreenEndsWithTheLatestPosts(test *testing.T) {
 	ending.Head.Latest = &document.LatestPosts{
 		Title: textOf("blog"),
 		All:   document.Link{Target: document.PageOf(document.PageBlog), Spans: textOf("all posts")},
-		Posts: []document.ListedPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost("older", olderDaysBefore)},
+		Posts: []document.LatestPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost("older", olderDaysBefore)},
 	}
 	withPosts := fixtureWriter(test).Page(ending, blankPerson(), "")
 	newest := `<a class="tile-title" href="/blog/newest">` + "\n" + `<span class="edge">` + "\n" + `<span class="edge-name tile-edge">` + "\n" +
@@ -508,7 +508,7 @@ func TestTheFirstScreenEndsWithTheLatestPosts(test *testing.T) {
 	}{
 		{
 			name: "posts out", page: lined(withPosts),
-			holds: []string{`<h2 id="_latest-posts" class="latest-title">blog</h2>`, `<a href="/blog">all posts</a>`, newest + " </div>\n</li>"},
+			holds: []string{`<h2 id="_latest-posts" class="latest-title">blog</h2>`, `<a href="/blog">all posts</a>`, newest + "\n</div>\n</li>"},
 			lacks: []string{`class="tile-lead"`, `class="tile-foot"`},
 		},
 		{name: "none out", page: fixtureWriter(test).Page(plain, blankPerson(), ""), holds: nil, lacks: []string{`class="latest"`}},

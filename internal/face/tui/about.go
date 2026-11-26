@@ -91,15 +91,13 @@ func (layout layout) latestPosts(latest *document.LatestPosts) []line {
 // smallTiles lays out posts as small tiles on a grid (DESIGN.md, LatestPosts), framed as the blog's list frames its
 // tiles: each its day set into its top edge, as a tile's, and its title alone, bold, on one line, cut where it runs
 // longer, leading to its post.
-func (layout layout) smallTiles(posts []document.ListedPost, grid tileGrid) []line {
+func (layout layout) smallTiles(posts []document.LatestPost, grid tileGrid) []line {
 	inside := layout
 	inside.width = grid.inside()
 	cells := make([]gridCell, 0, len(posts))
 	for _, post := range posts {
-		// compose hands the latest posts out alone; a part to come would stand off, leading nowhere
-		out, isOut := post.Readiness.(document.PostOut)
-		title := []document.Span{document.Link{Target: out.Page, Spans: []document.Span{document.Text{Text: cutTo(document.PlainText(post.Title), inside.width)}}}}
-		cells = append(cells, gridCell{label: layout.edgeLabel(post), words: tileWords{top: inside.fill(inside.words(title, kindStrong), 0), foot: nil}, leads: isOut})
+		title := []document.Span{document.Link{Target: post.Page, Spans: []document.Span{document.Text{Text: cutTo(document.PlainText(post.Title), inside.width)}}}}
+		cells = append(cells, gridCell{label: line{layout.tileDay(post.Day)}, words: tileWords{top: inside.fill(inside.words(title, kindStrong), 0), foot: nil}, leads: true})
 	}
 	return grid.framed(cells).lines
 }

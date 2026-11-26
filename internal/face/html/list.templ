@@ -75,12 +75,26 @@ templ (writer PageWriter) postGroup(group document.Group) {
 	</section>
 }
 
-// tiles are posts, each as its tile: those a group of the list names, or the latest under the résumé's first screen.
+// tiles are the posts a group names, each as its tile.
 templ (writer PageWriter) tiles(posts []document.ListedPost) {
 	<ol class="tiles tile-grid">
 		for _, post := range posts {
 			<li>
 				@writer.tile(post)
+			</li>
+		}
+	</ol>
+}
+
+// smallTiles are the latest posts under the résumé's first screen on the grid of tiles, each as a small tile
+// (DESIGN.md, LatestPosts): a tile holding its title's link alone, its day set into its edge.
+templ (writer PageWriter) smallTiles(posts []document.LatestPost) {
+	<ol class="tiles tile-grid">
+		for _, post := range posts {
+			<li>
+				<div class="pane tile">
+					@writer.tileTitle(writer.tileEdge(nil, writer.day(post.Day)), post.Title, routes.Reference(post.Page, routes.FormatChosen))
+				</div>
 			</li>
 		}
 	</ol>
@@ -108,18 +122,9 @@ templ (writer PageWriter) tileToCome(post document.ListedPost, toCome document.C
 // it stands, its part and its series' title, a link to the series' group on the list by series, where its group is no
 // series' own, and its tags, words of the tile.
 templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Component, address string) {
-	if address != "" {
-		<a class="tile-title" href={ address }>
-			@writer.tileEdge(post, when)
-			@text(wordSpace)
-			@writer.spans(post.Title)
-		</a>
-	} else {
-		@writer.tileEdge(post, when)
-		<span class="tile-title">
-			@writer.spans(post.Title)
-		</span>
-	}
+	// the title and the space a reader of the page's text reads it apart from the lead by, joined, as templ writes no
+	// space after a template it calls
+	@templ.Join(writer.tileTitle(writer.tileEdge(edgePart(post), when), post.Title, address), text(wordSpace))
 	if len(post.Lead) > 0 {
 		<span class="tile-lead">
 			@writer.spans(post.Lead)
@@ -142,14 +147,32 @@ templ (writer PageWriter) tileParts(post document.ListedPost, when templ.Compone
 	}
 }
 
+// tileTitle is a tile's title with what is set into its edge: where it has an address, a link to its post, the edge
+// inside it, so the link's name opens with the day and the edge leads to the post too, which the stylesheet stretches
+// over the tile; else the edge, then the title as words.
+templ (writer PageWriter) tileTitle(edge templ.Component, title []document.Span, address string) {
+	if address != "" {
+		<a class="tile-title" href={ address }>
+			@edge
+			@text(wordSpace)
+			@writer.spans(title)
+		</a>
+	} else {
+		@edge
+		<span class="tile-title">
+			@writer.spans(title)
+		</span>
+	}
+}
+
 // tileEdge is what is set into a tile's top edge, as a pane's name: when its post came out or that it comes, after its
-// part in its series' own group.
-templ (writer PageWriter) tileEdge(post document.ListedPost, when templ.Component) {
+// part where it has one there (edgePart).
+templ (writer PageWriter) tileEdge(part []document.Span, when templ.Component) {
 	<span class="edge">
 		<span class="edge-name tile-edge">
-			if post.InItsSeriesGroup() {
+			if len(part) > 0 {
 				<span class="tile-part">
-					@writer.spans(post.Part)
+					@writer.spans(part)
 				</span>
 				@text(dot)
 			}

@@ -589,7 +589,7 @@ func (layout layout) sources(notes []document.Note) []line {
 	}
 	noted := layout
 	noted.width = layout.width - textColumn
-	lines := []line{{gapRun(textColumn), plainRun(strings.Repeat(frameAcross, max(noted.width, 0)), kindQuietLine)}}
+	lines := []line{quietRule(textColumn, noted.width)}
 	for _, note := range notes {
 		lines = append(lines, shiftedLines(noted.noteLines(note), textColumn)...)
 	}

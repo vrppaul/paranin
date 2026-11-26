@@ -256,6 +256,12 @@ func stacked(above, below []line) []line {
 	return slices.Concat(above, blankLines(), below)
 }
 
+// quietRule is the quiet line across a width, from an indent, that sets a part of a page apart from what stands
+// before it: a post's sources at its end, a project's end.
+func quietRule(indent, width int) line {
+	return line{gapRun(indent), plainRun(strings.Repeat(frameAcross, max(width, 0)), kindQuietLine)}
+}
+
 // headParts are the parts of a head every opening lays out alike, about its title: the greeting and the lead; each
 // nothing where the head has none.
 type headParts struct {

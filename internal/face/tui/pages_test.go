@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
@@ -73,6 +74,32 @@ func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 		}
 		rest = after
 	}
+}
+
+// A project's end, after its last section, opens with a quiet rule, as the page's, whether the project has others or
+// not.
+func TestAProjectsEndOpensWithARule(test *testing.T) {
+	cases := []struct {
+		name    string
+		content *content.Snapshot
+	}{
+		{name: "a project with others", content: fixtures.WithTwoProjectPages(test)},
+		{name: "a project alone", content: fixtures.LoadedContent(test)},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(testCase.content, commonWidth, tallHeight), "e tidy-tool")))
+			_, end, _ := strings.Cut(page, "Files were untidy.")
+			if !slices.ContainsFunc(strings.Split(end, "\n"), isRule) {
+				test.Errorf("the project's page =\n%s\nwant a rule after its last section", page)
+			}
+		})
+	}
+}
+
+// isRule is whether a screen's row is a rule alone: a line across and nothing else.
+func isRule(row string) bool {
+	return strings.Contains(row, frameAcross) && strings.Trim(row, " "+frameAcross) == ""
 }
 
 // A tile with nothing set into its top edge, as another project at a project's end, draws its top edge whole, with no

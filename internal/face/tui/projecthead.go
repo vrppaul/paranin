@@ -61,23 +61,23 @@ func wholeWord(words []word) word {
 	return word{runs: wordRuns(words), highlightBefore: words[0].highlightBefore, spaceBefore: words[0].spaceBefore}
 }
 
-// projectEnd lays out where a project's reader goes next, after its sections, in one column (DESIGN.md, ProjectEnd):
-// where it has others, the heading over them, strong, the way to them all beside it, then the others on the blog's
-// grid of tiles; then the author's mail, parted as the brief parts it, with no word over it, as the page draws it. None
-// on a page that is no project's.
+// projectEnd lays out where a project's reader goes next, after its sections, in one column (DESIGN.md, ProjectEnd),
+// under a quiet rule: where it has others, the heading over them, strong, the way to them all beside it, then the
+// others on the blog's grid of tiles; then the author's mail, parted as the brief parts it, with no word over it, as
+// the page draws it. None on a page that is no project's.
 func (layout layout) projectEnd(head document.Head) []line {
 	project := head.Project
 	if project == nil {
 		return nil
 	}
+	others := []line{}
+	if len(project.Others) > 0 {
+		lead := line{plainRun(project.Labels.Others, kindStrong), gapRun(headingGap)}
+		others = slices.Concat(layout.continued(lead, layout.words([]document.Span{project.AllProjects}, kindText), 0), blankLines(), layout.otherTiles(project.Others))
+	}
 	mail := document.Link{Target: project.Mail, Spans: []document.Span{document.Text{Text: project.Mail.Address}}}
 	mailLines := []line{mailRuns(wordRuns(layout.valueWords([]document.Span{mail})), project.Mail)}
-	if len(project.Others) == 0 {
-		return mailLines
-	}
-	lead := line{plainRun(project.Labels.Others, kindStrong), gapRun(headingGap)}
-	others := slices.Concat(layout.continued(lead, layout.words([]document.Span{project.AllProjects}, kindText), 0), blankLines(), layout.otherTiles(project.Others))
-	return stacked(others, mailLines)
+	return stacked(stacked([]line{quietRule(0, layout.width)}, others), mailLines)
 }
 
 // otherTiles are the other projects on the blog's grid of tiles, as many in a row as hold a tile each, sharing their

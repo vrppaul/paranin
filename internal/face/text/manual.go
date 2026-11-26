@@ -254,9 +254,9 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	case document.Side:
 		return trimBlank(writer.blocks(typed.Blocks, indent))
 	case document.Reference:
-		// never reached: Manual takes a project's details apart from the blocks it writes so, and writes them after
-		// its sections
-		return writer.reference(typed)
+		// Manual writes a project's details after its sections, taken apart from the description (detailsApart), so
+		// none stands among the blocks written here
+		return nil
 	case document.Card:
 		return writer.card(indent, typed)
 	case document.Contents:

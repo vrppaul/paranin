@@ -25,15 +25,15 @@ HOW IT TIDIES
        - Sorts the lines
        - Keeps the blank ones
 
-       - source — where the code lives
-       - manual — every flag it takes
+       - source <https://github.test/mira/tidy> — where the code lives
+       - manual <https://docs.example.test/tidy> — every flag it takes
 
                                       *   *   *
 
 FLAGS
        --check reports what it would tidy and changes nothing.
 
-       - flags — each flag in full
+       - flags <https://docs.example.test/tidy/flags> — each flag in full
 
 OTHER PROJECTS
        all projects <https://example.test/projects.txt>

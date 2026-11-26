@@ -316,15 +316,27 @@ func (writer manualWriter) listedPost(indent int, post document.ListedPost) []st
 	return append(lines, paragraph(inner, 0, strings.Fields(address))...)
 }
 
-// contents writes each listed page as a bullet: its title and its address as a manual, as a link to it reads, then
-// the line on what it is.
+// contents writes each listed place as a bullet: its title and its address (listedAddress), then the line on what it
+// is.
 func (writer manualWriter) contents(indent int, contents document.Contents) []string {
 	lines := []string{}
 	for _, listing := range contents.Listings {
-		title := writer.words([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
+		title := writer.words(listing.Title)
+		if address := writer.listedAddress(listing.Target); address != "" {
+			title = append(title, addressOpening+address+addressClosing)
+		}
 		lines = append(lines, bullet(indent, joinedWords(dashWord, title, writer.words(listing.Note)))...)
 	}
 	return lines
+}
+
+// listedAddress is the address a listing leads to as the manual writes it: a page's manual, as a link's, or an address
+// outside the site whole, since a list of places, as a section's links, holds little but them.
+func (writer manualWriter) listedAddress(target document.Target) string {
+	if outside, isOutside := target.(document.Address); isOutside {
+		return outside.URL
+	}
+	return writer.siteAddress(target)
 }
 
 // entry writes an entry's title and subtitle with its period at the right, its technologies in a line under them, then

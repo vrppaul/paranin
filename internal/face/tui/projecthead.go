@@ -34,33 +34,31 @@ func (layout layout) projectGets(project document.Project) []line {
 }
 
 // projectAbout are what tells about a project, each under the site's word, the words in a column after the widest
-// label, as far as the project gives each: what it is made of, each name whole; a link to its newest release and one
-// to their history; its licence. The faint mark stands between two names and between the two links.
+// label: its parts, each whole, the faint mark between two.
 func (layout layout) projectAbout(project document.Project) []line {
-	told := []labelledWords{}
-	if len(project.Stack) > 0 {
-		names := make([][]word, 0, len(project.Stack))
-		for _, name := range project.Stack {
-			names = append(names, []word{wordOf(name, kindText)})
-		}
-		told = append(told, labelledWords{label: project.Labels.Stack, words: faintlyMarked(names)})
-	}
-	if release := project.Release; release != nil {
-		links := [][]word{layout.valueWords([]document.Span{release.Latest}), layout.valueWords([]document.Span{release.Changelog})}
-		told = append(told, labelledWords{label: project.Labels.Release, words: faintlyMarked(links)})
-	}
-	if project.Licence != "" {
-		told = append(told, labelledWords{label: project.Labels.Licence, words: textWords(project.Licence, kindText)})
-	}
-	labels := make([]string, 0, len(told))
-	for _, labelled := range told {
-		labels = append(labels, labelled.label)
+	about := project.About()
+	labels := make([]string, 0, len(about))
+	for _, told := range about {
+		labels = append(labels, told.Label)
 	}
 	column, lines := labelColumn(labels), []line{}
-	for _, labelled := range told {
-		lines = append(lines, layout.labelled(labelled, 0, column, kindMuted)...)
+	for _, told := range about {
+		parts := make([][]word, 0, len(told.Parts))
+		for _, part := range told.Parts {
+			parts = append(parts, []word{wholeWord(layout.valueWords([]document.Span{part}))})
+		}
+		lines = append(lines, layout.labelled(labelledWords{label: told.Label, words: faintlyMarked(parts)}, 0, column, kindMuted)...)
 	}
 	return lines
+}
+
+// wholeWord is words laid as one word, a space between each two, which no line breaks inside: a part of what tells
+// about a project, a name of more than one word among them.
+func wholeWord(words []word) word {
+	if len(words) == 0 {
+		return word{runs: nil, highlightBefore: false, spaceBefore: kindText}
+	}
+	return word{runs: wordRuns(words), highlightBefore: words[0].highlightBefore, spaceBefore: words[0].spaceBefore}
 }
 
 // projectEnd lays out where a project's reader goes next, after its sections, in one column (DESIGN.md, ProjectEnd):

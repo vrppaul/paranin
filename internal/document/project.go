@@ -1,7 +1,5 @@
 package document
 
-import "strings"
-
 // Project is what a project's page says of it beside its name and lines (DESIGN.md, ProjectHead): what gets the
 // project, where its code lives, how it is installed and when another way is taken instead; and what tells about it,
 // what it is made of, where its releases are read and its licence, each as far as the profile gives it. Then where its
@@ -93,19 +91,52 @@ func (project Project) InstallFact() (Fact, bool) {
 	return CommandFact(project.Labels.Install, project.Install), true
 }
 
-// AboutFacts are what tells about the project as a face that writes it as text lists it among facts, each under the
-// site's word, as far as the project gives it: what it is made of, its names joined by the face's own joint; its
-// release's two links, the same joint between them; its licence.
-func (project Project) AboutFacts(joint string) []Fact {
-	facts := []Fact{}
+// Told is a thing that tells about a project: its label, the site's word, and its parts, each whole, a name or a
+// link, which a face joins with its own mark and never breaks inside.
+type Told struct {
+	Label string
+	Parts []Span
+}
+
+// About is what tells about the project, in the order DESIGN.md's ProjectHead gives, as far as the project gives
+// each: what it is made of, a part a name; its release, a link to its newest and one to their history; its licence.
+func (project Project) About() []Told {
+	told := []Told{}
 	if len(project.Stack) > 0 {
-		facts = append(facts, Fact{Label: project.Labels.Stack, Value: []Span{Text{Text: strings.Join(project.Stack, joint)}}})
+		told = append(told, Told{Label: project.Labels.Stack, Parts: NameParts(project.Stack)})
 	}
 	if release := project.Release; release != nil {
-		facts = append(facts, Fact{Label: project.Labels.Release, Value: []Span{release.Latest, Text{Text: joint}, release.Changelog}})
+		told = append(told, Told{Label: project.Labels.Release, Parts: []Span{release.Latest, release.Changelog}})
 	}
 	if project.Licence != "" {
-		facts = append(facts, Fact{Label: project.Labels.Licence, Value: []Span{Text{Text: project.Licence}}})
+		told = append(told, Told{Label: project.Labels.Licence, Parts: []Span{Text{Text: project.Licence}}})
+	}
+	return told
+}
+
+// AboutFacts are what tells about the project as a face that writes it as text lists it among facts: each under its
+// label, its parts joined by the face's own joint.
+func (project Project) AboutFacts(joint string) []Fact {
+	about := project.About()
+	facts := make([]Fact, 0, len(about))
+	for _, told := range about {
+		value := []Span{}
+		for index, part := range told.Parts {
+			if index > 0 {
+				value = append(value, Text{Text: joint})
+			}
+			value = append(value, part)
+		}
+		facts = append(facts, Fact{Label: told.Label, Value: value})
 	}
 	return facts
+}
+
+// NameParts are names as parts a face joins, each name a text alone: what a project is made of.
+func NameParts(names []string) []Span {
+	parts := make([]Span, 0, len(names))
+	for _, name := range names {
+		parts = append(parts, Text{Text: name})
+	}
+	return parts
 }

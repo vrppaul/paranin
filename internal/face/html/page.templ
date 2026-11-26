@@ -527,23 +527,30 @@ templ (writer PageWriter) otherPane(other document.OtherProject) {
 		</span>
 		if len(other.Stack) > 0 {
 			<span class="pane-stack">
-				@stackNames(other.Stack)
+				@writer.wholeParts(document.NameParts(other.Stack))
 			</span>
 		}
 	</a>
 }
 
-// stackNames are what a project is made of, each name a whole that never breaks inside, a line breaking only after the
-// dot between two.
-templ stackNames(names []string) {
-	// the dot before a name meets it, as templ writes a space after one on a line of its own
-	for index, name := range names {
+// wholeParts are parts a face joins, names or links, each a whole that never breaks inside, a line breaking only after
+// the dot between two.
+templ (writer PageWriter) wholeParts(parts []document.Span) {
+	// the dot before a part meets it, as templ writes a space after one on a line of its own
+	for index, part := range parts {
 		if index > 0 {
-			{ dot }<span class="stack-name">{ name }</span>
+			{ dot }@writer.wholePart(part)
 		} else {
-			<span class="stack-name">{ name }</span>
+			@writer.wholePart(part)
 		}
 	}
+}
+
+// wholePart is a part a face joins, a name or a link, as one whole that never breaks inside.
+templ (writer PageWriter) wholePart(part document.Span) {
+	<span class="whole-part">
+		@writer.spans([]document.Span{part})
+	</span>
 }
 
 // projectHead is a project's first screen (DESIGN.md, ProjectHead): its name in block letters, the page's h1, on a row
@@ -567,8 +574,8 @@ templ (writer PageWriter) projectHead(head document.Head) {
 		if project := head.Project; project != nil {
 			<div class="project-side">
 				@writer.projectGets(*project)
-				if len(project.Stack) > 0 || project.Release != nil || project.Licence != "" {
-					@writer.projectFacts(*project)
+				if about := project.About(); len(about) > 0 {
+					@writer.projectFacts(about)
 				}
 			</div>
 		}
@@ -596,28 +603,12 @@ templ (writer PageWriter) projectGets(project document.Project) {
 	</div>
 }
 
-// projectFacts are what tells about a project, as facts under the site's words, as far as it gives each: what it is
-// made of, each name a whole that never breaks inside, a line breaking only after the dot between two; a link to its
-// newest release and one to their history, the dot between them; its licence.
-templ (writer PageWriter) projectFacts(project document.Project) {
+// projectFacts are what tells about a project, as facts under the site's words: each thing's parts whole, the dot
+// between two.
+templ (writer PageWriter) projectFacts(about []document.Told) {
 	<dl class="facts">
-		if len(project.Stack) > 0 {
-			<dt>{ project.Labels.Stack }</dt>
-			<dd>
-				@stackNames(project.Stack)
-			</dd>
-		}
-		if release := project.Release; release != nil {
-			<dt>{ project.Labels.Release }</dt>
-			<dd>
-				@writer.spans([]document.Span{release.Latest})
-				@text(dot)
-				@writer.spans([]document.Span{release.Changelog})
-			</dd>
-		}
-		if project.Licence != "" {
-			<dt>{ project.Labels.Licence }</dt>
-			<dd>{ project.Licence }</dd>
+		for _, told := range about {
+			@factRow(told.Label, writer.wholeParts(told.Parts))
 		}
 	</dl>
 }
@@ -743,16 +734,16 @@ templ codeRuns(runs []document.CodeRun) {
 templ (writer PageWriter) facts(facts []document.Fact) {
 	<dl class="facts">
 		for _, fact := range facts {
-			@writer.factRow(fact)
+			@factRow(fact.Label, writer.factValue(fact))
 		}
 	</dl>
 }
 
-// factRow is a fact's label and its value, the value as factValue draws it.
-templ (writer PageWriter) factRow(fact document.Fact) {
-	<dt>{ fact.Label }</dt>
+// factRow is a label and its value, as facts and what tells about a project stand.
+templ factRow(label string, value templ.Component) {
+	<dt>{ label }</dt>
 	<dd>
-		@writer.factValue(fact)
+		@value
 	</dd>
 }
 

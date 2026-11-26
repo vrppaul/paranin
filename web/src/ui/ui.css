@@ -1654,8 +1654,9 @@ a.tile-title:focus-visible {
   justify-items: start;
 }
 
-/* a name of what the project is made of stands whole, so its line breaks after a dot alone, never at a hyphen */
-.stack-name {
+/* a part of what tells about a project, a name or a link, stands whole, so its line breaks after a dot alone, never at
+ * a hyphen */
+.whole-part {
   white-space: nowrap;
 }
 

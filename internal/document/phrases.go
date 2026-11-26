@@ -115,14 +115,15 @@ func projectPhrases(phrases []string, project *Project) []string {
 	return endPhrases(phrases, *project)
 }
 
-// endPhrases are what a project's end says, its sections' (EndSections): where it has others, their heading, the way
-// to them all and each one's name and tagline, not what it is made of, which its own page says; the word for contact
-// and the author's mail.
+// endPhrases are what a project's end says: where it has others, their heading, the way to them all and each one's name
+// and tagline, not what it is made of, which its own page says; and the author's mail. Not the site's word for contact
+// over the mail, which a face leaves out where the mail's place says it.
 func endPhrases(phrases []string, project Project) []string {
-	for _, section := range project.EndSections() {
-		phrases = oneBlockPhrases(phrases, section)
+	if len(project.Others) > 0 {
+		phrases = spanPhrases(textPhrase(phrases, project.Labels.Others), []Span{project.AllProjects})
+		phrases = listingPhrases(phrases, project.OtherListings())
 	}
-	return phrases
+	return textPhrase(phrases, project.Mail.Address)
 }
 
 func factPhrases(phrases []string, facts []Fact) []string {

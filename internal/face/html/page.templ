@@ -489,8 +489,8 @@ templ (writer PageWriter) projectMain(head document.Head, blocks []document.Bloc
 
 // projectEnd is where a project's reader goes next (DESIGN.md, ProjectEnd), under a quiet rule on the project's grid:
 // where the project has others, in the text's column the heading over them and the way to them all, then each a pane;
-// in the side's, under a heading a screen reader alone reads, the site's word for contact, the author's mail, heading
-// as the brief's does, and the primary button, which does nothing until the form is there, as the first screen's.
+// in the side's the author's mail, heading as the brief's does, with no word over it, and the primary button, which
+// does nothing until the form is there, as the first screen's.
 templ (writer PageWriter) projectEnd(project document.Project) {
 	<footer class="project-end">
 		if len(project.Others) > 0 {
@@ -506,7 +506,6 @@ templ (writer PageWriter) projectEnd(project document.Project) {
 				}
 			</nav>
 		}
-		<h2 class="unseen-heading">{ project.Labels.Contact }</h2>
 		@writer.mailLink(project.Mail, true)
 		<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
 	</footer>

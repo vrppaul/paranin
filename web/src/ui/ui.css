@@ -1716,17 +1716,6 @@ a.tile-title:focus-visible {
   justify-self: start;
 }
 
-/* a heading the outline holds and a screen reader reads, which the page shows by its place alone */
-.unseen-heading {
-  position: absolute;
-  width: var(--hairline);
-  height: var(--hairline);
-  margin: 0;
-  overflow: hidden;
-  clip-path: circle(0);
-  white-space: nowrap;
-}
-
 /* on a phone one column: the name, the tagline and the description, then the side's two groups; at the end the panes
  * one under another, then the mail and the button */
 @media (width < 53.75rem) {

@@ -7,8 +7,8 @@ import (
 
 // WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point, a paragraph of a role's
 // description, the experience's line or a technology it puts forward that holds nothing but gaps still to fill is left
-// out until its author fills it, and a list of facts or of points, a side or the experience's head left with none goes
-// with it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the
+// out until its author fills it, and a list of facts or of points or the experience's head left with none goes with
+// it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the
 // blocks whole. The blocks it is handed keep everything they had.
 func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
@@ -21,7 +21,7 @@ func WrittenBlocks(blocks []Block) []Block {
 }
 
 // writtenBlock is a block with its facts, points, paragraphs, line and technologies that are only gaps left out; not
-// shown at all where it is a list of facts or of points, a side or the experience's head left with none.
+// shown at all where it is a list of facts or of points or the experience's head left with none.
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
 	case Section:
@@ -43,9 +43,6 @@ func writtenBlock(block Block) (Block, bool) {
 	case Points:
 		typed.List = writtenPoints(typed.List)
 		return typed, len(typed.List) > 0
-	case Side:
-		typed.Blocks = WrittenBlocks(typed.Blocks)
-		return typed, len(typed.Blocks) > 0
 	case Reference:
 		sections := make([]Section, 0, len(typed.Sections))
 		for _, section := range typed.Sections {
@@ -57,7 +54,7 @@ func writtenBlock(block Block) (Block, bool) {
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)
 		return typed, true
-	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Contents, Checks, Skills, Posts:
+	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Side, Contents, Checks, Skills, Posts:
 	}
 	return block, true
 }

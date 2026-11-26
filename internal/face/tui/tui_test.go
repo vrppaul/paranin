@@ -709,7 +709,8 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // (ADR-0003): the address heads the brief without its label, and the facts stand in the brief without their
 // section's title. A tab's title the page draws in the titles' font, or not at all on the opening, reaches the reader
 // by form too, as the footer's name of the tab. A project's opening shows its repository by its form too: its owner
-// and name under the title, a link to the address, without its label. The blog's list and a post reach it as well,
+// and name under the title, a link to the address, without its label; its end, the author's mail, without the word for
+// contact over it, as the page's. The blog's list and a post reach it as well,
 // the blog's name in the titles' font; what a frame holds, a post's code, a widget's alt text and a command, is read
 // without the frame's sides, which stand between each two of its rows, and without the mark that opens each row a
 // command goes on in.
@@ -727,7 +728,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		{
 			name: "a project's page", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),
-			byForm: []string{"repository", "https://github.test/mira/tidy", "Why"},
+			byForm: []string{"repository", "https://github.test/mira/tidy", "Why", "contact"},
 		},
 		{
 			name: "the health report", shown: compose.Health(snapshot),

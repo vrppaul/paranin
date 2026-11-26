@@ -33,7 +33,9 @@ person:
   headline_links:
     experience: backend services
     projects: tools
-  location: Prague, Czechia
+  # The city as the page writes it, then where he works from, which the page writes after it
+  location: Prague
+  works_from: remote worldwide
   email: pavel@paran.in
   links:
     - label: GitHub

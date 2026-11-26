@@ -112,7 +112,8 @@ func besideLines(left []line, rightStart int, right []line) []line {
 }
 
 // brief is the brief as neofetch prints a system's: the address, the first way to reach the author, parted into its
-// mailbox and its host, a rule under it; the subtitle and the place; then the facts, each by its label; the other
+// mailbox and its host, a rule under it; the subtitle, and the place on a line of its own, as the page's brief stands
+// them; then the facts, each by its label; the other
 // ways to reach the author, as the page's first screen ends its brief with them; then a row of swatches of the
 // design's colours.
 func (layout layout) brief(opening briefOpening) []line {
@@ -125,7 +126,8 @@ func (layout layout) brief(opening briefOpening) []line {
 		rule := plainRun(strings.Repeat(briefRuleMark, runsWidth(addressLine)), kindFaint)
 		lines = append(lines, addressLine, line{rule})
 	}
-	lines = stacked(slices.Concat(lines, layout.subtitleLines(opening.head), layout.facts(opening.brief, 0, kindLabel)), layout.factBlock(opening.ways, 0))
+	role, place := layout.fill(layout.words(opening.head.Subtitle, kindText), 0), layout.fill(textWords(opening.head.Place, kindMuted), 0)
+	lines = stacked(slices.Concat(lines, role, place, layout.facts(opening.brief, 0, kindLabel)), layout.factBlock(opening.ways, 0))
 	swatches := line{}
 	for tone := range len(swatchColours()) {
 		swatches = append(swatches, tonedRun(swatchMark, kindSwatch, tone))

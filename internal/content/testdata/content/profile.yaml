@@ -13,7 +13,8 @@ person:
   headline_links:
     experience: Builds
     projects: small tools
-  location: Brno, Czechia
+  location: Brno
+  works_from: remote across Europe
   email: mira@example.test
   links:
     - label: GitHub

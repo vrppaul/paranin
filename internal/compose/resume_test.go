@@ -22,7 +22,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 	}{
 		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
-		{name: "the place", want: "Brno, Czechia"},
+		{name: "the place", want: "Based in Brno · remote across Europe"},
 		{name: "the headline's words for a kind of work", want: "small tools"},
 		{name: "the summary", want: "Writes software for people who read it."},
 		{name: "a fact's label", want: "available"},
@@ -513,6 +513,26 @@ func TestTheHeadlineLeadsEachKindOfWorkToItsTab(test *testing.T) {
 	}
 }
 
+// The résumé's head places the author in the site's words: the city they are based in, then where they work from, the
+// dot between (DESIGN.md, Pages); the city alone where the profile says nowhere they work from.
+func TestTheResumeHeadSaysWhereTheAuthorWorksFrom(test *testing.T) {
+	cases := []struct {
+		name     string
+		snapshot *content.Snapshot
+		want     string
+	}{
+		{name: "a city and where they work from", snapshot: fixtures.LoadedContent(test), want: "Based in Brno · remote across Europe"},
+		{name: "a city alone", snapshot: withoutWorkingFrom(fixtures.LoadedContent(test)), want: "Based in Brno"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if got := Resume(testCase.snapshot, nil).Head.Place; got != testCase.want {
+				test.Errorf("the place = %q, want %q", got, testCase.want)
+			}
+		})
+	}
+}
+
 // The résumé's head greets the reader before the author's name, in the site's words; a project's page does not.
 func TestTheResumeHeadGreetsTheReader(test *testing.T) {
 	documents := DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages)
@@ -560,6 +580,13 @@ func withoutLanguages(snapshot *content.Snapshot) *content.Snapshot {
 	for index := range changed.Profile.Projects {
 		changed.Profile.Projects[index].Language = ""
 	}
+	return &changed
+}
+
+// withoutWorkingFrom is a snapshot whose author names no place they work from, the rest as it was.
+func withoutWorkingFrom(snapshot *content.Snapshot) *content.Snapshot {
+	changed := *snapshot
+	changed.Profile.Person.WorksFrom = ""
 	return &changed
 }
 

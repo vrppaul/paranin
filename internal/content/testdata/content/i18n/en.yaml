@@ -89,3 +89,4 @@ manual_description: Description
 manual_notes: Notes
 outdated: older than the original
 live: live
+based_in: "Based in {}"

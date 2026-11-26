@@ -35,7 +35,8 @@ type Site struct {
 	TagAuthority string     `yaml:"tag_authority"`
 }
 
-// Person is who the résumé is about.
+// Person is who the résumé is about: among the rest, the city they are based in, as the page writes it, and where they
+// work from.
 type Person struct {
 	Name           string        `yaml:"name"`
 	AlternateNames []string      `yaml:"alternate_names"`
@@ -43,6 +44,7 @@ type Person struct {
 	Headline       string        `yaml:"headline"`
 	HeadlineLinks  HeadlineLinks `yaml:"headline_links"`
 	Location       string        `yaml:"location"`
+	WorksFrom      string        `yaml:"works_from"`
 	Email          string        `yaml:"email"`
 	Links          []SocialLink  `yaml:"links"`
 }

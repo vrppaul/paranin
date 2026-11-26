@@ -112,8 +112,8 @@ const (
 // with its title and the grouping's word, and the filter of a list filtered by a tag, with the tag, and that filter as
 // the way back to the whole list, with its words; what an older version of a post says of the newer, with that
 // version's day; and the title of the blog's feed, with the author's name, and of a series', with the series' title
-// and the blog's feed's. A catalogue writes each place as phrasePlace, where its language puts the value, the values
-// in the order the site hands them.
+// and the blog's feed's; and where the author is based, with the city. A catalogue writes each place as phrasePlace,
+// where its language puts the value, the values in the order the site hands them.
 type Phrase int
 
 const (
@@ -131,6 +131,7 @@ const (
 	PhraseNewerVersion
 	PhraseBlogFeed
 	PhraseSeriesFeed
+	PhraseBasedIn
 )
 
 // How a phrase writes the place of a value
@@ -163,6 +164,7 @@ func phraseForms() map[Phrase]phraseForm {
 		PhraseNewerVersion:  {key: "newer_version", values: oneValue},
 		PhraseBlogFeed:      {key: "blog_feed", values: oneValue},
 		PhraseSeriesFeed:    {key: "series_feed", values: twoValues},
+		PhraseBasedIn:       {key: "based_in", values: oneValue},
 	}
 }
 

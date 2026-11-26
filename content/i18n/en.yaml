@@ -19,10 +19,12 @@
 # before how it groups its posts, apart from the series' label among a post's facts, since a language may write the
 # two otherwise; the months' names as a day writes them, 21 Nov 2026; the manual's own words, the section of the manual
 # its pages stand in, the names of the sections each opens with and of its notes, which it writes in capitals; what a
-# translation older than its original says of it; and the word in a widget's edge that says it runs. A phrase holds a
+# translation older than its original says of it; the word in a widget's edge that says it runs; and where the author
+# is based, before where they work from. A phrase holds a
 # place, {}, for each value it takes, in the order the site hands them: the command, the code block's number on its
 # page, a part's number and the count of parts, the series' title, the list's title and the grouping's word, the tag,
-# the filter's words, the newer version's day, the author's name, the series' title and the blog's feed's title. A
+# the filter's words, the newer version's day, the author's name, the series' title and the blog's feed's title, and
+# the city the author is based in. A
 # count, how many posts, all the parts of a series and those out, is written in each form the language gives a whole
 # number, as CLDR names them, English one and other, Russian one, few and many, its number in its first place.
 # `paranin check content` requires every one of them.
@@ -116,3 +118,4 @@ manual_description: Description
 manual_notes: Notes
 outdated: older than the original
 live: live
+based_in: "Based in {}"

@@ -44,7 +44,8 @@ func TestTheFirstTabHoldsTheBriefAndTheCareer(test *testing.T) {
 	}{
 		{name: "a fact", want: "5 years"},
 		{name: "the address", want: "mira@example.test"},
-		{name: "the subtitle and the place", want: "Software Engineer · Brno, Czechia"},
+		{name: "the subtitle", want: "Software Engineer"},
+		{name: "the place, on a line of its own as the page's", want: "Based in Brno · remote across Europe"},
 		{name: "the role still held", want: "Northwind"},
 		{name: "a role before it", want: "Southwind"},
 		{name: "the present", want: "present"},

@@ -337,7 +337,7 @@ func TestAMissingOrEmptyProfileIsAFaultOfTheFile(test *testing.T) {
 
 func TestEveryUnknownKeyIsAFault(test *testing.T) {
 	folder := changedProfile(test, "headline:", "tagline:")
-	faults := faultsOf(test, changedFile(test, folder, profileFile, "location: Brno, Czechia", "place: Brno, Czechia"))
+	faults := faultsOf(test, changedFile(test, folder, profileFile, "location: Brno", "place: Brno"))
 	named := []bool{
 		slices.ContainsFunc(faults, func(fault Fault) bool { return strings.Contains(fault.Problem, "tagline") }),
 		slices.ContainsFunc(faults, func(fault Fault) bool { return strings.Contains(fault.Problem, "place") }),

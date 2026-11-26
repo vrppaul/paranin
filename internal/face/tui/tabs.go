@@ -277,7 +277,7 @@ func (layout layout) headParts(head document.Head) headParts {
 	}
 }
 
-// subtitleLines are a head's subtitle with its place beside it, under the title or in the brief.
+// subtitleLines are a head's subtitle with its place beside it, under the title.
 func (layout layout) subtitleLines(head document.Head) []line {
 	return layout.fill(markedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted), placeMark), 0)
 }

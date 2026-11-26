@@ -19,6 +19,10 @@ import (
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
+// What parts the city the author is based in from where they work from, in the one text a head's place is: the dot
+// every face parts the parts of a line with
+const placeJoint = " · "
+
 // Composed is a page a person reads, as compose makes it: its document, its tabs past the opening, each a document
 // alone, and its record, made together so none is ever without the others.
 type Composed struct {
@@ -205,7 +209,7 @@ func resumeHead(profile content.Profile, words content.Words, feeds []document.L
 		Greeting:    words.Text(content.WordGreeting),
 		Title:       markedSpans(person.Name),
 		Subtitle:    markedSpans(person.Title),
-		Place:       person.Location,
+		Place:       placeOf(person, words),
 		Filters:     nil,
 		Lead:        headline,
 		Version:     nil,
@@ -215,6 +219,20 @@ func resumeHead(profile content.Profile, words content.Words, feeds []document.L
 		Feeds:       feeds,
 		Languages:   nil,
 	}
+}
+
+// placeOf is where the author is, in the site's words (DESIGN.md, Pages): the city they are based in, then where they
+// work from, the place mark between; the city alone where the profile says nowhere they work from, and none where it
+// names no city.
+func placeOf(person content.Person, words content.Words) string {
+	if person.Location == "" {
+		return ""
+	}
+	based := words.Phrase(content.PhraseBasedIn, person.Location)
+	if person.WorksFrom == "" {
+		return based
+	}
+	return based + placeJoint + person.WorksFrom
 }
 
 // ways are the ways to reach the author, in the order a reader tries them: mail, the public profiles, ssh.

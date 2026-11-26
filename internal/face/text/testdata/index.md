@@ -1,6 +1,6 @@
 # Mira Example
 
-Software Engineer · Brno, Czechia
+Software Engineer · Based in Brno · remote across Europe
 
 > [Builds](https://example.test/experience.md) [small tools](https://example.test/projects.md) that last.
 

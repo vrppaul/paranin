@@ -92,3 +92,4 @@ manual_description: Описание
 manual_notes: Примечания
 outdated: старше оригинала
 live: вживую
+based_in: "Живу в {}"

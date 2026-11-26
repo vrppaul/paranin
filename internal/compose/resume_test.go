@@ -99,16 +99,6 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 	}
 }
 
-// Each entry of the experience says what its time was spent on, a role, so a face takes it by its kind, as the
-// career line does, not by the section it stands in.
-func TestEachEntryOfTheExperienceIsARole(test *testing.T) {
-	for _, block := range sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience").Blocks {
-		if got := as[document.Entry](test, block).Kind; got != document.EntryRole {
-			test.Errorf("an entry of the experience is of the kind %d, want a role, %d", got, document.EntryRole)
-		}
-	}
-}
-
 // Every link of the résumé and of a project's page leads where the profile says: a face writes the address, but
 // never chooses it.
 func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {

@@ -697,9 +697,6 @@ templ (writer PageWriter) table(table document.Table) {
 								if !namesColumns {
 									role="cell"
 								}
-								if setBack(cell.Kind) {
-									class="table-duration"
-								}
 							>
 								@writer.spans(cell.Spans)
 							</td>

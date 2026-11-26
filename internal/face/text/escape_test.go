@@ -52,8 +52,8 @@ func TestAListItemNeverOpensABlock(test *testing.T) {
 	composed := document.Document{
 		Head: fixtures.HeadOf(document.Page{Kind: document.PageNone, Slug: "", Tab: ""}, nil),
 		Blocks: []document.Block{document.Table{Rows: []document.Row{
-			{Cells: []document.Cell{{Kind: document.CellText, Spans: []document.Span{document.Text{Text: "- a"}}}}},
-			{Cells: []document.Cell{{Kind: document.CellText, Spans: []document.Span{document.Text{Text: "1. b"}}}}},
+			{Cells: []document.Cell{{Spans: []document.Span{document.Text{Text: "- a"}}}}},
+			{Cells: []document.Cell{{Spans: []document.Span{document.Text{Text: "1. b"}}}}},
 		}}},
 	}
 	want := "- \\- a\n- 1\\. b"

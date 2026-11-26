@@ -1122,7 +1122,7 @@ func TestAnItemOpeningWithABlockStandsTheBlockOnItsMark(test *testing.T) {
 	code := document.CodeBlock{Language: "go", Runs: []document.CodeRun{{Kind: document.CodePlain, Text: "main()"}}}
 	quote := document.Quote{Blocks: []document.Block{document.Paragraph{Spans: textOf("A quote")}}}
 	table := document.Table{Header: document.Row{Cells: nil}, Rows: []document.Row{{Cells: []document.Cell{
-		{Kind: document.CellText, Spans: textOf("Reading")}, {Kind: document.CellText, Spans: textOf("Kept")},
+		{Spans: textOf("Reading")}, {Spans: textOf("Kept")},
 	}}}}
 	inner := document.List{Ordered: false, Start: 0, Items: []document.Item{{Blocks: []document.Block{document.Paragraph{Spans: textOf("inside")}}}}}
 	items := []document.Item{{Blocks: []document.Block{picture}}, {Blocks: []document.Block{code}}, {Blocks: []document.Block{quote}}, {Blocks: []document.Block{table}}, {Blocks: []document.Block{inner}}}

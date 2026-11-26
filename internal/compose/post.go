@@ -248,7 +248,7 @@ func (reader bodyReader) table(table *extensionast.Table) document.Table {
 func (reader bodyReader) row(row ast.Node) document.Row {
 	cells := []document.Cell{}
 	for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
-		cells = append(cells, document.Cell{Kind: document.CellText, Spans: reader.spans(cell)})
+		cells = append(cells, document.Cell{Spans: reader.spans(cell)})
 	}
 	return document.Row{Cells: cells}
 }

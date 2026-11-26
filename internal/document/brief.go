@@ -73,11 +73,11 @@ func SectionsOf(blocks []Block) ([]Block, []Section) {
 	return others, sections
 }
 
-// rolesOf is the roles sections hold, the entries whose kind is a role, in order.
+// rolesOf is the roles sections hold, their entries, in order.
 func rolesOf(sections []Section) []Entry {
 	roles := []Entry{}
 	for block := range sectionBlocks(sections) {
-		if entry, isEntry := block.(Entry); isEntry && entry.Kind == EntryRole {
+		if entry, isEntry := block.(Entry); isEntry {
 			roles = append(roles, entry)
 		}
 	}

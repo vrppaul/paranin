@@ -484,18 +484,6 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	return templ.NopComponent
 }
 
-// setBack is whether a table's cell of a kind stands back from the words beside it, as a duration does.
-func setBack(kind document.CellKind) bool {
-	switch kind {
-	case document.CellText:
-		return false
-	case document.CellDuration:
-		return true
-	}
-	// the zero kind, which compose never builds, reads as words
-	return false
-}
-
 // factValue is the component of a fact's value by its shape: a command alone as a chip that copies it (DESIGN.md,
 // Command), one link to a mailbox as the Mail in the size of the text round it, anything else as its spans.
 func (writer PageWriter) factValue(fact document.Fact) templ.Component {

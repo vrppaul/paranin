@@ -1462,11 +1462,6 @@ a.tile-title:focus-visible {
   text-align: start;
 }
 
-/* a duration stands back from the words beside it */
-.table .table-duration {
-  color: var(--muted);
-}
-
 /* on a phone a skill table folds (DESIGN.md, Table), so a long name never pushes its sources off the screen. The last
  * cell's track is flexible, so its words widen no column; the row carries the air, so the last cell hugs the others */
 @media (width < 53.75rem) {

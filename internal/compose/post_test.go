@@ -145,12 +145,12 @@ func TestAPostsBodyBecomesItsBlocks(test *testing.T) {
 			body: "| Reading | Kept |\n| --- | --- |\n| Slow | **Most** |",
 			want: []document.Block{document.Table{
 				Header: document.Row{Cells: []document.Cell{
-					{Kind: document.CellText, Spans: textSpans("Reading")},
-					{Kind: document.CellText, Spans: textSpans("Kept")},
+					{Spans: textSpans("Reading")},
+					{Spans: textSpans("Kept")},
 				}},
 				Rows: []document.Row{{Cells: []document.Cell{
-					{Kind: document.CellText, Spans: textSpans("Slow")},
-					{Kind: document.CellText, Spans: []document.Span{document.Strong{Spans: textSpans("Most")}}},
+					{Spans: textSpans("Slow")},
+					{Spans: []document.Span{document.Strong{Spans: textSpans("Most")}}},
 				}}},
 			}},
 		},

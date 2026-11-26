@@ -18,8 +18,8 @@ func TestTheNotesGatherEachNoteOnceInTheOrderFirstCited(test *testing.T) {
 			List{Ordered: false, Start: 0, Items: []Item{{Blocks: []Block{Paragraph{Spans: []Span{Strong{Spans: []Span{second}}}}}}}},
 			Quote{Blocks: []Block{Paragraph{Spans: []Span{first}}}},
 			Table{
-				Header: Row{Cells: []Cell{{Kind: CellText, Spans: []Span{third}}}},
-				Rows:   []Row{{Cells: []Cell{{Kind: CellText, Spans: []Span{fourth, second}}}}},
+				Header: Row{Cells: []Cell{{Spans: []Span{third}}}},
+				Rows:   []Row{{Cells: []Cell{{Spans: []Span{fourth, second}}}}},
 			},
 		}},
 	}

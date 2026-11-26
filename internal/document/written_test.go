@@ -36,8 +36,8 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 		},
 		{
 			name:  "a point only a gap, in words or in a result",
-			block: Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{onlyAGap, amongWords, unwrittenResult, writtenResult}},
-			want:  []Block{Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{amongWords, writtenResult}}},
+			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{onlyAGap, amongWords, unwrittenResult, writtenResult}},
+			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{amongWords, writtenResult}}},
 		},
 		{
 			name:  "a card's fact",
@@ -51,8 +51,8 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 		},
 		{
 			name:  "a point only stressed or strong gaps, and points of words so",
-			block: Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedGap, strongGap, stressedWords, strongWords}},
-			want:  []Block{Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedWords, strongWords}}},
+			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedGap, strongGap, stressedWords, strongWords}},
+			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedWords, strongWords}}},
 		},
 		{name: "a paragraph, which is no fact and no point", block: gapParagraph, want: []Block{gapParagraph}},
 	}
@@ -71,7 +71,7 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 func TestWrittenKeepsTheBlocksHandedWhole(test *testing.T) {
 	facts := []Fact{{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}, {Label: "now", Value: []Span{Text{Text: "here"}}}}
 	points := []Point{{Spans: []Span{Gap{Text: "[What was built]"}}}, {Spans: []Span{Text{Text: "Wrote it"}}}}
-	role := Entry{Kind: EntryRole, Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: points}
+	role := Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: points}
 	handed := Document{Head: Head{}, Blocks: []Block{Facts{Kind: FactsDetails, List: facts}, role}}
 	want := Phrases(handed)
 	WrittenBlocks(handed.Blocks)

@@ -197,7 +197,6 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 	entries := make([]document.Block, 0, len(roles))
 	for _, role := range roles {
 		entries = append(entries, document.Entry{
-			Kind:     document.EntryRole,
 			Period:   periodOf(role.Start, role.End, words),
 			Title:    markedSpans(role.Company),
 			Subtitle: markedSpans(role.Title),

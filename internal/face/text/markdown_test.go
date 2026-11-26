@@ -171,5 +171,5 @@ func TestABarInATablesCellStaysInItsCell(test *testing.T) {
 
 // cellOf is a cell of a table a test builds by hand: a text.
 func cellOf(text string) document.Cell {
-	return document.Cell{Kind: document.CellText, Spans: []document.Span{document.Text{Text: text}}}
+	return document.Cell{Spans: []document.Span{document.Text{Text: text}}}
 }

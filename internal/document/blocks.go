@@ -40,24 +40,10 @@ type Row struct {
 	Cells []Cell
 }
 
-// Cell is one cell of a row, of a kind a face draws it by. The kind rides on each cell, not on its column, so a
-// face reads a cell's kind off the cell itself; the first cell's look is the Table's own rule.
+// Cell is one cell of a row, words read as the text around them; the first cell's look is the Table's own rule.
 type Cell struct {
-	Kind  CellKind
 	Spans []Span
 }
-
-// CellKind is what a cell of a table holds.
-type CellKind int
-
-const (
-	// The zero kind names none
-	_ CellKind = iota
-	// CellText is words, read as the text around them
-	CellText
-	// CellDuration is how long something lasted, as a skill's use, which a face sets back from the words beside it
-	CellDuration
-)
 
 // CodeBlock is text shown as it is, line for line: a post's code. Its runs hold the text whole by kind of word, so a
 // face colours a kind and never reads a language.
@@ -184,27 +170,14 @@ const (
 	FactsWays
 )
 
-// Entry is a span of time spent somewhere, a role or a school as its kind says, with what came of it.
+// Entry is a role, work for an employer or a client, over a span of time, with what came of it.
 type Entry struct {
-	Kind     EntryKind
 	Period   Period
 	Title    []Span
 	Subtitle []Span
 	Place    string
 	Points   []Point
 }
-
-// EntryKind is what an entry's time was spent on.
-type EntryKind int
-
-const (
-	// The zero kind names none
-	_ EntryKind = iota
-	// EntryRole is a role: work for an employer or a client
-	EntryRole
-	// EntrySchool is a school: a course of study
-	EntrySchool
-)
 
 // Point is one thing an entry holds up.
 type Point struct {

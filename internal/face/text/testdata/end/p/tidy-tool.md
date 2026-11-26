@@ -20,7 +20,7 @@ Files were untidy.
 
 ## How it tidies
 
-It reads each file once.
+`tidy .` reads each file once.
 
 - Sorts the lines
 - Keeps the **blank** ones

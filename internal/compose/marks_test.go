@@ -7,8 +7,8 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The profile marks a result with ==…== and a gap still to fill with […]; both become spans, and a gap may sit
-// inside a result, as the profile writes "==[N] requests/day==".
+// The profile marks a result with ==…==, a gap still to fill with […] and code with `…`; each becomes a span, a gap or
+// code may sit inside a result, as the profile writes "==[N] requests/day==", and inside code no mark is read.
 func TestTheProfilesMarksBecomeSpans(test *testing.T) {
 	cases := []struct {
 		name string
@@ -29,6 +29,17 @@ func TestTheProfilesMarksBecomeSpans(test *testing.T) {
 		{name: "brackets inside brackets", text: "[a [b] c]", want: []document.Span{document.Text{Text: "[a "}, document.Gap{Text: "[b]"}, document.Text{Text: " c]"}}},
 		{name: "empty brackets", text: "a [] b", want: []document.Span{document.Text{Text: "a [] b"}}},
 		{name: "a result never closed", text: "==open", want: []document.Span{document.Text{Text: "==open"}}},
+		{name: "code", text: "Run `go test` now", want: []document.Span{document.Text{Text: "Run "}, document.Code{Text: "go test"}, document.Text{Text: " now"}}},
+		{name: "no mark inside code", text: "`==a== [b]`", want: []document.Span{document.Code{Text: "==a== [b]"}}},
+		{name: "a backtick with no partner", text: "a ` b", want: []document.Span{document.Text{Text: "a ` b"}}},
+		{
+			name: "code inside a result", text: "==`go` fast==",
+			want: []document.Span{document.Highlight{Spans: []document.Span{document.Code{Text: "go"}, document.Text{Text: " fast"}}}},
+		},
+		{
+			name: "a result's mark inside code inside a result", text: "==a `b==c` d==",
+			want: []document.Span{document.Highlight{Spans: []document.Span{document.Text{Text: "a "}, document.Code{Text: "b==c"}, document.Text{Text: " d"}}}},
+		},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

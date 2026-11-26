@@ -214,7 +214,7 @@ func TestAProjectsSectionHoldsItsParagraphsThenItsPoints(test *testing.T) {
 	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	got := sectionTitled(test, project, "How it tidies").Blocks
 	want := []document.Block{
-		document.Paragraph{Spans: []document.Span{document.Text{Text: "It reads each file once."}}},
+		document.Paragraph{Spans: []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " reads each file once."}}},
 		document.Points{List: []document.Point{
 			{Spans: []document.Span{document.Text{Text: "Sorts the lines"}}},
 			{Spans: []document.Span{document.Text{Text: "Keeps the "}, document.Highlight{Spans: []document.Span{document.Text{Text: "blank"}}}, document.Text{Text: " ones"}}},

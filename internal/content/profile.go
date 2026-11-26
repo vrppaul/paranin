@@ -1,14 +1,15 @@
 package content
 
-// The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
-// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
-// description, a value. A label, a place, a language's name, a stack's or a technology's name, an address, a link's
-// text and a command are shown as written. A gap is also how a duration not known yet is written, the gap its whole
-// value
+// The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, [text] a gap
+// the author has still to fill, and `text` code, inside which no mark is read. Prose and titles carry them: a name, a
+// title, a line, a point, a paragraph, a description, a value. A label, a place, a language's name, a stack's or a
+// technology's name, an address, a link's text and a command are shown as written. A gap is also how a duration not
+// known yet is written, the gap its whole value
 const (
 	HighlightMark = "=="
 	GapOpening    = "["
 	GapClosing    = "]"
+	CodeMark      = "`"
 )
 
 // Profile is the résumé: who, what they did and made, what they can do, and how to reach them.

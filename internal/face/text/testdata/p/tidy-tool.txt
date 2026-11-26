@@ -20,7 +20,7 @@ WHY
        Files were untidy.
 
 HOW IT TIDIES
-       It reads each file once.
+       tidy . reads each file once.
 
        - Sorts the lines
        - Keeps the blank ones

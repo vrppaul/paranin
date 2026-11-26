@@ -126,7 +126,6 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post's number", body: "[a](/blog/1)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
-		{name: "a tab of a project's page", body: "[a](/p/tidy-tool/why)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's page", body: "[a](/blog/reading-slowly)", change: fixturePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out after the post linking it", body: "[a](/blog/reading-slowly)", change: fixturePostLater, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},

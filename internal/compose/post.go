@@ -34,7 +34,7 @@ func composedPosts(prepared *Prepared, read blog, paths map[string]document.Targ
 	author := authorOf(prepared.snapshot.Profile.Person)
 	posts := []Composed{}
 	for _, post := range read.served {
-		posts = append(posts, Composed{Document: postDocument(currentOf(post), read, prepared, paths), Tabs: nil, Record: read.postRecord(post, author)})
+		posts = append(posts, composedPage(postDocument(currentOf(post), read, prepared, paths), read.postRecord(post, author)))
 	}
 	return posts
 }

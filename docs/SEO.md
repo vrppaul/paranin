@@ -43,9 +43,7 @@ nothing: every negotiated answer is `no-cache`, and no CDN caches an address who
 
 - **A title of its own**, no two alike: the résumé its person's name; a tab its title and the person's name,
   `Experience — Pavel Paranin`; the list by series its own, `blog · series`, beside the list by year's `blog`, each in
-  its language's words (owner, 2026-11-24); a project and a post their titles; a project's tab, whose title another
-  project's may share, its title and the project's name, `How it works — semantic-code-mcp` (the author's choice, on
-  the owner's leave, 2026-11-24).
+  its language's words (owner, 2026-11-24); a project and a post their titles.
 - **A description:** the check requires one of a post.
 - **Its markup:** one `h1`, `<article>`, `<time datetime>`, alt text required of every picture.
 - **One address**, whole, as `routes` writes it: the canonical link in the head, the `Link` header every format sends
@@ -92,7 +90,7 @@ One `Person` stands for the author, by the `@id` `https://paran.in/#person`, so 
 
 ## What is indexed
 
-Indexed: the résumé and its tabs, the projects' pages and theirs, the blog's lists by year and by series and each post
+Indexed: the résumé and its tabs, the projects' pages, the blog's lists by year and by series and each post
 published and out, in each language. Not indexed: a filtered list, an older version of a post and an unlisted post
 (owner, 2026-11-24), each sent with `noindex` in every format, with no canonical address or record, and out of the
 sitemap. A filtered list and an older version carry no Open Graph either, since they have no address of their own to

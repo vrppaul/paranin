@@ -17,11 +17,11 @@ Beside them a feed reader polls the blog's feeds, in **Atom**, each at an addres
 
 ## Addresses
 
-A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé or a
-project's page is a tab, named by its title's letters and digits in small letters, a hyphen between each run of them
-(`Experience` is `experience`); a post and the list have no tabs. A post is served while it is published or unlisted
-and its `published` time has come, and as a draft only under `paranin serve --drafts`, to its author; the list names
-the posts published and out alone. A post dated later comes out at its time with no reload, and is a draft until then
+A page is the résumé, a project's page, a post or the blog's list. Each section past the opening of the résumé is a
+tab, named by its title's letters and digits in small letters, a hyphen between each run of them (`Experience` is
+`experience`); a project's page (owner, 2026-11-26), a post and the list have no tabs. A post is served while it is
+published or unlisted and its `published` time has come, and as a draft only under `paranin serve --drafts`, to its
+author; the list names the posts published and out alone. A post dated later comes out at its time with no reload, and is a draft until then
 in who reads it and where it is listed, its version marked by its day, never the word `draft`, which a post written
 as a draft alone reads (`docs/FOUNDATION.md` §5.4, Status).
 
@@ -34,12 +34,12 @@ lists the posts out in it alone, in its words; English, the site's own language,
 | Method, path | Answer |
 | --- | --- |
 | `GET /`, `GET /p/{slug}` | The page, in the format the reader's request chooses: the text formats write it whole, the HTML shows its opening tab. |
-| `GET /{tab}`, `GET /p/{slug}/{tab}` | One tab, chosen the same way: the text formats write it alone, the HTML shows it inside its page. |
+| `GET /{tab}` | One tab of the résumé, chosen the same way: the text formats write it alone, the HTML shows it inside its page. |
 | `GET /blog/{slug}` | A post, whole, in the format the reader's request chooses. |
 | `GET /blog`, `GET /blog/series` | The blog's list, every post published, by year, newest first, and by series, the posts in no series last, chosen the same way. No two pages share an address: content where two would, as a post slugged `series`, is refused as it loads. |
 | `GET /blog?tag={tag}` | The list by year filtered to the posts of a tag, chosen the same way, for each tag of a post the list names. On the list by year the query names one tag; any other key, and the query of any other path, is passed over. A tag named twice, or one no list has, is `404`. Each is drawn the first time a request asks for it, and kept. |
-| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/p/{slug}/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md`, `/blog.md?tag={tag}` | The same in markdown, `text/markdown`. |
-| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/p/{slug}/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}` | The same as the manual, `text/plain`. |
+| `GET /index.md`, `/p/{slug}.md`, `/{tab}.md`, `/blog/{slug}.md`, `/blog.md`, `/blog/series.md`, `/blog.md?tag={tag}` | The same in markdown, `text/markdown`. |
+| `GET /index.txt`, `/p/{slug}.txt`, `/{tab}.txt`, `/blog/{slug}.txt`, `/blog.txt`, `/blog/series.txt`, `/blog.txt?tag={tag}` | The same as the manual, `text/plain`. |
 | `GET /blog/{slug}/{date}`, `.md`, `.txt` | An older version of a post out, published or unlisted, by the day it came out (`2026-11-10`), its revision's name (`docs/FOUNDATION.md` §5.4, Revisions), chosen and in each format as the post is; drawn the first time a request asks for it, and kept. A draft's, a post's dated later among them, are served nowhere. The current version's day, the name the post's versions list it by, is `302` to the same face at `/blog/{slug}`, with `Cache-Control: no-cache`, since that day names an older version once the post is updated. |
 | `GET /blog/{slug}/{picture}` | A picture a version of the post shows, from its folder, as its type: `image/png`, `image/jpeg`, `image/webp` or `image/svg+xml`. Nothing else of the folder is served, and no path leads out of it. A picture's name ends in its type's ending, which no day and no format's ending is, so a version and a picture never share a path. |
 | `GET /blog/{number}` | `301` to `/blog/{slug}`, by its path from the root, with `Cache-Control: no-cache`, since a post's slug is its folder's name, which may change. |

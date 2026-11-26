@@ -121,7 +121,7 @@ type plainOpening struct {
 	blocks []document.Block
 }
 
-// titledSection is a section of the résumé or of a project's page, which stands under its title.
+// titledSection is a section of the résumé, which stands under its title.
 type titledSection struct {
 	blocks []document.Block
 }
@@ -152,22 +152,14 @@ func (plainSection) tabBody()  {}
 func (listBody) tabBody()      {}
 func (postBody) tabBody()      {}
 
-// tabsOf lays a document's tabs out as the TUI shows them: the blog's list, filtered or not, and a post whole, a tab
-// each, which the blog's session names as its windows (Model.windows); any other document's as document.TabsOf parts
-// it.
+// tabsOf lays a document's tabs out as the TUI shows them, as document.TabsOf parts it: the blog's list, filtered or
+// not, and a post whole are one tab each, which the blog's session names as its windows (Model.windows).
 func tabsOf(composed document.Document) []tab {
 	head := composed.Head
-	page, title := head.Page, document.PlainText(head.Title)
-	switch page.Kind {
-	case document.PagePost:
-		return []tab{{page: page, place: 0, title: title, slug: "", body: postBody{post: composed}}}
-	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
-		return []tab{{page: page, place: 0, title: title, slug: "", body: listBody{head: head, groups: composed.Blocks}}}
-	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills:
-	}
+	page := head.Page
 	parted := document.TabsOf(composed)
 	opening := parted.Opening
-	tabs := []tab{{page: page, place: 0, title: document.PlainText(opening.Title), slug: opening.Slug, body: openingBody(head, opening)}}
+	tabs := []tab{{page: page, place: 0, title: document.PlainText(opening.Title), slug: opening.Slug, body: openingBody(composed, opening)}}
 	for _, shown := range parted.Rest {
 		body := sectionBody(page.Kind, shown.Blocks)
 		tabs = append(tabs, tab{page: page, place: len(tabs), title: document.PlainText(shown.Title), slug: shown.Slug, body: body})
@@ -176,9 +168,9 @@ func tabsOf(composed document.Document) []tab {
 }
 
 // openingBody is what a document's first tab shows: its brief as neofetch prints a system, or by the kind of its page
-// a project's README, the health report, the list of skills, or the head as it is.
-func openingBody(head document.Head, opening document.Opening) tabBody {
-	blocks := opening.Blocks
+// a project's README, the health report, the list of skills, a post whole, the blog's list, or the head as it is.
+func openingBody(composed document.Document, opening document.Opening) tabBody {
+	head, blocks := composed.Head, opening.Blocks
 	if briefed := opening.Brief; briefed != nil {
 		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, blocks: blocks}
 	}
@@ -189,8 +181,11 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 		return reportOpening{head: head, blocks: blocks}
 	case document.PageSkills:
 		return skillsOpening{head: head, blocks: blocks}
-	case document.PageNone, document.PageResume, document.PageIndex, document.PagePost, document.PageBlog, document.PageBlogSeries,
-		document.PageTagFilter:
+	case document.PagePost:
+		return postBody{post: composed}
+	case document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
+		return listBody{head: head, groups: blocks}
+	case document.PageNone, document.PageResume, document.PageIndex:
 	}
 	return plainOpening{head: head, blocks: blocks}
 }

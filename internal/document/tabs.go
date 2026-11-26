@@ -28,27 +28,46 @@ type Opening struct {
 	Brief *Briefed
 }
 
-// TabsOf parts a document: a résumé whose first section holds facts opens with that section, briefed, under its
-// title; a project is one page with no tabs, opening under the head's title with every block, sections included; any
-// other document opens under the head's title; each section left is a tab, under its own.
+// TabsOf parts a document by the kind of its page, the one place that decides which pages part into tabs. The résumé
+// opens with its first section where that holds facts, briefed, under its title; the index and the hidden pages open
+// under the head's title with the blocks before their first section; each section left is a tab under its own title.
+// A project, a post and the blog's lists are one tab under the head's title holding every block, sections included.
 func TabsOf(composed Document) Tabs {
-	if composed.Head.Page.Kind == PageProject {
-		return Tabs{Opening: Opening{Tab: tabOf(composed.Head.Title, composed.Blocks), Brief: nil}, Rest: []Tab{}}
+	switch composed.Head.Page.Kind {
+	case PageResume:
+		return resumeTabs(composed)
+	case PageNone, PageIndex, PageHealth, PageSkills:
+		return partedTabs(composed)
+	case PageProject, PagePost, PageBlog, PageBlogSeries, PageTagFilter:
 	}
+	return Tabs{Opening: Opening{Tab: tabOf(composed.Head.Title, composed.Blocks), Brief: nil}, Rest: []Tab{}}
+}
+
+// resumeTabs parts the résumé: a brief's section, where its first section holds facts, is the opening, else the
+// document parts as partedTabs.
+func resumeTabs(composed Document) Tabs {
 	loose, sections := SectionsOf(composed.Blocks)
-	var opening Opening
-	left := sections
-	if briefed := BriefOf(sections); composed.Head.Page.Kind == PageResume && briefed != nil {
-		opening = Opening{Tab: tabOf(briefed.Title, slices.Concat(loose, briefed.Before, briefed.After)), Brief: briefed}
-		left = briefed.Rest
-	} else {
-		opening = Opening{Tab: tabOf(composed.Head.Title, loose), Brief: nil}
+	briefed := BriefOf(sections)
+	if briefed == nil {
+		return partedTabs(composed)
 	}
-	rest := make([]Tab, 0, len(left))
-	for _, section := range left {
-		rest = append(rest, tabOf(section.Title, slices.Clip(section.Blocks)))
+	opening := Opening{Tab: tabOf(briefed.Title, slices.Concat(loose, briefed.Before, briefed.After)), Brief: briefed}
+	return Tabs{Opening: opening, Rest: sectionTabs(briefed.Rest)}
+}
+
+// partedTabs opens a document under the head's title with the blocks before its first section, a tab for each section.
+func partedTabs(composed Document) Tabs {
+	loose, sections := SectionsOf(composed.Blocks)
+	return Tabs{Opening: Opening{Tab: tabOf(composed.Head.Title, loose), Brief: nil}, Rest: sectionTabs(sections)}
+}
+
+// sectionTabs are sections as tabs, each under its own title.
+func sectionTabs(sections []Section) []Tab {
+	tabs := make([]Tab, 0, len(sections))
+	for _, section := range sections {
+		tabs = append(tabs, tabOf(section.Title, slices.Clip(section.Blocks)))
 	}
-	return Tabs{Opening: opening, Rest: rest}
+	return tabs
 }
 
 // tabOf is a tab under a title, showing blocks.

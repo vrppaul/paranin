@@ -2023,6 +2023,16 @@ a.tag[aria-current]:hover {
   font-size: var(--code-in-words);
 }
 
+/* a heading, a widget or a group of the list reached by its anchor stands a row clear of the screen's top, as the
+ * Outline's mark of it and a group's sticking name stand, so the name a widget sets into its edge shows whole, and a
+ * project's section's title its focus ring */
+.post .article :is(h2, h3, h4, h5, h6),
+.project-sections > section > h2,
+.widget,
+.group {
+  scroll-margin-top: var(--row);
+}
+
 /* a heading of the article: an h2 in the heading's style, the row before it on top of the row its block before keeps;
  * a heading under it in the strong style, half a row before it */
 .post .article h2 {
@@ -2037,14 +2047,6 @@ a.tag[aria-current]:hover {
   font-size: var(--type-strong-size);
   font-weight: var(--type-strong-weight);
   line-height: var(--type-strong-line);
-}
-
-/* a heading, a widget or a group of the list reached by its anchor stands a row clear of the screen's top, as the
- * Outline's mark of it and a group's sticking name stand, so the name a widget sets into its edge shows whole */
-.post .article :is(h2, h3, h4, h5, h6),
-.widget,
-.group {
-  scroll-margin-top: var(--row);
 }
 
 /* a paragraph's number in the margin, faint, on its paragraph's first line, a link to it that turns the text's colour

@@ -90,11 +90,7 @@ func Manual(composed document.Document, site routes.Site, own compose.ManualWord
 		lines = append(lines, writer.pageSection(section)...)
 	}
 	for _, reference := range details {
-		// a project's details after its story, set apart by the mark of a turn a post takes, each a section of the page
-		lines = append(lines, "", pauseLine(sectionIndent))
-		for _, section := range reference.Sections {
-			lines = append(lines, writer.pageSection(section)...)
-		}
+		lines = append(lines, writer.reference(reference)...)
 	}
 	if project := composed.Head.Project; project != nil {
 		for _, section := range project.EndSections() {
@@ -104,6 +100,16 @@ func Manual(composed document.Document, site routes.Site, own compose.ManualWord
 	lines = append(lines, writer.notes(document.NotesOf(composed.Blocks))...)
 	lines = append(lines, "", columns(site.Host(), versionText(composed.Head), title))
 	return strings.Join(lines, lineEnd) + lineEnd
+}
+
+// reference writes a project's details after its story, set apart by the mark of a turn a post takes, each a section of
+// the page.
+func (writer manualWriter) reference(reference document.Reference) []string {
+	lines := []string{"", pauseLine(sectionIndent)}
+	for _, section := range reference.Sections {
+		lines = append(lines, writer.pageSection(section)...)
+	}
+	return lines
 }
 
 // detailsApart parts the blocks a page holds outside its sections into those its description holds and a project's
@@ -248,8 +254,9 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	case document.Side:
 		return trimBlank(writer.blocks(typed.Blocks, indent))
 	case document.Reference:
-		// the details set apart from the story by the mark of a turn a post takes
-		return slices.Concat(pause(indent), trimBlank(writer.blocks(typed.Blocks(), indent)))
+		// never reached: Manual takes a project's details apart from the blocks it writes so, and writes them after
+		// its sections
+		return writer.reference(typed)
 	case document.Card:
 		return writer.card(indent, typed)
 	case document.Contents:

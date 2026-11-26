@@ -74,6 +74,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 | `code_in_words` | `design/tokens.yaml` | code among an article's words, a share of their size |
 | `tab_stop` | `design/tokens.yaml` | how far apart a tab's stops stand in code |
 | `group_name`, `group_name_mid`, `tile` | `design/tokens.yaml` | the blog's list: the groups' names, and below `wide`; the least width of a tile |
+| `project_text`, `project_side` | `design/tokens.yaml` | a project's page: the shares of its text and of its side, three fifths and two |
 
 ## Sizes
 
@@ -106,7 +107,9 @@ other size: a control that seems to need one is the wrong control.
   name, in both themes; in an article it numbers the sources too, in the text and beside it.
 - `accent` is spent where the eye should go first: the primary button, the cursor, the current role, the near end of
   the name, and a mark beside words that says where to look (the arrow to a newer version, the Outline's heading
-  read). In Latte it is a fill, a display colour and such a mark, never small text (2.64:1).
+  read). In Latte it is a fill, a display colour and such a mark, never small text (2.64:1); where small text takes
+  it, as a repository's owner (Repository), Latte gives `accent_text`, its peach a shade darker as `host`'s mauve is,
+  reading at 4.5:1 (owner, 2026-11-26).
 - `host` is the site's host and the far end of the name. `tint` marks a result worth seeing first, and the way from an
   older version of a post to the newer. `error`, `passed` and `warned` only for states, always with words. In Latte
   `host` and `error` are Catppuccin's mauve and red a shade darker, so each reads as small text at the 4.5:1 WCAG asks,
@@ -133,6 +136,7 @@ other size: a control that seems to need one is the wrong control.
 | `mail`, `mail_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the mail heading the brief, and on a phone |
 | `lead`, `lead_phone` | `design/tokens.yaml` | `design/tokens.yaml` | the headline under the name, and on a phone |
 | `heading` | `design/tokens.yaml` | `design/tokens.yaml` | an `h2` on a page that is not the résumé |
+| `section_title` | `design/tokens.yaml` | `design/tokens.yaml` | a section's title on a project's page, a step over `heading` (owner, 2026-11-26) |
 | `body` | `design/tokens.yaml` | `design/tokens.yaml` | everything read; the default |
 | `strong` | `design/tokens.yaml` | `design/tokens.yaml` | a role, a company, a project's name, a button's words, a word made strong |
 | `small` | `design/tokens.yaml` | `design/tokens.yaml` | the foot line, a field's hint |
@@ -210,6 +214,9 @@ other size: a control that seems to need one is the wrong control.
 - The blog's list is a grid of two columns: the groups' names, `group_name` wide, `group_name_mid` below `wide`, and
   the tiles, as many in a row as hold `tile` each. Below `phone` the name stands over its tiles and the tiles take one
   column.
+- A project's page is one grid from its head to its foot: the text's column, `project_text`, the main thing, since a
+  project without a recording is still its words, `row_3` of air, then the side's, `project_side`, what adds to the
+  text (owner, 2026-11-26). Below `phone` one column.
 
 ## Iconography
 
@@ -233,7 +240,7 @@ anything over it.
 
 ### SectionTitle
 
-A tab's title in the title font, the page's `h1`: Experience, Projects, Skills, Contact, and each tab of a project's
+A tab's title in the title font, the page's `h1`: Experience, Projects, Skills, Contact, and a project's name on its
 page. A subsection (Spoken languages, Education, a skill group) is a
 `strong` heading.
 
@@ -242,6 +249,13 @@ page. A subsection (Spoken languages, Education, a skill group) is a
 The address as the site writes it: the box in `accent`, @ in `faint` at the body's weight, the host in `host`. It heads
 the brief in `mail`; elsewhere the same three colours at `body` size. A `mailto:` link; under the pointer the box and
 the host underline, `underline_hover` thick, `nudge` below.
+
+### Repository
+
+Where a project's code lives, written in the Mail's colours (owner, 2026-11-26): the host and the slashes in `faint` at
+the body's weight, the owner in `accent` (`accent_text` in Latte, small text there), the project in `host`;
+`strong`, at the text's size. A Link, underlined as any link in `muted`, `accent` and `underline_hover` thick under the
+pointer (owner, 2026-11-26). It breaks after a slash alone, never at a hyphen.
 
 ### Favicon
 
@@ -265,7 +279,9 @@ Does one thing its words say, verb first.
 A command the reader can run: ❯ in `prompt`, the command in `text`, then "copy" in `text` and `small` after a `muted`
 rule. `sunk` ground and a `muted` hairline, so it shows on any ground; under the pointer the hairline turns `text` and
 the ground `deep`. The whole chip is the button; the command stays selectable text. On copy the word turns to "copied"
-in `passed` and a Toast says what was copied. A command never wraps: on a narrow screen it scrolls inside itself. The
+in `passed` and a Toast says what was copied. A command longer than its column goes on under itself between its
+words, each line after the first two cells in, as a terminal wraps a long line, "copy" in sight at its right; a word
+alone wider than the line, an address, breaks inside itself; a command is never cut (owner, 2026-11-26). The
 button inside it is what a keyboard reaches, and its focus rings the whole chip; without the script the button is
 hidden and the command is words to select, and a copy the browser refuses selects the command.
 
@@ -414,7 +430,7 @@ Rows of a few cells, as a skill group's skills: the first cell `strong`, the res
 post's table may name its columns: the page draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
 On a phone a table that names no columns, a skill group's, folds: each row's last cell, a skill's sources, stands under
 the others across its width, and its first cell may wrap, so it fits rather than scroll.
-Whatever scrolls inside itself, a table, a Command, a code block, shows a thin scrollbar.
+Whatever scrolls inside itself, a table, a code block, shows a thin scrollbar.
 
 ### Code
 
@@ -426,9 +442,8 @@ eight cells; the manual writes a tab as the spaces to the same stops.
 
 - Contents: the pages a page leads to, one a line, `row_half` apart, each a link by its title, then a colon and its
   line in `muted`. No bullets.
-- PageHead: a page that is not the résumé opens with its title as the `h1` in the title font, its line in `lead`, what
-  it is made of as `muted` words joined by ` · ` (not chips and not Tags: they do nothing when pressed and gather
-  nothing), its lead, and where its code lives as Facts.
+- PageHead: a page that is not the résumé, a project's or the blog's opens with its title as the `h1` in the title
+  font, its line in `lead` and its lead.
 
 ### Highlight
 
@@ -624,6 +639,48 @@ The blog under the résumé's first screen, a hint of it, not a part of the rés
 - With no post out, no LatestPosts.
 - On a phone `blog` and `all posts` stand over the Tiles, which take the width one under another.
 
+### ProjectHead
+
+A project's first screen, on its page's grid (Layout), the four crosses at its corners (owner, 2026-11-26).
+
+- Its name in the title font, the page's `h1`, on a row of its own, no wider than the text's column; nothing stands
+  beside it.
+- Under it, level with each other: in the text's column the tagline in `lead` and the description in `muted`, held to
+  `measure`; in the side's, first what gets the project, the Repository and its install line as a Command, a word on
+  installing with its own Command under it where the profile gives one; then, under a `quiet` rule, what tells about
+  it as Facts: `stack`, its words joined by ` · `, each whole; `release`, `latest`, a Link to its newest release,
+  and `changelog`, a Link to its history, no number, which would go stale; `licence`, a word.
+- `row_4` from its last line to the first section's title.
+- On a phone one column: the name, the tagline and description, then the side's two groups.
+
+### ProjectSection and Side
+
+The body of a project's page, its sections in two groups (owner, 2026-11-26).
+
+- A section: its title in `section_title` on a row of its own across the whole width, a Link to the section itself;
+  a row under it, its words in the text's column, `reading`, held to `column`: paragraphs, and points as the résumé's;
+  beside them, in the side's column, what adds to the section, its top level with their first line, held in sight
+  while they scroll past, until the section ends. A section with nothing to add leaves the side empty.
+- First the story: what the project does, each with its Clip where it has one, then the author's own section, why he
+  built it, which stands only where he has written it. Then, under a `quiet` rule across the grid, the details a user
+  looks up, their titles in `heading`; where a project has none, no rule.
+- What the side holds: a Clip; Links, one a line, `row_half` apart, each a link by its name, then a colon and its line
+  in `muted`, as Contents; a post the blog tags with the project's name, `in the blog` in `muted` over it as a small
+  Tile (LatestPosts).
+- Clip: a recording of the project at work, played on the page from the site's own file, never on its own: its still,
+  a frame of the recording itself, framed in a `quiet` hairline; under it `▶ play` bold, ▶ in `accent`, and its length
+  in `muted`, then what it shows, `small` in `muted`. A press on the still or on `▶ play` plays it in its place, with
+  the browser's own controls; the keyboard reaches it as a button (owner, 2026-11-26).
+- On a phone one column: a section's title, its words, then its side.
+
+### ProjectEnd
+
+Where a project's reader goes next, under a `quiet` rule, on the page's grid (owner, 2026-11-26). In the text's column
+`Other projects` in `strong` and `all projects`, a Link to the projects' tab, then each other project with a page of
+its own as a pane of Panes: its name, its tagline `small` in `muted`, its stack `caption` in `faint` at its foot. In
+the side's column the Mail in `mail` and under it the primary Button, "Write to me". On a phone the panes, then the
+Mail and the Button.
+
 ## Pages
 
 - The first screen: left, the greeting, the Name and the headline in `lead`, the words naming his two kinds of work
@@ -638,6 +695,8 @@ The blog under the résumé's first screen, a hint of it, not a part of the rés
 - The blog's list: the BlogHead, then its Groups of Tiles; a tag filters it, the filter reversed in the head.
 - A post: the PostHead, the Outline beside the Article, the Panes; an older version the same, its head saying a newer
   stands.
+- A project: one page, no tabs, so the foot line shows one window (owner, 2026-11-26): the ProjectHead, its
+  ProjectSections, the story and then the details, and the ProjectEnd.
 
 ## Social cards
 
@@ -671,7 +730,7 @@ page's 16px grown by 1.75.
   ellipsis after it; a word wider than the card is cut inside it, the ellipsis after the last letter that fits.
   Block letters are never cut.
 - No foot line, greeting, headline, place or corner crosses: on a phone each is 12px or a speck.
-- A tab of the résumé or of a project shows its page's card. An older version, a filtered list, a draft and the
+- A tab of the résumé and a project's page show their page's card. An older version, a filtered list, a draft and the
   address of no page show no preview and have no card.
 
 ## The TUI
@@ -682,10 +741,14 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
 
 - Frames are tmux's, square, `┌┬┐├┼┤└┴┘`, each in one colour, round a command, the window of keys, panes, tiles and
   code. A command's label, a pane's and a tile's name stand set into the top edge at the left.
-- A tab's title, a project's section's too, is in the title font in the gradient, or in text in the gradient where the
+- A tab's title, a project's name too, is in the title font in the gradient, or in text in the gradient where the
   letters do not fit. A post's title is bold text.
-- A post's tags as the page's: `#` in `faint`, the word in `muted`. What a project is made of as the page's PageHead
-  writes it, `muted` words joined by ` · `, not chips.
+- A post's tags as the page's: `#` in `faint`, the word in `muted`. What a project is made of as the page's
+  ProjectHead writes it, words joined by ` · `, not chips.
+- A project's page as the page's, as far as a terminal can draw it (owner, 2026-11-26): in one column, its name, then
+  what it is, what gets it and what tells about it, then its sections and their sides, each side under its section's
+  words, then its end; one window. A Clip, which a cell cannot hold, is drawn as a picture is: what it shows in
+  `text`, its address in `faint`, both links to it.
 - Code in a line stands in `text` on `sunk`; a block of it in a `quiet` frame, its language in the edge, coloured as
   the page's. A line wider than the frame goes on under itself, never cut: each row it goes on in opens with `↪ ` in
   `faint`, as Neovim's showbreak marks it. A command is a box in a `muted` hairline with its label in the top edge,

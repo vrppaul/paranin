@@ -1624,6 +1624,9 @@ a.tile-title:focus-visible {
 
 .project-sections > section > h2 {
   grid-column: 1 / -1;
+  font-size: var(--type-section-title-size);
+  font-weight: var(--type-section-title-weight);
+  line-height: var(--type-section-title-line);
 }
 
 /* its head (DESIGN.md, ProjectHead): the name on a row of its own, no wider than the text's column; two rows under

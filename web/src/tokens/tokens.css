@@ -128,6 +128,12 @@
   --type-heading-line: 2rem;
   /* a section's title on a page that is not the résumé: its weight */
   --type-heading-weight: 700;
+  /* a section's title on a project's page, a step over heading, since its sections are the page's whole story: its size */
+  --type-section-title-size: 1.5rem;
+  /* a section's title on a project's page, a step over heading, since its sections are the page's whole story: its line's height */
+  --type-section-title-line: 2rem;
+  /* a section's title on a project's page, a step over heading, since its sections are the page's whole story: its weight */
+  --type-section-title-weight: 700;
   /* a title set in text, a post's, a few words a line: its size */
   --type-title-text-size: 2.5rem;
   /* a title set in text, a post's, a few words a line: its line's height */

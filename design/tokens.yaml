@@ -303,6 +303,11 @@ type:
     size: 1.25
     line: 2
     weight: 700
+  - name: section_title
+    about: a section's title on a project's page, a step over heading, since its sections are the page's whole story
+    size: 1.5
+    line: 2
+    weight: 700
   - name: title_text
     about: a title set in text, a post's, a few words a line
     size: 2.5

@@ -35,6 +35,13 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		want        string
 	}{
 		{name: "an empty name", original: "name: Mira Example", replacement: `name: ""`, want: "profile.yaml: person.name is empty"},
+		{name: "headline words the headline does not hold", original: "experience: Builds", replacement: "experience: Ships", want: `profile.yaml: person.headline_links.experience "Ships" is not in the headline`},
+		{name: "headline words the headline holds twice", original: "projects: small tools", replacement: "projects: s", want: `profile.yaml: person.headline_links.projects "s" stands in the headline 4 times, where a link takes it once`},
+		{name: "headline words left empty", original: "projects: small tools", replacement: `projects: ""`, want: "profile.yaml: person.headline_links.projects is empty"},
+		{
+			name: "headline words the other kind's share", original: "projects: small tools", replacement: "projects: Builds small",
+			want: `profile.yaml: person.headline_links.projects "Builds small" shares words of the headline with person.headline_links.experience, "Builds"`,
+		},
 		{name: "a mail address with a name round it", original: "email: mira@example.test", replacement: "email: Mira <mira@example.test>", want: `profile.yaml: person.email "Mira <mira@example.test>" is no bare mail address`},
 		{name: "a base address ending in a slash", original: "base_url: https://example.test", replacement: "base_url: https://example.test/", want: `profile.yaml: site.base_url "https://example.test/" ends in a slash, which every address adds itself`},
 		{name: "a base address of no web scheme", original: "base_url: https://example.test", replacement: "base_url: ftp://example.test", want: `profile.yaml: site.base_url "ftp://example.test" is no absolute web address`},

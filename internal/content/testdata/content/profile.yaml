@@ -10,6 +10,9 @@ person:
   alternate_names: [M. Example]
   title: Software Engineer
   headline: Builds small tools that last.
+  headline_links:
+    experience: Builds
+    projects: small tools
   location: Brno, Czechia
   email: mira@example.test
   links:

@@ -2,7 +2,7 @@
 
 Software Engineer · Brno, Czechia
 
-> Builds small tools that last.
+> [Builds](https://example.test/experience.md) [small tools](https://example.test/projects.md) that last.
 
 ## About
 

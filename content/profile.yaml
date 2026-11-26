@@ -29,6 +29,10 @@ person:
   alternate_names: [Paul Paranin, Павел Паранин, vrppaul]
   title: Senior Software Engineer
   headline: I build backend services, and tools for people who live in the terminal.
+  # The headline's words for each kind of work, each a link to the tab that holds it
+  headline_links:
+    experience: backend services
+    projects: tools
   location: Prague, Czechia
   email: pavel@paran.in
   links:

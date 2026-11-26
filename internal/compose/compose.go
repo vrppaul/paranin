@@ -8,6 +8,7 @@
 package compose
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 
@@ -92,14 +93,47 @@ func projectsWithPages(projects []content.Project) []content.Project {
 // experience, and their projects (DESIGN.md, Pages).
 func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document {
 	profile, words := snapshot.Profile, snapshot.Own.Words
+	experience := experienceSection(profile.Experience, profile.SkillGroups, words)
+	projects := projectsSection(profile.Projects, words)
+	resume := document.PageOf(document.PageResume)
+	tabs := workTabs{experience: document.TabPage(resume, experience.Title), projects: document.TabPage(resume, projects.Title)}
 	return document.Document{
-		Head: resumeHead(profile, words, feeds),
-		Blocks: []document.Block{
-			aboutSection(profile, words),
-			experienceSection(profile.Experience, profile.SkillGroups, words),
-			projectsSection(profile.Projects, words),
-		},
+		Head:   resumeHead(profile, words, feeds, tabs),
+		Blocks: []document.Block{aboutSection(profile, words), experience, projects},
 	}
+}
+
+// workTabs are the résumé's tabs that hold the author's two kinds of work, which the headline's words for each lead
+// to: the experience's and the projects'.
+type workTabs struct {
+	experience document.Page
+	projects   document.Page
+}
+
+// headlineWords are words of the headline that name a kind of work, and the tab they lead to.
+type headlineWords struct {
+	words string
+	tab   document.Page
+}
+
+// headlineSpans is the headline, its words for each kind of work a link to the tab that holds it, the words round them
+// as it writes them. The content's check holds each to words the headline holds once, apart from the other's.
+func headlineSpans(person content.Person, tabs workTabs) []document.Span {
+	headline := person.Headline
+	linked := []headlineWords{
+		{words: person.HeadlineLinks.Experience, tab: tabs.experience},
+		{words: person.HeadlineLinks.Projects, tab: tabs.projects},
+	}
+	slices.SortFunc(linked, func(first, second headlineWords) int {
+		return cmp.Compare(strings.Index(headline, first.words), strings.Index(headline, second.words))
+	})
+	spans, rest := []document.Span{}, headline
+	for _, link := range linked {
+		before, after, _ := strings.Cut(rest, link.words)
+		spans = append(append(spans, markedSpans(before)...), document.Link{Target: link.tab, Spans: markedSpans(link.words)})
+		rest = after
+	}
+	return append(spans, markedSpans(rest)...)
 }
 
 // aboutSection is the section about the author: the summary, the facts, then the ways to reach them, which the first
@@ -122,7 +156,7 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 // listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
 func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	words := snapshot.Own.Words
-	resume := resumeHead(snapshot.Profile, words, nil)
+	resume := Resume(snapshot, nil).Head
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
@@ -159,11 +193,11 @@ func listing(head document.Head) document.Listing {
 	return document.Listing{Target: head.Page, Title: head.Title, Note: head.Subtitle}
 }
 
-// resumeHead is the résumé's head, its headline its description: it greets the reader before the author's name,
-// names its opening, in the site's words, and the feeds handed it.
-func resumeHead(profile content.Profile, words content.Words, feeds []document.Link) document.Head {
+// resumeHead is the résumé's head, its headline its description, its words for each kind of work leading to a tab: it
+// greets the reader before the author's name, names its opening, in the site's words, and the feeds handed it.
+func resumeHead(profile content.Profile, words content.Words, feeds []document.Link, tabs workTabs) document.Head {
 	person := profile.Person
-	headline := markedSpans(person.Headline)
+	headline := headlineSpans(person, tabs)
 	return document.Head{
 		Page:        document.PageOf(document.PageResume),
 		Number:      0,

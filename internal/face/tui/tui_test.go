@@ -789,6 +789,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 	}{
 		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
 		{name: "a public profile on the first tab", model: fixtureModel(test, commonWidth, tallHeight), address: "https://github.test/mira"},
+		{name: "the headline's words for a kind of work", model: fixtureModel(test, commonWidth, tallHeight), address: "https://example.test/projects"},
 		{name: "a post's picture", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly/margin.png"},
 		{name: "a post's link to a heading", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly#what-a-reader-keeps"},
 	}

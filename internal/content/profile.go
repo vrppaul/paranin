@@ -37,13 +37,21 @@ type Site struct {
 
 // Person is who the résumé is about.
 type Person struct {
-	Name           string       `yaml:"name"`
-	AlternateNames []string     `yaml:"alternate_names"`
-	Title          string       `yaml:"title"`
-	Headline       string       `yaml:"headline"`
-	Location       string       `yaml:"location"`
-	Email          string       `yaml:"email"`
-	Links          []SocialLink `yaml:"links"`
+	Name           string        `yaml:"name"`
+	AlternateNames []string      `yaml:"alternate_names"`
+	Title          string        `yaml:"title"`
+	Headline       string        `yaml:"headline"`
+	HeadlineLinks  HeadlineLinks `yaml:"headline_links"`
+	Location       string        `yaml:"location"`
+	Email          string        `yaml:"email"`
+	Links          []SocialLink  `yaml:"links"`
+}
+
+// HeadlineLinks are the words of the headline that name the author's two kinds of work, each once, each a link to the
+// tab that holds it: the experience's and the projects'.
+type HeadlineLinks struct {
+	Experience string `yaml:"experience"`
+	Projects   string `yaml:"projects"`
 }
 
 // SocialLink is a public profile: its label, its address, and how the address is written out.

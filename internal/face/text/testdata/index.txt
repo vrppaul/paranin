@@ -4,7 +4,8 @@ NAME
        Mira Example — Software Engineer · Brno, Czechia
 
 DESCRIPTION
-       Builds small tools that last.
+       Builds <https://example.test/experience.txt> small tools
+       <https://example.test/projects.txt> that last.
 
 ABOUT
        Writes software for people who read it.

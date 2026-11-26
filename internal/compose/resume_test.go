@@ -23,7 +23,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
 		{name: "the place", want: "Brno, Czechia"},
-		{name: "the headline", want: "Builds small tools that last."},
+		{name: "the headline's words for a kind of work", want: "small tools"},
 		{name: "the summary", want: "Writes software for people who read it."},
 		{name: "a fact's label", want: "available"},
 		{name: "a fact's value", want: "5 years"},
@@ -437,7 +437,7 @@ func TestEveryPageReachesTheIndex(test *testing.T) {
 		name string
 		want string
 	}{
-		{name: "the headline", want: "Builds small tools that last."},
+		{name: "the headline's words for a kind of work", want: "small tools"},
 		{name: "a word of the site", want: "Résumé"},
 		{name: "a listing's title", want: "tidy-tool"},
 		{name: "a listing's line", want: "Tidies files."},
@@ -484,6 +484,32 @@ func TestEachPageHasADescription(test *testing.T) {
 				test.Errorf("the description of %+v = %q, want %q", testCase.page, got, testCase.want)
 			}
 		})
+	}
+}
+
+// The headline's words for each kind of work lead to the résumé's tab that holds that work, the experience's and the
+// projects', and the words round them stand as the headline writes them (DESIGN.md, Pages).
+func TestTheHeadlineLeadsEachKindOfWorkToItsTab(test *testing.T) {
+	resume := Resume(fixtures.LoadedContent(test), nil)
+	experience := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
+	projects := document.Page{Kind: document.PageResume, Slug: "", Tab: "projects"}
+	want := []document.Span{
+		document.Link{Target: experience, Spans: []document.Span{document.Text{Text: "Builds"}}},
+		document.Text{Text: " "},
+		document.Link{Target: projects, Spans: []document.Span{document.Text{Text: "small tools"}}},
+		document.Text{Text: " that last."},
+	}
+	if got := resume.Head.Lead; !reflect.DeepEqual(got, want) {
+		test.Errorf("the headline = %+v, want %+v", got, want)
+	}
+	tabs := []document.Page{}
+	for _, tab := range tabDocuments(resume) {
+		tabs = append(tabs, tab.Head.Page)
+	}
+	for _, page := range []document.Page{experience, projects} {
+		if !slices.Contains(tabs, page) {
+			test.Errorf("the résumé's tabs %+v hold no %+v", tabs, page)
+		}
 	}
 }
 

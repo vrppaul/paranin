@@ -25,6 +25,9 @@ const (
 	insecureProblem        = "%q is no https address"
 	slashProblem           = "%q ends in a slash, which every address adds itself"
 	mailProblem            = "%q is no bare mail address"
+	headlineMissing        = "%q is not in the headline"
+	headlineTwice          = "%q stands in the headline %d times, where a link takes it once"
+	headlineShared         = "%q shares words of the headline with %s, %q"
 	unknownMonth           = "%q is no month, YYYY-MM"
 	unknownEnd             = unknownMonth + ", nor " + currentWord
 	unknownDuration        = "%q is no span, as 1y 7m, nor " + sideWord + ", " + learningWord + " or a " + GapOpening + "gap" + GapClosing
@@ -279,6 +282,7 @@ func readsAsTagDay(day string) bool {
 func inspectPerson(inspection *inspection, person Person) {
 	inspection.require("person.name", person.Name)
 	inspection.require("person.title", person.Title)
+	inspectHeadlineLinks(inspection, person.Headline, person.HeadlineLinks)
 	if !bareMail(person.Email) {
 		inspection.add("person.email", mailProblem, person.Email)
 	}
@@ -287,6 +291,50 @@ func inspectPerson(inspection *inspection, person Person) {
 		inspection.require(fmt.Sprintf("person.links[%d].text", index), link.Text)
 		inspection.requireWebAddress(fmt.Sprintf("person.links[%d].url", index), readWebAddress(link.URL))
 	}
+}
+
+// The fields of the headline's words that lead to the tabs, where a fault of them stands
+const (
+	experienceLinkField = "person.headline_links.experience"
+	projectsLinkField   = "person.headline_links.projects"
+)
+
+// inspectHeadlineLinks holds the words of each kind of work to words the headline holds once, apart from the other
+// kind's, so each stands in it as one link.
+func inspectHeadlineLinks(inspection *inspection, headline string, links HeadlineLinks) {
+	experience, experienceHeld := inspection.heldOnce(experienceLinkField, headline, links.Experience)
+	projects, projectsHeld := inspection.heldOnce(projectsLinkField, headline, links.Projects)
+	if experienceHeld && projectsHeld && experience.overlaps(projects) {
+		inspection.add(projectsLinkField, headlineShared, links.Projects, experienceLinkField, links.Experience)
+	}
+}
+
+// heldOnce is where words at a field stand in the headline, held where it holds them once; a fault at the field where
+// they are empty, missing or there more than once.
+func (inspection *inspection) heldOnce(field, headline, words string) (headlineSpan, bool) {
+	switch count := strings.Count(headline, words); {
+	case blank(words):
+		inspection.add(field, emptyProblem)
+	case count == 0:
+		inspection.add(field, headlineMissing, words)
+	case count > 1:
+		inspection.add(field, headlineTwice, words, count)
+	default:
+		start := strings.Index(headline, words)
+		return headlineSpan{start: start, end: start + len(words)}, true
+	}
+	return headlineSpan{start: 0, end: 0}, false
+}
+
+// headlineSpan is where words stand in the headline: their first byte, and the one past their last.
+type headlineSpan struct {
+	start int
+	end   int
+}
+
+// overlaps is whether two spans of the headline share a byte.
+func (span headlineSpan) overlaps(other headlineSpan) bool {
+	return span.start < other.end && other.start < span.end
 }
 
 // inspectExperience holds each skill put forward to one a group lists, which gives how long it was used, and each

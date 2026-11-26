@@ -1404,6 +1404,22 @@ a.tile-title:focus-visible {
   text-indent: 0;
 }
 
+/* the places a page leads to (DESIGN.md, Contents), one a line, half a row apart, no bullets: each a link by its
+ * title, then a colon and its line muted */
+.contents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contents > * + * {
+  margin-top: var(--row-half);
+}
+
+.contents-line {
+  color: var(--muted);
+}
+
 /* a piece of work (DESIGN.md, Card): its heading, its line muted, its summary, its facts, half a row apart; cards are
  * set apart by a quiet hairline, a row of air either side of it */
 .card {
@@ -1602,8 +1618,9 @@ a.tile-title:focus-visible {
 }
 
 /* a project's section (DESIGN.md, ProjectSection) on the project's grid: its title on a row of its own across it, a
- * row over its words, which stand in the text's column held to the reading column; the side's column stays empty
- * until a section has something to add */
+ * row over its words, which stand in the text's column a row apart, held to the reading column; beside them, in the
+ * side's column, what adds to the section, its top level with theirs, held in sight while they scroll past until the
+ * section ends. A section with nothing to add leaves the side's column empty */
 .project-sections {
   display: grid;
   grid-column: 1 / -1;
@@ -1617,9 +1634,23 @@ a.tile-title:focus-visible {
   grid-template-columns: subgrid;
 }
 
-.project-sections > section > :is(p, .points) {
+.section-words {
+  display: grid;
   grid-column: 1;
+  row-gap: var(--row);
+}
+
+.section-words > * {
   max-width: var(--column);
+  margin: 0;
+}
+
+.section-side {
+  position: sticky;
+  top: var(--row);
+  grid-row: 2;
+  grid-column: 2;
+  align-self: start;
 }
 
 .project-sections > section > h2 {
@@ -1739,8 +1770,8 @@ a.tile-title:focus-visible {
   justify-self: start;
 }
 
-/* on a phone one column: the name, the tagline and the description, then the side's two groups; at the end the panes
- * one under another, then the mail and the button */
+/* on a phone one column: the name, the tagline and the description, then the side's two groups; a section's title,
+ * its words, then its side; at the end the panes one under another, then the mail and the button */
 @media (width < 53.75rem) {
   .project {
     grid-template-columns: minmax(0, 1fr);
@@ -1753,6 +1784,12 @@ a.tile-title:focus-visible {
   .project-head > h1,
   .project-intro,
   .project-side {
+    grid-column: 1;
+  }
+
+  .section-side {
+    position: static;
+    grid-row: auto;
     grid-column: 1;
   }
 
@@ -2000,7 +2037,7 @@ a.tag[aria-current]:hover {
 .post .article-section > p,
 .article .post-list,
 .article blockquote,
-.project-sections > section > :is(p, .points) {
+.section-words > :is(p, .points) {
   font-family: var(--reading-face);
   font-size: var(--type-reading-size);
   font-weight: var(--type-reading-weight);

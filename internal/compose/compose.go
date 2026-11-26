@@ -269,22 +269,39 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
-// projectDocument is a project's own page, one of the profile's: its head, then its sections, each named by its title
-// as a post's headings are, holding its paragraphs, then its points.
+// projectDocument is a project's own page, one of the profile's: its head, then its sections.
 func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
 	blocks, taken := make([]document.Block, 0, len(project.Sections)), anchors{}
 	for _, section := range project.Sections {
-		sectionBlocks := make([]document.Block, 0, len(section.Paragraphs)+1)
-		for _, paragraph := range paragraphs(section.Paragraphs) {
-			sectionBlocks = append(sectionBlocks, paragraph)
-		}
-		if len(section.Points) > 0 {
-			sectionBlocks = append(sectionBlocks, document.Points{List: points(section.Points)})
-		}
-		title := markedSpans(section.Title)
-		blocks = append(blocks, document.Section{Title: title, Name: taken.headingAnchor(title), Blocks: sectionBlocks})
+		blocks = append(blocks, projectSection(section, taken))
 	}
 	return document.Document{Head: projectHead(project, profile, words), Blocks: blocks}
+}
+
+// projectSection is a section of a project's page, named by its title from the page's anchors as a post's headings
+// are: its paragraphs, then its points, then its side, its links, where it has any.
+func projectSection(section content.Section, taken anchors) document.Section {
+	blocks := make([]document.Block, 0, len(section.Paragraphs))
+	for _, paragraph := range paragraphs(section.Paragraphs) {
+		blocks = append(blocks, paragraph)
+	}
+	if len(section.Points) > 0 {
+		blocks = append(blocks, document.Points{List: points(section.Points)})
+	}
+	if len(section.Links) > 0 {
+		blocks = append(blocks, document.Side{Blocks: []document.Block{document.Contents{Listings: linkListings(section.Links)}}})
+	}
+	title := markedSpans(section.Title)
+	return document.Section{Title: title, Name: taken.headingAnchor(title), Blocks: blocks}
+}
+
+// linkListings are a section's links as contents: each leading to its address by its name, as written, with its line.
+func linkListings(links []content.Link) []document.Listing {
+	listings := make([]document.Listing, 0, len(links))
+	for _, link := range links {
+		listings = append(listings, document.Listing{Target: document.Address{URL: link.URL.Written()}, Title: textSpans(link.Name), Note: markedSpans(link.Line)})
+	}
+	return listings
 }
 
 // projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a

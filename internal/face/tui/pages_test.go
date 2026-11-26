@@ -56,13 +56,15 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 
 // A project's page stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
 // and description; what gets it, its repository and each way to install it, a later one under its note; what tells
-// about it, its stack, its releases and its licence; its sections; then its end, the heading over the other projects
+// about it, its stack, its releases and its licence; its sections, each side under its section's words, its links by
+// their names and lines; then its end, the heading over the other projects
 // and the way to them all, each other project by its name, its tagline and its stack, and the author's mail.
 func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	inOrder := []string{
 		"Tidies files.", "A tool that tidies files.", "mira / tidy",
 		"go install example.test/tidy@latest", "On a machine with no Go", "curl -fsSL https://example.test/tidy.sh | sh",
 		"Lua · Penlight · LPeg", "latest · changelog", "MIT", "Why", "Files were untidy.",
+		"How it tidies", "tidy . reads each file once.", "Keeps the blank ones", "source", "where the code lives", "manual",
 		"Other projects", "all projects", "tame-tool", "Tames files.", "Go", "mira@example.test",
 	}
 	page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(fixtures.WithTwoProjectPages(test), commonWidth, tallHeight), "e tidy-tool")))

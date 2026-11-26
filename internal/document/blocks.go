@@ -222,6 +222,12 @@ type Points struct {
 	List []Point
 }
 
+// Side is what adds to a section of a project's page, which a face sets beside its words or after them: its links,
+// as contents.
+type Side struct {
+	Blocks []Block
+}
+
 // Card is a piece of work: its title, what it is in a line, what it is written in, what it does, its details,
 // and its page, PageNone where it has none.
 type Card struct {
@@ -307,6 +313,7 @@ func (Facts) block()          {}
 func (ExperienceHead) block() {}
 func (Entry) block()          {}
 func (Points) block()         {}
+func (Side) block()           {}
 func (Card) block()           {}
 func (Contents) block()       {}
 func (Checks) block()         {}

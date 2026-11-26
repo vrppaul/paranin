@@ -223,6 +223,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.entry(indent, typed)
 	case document.Points:
 		return writer.bullets(indent, typed.List)
+	case document.Side:
+		return trimBlank(writer.blocks(typed.Blocks, indent))
 	case document.Card:
 		return writer.card(indent, typed)
 	case document.Contents:

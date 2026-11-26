@@ -651,13 +651,38 @@ templ (writer PageWriter) section(section document.Section, depth int) {
 	<section>
 		if section.Name == unnamed {
 			@heading(depth, unnamed, writer.spans(section.Title))
+			for _, block := range section.Blocks {
+				@writer.block(block, depth+1)
+			}
 		} else {
 			@heading(depth, section.Name, linkHere(section.Name, writer.spans(section.Title)))
-		}
-		for _, block := range section.Blocks {
-			@writer.block(block, depth+1)
+			@writer.sectionBody(section.Blocks, depth+1)
 		}
 	</section>
+}
+
+// sectionBody is a named section's blocks, a project's: its words together, then its side, which stands beside them
+// (DESIGN.md, ProjectSection).
+templ (writer PageWriter) sectionBody(blocks []document.Block, depth int) {
+	{{ words, sides := sideApart(blocks) }}
+	<div class="section-words">
+		for _, block := range words {
+			@writer.block(block, depth)
+		}
+	</div>
+	for _, side := range sides {
+		@writer.block(side, depth)
+	}
+}
+
+// side is what adds to a section, beside its words (DESIGN.md, ProjectSection): its blocks, held in sight while the
+// words scroll past.
+templ (writer PageWriter) side(side document.Side, depth int) {
+	<aside class="section-side">
+		for _, block := range side.Blocks {
+			@writer.block(block, depth)
+		}
+	</aside>
 }
 
 // linkHere is words as a link to a place of the page they stand on, by its name.
@@ -829,15 +854,18 @@ templ (writer PageWriter) card(card document.Card, depth int) {
 	</article>
 }
 
-// contents are the places a document leads to, each a link by its title, then the line on what it is.
+// contents are the places a document leads to (DESIGN.md, Contents), each a link by its title, then the line on what
+// it is.
 templ (writer PageWriter) contents(contents document.Contents) {
-	<ul>
+	<ul class="contents">
 		for _, listing := range contents.Listings {
 			<li>
 				@writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
 				if len(listing.Note) > 0 {
-					@text(labelEnd)
-					@writer.spans(listing.Note)
+					<span class="contents-line">
+						@text(labelEnd)
+						@writer.spans(listing.Note)
+					</span>
 				}
 			</li>
 		}

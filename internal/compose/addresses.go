@@ -220,8 +220,8 @@ func anchorsAmong(blocks []document.Block) []string {
 		case document.Widget:
 			anchors = append(anchors, typed.Live.Name)
 		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause, document.Figure,
-			document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Card, document.Contents, document.Checks,
-			document.Skills, document.Posts:
+			document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side, document.Card, document.Contents,
+			document.Checks, document.Skills, document.Posts:
 			// a widget stands as a block of the post's own, never inside a quote or a list's item, and no other block
 			// takes an anchor
 		}

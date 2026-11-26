@@ -355,13 +355,20 @@ func inspectProjects(inspection *inspection, projects []Project) {
 	}
 }
 
-// inspectSections holds each section of a project's page to a title and to some words, a paragraph or a point.
+// inspectSections holds each section of a project's page to a title and to some words, a paragraph or a point, and
+// each of its links to a name, an absolute web address and a line.
 func inspectSections(inspection *inspection, projectIndex int, sections []Section) {
 	for sectionIndex, section := range sections {
 		place := fmt.Sprintf("projects[%d].sections[%d]", projectIndex, sectionIndex)
 		inspection.require(place+".title", section.Title)
 		if len(section.Paragraphs) == 0 && len(section.Points) == 0 {
 			inspection.add(place, wordlessSectionProblem)
+		}
+		for linkIndex, link := range section.Links {
+			linkPlace := fmt.Sprintf("%s.links[%d]", place, linkIndex)
+			inspection.require(linkPlace+".name", link.Name)
+			inspection.requireWebAddress(linkPlace+".url", link.URL)
+			inspection.require(linkPlace+".line", link.Line)
 		}
 	}
 }

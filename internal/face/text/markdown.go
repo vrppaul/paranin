@@ -215,6 +215,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return writer.entry(chunks, typed, depth)
 	case document.Points:
 		return appendChunk(chunks, writer.points(typed.List))
+	case document.Side:
+		return writer.blocks(chunks, typed.Blocks, depth)
 	case document.Card:
 		return writer.card(chunks, typed, depth)
 	case document.Contents:

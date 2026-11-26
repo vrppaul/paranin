@@ -245,7 +245,8 @@ func (drawing *article) block(block document.Block) templ.Component {
 		return drawing.writer.figure(typed)
 	case document.Widget:
 		return drawing.writer.widget(typed)
-	case document.Section, document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Card, document.Contents,
+	case document.Section, document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side, document.Card,
+		document.Contents,
 		document.Checks, document.Skills, document.Posts:
 		// a post's body nests its headings into sections, which parts draws, and holds none of the résumé's blocks nor
 		// a project's points; the load refuses a heading inside a list's item or a quote

@@ -55,6 +55,12 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "another way to install with no command", original: "command: curl -fsSL https://example.test/tidy.sh | sh", replacement: `command: ""`, want: "profile.yaml: projects[1].install.alternatives[0].command is empty"},
 		{name: "a release with no changelog", original: "\n      changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md", replacement: "", want: `profile.yaml: projects[1].release.changelog "" is no absolute web address`},
 		{name: "a section with no title", original: "title: Why", replacement: `title: ""`, want: "profile.yaml: projects[1].sections[0].title is empty"},
+		{name: "a link with no name", original: "name: source", replacement: `name: ""`, want: "profile.yaml: projects[1].sections[1].links[0].name is empty"},
+		{name: "a link with no line", original: "line: where the code lives", replacement: `line: ""`, want: "profile.yaml: projects[1].sections[1].links[0].line is empty"},
+		{
+			name: "a link to no web address", original: "url: https://docs.example.test/tidy", replacement: "url: docs.example.test/tidy",
+			want: `profile.yaml: projects[1].sections[1].links[1].url "docs.example.test/tidy" is no absolute web address`,
+		},
 		{
 			name: "a section with no paragraph and no point", original: "        paragraphs:\n          - Files were untidy.\n", replacement: "",
 			want: "profile.yaml: projects[1].sections[0] holds no paragraph and no point",

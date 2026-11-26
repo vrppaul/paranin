@@ -209,8 +209,9 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 	}
 }
 
-// A project's section holds its paragraphs, then its points, their marks read.
-func TestAProjectsSectionHoldsItsParagraphsThenItsPoints(test *testing.T) {
+// A project's section holds its paragraphs, then its points, their marks read, then its side: its links, in their
+// order, each leading to its address by its name, with its line.
+func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
 	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
 	got := sectionTitled(test, project, "How it tidies").Blocks
 	want := []document.Block{
@@ -219,6 +220,10 @@ func TestAProjectsSectionHoldsItsParagraphsThenItsPoints(test *testing.T) {
 			{Spans: []document.Span{document.Text{Text: "Sorts the lines"}}},
 			{Spans: []document.Span{document.Text{Text: "Keeps the "}, document.Highlight{Spans: []document.Span{document.Text{Text: "blank"}}}, document.Text{Text: " ones"}}},
 		}},
+		document.Side{Blocks: []document.Block{document.Contents{Listings: []document.Listing{
+			{Target: document.Address{URL: "https://github.test/mira/tidy"}, Title: []document.Span{document.Text{Text: "source"}}, Note: []document.Span{document.Text{Text: "where the code lives"}}},
+			{Target: document.Address{URL: "https://docs.example.test/tidy"}, Title: []document.Span{document.Text{Text: "manual"}}, Note: []document.Span{document.Text{Text: "every flag it takes"}}},
+		}}}},
 	}
 	if !reflect.DeepEqual(got, want) {
 		test.Errorf("the section's blocks = %+v, want %+v", got, want)

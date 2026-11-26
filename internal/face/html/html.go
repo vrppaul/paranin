@@ -473,6 +473,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		return writer.entry(typed, depth)
 	case document.Points:
 		return writer.points(typed.List)
+	case document.Side:
+		return writer.side(typed, depth)
 	case document.Card:
 		return writer.card(typed, depth)
 	case document.Contents:
@@ -531,6 +533,19 @@ func headingWith(depth int, named templ.Attributes, title templ.Component) templ
 // named by.
 func headingLevels() []func(templ.Attributes, templ.Component) templ.Component {
 	return []func(templ.Attributes, templ.Component) templ.Component{headingTwo, headingThree, headingFour, headingFive, headingSix}
+}
+
+// sideApart parts a section's blocks into its words and its side, which the page sets beside them.
+func sideApart(blocks []document.Block) ([]document.Block, []document.Block) {
+	words, sides := []document.Block{}, []document.Block{}
+	for _, block := range blocks {
+		if _, isSide := block.(document.Side); isSide {
+			sides = append(sides, block)
+		} else {
+			words = append(words, block)
+		}
+	}
+	return words, sides
 }
 
 // linked are spans as a link to a page, where the page has an address: a card's title.

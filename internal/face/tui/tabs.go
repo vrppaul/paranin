@@ -381,6 +381,9 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.entry(typed, indent, periodWidth)
 	case document.Points:
 		return layout.points(typed.List, indent)
+	case document.Side:
+		// a section's side under its words (DESIGN.md, The TUI)
+		return layout.blocks(typed.Blocks, indent)
 	case document.Card:
 		return layout.card(typed, indent)
 	case document.Contents:

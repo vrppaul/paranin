@@ -25,6 +25,9 @@ HOW IT TIDIES
        - Sorts the lines
        - Keeps the blank ones
 
+       - source — where the code lives
+       - manual — every flag it takes
+
 CONTACT
        mira@example.test
 

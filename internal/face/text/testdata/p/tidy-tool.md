@@ -25,6 +25,9 @@ Files were untidy.
 - Sorts the lines
 - Keeps the **blank** ones
 
+- [source](https://github.test/mira/tidy): where the code lives
+- [manual](https://docs.example.test/tidy): every flag it takes
+
 ## contact
 
 [mira@example.test](mailto:mira@example.test)

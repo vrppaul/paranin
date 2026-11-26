@@ -12,7 +12,7 @@ import (
 )
 
 // Each page a person reads has its record, the facts a search engine reads as data: the résumé the person, with
-// where they work now, the schools, the skills they use and not those still learning, the languages and the public
+// where they work now, the skills they use and not those still learning, the languages and the public
 // profiles; a project's page the project, with its author; a post its current version, when it came out and when that
 // version did, at the start of its day in the post's zone but never before the post, its author, its language, its
 // tags and the series its page shows, by its group on the list by series in its language. An unlisted part of a
@@ -29,7 +29,6 @@ func TestEachPageHasItsRecord(test *testing.T) {
 		Title:          "Software Engineer",
 		Email:          "mira@example.test",
 		Employer:       "Northwind",
-		Schools:        []string{"A University"},
 		Skills:         []string{"Go", "Shell scripts for the build machines"},
 		Languages:      []string{"English"},
 		Profiles:       []string{"https://github.test/mira"},
@@ -88,7 +87,7 @@ func TestEachPageHasItsRecord(test *testing.T) {
 	}
 }
 
-// A record's text is plain: the marks of the profile's name, title, company, school and skill are read and gone.
+// A record's text is plain: the marks of the profile's name, title, company and skill are read and gone.
 func TestARecordReadsTheMarksAway(test *testing.T) {
 	marked := *fixtures.LoadedContent(test)
 	profile := &marked.Profile
@@ -96,14 +95,10 @@ func TestARecordReadsTheMarksAway(test *testing.T) {
 	profile.Experience = slices.Clone(profile.Experience)
 	currentRole := slices.IndexFunc(profile.Experience, func(role content.Role) bool { return role.End.Kind() == content.MonthCurrent })
 	profile.Experience[currentRole].Company = "==North==wind"
-	profile.Education = slices.Clone(profile.Education)
-	for index := range profile.Education {
-		profile.Education[index].Name = "==" + profile.Education[index].Name + "=="
-	}
 	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Sources: nil, Learning: false}}}}
 	record := as[PersonRecord](test, recordOf(test, SiteOf(Prepare(&marked), publicOnTheDay()), document.PageOf(document.PageResume)))
-	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Schools: record.Schools, Skills: record.Skills}
-	want := markedFacts{Name: "Mira Example", Title: "Software Engineer", Employer: "Northwind", Schools: []string{"A University"}, Skills: []string{"Go"}}
+	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Skills: record.Skills}
+	want := markedFacts{Name: "Mira Example", Title: "Software Engineer", Employer: "Northwind", Skills: []string{"Go"}}
 	if !reflect.DeepEqual(got, want) {
 		test.Errorf("the marked facts of the résumé's record = %+v, want %+v", got, want)
 	}
@@ -114,7 +109,6 @@ type markedFacts struct {
 	Name     string
 	Title    string
 	Employer string
-	Schools  []string
 	Skills   []string
 }
 

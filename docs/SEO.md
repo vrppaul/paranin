@@ -74,7 +74,8 @@ One `Person` stands for the author, by the `@id` `https://paran.in/#person`, so 
 
 - **The résumé, `/`:** `ProfilePage` about the person; beside it `WebSite`, its `name` the name Google shows for the
   site ([Google](https://developers.google.com/search/docs/appearance/site-names)): the person's, as the profile
-  writes it, its host, `paran.in`, as its `alternateName` (owner, 2026-11-24).
+  writes it, its host, `paran.in`, as its `alternateName` (owner, 2026-11-24). The person names no school, which no
+  page shows (owner, 2026-11-26).
 - **A tab of the résumé:** `WebPage` about the person: the profile is `/` alone.
 - **A project's page:** `SoftwareSourceCode`, its author the person.
 - **A post:** `BlogPosting` with `headline`, `description`, `url`, `datePublished`, `dateModified` its current

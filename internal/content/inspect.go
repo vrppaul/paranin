@@ -27,7 +27,6 @@ const (
 	mailProblem          = "%q is no bare mail address"
 	unknownMonth         = "%q is no month, YYYY-MM"
 	unknownEnd           = unknownMonth + ", nor " + currentWord
-	unknownMonthOrGap    = unknownMonth + ", nor a " + GapOpening + "gap" + GapClosing
 	unknownDuration      = "%q is no span, as 1y 7m, nor " + sideWord + ", " + learningWord + " or a " + GapOpening + "gap" + GapClosing
 	unflaggedLearning    = "%q says the skill is still being learnt, but learning is not true"
 	orderProblem         = "%q comes before the start, %q"
@@ -225,7 +224,6 @@ func inspectProfile(profile Profile) Faults {
 	inspectSite(inspection, profile.Site)
 	inspectPerson(inspection, profile.Person)
 	inspectExperience(inspection, profile.Experience)
-	inspectEducation(inspection, profile.Education)
 	inspectProjects(inspection, profile.Projects)
 	inspectSkills(inspection, profile.SkillGroups)
 	inspectHealth(inspection, profile.Health)
@@ -306,29 +304,6 @@ func inspectExperience(inspection *inspection, roles []Role) {
 			inspection.add(end, orderProblem, role.End.Written(), role.Start.Written())
 		}
 	}
-}
-
-// inspectEducation lets a school's months be gaps, and holds known ones to their order.
-func inspectEducation(inspection *inspection, schools []School) {
-	for index, school := range schools {
-		inspection.require(fmt.Sprintf("education[%d].name", index), school.Name)
-		start := fmt.Sprintf("education[%d].start", index)
-		end := fmt.Sprintf("education[%d].end", index)
-		if !knownOrGap(school.Start) {
-			inspection.add(start, unknownMonthOrGap, school.Start.Written())
-		}
-		if !knownOrGap(school.End) {
-			inspection.add(end, unknownMonthOrGap, school.End.Written())
-		}
-		if school.Start.Kind() == MonthKnown && school.End.Kind() == MonthKnown && school.End.Before(school.Start) {
-			inspection.add(end, orderProblem, school.End.Written(), school.Start.Written())
-		}
-	}
-}
-
-// knownOrGap tells a month a school may start or end in.
-func knownOrGap(month Month) bool {
-	return month.Kind() == MonthKnown || month.Kind() == MonthGap
 }
 
 func inspectProjects(inspection *inspection, projects []Project) {

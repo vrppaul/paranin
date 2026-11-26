@@ -76,12 +76,6 @@ skill_groups:
     skills:
       - {name: Docker, duration: side, sources: [Northwind], learning: true}
 
-education:
-  - name: A University
-    field: Computer Science and the Engineering of Systems That Last
-    start: 2016-09
-    end: "[20XX]"
-
 languages:
   - {name: English, level: fluent}
 

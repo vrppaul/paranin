@@ -1,7 +1,7 @@
 # The facts of paran.in, ssh paran.in, the markdown and plain-text copies and cv.pdf, written once. The site
 # serves them from this folder; `paranin check content` checks it, as the site will on each load.
 #
-# A role still held ends `current`. A date not known yet is a gap, as in any text.
+# A role still held ends `current`.
 #
 # A skill's duration is a span, years first and months below twelve (`7y`, `1y 7m`, `11m`); `side`, for a skill used
 # on the side; `learning`, for one still being learnt, which says `learning: true` too; or a gap. The site shows
@@ -199,12 +199,6 @@ skill_groups:
   - title: Design
     skills:
       - {name: UX design, duration: 11m, sources: [Česká spořitelna]}
-
-education:
-  - name: Czech Technical University in Prague
-    field: Faculty of Mechanical Engineering
-    start: "[20XX]"
-    end: "[20XX]"
 
 languages:
   - {name: English, level: full professional}

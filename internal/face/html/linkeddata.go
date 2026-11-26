@@ -20,7 +20,6 @@ const (
 	webPageKind      = "WebPage"
 	personKind       = "Person"
 	organizationKind = "Organization"
-	schoolKind       = "EducationalOrganization"
 	sourceCodeKind   = "SoftwareSourceCode"
 	blogPostingKind  = "BlogPosting"
 	seriesKind       = "CreativeWorkSeries"
@@ -60,21 +59,20 @@ type webPage struct {
 
 // person is who a page is about, as schema.org names them; a fact the record lacks is left out.
 type person struct {
-	Kind          string         `json:"@type"`
-	ID            string         `json:"@id"`
-	Name          string         `json:"name"`
-	AlternateName []string       `json:"alternateName,omitempty"`
-	JobTitle      string         `json:"jobTitle,omitempty"`
-	Email         string         `json:"email,omitempty"`
-	URL           string         `json:"url"`
-	WorksFor      organization   `json:"worksFor,omitzero"`
-	AlumniOf      []organization `json:"alumniOf,omitempty"`
-	KnowsAbout    []string       `json:"knowsAbout,omitempty"`
-	KnowsLanguage []string       `json:"knowsLanguage,omitempty"`
-	SameAs        []string       `json:"sameAs,omitempty"`
+	Kind          string       `json:"@type"`
+	ID            string       `json:"@id"`
+	Name          string       `json:"name"`
+	AlternateName []string     `json:"alternateName,omitempty"`
+	JobTitle      string       `json:"jobTitle,omitempty"`
+	Email         string       `json:"email,omitempty"`
+	URL           string       `json:"url"`
+	WorksFor      organization `json:"worksFor,omitzero"`
+	KnowsAbout    []string     `json:"knowsAbout,omitempty"`
+	KnowsLanguage []string     `json:"knowsLanguage,omitempty"`
+	SameAs        []string     `json:"sameAs,omitempty"`
 }
 
-// organization is a company or a school, by its kind and name.
+// organization is a company, by its kind and name.
 type organization struct {
 	Kind string `json:"@type"`
 	Name string `json:"name"`
@@ -175,7 +173,6 @@ func (writer PageWriter) profilePageOf(record compose.PersonRecord, address stri
 			Email:         record.Email,
 			URL:           writer.frame.site.Address(record.Page, routes.FormatChosen),
 			WorksFor:      employerOf(record.Employer),
-			AlumniOf:      schoolsOf(record.Schools),
 			KnowsAbout:    record.Skills,
 			KnowsLanguage: record.Languages,
 			SameAs:        record.Profiles,
@@ -211,14 +208,6 @@ func employerOf(name string) organization {
 		return organization{Kind: "", Name: ""}
 	}
 	return organization{Kind: organizationKind, Name: name}
-}
-
-func schoolsOf(names []string) []organization {
-	schools := make([]organization, 0, len(names))
-	for _, name := range names {
-		schools = append(schools, organization{Kind: schoolKind, Name: name})
-	}
-	return schools
 }
 
 func (writer PageWriter) sourceCodeOf(record compose.WorkRecord) sourceCode {

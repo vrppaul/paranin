@@ -1722,7 +1722,7 @@ func composedOf(test *testing.T, pages []compose.Composed, page document.Page) c
 // has a record, and a page standing for the résumé has a person's.
 func blankPerson() compose.PersonRecord {
 	return compose.PersonRecord{
-		Name: "", AlternateNames: nil, Title: "", Email: "", Employer: "", Schools: nil, Skills: nil, Languages: nil,
+		Name: "", AlternateNames: nil, Title: "", Email: "", Employer: "", Skills: nil, Languages: nil,
 		Profiles: nil, Page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""},
 	}
 }

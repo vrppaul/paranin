@@ -18,15 +18,14 @@ type Record interface {
 }
 
 // PersonRecord is the résumé's record: who it is about, the names they also go by, their title and mail, where
-// they work now, none where no role goes on, the schools they went to, the skills they use, not those still
-// learning, the languages they speak, the addresses of their public profiles, and the page that is theirs.
+// they work now, none where no role goes on, the skills they use, not those still learning, the languages they
+// speak, the addresses of their public profiles, and the page that is theirs.
 type PersonRecord struct {
 	Name           string
 	AlternateNames []string
 	Title          string
 	Email          string
 	Employer       string
-	Schools        []string
 	Skills         []string
 	Languages      []string
 	Profiles       []string
@@ -91,7 +90,6 @@ func personRecord(profile content.Profile) PersonRecord {
 		Title:          plainText(person.Title),
 		Email:          person.Email,
 		Employer:       employer(profile.Experience),
-		Schools:        schools(profile.Education),
 		Skills:         skillsInUse(profile.SkillGroups),
 		Languages:      languages,
 		Profiles:       profiles,
@@ -107,14 +105,6 @@ func employer(roles []content.Role) string {
 		}
 	}
 	return ""
-}
-
-func schools(education []content.School) []string {
-	names := make([]string, 0, len(education))
-	for _, school := range education {
-		names = append(names, plainText(school.Name))
-	}
-	return names
 }
 
 // skillsInUse are the names of the skills the author uses, in the profile's order: not those still learning.

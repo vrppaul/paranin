@@ -77,7 +77,7 @@ templ (writer PageWriter) postGroup(group document.Group) {
 
 // tiles are the posts a group names, each as its tile.
 templ (writer PageWriter) tiles(posts document.Posts) {
-	<ol class="tiles">
+	<ol class="tiles tile-grid">
 		for _, post := range posts.List {
 			<li>
 				@writer.tile(post)

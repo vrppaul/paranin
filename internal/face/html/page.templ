@@ -500,7 +500,7 @@ templ (writer PageWriter) projectEnd(project document.Project) {
 					@writer.spans(project.AllProjects.Spans)
 				</a>
 			</div>
-			<nav class="panes" aria-labelledby={ ownID(othersHeadingID) }>
+			<nav class="tile-grid" aria-labelledby={ ownID(othersHeadingID) }>
 				for _, other := range project.Others {
 					@writer.otherPane(other)
 				}

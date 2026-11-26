@@ -69,8 +69,8 @@ export default {
       // the toast stands over the foot line it hangs from, however tall the line is
       "/^bottom$/": ["%"],
       // a grid's column takes the room the others leave: a fact's value beside its label, an entry's words beside its
-      // dates
-      "/^grid-template-columns$/": ["fr"],
+      // dates; and a tile is never wider than its grid, however narrow the screen
+      "/^grid-template-columns$/": ["fr", "%"],
       "/.*/": [],
     },
     // A media query holds a width alone, in rem, and only the page's widths, since a custom property cannot stand in

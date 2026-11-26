@@ -1700,7 +1700,7 @@ a.tile-title:focus-visible {
   border-top: var(--hairline) solid var(--quiet);
 }
 
-.project-end > :is(.panes-heading, .panes) {
+.project-end > :is(.panes-heading, .tile-grid) {
   grid-column: 1;
 }
 
@@ -1757,6 +1757,18 @@ a.tile-title:focus-visible {
   .project-end > .mail {
     margin-top: var(--row);
   }
+}
+
+/* tiles as tmux splits a window into panes, the blog's posts and a project's other projects: as many in a row as hold
+ * a tile each, one across the whole width where none fits, with no gap; each laid a hairline over its neighbours to
+ * the right and below, so the two share the line between them */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--tile), 100%), 1fr));
+}
+
+.tile-grid > * {
+  margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
 }
 
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
@@ -2506,11 +2518,6 @@ a.pick-row:hover {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-/* a project's other projects on the blog's tiles' grid, as many in a row as hold a tile each (.tiles) */
-.project-end > .panes {
-  grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr));
-}
-
 /* a pane, padded as a dialog (.hint), in a muted hairline; the whole of it the link, a shade down under the pointer, its
  * title's underline turning the accent, twice as thick. A tile of the blog's list is one too, and adds what differs */
 .pane {
@@ -2534,10 +2541,8 @@ a.pick-row:hover {
   border-left-color: transparent;
 }
 
-/* a project's other projects share the lines between them as the blog's tiles do (.tiles > li): each laid a hairline
- * over its neighbours to the right and below; and with no name set into their edge they stand a row from their top */
-.project-end > .panes > .pane {
-  margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
+/* a project's other projects, with no name set into their edge, stand a row from their top */
+.project-end > .tile-grid > .pane {
   padding-top: var(--row);
 }
 
@@ -2917,12 +2922,9 @@ a.pane:hover .pane-title {
   line-height: var(--type-small-line);
 }
 
-/* the tiles as tmux splits a window into panes, as many in a row as hold a tile each, with no gap: each laid a
- * hairline over its neighbours to the right and below, so the two share the line between them. Half a row clear at
- * the top for the first row's days, set into its edge */
+/* a group's tiles on the grid of tiles (.tile-grid), half a row clear at the top for the first row's days, set into
+ * its edge */
 .tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr));
   margin: 0;
   padding: var(--row-half) 0 0;
   list-style: none;
@@ -2930,7 +2932,6 @@ a.pane:hover .pane-title {
 
 .tiles > li {
   display: grid;
-  margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
 }
 
 /* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .edge), its title
@@ -3091,7 +3092,6 @@ a.tile-title::after {
   }
 
   .tiles {
-    grid-template-columns: minmax(0, 1fr);
     margin-top: var(--row);
   }
 }

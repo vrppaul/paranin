@@ -2,9 +2,9 @@ package document
 
 import "time"
 
-// Period is the time an entry spans.
+// Period is the time an entry spans: from a known month to one, or to what still goes on.
 type Period struct {
-	Start Month
+	Start KnownMonth
 	End   Month
 }
 

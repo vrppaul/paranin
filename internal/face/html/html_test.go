@@ -744,7 +744,7 @@ func TestTheBriefEndsWithTheProfiles(test *testing.T) {
 }
 
 // roleOf is a role a test builds by hand: its company and its months, nothing else.
-func roleOf(company string, start, end document.Month) document.Entry {
+func roleOf(company string, start document.KnownMonth, end document.Month) document.Entry {
 	return document.Entry{
 		Period: document.Period{Start: start, End: end}, Title: []document.Span{document.Text{Text: company}},
 		Subtitle: nil, Points: nil,

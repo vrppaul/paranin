@@ -140,7 +140,8 @@ func factPhrases(phrases []string, facts []Fact) []string {
 }
 
 func entryPhrases(phrases []string, entry Entry) []string {
-	phrases = monthPhrase(monthPhrase(phrases, entry.Period.Start), entry.Period.End)
+	// a period's start is a known month, each face's to write
+	phrases = monthPhrase(phrases, entry.Period.End)
 	phrases = spanPhrases(spanPhrases(phrases, entry.Title), entry.Subtitle)
 	for _, technology := range entry.Technologies {
 		phrases = textPhrase(phrases, technology)

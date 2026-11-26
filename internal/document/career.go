@@ -33,11 +33,7 @@ type CareerSpan struct {
 func CareerOf(roles []Entry, today time.Time) Career {
 	career := Career{Spans: []CareerSpan{}, First: today, Last: today, Present: ""}
 	for _, role := range roles {
-		start, known := role.Period.Start.(KnownMonth)
-		if !known {
-			continue
-		}
-		span := CareerSpan{Company: PlainText(role.Title), Start: start.Start, End: today, Current: false}
+		span := CareerSpan{Company: PlainText(role.Title), Start: role.Period.Start.Start, End: today, Current: false}
 		switch end := role.Period.End.(type) {
 		case KnownMonth:
 			span.End = end.Start.AddDate(0, 1, 0)

@@ -89,7 +89,7 @@ func personRecord(profile content.Profile) PersonRecord {
 		AlternateNames: person.AlternateNames,
 		Title:          plainText(person.Title),
 		Email:          person.Email,
-		Employer:       employer(profile.Experience),
+		Employer:       employer(profile.Experience.Roles),
 		Skills:         skillsInUse(profile.SkillGroups),
 		Languages:      languages,
 		Profiles:       profiles,

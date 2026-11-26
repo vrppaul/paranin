@@ -102,16 +102,22 @@ func (layout layout) otherTiles(others []document.OtherProject) []line {
 // its top; what it is made of, each name whole, the faint mark between two, at its foot.
 func (layout layout) otherWords(other document.OtherProject) tileWords {
 	name := layout.words([]document.Span{document.Link{Target: other.Page, Spans: other.Name}}, kindStrong)
-	names := make([][]word, 0, len(other.Stack))
-	for _, written := range other.Stack {
-		names = append(names, []word{wordOf(written, kindFaint)})
-	}
 	top := slices.Concat(layout.fill(name, 0), layout.fill(layout.words(other.Tagline, kindMuted), 0))
 	foot := []line{}
-	if len(names) > 0 {
-		foot = append(blankLines(), layout.fill(faintlyMarked(names), 0)...)
+	if len(other.Stack) > 0 {
+		foot = append(blankLines(), layout.fill(faintNames(other.Stack), 0)...)
 	}
 	return tileWords{top: top, foot: foot}
+}
+
+// faintNames are names in a row, faint, each whole, the place mark between two: what a project is made of, or the
+// technologies a role was done with.
+func faintNames(names []string) []word {
+	groups := make([][]word, 0, len(names))
+	for _, name := range names {
+		groups = append(groups, []word{wordOf(name, kindFaint)})
+	}
+	return faintlyMarked(groups)
 }
 
 // faintlyMarked are groups of words in a row, the place mark in faint between each two, as the page parts a project's

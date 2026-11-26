@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -14,6 +15,15 @@ import (
 func toExperience() []string {
 	return []string{"l"}
 }
+
+// The experience tab of the fixture, as a test scrolls it: a word of its first line, which a page opened on the tab
+// shows at its top; one of the line a row of nothing below it, which a line down brings to the top's next row; and how
+// many lines down the page stands past the first line holding "kept"
+const (
+	experienceTop    = "Ships"
+	experienceSecond = "3y"
+	pastTheFirstKept = 8
+)
 
 // A search finds its text in the tab, whatever its case, scrolls to the first line holding it at or after where
 // the page stood, and says which match of how many it shows.
@@ -79,9 +89,9 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 		after []string
 		holds string
 	}{
-		{name: "a match after the top line", keys: []string{"j", "j", "j"}, query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
+		{name: "a match after the top line", keys: slices.Repeat([]string{"j"}, pastTheFirstKept), query: "kept", after: []string{"enter"}, holds: "/kept [2/2]"},
 		{name: "a match on the top line", keys: []string{"j"}, query: "the", after: []string{"enter"}, holds: "/the [1/4]"},
-		{name: "the count while the reader types", keys: []string{"j", "j", "j"}, query: "kept", after: nil, holds: "[2/2]"},
+		{name: "the count while the reader types", keys: slices.Repeat([]string{"j"}, pastTheFirstKept), query: "kept", after: nil, holds: "[2/2]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -95,7 +105,7 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 
 // n and N go on from the match shown even where the page can scroll no further, so no match is skipped; each tab
 // keeps the match it showed while the reader looks at another; and a tab that has shown none starts at its top line,
-// as Enter does, and N there goes to the match before it. The experience tab holds an e 31 times, six of them on its
+// as Enter does, and N there goes to the match before it. The experience tab holds an e 49 times, four of them on its
 // top line, and the projects tab 11 times, its top line among them.
 func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 	cases := []struct {
@@ -103,8 +113,8 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 		keys  []string
 		holds string
 	}{
-		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [30/31]"},
-		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/31]"},
+		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [48/49]"},
+		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/49]"},
 		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/11]"},
 		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [11/11]"},
 	}
@@ -123,7 +133,7 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 func TestASearchThatFindsNothingTellsTheReader(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 	screen := screenOf(test, pressed(test, typed(test, model, "zebra"), "enter"))
-	if !strings.Contains(screen, "E486: Pattern not found: zebra") || !strings.Contains(screen, "Northwind") {
+	if !strings.Contains(screen, "E486: Pattern not found: zebra") || !strings.Contains(screen, experienceTop) {
 		test.Errorf("after searching what is not there the screen =\n%s\nwant E486 and the page where it was", screen)
 	}
 }
@@ -142,8 +152,8 @@ func TestTheSearchLineFollowsTheTyping(test *testing.T) {
 		{name: "the matches are counted as the reader types", text: "the", keys: nil, holds: "[1/4]", lacks: "E486"},
 		{name: "a backspace takes a letter back", text: "parserx", keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "parserx"},
 		{name: "a backspace takes a letter of two code points back whole", text: "parser" + accentedLetter, keys: []string{"backspace", "enter"}, holds: "/parser [1/1]", lacks: "E486"},
-		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: "Northwind", lacks: "esc cancel"},
-		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: "Northwind", lacks: "/parser"},
+		{name: "a backspace on nothing ends the search", text: "", keys: []string{"backspace"}, holds: experienceTop, lacks: "esc cancel"},
+		{name: "Esc ends the search unsought", text: "parser", keys: []string{"esc"}, holds: experienceTop, lacks: "/parser"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -241,7 +251,7 @@ func TestANewSearchForgetsTheMatchesShown(test *testing.T) {
 func TestAResizeForgetsTheMatchesShown(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 	resized, _ := pressed(test, typed(test, model, "e"), "enter").Update(tea.WindowSizeMsg{Width: commonWidth, Height: shortHeight})
-	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/31]") {
+	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/49]") {
 		test.Errorf("after a resize and n the screen =\n%s\nwant the match on the top line", screen)
 	}
 }
@@ -259,7 +269,7 @@ func TestEscapeGluedToAKeyIsReadAsBoth(test *testing.T) {
 
 // While the reader types a search, the page goes to its first match at or after where the page stood, as
 // Neovim's incsearch does, and back there while what is typed matches nothing, or once the reader leaves it
-// unsought. Three lines down, the page stands past the first line holding "kept".
+// unsought.
 func TestThePageFollowsTheSearchTyped(test *testing.T) {
 	cases := []struct {
 		name   string
@@ -270,8 +280,8 @@ func TestThePageFollowsTheSearchTyped(test *testing.T) {
 		lacks  string
 	}{
 		{name: "typing goes to the first match", before: nil, text: "parser", keys: nil, holds: "Wrote the first parser", lacks: "Northwind"},
-		{name: "typing goes to the first match after the page", before: []string{"j", "j", "j"}, text: "kept", keys: nil, holds: "Kept the build", lacks: "Kept the queue"},
-		{name: "typing what matches nothing goes back", before: nil, text: "parserz", keys: nil, holds: "Northwind", lacks: "Wrote the first parser"},
+		{name: "typing goes to the first match after the page", before: slices.Repeat([]string{"j"}, pastTheFirstKept), text: "kept", keys: nil, holds: "Kept the build", lacks: "Kept the queue"},
+		{name: "typing what matches nothing goes back", before: nil, text: "parserz", keys: nil, holds: experienceTop, lacks: "Wrote the first parser"},
 		{name: "a backspace goes to the match again", before: nil, text: "parserz", keys: []string{"backspace"}, holds: "Wrote the first parser", lacks: "Northwind"},
 		{name: "a backspace seeks from where the search began", before: nil, text: "kept the b", keys: []string{"backspace"}, holds: "Kept the queue", lacks: "Kept the build"},
 	}

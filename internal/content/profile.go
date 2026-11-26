@@ -1,9 +1,9 @@
 package content
 
 // The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
-// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
-// value. A label, a place, a language's name, a stack's name, an address, a link's text and a command are shown as
-// written. A gap is also how a duration not known yet is written, the gap its whole value
+// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a detail, a
+// value. A label, a place, a language's name, a stack's or a technology's name, an address, a link's text and a
+// command are shown as written. A gap is also how a duration not known yet is written, the gap its whole value
 const (
 	HighlightMark = "=="
 	GapOpening    = "["
@@ -16,7 +16,7 @@ type Profile struct {
 	Person      Person          `yaml:"person"`
 	Summary     string          `yaml:"summary"`
 	Facts       []Fact          `yaml:"facts"`
-	Experience  []Role          `yaml:"experience"`
+	Experience  Experience      `yaml:"experience"`
 	Projects    []Project       `yaml:"projects"`
 	SkillGroups []SkillGroup    `yaml:"skill_groups"`
 	Languages   []Language      `yaml:"languages"`
@@ -57,14 +57,25 @@ type Fact struct {
 	Value string `yaml:"value"`
 }
 
-// Role is one place of work. A role still held ends "current".
+// Experience is the author's work: its line, the one thing a reader should keep of it; the skills it puts forward, by
+// their names in the skill groups, which give how long each was used; and the roles, in their order.
+type Experience struct {
+	Line       string   `yaml:"line"`
+	PutForward []string `yaml:"put_forward"`
+	Roles      []Role   `yaml:"roles"`
+}
+
+// Role is one place of work: its technologies by name, its points, and its details, paragraphs that tell it at
+// length. A role still held ends "current".
 type Role struct {
-	Company  string   `yaml:"company"`
-	Title    string   `yaml:"title"`
-	Location string   `yaml:"location"`
-	Start    Month    `yaml:"start"`
-	End      Month    `yaml:"end"`
-	Bullets  []string `yaml:"bullets"`
+	Company      string   `yaml:"company"`
+	Title        string   `yaml:"title"`
+	Location     string   `yaml:"location"`
+	Start        Month    `yaml:"start"`
+	End          Month    `yaml:"end"`
+	Technologies []string `yaml:"technologies"`
+	Bullets      []string `yaml:"bullets"`
+	Details      []string `yaml:"details"`
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of

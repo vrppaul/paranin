@@ -36,6 +36,7 @@ const (
 	sharedGroupProblem   = "%q names another group too"
 	stackLanguageProblem = "%q is the project's language already"
 	emptyGroupProblem    = "holds no skill"
+	unknownSkillProblem  = "%q is no skill of a group"
 	noneOfProblem        = "%q is none of %s"
 	positiveProblem      = "%d is not above 0"
 	rangeProblem         = "%d is not above min, %d"
@@ -223,7 +224,7 @@ func inspectProfile(profile Profile) Faults {
 	inspection := &inspection{file: profileFile, faults: nil}
 	inspectSite(inspection, profile.Site)
 	inspectPerson(inspection, profile.Person)
-	inspectExperience(inspection, profile.Experience)
+	inspectExperience(inspection, profile.Experience, profile.SkillGroups)
 	inspectProjects(inspection, profile.Projects)
 	inspectSkills(inspection, profile.SkillGroups)
 	inspectHealth(inspection, profile.Health)
@@ -286,23 +287,47 @@ func inspectPerson(inspection *inspection, person Person) {
 	}
 }
 
-// inspectExperience holds each role to known months, its end a month or current: a role is dated, never a gap.
-func inspectExperience(inspection *inspection, roles []Role) {
-	for index, role := range roles {
-		inspection.require(fmt.Sprintf("experience[%d].company", index), role.Company)
-		inspection.require(fmt.Sprintf("experience[%d].title", index), role.Title)
-		start := fmt.Sprintf("experience[%d].start", index)
-		if role.Start.Kind() != MonthKnown {
-			inspection.add(start, unknownMonth, role.Start.Written())
+// inspectExperience holds each skill put forward to one a group lists, which gives how long it was used, and each
+// role to known months, its end a month or current: a role is dated, never a gap.
+func inspectExperience(inspection *inspection, experience Experience, groups []SkillGroup) {
+	for index, name := range experience.PutForward {
+		if !listsSkill(groups, name) {
+			inspection.add(fmt.Sprintf("experience.put_forward[%d]", index), unknownSkillProblem, name)
 		}
-		end := fmt.Sprintf("experience[%d].end", index)
-		switch {
-		case role.End.Kind() == MonthCurrent:
-		case role.End.Kind() != MonthKnown:
-			inspection.add(end, unknownEnd, role.End.Written())
-		case role.Start.Kind() == MonthKnown && role.End.Before(role.Start):
-			inspection.add(end, orderProblem, role.End.Written(), role.Start.Written())
+	}
+	for index, role := range experience.Roles {
+		inspectRole(inspection, fmt.Sprintf("experience.roles[%d]", index), role)
+	}
+}
+
+// listsSkill is whether a group lists a skill of a name.
+func listsSkill(groups []SkillGroup, name string) bool {
+	for _, group := range groups {
+		if slices.ContainsFunc(group.Skills, func(skill Skill) bool { return skill.Name == name }) {
+			return true
 		}
+	}
+	return false
+}
+
+// inspectRole holds a role at a place to its company, its title and a name for each technology, and its months to
+// known ones in order.
+func inspectRole(inspection *inspection, place string, role Role) {
+	inspection.require(place+".company", role.Company)
+	inspection.require(place+".title", role.Title)
+	for index, technology := range role.Technologies {
+		inspection.require(fmt.Sprintf("%s.technologies[%d]", place, index), technology)
+	}
+	if role.Start.Kind() != MonthKnown {
+		inspection.add(place+".start", unknownMonth, role.Start.Written())
+	}
+	end := place + ".end"
+	switch {
+	case role.End.Kind() == MonthCurrent:
+	case role.End.Kind() != MonthKnown:
+		inspection.add(end, unknownEnd, role.End.Written())
+	case role.Start.Kind() == MonthKnown && role.End.Before(role.Start):
+		inspection.add(end, orderProblem, role.End.Written(), role.Start.Written())
 	}
 }
 

@@ -36,6 +36,11 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a role", want: "Senior Engineer"},
 		{name: "a role's place", want: "Prague"},
 		{name: "a point", want: "Wrote the first parser"},
+		{name: "a role's technology", want: "Docker"},
+		{name: "a role's detail", want: "Joined a team of four that ran a "},
+		{name: "the experience's line", want: "Ships tools a team "},
+		{name: "a skill the experience puts forward", want: "Go"},
+		{name: "how long it was used", want: "3y"},
 		{name: "a highlighted result", want: "queue"},
 		{name: "a project", want: "tidy-tool"},
 		{name: "a tagline", want: "Tidies files."},
@@ -84,13 +89,34 @@ func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
 	}
 }
 
+// The experience opens with its line, then the skills it puts forward, each by its name and how long it was used, in
+// the profile's order, as the skills' list writes a duration; its roles come after.
+func TestTheExperienceOpensWithItsLineAndTheSkillsPutForward(test *testing.T) {
+	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience").Blocks
+	got := make([]string, 0, len(experience))
+	for _, block := range experience {
+		got = append(got, fmt.Sprintf("%T", block))
+	}
+	if want := []string{"document.Paragraph", "document.Facts", "document.Entry", "document.Entry"}; !slices.Equal(got, want) {
+		test.Fatalf("the experience section holds %q, want %q", got, want)
+	}
+	putForward := as[document.Facts](test, experience[1])
+	want := document.Facts{Kind: document.FactsTechnologies, List: []document.Fact{
+		{Label: "Go", Value: []document.Span{document.Text{Text: "3y"}}},
+		{Label: "Rust", Value: []document.Span{document.Text{Text: "still learning"}}},
+	}}
+	if !reflect.DeepEqual(putForward, want) {
+		test.Errorf("the skills the experience puts forward = %+v, want %+v", putForward, want)
+	}
+}
+
 // A role's months reach the document typed, so each face writes them its own way, and a role still held stays
 // current.
 func TestEachRoleKeepsItsPeriod(test *testing.T) {
-	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience")
+	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil).Blocks)
 	got := []document.Period{}
-	for _, block := range experience.Blocks {
-		got = append(got, as[document.Entry](test, block).Period)
+	for _, role := range document.BriefOf(sections).Roles {
+		got = append(got, role.Period)
 	}
 	want := []document.Period{
 		{Start: document.KnownMonth{Start: firstMoment(2023, time.April)}, End: document.CurrentMonth{Text: "present"}},

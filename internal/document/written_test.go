@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-// A document as a reader of the finished work sees it leaves out a fact or a point that holds nothing but gaps still
-// to fill, and a list of facts left with none; a gap among written words stays, as does every other block.
+// A document as a reader of the finished work sees it leaves out a fact, a point or a detail that holds nothing but
+// gaps still to fill, and a list of facts left with none; a gap among written words stays, as does every other block.
 func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	later := Fact{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}
 	where := Fact{Label: "where", Value: []Span{Text{Text: "Prague · "}, Gap{Text: "[remote?]"}}}
@@ -15,6 +15,7 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	amongWords := Point{Spans: []Span{Text{Text: "Owned "}, Gap{Text: "[service]"}}}
 	onlyAGap := Point{Spans: []Span{Gap{Text: "[What was built]"}}}
 	gapParagraph := Paragraph{Spans: []Span{Gap{Text: "[summary]"}}}
+	writtenParagraph := Paragraph{Spans: []Span{Text{Text: "Ran the queue."}}}
 	stressedGap := Point{Spans: []Span{Emphasis{Spans: []Span{Gap{Text: "[N]"}}}}}
 	strongGap := Point{Spans: []Span{Strong{Spans: []Span{Gap{Text: "[N]"}}}}}
 	strongWords := Point{Spans: []Span{Strong{Spans: []Span{Text{Text: "Shipped"}}}}}
@@ -36,8 +37,13 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 		},
 		{
 			name:  "a point only a gap, in words or in a result",
-			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{onlyAGap, amongWords, unwrittenResult, writtenResult}},
-			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{amongWords, writtenResult}}},
+			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: []Point{onlyAGap, amongWords, unwrittenResult, writtenResult}, Details: nil},
+			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: []Point{amongWords, writtenResult}, Details: nil}},
+		},
+		{
+			name:  "a detail only a gap",
+			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: nil, Details: []Paragraph{gapParagraph, writtenParagraph}},
+			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: nil, Details: []Paragraph{writtenParagraph}}},
 		},
 		{
 			name:  "a card's fact",
@@ -51,8 +57,8 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 		},
 		{
 			name:  "a point only stressed or strong gaps, and points of words so",
-			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedGap, strongGap, stressedWords, strongWords}},
-			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: []Point{stressedWords, strongWords}}},
+			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: []Point{stressedGap, strongGap, stressedWords, strongWords}, Details: nil},
+			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: []Point{stressedWords, strongWords}, Details: nil}},
 		},
 		{name: "a paragraph, which is no fact and no point", block: gapParagraph, want: []Block{gapParagraph}},
 	}
@@ -71,7 +77,7 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 func TestWrittenKeepsTheBlocksHandedWhole(test *testing.T) {
 	facts := []Fact{{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}, {Label: "now", Value: []Span{Text{Text: "here"}}}}
 	points := []Point{{Spans: []Span{Gap{Text: "[What was built]"}}}, {Spans: []Span{Text{Text: "Wrote it"}}}}
-	role := Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Points: points}
+	role := Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Place: "", Technologies: nil, Points: points, Details: nil}
 	handed := Document{Head: Head{}, Blocks: []Block{Facts{Kind: FactsDetails, List: facts}, role}}
 	want := Phrases(handed)
 	WrittenBlocks(handed.Blocks)

@@ -92,9 +92,10 @@ func TestARecordReadsTheMarksAway(test *testing.T) {
 	marked := *fixtures.LoadedContent(test)
 	profile := &marked.Profile
 	profile.Person.Name, profile.Person.Title = "==Mira== Example", "==Software== Engineer"
-	profile.Experience = slices.Clone(profile.Experience)
-	currentRole := slices.IndexFunc(profile.Experience, func(role content.Role) bool { return role.End.Kind() == content.MonthCurrent })
-	profile.Experience[currentRole].Company = "==North==wind"
+	roles := slices.Clone(profile.Experience.Roles)
+	currentRole := slices.IndexFunc(roles, func(role content.Role) bool { return role.End.Kind() == content.MonthCurrent })
+	roles[currentRole].Company = "==North==wind"
+	profile.Experience.Roles = roles
 	profile.SkillGroups = []content.SkillGroup{{Title: "Languages", Skills: []content.Skill{{Name: "==Go==", Duration: content.Duration{}, Sources: nil, Learning: false}}}}
 	record := as[PersonRecord](test, recordOf(test, SiteOf(Prepare(&marked), publicOnTheDay()), document.PageOf(document.PageResume)))
 	got := markedFacts{Name: record.Name, Title: record.Title, Employer: record.Employer, Skills: record.Skills}
@@ -115,7 +116,7 @@ type markedFacts struct {
 // A person whose every role has ended works nowhere now, and the résumé's record names no employer.
 func TestAPersonWithNoRoleGoingOnHasNoEmployer(test *testing.T) {
 	ended := *fixtures.LoadedContent(test)
-	ended.Profile.Experience = slices.DeleteFunc(slices.Clone(ended.Profile.Experience), func(role content.Role) bool {
+	ended.Profile.Experience.Roles = slices.DeleteFunc(slices.Clone(ended.Profile.Experience.Roles), func(role content.Role) bool {
 		return role.End.Kind() == content.MonthCurrent
 	})
 	if record := as[PersonRecord](test, recordOf(test, SiteOf(Prepare(&ended), publicOnTheDay()), document.PageOf(document.PageResume))); record.Employer != "" {

@@ -363,8 +363,9 @@ func noteReference(number int) string {
 	return noteOpening + strconv.Itoa(number) + noteClosing
 }
 
-// factsBlock writes a block of facts by its kind: details as a list; the ways to reach the author each a paragraph of
-// its own, since they follow the author's details and markdown would read two lists in a row as one.
+// factsBlock writes a block of facts by its kind: details and technologies as a list; the ways to reach the author
+// each a paragraph of its own, since they follow the author's details and markdown would read two lists in a row as
+// one.
 func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) []string {
 	switch facts.Kind {
 	case document.FactsWays:
@@ -372,7 +373,7 @@ func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) [
 			chunks = appendLine(chunks, writer.fact(fact))
 		}
 		return chunks
-	case document.FactsDetails:
+	case document.FactsDetails, document.FactsTechnologies:
 	}
 	return appendChunk(chunks, writer.facts(facts.List))
 }
@@ -390,15 +391,25 @@ func (writer markdownWriter) fact(fact document.Fact) string {
 	return writer.text(fact.Label) + labelEnd + writer.spans(fact.Value)
 }
 
-// entry writes an entry under its title and subtitle, its period and place in a line, then its points.
+// entry writes an entry under its title and subtitle, its period and place in a line, its technologies in another,
+// then its points, and its details, each a paragraph.
 func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth int) []string {
 	chunks = appendChunk(chunks, heading(depth, joined(dash, writer.spans(entry.Title), writer.spans(entry.Subtitle))))
 	chunks = appendLine(chunks, joined(dot, writer.period(entry.Period), writer.text(entry.Place)))
+	technologies := make([]string, 0, len(entry.Technologies))
+	for _, technology := range entry.Technologies {
+		technologies = append(technologies, writer.text(technology))
+	}
+	chunks = appendLine(chunks, joined(dot, technologies...))
 	points := make([]string, 0, len(entry.Points))
 	for _, point := range entry.Points {
 		points = append(points, writer.spans(point.Spans))
 	}
-	return appendChunk(chunks, list(points))
+	chunks = appendChunk(chunks, list(points))
+	for _, detail := range entry.Details {
+		chunks = appendLine(chunks, writer.spans(detail.Spans))
+	}
+	return chunks
 }
 
 // card writes a card under its title, a link to its page where it has one; its tag and subtitle in a line, its

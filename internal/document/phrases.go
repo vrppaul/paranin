@@ -135,8 +135,14 @@ func factPhrases(phrases []string, facts []Fact) []string {
 func entryPhrases(phrases []string, entry Entry) []string {
 	phrases = monthPhrase(monthPhrase(phrases, entry.Period.Start), entry.Period.End)
 	phrases = textPhrase(spanPhrases(spanPhrases(phrases, entry.Title), entry.Subtitle), entry.Place)
+	for _, technology := range entry.Technologies {
+		phrases = textPhrase(phrases, technology)
+	}
 	for _, point := range entry.Points {
 		phrases = spanPhrases(phrases, point.Spans)
+	}
+	for _, detail := range entry.Details {
+		phrases = spanPhrases(phrases, detail.Spans)
 	}
 	return phrases
 }

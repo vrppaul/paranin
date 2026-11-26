@@ -386,8 +386,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 }
 
 // entry lays out an entry: its period in a column of a width, the widest period of those laid out with it, the one
-// still going on standing out, and beside it its title, its subtitle and its place, its points under them; where the
-// page leaves the words beside the column too little room, the period stands above them.
+// still going on standing out, and beside it its title, its subtitle and its place, the rest of it under them; where
+// the page leaves the words beside the column too little room, the period stands above them.
 func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line {
 	periodKind := kindMuted
 	if entry.Period.GoesOn() {
@@ -397,11 +397,21 @@ func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line
 	titleWords := markedWords(markedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted), subtitleMark), textWords(entry.Place, kindMuted), placeMark)
 	column := indent + periodWidth + columnGap
 	if layout.width-column < narrowestEntry {
-		return slices.Concat(layout.fill(period, indent), layout.fill(titleWords, indent), layout.points(entry.Points, indent))
+		return slices.Concat(layout.fill(period, indent), layout.fill(titleWords, indent), layout.entryBody(entry, indent))
 	}
 	lead := append(line{gapRun(indent)}, wordRuns(period)...)
 	lead = append(lead, gapRun(column-runsWidth(lead)))
-	return append(layout.continued(lead, titleWords, column), layout.points(entry.Points, column)...)
+	return append(layout.continued(lead, titleWords, column), layout.entryBody(entry, column)...)
+}
+
+// entryBody is what stands under an entry's title at an indent: its technologies in a row, as a project's stack; its
+// points; then its details, each a paragraph a row of nothing below what stands before it.
+func (layout layout) entryBody(entry document.Entry, indent int) []line {
+	lines := slices.Concat(layout.fill(faintNames(entry.Technologies), indent), layout.points(entry.Points, indent))
+	for _, detail := range entry.Details {
+		lines = stacked(lines, layout.fill(layout.words(detail.Spans, kindText), indent))
+	}
+	return lines
 }
 
 // periodWidthOf is how wide the widest period of the entries among blocks is.

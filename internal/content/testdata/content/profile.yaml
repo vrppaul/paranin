@@ -25,21 +25,28 @@ facts:
   - {label: focus, value: "Small tools for people who live in the terminal, written to last and to be read by whoever comes next"}
 
 experience:
-  - company: Northwind
-    title: Senior Engineer
-    location: Brno
-    start: 2023-04
-    end: current
-    bullets:
-      - "Kept the ==queue== moving"
-  - company: Southwind
-    title: Engineer
-    location: Prague
-    start: 2020-01
-    end: 2023-03
-    bullets:
-      - Wrote the first parser
-      - Kept the build green through three moves of the office, two mergers and one long winter of outages
+  line: Ships tools a team ==leans on== every day.
+  put_forward: [Go, Rust]
+  roles:
+    - company: Northwind
+      title: Senior Engineer
+      location: Brno
+      start: 2023-04
+      end: current
+      technologies: [Go, Docker]
+      bullets:
+        - "Kept the ==queue== moving"
+      details:
+        - Joined a team of four that ran a ==message queue== for every service.
+        - "[what came of it, in numbers]"
+    - company: Southwind
+      title: Engineer
+      location: Prague
+      start: 2020-01
+      end: 2023-03
+      bullets:
+        - Wrote the first parser
+        - Kept the build green through three moves of the office, two mergers and one long winter of outages
 
 projects:
   - slug: other-tool

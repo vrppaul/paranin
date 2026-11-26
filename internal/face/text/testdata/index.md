@@ -20,11 +20,22 @@ ssh: `ssh example.test`
 
 ## Experience
 
+Ships tools a team **leans on** every day.
+
+- Go: 3y
+- Rust: still learning
+
 ### Northwind — Senior Engineer
 
 04/2023 – present · Brno
 
+Go · Docker
+
 - Kept the **queue** moving
+
+Joined a team of four that ran a **message queue** for every service.
+
+[what came of it, in numbers]
 
 ### Southwind — Engineer
 

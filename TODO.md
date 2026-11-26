@@ -12,11 +12,11 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
   Clips, recordings the site serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); then the
   projects' words from their READMEs, with the owner. A post beside a section, the blog's post tagged with the project,
   comes with the owner's first such post.
-- The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: each role's
-  technologies and long description in the profile, the experience's line and the technologies it puts forward; the
+- The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: the
   experience tab's look, its head, its Positions with the CareerLine on its side, the description folded, the filter
   by a technology; its end, contact, projects and blog; then the TUI's experience, drawn on a capture of the TUI
-  before its code. The words themselves, each role's technologies and description, come from a talk with the owner.
+  before its code. The words themselves, the experience's line and each role's technologies and description, come from
+  a talk with the owner.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - A tab's name keeps every letter of its title, so a site in another script serves its tabs at addresses in that script.
 - A TUI frame narrower than what its top edge sets in, a widget's name and `● live` or a code block's language, runs past its edge: the frame drawing the edge's words in the room it has would hold it.

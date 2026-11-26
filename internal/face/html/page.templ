@@ -741,8 +741,9 @@ templ factRow(label string, value templ.Component) {
 	</dd>
 }
 
-// entry is a role or a school (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on;
-// then its title and subtitle as its heading, its place under them, and its points, each after the point's mark.
+// entry is a role (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on; then its title
+// and subtitle as its heading, its place and its technologies under them, its points, each after the point's mark,
+// and its details, each a paragraph.
 templ (writer PageWriter) entry(entry document.Entry, depth int) {
 	<article class={ "entry", templ.KV("entry-now", entry.Period.GoesOn()) }>
 		<p class="entry-when">
@@ -755,6 +756,11 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 			if entry.Place != "" {
 				<p class="entry-place">{ entry.Place }</p>
 			}
+			if len(entry.Technologies) > 0 {
+				<p class="entry-technologies">
+					@writer.wholeParts(document.NameParts(entry.Technologies))
+				</p>
+			}
 			if len(entry.Points) > 0 {
 				<ul class="points">
 					for _, point := range entry.Points {
@@ -765,6 +771,11 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 						</li>
 					}
 				</ul>
+			}
+			for _, detail := range entry.Details {
+				<p class="entry-detail">
+					@writer.spans(detail.Spans)
+				</p>
 			}
 		</div>
 	</article>

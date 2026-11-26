@@ -354,9 +354,9 @@ func TestADigitChoosesItsTabAtOnce(test *testing.T) {
 		lacks string
 	}{
 		{name: "the third tab", keys: []string{"3"}, holds: "other-tool", lacks: "Kept the queue"},
-		{name: "the tab, then a line down", keys: []string{"2", "j"}, holds: "Kept the queue", lacks: "other-tool"},
-		{name: "a digit of no tab", keys: []string{"2", "9"}, holds: "Kept the queue", lacks: "other-tool"},
-		{name: "zero", keys: []string{"2", "0"}, holds: "Kept the queue", lacks: "other-tool"},
+		{name: "the tab, then a line down", keys: []string{"2", "j"}, holds: experienceSecond, lacks: "other-tool"},
+		{name: "a digit of no tab", keys: []string{"2", "9"}, holds: experienceTop, lacks: "other-tool"},
+		{name: "zero", keys: []string{"2", "0"}, holds: experienceTop, lacks: "other-tool"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -408,17 +408,17 @@ func TestTheScrollingKeysMoveThroughATab(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "the tab opens at its start", keys: nil, holds: "Northwind", lacks: "one long winter"},
-		{name: "j goes a line down", keys: []string{"j"}, holds: "Kept the queue moving", lacks: "Northwind"},
-		{name: "the down arrow goes a line down", keys: []string{"down"}, holds: "Kept the queue moving", lacks: "Northwind"},
-		{name: "k goes a line back up", keys: []string{"j", "k"}, holds: "Northwind", lacks: "one long winter"},
-		{name: "the up arrow goes a line back up", keys: []string{"j", "up"}, holds: "Northwind", lacks: "one long winter"},
-		{name: "G goes to the end", keys: []string{"G"}, holds: "one long winter", lacks: "Northwind"},
-		{name: "gg goes back to the start", keys: []string{"G", "g", "g"}, holds: "Northwind", lacks: "one long winter"},
-		{name: "one g alone stays", keys: []string{"G", "g"}, holds: "one long winter", lacks: "Northwind"},
-		{name: "a key between two g's parts them", keys: []string{"G", "g", "k", "g"}, holds: "Kept the build green", lacks: "Northwind"},
-		{name: "k at the start stays there", keys: []string{"k"}, holds: "Northwind", lacks: "one long winter"},
-		{name: "j at the end stays there", keys: []string{"G", "j"}, holds: "one long winter", lacks: "Northwind"},
+		{name: "the tab opens at its start", keys: nil, holds: experienceTop, lacks: "one long winter"},
+		{name: "j goes a line down", keys: []string{"j"}, holds: experienceSecond, lacks: experienceTop},
+		{name: "the down arrow goes a line down", keys: []string{"down"}, holds: experienceSecond, lacks: experienceTop},
+		{name: "k goes a line back up", keys: []string{"j", "k"}, holds: experienceTop, lacks: "one long winter"},
+		{name: "the up arrow goes a line back up", keys: []string{"j", "up"}, holds: experienceTop, lacks: "one long winter"},
+		{name: "G goes to the end", keys: []string{"G"}, holds: "one long winter", lacks: experienceTop},
+		{name: "gg goes back to the start", keys: []string{"G", "g", "g"}, holds: experienceTop, lacks: "one long winter"},
+		{name: "one g alone stays", keys: []string{"G", "g"}, holds: "one long winter", lacks: experienceTop},
+		{name: "a key between two g's parts them", keys: []string{"G", "g", "k", "g"}, holds: "Kept the build green", lacks: experienceTop},
+		{name: "k at the start stays there", keys: []string{"k"}, holds: experienceTop, lacks: "one long winter"},
+		{name: "j at the end stays there", keys: []string{"G", "j"}, holds: "one long winter", lacks: experienceTop},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -579,10 +579,10 @@ func TestAResizeLaysThePageOutAgain(test *testing.T) {
 		holds  string
 		lacks  string
 	}{
-		{name: "fewer rows show fewer lines", width: commonWidth, height: shortHeight, holds: "Northwind", lacks: "one long winter"},
+		{name: "fewer rows show fewer lines", width: commonWidth, height: shortHeight, holds: experienceTop, lacks: "one long winter"},
 		{name: "more rows show more lines", width: commonWidth, height: tallHeight, holds: "one long winter", lacks: "Builds small tools"},
-		{name: "a phone's width still reads", width: phoneWidth, height: phoneHeight, holds: "Northwind", lacks: "Builds small tools"},
-		{name: "the smallest terminal still draws", width: smallestWidth, height: smallestHeight, holds: "2023-04", lacks: "Builds small tools"},
+		{name: "a phone's width still reads", width: phoneWidth, height: phoneHeight, holds: experienceTop, lacks: "Builds small tools"},
+		{name: "the smallest terminal still draws", width: smallestWidth, height: smallestHeight, holds: experienceTop, lacks: "Builds small tools"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

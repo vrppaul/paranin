@@ -130,7 +130,7 @@ func TestATabIsServedAlone(test *testing.T) {
 		holds       string
 		lacks       string
 	}{
-		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", contentType: markdown, holds: "# Experience\n\n## Northwind — Senior Engineer", lacks: resumeOpening},
+		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", contentType: markdown, holds: "# Experience\n\nShips tools a team", lacks: resumeOpening},
 		{name: "a tab of the résumé as a manual", path: "/experience.txt", accept: "", contentType: manual, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of the résumé, chosen as a manual", path: "/experience", accept: "text/plain", contentType: manual, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of the résumé in a browser", path: "/experience", accept: "text/html", contentType: browsed, holds: "Northwind", lacks: resumeOpening},

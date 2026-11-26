@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-// WrittenBlocks are blocks as a reader of the finished work sees them: a fact or a point that holds nothing but gaps
-// still to fill is left out until its author fills it, and a list of facts left with none goes with it; a gap among
-// written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks whole. The blocks
-// it is handed keep everything they had.
+// WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point or a detail that holds nothing
+// but gaps still to fill is left out until its author fills it, and a list of facts left with none goes with it; a gap
+// among written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks whole. The
+// blocks it is handed keep everything they had.
 func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
 	for _, block := range blocks {
@@ -19,8 +19,8 @@ func WrittenBlocks(blocks []Block) []Block {
 	return kept
 }
 
-// writtenBlock is a block with its facts and points that are only gaps left out; not shown at all where it is a list
-// of facts left with none.
+// writtenBlock is a block with its facts, points and details that are only gaps left out; not shown at all where it is
+// a list of facts left with none.
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
 	case Section:
@@ -31,6 +31,7 @@ func writtenBlock(block Block) (Block, bool) {
 		return typed, len(typed.List) > 0
 	case Entry:
 		typed.Points = slices.DeleteFunc(slices.Clone(typed.Points), func(point Point) bool { return !written(point.Spans) })
+		typed.Details = slices.DeleteFunc(slices.Clone(typed.Details), func(detail Paragraph) bool { return !written(detail.Spans) })
 		return typed, true
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)

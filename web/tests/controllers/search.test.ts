@@ -33,7 +33,7 @@ const STATE = "data-state";
 // matches twice in the roles' names, and one it never matches
 const KEPT = "kept";
 const WIND = "wind";
-const NOWHERE = "rust";
+const NOWHERE = "zebra";
 
 // A phrase the fixture's first point parts with a mark, "Kept the <mark>queue</mark> moving"; and the end of the
 // first role's heading run on into its place, "Northwind — Senior Engineer" and "Brno", which the served page sets

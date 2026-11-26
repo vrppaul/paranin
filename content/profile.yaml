@@ -55,54 +55,74 @@ facts:
   - {label: available, value: "[notice period]"}
   - {label: open source, value: 2 tools for AI agents}
 
+# The experience's line is the one thing a reader should keep; it puts forward skills by their names in skill_groups,
+# whose durations say how long. A role names its technologies as written, and tells itself at length in its details.
 experience:
-  - company: Kiwi.com
-    title: Senior Software Engineer
-    location: Prague
-    start: 2024-01
-    end: current
-    bullets:
-      - "Owned [service] handling ==[N] requests/day=="
-      - "Cut [p95 latency] by ==[40%]== through [change]"
-      - "Brought AI agent tooling into the team's workflow: [what changed, measured]"
-  - company: Twisto
-    title: Backend Developer
-    location: Prague
-    start: 2022-02
-    end: 2023-12
-    bullets:
-      - "[What you built in payments, and what it changed]"
-      - "[A second result, with a number]"
-  - company: Seznam.cz
-    title: Backend Developer
-    location: Prague
-    start: 2020-08
-    end: 2022-01
-    bullets:
-      - Built new services from scratch with business stakeholders, from first idea to production
-      - Migrated services from Python 2 to Python 3, added Kubernetes support, moved legacy databases to new infrastructure
-  - company: Blindspot Solutions
-    title: Machine Learning Developer
-    location: Prague
-    start: 2019-01
-    end: 2020-07
-    bullets:
-      - NLP topic extraction with scikit-learn behind a C# / ASP.NET backend; context search in Python
-      - "Logistics optimisation: data analysis in Python, solver in Kotlin"
-  - company: Česká spořitelna
-    title: UX Designer
-    location: Prague
-    start: 2017-11
-    end: 2018-09
-    bullets:
-      - Personas, prototypes and usability testing for a major web app in an agile team
-  - company: Freelance
-    title: Web Graphic Designer
-    location: Prague
-    start: 2016-01
-    end: 2017-10
-    bullets:
-      - Websites, logos and brand identities for small companies
+  line: "[the one thing you want a reader to keep]"
+  put_forward: [Python, Kubernetes, LLM agents, MCP]
+  roles:
+    - company: Kiwi.com
+      title: Senior Software Engineer
+      location: Prague
+      start: 2024-01
+      end: current
+      bullets:
+        - "Owned [service] handling ==[N] requests/day=="
+        - "Cut [p95 latency] by ==[40%]== through [change]"
+        - "Brought AI agent tooling into the team's workflow: [what changed, measured]"
+      details:
+        - "[the context: the team, the product, its scale]"
+        - "[what you built, and how]"
+        - "[what came of it, in numbers]"
+    - company: Twisto
+      title: Backend Developer
+      location: Prague
+      start: 2022-02
+      end: 2023-12
+      bullets:
+        - "[What you built in payments, and what it changed]"
+        - "[A second result, with a number]"
+    - company: Seznam.cz
+      title: Backend Developer
+      location: Prague
+      start: 2020-08
+      end: 2022-01
+      technologies: [Python, Kubernetes]
+      bullets:
+        - Built new services from scratch with business stakeholders, from first idea to production
+        - Migrated services from Python 2 to Python 3, added Kubernetes support, moved legacy databases to new infrastructure
+      details:
+        - "[the context: the team, the product, its scale]"
+        - "[what you built, and how]"
+        - "[what came of it, in numbers]"
+    - company: Blindspot Solutions
+      title: Machine Learning Developer
+      location: Prague
+      start: 2019-01
+      end: 2020-07
+      technologies: [Python, Kotlin, scikit-learn]
+      bullets:
+        - NLP topic extraction with scikit-learn behind a C# / ASP.NET backend; context search in Python
+        - "Logistics optimisation: data analysis in Python, solver in Kotlin"
+      details:
+        - "[the context: the team, the product, its scale]"
+        - "[what you built, and how]"
+        - "[what came of it, in numbers]"
+    - company: Česká spořitelna
+      title: UX Designer
+      location: Prague
+      start: 2017-11
+      end: 2018-09
+      technologies: [UX design]
+      bullets:
+        - Personas, prototypes and usability testing for a major web app in an agile team
+    - company: Freelance
+      title: Web Graphic Designer
+      location: Prague
+      start: 2016-01
+      end: 2017-10
+      bullets:
+        - Websites, logos and brand identities for small companies
 
 # A project's install is its command, and its alternatives, each a note on when to take it instead and a command. Its
 # release names its newest release and its changelog, both or none; its licence is a word.

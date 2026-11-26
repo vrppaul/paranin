@@ -168,15 +168,21 @@ const (
 	FactsDetails
 	// FactsWays are the ways to reach the author, the mail first, which a face shows where it chooses
 	FactsWays
+	// FactsTechnologies are the technologies the author's experience puts forward, each labelled by its name, its
+	// value how long they used it
+	FactsTechnologies
 )
 
-// Entry is a role, work for an employer or a client, over a span of time, with what came of it.
+// Entry is a role, work for an employer or a client, over a span of time, with what came of it: the technologies it
+// was done with, by name, its points, and its details, paragraphs that tell it at length.
 type Entry struct {
-	Period   Period
-	Title    []Span
-	Subtitle []Span
-	Place    string
-	Points   []Point
+	Period       Period
+	Title        []Span
+	Subtitle     []Span
+	Place        string
+	Technologies []string
+	Points       []Point
+	Details      []Paragraph
 }
 
 // Point is one thing an entry holds up.

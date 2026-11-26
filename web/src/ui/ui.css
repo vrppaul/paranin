@@ -1374,8 +1374,15 @@ a.tile-title:focus-visible {
   margin: 0;
 }
 
-.entry-place {
+.entry-place,
+.entry-technologies {
   color: var(--muted);
+}
+
+/* a role's details, each a paragraph under its points, as wide as a point */
+.entry-detail {
+  max-width: var(--measure);
+  margin-top: var(--row-half);
 }
 
 /* each point after its faint dash, which hangs in the margin: two cells, then the space after it, so the point's lines

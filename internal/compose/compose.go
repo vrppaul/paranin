@@ -96,7 +96,7 @@ func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document
 		Head: resumeHead(profile, words, feeds),
 		Blocks: []document.Block{
 			aboutSection(profile, words),
-			experienceSection(profile.Experience, words),
+			experienceSection(profile.Experience, profile.SkillGroups, words),
 			projectsSection(profile.Projects, words),
 		},
 	}
@@ -193,18 +193,53 @@ func ways(person content.Person, site content.Site, words content.Words) []docum
 	return append(list, document.Fact{Label: words.Text(content.WordSSH), Value: []document.Span{document.Code{Text: sshCommand(site.SSHHost, anyUser)}}})
 }
 
-func experienceSection(roles []content.Role, words content.Words) document.Section {
-	entries := make([]document.Block, 0, len(roles))
-	for _, role := range roles {
-		entries = append(entries, document.Entry{
-			Period:   periodOf(role.Start, role.End, words),
-			Title:    markedSpans(role.Company),
-			Subtitle: markedSpans(role.Title),
-			Place:    role.Location,
-			Points:   points(role.Bullets),
+// experienceSection is the author's work: its line, where the profile writes one, and the skills it puts forward,
+// each by its name and how long it was used, where it puts any; then each role.
+func experienceSection(experience content.Experience, groups []content.SkillGroup, words content.Words) document.Section {
+	blocks := make([]document.Block, 0, len(experience.Roles))
+	if experience.Line != "" {
+		blocks = append(blocks, document.Paragraph{Spans: markedSpans(experience.Line)})
+	}
+	if len(experience.PutForward) > 0 {
+		blocks = append(blocks, document.Facts{Kind: document.FactsTechnologies, List: putForward(experience.PutForward, groups, words)})
+	}
+	for _, role := range experience.Roles {
+		blocks = append(blocks, document.Entry{
+			Period:       periodOf(role.Start, role.End, words),
+			Title:        markedSpans(role.Company),
+			Subtitle:     markedSpans(role.Title),
+			Place:        role.Location,
+			Technologies: role.Technologies,
+			Points:       points(role.Bullets),
+			Details:      paragraphs(role.Details),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: entries}
+	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: blocks}
+}
+
+// putForward are the skills of names the groups list, each labelled by its name, its value how long it was used, as
+// the skills' list writes it; the check holds every name to a skill of a group.
+func putForward(names []string, groups []content.SkillGroup, words content.Words) []document.Fact {
+	durations := map[string]content.Duration{}
+	for _, group := range groups {
+		for _, skill := range group.Skills {
+			durations[skill.Name] = skill.Duration
+		}
+	}
+	facts := make([]document.Fact, 0, len(names))
+	for _, name := range names {
+		facts = append(facts, document.Fact{Label: name, Value: durationSpans(durations[name], words)})
+	}
+	return facts
+}
+
+// paragraphs are texts of the profile as paragraphs, their marks read.
+func paragraphs(texts []string) []document.Paragraph {
+	written := make([]document.Paragraph, 0, len(texts))
+	for _, text := range texts {
+		written = append(written, document.Paragraph{Spans: markedSpans(text)})
+	}
+	return written
 }
 
 // projectsTitle is the title of the résumé's section of projects, which the projects' tab is named by and a project's

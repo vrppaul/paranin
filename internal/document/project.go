@@ -137,7 +137,8 @@ func (project Project) AboutFacts(joint string) []Fact {
 	return facts
 }
 
-// NameParts are names as parts a face joins, each name a text alone: what a project is made of.
+// NameParts are names as parts a face joins, each name a text alone: what a project is made of, or the technologies
+// a role was done with.
 func NameParts(names []string) []Span {
 	parts := make([]Span, 0, len(names))
 	for _, name := range names {

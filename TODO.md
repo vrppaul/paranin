@@ -7,6 +7,14 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
   - The form's salary range, an island, waits for `inbox` (step 10).
+- A project's page as `DESIGN.md` draws it (owner, 2026-11-26), a chunk each: its head, what gets the project and
+  what tells about it, on the grid's two shares; its sections, with points, code written in backticks in the profile's
+  words (owner, 2026-11-26), Links beside them and each title a link to its section; its Clips, recordings the site
+  serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); its end, the other projects and the
+  Mail with "Write to me", which does nothing until `inbox`; then the projects' words from their READMEs, with the
+  owner. A post beside a section, the blog's post tagged with the project, comes with the owner's first such post.
+- The résumé's pages with Contact gone, Skills a part of Experience and the CV.pdf on the first screen and among the
+  foot line's ways (owner, 2026-11-26): drawn on a canvas for the owner to pick before any code.
 - At 53.75 to about 60rem wide the foot line wraps to two rows, more than the command line's menu keeps back (`row_3`), so in a window under about 175px tall the menu's top row is cut. Keeping back the line's real height would need the script to measure it; rare enough to leave until a reader meets it.
 - A tab's name keeps every letter of its title, so a site in another script serves its tabs at addresses in that script.
 - A TUI frame narrower than what its top edge sets in, a widget's name and `● live` or a code block's language, runs past its edge: the frame drawing the edge's words in the room it has would hold it.

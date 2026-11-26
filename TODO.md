@@ -9,10 +9,9 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
   - The form's salary range, an island, waits for `inbox` (step 10).
 - A project's page as `DESIGN.md` draws it (owner, 2026-11-26), a chunk each: its sections, with points, code written
   in backticks in the profile's words (owner, 2026-11-26), Links beside them and each title a link to its section; its
-  Clips, recordings the site serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); its end, the
-  other projects and the Mail with "Write to me", which does nothing until `inbox`; then the projects' words from their
-  READMEs, with the owner. A post beside a section, the blog's post tagged with the project, comes with the owner's
-  first such post.
+  Clips, recordings the site serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); then the
+  projects' words from their READMEs, with the owner. A post beside a section, the blog's post tagged with the project,
+  comes with the owner's first such post.
 - The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: each role's
   technologies and long description in the profile, the experience's line and the technologies it puts forward; the
   experience tab's look, its head, its Positions with the CareerLine on its side, the description folded, the filter

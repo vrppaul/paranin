@@ -687,11 +687,11 @@ func TestAnotherProjectStandsAsAPaneLeadingToItsPage(test *testing.T) {
 		}},
 		AllProjects: document.Link{Target: document.Page{Kind: document.PageResume, Slug: "", Tab: "projects"}, Spans: []document.Span{document.Text{Text: "all projects"}}},
 		Mail:        document.Mail{Address: "mira@example.test"},
-		Labels:      document.ProjectLabels{Install: "", Stack: "", Release: "", Licence: "", Others: "Other projects"},
+		Labels:      document.ProjectLabels{Install: "", Stack: "", Release: "", Licence: "", Others: "Other projects", Contact: "contact"},
 	}
 	written := fixtureWriter(test).Page(document.Document{Head: head, Blocks: nil}, blankPerson(), "")
 	for _, want := range []string{
-		`<nav class="project-panes" aria-labelledby="_other-projects">`,
+		`<nav class="panes" aria-labelledby="_other-projects">`,
 		`<a class="pane" href="/p/tame-tool"><span class="pane-title">tame-tool</span> <span class="pane-lead">Tames files.</span> <span class="pane-stack"><span class="whole-part">Go</span>` + dot + `<span class="whole-part">tree-sitter</span></span></a>`,
 	} {
 		if !strings.Contains(written, want) {

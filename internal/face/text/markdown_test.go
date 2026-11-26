@@ -94,6 +94,24 @@ func TestEveryPageReadsAsItsGoldenText(test *testing.T) {
 	}
 }
 
+// A project's page with another to lead to ends with them, in each format: under their heading the way to all the
+// projects and each other a link by its name with its tagline, then the author's mail under the site's word for
+// contact. Each format is held to its golden file.
+func TestAProjectsEndReadsAsItsGoldenText(test *testing.T) {
+	snapshot := fixtures.WithTwoProjectPages(test)
+	site := compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false})
+	project := fixtures.DocumentOf(test, compose.DocumentsOf(site.Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	for _, written := range formats() {
+		path := projectEndFolder + routes.Path(project.Head.Page, written.format)
+		test.Run(path, func(test *testing.T) {
+			golden.Match(test, path, written.write(project, fixtures.Site(snapshot), site.Own.Frame.Manual))
+		})
+	}
+}
+
+// The folder a project's page with another to lead to is held in, apart from the fixture's own page
+const projectEndFolder = "end"
+
 // A filtered list is written as the list it filters, its manual named as the list's, with the filter in the site's
 // words beside the blog's name, and the posts it keeps; in each format, it is held to its golden file, named by the
 // filter, since the list's path holds a query.

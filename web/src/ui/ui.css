@@ -1682,28 +1682,43 @@ a.tile-title:focus-visible {
 }
 
 /* where a project's reader goes next (DESIGN.md, ProjectEnd): under a quiet rule across the grid, in the text's column
- * the heading over the other projects, the way to them all beside it, then their panes; in the side's the mail and the
- * button under it, a row apart */
+ * the heading over the other projects, the way to them all beside it, then their panes; in the side's the mail level
+ * with the heading, a nudge down as the approved canvas sets it, and the button level with the panes' top */
 .project-end {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
+  row-gap: var(--row);
   align-items: start;
   padding-block: var(--row-2) var(--row-4);
   border-top: var(--hairline) solid var(--quiet);
 }
 
-.project-others {
-  display: grid;
+.project-end > :is(.panes-heading, .panes) {
   grid-column: 1;
-  gap: var(--row);
 }
 
-.project-write {
-  display: grid;
+.project-end > .mail {
+  grid-row: 1;
   grid-column: 2;
-  gap: var(--row);
-  justify-items: start;
+  margin-top: var(--nudge);
+}
+
+.project-end > .button-primary {
+  grid-row: 2;
+  grid-column: 2;
+  justify-self: start;
+}
+
+/* a heading the outline holds and a screen reader reads, which the page shows by its place alone */
+.unseen-heading {
+  position: absolute;
+  width: var(--hairline);
+  height: var(--hairline);
+  margin: 0;
+  overflow: hidden;
+  clip-path: circle(0);
+  white-space: nowrap;
 }
 
 /* on a phone one column: the name, the tagline and the description, then the side's two groups; at the end the panes
@@ -1719,15 +1734,22 @@ a.tile-title:focus-visible {
 
   .project-head > h1,
   .project-intro,
-  .project-side,
-  .project-others,
-  .project-write {
+  .project-side {
     grid-column: 1;
   }
 
   .project-end {
-    row-gap: var(--row-2);
     padding-block: var(--row) var(--row-2);
+  }
+
+  .project-end > .mail,
+  .project-end > .button-primary {
+    grid-row: auto;
+    grid-column: 1;
+  }
+
+  .project-end > .mail {
+    margin-top: var(--row);
   }
 }
 
@@ -2444,14 +2466,13 @@ a.pick-row:hover {
   border-top: var(--hairline) solid var(--quiet);
 }
 
-.panes-heading,
-.panes,
-.discussions {
+.panes-foot > :is(.panes-heading, .panes, .discussions) {
   grid-column: text-start / aside-end;
 }
 
-.panes-heading,
-.project-others-heading {
+/* the panes' heading in the strong style with the way to all they name beside it: a post's foot's and a project's
+ * end's */
+.panes-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2473,11 +2494,15 @@ a.pick-row:hover {
   line-height: var(--type-small-line);
 }
 
-/* two panes side by side, as tmux splits a window: a post's, and a project's other projects */
-.panes,
-.project-panes {
+/* two panes side by side, as tmux splits a window */
+.panes {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* a project's other projects on the blog's tiles' grid, as many in a row as hold a tile each (.tiles) */
+.project-end > .panes {
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr));
 }
 
 /* a pane, padded as a dialog (.hint), in a muted hairline; the whole of it the link, a shade down under the pointer, its
@@ -2503,14 +2528,11 @@ a.pick-row:hover {
   border-left-color: transparent;
 }
 
-/* a project's other projects share the lines between them too: each pane drawn a hairline over the one before it and
- * the one above it */
-.project-panes {
-  padding: var(--hairline) 0 0 var(--hairline);
-}
-
-.project-panes > .pane {
-  margin: calc(-1 * var(--hairline)) 0 0 calc(-1 * var(--hairline));
+/* a project's other projects share the lines between them as the blog's tiles do (.tiles > li): each laid a hairline
+ * over its neighbours to the right and below; and with no name set into their edge they stand a row from their top */
+.project-end > .panes > .pane {
+  margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
+  padding-top: var(--row);
 }
 
 /* what a pane, a tile or a widget's window sets into its top edge: a row half over the edge, as far in from each
@@ -2712,15 +2734,11 @@ a.pane:hover .pane-title {
   /* the foot across the whole width, its panes one under the other, sharing the line between them: the side after
    * first where it leads somewhere, the side that leads nowhere always last, the line drawn by the pane that leads
    * somewhere */
-  .panes-heading,
-  .panes,
-  .discussions {
+  .panes-foot > :is(.panes-heading, .panes, .discussions) {
     grid-column: 1 / -1;
   }
 
-  /* a project's other projects one under another too */
-  .panes,
-  .project-panes {
+  .panes {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2984,12 +3002,13 @@ a.pane:hover .pane-title {
  * its edge inside it, stretched over the whole tile, since its series leads elsewhere and a link holds no other: the
  * keyboard's ring and the pointer's states are the tile's, as a pane's (.pane, .command), and its title, which no
  * underline marks at rest, takes the accent's under the pointer, twice as thick, its edge left out, set into the frame
- * as it is */
+ * as it is. A pane the keyboard is on stands over its neighbours too, so no line they share cuts its ring */
 .tile:has(> a.tile-title:any-link) {
   z-index: var(--layer-tile);
 }
 
-.tile:has(> a.tile-title:focus-visible) {
+.tile:has(> a.tile-title:focus-visible),
+a.pane:focus-visible {
   z-index: var(--layer-tile-focus);
 }
 

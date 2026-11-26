@@ -1,0 +1,30 @@
+TIDY-TOOL(1)                    User Commands                     TIDY-TOOL(1)
+
+NAME
+       tidy-tool — Tidies files.
+
+DESCRIPTION
+       A tool that tidies files.
+
+       repository   https://github.test/mira/tidy
+       install      go install example.test/tidy@latest
+
+       On a machine with no Go
+         curl -fsSL https://example.test/tidy.sh | sh
+
+       stack     Lua · Penlight · LPeg
+       release   latest · changelog
+       licence   MIT
+
+WHY
+       Files were untidy.
+
+OTHER PROJECTS
+       all projects <https://example.test/projects.txt>
+
+       - tame-tool <https://example.test/p/tame-tool.txt> — Tames files.
+
+CONTACT
+       mira@example.test
+
+example.test                                                      TIDY-TOOL(1)

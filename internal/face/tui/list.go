@@ -499,7 +499,8 @@ func (layout layout) edgeLabel(post document.ListedPost) line {
 }
 
 // edgeLine is the grid's line across between a row of tiles above and one below, by whether each tile leads
-// somewhere, each label of those below set into its top edge; each piece of it framed as the tiles it bounds have it.
+// somewhere, each label of those below, where it has one, set into its top edge; each piece of it framed as the tiles
+// it bounds have it.
 func (grid tileGrid) edgeLine(above, below []bool, labels []line) line {
 	marks, widest := junctionMarks(), max(len(above), len(below))
 	edge := line{gapRun(0)}
@@ -511,7 +512,7 @@ func (grid tileGrid) edgeLine(above, below []bool, labels []line) line {
 		beside := frameKind(leadsAt(above, point), leadsAt(below, point))
 		switch {
 		case point == widest:
-		case point < len(below):
+		case point < len(below) && len(labels[point]) > 0:
 			label := slices.Concat(line{gapRun(spaceWidth)}, labels[point], line{gapRun(spaceWidth)})
 			rest := max(across-tileLabelInset-runsWidth(label), 0)
 			edge = slices.Concat(edge, line{plainRun(strings.Repeat(frameAcross, tileLabelInset), beside)}, label, line{plainRun(strings.Repeat(frameAcross, rest), beside)})

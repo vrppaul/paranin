@@ -62,37 +62,56 @@ func wholeWord(words []word) word {
 }
 
 // projectEnd lays out where a project's reader goes next, after its sections, in one column (DESIGN.md, ProjectEnd):
-// the heading over its other projects, strong, the way to them all beside it; each other project a pane, its name a
-// link, its tagline muted, its stack faint at its foot, each name whole; then the author's mail, parted as the brief
-// parts it. None on a page that is no project's.
+// where it has others, the heading over them, strong, the way to them all beside it, then the others on the blog's
+// grid of tiles; then the site's word for contact, strong, and the author's mail under it, parted as the brief parts
+// it. None on a page that is no project's.
 func (layout layout) projectEnd(head document.Head) []line {
 	project := head.Project
 	if project == nil {
 		return nil
 	}
-	lead := line{plainRun(project.Labels.Others, kindStrong), gapRun(headingGap)}
-	lines := layout.continued(lead, layout.words([]document.Span{project.AllProjects}, kindText), 0)
-	for _, other := range project.Others {
-		lines = stacked(lines, layout.otherPane(other))
-	}
 	mail := document.Link{Target: project.Mail, Spans: []document.Span{document.Text{Text: project.Mail.Address}}}
-	return stacked(lines, []line{mailRuns(wordRuns(layout.valueWords([]document.Span{mail})), project.Mail)})
+	contact := []line{{plainRun(project.Labels.Contact, kindStrong)}, mailRuns(wordRuns(layout.valueWords([]document.Span{mail})), project.Mail)}
+	if len(project.Others) == 0 {
+		return contact
+	}
+	lead := line{plainRun(project.Labels.Others, kindStrong), gapRun(headingGap)}
+	others := slices.Concat(layout.continued(lead, layout.words([]document.Span{project.AllProjects}, kindText), 0), blankLines(), layout.otherTiles(project.Others))
+	return stacked(others, contact)
 }
 
-// otherPane is another project in a pane across the page, as tmux frames one: its name, bold, a link to its page; its
-// tagline muted; what it is made of faint at its foot, each name whole, the faint mark between two.
-func (layout layout) otherPane(other document.OtherProject) []line {
-	width := layout.frameRoom(0)
+// otherTiles are the other projects on the blog's grid of tiles, as many in a row as hold a tile each, sharing their
+// edges as the page's panes share their lines; each its name, bold, a link to its page, its tagline muted, and what it
+// is made of faint at its foot, each name whole, the faint mark between two.
+func (layout layout) otherTiles(others []document.OtherProject) []line {
+	grid := gridOf(layout.width)
+	inside := layout
+	inside.width = grid.inside()
+	rows := [][]gridCell{}
+	for first := 0; first < len(others); first += grid.columns {
+		row := []gridCell{}
+		for _, other := range others[first:min(first+grid.columns, len(others))] {
+			row = append(row, gridCell{label: nil, words: inside.otherWords(other), leads: true})
+		}
+		rows = append(rows, row)
+	}
+	return grid.framed(rows).lines
+}
+
+// otherWords are another project's words in its tile: its name, bold, a link to its page, and its tagline muted at
+// its top; what it is made of, each name whole, the faint mark between two, at its foot.
+func (layout layout) otherWords(other document.OtherProject) tileWords {
 	name := layout.words([]document.Span{document.Link{Target: other.Page, Spans: other.Name}}, kindStrong)
 	names := make([][]word, 0, len(other.Stack))
 	for _, written := range other.Stack {
 		names = append(names, []word{wordOf(written, kindFaint)})
 	}
-	rows := slices.Concat(packed(line{}, line{}, name, width), packed(line{}, line{}, layout.words(other.Tagline, kindMuted), width))
+	top := slices.Concat(layout.fill(name, 0), layout.fill(layout.words(other.Tagline, kindMuted), 0))
+	foot := []line{}
 	if len(names) > 0 {
-		rows = slices.Concat(rows, blankLines(), packed(line{}, line{}, faintlyMarked(names), width))
+		foot = append(blankLines(), layout.fill(faintlyMarked(names), 0)...)
 	}
-	return layout.framed(0, frameEdges{left: line{}, right: line{}, edge: kindMuted}, rows)
+	return tileWords{top: top, foot: foot}
 }
 
 // faintlyMarked are groups of words in a row, the place mark in faint between each two, as the page parts a project's

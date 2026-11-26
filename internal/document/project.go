@@ -58,18 +58,23 @@ type ProjectLabels struct {
 	Release string
 	Licence string
 	Others  string
+	Contact string
 }
 
-// EndSection is where a project's reader goes next as a face that writes it as one more of the page's sections: under
-// the heading over its other projects, the way to them all, each other project, where there is one, a link by its name
-// with its tagline, then the author's mail.
-func (project Project) EndSection() Section {
-	blocks := []Block{Paragraph{Spans: []Span{project.AllProjects}}}
-	if len(project.Others) > 0 {
-		blocks = append(blocks, Contents{Listings: project.OtherListings()})
-	}
+// EndSections are where a project's reader goes next as a face that writes them as more of the page's sections: where
+// the project has others, under the heading over them, the way to them all and each other project, a link by its name
+// with its tagline; then, under the site's word for contact, the author's mail.
+func (project Project) EndSections() []Section {
 	mail := Link{Target: project.Mail, Spans: []Span{Text{Text: project.Mail.Address}}}
-	return Section{Title: []Span{Text{Text: project.Labels.Others}}, Name: "", Blocks: append(blocks, Paragraph{Spans: []Span{mail}})}
+	contact := Section{Title: []Span{Text{Text: project.Labels.Contact}}, Name: "", Blocks: []Block{Paragraph{Spans: []Span{mail}}}}
+	if len(project.Others) == 0 {
+		return []Section{contact}
+	}
+	others := Section{Title: []Span{Text{Text: project.Labels.Others}}, Name: "", Blocks: []Block{
+		Paragraph{Spans: []Span{project.AllProjects}},
+		Contents{Listings: project.OtherListings()},
+	}}
+	return []Section{others, contact}
 }
 
 // OtherListings are the other projects as a face that lists pages by their titles and lines lists them: each by its

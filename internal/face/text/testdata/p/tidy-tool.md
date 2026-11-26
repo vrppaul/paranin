@@ -18,8 +18,6 @@ On a machine with no Go: `curl -fsSL https://example.test/tidy.sh | sh`
 
 Files were untidy.
 
-## Other projects
-
-[all projects](https://example.test/projects.md)
+## contact
 
 [mira@example.test](mailto:mira@example.test)

@@ -488,30 +488,27 @@ templ (writer PageWriter) projectMain(head document.Head, blocks []document.Bloc
 }
 
 // projectEnd is where a project's reader goes next (DESIGN.md, ProjectEnd), under a quiet rule on the project's grid:
-// in the text's column the heading over the other projects and the way to them all, then each other project a pane;
-// in the side's the author's mail, heading as the brief's does, and the primary button, which does nothing until the
-// form is there, as the first screen's.
+// where the project has others, in the text's column the heading over them and the way to them all, then each a pane;
+// in the side's, under a heading a screen reader alone reads, the site's word for contact, the author's mail, heading
+// as the brief's does, and the primary button, which does nothing until the form is there, as the first screen's.
 templ (writer PageWriter) projectEnd(project document.Project) {
 	<footer class="project-end">
-		<div class="project-others">
-			<div class="project-others-heading">
+		if len(project.Others) > 0 {
+			<div class="panes-heading">
 				<h2 id={ ownID(othersHeadingID) } class="panes-title">{ project.Labels.Others }</h2>
 				<a class="panes-all" href={ routes.Reference(project.AllProjects.Target, routes.FormatChosen) }>
 					@writer.spans(project.AllProjects.Spans)
 				</a>
 			</div>
-			if len(project.Others) > 0 {
-				<nav class="project-panes" aria-labelledby={ ownID(othersHeadingID) }>
-					for _, other := range project.Others {
-						@writer.otherPane(other)
-					}
-				</nav>
-			}
-		</div>
-		<div class="project-write">
-			@writer.mailLink(project.Mail, true)
-			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
-		</div>
+			<nav class="panes" aria-labelledby={ ownID(othersHeadingID) }>
+				for _, other := range project.Others {
+					@writer.otherPane(other)
+				}
+			</nav>
+		}
+		<h2 class="unseen-heading">{ project.Labels.Contact }</h2>
+		@writer.mailLink(project.Mail, true)
+		<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
 	</footer>
 }
 

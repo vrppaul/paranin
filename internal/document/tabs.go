@@ -72,7 +72,20 @@ func sectionTabs(sections []Section) []Tab {
 
 // tabOf is a tab under a title, showing blocks.
 func tabOf(title []Span, blocks []Block) Tab {
-	return Tab{Title: title, Slug: SlugOf(PlainText(title)), Blocks: blocks}
+	return Tab{Title: title, Slug: tabSlug(title), Blocks: blocks}
+}
+
+// TabPage is the page a page's tab is, under the title of the section it shows, as TabsOf names it.
+func TabPage(page Page, title []Span) Page {
+	page.Tab = tabSlug(title)
+	return page
+}
+
+// tabSlug is the name a tab under a title is known by.
+//
+//wrapper:the one place a tab's title gives its name, which TabsOf and a link to a tab both read
+func tabSlug(title []Span) string {
+	return SlugOf(PlainText(title))
 }
 
 // SlugOf is the name a title is known by: its words in small letters, letters and digits alone, joined by hyphens.

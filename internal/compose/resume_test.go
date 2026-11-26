@@ -219,11 +219,11 @@ type pageEnd struct {
 	mail        document.Mail
 }
 
-// A project's page ends where its reader goes next (DESIGN.md, ProjectEnd): each other project with a page of its own,
-// in the profile's order, the project itself left out, by its name, its tagline, its stack and its page; the way to the
-// résumé's projects tab; and the author's mail.
+// A project's page ends where its reader goes next (DESIGN.md, ProjectEnd): the other project with a page of its own,
+// the project itself left out, by its name, its tagline, its stack and its page; the way to the résumé's projects tab;
+// and the author's mail.
 func TestAProjectsPageEndsWhereItsReaderGoesNext(test *testing.T) {
-	pages := DocumentsOf(SiteOf(Prepare(withAnotherPage(fixtures.LoadedContent(test))), publicOnTheDay()).Pages)
+	pages := DocumentsOf(SiteOf(Prepare(fixtures.WithTwoProjectPages(test)), publicOnTheDay()).Pages)
 	project := fixtures.DocumentOf(test, pages, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}).Head.Project
 	want := pageEnd{
 		others: []document.OtherProject{{
@@ -459,17 +459,6 @@ func withoutAbout(snapshot *content.Snapshot) *content.Snapshot {
 		changed.Profile.Projects[index].Release = nil
 		changed.Profile.Projects[index].Licence = ""
 	}
-	return &changed
-}
-
-// withAnotherPage is a snapshot whose profile lists, after its projects, another with a page of its own.
-func withAnotherPage(snapshot *content.Snapshot) *content.Snapshot {
-	tame := content.Project{
-		Slug: "tame-tool", Name: "tame-tool", Tagline: "Tames files.", Description: "", Language: "Go", Stack: nil, Repo: "",
-		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil,
-	}
-	changed := *snapshot
-	changed.Profile.Projects = slices.Concat(snapshot.Profile.Projects, []content.Project{tame})
 	return &changed
 }
 

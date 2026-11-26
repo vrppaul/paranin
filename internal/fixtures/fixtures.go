@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -106,6 +107,22 @@ func DocumentOf(test *testing.T, documents []document.Document, page document.Pa
 func LoadedContent(test *testing.T) *content.Snapshot {
 	test.Helper()
 	return LoadedFrom(test, ContentFolder(test))
+}
+
+// WithTwoProjectPages is the fixture content, loaded, with a second project of a page of its own after tidy-tool,
+// though its slug sorts before it: tame-tool, of a name, a tagline and a language, so a project's page has another
+// to lead to.
+func WithTwoProjectPages(test *testing.T) *content.Snapshot {
+	test.Helper()
+	// the second project's slug, which is its name too
+	const tameTool = "tame-tool"
+	tame := content.Project{
+		Slug: tameTool, Name: tameTool, Tagline: "Tames files.", Description: "", Language: "Go", Stack: nil, Repo: "",
+		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil,
+	}
+	snapshot := *LoadedContent(test)
+	snapshot.Profile.Projects = append(slices.Clone(snapshot.Profile.Projects), tame)
+	return &snapshot
 }
 
 // LoadedFrom is the content of a folder, loaded: the fixture's, or a copy of it a test changed.

@@ -207,6 +207,14 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: entries}
 }
 
+// projectsTitle is the title of the résumé's section of projects, which the projects' tab is named by and a project's
+// page leads to.
+//
+//wrapper:names the one title the projects' section stands under and its tab's address follows
+func projectsTitle(words content.Words) []document.Span {
+	return textSpans(words.Text(content.WordProjects))
+}
+
 func projectsSection(projects []content.Project, words content.Words) document.Section {
 	cards := make([]document.Block, 0, len(projects))
 	for _, project := range projects {
@@ -219,7 +227,7 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 			Page:     projectPage(project),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
+	return document.Section{Title: projectsTitle(words), Name: "", Blocks: cards}
 }
 
 // projectDocument is a project's own page, one of the profile's: its head, then its sections.
@@ -264,7 +272,7 @@ func projectHead(project content.Project, profile content.Profile, words content
 // with a page, the way to them all on the résumé's tab of them, and the author's mail.
 func projectPart(project content.Project, profile content.Profile, words content.Words) *document.Project {
 	install, alternatives := projectInstall(project.Install)
-	projectsTab := document.Page{Kind: document.PageResume, Slug: "", Tab: document.SlugOf(words.Text(content.WordProjects)), Revision: "", Translation: ""}
+	projectsTab := document.TabPage(document.PageOf(document.PageResume), projectsTitle(words))
 	return &document.Project{
 		Repository:   projectRepository(project, words),
 		Install:      install,
@@ -281,6 +289,7 @@ func projectPart(project content.Project, profile content.Profile, words content
 			Release: words.Text(content.WordRelease),
 			Licence: words.Text(content.WordLicence),
 			Others:  words.Text(content.WordOtherProjects),
+			Contact: words.Text(content.WordContact),
 		},
 	}
 }

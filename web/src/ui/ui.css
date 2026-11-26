@@ -1462,8 +1462,9 @@ a.tile-title:focus-visible {
   text-align: start;
 }
 
-/* on a phone a skill table folds (DESIGN.md, Table), so a long name never pushes its sources off the screen. The last
- * cell's track is flexible, so its words widen no column; the row carries the air, so the last cell hugs the others */
+/* on a phone a table that names no columns folds (DESIGN.md, Table), so a long first cell never pushes the last off
+ * the screen. The last cell's track is flexible, so its words widen no column; the row carries the air, so the last
+ * cell hugs the others */
 @media (width < 53.75rem) {
   .table-headerless {
     display: grid;

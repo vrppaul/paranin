@@ -83,10 +83,10 @@ type tabBody interface {
 	tabBody()
 }
 
-// briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts: the head,
-// beside it those facts as the brief, headed by the address, the first way to reach the author; the roles for the
-// career's line under them; then the blocks before the first section and those the section holds beside its facts;
-// then the other ways to reach the author.
+// briefOpening is the résumé's opening as neofetch prints a system, where its first section holds details: the head,
+// beside it those details as the brief, headed by the address, the first way to reach the author, the other ways after
+// them; the roles for the career's line under them; then the blocks before the first section and those the section
+// holds beside its details.
 type briefOpening struct {
 	head    document.Head
 	brief   []document.Fact
@@ -222,7 +222,7 @@ type layout struct {
 func (layout layout) tab(shown tab) laidTab {
 	switch body := shown.body.(type) {
 	case briefOpening:
-		return linesAlone(stacked(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)), layout.factBlock(body.ways, 0)))
+		return linesAlone(stacked(layout.about(body), layout.blocks(body.blocks, 0)))
 	case projectOpening:
 		return linesAlone(stacked(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)), layout.projectEnd(body.head)))
 	case reportOpening:

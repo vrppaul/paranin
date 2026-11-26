@@ -29,7 +29,7 @@ type Opening struct {
 }
 
 // TabsOf parts a document by the kind of its page, the one place that decides which pages part into tabs. The résumé
-// opens with its first section where that holds facts, briefed, under its title; the index and the hidden pages open
+// opens with its first section where that holds details, briefed, under its title; the index and the hidden pages open
 // under the head's title with the blocks before their first section; each section left is a tab under its own title.
 // A project, a post and the blog's lists are one tab under the head's title holding every block, sections included.
 func TabsOf(composed Document) Tabs {
@@ -43,7 +43,7 @@ func TabsOf(composed Document) Tabs {
 	return Tabs{Opening: Opening{Tab: tabOf(composed.Head.Title, composed.Blocks), Brief: nil}, Rest: []Tab{}}
 }
 
-// resumeTabs parts the résumé: a brief's section, where its first section holds facts, is the opening, else the
+// resumeTabs parts the résumé: a brief's section, where its first section holds details, is the opening, else the
 // document parts as partedTabs.
 func resumeTabs(composed Document) Tabs {
 	loose, sections := SectionsOf(composed.Blocks)

@@ -64,7 +64,7 @@ func TestABriefTallerThanTheNameStandsWhole(test *testing.T) {
 	// more facts than the name's column has rows
 	const keptFacts = 12
 	facts := append(slices.Repeat([]document.Fact{{Label: "kept", Value: textOf("a value")}}, keptFacts), document.Fact{Label: "last", Value: textOf("the last value")})
-	model := handResume(test, "home", commonWidth, tallHeight, document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: facts}}})
+	model := handResume(test, "home", commonWidth, tallHeight, document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: facts}}})
 	if page := aboveTheFooter(screenOf(test, model)); !strings.Contains(page, "the last value") {
 		test.Errorf("the first tab =\n%s\nwant the brief's last fact, %q", page, "the last value")
 	}
@@ -75,7 +75,7 @@ func TestABriefTallerThanTheNameStandsWhole(test *testing.T) {
 func TestTheBlocksBesideTheBriefStandOnTheFirstTab(test *testing.T) {
 	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{
 		document.Paragraph{Spans: textOf("said before")},
-		document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}},
+		document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}},
 		document.Paragraph{Spans: textOf("said after")},
 	}}
 	page := aboveTheFooter(screenOf(test, handResume(test, "home", commonWidth, tallHeight, section)))
@@ -91,7 +91,7 @@ func TestTheBlocksBesideTheBriefStandOnTheFirstTab(test *testing.T) {
 func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {
 	// a page as wide as the word for the present the second case writes
 	const presentWidth = 30
-	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
+	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
 	cases := []struct {
 		name  string
 		role  document.Entry
@@ -125,7 +125,7 @@ func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 	role := document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Northwind")}
 	unfilled := document.Entry{Period: document.Period{Start: knownMonth(2020, time.January), End: document.GapMonth{Text: "[20XX]"}}, Title: textOf("Eastwind")}
 	unstarted := document.Entry{Period: document.Period{Start: document.GapMonth{Text: "[20XX]"}, End: knownMonth(2019, time.June)}, Title: textOf("Westwind")}
-	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	model := handResume(test, "home", commonWidth, tallHeight,
 		document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}},
 		document.Section{Title: textOf("Work"), Blocks: []document.Block{role, unfilled, unstarted}},
@@ -152,7 +152,7 @@ func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 // Only the résumé's first section, where it holds facts, joins the first tab, its facts as the brief: one that holds
 // no fact, one after another section, and one after a first section of facts keep a tab of their own.
 func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
-	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	paragraph := document.Paragraph{Spans: textOf("the door")}
 	section := document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}
 	cases := []struct {
@@ -163,7 +163,7 @@ func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
 		{name: "facts alone, first", blocks: []document.Block{section}, listed: false},
 		{
 			name:   "no fact, first",
-			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: nil}}}},
+			blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: nil}}}},
 			listed: true,
 		},
 		{
@@ -195,7 +195,7 @@ func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
 // The first section the first tab takes in names the tab, and what it holds beside its facts stands on the tab
 // under the career's line; where none joins, the tab is named by the author.
 func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
-	facts := document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	paragraph := document.Paragraph{Spans: textOf("the door")}
 	cases := []struct {
 		name       string
@@ -221,7 +221,7 @@ func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 
 // A project's page is one tab, a first section of facts on it as any section: only the résumé opens with a brief.
 func TestAProjectsPageHoldsItsSectionsOnOneTab(test *testing.T) {
-	facts := document.Facts{List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
 	project := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, textOf("tidy-tool")),
 		Blocks: []document.Block{document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}}},
@@ -248,7 +248,7 @@ func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
 		shorterThanTheName  = 6
 		noRowOverTheName    = 15
 	)
-	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
+	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
 	cases := []struct {
 		name   string
 		title  string
@@ -499,7 +499,7 @@ func TestAWordOfWideLettersLeavesTheTabLaidOut(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			facts := document.Facts{List: []document.Fact{{Label: "Email", Value: textOf(testCase.value)}}}
+			facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "Email", Value: textOf(testCase.value)}}}
 			if page := aboveTheFooter(screenOf(test, handResume(test, "home", oneColumnLeft, tallHeight, facts))); !strings.Contains(page, "Email") {
 				test.Errorf("at %d columns with %q the page =\n%s\nwant the fact's label %q", oneColumnLeft, testCase.value, page, "Email")
 			}
@@ -510,7 +510,7 @@ func TestAWordOfWideLettersLeavesTheTabLaidOut(test *testing.T) {
 // A letter wider than the room its line leaves stands on that line, the next word on the line after: no line is
 // left blank between them.
 func TestALetterWiderThanItsRoomLeavesNoBlankLine(test *testing.T) {
-	facts := document.Facts{List: []document.Fact{{Label: "Email", Value: textOf("中 ab")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "Email", Value: textOf("中 ab")}}}
 	lines := strings.Split(aboveTheFooter(screenOf(test, handResume(test, "home", oneColumnLeft, tallHeight, facts))), lineEnd)
 	label := slices.IndexFunc(lines, func(shown string) bool { return strings.Contains(shown, "Email") })
 	if label < 0 || label+1 >= len(lines) {
@@ -608,7 +608,7 @@ func TestANarrowTerminalOpensTheResume(test *testing.T) {
 func TestAFactWithNoValueReadsAsItsLabel(test *testing.T) {
 	composed := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, nil),
-		Blocks: []document.Block{document.Facts{List: []document.Fact{{Label: "available", Value: nil}}}},
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "available", Value: nil}}}},
 	}
 	if screen := screenOf(test, handModel(test, commonWidth, commonHeight, composed)); !strings.Contains(screen, "available") {
 		test.Errorf("the screen =\n%s\nwant the label %q", screen, "available")
@@ -662,7 +662,7 @@ func TestACommandWiderThanItsBoxGoesOnUnderItself(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			facts := document.Facts{List: []document.Fact{{Label: "run", Value: []document.Span{document.Code{Text: testCase.command}}}}}
+			facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "run", Value: []document.Span{document.Code{Text: testCase.command}}}}}
 			read := readRows(aboveTheFooter(screenOf(test, handResume(test, "Mira", phoneWidth, commonHeight, facts))))
 			for _, row := range testCase.rows {
 				if !strings.Contains(read, row) {
@@ -675,7 +675,7 @@ func TestACommandWiderThanItsBoxGoesOnUnderItself(test *testing.T) {
 
 // commandFactsRead is a page of a block of facts round a command, as readRows reads it.
 func commandFactsRead(test *testing.T) string {
-	facts := document.Facts{List: []document.Fact{
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{
 		{Label: "status", Value: textOf("done")},
 		{Label: "setup", Value: []document.Span{document.Code{Text: "go install example.test/tool"}}},
 		{Label: "steps", Value: []document.Span{document.Code{Text: "make"}, document.Text{Text: " then run"}}},
@@ -829,10 +829,14 @@ func TestAPicturesAddressLeadsToThePictureFromEachOfItsLines(test *testing.T) {
 	}
 }
 
-// The first tab holds every way to reach the author once (DESIGN.md, Pages): the mail heading the brief, the others
-// at the tab's end, each by its label, a command in its box.
+// The first tab holds every way to reach the author once, in the brief, above the career's line, as the page's first
+// screen (DESIGN.md, Pages): the mail heading the brief, the others after its facts, each by its label, a command in
+// its box.
 func TestTheFirstTabHoldsEveryWayToReachTheAuthorOnce(test *testing.T) {
+	// the career's word for the present, which the line under the brief ends with
+	const careerPresent = "present"
 	screen := readRows(aboveTheFooter(screenOf(test, fixtureModel(test, commonWidth, tallHeight))))
+	career := strings.Index(screen, careerPresent)
 	cases := []struct {
 		name string
 		want string
@@ -843,8 +847,9 @@ func TestTheFirstTabHoldsEveryWayToReachTheAuthorOnce(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if count := strings.Count(screen, testCase.want); count != 1 {
-				test.Errorf("the first tab =\n%s\nholds %q %d times, want it once", screen, testCase.want, count)
+			count, place := strings.Count(screen, testCase.want), strings.Index(screen, testCase.want)
+			if count != 1 || place > career {
+				test.Errorf("the first tab =\n%s\nholds %q %d times, at %d, want it once, before the career's line at %d", screen, testCase.want, count, place, career)
 			}
 		})
 	}

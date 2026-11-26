@@ -361,8 +361,8 @@ func noteReference(number int) string {
 	return noteOpening + strconv.Itoa(number) + noteClosing
 }
 
-// factsBlock writes a block of facts by its kind: details as a list; the ways to reach the author each a line of its
-// own, since they follow the author's details and markdown would read two lists in a row as one.
+// factsBlock writes a block of facts by its kind: details as a list; the ways to reach the author each a paragraph of
+// its own, since they follow the author's details and markdown would read two lists in a row as one.
 func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) []string {
 	switch facts.Kind {
 	case document.FactsWays:

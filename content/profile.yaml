@@ -201,9 +201,9 @@ skill_groups:
       - {name: UX design, duration: 11m, sources: [Česká spořitelna]}
 
 languages:
-  - {name: English, level: full professional}
-  - {name: Czech, level: full professional}
-  - {name: Russian, level: native}
+  - {name: English}
+  - {name: Czech}
+  - {name: Russian}
 
 health:
   - name: experience

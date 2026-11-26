@@ -124,10 +124,9 @@ type Skill struct {
 	Learning bool     `yaml:"learning"`
 }
 
-// Language is a spoken language and how well.
+// Language is a language the author speaks.
 type Language struct {
-	Name  string `yaml:"name"`
-	Level string `yaml:"level"`
+	Name string `yaml:"name"`
 }
 
 // HealthSection groups the checks of the hidden :checkhealth report.

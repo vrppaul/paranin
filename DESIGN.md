@@ -199,7 +199,7 @@ other size: a control that seems to need one is the wrong control.
   it would shrink (Frame and Section). Below `wide` the brief narrows to `brief_mid` and every section's title stands
   above its content.
 - Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the foot line wraps, the career line
-  becomes a list, a skill table folds (Table) and a table that names its columns scrolls inside itself. No page is
+  becomes a list, a table that names no columns folds and one that names them scrolls inside itself (Table). No page is
   ever wider than its screen.
 - The two widths are the only ones a media query may hold, in rem, since a custom property cannot stand in one;
   stylelint holds them from the first media query on, and refuses any width until then. A media query's rem is the
@@ -413,9 +413,8 @@ month still to fill is left out of both.
 
 ### Entry
 
-One role or school: its dates in a column of their own (`when`), then its heading, `strong`, a level below the heading
-it stands under: a role's an `h2` on its tab, under the page's `h1`; a school's one deeper, under its subsection's
-heading. Its place in `muted`, its points. The current role's dates bold in `text`, ended ones `muted`. Points start
+One role: its dates in a column of their own (`when`), then its heading, `strong`, an `h2` on its tab, under the
+page's `h1`. Its place in `muted`, its points. The current role's dates bold in `text`, ended ones `muted`. Points start
 with a `faint` dash, at most `measure` wide. Entries are set apart by a `quiet` hairline, never boxed.
 
 ### Card
@@ -427,11 +426,11 @@ label across the card's width, since beside the label a long one outruns the val
 
 ### Table
 
-Rows of a few cells, as a skill group's skills: the first cell `strong`, the rest `text`, a duration `muted`; cells
-`cell_3` apart, rows set apart by a `quiet` hairline; numbers line up (`tabular-nums`). No header row, no stripes. A
-post's table may name its columns: the page draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the table scrolls inside itself.
-On a phone a table that names no columns, a skill group's, folds: each row's last cell, a skill's sources, stands under
-the others across its width, and its first cell may wrap, so it fits rather than scroll.
+Rows of a few cells: the first cell `strong`, the rest `text`; cells `cell_3` apart, rows set apart by a `quiet`
+hairline; numbers line up (`tabular-nums`). No header row, no stripes. A post's table may name its columns: the page
+draws that row as the table's first, in `strong`. A cell but the last keeps to one line, so on a narrow screen the
+table scrolls inside itself. On a phone a table that names no columns folds: each row's last cell stands under the
+others across its width, and its first cell may wrap, so it fits rather than scroll.
 Whatever scrolls inside itself, a table, a code block, shows a thin scrollbar.
 
 ### Code

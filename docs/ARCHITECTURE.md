@@ -324,11 +324,11 @@ and web routes.
   tab, which its title names, its facts as a brief beside the name and
   what else it holds under the lead; and the first way to reach the
   author, the mail, at the brief's head without its label, the other ways
-  at the first tab's end. Under them a career's line lays out the roles,
-  the entries in any of its top-level sections, and the lead comes last.
-  The brief is found by its place in the document, and the ways by their
-  kind (amended 2026-11-15,
-  the owner's word). The page's first screen opens from the same reading,
+  after its facts. Under them a career's line lays out the roles, the
+  entries in any of its top-level sections, and the lead comes last. The
+  brief is the first section's first details, and the ways the first
+  facts of their kind, each found by its kind (amended 2026-11-26, the
+  owner's word). The page's first screen opens from the same reading,
   which `document.BriefOf` makes for both faces: beside the name the
   mail, the title, the place and the first four facts in the profile's
   order, the author's choice of which come first; the facts after them

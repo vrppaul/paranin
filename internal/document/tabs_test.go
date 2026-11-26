@@ -22,9 +22,11 @@ type partedName struct {
 }
 
 func TestADocumentPartsIntoAnOpeningAndATabForEachSectionLeft(test *testing.T) {
-	facts := document.Facts{List: []document.Fact{{Label: "stack", Value: textOf("Go")}}}
+	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "stack", Value: textOf("Go")}}}
+	ways := document.Facts{Kind: document.FactsWays, List: []document.Fact{{Label: "mail", Value: textOf("ada@example.test")}}}
 	paragraph := document.Paragraph{Spans: textOf("words")}
 	about := document.Section{Title: textOf("About"), Blocks: []document.Block{paragraph, facts, paragraph}}
+	aboutWithoutFacts := document.Section{Title: textOf("About"), Blocks: []document.Block{paragraph, ways}}
 	experience := document.Section{Title: textOf("Experience"), Blocks: []document.Block{paragraph, paragraph}}
 	install := document.Section{Title: textOf("Step 2: install & run"), Blocks: []document.Block{paragraph}}
 	testCases := []struct {
@@ -43,6 +45,11 @@ func TestADocumentPartsIntoAnOpeningAndATabForEachSectionLeft(test *testing.T) {
 			name: "a résumé with no brief opens with its head", kind: document.PageResume,
 			title: "Ada Lovelace", blocks: []document.Block{experience},
 			want: partedName{opening: tabName{slug: "ada-lovelace", blocks: 0}, briefed: false, rest: []tabName{{slug: "experience", blocks: 2}}},
+		},
+		{
+			name: "a résumé whose first section holds the ways alone has no brief, the ways in their tab once", kind: document.PageResume,
+			title: "Ada Lovelace", blocks: []document.Block{aboutWithoutFacts, experience},
+			want: partedName{opening: tabName{slug: "ada-lovelace", blocks: 0}, briefed: false, rest: []tabName{{slug: "about", blocks: 2}, {slug: "experience", blocks: 2}}},
 		},
 		{
 			name: "a project is one tab holding its sections", kind: document.PageProject,

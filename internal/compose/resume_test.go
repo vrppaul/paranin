@@ -76,9 +76,11 @@ func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
 	for _, block := range about {
 		got = append(got, fmt.Sprintf("%T", block))
 	}
-	ways := as[document.Facts](test, about[len(about)-1]).Kind
-	if want := []string{"document.Paragraph", "document.Facts", "document.Facts"}; !slices.Equal(got, want) || ways != document.FactsWays {
-		test.Errorf("the about section holds %q, the last of the ways' kind: %t, want %q, the last the ways", got, ways == document.FactsWays, want)
+	if want := []string{"document.Paragraph", "document.Facts", "document.Facts"}; !slices.Equal(got, want) {
+		test.Fatalf("the about section holds %q, want %q", got, want)
+	}
+	if ways := as[document.Facts](test, about[len(about)-1]).Kind; ways != document.FactsWays {
+		test.Errorf("the about section's last facts are of kind %d, want the ways' kind, %d", ways, document.FactsWays)
 	}
 }
 

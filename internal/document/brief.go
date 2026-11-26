@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-// Briefed is a document's sections read for the brief a résumé opens with: the brief, the first facts the first
+// Briefed is a document's sections read for the brief a résumé opens with: the brief, the first details the first
 // section holds; that section's title, and the blocks it holds before the brief and after it, but the ways to reach
 // the author, which each face places as it chooses; the sections after it; those ways, the mail first; and the roles
 // the sections hold, in order, which CareerOf lays on a line.
@@ -38,14 +38,15 @@ func (briefed *Briefed) OtherWays() []Fact {
 	return briefed.Ways[1:]
 }
 
-// BriefOf is sections read for their brief; nothing where the first holds no facts.
+// BriefOf is sections read for their brief, the first details the first section holds; nothing where it holds none,
+// so the ways to reach the author never stand in for it.
 func BriefOf(sections []Section) *Briefed {
 	if len(sections) == 0 {
 		return nil
 	}
 	first := sections[0]
 	for index, block := range first.Blocks {
-		if facts, isFacts := block.(Facts); isFacts && len(facts.List) > 0 {
+		if facts, isFacts := block.(Facts); isFacts && facts.Kind == FactsDetails && len(facts.List) > 0 {
 			return &Briefed{
 				Brief:  facts,
 				Title:  first.Title,

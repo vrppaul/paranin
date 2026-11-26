@@ -20,7 +20,7 @@ each part with the tokens and the rules it draws by; `TODO.md` lists the parts s
 ## Content
 
 - Write as the profile writes: plain English, short sentences, numbers as figures.
-- The site is its author's: where it speaks, it speaks in the first person, "Write to me", as About does; a fact
+- The site is its author's: where it speaks, it speaks in the first person, "Write to me", as the headline does; a fact
   states itself.
 - Sentence case everywhere. Section names, tabs, fact labels and chips are lower case, as the TUI writes them:
   `experience`, `looking for`. The block-letter titles are capitals because the font has no others.
@@ -142,17 +142,17 @@ other size: a control that seems to need one is the wrong control.
 | `reading` | `design/tokens.yaml` | `design/tokens.yaml` | an article's words, in `reading_face`, on a line of its own taller than a row |
 | `source` | `design/tokens.yaml` | `design/tokens.yaml` | a source beside an article's text, `caption`'s size on a line short enough to read as one note |
 
-- The page's one `h1`, a tab's title among them, and the `h2` of the résumé's first section under its first screen are
-  block letters; a post's title is its page's `h1` in `title_text`, since a sentence in block letters would not fit;
-  another page's `h2` is `heading`; every heading below is `strong`, its depth shown by the space before it: `row_2`
-  before a subsection's heading, `row` before an entry's or a card's. Levels never skip.
+- The page's one `h1`, a tab's title among them, is block letters; a post's title is its page's `h1` in
+  `title_text`, since a sentence in block letters would not fit; another page's `h2` is `heading`; every heading
+  below is `strong`, its depth shown by the space before it: `row_2` before a subsection's heading, `row` before an
+  entry's or a card's. Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
 - Weights: 400 for text, 700 for what names (a role, a company, a button) and for a word made strong, wherever it
   stands, 800 only for the mail, its @ left at 400.
 
 ## Block letters
 
-- The name and the five sections' titles are drawn in the TUI's block fonts, the same glyphs
+- The name and the tabs' titles are drawn in the TUI's block fonts, the same glyphs
   (`internal/look/letters.go`), as SVG rectangles: they need no font and shrink to their column, never past it.
 - Natural size: `name_cell` a cell for the name, `title_cell` for a title.
 - One gradient, `accent` to `host`, left to right. `shape-rendering: crispEdges`, so no seam shows between two
@@ -234,7 +234,7 @@ anything over it.
 ### SectionTitle
 
 A tab's title in the title font, the page's `h1`: Experience, Projects, Skills, Contact, and each tab of a project's
-page; About is the `h2` under the first screen. A subsection (Spoken languages, Education, a skill group) is a
+page. A subsection (Spoken languages, Education, a skill group) is a
 `strong` heading.
 
 ### Mail
@@ -380,9 +380,10 @@ in a Tooltip over it under the pointer. Without the script it is hidden and the 
 ### Facts
 
 Label and value, two cells apart: the label `muted`, one or two lower-case words as the profile writes them; the value
-in `text`, on the label's baseline. On the first screen the first four the profile lists, its author's choice
-(experience, stack, now, languages); the rest stand in About under the summary (owner, 2026-11-18). On a phone a
-value that is a Command stands under its label across the whole width, as a Card's install line does at any width.
+in `text`, on the label's baseline. On the first screen the first three the profile lists, its author's choice
+(experience, stack, languages); where he works from stands with the place, not as a fact (owner, 2026-11-26). On a
+phone a value that is a Command stands under its label across the whole width, as a Card's install line does at any
+width.
 
 ### CareerLine
 
@@ -609,12 +610,28 @@ the series' Pick, or `Other posts` with a link to the list; then two panes as tm
   ring parts where the date is set in, as the frame does. A
   part to come: framed in `quiet_half`, its date and title `faint`, not bold, no link.
 
+### LatestPosts
+
+The blog under the résumé's first screen, a hint of it, not a part of the résumé (owner, 2026-11-26).
+
+- At the left `blog`, bold in `heading`, and under it `all posts`, a Link to the list, in the text's size.
+- Right after them the row to the page's right edge in three equal places, each holding one of the three latest
+  posts as a small Tile, newest first; fewer posts stand in the first places, as wide. The Tiles' top edge stands level
+  with the top of `blog`'s letters.
+- A small Tile: its date set into its top edge, as a Tile's; its title alone, bold, at its left and in its middle
+  height, a row clear above and below, on one line, cut with `…` where it runs longer, so every Tile stays one height.
+  No lead, no series, no tags. The whole Tile is the link to its post, as a Tile's.
+- With no post out, no LatestPosts.
+- On a phone `blog` and `all posts` stand over the Tiles, which take the width one under another.
+
 ## Pages
 
-- The first screen: left, the greeting, the Name and the headline in `lead`; right, `brief` wide, the Mail, the role,
-  the place, the Facts, the primary button and the Command, then cv.pdf, GitHub and LinkedIn. Below, the CareerLine
-  across the whole width; the four crosses at the corners. Under it the About section; the rest of the résumé is its
-  tabs, each a page of its own.
+- The first screen: left, the greeting, the Name and the headline in `lead`, the words naming his two kinds of work
+  each a Link to the tab that holds them, `backend services` to experience and `tools` to projects; right, `brief`
+  wide, the Mail, the role, the place with where he works from, `Based in Prague · remote worldwide`, the Facts, the
+  primary button and the Command, then cv.pdf, GitHub and LinkedIn. Below, the CareerLine across the whole width; the
+  four crosses at the corners. Under it LatestPosts, and no section more: the rest of the résumé is its tabs, each a
+  page of its own (owner, 2026-11-26).
 - The address of no page: its status in block letters, in English as HTTP writes it, the address quoted as Code, a
   link to the start, the foot line in the words of the language whose folder the address opens with; no apology and
   no joke. The foot line stands as on every page, with no windows.
@@ -685,6 +702,8 @@ second face, a hover, it leaves out; what the page and the TUI both draw, they d
   its translation, or its window closed where it has none.
 - The blog's pages run wider than the résumé's column where the screen has room, 132 cells at most, the text still
   held to its measure.
+- The résumé's opening as the page's: the headline's two kinds of work links to their tabs, the place with where he
+  works from, and LatestPosts under the career line, its small Tiles framed as tmux's panes (owner, 2026-11-26).
 - The list: BLOG in the title font, as the page's; the groups' names in a column, 22 cells wide, 18 under 132, the
   year in the title font in the gradient,
   staying in sight at the top while its tiles scroll; under 100 cells the name stands over its tiles as one line in the

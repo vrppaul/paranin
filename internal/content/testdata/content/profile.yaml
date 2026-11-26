@@ -51,11 +51,15 @@ projects:
     language: Lua
     stack: [Penlight, LPeg]
     repo: https://github.test/mira/tidy
-    install: go install example.test/tidy@latest
-    recording: "$ tidy .\ntidied 3 files"
+    install:
+      - command: go install example.test/tidy@latest
+      - note: On a machine with no Go
+        command: curl -fsSL https://example.test/tidy.sh | sh
+    release:
+      latest: https://github.test/mira/tidy/releases/latest
+      changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md
+    licence: MIT
     page: true
-    facts:
-      - {label: status, value: done}
     sections:
       - title: Why
         paragraphs:

@@ -14,10 +14,10 @@ type Document struct {
 }
 
 // Head is what a face shows first: the page the document is, a post's number, the language it is written in, its
-// title, a subtitle and the place beside it, what a project is made of or a post's tags, a lead, the day a post came
-// out and where a project's code lives, which every face shows; where a post stands in the blog; the page's
-// description and the feeds that follow it; and, for a face that has a use for it, a greeting before the title. The
-// ways to reach the author are facts of their own kind, which a face places where it chooses.
+// title, a subtitle and the place beside it, a post's tags, a lead, the day a post came out, and what gets a project
+// and tells about it, which every face shows; where a post stands in the blog; the page's description and the feeds
+// that follow it; and, for a face that has a use for it, a greeting before the title. The ways to reach the author
+// are facts of their own kind, which a face places where it chooses.
 type Head struct {
 	Page Page
 	// Number is a post's number, which blog/<number> reaches as its slug does (D26); 0 on any other page
@@ -34,14 +34,11 @@ type Head struct {
 	Place    string
 	// Filters are the tags a post's head and the blog's list's offer to filter the list by; none on any other page
 	Filters []Filter
-	// MadeOf is what a project's page says the project is made of, by name: the language it is written in, then what
-	// it is built on; none on another page, a post's and the list's tags standing among their Filters
-	MadeOf []string
-	Lead   []Span
+	Lead    []Span
 	// Version is the version of a post its reader reads; none on any other page
 	Version Version
-	// Repository is where the code of a project's page lives; none on another page or for a project that names none
-	Repository *Repository
+	// Project is what gets a project and what tells about it; none on any page but a project's
+	Project *Project
 	// Post is where a post stands in the blog and where it is discussed; none on any other page
 	Post *PostPlace
 	// Description is what the page is about, for its metadata: a search engine's snippet, a link's preview where
@@ -117,6 +114,44 @@ func (fact Fact) Command() (string, bool) {
 	}
 	code, isCode := fact.Value[0].(Code)
 	return code.Text, isCode
+}
+
+// Project is what a project's page says of it beside its name and lines (DESIGN.md, ProjectHead): what gets the
+// project, where its code lives and how it is installed, and what tells about it.
+type Project struct {
+	// Repository is where the project's code lives; none where the profile names no place
+	Repository *Repository
+	// InstallLabel is the site's word for installing, over the first install where a face labels each
+	InstallLabel string
+	// Installs are the ways to install the project: the first, then each with a note on when to take it instead
+	Installs []Install
+	// About are the facts that tell about the project, each under the site's word, as far as the profile gives them
+	About []Fact
+}
+
+// Install is a way to install a project: a note on when to take it, none on the first, and its command.
+type Install struct {
+	Note    []Span
+	Command string
+}
+
+// InstallFacts are the installs as a face that labels each lists them among facts (InstallFact).
+func (project Project) InstallFacts() []Fact {
+	facts := make([]Fact, 0, len(project.Installs))
+	for _, install := range project.Installs {
+		facts = append(facts, project.InstallFact(install))
+	}
+	return facts
+}
+
+// InstallFact is an install as a face that labels it lists it among facts, its command as code: under its note, or
+// under the site's word where it has none, as the first.
+func (project Project) InstallFact(install Install) Fact {
+	label := project.InstallLabel
+	if len(install.Note) > 0 {
+		label = PlainText(install.Note)
+	}
+	return Fact{Label: label, Value: []Span{Code{Text: install.Command}}}
 }
 
 // Repository is where a project's code lives: the site's word that names it, and its address.

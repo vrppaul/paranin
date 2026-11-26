@@ -69,7 +69,8 @@ type Role struct {
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of
-// its own gets one. Its stack is what it is built on, by name, after the language it is written in.
+// its own gets one. Its stack is what it is built on, by name, after the language it is written in; its licence a
+// word, as SPDX names one.
 type Project struct {
 	Slug        string    `yaml:"slug"`
 	Name        string    `yaml:"name"`
@@ -78,11 +79,24 @@ type Project struct {
 	Language    string    `yaml:"language"`
 	Stack       []string  `yaml:"stack"`
 	Repo        string    `yaml:"repo"`
-	Install     string    `yaml:"install"`
-	Recording   string    `yaml:"recording"`
+	Install     []Install `yaml:"install"`
+	Release     *Release  `yaml:"release"`
+	Licence     string    `yaml:"licence"`
 	Page        bool      `yaml:"page"`
-	Facts       []Fact    `yaml:"facts"`
 	Sections    []Section `yaml:"sections"`
+}
+
+// Install is a way to install a project: its command, and a note on when to take it instead of the first, which
+// every way but the first has.
+type Install struct {
+	Note    string `yaml:"note"`
+	Command string `yaml:"command"`
+}
+
+// Release is where a project's releases are read: its newest, and the history of them all.
+type Release struct {
+	Latest    WebAddress `yaml:"latest"`
+	Changelog WebAddress `yaml:"changelog"`
 }
 
 // Section is a titled block of paragraphs on a project's page.

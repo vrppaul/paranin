@@ -12,10 +12,14 @@ mail: mail
 ssh: ssh
 repository: repository
 install: install
+stack: stack
+release: release
+latest: latest
+changelog: changelog
+licence: licence
 present: present
 side: on the side
 learning: still learning
-author: author
 resume: Résumé
 health: health
 dark_theme: Dark theme

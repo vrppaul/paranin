@@ -80,7 +80,7 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 		greeting   = "Hello, my name is"
 		summary    = "Writes software for people who read it."
 		experience = "Northwind — Senior Engineer"
-		// a line of a project's details, and of its section Why
+		// a line of what gets a project, and of its section Why
 		details = "go install example.test/tidy@latest"
 		why     = "Files were untidy."
 	)

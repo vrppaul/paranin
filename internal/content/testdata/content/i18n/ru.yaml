@@ -12,10 +12,14 @@ mail: почта
 ssh: ssh
 repository: репозиторий
 install: установка
+stack: стек
+release: релиз
+latest: последний
+changelog: история изменений
+licence: лицензия
 present: сейчас
 side: между делом
 learning: ещё учусь
-author: автор
 resume: Резюме
 health: здоровье
 dark_theme: Тёмная тема

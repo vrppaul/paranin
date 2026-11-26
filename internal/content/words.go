@@ -14,15 +14,16 @@ import (
 )
 
 // Word is one of the site's own words, which the faces show beside the facts: the title of a section of the
-// résumé or of the index, the greeting before the author's name, the label of a way to reach the author or of a
-// detail of a project, the end of what still goes on, how long a skill was used where it was used on the side or is
-// still being learnt, the title of the TUI's health report, or a word of the page's frame: the name of its theme
-// button, a command's button that copies it: the word on it and the word it turns to once it has, the first
-// screen's button that writes to the author, what each way a terminal reaches the site gives, which its hint says,
-// the blog's session, the labels of a post's facts, what a draft's version says it is, what the toast says once a
-// code block is copied, and the words of a post's series and the panes at its foot: where a part stands for the
-// reader, each side's name, what a side with none says, the panes' heading outside a series, the word before where
-// the post is discussed, and the name of its outline; and the blog's list: the line it opens with, its window in the
+// résumé or of the index, the greeting before the author's name, the label of a way to reach the author, of what
+// gets a project or of what tells about it, the words of the links to its newest release and to its history, the end
+// of what still goes on, how long a skill was used where it was used on the side or is still being learnt, the title
+// of the TUI's health report, or a word of the page's frame: the name of its theme button, a command's button that
+// copies it: the word on it and the word it turns to once it has, the first screen's button that writes to the
+// author, what each way a terminal reaches the site gives, which its hint says, the blog's session, the labels of a
+// post's facts, what a draft's version says it is, what the toast says once a code block is copied, and the words of
+// a post's series and the panes at its foot: where a part stands for the reader, each side's name, what a side with
+// none says, the panes' heading outside a series, the word before where the post is discussed, and the name of its
+// outline; and the blog's list: the line it opens with, its window in the
 // foot line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year
 // and by series, and its group of the posts in no series; and a post's versions: the title of the window that lists
 // them, and the words that mark the current one and the one read; and the language: the label of a post's language,
@@ -46,10 +47,14 @@ const (
 	WordSSH
 	WordRepository
 	WordInstall
+	WordStack
+	WordRelease
+	WordLatest
+	WordChangelog
+	WordLicence
 	WordPresent
 	WordSide
 	WordLearning
-	WordAuthor
 	WordResume
 	WordHealth
 	WordDarkTheme
@@ -176,10 +181,14 @@ func wordKeys() map[Word]string {
 		WordSSH:               "ssh",
 		WordRepository:        "repository",
 		WordInstall:           "install",
+		WordStack:             "stack",
+		WordRelease:           "release",
+		WordLatest:            "latest",
+		WordChangelog:         "changelog",
+		WordLicence:           "licence",
 		WordPresent:           "present",
 		WordSide:              "side",
 		WordLearning:          "learning",
-		WordAuthor:            "author",
 		WordResume:            "resume",
 		WordHealth:            "health",
 		WordDarkTheme:         "dark_theme",

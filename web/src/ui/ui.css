@@ -1551,8 +1551,8 @@ a.tile-title:focus-visible {
 /* what a page opens with, its title in block letters first, each part a row from the next: the page of an address of
  * no page (DESIGN.md, Pages), its status, the address asked for, the way to the start, four rows of air above and
  * below; and the head of a page that is not the résumé (DESIGN.md, Contents and PageHead), its line in the lead's
- * style, what it is made of in muted words, its lead held to the measure, where its code lives, four rows of air above
- * and two below */
+ * style, its lead held to the measure, what gets a project and what tells about it, four rows of air above and two
+ * below */
 .not-found,
 .page-head {
   display: grid;
@@ -1575,10 +1575,6 @@ a.tile-title:focus-visible {
 .page-line,
 .page-lead {
   max-width: var(--measure);
-}
-
-.page-tags {
-  color: var(--muted);
 }
 
 /* such a page's blocks, after its head, four rows of air under them; a section's title among them in the

@@ -134,9 +134,8 @@ func escaperOf(letters string) *strings.Replacer {
 // head writes the title as a heading, then the subtitle, the place and the version a post's reader reads on a line, an
 // older version's with the newer one that stands over it, a translation older than its original's with the way to the
 // original, the languages a post is read in on the next, the one read
-// strong and each other a link to the post in it, what a project is made of or a post's tags on the next, and the lead
-// as a quote. Where a project's code lives stands as a line of its own, not an item, since the list of the project's
-// details comes next and markdown would read two lists in a row as one.
+// strong and each other a link to the post in it, a post's tags on the next, the lead as a quote, and what gets a
+// project and tells about it.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	version := joined(dot, writer.text(versionText(head)), writer.spans(versionNote(head)))
@@ -146,17 +145,27 @@ func (writer markdownWriter) head(head document.Head) []string {
 		languages = append(languages, writer.spans(language.Spans()))
 	}
 	chunks = appendLine(chunks, joined(dot, languages...))
-	named := head.ListedWords()
+	named := head.Tags()
 	tags := make([]string, 0, len(named))
 	for _, tag := range named {
 		tags = append(tags, writer.text(tag))
 	}
 	chunks = appendLine(chunks, joined(dot, tags...))
 	chunks = appendChunk(chunks, quote(lineStart(writer.spans(head.Lead))))
-	for _, fact := range head.Repository.Facts() {
+	return writer.project(chunks, head.Project)
+}
+
+// project writes what gets a project, each a line of its own: where its code lives, then each way to install it, the
+// first under the site's word, a later one under its note; then what tells about it as a list of facts. What gets it
+// stands in lines, not items, since markdown would read two lists in a row as one.
+func (writer markdownWriter) project(chunks []string, project *document.Project) []string {
+	if project == nil {
+		return chunks
+	}
+	for _, fact := range slices.Concat(project.Repository.Facts(), project.InstallFacts()) {
 		chunks = appendLine(chunks, writer.fact(fact))
 	}
-	return chunks
+	return appendChunk(chunks, writer.facts(project.About))
 }
 
 func (writer markdownWriter) blocks(chunks []string, blocks []document.Block, depth int) []string {

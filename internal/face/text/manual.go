@@ -120,8 +120,8 @@ func (writer manualWriter) name(head document.Head) []string {
 
 // description writes the description section: what the version read says under its day, that a newer version stands
 // or that the original changed since a translation, first, then the lead, the languages a post is read in, each other
-// than the one read with the address of its manual, what a project is made of or a post's or the list's tags, where a
-// project's code lives, then the blocks that are no section; none where there is nothing to describe.
+// than the one read with the address of its manual, a post's or the list's tags, what gets a project and tells about
+// it, then the blocks that are no section; none where there is nothing to describe.
 func (writer manualWriter) description(head document.Head, others []document.Block) []string {
 	lines := paragraph(sectionIndent, 0, writer.words(head.Lead))
 	if note := versionNote(head); len(note) > 0 {
@@ -134,21 +134,43 @@ func (writer manualWriter) description(head document.Head, others []document.Blo
 		}
 		lines = append(append(lines, ""), paragraph(sectionIndent, 0, joinedWords(dotWord, languages...))...)
 	}
-	if named := head.ListedWords(); len(named) > 0 {
+	if named := head.Tags(); len(named) > 0 {
 		tags := make([][]string, 0, len(named))
 		for _, tag := range named {
 			tags = append(tags, strings.Fields(tag))
 		}
 		lines = append(append(lines, ""), paragraph(sectionIndent, 0, joinedWords(dotWord, tags...))...)
 	}
-	if repository := head.Repository.Facts(); len(repository) > 0 {
-		lines = append(append(lines, ""), writer.pairs(sectionIndent, repository)...)
-	}
+	lines = append(lines, writer.project(head.Project)...)
 	lines = trimBlank(append(lines, writer.blocks(others, sectionIndent)...))
 	if len(lines) == 0 {
 		return nil
 	}
 	return append([]string{"", strings.ToUpper(writer.own.Description)}, lines...)
+}
+
+// project writes what gets a project and what tells about it, a blank line before each part: where its code lives
+// and the way to install it as labelled pairs; each later way under its note, its command standing in under the note,
+// since a note is too long a label to set the pairs' column by; then the facts that tell about it. None on a page
+// that is no project's.
+func (writer manualWriter) project(project *document.Project) []string {
+	if project == nil {
+		return nil
+	}
+	gets, later := project.Repository.Facts(), []string{}
+	for _, install := range project.Installs {
+		if len(install.Note) == 0 {
+			gets = append(gets, project.InstallFact(install))
+			continue
+		}
+		later = append(append(later, ""), paragraph(sectionIndent, 0, writer.words(install.Note))...)
+		later = append(later, codeLines(sectionIndent+bulletHang, install.Command)...)
+	}
+	lines := append(append([]string{""}, writer.pairs(sectionIndent, gets)...), later...)
+	if len(project.About) > 0 {
+		lines = append(append(lines, ""), writer.pairs(sectionIndent, project.About)...)
+	}
+	return lines
 }
 
 // pageSection writes a section of the page: its title in capitals over its blocks.

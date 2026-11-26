@@ -2,20 +2,17 @@
 
 Tidies files.
 
-Lua · Penlight · LPeg
-
 > A tool that **tidies files**.
 
 repository: [https://github.test/mira/tidy](https://github.test/mira/tidy)
 
-- author: [Mira Example](https://example.test/index.md)
-- status: done
-- install: `go install example.test/tidy@latest`
+install: `go install example.test/tidy@latest`
 
-```
-$ tidy .
-tidied 3 files
-```
+On a machine with no Go: `curl -fsSL https://example.test/tidy.sh | sh`
+
+- stack: Lua · Penlight · LPeg
+- release: [latest](https://github.test/mira/tidy/releases/latest) · [changelog](https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md)
+- licence: MIT
 
 ## Why
 

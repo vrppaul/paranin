@@ -13,12 +13,16 @@ import (
 // writes them
 const pathMark = "/"
 
-// readme lays out a project's head as its forge shows its README, as glow draws one: the name in the titles' font,
-// the repository's owner and name under it, a link to it; what it is made of; the tagline, and what the project does.
+// readme lays out a project's head as the page lays it, in one column (DESIGN.md, The TUI): the name in the titles'
+// font; the tagline, and what the project does; what gets it, the repository's owner and name, a link to it, then each
+// way to install it, a command in a box under its label; then the facts that tell about it.
 func (layout layout) readme(head document.Head) []line {
-	lines := slices.Concat(layout.heading(document.PlainText(head.Title)), layout.fill(layout.repositoryWords(head.Repository), 0))
-	lines = stacked(lines, layout.fill(madeOfWords(head.MadeOf), 0))
-	return stacked(lines, slices.Concat(layout.fill(layout.words(head.Subtitle, kindStrong), 0), layout.fill(layout.words(head.Lead, kindText), 0)))
+	lines := slices.Concat(layout.heading(document.PlainText(head.Title)), layout.fill(layout.words(head.Subtitle, kindStrong), 0), layout.fill(layout.words(head.Lead, kindText), 0))
+	if head.Project == nil {
+		return lines
+	}
+	gets := stacked(layout.fill(layout.repositoryWords(head.Project.Repository), 0), layout.factBlock(head.Project.InstallFacts(), 0))
+	return stacked(stacked(lines, gets), layout.factBlock(head.Project.About, 0))
 }
 
 // repositoryWords are a repository's owner and name, as the parts of its address's path give them, the path's mark
@@ -60,14 +64,4 @@ func pathParts(address string) []string {
 		return nil
 	}
 	return strings.Split(path, pathMark)
-}
-
-// madeOfWords are what a project is made of, its tags, as the page's head writes them: words that say less than the
-// text, the place mark between each two tags; not chips, which would read as something to press.
-func madeOfWords(tags []string) []word {
-	words := []word{}
-	for _, tag := range tags {
-		words = markedWords(words, textWords(tag, kindMuted), placeMark)
-	}
-	return words
 }

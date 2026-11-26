@@ -18,6 +18,10 @@ import (
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
+// What separates the words of a fact the site joins, a project's stack and the links to its releases, as the profile
+// writes the résumé's stack
+const wordSeparator = " · "
+
 // Composed is a page a person reads, as compose makes it: its document, its tabs past the opening, each a document
 // alone, and its record, made together so none is ever without the others.
 type Composed struct {
@@ -34,7 +38,7 @@ func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks(noSeries)), personRecord(profile))}
 	author := authorOf(profile.Person)
 	for _, project := range projectsWithPages(profile.Projects) {
-		pages = append(pages, composedPage(projectDocument(project, profile.Person, snapshot.Own.Words), workRecord(project, author)))
+		pages = append(pages, composedPage(projectDocument(project, snapshot.Own.Words), workRecord(project, author)))
 	}
 	return pages
 }
@@ -72,10 +76,9 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Subtitle:    nil,
 		Place:       "",
 		Filters:     nil,
-		MadeOf:      nil,
 		Lead:        nil,
 		Version:     nil,
-		Repository:  nil,
+		Project:     nil,
 		Post:        nil,
 		Description: head.Description,
 		Feeds:       head.Feeds,
@@ -143,10 +146,9 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 			Subtitle:    nil,
 			Place:       "",
 			Filters:     nil,
-			MadeOf:      nil,
 			Lead:        resume.Lead,
 			Version:     nil,
-			Repository:  nil,
+			Project:     nil,
 			Post:        nil,
 			Description: nil,
 			Feeds:       nil,
@@ -175,10 +177,9 @@ func resumeHead(profile content.Profile, words content.Words, feeds []document.L
 		Subtitle:    markedSpans(person.Title),
 		Place:       person.Location,
 		Filters:     nil,
-		MadeOf:      nil,
 		Lead:        headline,
 		Version:     nil,
-		Repository:  nil,
+		Project:     nil,
 		Post:        nil,
 		Description: headline,
 		Feeds:       feeds,
@@ -241,16 +242,9 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
-// projectDocument is a project's own page: its head; its details, its author first, a link back to the résumé, and
-// how it is installed last; its recording, where it has one; then its sections.
-func projectDocument(project content.Project, author content.Person, words content.Words) document.Document {
-	resume := document.PageOf(document.PageResume)
-	details := []document.Fact{{Label: words.Text(content.WordAuthor), Value: linkSpans(resume, author.Name)}}
-	details = append(details, factList(project.Facts)...)
-	blocks := []document.Block{document.Facts{Kind: document.FactsDetails, List: append(details, installFacts(project, words)...)}}
-	if project.Recording != "" {
-		blocks = append(blocks, codeBlock(project.Recording, noLanguage))
-	}
+// projectDocument is a project's own page: its head, then its sections.
+func projectDocument(project content.Project, words content.Words) document.Document {
+	blocks := make([]document.Block, 0, len(project.Sections))
 	for _, section := range project.Sections {
 		paragraphs := make([]document.Block, 0, len(section.Paragraphs))
 		for _, paragraph := range section.Paragraphs {
@@ -262,7 +256,7 @@ func projectDocument(project content.Project, author content.Person, words conte
 }
 
 // projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a
-// line, what it is made of, what it does, its description, and where its code lives.
+// line, what it does, its description, and what gets it and tells about it.
 func projectHead(project content.Project, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
@@ -274,15 +268,48 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Subtitle:    markedSpans(project.Tagline),
 		Place:       "",
 		Filters:     nil,
-		MadeOf:      projectMadeOf(project),
 		Lead:        description,
 		Version:     nil,
-		Repository:  projectRepository(project, words),
+		Project:     projectPart(project, words),
 		Post:        nil,
 		Description: description,
 		Feeds:       nil,
 		Languages:   nil,
 	}
+}
+
+// projectPart is what a project's head says of it beside its name and lines: where its code lives, the ways to
+// install it, each note as prose and each command as written, and what tells about it.
+func projectPart(project content.Project, words content.Words) *document.Project {
+	installs := make([]document.Install, 0, len(project.Install))
+	for _, install := range project.Install {
+		installs = append(installs, document.Install{Note: markedSpans(install.Note), Command: install.Command})
+	}
+	return &document.Project{
+		Repository:   projectRepository(project, words),
+		InstallLabel: words.Text(content.WordInstall),
+		Installs:     installs,
+		About:        projectAbout(project, words),
+	}
+}
+
+// projectAbout are the facts that tell about a project, each under the site's word, as far as the profile gives
+// them: what it is made of, its words joined; where its releases are read, a link to the newest and one to their
+// history, with no number, which would go stale; and its licence.
+func projectAbout(project content.Project, words content.Words) []document.Fact {
+	about := []document.Fact{}
+	if madeOf := projectMadeOf(project); len(madeOf) > 0 {
+		about = append(about, document.Fact{Label: words.Text(content.WordStack), Value: textSpans(strings.Join(madeOf, wordSeparator))})
+	}
+	if release := project.Release; release != nil {
+		latest := linkSpans(document.Address{URL: release.Latest.Written()}, words.Text(content.WordLatest))
+		changelog := linkSpans(document.Address{URL: release.Changelog.Written()}, words.Text(content.WordChangelog))
+		about = append(about, document.Fact{Label: words.Text(content.WordRelease), Value: slices.Concat(latest, textSpans(wordSeparator), changelog)})
+	}
+	if project.Licence != "" {
+		about = append(about, document.Fact{Label: words.Text(content.WordLicence), Value: textSpans(project.Licence)})
+	}
+	return about
 }
 
 // projectMadeOf is what a project is made of: the language it is written in, where the profile names one, then what
@@ -311,12 +338,13 @@ func projectRepository(project content.Project, words content.Words) *document.R
 	return &document.Repository{Label: words.Text(content.WordRepository), Address: document.Address{URL: project.Repo}}
 }
 
-// installFacts are how a project is installed, under the site's word for it, where the project says.
+// installFacts are how a project is installed as its card says it, the first way alone under the site's word for it,
+// where the project gives one.
 func installFacts(project content.Project, words content.Words) []document.Fact {
-	if project.Install == "" {
+	if len(project.Install) == 0 {
 		return nil
 	}
-	return []document.Fact{{Label: words.Text(content.WordInstall), Value: []document.Span{document.Code{Text: project.Install}}}}
+	return []document.Fact{{Label: words.Text(content.WordInstall), Value: []document.Span{document.Code{Text: project.Install[0].Command}}}}
 }
 
 // skillsSection is what the author can do: a section of each group of skills, each a table of a skill, how long, and

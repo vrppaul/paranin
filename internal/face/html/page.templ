@@ -476,8 +476,7 @@ templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
 }
 
 // head is what the page's main part shows first (DESIGN.md, Contents and PageHead): its title in block letters, its
-// line, the subtitle and the place beside it; what a project is made of, joined in one line, words that do nothing
-// when pressed; the lead; and where a project's code lives.
+// line, the subtitle and the place beside it; the lead; and what gets a project, then what tells about it.
 templ (writer PageWriter) head(head document.Head) {
 	<div class="page-head">
 		@writer.drawnTitle(head)
@@ -490,16 +489,18 @@ templ (writer PageWriter) head(head document.Head) {
 				@text(head.Place)
 			</p>
 		}
-		if len(head.MadeOf) > 0 {
-			<p class="page-tags">{ strings.Join(head.MadeOf, dot) }</p>
-		}
 		if len(head.Lead) > 0 {
 			<p class="page-lead">
 				@writer.spans(head.Lead)
 			</p>
 		}
-		if repository := head.Repository.Facts(); len(repository) > 0 {
-			@writer.facts(repository)
+		if project := head.Project; project != nil {
+			if gets := append(project.Repository.Facts(), project.InstallFacts()...); len(gets) > 0 {
+				@writer.facts(gets)
+			}
+			if len(project.About) > 0 {
+				@writer.facts(project.About)
+			}
 		}
 	</div>
 }

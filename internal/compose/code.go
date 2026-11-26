@@ -13,7 +13,7 @@ import (
 	"github.com/vrppaul/paranin/internal/document"
 )
 
-// The language of code whose author names none: a project's recording, a post's code indented
+// The language of code whose author names none: a post's code indented
 const noLanguage = ""
 
 // Prepared is a snapshot's content as every composition of it reads it: the snapshot, and the code of each of its posts

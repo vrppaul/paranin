@@ -6,16 +6,15 @@ NAME
 DESCRIPTION
        A tool that tidies files.
 
-       Lua · Penlight · LPeg
-
        repository   https://github.test/mira/tidy
+       install      go install example.test/tidy@latest
 
-       author    Mira Example <https://example.test/index.txt>
-       status    done
-       install   go install example.test/tidy@latest
+       On a machine with no Go
+         curl -fsSL https://example.test/tidy.sh | sh
 
-       $ tidy .
-       tidied 3 files
+       stack     Lua · Penlight · LPeg
+       release   latest · changelog
+       licence   MIT
 
 WHY
        Files were untidy.

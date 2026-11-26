@@ -59,8 +59,8 @@ const (
 	CellDuration
 )
 
-// CodeBlock is text shown as it is, line for line: a terminal's recording, a post's code. Its runs hold the text whole
-// by kind of word, so a face colours a kind and never reads a language.
+// CodeBlock is text shown as it is, line for line: a post's code. Its runs hold the text whole by kind of word, so a
+// face colours a kind and never reads a language.
 type CodeBlock struct {
 	// Language is what the code is written in, as its author names it: "go"; none where the author names none
 	Language string
@@ -178,8 +178,7 @@ type FactsKind int
 const (
 	// The zero kind names none
 	_ FactsKind = iota
-	// FactsDetails are details of what the document is about: the author's facts, the languages they speak, a
-	// project's details
+	// FactsDetails are details of what the document is about: the author's facts, the languages they speak
 	FactsDetails
 	// FactsWays are the ways to reach the author, the mail first, which a face shows where it chooses
 	FactsWays

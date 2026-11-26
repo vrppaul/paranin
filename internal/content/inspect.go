@@ -36,6 +36,7 @@ const (
 	sharedSlugProblem    = "%q names another project too"
 	sharedGroupProblem   = "%q names another group too"
 	stackLanguageProblem = "%q is the project's language already"
+	notedFirstProblem    = "holds a note, which the first install takes none of: it is the way to install, and each after it says when to take it instead"
 	emptyGroupProblem    = "holds no skill"
 	noneOfProblem        = "%q is none of %s"
 	positiveProblem      = "%d is not above 0"
@@ -348,6 +349,26 @@ func inspectProjects(inspection *inspection, projects []Project) {
 			inspection.requireWebAddress(fmt.Sprintf("projects[%d].repo", index), readWebAddress(project.Repo))
 		}
 		inspectStack(inspection, index, project)
+		inspectInstalls(inspection, index, project.Install)
+		if project.Release != nil {
+			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.latest", index), project.Release.Latest)
+			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.changelog", index), project.Release.Changelog)
+		}
+	}
+}
+
+// inspectInstalls holds each way to install a project to a command, and to a note on when to take it on every way but
+// the first, which is the way to install and takes none.
+func inspectInstalls(inspection *inspection, projectIndex int, installs []Install) {
+	for installIndex, install := range installs {
+		place := fmt.Sprintf("projects[%d].install[%d]", projectIndex, installIndex)
+		inspection.require(place+".command", install.Command)
+		switch {
+		case installIndex == 0 && !blank(install.Note):
+			inspection.add(place+".note", notedFirstProblem)
+		case installIndex > 0:
+			inspection.require(place+".note", install.Note)
+		}
 	}
 }
 

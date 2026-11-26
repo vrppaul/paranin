@@ -1,9 +1,6 @@
 package document
 
-import (
-	"slices"
-	"time"
-)
+import "time"
 
 // Posts are the posts a group of the blog's list holds, the group a section of the list under its name (D25): what
 // a series' group is about, none for a year's or the posts in no series; how many it holds, in the site's words; and
@@ -61,14 +58,14 @@ type Filter struct {
 	WayOut  string
 }
 
-// ListedWords are the words a head lists under its title, as a face that writes no filter as a link writes them: what a
-// project's page says the project is made of, or the tags a post's or the list's head offers to filter by.
-func (head Head) ListedWords() []string {
-	names := slices.Clone(head.MadeOf)
+// Tags are the tags a post's or the list's head offers to filter by, as a face that writes no filter as a link writes
+// them.
+func (head Head) Tags() []string {
+	tags := make([]string, 0, len(head.Filters))
 	for _, filter := range head.Filters {
-		names = append(names, filter.Tag)
+		tags = append(tags, filter.Tag)
 	}
-	return names
+	return tags
 }
 
 // InItsSeriesGroup is whether a post stands in its own series' group, which names the series, so its part alone says

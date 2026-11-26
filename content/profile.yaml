@@ -104,6 +104,8 @@ experience:
     bullets:
       - Websites, logos and brand identities for small companies
 
+# A project's first install is the way to install it; each after it says in a note when to take it instead. Its
+# release names its newest release and its changelog, both or none; its licence is a word.
 projects:
   - slug: claude-review
     name: claude-review
@@ -113,12 +115,13 @@ projects:
       transcripts, and send structured feedback back to the agent.
     language: Python
     repo: https://github.com/vrppaul/claude-review
-    install: npx skills add vrppaul/claude-review -g -y
+    install:
+      - command: npx skills add vrppaul/claude-review -g -y
+    release:
+      latest: https://github.com/vrppaul/claude-review/releases/latest
+      changelog: https://github.com/vrppaul/claude-review/blob/HEAD/CHANGELOG.md
+    licence: MIT
     page: true
-    recording: ""
-    facts:
-      - {label: works in, value: "Claude Code, Cursor, Codex"}
-      - {label: modes, value: "diff, files, plan, transcript"}
     sections:
       - title: What it does
         paragraphs:
@@ -136,11 +139,15 @@ projects:
     language: Python
     stack: [tree-sitter, sentence-transformers, LanceDB]
     repo: https://github.com/vrppaul/semantic-code-mcp
-    install: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
+    install:
+      - command: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
+      - note: On Linux, the CPU-only torch build
+        command: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp
+    release:
+      latest: https://github.com/vrppaul/semantic-code-mcp/releases/latest
+      changelog: https://github.com/vrppaul/semantic-code-mcp/blob/HEAD/CHANGELOG.md
+    licence: MIT
     page: true
-    recording: ""
-    facts:
-      - {label: indexes, value: "Python, Rust, Markdown"}
     sections:
       - title: How it works
         paragraphs:
@@ -149,17 +156,15 @@ projects:
           - "Search combines semantic and keyword matching and boosts recent code. The first search indexes the project on its own."
           - "Indexing is incremental, by file modification time, and finds files with git ls-files. The embedding model loads on the first query."
           - "Three MCP tools: search_code, index_codebase and index_status."
-          - "On Linux, install the CPU-only torch build: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp"
   - slug: paranin
     name: paranin
     tagline: This résumé as an SSH app.
     description: The same profile, served over SSH as a terminal app. Go, Charm Wish and Bubble Tea.
     language: Go
     repo: ""
-    install: ssh paran.in
+    install:
+      - command: ssh paran.in
     page: false
-    recording: ""
-    facts: []
     sections: []
   - slug: water-tracker
     name: water-tracker
@@ -167,10 +172,8 @@ projects:
     description: ESP32 firmware reads a load cell; a Raspberry Pi server with PostgreSQL answers how much water you drank today.
     language: C++ and Python
     repo: ""
-    install: ""
+    install: []
     page: false
-    recording: ""
-    facts: []
     sections: []
 
 # The groups skills are shown in, and the skills in each, in this order

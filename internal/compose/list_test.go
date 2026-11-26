@@ -146,7 +146,7 @@ func TestTheListsHeadNamesTheTagsOfTheListedPosts(test *testing.T) {
 	pages := []document.PageKind{document.PageBlog, document.PageBlogSeries}
 	for index, list := range SiteOf(Prepare(snapshot), publicOnTheDay()).Own.Lists {
 		head := list.Head
-		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.ListedWords(), want) || document.PlainText(head.Title) != snapshot.Own.Words.Text(content.WordBlog) ||
+		if head.Page.Kind != pages[index] || !reflect.DeepEqual(head.Tags(), want) || document.PlainText(head.Title) != snapshot.Own.Words.Text(content.WordBlog) ||
 			document.PlainText(head.Lead) != "What the writer reads, and how." || document.PlainText(head.Description) != "What the writer reads, and how." {
 			test.Errorf("the list's head = %+v, want the page of kind %d, the tags %q and the blog's name and line", head, pages[index], want)
 		}
@@ -204,7 +204,7 @@ func TestTheListIsFilteredByEachTag(test *testing.T) {
 	for index, testCase := range cases {
 		test.Run(testCase.subtitle, func(test *testing.T) {
 			head := filtered[index].Head
-			if head.Page != testCase.page || document.PlainText(head.Subtitle) != testCase.subtitle || !reflect.DeepEqual(head.ListedWords(), tags) ||
+			if head.Page != testCase.page || document.PlainText(head.Subtitle) != testCase.subtitle || !reflect.DeepEqual(head.Tags(), tags) ||
 				document.PlainText(head.Title) != "blog" {
 				test.Errorf("the filtered list's head = %+v, want the page %+v, the subtitle %q and the tags %q", head, testCase.page, testCase.subtitle, tags)
 			}

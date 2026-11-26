@@ -22,7 +22,7 @@ const (
 	valueOffset = 1
 )
 
-// lineFeed is the one control character a value may hold, which a block of lines, as a recording, is written with.
+// lineFeed is the one control character a value may hold, which a value of several lines is written with.
 // A tab is refused: how wide it stands hangs on the terminal, so no face could lay it out.
 const lineFeed = '\n'
 

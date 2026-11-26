@@ -12,11 +12,11 @@ func Phrases(document Document) []string {
 	phrases := spanPhrases(nil, head.Title)
 	phrases = spanPhrases(phrases, head.Subtitle)
 	phrases = textPhrase(phrases, head.Place)
-	for _, listed := range head.ListedWords() {
-		phrases = textPhrase(phrases, listed)
+	for _, tag := range head.Tags() {
+		phrases = textPhrase(phrases, tag)
 	}
 	phrases = spanPhrases(phrases, head.Lead)
-	phrases = factPhrases(phrases, head.Repository.Facts())
+	phrases = projectPhrases(phrases, head.Project)
 	if older, isOlder := head.Version.(VersionOlder); isOlder {
 		phrases = textPhrase(textPhrase(phrases, strings.TrimSpace(older.NewerWords.Before)), strings.TrimSpace(older.NewerWords.After))
 	}
@@ -93,6 +93,22 @@ func rowPhrases(phrases []string, rows []Row) []string {
 		}
 	}
 	return phrases
+}
+
+// projectPhrases are what a project's head says of it: where its code lives, each way to install it, its note and
+// its command, and each fact that tells about it; not the site's words over the repository and the first install,
+// which a face may leave out where the place they stand in says it.
+func projectPhrases(phrases []string, project *Project) []string {
+	if project == nil {
+		return phrases
+	}
+	if project.Repository != nil {
+		phrases = textPhrase(phrases, project.Repository.Address.URL)
+	}
+	for _, install := range project.Installs {
+		phrases = textPhrase(spanPhrases(phrases, install.Note), install.Command)
+	}
+	return factPhrases(phrases, project.About)
 }
 
 func factPhrases(phrases []string, facts []Fact) []string {

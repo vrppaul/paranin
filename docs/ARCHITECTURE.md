@@ -119,7 +119,8 @@ but our own (`script-src 'self'`).
 (D8), the store, one document model every face draws (D19), and the layers (D20). The document's parts below
 are the author's, on Pavel's leave to choose. [FOUNDATION](FOUNDATION.md) §5.2. Amended 2026-11-06: the head
 gains a greeting and the title of its opening, for the TUI Pavel chose to redo. Amended 2026-11-07, on Pavel's
-choice for a project's page in the TUI: the head gains what a project is made of and where its code lives.
+choice for a project's page in the TUI, and 2026-11-26 with the page he chose for a project: the head gains a project's
+part, what gets the project and what tells about it.
 Amended 2026-11-07, on Pavel's choice for the TUI's :Lazy: a skill carries its months beside how long.
 Amended 2026-11-20, on Pavel's choice that each tab is a page of its own, as in the TUI: a page of the site may
 name one of its tabs, shown alone. Amended 2026-11-22, with the posts' loader: `content` reads a post once.
@@ -274,11 +275,15 @@ and web routes.
 - **A document is a head and its blocks.** The head holds the page it is,
   where it is one; the language it is written in; its title, a subtitle,
   a place and a lead (the résumé's are the name, the title, where the
-  author lives, the headline); on a project's page what it is made of,
-  the language it is written in and then its stack, as the profile lists
-  them; a description for the page's metadata; and on a project's page
-  where its code lives, a repository typed as its address and the site's
-  word for it, since every face shows it first; on a post's page its
+  author lives, the headline); a description for the page's metadata; on
+  a project's page its project part (amended 2026-11-26, the owner's
+  word): what gets the project, a repository typed as its address and the
+  site's word for it, and each way to install it, the first under the
+  site's word and each later one under a note on when to take it; then
+  what tells about it, facts under the site's words, each where the
+  profile gives it: its stack, the language it is written in first, its
+  releases, a link to the newest and one to their history, and its
+  licence; on a post's page its
   number, its tags as filters of the list, its description as its lead, and the version read, a
   closed set (amended 2026-11-23): out, by when it came out, which each
   face writes its own way, or a draft, by the site's word for one, which a
@@ -332,16 +337,18 @@ and web routes.
   owner's word). `document.TabsOf` parts a document into its tabs, the
   opening and a tab for each section left, the TUI's; `SlugOf` names
   each, and the ids of the page's sections (amended 2026-11-20, the
-  owner's word). Each section of the résumé and of a project's page after
-  the opening stands under its title, in a smaller block font where the
-  page has room for it, so a search finds a section's title on its page
-  only where it reads as text (amended 2026-11-22, the owner's word).
-  A project's page opens as glow draws its README (amended 2026-11-07,
-  with the look the owner chose): its name in that smaller font where the
-  page has room for it, so a search finds the name on its page only where
-  it reads as text, and its repository by its form, the owner and name its
-  address's path gives, a link to it, without its label; the address is
-  written out only where its path gives no owner and name.
+  owner's word). Each section of the résumé after the opening stands
+  under its title, in a smaller block font where the page has room for
+  it, so a search finds a section's title on its page only where it reads
+  as text (amended 2026-11-22, the owner's word). A project's page opens
+  as the page's head stands, in one column (amended 2026-11-26, with the
+  look the owner chose): its name in that smaller font where the page has
+  room for it, so a search finds the name on its page only where it reads
+  as text; its tagline and description; its repository by its form, the
+  owner and name its address's path gives, a link to it, without its
+  label, the address written out only where its path gives no owner and
+  name; each way to install it, a command in a box under its label; then
+  the facts that tell about it.
 - **The blocks** are a closed set (`//sumtype:decl`), and every face switches
   over all of them (gochecksumtype), so a new kind reaches every face:
   - the résumé's: a section (a title, an anchor and its blocks), a
@@ -656,8 +663,8 @@ and web routes.
   the pages once for it and again for the hosts. The kinds
   of page are `document`'s type; `routes` builds on `document` and writes
   a target's address in each format (`/p/claude-review`,
-  `/p/claude-review.md`, `/p/claude-review/what-it-does.md`,
-  `/experience`, `/blog/<slug>#<heading>`), so the markdown face
+  `/p/claude-review.md`, `/experience.md`, `/experience`,
+  `/blog/<slug>#<heading>`), so the markdown face
   links to markdown and the TUI can open the page in a buffer. A tab is
   named by its title (`document.SlugOf`).
 - **The islands' text is a document's too.** The extras of the TUI and the

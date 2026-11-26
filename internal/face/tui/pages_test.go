@@ -55,13 +55,23 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 	}
 }
 
-// A project's head says what the project is made of as the page's head writes it: its language, then what it is built
-// with, words joined by the place mark.
-func TestAProjectsHeadNamesWhatTheProjectIsMadeOf(test *testing.T) {
-	const want = "Lua · Penlight · LPeg"
-	page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool")))
-	if !strings.Contains(page, want) {
-		test.Errorf("the project's page =\n%s\nwant %q", page, want)
+// A project's head stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
+// and description; what gets it, its repository and each way to install it, a later one under its note; then what
+// tells about it, its stack, its releases and its licence.
+func TestAProjectsHeadStandsInThePagesOrder(test *testing.T) {
+	inOrder := []string{
+		"Tidies files.", "A tool that tidies files.", "mira / tidy",
+		"go install example.test/tidy@latest", "On a machine with no Go", "curl -fsSL https://example.test/tidy.sh | sh",
+		"Lua · Penlight · LPeg", "latest · changelog", "MIT",
+	}
+	page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), "e tidy-tool")))
+	rest := page
+	for _, want := range inOrder {
+		_, after, found := strings.Cut(rest, want)
+		if !found {
+			test.Fatalf("the project's page =\n%s\nwant %q after what stands before it, in the order %q", page, want, inOrder)
+		}
+		rest = after
 	}
 }
 
@@ -225,8 +235,8 @@ func TestTabGoesRoundTheProjectsPagesInTheProfilesOrder(test *testing.T) {
 // after tidy-tool in the profile though its slug sorts before it.
 func twoPagesModel(test *testing.T) Model {
 	tame := content.Project{
-		Slug: "tame-tool", Name: "tame-tool", Tagline: "", Description: "", Language: "", Stack: nil, Repo: "", Install: "",
-		Recording: "", Page: true, Facts: nil, Sections: nil,
+		Slug: "tame-tool", Name: "tame-tool", Tagline: "", Description: "", Language: "", Stack: nil, Repo: "", Install: nil,
+		Release: nil, Licence: "", Page: true, Sections: nil,
 	}
 	snapshot := *fixtures.LoadedContent(test)
 	snapshot.Profile.Projects = slices.Concat(snapshot.Profile.Projects, []content.Project{tame})

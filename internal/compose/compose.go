@@ -95,13 +95,31 @@ func projectsWithPages(projects []content.Project) []content.Project {
 // Pages).
 func Resume(snapshot *content.Snapshot, feeds []document.Link, latest *document.LatestPosts) document.Document {
 	profile, words := snapshot.Profile, snapshot.Own.Words
-	experience := experienceSection(profile.Experience, profile.SkillGroups, words)
-	projects := projectsSection(profile.Projects, words)
-	resume := document.PageOf(document.PageResume)
-	tabs := workTabs{experience: document.TabPage(resume, experience.Title), projects: document.TabPage(resume, projects.Title)}
+	titles := resumeTitlesOf(words)
 	return document.Document{
-		Head:   resumeHead(profile, words, tabs, feeds, latest),
-		Blocks: []document.Block{aboutSection(profile, words), experience, projects},
+		Head: resumeHead(profile, words, workTabsOf(titles), feeds, latest),
+		Blocks: []document.Block{
+			aboutSection(profile, words, titles.about),
+			experienceSection(profile.Experience, profile.SkillGroups, words, titles.experience),
+			projectsSection(profile.Projects, words, titles.projects),
+		},
+	}
+}
+
+// resumeTitles are the titles of the résumé's three sections, each the site's word for it: the titles they stand under
+// and their tabs are named by.
+type resumeTitles struct {
+	about      []document.Span
+	experience []document.Span
+	projects   []document.Span
+}
+
+// resumeTitlesOf are the titles of the résumé's sections in the site's words.
+func resumeTitlesOf(words content.Words) resumeTitles {
+	return resumeTitles{
+		about:      textSpans(words.Text(content.WordAbout)),
+		experience: textSpans(words.Text(content.WordExperience)),
+		projects:   textSpans(words.Text(content.WordProjects)),
 	}
 }
 
@@ -110,6 +128,13 @@ func Resume(snapshot *content.Snapshot, feeds []document.Link, latest *document.
 type workTabs struct {
 	experience document.Page
 	projects   document.Page
+}
+
+// workTabsOf are the résumé's tabs that hold the author's two kinds of work, each the page of the tab its section's
+// title names, as document.TabsOf names it.
+func workTabsOf(titles resumeTitles) workTabs {
+	resume := document.PageOf(document.PageResume)
+	return workTabs{experience: document.TabPage(resume, titles.experience), projects: document.TabPage(resume, titles.projects)}
 }
 
 // headlineWords are words of the headline that name a kind of work, and the tab they lead to.
@@ -138,11 +163,11 @@ func headlineSpans(person content.Person, tabs workTabs) []document.Span {
 	return append(spans, markedSpans(rest)...)
 }
 
-// aboutSection is the section about the author: the summary, the facts, then the ways to reach them, which the first
-// screen places as each face chooses.
-func aboutSection(profile content.Profile, words content.Words) document.Section {
+// aboutSection is the section about the author under its title: the summary, the facts, then the ways to reach them,
+// which the first screen places as each face chooses.
+func aboutSection(profile content.Profile, words content.Words, title []document.Span) document.Section {
 	return document.Section{
-		Title: textSpans(words.Text(content.WordAbout)),
+		Title: title,
 		Name:  "",
 		Blocks: []document.Block{
 			document.Paragraph{Spans: markedSpans(profile.Summary)},
@@ -158,7 +183,7 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 // listed by the title and subtitle their own heads open with; the blog's, as blogListings has them.
 func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	words := snapshot.Own.Words
-	resume := Resume(snapshot, nil, nil).Head
+	resume := resumeHead(snapshot.Profile, words, workTabsOf(resumeTitlesOf(words)), nil, nil)
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
@@ -241,9 +266,9 @@ func ways(person content.Person, site content.Site, words content.Words) []docum
 	return append(list, document.Fact{Label: words.Text(content.WordSSH), Value: []document.Span{document.Code{Text: sshCommand(site.SSHHost, anyUser)}}})
 }
 
-// experienceSection is the author's work: its head, where the profile writes its line or puts any skill forward, each
-// by its name and how long it was used; then each role, with the technologies it worked with.
-func experienceSection(experience content.Experience, groups []content.SkillGroup, words content.Words) document.Section {
+// experienceSection is the author's work under its title: its head, where the profile writes its line or puts any skill
+// forward, each by its name and how long it was used; then each role, with the technologies it worked with.
+func experienceSection(experience content.Experience, groups []content.SkillGroup, words content.Words, title []document.Span) document.Section {
 	blocks := make([]document.Block, 0, len(experience.Roles)+1)
 	if experience.Line != "" || len(experience.PutForward) > 0 {
 		blocks = append(blocks, document.ExperienceHead{Line: markedSpans(experience.Line), Technologies: putForward(experience.PutForward, groups, words)})
@@ -258,7 +283,7 @@ func experienceSection(experience content.Experience, groups []content.SkillGrou
 			Description:  paragraphs(role.Description),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: blocks}
+	return document.Section{Title: title, Name: "", Blocks: blocks}
 }
 
 // technologiesOf are the names of the skills whose sources name a company, in the profile's order of groups and
@@ -302,7 +327,8 @@ func paragraphs(texts []string) []document.Paragraph {
 	return written
 }
 
-func projectsSection(projects []content.Project, words content.Words) document.Section {
+// projectsSection is the author's projects under its title, each a card.
+func projectsSection(projects []content.Project, words content.Words, title []document.Span) document.Section {
 	cards := make([]document.Block, 0, len(projects))
 	for _, project := range projects {
 		cards = append(cards, document.Card{
@@ -314,7 +340,7 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 			Page:     projectPage(project),
 		})
 	}
-	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
+	return document.Section{Title: title, Name: "", Blocks: cards}
 }
 
 // projectDocument is a project's own page, one of the profile's: its head, then its story's sections, then its details,
@@ -390,7 +416,7 @@ func projectHead(project content.Project, profile content.Profile, words content
 // with a page, the way to them all on the résumé's tab of them, and the author's mail.
 func projectPart(project content.Project, profile content.Profile, words content.Words) *document.Project {
 	install, alternatives := projectInstall(project.Install)
-	projectsTab := document.TabPage(document.PageOf(document.PageResume), textSpans(words.Text(content.WordProjects)))
+	projectsTab := workTabsOf(resumeTitlesOf(words)).projects
 	return &document.Project{
 		Repository:   projectRepository(project, words),
 		Install:      install,

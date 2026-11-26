@@ -59,6 +59,7 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},
 		{name: "a group with no skills", original: "    skills:\n      - {name: Docker, duration: side, sources: [Northwind], learning: true}\n", replacement: "    skills: []\n", want: "profile.yaml: skill_groups[1].skills holds no skill"},
 		{name: "a skill with no name", original: "name: Docker", replacement: `name: ""`, want: "profile.yaml: skill_groups[1].skills[0].name is empty"},
+		{name: "a skill another group names", original: "name: Docker", replacement: "name: Go", want: `profile.yaml: skill_groups[1].skills[0].name "Go" names another skill too`},
 		{name: "a duration of no span", original: "duration: 3y", replacement: "duration: three years", want: `profile.yaml: skill_groups[0].skills[1].duration "three years" is no span, as 1y 7m, nor side, learning or a [gap]`},
 		{name: "a span of months before years", original: "duration: 3y", replacement: "duration: 7m 1y", want: `profile.yaml: skill_groups[0].skills[1].duration "7m 1y" is no span, as 1y 7m, nor side, learning or a [gap]`},
 		{name: "a span of no months", original: "duration: 3y", replacement: "duration: 0m", want: `profile.yaml: skill_groups[0].skills[1].duration "0m" is no span, as 1y 7m, nor side, learning or a [gap]`},

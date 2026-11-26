@@ -34,6 +34,7 @@ const (
 	numberNameProblem    = "%q is digits alone, which an address would read as a number"
 	sharedSlugProblem    = "%q names another project too"
 	sharedGroupProblem   = "%q names another group too"
+	sharedSkillProblem   = "%q names another skill too"
 	stackLanguageProblem = "%q is the project's language already"
 	emptyGroupProblem    = "holds no skill"
 	unknownSkillProblem  = "%q is no skill of a group"
@@ -380,22 +381,27 @@ func inspectStack(inspection *inspection, projectIndex int, project Project) {
 	}
 }
 
-// inspectSkills holds every group to a title of its own and to a skill at least, and every skill as inspectSkill
-// does.
+// inspectSkills holds every group to a title of its own and to a skill at least, every skill to a name no skill of any
+// group has before it, since the experience and a role read skills by name, and every skill as inspectSkill does.
 func inspectSkills(inspection *inspection, groups []SkillGroup) {
-	seen := map[string]bool{}
+	seenTitles, seenNames := map[string]bool{}, map[string]bool{}
 	for groupIndex, group := range groups {
 		title := fmt.Sprintf("skill_groups[%d].title", groupIndex)
 		inspection.require(title, group.Title)
-		if seen[group.Title] {
+		if seenTitles[group.Title] {
 			inspection.add(title, sharedGroupProblem, group.Title)
 		}
-		seen[group.Title] = true
+		seenTitles[group.Title] = true
 		if len(group.Skills) == 0 {
 			inspection.add(fmt.Sprintf("skill_groups[%d].skills", groupIndex), emptyGroupProblem)
 		}
 		for skillIndex, skill := range group.Skills {
-			inspectSkill(inspection, fmt.Sprintf("skill_groups[%d].skills[%d]", groupIndex, skillIndex), skill)
+			place := fmt.Sprintf("skill_groups[%d].skills[%d]", groupIndex, skillIndex)
+			if seenNames[skill.Name] {
+				inspection.add(place+".name", sharedSkillProblem, skill.Name)
+			}
+			seenNames[skill.Name] = true
+			inspectSkill(inspection, place, skill)
 		}
 	}
 }

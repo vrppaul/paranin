@@ -46,6 +46,7 @@ void Promise.all([import("../controllers/commandline"), import("../controllers/s
     ),
 );
 void import("../controllers/copy").then(({ startCopying }) => startCopying(document, navigator.clipboard, TIMES.toast));
+void import("../controllers/clip").then(({ startClips }) => startClips(document));
 // the components the page's islands show, each one's code loading beside the islands', not after them
 const shownComponents = islandNames(document);
 if (shownComponents.length > 0) {

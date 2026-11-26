@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/vrppaul/paranin/internal/content"
@@ -11,82 +12,95 @@ import (
 // no mark is read; a result between two highlight marks (==40%==) is a highlight, which may hold code and gaps; and a
 // gap ([N]) a gap. A mark never closed stays text.
 func markedSpans(text string) []document.Span {
-	spans := []document.Span{}
-	rest := text
+	marked := markedText{text: text, code: codeRunsOf(text)}
+	spans, cursor := []document.Span{}, 0
 	for {
-		opening := proseIndex(rest, content.HighlightMark)
+		opening := marked.proseIndex(content.HighlightMark, cursor)
 		if opening < 0 {
 			break
 		}
 		insideStart := opening + len(content.HighlightMark)
-		insideLength := proseIndex(rest[insideStart:], content.HighlightMark)
-		if insideLength <= 0 {
+		closing := marked.proseIndex(content.HighlightMark, insideStart)
+		if closing <= insideStart {
 			break
 		}
-		spans = append(spans, codeSpans(rest[:opening])...)
-		spans = append(spans, document.Highlight{Spans: codeSpans(rest[insideStart : insideStart+insideLength])})
-		rest = rest[insideStart+insideLength+len(content.HighlightMark):]
+		spans = append(spans, marked.codeSpans(cursor, opening)...)
+		spans = append(spans, document.Highlight{Spans: marked.codeSpans(insideStart, closing)})
+		cursor = closing + len(content.HighlightMark)
 	}
-	return append(spans, codeSpans(rest)...)
+	return append(spans, marked.codeSpans(cursor, len(text))...)
 }
 
-// How many code marks hold a run of code, one at each side
-const codeMarksRound = 2
-
-// markedPiece is a run of a text of the profile between its code marks: code, read as written, or prose, whose other
-// marks are read.
-type markedPiece struct {
+// markedText is a text of the profile with its runs of code, read once, so its other marks are read round them.
+type markedText struct {
 	text string
-	code bool
+	code []codeRun
 }
 
-// codePieces parts a text at its code: a code mark opens a run of code and the next one closes it, with something
-// between them; a code mark with none after it is prose.
-func codePieces(text string) []markedPiece {
-	pieces := []markedPiece{}
-	rest := text
+// codeRun is a run of code in a text, by where its opening code mark and its closing one stand.
+type codeRun struct {
+	opening int
+	closing int
+}
+
+// end is where the text after a run of code starts, its closing mark passed.
+//
+//wrapper:names where the prose after code starts, which both reading the highlights and the spans need
+func (run codeRun) end() int {
+	return run.closing + len(content.CodeMark)
+}
+
+// codeRunsOf are a text's runs of code: a code mark opens one and the next closes it, with something between them; a
+// code mark with none after it is prose.
+func codeRunsOf(text string) []codeRun {
+	runs, cursor := []codeRun{}, 0
 	for {
-		opening := strings.Index(rest, content.CodeMark)
+		opening := strings.Index(text[cursor:], content.CodeMark)
 		if opening < 0 {
-			break
+			return runs
 		}
+		opening += cursor
 		insideStart := opening + len(content.CodeMark)
-		insideLength := strings.Index(rest[insideStart:], content.CodeMark)
-		if insideLength <= 0 {
-			break
+		closing := strings.Index(text[insideStart:], content.CodeMark)
+		if closing <= 0 {
+			return runs
 		}
-		pieces = append(pieces, markedPiece{text: rest[:opening], code: false}, markedPiece{text: rest[insideStart : insideStart+insideLength], code: true})
-		rest = rest[insideStart+insideLength+len(content.CodeMark):]
+		run := codeRun{opening: opening, closing: insideStart + closing}
+		runs, cursor = append(runs, run), run.end()
 	}
-	return append(pieces, markedPiece{text: rest, code: false})
 }
 
-// proseIndex is where a mark first stands in a text outside its code; -1 where it stands nowhere outside it.
-func proseIndex(text, mark string) int {
-	pieceStart := 0
-	for _, piece := range codePieces(text) {
-		if at := strings.Index(piece.text, mark); !piece.code && at >= 0 {
-			return pieceStart + at
+// proseIndex is where a mark first stands at or after a place of the text outside its code; -1 where it stands nowhere
+// outside it.
+func (marked markedText) proseIndex(mark string, from int) int {
+	cursor := from
+	for {
+		found := strings.Index(marked.text[cursor:], mark)
+		if found < 0 {
+			return -1
 		}
-		pieceStart += len(piece.text)
-		if piece.code {
-			pieceStart += codeMarksRound * len(content.CodeMark)
+		found += cursor
+		holding := slices.IndexFunc(marked.code, func(run codeRun) bool { return run.opening <= found && found < run.end() })
+		if holding < 0 {
+			return found
 		}
+		cursor = marked.code[holding].end()
 	}
-	return -1
 }
 
-// codeSpans reads a text with no highlight into code, as written, and the prose round it, read for gaps.
-func codeSpans(text string) []document.Span {
-	spans := []document.Span{}
-	for _, piece := range codePieces(text) {
-		if piece.code {
-			spans = append(spans, document.Code{Text: piece.text})
-		} else {
-			spans = append(spans, gapSpans(piece.text)...)
+// codeSpans reads the text from one place to another, which no highlight mark stands between, into code, as written,
+// and the prose round it, read for gaps.
+func (marked markedText) codeSpans(from, to int) []document.Span {
+	spans, proseStart := []document.Span{}, from
+	for _, run := range marked.code {
+		if run.opening < from || run.opening >= to {
+			continue
 		}
+		spans = append(spans, gapSpans(marked.text[proseStart:run.opening])...)
+		spans = append(spans, document.Code{Text: marked.text[run.opening+len(content.CodeMark) : run.closing]})
+		proseStart = run.end()
 	}
-	return spans
+	return append(spans, gapSpans(marked.text[proseStart:to])...)
 }
 
 // gapSpans reads prose with no highlight and no code into text and gaps. A gap opens with a bracket and closes with

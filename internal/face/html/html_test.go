@@ -670,7 +670,8 @@ func TestAGapAloneIsLeftOutOfThePage(test *testing.T) {
 }
 
 // A résumé whose brief would hold nothing but gaps keeps its tabs as every face parts them: it opens on its first
-// screen, which briefs the reader with no fact, and the foot line names the tabs the site serves.
+// screen, which briefs the reader with no fact and draws no empty list of them, and the foot line names the tabs the
+// site serves.
 func TestAnOpeningOfGapsStaysTheFirstScreen(test *testing.T) {
 	about := document.Section{
 		Title:  []document.Span{document.Text{Text: "About"}},
@@ -687,8 +688,10 @@ func TestAnOpeningOfGapsStaysTheFirstScreen(test *testing.T) {
 			test.Errorf("the page %q holds no %q", page, want)
 		}
 	}
-	if strings.Contains(page, "[later]") {
-		test.Errorf("the page %q holds the gap %q", page, "[later]")
+	for _, unwanted := range []string{"[later]", `<dl class="facts">`} {
+		if strings.Contains(page, unwanted) {
+			test.Errorf("the page %q holds %q", page, unwanted)
+		}
 	}
 }
 

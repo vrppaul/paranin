@@ -219,6 +219,8 @@ func anchorsAmong(blocks []document.Block) []string {
 			anchors = append(anchors, anchorsAmong(typed.Blocks)...)
 		case document.Widget:
 			anchors = append(anchors, typed.Live.Name)
+		case document.Reference:
+			anchors = append(anchors, anchorsAmong(typed.Blocks())...)
 		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause, document.Figure,
 			document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side, document.Card, document.Contents,
 			document.Checks, document.Skills, document.Posts:

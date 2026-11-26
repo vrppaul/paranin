@@ -1628,10 +1628,24 @@ a.tile-title:focus-visible {
   padding-top: var(--row-2);
 }
 
-.project-sections > section {
+:is(.project-sections, .project-reference) > section {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
+}
+
+/* the details a user looks up, after the story: under a quiet rule across the project's grid, each a section as the
+ * story's, two rows apart, its title in the heading's style, the page's own */
+.project-reference {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  padding-top: var(--row-2);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.project-reference > * + * {
+  margin-top: var(--row-2);
 }
 
 .section-words {
@@ -1653,8 +1667,11 @@ a.tile-title:focus-visible {
   align-self: start;
 }
 
-.project-sections > section > h2 {
+:is(.project-sections, .project-reference) > section > h2 {
   grid-column: 1 / -1;
+}
+
+.project-sections > section > h2 {
   font-size: var(--type-section-title-size);
   font-weight: var(--type-section-title-weight);
   line-height: var(--type-section-title-line);
@@ -2064,7 +2081,7 @@ a.tag[aria-current]:hover {
  * Outline's mark of it and a group's sticking name stand, so the name a widget sets into its edge shows whole, and a
  * project's section's title its focus ring */
 .post .article :is(h2, h3, h4, h5, h6),
-.project-sections > section > h2,
+.project-sections section > h2,
 .widget,
 .group {
   scroll-margin-top: var(--row);

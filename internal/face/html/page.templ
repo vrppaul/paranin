@@ -675,6 +675,16 @@ templ (writer PageWriter) sectionBody(blocks []document.Block, depth int) {
 	}
 }
 
+// reference is the details a user of a project looks up (DESIGN.md, ProjectSection), under a quiet rule across the
+// project's grid, each a section.
+templ (writer PageWriter) reference(reference document.Reference, depth int) {
+	<div class="project-reference">
+		for _, section := range reference.Sections {
+			@writer.section(section, depth)
+		}
+	</div>
+}
+
 // side is what adds to a section, beside its words (DESIGN.md, ProjectSection): its blocks, held in sight while the
 // words scroll past.
 templ (writer PageWriter) side(side document.Side, depth int) {

@@ -230,20 +230,26 @@ func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
 	}
 }
 
-// Each section of a project's page is named by its title, as a post's headings are, so a link reaches it; two of one
-// title are named apart.
-func TestEachSectionOfAProjectIsNamedByItsTitle(test *testing.T) {
+// A project's page holds its story's sections, then its details after them, each section named by its title, as a
+// post's headings are, so a link reaches it; two of one title are named apart, a detail and a section of the story too.
+func TestAProjectsDetailsFollowItsStoryEachNamedApart(test *testing.T) {
 	snapshot := *fixtures.LoadedContent(test)
 	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
 	tidy := &snapshot.Profile.Projects[slices.IndexFunc(snapshot.Profile.Projects, func(project content.Project) bool { return project.Slug == "tidy-tool" })]
-	tidy.Sections = append(slices.Clone(tidy.Sections), content.Section{Title: "Why", Paragraphs: []string{"Files were untidy again."}, Points: nil})
+	again := content.Section{Title: "Why", Paragraphs: []string{"Files were untidy again."}, Points: nil, Links: nil}
+	tidy.Sections, tidy.Details = append(slices.Clone(tidy.Sections), again), append(slices.Clone(tidy.Details), again)
 	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(&snapshot), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	got := []string{}
-	for _, block := range project.Blocks {
-		got = append(got, as[document.Section](test, block).Name)
+	last := len(project.Blocks) - 1
+	story := []string{}
+	for _, block := range project.Blocks[:last] {
+		story = append(story, as[document.Section](test, block).Name)
 	}
-	if want := []string{"why", "how-it-tidies", "why-2"}; !slices.Equal(got, want) {
-		test.Errorf("the sections' names = %q, want %q", got, want)
+	details := []string{}
+	for _, section := range as[document.Reference](test, project.Blocks[last]).Sections {
+		details = append(details, section.Name)
+	}
+	if wantStory, wantDetails := []string{"why", "how-it-tidies", "why-2"}, []string{"flags", "why-3"}; !slices.Equal(story, wantStory) || !slices.Equal(details, wantDetails) {
+		test.Errorf("the story's sections = %q and the details = %q, want %q and %q", story, details, wantStory, wantDetails)
 	}
 }
 

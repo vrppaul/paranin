@@ -46,6 +46,14 @@ func writtenBlock(block Block) (Block, bool) {
 	case Side:
 		typed.Blocks = WrittenBlocks(typed.Blocks)
 		return typed, len(typed.Blocks) > 0
+	case Reference:
+		sections := make([]Section, 0, len(typed.Sections))
+		for _, section := range typed.Sections {
+			section.Blocks = WrittenBlocks(section.Blocks)
+			sections = append(sections, section)
+		}
+		typed.Sections = sections
+		return typed, true
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)
 		return typed, true

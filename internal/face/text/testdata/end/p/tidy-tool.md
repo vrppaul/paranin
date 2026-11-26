@@ -28,6 +28,14 @@ Files were untidy.
 - [source](https://github.test/mira/tidy): where the code lives
 - [manual](https://docs.example.test/tidy): every flag it takes
 
+***
+
+## Flags
+
+`--check` reports what it would tidy and changes nothing.
+
+- [flags](https://docs.example.test/tidy/flags): each flag in full
+
 ## Other projects
 
 [all projects](https://example.test/projects.md)

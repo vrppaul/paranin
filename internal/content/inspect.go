@@ -347,7 +347,8 @@ func inspectProjects(inspection *inspection, projects []Project) {
 		}
 		inspectStack(inspection, index, project)
 		inspectInstall(inspection, index, project.Install)
-		inspectSections(inspection, index, project.Sections)
+		inspectSections(inspection, fmt.Sprintf("projects[%d].sections", index), project.Sections)
+		inspectSections(inspection, fmt.Sprintf("projects[%d].details", index), project.Details)
 		if project.Release != nil {
 			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.latest", index), project.Release.Latest)
 			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.changelog", index), project.Release.Changelog)
@@ -355,11 +356,11 @@ func inspectProjects(inspection *inspection, projects []Project) {
 	}
 }
 
-// inspectSections holds each section of a project's page to a title and to some words, a paragraph or a point, and
-// each of its links to a name, an absolute web address and a line.
-func inspectSections(inspection *inspection, projectIndex int, sections []Section) {
+// inspectSections holds each section of a project's page, of its story or of its details, at a field, to a title and
+// to some words, a paragraph or a point, and each of its links to a name, an absolute web address and a line.
+func inspectSections(inspection *inspection, field string, sections []Section) {
 	for sectionIndex, section := range sections {
-		place := fmt.Sprintf("projects[%d].sections[%d]", projectIndex, sectionIndex)
+		place := fmt.Sprintf("%s[%d]", field, sectionIndex)
 		inspection.require(place+".title", section.Title)
 		if len(section.Paragraphs) == 0 && len(section.Points) == 0 {
 			inspection.add(place, wordlessSectionProblem)

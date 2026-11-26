@@ -217,6 +217,9 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return appendChunk(chunks, writer.points(typed.List))
 	case document.Side:
 		return writer.blocks(chunks, typed.Blocks, depth)
+	case document.Reference:
+		// the details set apart from the story by a thematic break, as a turn a post takes
+		return writer.blocks(appendChunk(chunks, breakMark), typed.Blocks(), depth)
 	case document.Card:
 		return writer.card(chunks, typed, depth)
 	case document.Contents:

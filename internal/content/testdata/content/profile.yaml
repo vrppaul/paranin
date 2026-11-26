@@ -78,6 +78,12 @@ projects:
         links:
           - {name: source, url: https://github.test/mira/tidy, line: where the code lives}
           - {name: manual, url: https://docs.example.test/tidy, line: every flag it takes}
+    details:
+      - title: Flags
+        paragraphs:
+          - "`--check` reports what it would tidy and changes nothing."
+        links:
+          - {name: flags, url: https://docs.example.test/tidy/flags, line: each flag in full}
 
 skill_groups:
   - title: Languages

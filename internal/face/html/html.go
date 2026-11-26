@@ -475,6 +475,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		return writer.points(typed.List)
 	case document.Side:
 		return writer.side(typed, depth)
+	case document.Reference:
+		return writer.reference(typed, depth)
 	case document.Card:
 		return writer.card(typed, depth)
 	case document.Contents:

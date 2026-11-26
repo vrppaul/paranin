@@ -118,7 +118,7 @@ func WithTwoProjectPages(test *testing.T) *content.Snapshot {
 	const tameTool = "tame-tool"
 	tame := content.Project{
 		Slug: tameTool, Name: tameTool, Tagline: "Tames files.", Description: "", Language: "Go", Stack: nil, Repo: "",
-		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil,
+		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil, Details: nil,
 	}
 	snapshot := *LoadedContent(test)
 	snapshot.Profile.Projects = append(slices.Clone(snapshot.Profile.Projects), tame)

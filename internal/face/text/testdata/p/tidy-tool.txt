@@ -28,6 +28,13 @@ HOW IT TIDIES
        - source — where the code lives
        - manual — every flag it takes
 
+                                      *   *   *
+
+FLAGS
+       --check reports what it would tidy and changes nothing.
+
+       - flags — each flag in full
+
 CONTACT
        mira@example.test
 

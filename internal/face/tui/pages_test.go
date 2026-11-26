@@ -57,14 +57,15 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 // A project's page stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
 // and description; what gets it, its repository and each way to install it, a later one under its note; what tells
 // about it, its stack, its releases and its licence; its sections, each side under its section's words, its links by
-// their names and lines; then its end, the heading over the other projects
-// and the way to them all, each other project by its name, its tagline and its stack, and the author's mail.
+// their names and lines, then its details; then its end, the heading over the other projects and the way to them all,
+// each other project by its name, its tagline and its stack, and the author's mail.
 func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	inOrder := []string{
 		"Tidies files.", "A tool that tidies files.", "mira / tidy",
 		"go install example.test/tidy@latest", "On a machine with no Go", "curl -fsSL https://example.test/tidy.sh | sh",
 		"Lua · Penlight · LPeg", "latest · changelog", "MIT", "Why", "Files were untidy.",
 		"How it tidies", "tidy . reads each file once.", "Keeps the blank ones", "source", "where the code lives", "manual",
+		"Flags", "--check reports what it would tidy", "flags", "each flag in full",
 		"Other projects", "all projects", "tame-tool", "Tames files.", "Go", "mira@example.test",
 	}
 	page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(fixtures.WithTwoProjectPages(test), commonWidth, tallHeight), "e tidy-tool")))
@@ -78,22 +79,26 @@ func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	}
 }
 
-// A project's end, after its last section, opens with a quiet rule, as the page's, whether the project has others or
-// not.
-func TestAProjectsEndOpensWithARule(test *testing.T) {
+// A project's details open with a quiet rule after its story, and its end with one after its last detail, as the
+// page's, whether the project has others or not.
+func TestAProjectsDetailsAndEndOpenWithARule(test *testing.T) {
 	cases := []struct {
 		name    string
 		content *content.Snapshot
+		after   string
+		before  string
 	}{
-		{name: "a project with others", content: fixtures.WithTwoProjectPages(test)},
-		{name: "a project alone", content: fixtures.LoadedContent(test)},
+		{name: "the details", content: fixtures.LoadedContent(test), after: "every flag it takes", before: "Flags"},
+		{name: "the end of a project with others", content: fixtures.WithTwoProjectPages(test), after: "each flag in full", before: "Other projects"},
+		{name: "the end of a project alone", content: fixtures.LoadedContent(test), after: "each flag in full", before: "mira@example.test"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(testCase.content, commonWidth, tallHeight), "e tidy-tool")))
-			_, end, _ := strings.Cut(page, "Files were untidy.")
-			if !slices.ContainsFunc(strings.Split(end, "\n"), isRule) {
-				test.Errorf("the project's page =\n%s\nwant a rule after its last section", page)
+			_, rest, _ := strings.Cut(page, testCase.after)
+			between, _, _ := strings.Cut(rest, testCase.before)
+			if !slices.ContainsFunc(strings.Split(between, "\n"), isRule) {
+				test.Errorf("the project's page =\n%s\nwant a rule between %q and %q", page, testCase.after, testCase.before)
 			}
 		})
 	}

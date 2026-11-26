@@ -269,11 +269,19 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
-// projectDocument is a project's own page, one of the profile's: its head, then its sections.
+// projectDocument is a project's own page, one of the profile's: its head, then its story's sections, then its details,
+// where it has any, all named from one set of anchors, so no two share a name.
 func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
-	blocks, taken := make([]document.Block, 0, len(project.Sections)), anchors{}
+	blocks, taken := make([]document.Block, 0, len(project.Sections)+1), anchors{}
 	for _, section := range project.Sections {
 		blocks = append(blocks, projectSection(section, taken))
+	}
+	if len(project.Details) > 0 {
+		details := make([]document.Section, 0, len(project.Details))
+		for _, detail := range project.Details {
+			details = append(details, projectSection(detail, taken))
+		}
+		blocks = append(blocks, document.Reference{Sections: details})
 	}
 	return document.Document{Head: projectHead(project, profile, words), Blocks: blocks}
 }

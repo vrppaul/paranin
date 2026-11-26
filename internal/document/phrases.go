@@ -68,6 +68,8 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return pointPhrases(phrases, typed.List)
 	case Side:
 		return blockPhrases(phrases, typed.Blocks)
+	case Reference:
+		return blockPhrases(phrases, typed.Blocks())
 	case Card:
 		return cardPhrases(phrases, typed)
 	case Contents:

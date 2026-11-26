@@ -120,12 +120,13 @@ func checksIn(blocks []document.Block) []document.Check {
 		switch typed := block.(type) {
 		case document.Section:
 			checks = append(checks, checksIn(typed.Blocks)...)
+		case document.Reference:
+			checks = append(checks, checksIn(typed.Blocks())...)
 		case document.Checks:
 			checks = append(checks, typed.List...)
 		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause,
 			document.Figure, document.Widget, document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side,
-			document.Card,
-			document.Contents, document.Skills, document.Posts:
+			document.Card, document.Contents, document.Skills, document.Posts:
 		}
 	}
 	return checks

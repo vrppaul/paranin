@@ -81,12 +81,20 @@ type manualWriter struct {
 func Manual(composed document.Document, site routes.Site, own compose.ManualWords) string {
 	writer := manualWriter{site: site, own: own}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
-	others, sections := document.SectionsOf(composed.Blocks)
+	loose, sections := document.SectionsOf(composed.Blocks)
+	others, details := detailsApart(loose)
 	lines := []string{columns(title, own.Section, title)}
 	lines = append(lines, writer.name(composed.Head)...)
 	lines = append(lines, writer.description(composed.Head, others)...)
 	for _, section := range sections {
 		lines = append(lines, writer.pageSection(section)...)
+	}
+	for _, reference := range details {
+		// a project's details after its story, set apart by the mark of a turn a post takes, each a section of the page
+		lines = append(lines, "", pauseLine(sectionIndent))
+		for _, section := range reference.Sections {
+			lines = append(lines, writer.pageSection(section)...)
+		}
 	}
 	if project := composed.Head.Project; project != nil {
 		for _, section := range project.EndSections() {
@@ -96,6 +104,20 @@ func Manual(composed document.Document, site routes.Site, own compose.ManualWord
 	lines = append(lines, writer.notes(document.NotesOf(composed.Blocks))...)
 	lines = append(lines, "", columns(site.Host(), versionText(composed.Head), title))
 	return strings.Join(lines, lineEnd) + lineEnd
+}
+
+// detailsApart parts the blocks a page holds outside its sections into those its description holds and a project's
+// details, which follow its sections.
+func detailsApart(blocks []document.Block) ([]document.Block, []document.Reference) {
+	others, details := []document.Block{}, []document.Reference{}
+	for _, block := range blocks {
+		if reference, isReference := block.(document.Reference); isReference {
+			details = append(details, reference)
+		} else {
+			others = append(others, block)
+		}
+	}
+	return others, details
 }
 
 // pageName is what a page's manual is called: the site's own name for the résumé, its slug for a project's page and
@@ -225,6 +247,9 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.bullets(indent, typed.List)
 	case document.Side:
 		return trimBlank(writer.blocks(typed.Blocks, indent))
+	case document.Reference:
+		// the details set apart from the story by the mark of a turn a post takes
+		return slices.Concat(pause(indent), trimBlank(writer.blocks(typed.Blocks(), indent)))
 	case document.Card:
 		return writer.card(indent, typed)
 	case document.Contents:
@@ -451,11 +476,16 @@ func (writer manualWriter) quote(indent int, quote document.Quote) []string {
 	return lines
 }
 
-// pause writes a pause as the page draws it: the three stars in the middle of the text's column, from the indent to
-// the page's edge, a row of air above and below them.
+// pause writes a pause as the page draws it, its line with a row of air above and below it.
 func pause(indent int) []string {
+	return []string{"", pauseLine(indent), ""}
+}
+
+// pauseLine is the line of a pause: the three stars in the middle of the text's column, from the indent to the page's
+// edge.
+func pauseLine(indent int) string {
 	room := pageWidth - indent - textWidth(look.PauseMark)
-	return []string{"", strings.Repeat(space, indent+room/sides) + look.PauseMark, ""}
+	return strings.Repeat(space, indent+room/sides) + look.PauseMark
 }
 
 // standIn writes what stands for a picture or a widget, which a terminal shows neither of, each part from a line of its

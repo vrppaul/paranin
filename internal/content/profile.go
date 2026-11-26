@@ -80,7 +80,7 @@ type Role struct {
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of
 // its own gets one. Its stack is what it is built on, by name, after the language it is written in; its licence a
-// word, as SPDX names one.
+// word, as SPDX names one. Its page tells its story in its sections, then the details a user looks up.
 type Project struct {
 	Slug        string    `yaml:"slug"`
 	Name        string    `yaml:"name"`
@@ -94,6 +94,7 @@ type Project struct {
 	Licence     string    `yaml:"licence"`
 	Page        bool      `yaml:"page"`
 	Sections    []Section `yaml:"sections"`
+	Details     []Section `yaml:"details"`
 }
 
 // Install is how a project is installed: its command, and the other ways, each taken instead where its note says.

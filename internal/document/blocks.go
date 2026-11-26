@@ -222,6 +222,21 @@ type Points struct {
 	List []Point
 }
 
+// Reference is the details a user of a project looks up, sections of its page after its story, which a face sets
+// apart from the story.
+type Reference struct {
+	Sections []Section
+}
+
+// Blocks are the details as blocks, so a walk over a page's blocks reaches the sections inside them.
+func (reference Reference) Blocks() []Block {
+	blocks := make([]Block, 0, len(reference.Sections))
+	for _, section := range reference.Sections {
+		blocks = append(blocks, section)
+	}
+	return blocks
+}
+
 // Side is what adds to a section of a project's page, which a face sets beside its words or after them: its links,
 // as contents.
 type Side struct {
@@ -314,6 +329,7 @@ func (ExperienceHead) block() {}
 func (Entry) block()          {}
 func (Points) block()         {}
 func (Side) block()           {}
+func (Reference) block()      {}
 func (Card) block()           {}
 func (Contents) block()       {}
 func (Checks) block()         {}

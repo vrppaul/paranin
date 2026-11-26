@@ -384,6 +384,9 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 	case document.Side:
 		// a section's side under its words (DESIGN.md, The TUI)
 		return layout.blocks(typed.Blocks, indent)
+	case document.Reference:
+		// the details set apart from the story by the quiet rule a post's sources stand under
+		return stacked([]line{quietRule(indent, layout.width-indent)}, layout.blocks(typed.Blocks(), indent))
 	case document.Card:
 		return layout.card(typed, indent)
 	case document.Contents:

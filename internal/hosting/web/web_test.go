@@ -765,6 +765,44 @@ func TestAFileAnswersARangeOfItsBytes(test *testing.T) {
 	}
 }
 
+// A file the site serves names its bytes by a validator, so a cache that holds them is told they stand (304) and a
+// player that stopped part way resumes from where it stopped (If-Range, 206); a validator of other bytes is no match.
+func TestAFilesValidatorSparesFetchingTheFileAgain(test *testing.T) {
+	const (
+		clipPath     = "/p/tidy-tool/tidying.mp4"
+		resumedRange = "bytes=100-"
+		otherBytes   = `"other"`
+	)
+	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	whole := httptest.NewRecorder()
+	server.ServeHTTP(whole, httptest.NewRequest(http.MethodGet, clipPath, nil))
+	validator := whole.Header().Get("ETag")
+	cases := []struct {
+		name   string
+		asked  string
+		header string
+		value  string
+		status int
+	}{
+		{name: "the bytes a cache holds stand", asked: "", header: "If-None-Match", value: validator, status: http.StatusNotModified},
+		{name: "other bytes than a cache holds", asked: "", header: "If-None-Match", value: otherBytes, status: http.StatusOK},
+		{name: "a player resumes the bytes it stopped in", asked: resumedRange, header: "If-Range", value: validator, status: http.StatusPartialContent},
+		{name: "a player starts again on other bytes", asked: resumedRange, header: "If-Range", value: otherBytes, status: http.StatusOK},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, clipPath, nil)
+			request.Header.Set("Range", testCase.asked)
+			request.Header.Set(testCase.header, testCase.value)
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if validator == "" || response.Code != testCase.status {
+				test.Errorf("GET %s, %s %q = %d, its ETag %q; want %d and an ETag", clipPath, testCase.header, testCase.value, response.Code, validator, testCase.status)
+			}
+		})
+	}
+}
+
 // The key a site tells IndexNow of, and the path its file is served at, from the site's root (indexnow.org); and the
 // path of the file of an empty key
 const (

@@ -29,6 +29,8 @@ package web
 import (
 	"bytes"
 	"cmp"
+	"crypto/sha256"
+	"encoding/base64"
 	"mime"
 	"net/http"
 	"net/url"
@@ -87,6 +89,22 @@ const (
 // How the day of a post's current version sends its reader on to the post's own address: for a while alone, since
 // that day names an older version once the post is updated
 const sentOnForAWhile = http.StatusFound
+
+// How a file's bytes are named, so a cache that holds them asks for no more (304) and a player resumes them (If-Range):
+// the header, the quotes a strong validator stands in, and how many bytes of the bytes' SHA-256 name them, past what
+// two files of the site would ever share
+const (
+	validatorHeader = "ETag"
+	validatorQuote  = `"`
+	validatorBytes  = 16
+)
+
+// validatorOf is the strong validator a file's bytes are named by, worked out once as the file is drawn, never for a
+// request: the same bytes are named alike after a reload, and other bytes otherwise.
+func validatorOf(body []byte) string {
+	sum := sha256.Sum256(body)
+	return validatorQuote + base64.RawURLEncoding.EncodeToString(sum[:validatorBytes]) + validatorQuote
+}
 
 // How the header a page names its address in is written: <address>; rel="canonical"
 const (
@@ -254,8 +272,8 @@ type missingFormat struct {
 // answer is a page or a file as it is sent: the header that says what it is; the Link header naming the address a page
 // is known by, empty where it is none a person reads; what it tells a search engine, empty where it leaves it free to
 // index it; how long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; what it
-// holds; and whether it is a file, which answers a range of its bytes, as a player asks for a recording's, where a page
-// or a feed is always sent whole.
+// holds; and, for a file, the validator its bytes are named by, which lets it answer a range of them, as a player asks
+// for a recording's, and a conditional request, where a page or a feed, with none, is always sent whole.
 type answer struct {
 	contentType  string
 	link         string
@@ -263,31 +281,31 @@ type answer struct {
 	cacheControl string
 	policy       string
 	body         []byte
-	file         bool
+	validator    string
 }
 
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
 func drawnAs(mediaType, text string) answer {
-	return answer{contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text), file: false}
+	return answer{contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text), validator: ""}
 }
 
 // builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
 // another name.
 func builtAs(file assets.File) answer {
-	return answer{contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body, file: true}
+	return answer{contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body, validator: validatorOf(file.Body)}
 }
 
 // picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
 // new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
-	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body, file: true}
+	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body, validator: validatorOf(icon.Body)}
 }
 
 // besideAPage is a file served beside a page, a post's picture or a project's clip, of a type, as it is served: which a
 // cache asks for again, since a reload may change it under the same name, and which a browser opening it by itself runs
 // nothing in.
 func besideAPage(mediaType string, body []byte) answer {
-	return answer{contentType: mediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: body, file: true}
+	return answer{contentType: mediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: body, validator: validatorOf(body)}
 }
 
 // siteFilesOf are the site's own files, by the path each is served at: its pictures, and the file of the IndexNow key
@@ -583,9 +601,10 @@ func send(writer http.ResponseWriter, request *http.Request, status int, sent an
 		header.Set(securityPolicy, sent.policy)
 	}
 	header.Set(cacheControl, sent.cacheControl)
-	if sent.file && status == http.StatusOK {
-		// no moment of change: a reload may change a file under the same name, and the snapshot keeps no moment of each,
-		// so no Last-Modified tells a cache the file is older than it is
+	if sent.validator != "" && status == http.StatusOK {
+		// the validator names the bytes; no moment of change, since a reload may change a file under the same name and
+		// the snapshot keeps no moment of each, so no Last-Modified tells a cache the file is older than it is
+		header.Set(validatorHeader, sent.validator)
 		http.ServeContent(writer, request, "", time.Time{}, bytes.NewReader(sent.body))
 		return
 	}

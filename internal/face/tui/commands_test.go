@@ -211,15 +211,15 @@ func TestEnterOnAPlaceGoesThere(test *testing.T) {
 	}
 }
 
-// The places follow the page shown: on a project's page Tab goes round its own tabs, not the résumé's, and after q
-// the résumé's again.
+// The places follow the page shown: on a project's page, whose one tab is the page itself, Tab starts at the window of
+// keys, and after q at the résumé's tab again.
 func TestThePlacesFollowThePageShown(test *testing.T) {
 	cases := []struct {
 		name string
 		keys []string
 		line string
 	}{
-		{name: "a project's page", keys: nil, line: ":why"},
+		{name: "a project's page", keys: nil, line: ":help"},
 		{name: "the résumé again", keys: []string{"q"}, line: ":experience"},
 	}
 	for _, testCase := range cases {
@@ -229,6 +229,18 @@ func TestThePlacesFollowThePageShown(test *testing.T) {
 				test.Errorf("after :e tidy-tool, %q, a colon and Tab the command line = %q, want %q", testCase.keys, line, testCase.line)
 			}
 		})
+	}
+}
+
+// A full round of Tab on a project's page offers no tab of the résumé: the tabs it offers are the page shown's own.
+func TestAProjectsPageOffersNoTabOfTheResume(test *testing.T) {
+	const roundOfTabs = 20
+	model := pressed(test, commanded(test, fixtureModel(test, commonWidth, commonHeight), "e tidy-tool"), ":")
+	for range roundOfTabs {
+		model = pressed(test, model, "tab")
+		if line := commandLineOf(screenOf(test, model)); line == ":experience" {
+			test.Errorf("on the project's page Tab offered the résumé's tab, the command line = %q", line)
+		}
 	}
 }
 

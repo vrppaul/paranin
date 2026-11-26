@@ -119,9 +119,8 @@ func TestATabIsServedAlone(test *testing.T) {
 		markdown = "text/markdown; charset=utf-8"
 		manual   = "text/plain; charset=utf-8"
 		browsed  = "text/html; charset=utf-8"
-		// a line of the résumé's opening tab, and one of a project's opening tab
-		resumeOpening  = "Writes software for people who read it."
-		projectOpening = "go install example.test/tidy@latest"
+		// a line of the résumé's opening tab
+		resumeOpening = "Writes software for people who read it."
 	)
 	cases := []struct {
 		name        string
@@ -135,8 +134,6 @@ func TestATabIsServedAlone(test *testing.T) {
 		{name: "a tab of the résumé as a manual", path: "/experience.txt", accept: "", contentType: manual, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of the résumé, chosen as a manual", path: "/experience", accept: "text/plain", contentType: manual, holds: "Northwind", lacks: resumeOpening},
 		{name: "a tab of the résumé in a browser", path: "/experience", accept: "text/html", contentType: browsed, holds: "Northwind", lacks: resumeOpening},
-		{name: "a tab of a project's page in markdown", path: "/p/tidy-tool/why.md", accept: "", contentType: markdown, holds: "# Why\n\nFiles were untidy.", lacks: projectOpening},
-		{name: "a tab of a project's page, chosen as a manual", path: "/p/tidy-tool/why", accept: "text/plain", contentType: manual, holds: "Files were untidy.", lacks: projectOpening},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -244,8 +241,7 @@ func TestTheReaderChoosesTheFormat(test *testing.T) {
 }
 
 // Each page a browser reads carries its record as linked data: the résumé its person, a tab of it a page about the
-// person, by the @id the résumé's address gives them; a project's page its code, and a tab of it its page's, the code
-// at its page's address whole.
+// person, by the @id the résumé's address gives them; a project's page its code.
 func TestEveryPageCarriesItsRecord(test *testing.T) {
 	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
 	cases := []struct {
@@ -256,7 +252,6 @@ func TestEveryPageCarriesItsRecord(test *testing.T) {
 		{name: "the résumé", path: "/", holds: `"@type":"ProfilePage"`},
 		{name: "a project's page", path: "/p/tidy-tool", holds: `"@type":"SoftwareSourceCode","name":"tidy-tool"`},
 		{name: "a tab of the résumé, a page about its person", path: "/experience", holds: `"@type":"WebPage","url":"https://example.test/experience","about":{"@type":"Person","@id":"https://example.test/#person"`},
-		{name: "a tab of a project's page, its page's", path: "/p/tidy-tool/why", holds: `"programmingLanguage":"Lua","url":"https://example.test/p/tidy-tool","codeRepository"`},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -285,7 +280,6 @@ func TestEveryFormatOfAPageNamesItsCanonicalAddress(test *testing.T) {
 		{name: "a project's page in markdown", path: "/p/tidy-tool.md", accept: "", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
 		{name: "a project's page, chosen", path: "/p/tidy-tool", accept: "*/*", want: `<https://example.test/p/tidy-tool>; rel="canonical"`},
 		{name: "a tab of the résumé in markdown", path: "/experience.md", accept: "", want: `<https://example.test/experience>; rel="canonical"`},
-		{name: "a tab of a project's page, chosen", path: "/p/tidy-tool/why", accept: "text/html", want: `<https://example.test/p/tidy-tool/why>; rel="canonical"`},
 		{name: "a post in markdown", path: "/blog/reading-slowly.md", accept: "", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post, chosen", path: "/blog/reading-slowly", accept: "*/*", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},
 		{name: "a post in a browser", path: "/blog/reading-slowly", accept: "text/html", want: `<https://example.test/blog/reading-slowly>; rel="canonical"`},

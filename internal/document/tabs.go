@@ -29,8 +29,12 @@ type Opening struct {
 }
 
 // TabsOf parts a document: a résumé whose first section holds facts opens with that section, briefed, under its
-// title; any other document opens under the head's title; each section left is a tab, under its own.
+// title; a project is one page with no tabs, opening under the head's title with every block, sections included; any
+// other document opens under the head's title; each section left is a tab, under its own.
 func TabsOf(composed Document) Tabs {
+	if composed.Head.Page.Kind == PageProject {
+		return Tabs{Opening: Opening{Tab: tabOf(composed.Head.Title, composed.Blocks), Brief: nil}, Rest: []Tab{}}
+	}
 	loose, sections := SectionsOf(composed.Blocks)
 	var opening Opening
 	left := sections

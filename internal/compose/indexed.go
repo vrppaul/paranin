@@ -27,7 +27,7 @@ func (site Site) IndexedPages() []IndexedPage {
 }
 
 // changedDays are the days the text of the blogs' pages last changed, by page: a post's, its current version's, as its
-// record has it; a list's, the latest of those among the posts it names. The résumé, a project's page and their tabs
+// record has it; a list's, the latest of those among the posts it names. The résumé with its tabs and a project's page
 // have none, since a wrong day is worse than none.
 func (site Site) changedDays() map[document.Page]time.Time {
 	days := map[document.Page]time.Time{}

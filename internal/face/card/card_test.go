@@ -54,7 +54,7 @@ func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 			want: Resume{Name: "Mira Example", Line: "Software Engineer", WayIn: fixtureWayIn},
 		},
 		{
-			name: "a project", site: site, page: projectPage("tidy-tool", ""),
+			name: "a project", site: site, page: projectPage("tidy-tool"),
 			want: Project{Name: "tidy-tool", Line: "Tidies files.", WayIn: fixtureWayIn},
 		},
 		{name: "the list by year", site: site, page: document.PageOf(document.PageBlog), want: list},
@@ -79,7 +79,6 @@ func TestEachPageAPreviewShowsHasTheFactsOfItsCard(test *testing.T) {
 			want: List{Mark: fixtureMark, Line: "Что читает автор, и как.", WayIn: "ssh ru/blog@example.test"},
 		},
 		{name: "a tab of the résumé", site: site, page: resumeTab("experience"), want: nil},
-		{name: "a tab of a project", site: site, page: projectPage("tidy-tool", "why"), want: nil},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -106,7 +105,6 @@ func TestAPageShowsItsOwnCardOrItsPagesOrNone(test *testing.T) {
 	}{
 		{name: "the résumé", site: site, page: document.PageOf(document.PageResume), want: document.PageOf(document.PageResume)},
 		{name: "a tab of the résumé", site: site, page: resumeTab("experience"), want: document.PageOf(document.PageResume)},
-		{name: "a tab of a project", site: site, page: projectPage("tidy-tool", "why"), want: projectPage("tidy-tool", "")},
 		{name: "a post", site: site, page: document.PostPage(fixturePostSlug), want: document.PostPage(fixturePostSlug)},
 		{name: "an older version", site: site, page: document.PostPage(fixturePostSlug).OlderVersion(olderVersion), want: none},
 		{name: "a filtered list", site: site, page: document.TagFilter("reading"), want: none},
@@ -165,7 +163,7 @@ func resumeTab(tab string) document.Page {
 	return document.Page{Kind: document.PageResume, Slug: "", Tab: tab, Revision: "", Translation: document.Untranslated}
 }
 
-// projectPage is a project's page, or a tab of it by its name.
-func projectPage(slug, tab string) document.Page {
-	return document.Page{Kind: document.PageProject, Slug: slug, Tab: tab, Revision: "", Translation: document.Untranslated}
+// projectPage is a project's page.
+func projectPage(slug string) document.Page {
+	return document.Page{Kind: document.PageProject, Slug: slug, Tab: "", Revision: "", Translation: document.Untranslated}
 }

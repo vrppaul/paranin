@@ -248,7 +248,7 @@ func TestTheNotifierTellsIndexNowWhatChanged(test *testing.T) {
 			name: "a reload moving the site to another host", start: fixtures.KeepFolder, change: moveTheSite,
 			want: []submission{movedSubmissionOf(
 				"https://moved.test/", "https://moved.test/blog", "https://moved.test/blog/series", "https://moved.test/contact",
-				"https://moved.test/experience", "https://moved.test/p/tidy-tool", "https://moved.test/p/tidy-tool/why",
+				"https://moved.test/experience", "https://moved.test/p/tidy-tool",
 				"https://moved.test/projects", "https://moved.test/ru/blog", "https://moved.test/ru/blog/series", "https://moved.test/skills",
 			)},
 		},

@@ -152,7 +152,7 @@ func DocumentsOf(pages []Composed) []document.Document {
 	return documents
 }
 
-// ownPages are the documents of the index, the résumé and each project's page, with each of their tabs alone.
+// ownPages are the documents of the index, the résumé and each project's page, with each tab of the résumé alone.
 func (site Site) ownPages() []document.Document {
 	pages := []document.Document{site.Index}
 	for _, page := range site.Pages {

@@ -38,7 +38,6 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, file: "experience.html"},
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "skills"}, file: "skills.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
-		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, file: "p/tidy-tool/why.html"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.file, func(test *testing.T) {
@@ -104,13 +103,8 @@ func TestAPageShowsOneTabOfItsDocument(test *testing.T) {
 			lacks: []string{greeting, summary},
 		},
 		{
-			name: "a project's opening", page: writer.Page(project.Document, project.Record, ""),
-			holds: []string{details, `<h1 aria-label="tidy-tool">`}, lacks: []string{why},
-		},
-		{
-			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: []string{why, `<title>Why — tidy-tool</title>`, `<h1 aria-label="Why">`, `<link rel="canonical" href="https://example.test/p/tidy-tool/why">`},
-			lacks: []string{details},
+			name: "a project's page, its sections on it", page: writer.Page(project.Document, project.Record, ""),
+			holds: []string{details, why, `<h1 aria-label="tidy-tool">`, `<link rel="canonical" href="https://example.test/p/tidy-tool">`}, lacks: nil,
 		},
 	}
 	for _, testCase := range cases {
@@ -290,8 +284,8 @@ func TestATabStandsUnderItsTitleInBlockLetters(test *testing.T) {
 		want  string
 	}{
 		{name: "the résumé's", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, title: "Work", want: `<h1 aria-label="Work">`},
-		{name: "a project's", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, title: "Usage", want: `<h1 aria-label="Usage">`},
-		{name: "a letter no font draws", page: document.Page{Kind: document.PageProject, Slug: "tidy", Tab: ""}, title: "Café", want: "<h1>Café</h1>"},
+		{name: "another page's", page: document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}, title: "Usage", want: `<h1 aria-label="Usage">`},
+		{name: "a letter no font draws", page: document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}, title: "Café", want: "<h1>Café</h1>"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -400,15 +394,9 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			holds: slices.Concat(every, []string{
 				siteSessions, resumeSSH, resumeGives, `<a class="way-chip" href="/p/tidy-tool.md">tidy-tool.md</a>`, projectReading,
 				`<a class="window" href="/p/tidy-tool" aria-current="page"><span class="window-number">1:</span>tidy-tool</a>`,
-				`<a class="window" href="/p/tidy-tool/why"><span class="window-number">2:</span>why</a>`,
-				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`,
-				`data-place="tab" data-name="why" data-address="/p/tidy-tool/why"`, projectPlace + ` data-current`,
+				`data-place="tab" data-name="tidy-tool" data-address="/p/tidy-tool" data-current`, projectPlace + ` data-current`,
 			}),
-			lacks: nil,
-		},
-		{
-			name: "a tab of a project's page", page: writer.Page(project.Document, project.Record, "why"),
-			holds: slices.Concat(every, []string{siteSessions, projectPlace + ` hidden`, projectReading}), lacks: []string{projectPlace + ` data-current`},
+			lacks: []string{`<span class="window-number">2:`},
 		},
 		{
 			name: "the page of no page", page: missing.For(missingPath),

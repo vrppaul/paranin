@@ -222,8 +222,8 @@ func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 	}
 }
 
-// A project's page keeps a first section of facts alone as a tab of its own: only the résumé opens with a brief.
-func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
+// A project's page is one tab, a first section of facts on it as any section: only the résumé opens with a brief.
+func TestAProjectsPageHoldsItsSectionsOnOneTab(test *testing.T) {
 	facts := document.Facts{List: []document.Fact{{Label: "language", Value: textOf("Go")}}}
 	project := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, textOf("tidy-tool")),
@@ -231,8 +231,12 @@ func TestAProjectsPageKeepsItsSectionOfFacts(test *testing.T) {
 	}
 	resume := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: nil}
 	model := commanded(test, handModel(test, commonWidth, commonHeight, resume, project), "e tidy-tool")
-	if footer := footerOf(screenOf(test, model)); !strings.Contains(footer, "2:facts") {
-		test.Errorf("on the project's page the footer = %q, want its tab of the facts", footer)
+	screen := screenOf(test, model)
+	if footer := footerOf(screen); strings.Contains(footer, "2:") {
+		test.Errorf("on the project's page the footer = %q, want one tab", footer)
+	}
+	if page := aboveTheFooter(screen); !strings.Contains(page, "language") || !strings.Contains(page, "Go") {
+		test.Errorf("the project's page =\n%s\nwant its section's fact on it", page)
 	}
 }
 
@@ -532,7 +536,7 @@ func TestAPeriodStandsApartFromItsTitle(test *testing.T) {
 	}
 }
 
-// A section stands under its title. On the résumé and on a project's page the title stands in the titles' font where
+// A section stands under its title. On the résumé the title stands in the titles' font where
 // the page has room for it and rows of the tab under it, as text where it has room for that alone, and on a page too
 // short for either the section stands as it is, named in the footer alone; on another page it stands as it is.
 func TestASectionStandsUnderItsTitle(test *testing.T) {
@@ -553,14 +557,6 @@ func TestASectionStandsUnderItsTitle(test *testing.T) {
 		{name: "a page too short for the banner", model: pressed(test, fixtureModel(test, commonWidth, shorterThanABanner), toExperience()...), title: "Experience", titleAsText: true},
 		{name: "a page tall enough for the banner holds no title as text", model: pressed(test, fixtureModel(test, commonWidth, tallEnoughForABanner), toExperience()...), title: "Experience", titleAsText: false},
 		{name: "a short screen", model: pressed(test, fixtureModel(test, phoneWidth, shortHeight), toExperience()...), title: "Experience", titleAsText: false},
-		{
-			name: "a project's section on a page too short for the banner", title: "Why", titleAsText: true,
-			model: pressed(test, commanded(test, fixtureModel(test, commonWidth, shorterThanABanner), "e tidy-tool"), "l"),
-		},
-		{
-			name: "a project's section on a page tall enough for the banner", title: "Why", titleAsText: false,
-			model: pressed(test, commanded(test, fixtureModel(test, commonWidth, tallEnoughForABanner), "e tidy-tool"), "l"),
-		},
 		{
 			name: "a section of another page", title: "Growing", titleAsText: false,
 			model: pressed(test, commanded(test, handHealth(test, phoneWidth, tallHeight, "Growing"), "checkhealth"), "l"),

@@ -45,12 +45,9 @@ func TestADocumentPartsIntoAnOpeningAndATabForEachSectionLeft(test *testing.T) {
 			want: partedName{opening: tabName{slug: "ada-lovelace", blocks: 0}, briefed: false, rest: []tabName{{slug: "experience", blocks: 2}}},
 		},
 		{
-			name: "a project opens with its head, its first section a tab of its own", kind: document.PageProject,
+			name: "a project is one tab holding its sections", kind: document.PageProject,
 			title: "graph-rs", blocks: []document.Block{paragraph, about, install},
-			want: partedName{
-				opening: tabName{slug: "graph-rs", blocks: 1}, briefed: false,
-				rest: []tabName{{slug: "about", blocks: 3}, {slug: "step-2-install-run", blocks: 1}},
-			},
+			want: partedName{opening: tabName{slug: "graph-rs", blocks: 3}, briefed: false, rest: []tabName{}},
 		},
 		{
 			name: "a page of no section is its opening alone", kind: document.PageIndex,

@@ -35,7 +35,6 @@ func TestTheSiteNamesEachPageIndexedByItsDay(test *testing.T) {
 		{name: "the résumé", path: "/", want: []string{noDay}},
 		{name: "a tab of the résumé", path: "/experience", want: []string{noDay}},
 		{name: "a project's page", path: "/p/tidy-tool", want: []string{noDay}},
-		{name: "a tab of a project's page", path: "/p/tidy-tool/why", want: []string{noDay}},
 		{name: "a post updated, by its current version's day", path: "/blog/reading-slowly", want: []string{"2026-11-12"}},
 		{name: "a post never updated, by the day it came out", path: "/blog/fresh", want: []string{"2026-11-11"}},
 		{name: "a translation, by its own version's day", path: "/ru/blog/reading-slowly", want: []string{"2026-11-15"}},

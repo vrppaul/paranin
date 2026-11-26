@@ -413,7 +413,6 @@ func TestEachPageHasADescription(test *testing.T) {
 		{name: "the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, want: "Builds small tools that last."},
 		{name: "a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, want: "A tool that tidies files."},
 		{name: "a tab of the résumé", page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, want: "Builds small tools that last."},
-		{name: "a tab of a project's page", page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}, want: "A tool that tidies files."},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

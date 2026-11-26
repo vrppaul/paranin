@@ -94,8 +94,8 @@ type briefOpening struct {
 	blocks  []document.Block
 }
 
-// readmeOpening is a project's opening as its forge shows its README: the head, then the blocks before the first
-// section.
+// readmeOpening is a project's opening as its forge shows its README: the head, then all its blocks, its
+// sections among them.
 type readmeOpening struct {
 	head   document.Head
 	blocks []document.Block
@@ -195,13 +195,13 @@ func openingBody(head document.Head, opening document.Opening) tabBody {
 	return plainOpening{head: head, blocks: blocks}
 }
 
-// sectionBody is what a section's tab shows of its blocks: on the résumé and on a project's page under its title, on
-// another page as they are.
+// sectionBody is what a section's tab shows of its blocks: on the résumé under its title, on another page as they are;
+// a project's page has no section tabs.
 func sectionBody(kind document.PageKind, blocks []document.Block) tabBody {
 	switch kind {
-	case document.PageResume, document.PageProject:
+	case document.PageResume:
 		return titledSection{blocks: blocks}
-	case document.PageNone, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost, document.PageBlog, document.PageBlogSeries,
+	case document.PageNone, document.PageProject, document.PageIndex, document.PageHealth, document.PageSkills, document.PagePost, document.PageBlog, document.PageBlogSeries,
 		document.PageTagFilter:
 	}
 	return plainSection{blocks: blocks}

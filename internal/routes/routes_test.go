@@ -15,7 +15,6 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 	resume := document.Page{Kind: document.PageResume, Slug: "", Tab: ""}
 	resumeTab := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
 	project := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
-	projectTab := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: "why"}
 	index := document.Page{Kind: document.PageIndex, Slug: "", Tab: ""}
 	post := document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""}
 	older := post.OlderVersion("2026-11-10")
@@ -37,9 +36,6 @@ func TestEveryTargetHasItsAddress(test *testing.T) {
 		{name: "a tab of the résumé in markdown", target: resumeTab, format: FormatMarkdown, want: "https://example.test/experience.md"},
 		{name: "a tab of the résumé as a manual", target: resumeTab, format: FormatManual, want: "https://example.test/experience.txt"},
 		{name: "a tab of the résumé as the reader asks", target: resumeTab, format: FormatChosen, want: "https://example.test/experience"},
-		{name: "a tab of a project's page in markdown", target: projectTab, format: FormatMarkdown, want: "https://example.test/p/tidy-tool/why.md"},
-		{name: "a tab of a project's page as a manual", target: projectTab, format: FormatManual, want: "https://example.test/p/tidy-tool/why.txt"},
-		{name: "a tab of a project's page as the reader asks", target: projectTab, format: FormatChosen, want: "https://example.test/p/tidy-tool/why"},
 		{name: "the index in markdown", target: index, format: FormatMarkdown, want: "https://example.test/llms.txt"},
 		{name: "the index has no manual", target: index, format: FormatManual, want: ""},
 		{name: "the index has no address to choose at", target: index, format: FormatChosen, want: ""},

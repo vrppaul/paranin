@@ -93,7 +93,7 @@ type faultSpot struct {
 // A post's link inside the site leads to a page the site serves by the path it is served at, and to a section of that
 // page where it names one: a path no page takes, a post's number, which only sends the reader on, a page's markdown, a
 // draft's page, a post out after the post linking it, or an anchor no section of its page takes, a feed's among them,
-// is a fault at its file's line. Links to the résumé, a tab, a project's page and its tab, the blog's lists, a heading,
+// is a fault at its file's line. Links to the résumé, a tab, a project's page, the blog's lists, a heading,
 // a widget, a series' group and a feed lead somewhere, and to a post out before the post linking it, or with it. A
 // draft's links are held to the site as its author reads it once every post dated later is out, where a draft's page
 // leads somewhere.
@@ -106,7 +106,7 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 	}{
 		{
 			name:   "links that lead somewhere",
-			body:   "[a](/) [b](/experience) [c](/p/tidy-tool) [d](/p/tidy-tool/why) [e](/blog) [f](/blog/series#reading) [g](/blog/reading-slowly#what-a-reader-keeps) [h](/blog/reading-slowly#in-a-terminal)",
+			body:   "[a](/) [b](/experience) [c](/p/tidy-tool) [d](/blog) [e](/blog/series#reading) [f](/blog/reading-slowly#what-a-reader-keeps) [g](/blog/reading-slowly#in-a-terminal)",
 			change: fixtures.KeepFolder, want: []faultSpot{},
 		},
 		{name: "the list filtered by a tag", body: "[a](/blog?tag=terminals)", change: fixtures.KeepFolder, want: []faultSpot{}},
@@ -126,6 +126,7 @@ func TestEveryLinkInsideTheSiteLeadsToAPageAndItsSection(test *testing.T) {
 		{name: "the list filtered by a tag no post carries", body: "[a](/blog?tag=nothing)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a path no page takes", body: "[a](/blog/no-such-post)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post's number", body: "[a](/blog/1)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
+		{name: "a tab of a project's page", body: "[a](/p/tidy-tool/why)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a page's markdown", body: "[a](/p/tidy-tool.md)", change: fixtures.KeepFolder, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a draft's page", body: "[a](/blog/reading-slowly)", change: fixturePostDrafted, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},
 		{name: "a post out after the post linking it", body: "[a](/blog/reading-slowly)", change: fixturePostLater, want: []faultSpot{{file: samplePostFile, line: samplePostBodyLine}}},

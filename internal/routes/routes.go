@@ -262,7 +262,7 @@ func ownPath(page document.Page, format Format) string {
 	case document.PageResume:
 		return resumePaths(page.Tab).inFormat(format)
 	case document.PageProject:
-		return projectPaths(page.Slug, page.Tab).inFormat(format)
+		return projectPaths(page.Slug).inFormat(format)
 	case document.PageIndex:
 		return indexPath(format)
 	case document.PagePost:
@@ -399,13 +399,9 @@ func resumePaths(tab string) paths {
 	return paths{chosen: resumeRoot + tab, files: resumeRoot + tab}
 }
 
-// projectPaths are where a project's page is served: in the projects' folder by its slug, a tab of it in the page's
-// own folder, by the tab's name.
-func projectPaths(slug, tab string) paths {
+// projectPaths are where a project's page is served: in the projects' folder by its slug.
+func projectPaths(slug string) paths {
 	path := projectFolder + slug
-	if tab != "" {
-		path += folderEnd + tab
-	}
 	return paths{chosen: path, files: path}
 }
 

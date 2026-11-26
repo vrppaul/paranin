@@ -2742,6 +2742,11 @@ a.pane:hover .pane-title {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* the tiles one under another, the blog's and a project's others, as everything below the phone's width */
+  .tile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .pane {
     padding-inline: var(--cell-2);
   }

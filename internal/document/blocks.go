@@ -239,12 +239,15 @@ func (reference Reference) Blocks() []Block {
 }
 
 // Clip is a recording of a project at work, which a section's side opens with (DESIGN.md, ProjectSection): its
-// recording and its still, files the site serves beside the project's page, what it shows, and how long it runs.
+// recording and its still, files the site serves beside the project's page, and the still's size in pixels, by which a
+// page keeps its room before it comes; what it shows, and how long it runs.
 type Clip struct {
-	Recording File
-	Still     File
-	Shows     []Span
-	Length    time.Duration
+	Recording   File
+	Still       File
+	StillWidth  int
+	StillHeight int
+	Shows       []Span
+	Length      time.Duration
 }
 
 // Side is what adds to a section of a project's page, which a face sets beside its words or after them: its clip, then

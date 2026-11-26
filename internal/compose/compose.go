@@ -383,10 +383,12 @@ func sideOf(section content.Section, page document.Page) []document.Block {
 	side := []document.Block{}
 	if clip := section.Clip; clip != nil {
 		side = append(side, document.Clip{
-			Recording: document.File{Page: page, Name: clip.File},
-			Still:     document.File{Page: page, Name: clip.Still},
-			Shows:     markedSpans(clip.Shows),
-			Length:    clip.Recording.Length,
+			Recording:   document.File{Page: page, Name: clip.File},
+			Still:       document.File{Page: page, Name: clip.Still},
+			StillWidth:  clip.Picture.Width,
+			StillHeight: clip.Picture.Height,
+			Shows:       markedSpans(clip.Shows),
+			Length:      clip.Recording.Length,
 		})
 	}
 	if len(section.Links) > 0 {

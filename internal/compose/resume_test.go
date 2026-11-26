@@ -224,10 +224,12 @@ func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
 			{Spans: []document.Span{document.Text{Text: "Keeps the "}, document.Highlight{Spans: []document.Span{document.Text{Text: "blank"}}}, document.Text{Text: " ones"}}},
 		}},
 		document.Side{Blocks: []document.Block{document.Clip{
-			Recording: document.File{Page: tidyTool, Name: "tidying.mp4"},
-			Still:     document.File{Page: tidyTool, Name: "tidying.png"},
-			Shows:     []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " tidying a folder"}},
-			Length:    2 * time.Second,
+			Recording:   document.File{Page: tidyTool, Name: "tidying.mp4"},
+			Still:       document.File{Page: tidyTool, Name: "tidying.png"},
+			StillWidth:  128,
+			StillHeight: 72,
+			Shows:       []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " tidying a folder"}},
+			Length:      2 * time.Second,
 		}, document.Contents{Listings: []document.Listing{
 			{Target: document.Address{URL: "https://github.test/mira/tidy"}, Title: []document.Span{document.Text{Text: "source"}}, Note: []document.Span{document.Text{Text: "where the code lives"}}},
 			{Target: document.Address{URL: "https://docs.example.test/tidy"}, Title: []document.Span{document.Text{Text: "manual"}}, Note: []document.Span{document.Text{Text: "every flag it takes"}}},

@@ -710,7 +710,7 @@ templ (writer PageWriter) reference(reference document.Reference, depth int) {
 // the player's own controls away (web/src/controllers/clip.ts), its length and what it shows.
 templ (writer PageWriter) clip(clip document.Clip) {
 	<figure class="clip" data-part="clip">
-		<video class="clip-recording" src={ routes.Reference(clip.Recording, routes.FormatChosen) } poster={ routes.Reference(clip.Still, routes.FormatChosen) } controls preload="none" data-part="clip-recording"></video>
+		<video class="clip-recording" src={ routes.Reference(clip.Recording, routes.FormatChosen) } poster={ routes.Reference(clip.Still, routes.FormatChosen) } width={ strconv.Itoa(clip.StillWidth) } height={ strconv.Itoa(clip.StillHeight) } controls preload="none" data-part="clip-recording"></video>
 		<figcaption class="clip-about">
 			<button type="button" class="clip-play" data-part="clip-play" hidden><span class="clip-mark" aria-hidden="true">{ playMark }</span> { writer.frame.play }</button>
 			<span class="clip-length">{ clipLength(clip.Length) }</span>

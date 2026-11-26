@@ -217,6 +217,9 @@ other size: a control that seems to need one is the wrong control.
 - A project's page is one grid from its head to its foot: the text's column, `project_text`, the main thing, since a
   project without a recording is still its words, `row_3` of air, then the side's, `project_side`, what adds to the
   text (owner, 2026-11-26). Below `phone` one column.
+- The experience tab is one grid from its head to its foot: the dates' column, `when`, `cell_3`, the positions',
+  `project_text`, `row_3` of air, then the technologies', `project_side`, the shares a project's page has (owner,
+  2026-11-26). Below `phone` one column.
 
 ## Iconography
 
@@ -240,9 +243,8 @@ anything over it.
 
 ### SectionTitle
 
-A tab's title in the title font, the page's `h1`: Experience, Projects, Skills, Contact, and a project's name on its
-page. A subsection (Spoken languages, Education, a skill group) is a
-`strong` heading.
+A tab's title in the title font, the page's `h1`: Experience and Projects, and a project's name on its page. A
+subsection is a `strong` heading.
 
 ### Mail
 
@@ -311,8 +313,8 @@ scrolls `row_2` clear of it, `row_4` on a phone, and the line's own parts, alway
   lowest ground.
 - At the line's end the ways the site is served, as the line's chips (Sizes): `❯ ssh` and `❯ curl`, ❯ in `prompt`,
   each opening its Hint, reversed and bold while it is open, as the window shown; then the markdown of the page whole
-  by its file's name, a link, the résumé's on a page that has none. `deep` ground, a `quiet` hairline turning `text`
-  under the pointer, `caption` words.
+  by its file's name, a link, the résumé's on a page that has none; then `cv.pdf`, the résumé as a PDF, a link, on
+  every page (owner, 2026-11-26). `deep` ground, a `quiet` hairline turning `text` under the pointer, `caption` words.
 - Then the VimKeys switch and the ThemeSwitch, its Tooltip over it. The Toast stands a row over the line, and the
   CommandLine, open, on the row over it.
 - On a phone the sessions and the theme button share the first row, the windows take the rows `row_half` below by their
@@ -681,6 +683,52 @@ its own as a pane of Panes: its name, its tagline `small` in `muted`, its stack 
 the side's column the Mail in `mail` and under it the primary Button, "Write to me". On a phone the panes, then the
 Mail and the Button.
 
+### ExperienceHead
+
+The experience tab's first screen, on its page's grid (owner, 2026-11-26). Its title in block letters on a row of its
+own; under it, in the dates' and the positions' columns, the one line the author wants a reader to keep, in `lead`,
+held to `measure`; in the technologies' column, level with it, what he puts forward: each technology bold in `lead`,
+how long he has used it beside it in `muted`, the lengths in one column. No rule under it: the first Position follows.
+On a phone the line, then the technologies.
+
+### Position
+
+A role on the experience tab as a row of its page's grid, each row set apart by a `quiet` hairline (owner,
+2026-11-26).
+
+- In the dates' column, `when` wide, its dates as an Entry's, the current role's bold in `text`.
+- In the positions' column the company in `heading`, the title under it in `muted`, then its points as an Entry's. No
+  place: every role stands where the first screen says he lives.
+- In the technologies' column, its top level with the company, what the role worked with, one a line in `lead`; where
+  the profile names none, the gap still to fill.
+- Where the author wrote the role's long description, a line under the points in the points' own grid: `+` bold in
+  `accent` where a point has its dash, then `read more about my Kiwi.com experience`, bold, underlined as a Link, its
+  underline `accent` under the pointer. Pressed, the `+` turns `−`, the words `hide`, and the description stands under
+  it, its paragraphs in `reading`, held to `column`, a row apart, from the points' text. It opens and closes without
+  the script and from the keyboard.
+- A technology, in a role or in the head, is a link that filters the roles by it: the roles that name it stay, the
+  rest turn `edge`, the technology `accent` wherever it stands, and the page's address names it, so a link sent opens
+  filtered; `show all roles` beside the head's technologies takes the filter off. Under the pointer a technology turns
+  `accent` wherever the page names it.
+- The CareerLine on its side: down the page's gutter, beside each role's row and as tall as it, a bar as thick as the
+  line's, `edge`, the current role's `accent`, the bars of the roles meeting as one.
+- On a phone one column: the dates, the company, the title, the technologies on one line joined by ` · `, the points,
+  the description's line; the bar thinner.
+
+### ExperienceEnd
+
+Under the Positions, three rows of one form on the same grid, each under a `quiet` hairline: its name bold in
+`heading` in the dates' column, the way to more under it, its parts across the others (owner, 2026-11-26).
+
+- `contact`: the Mail in `mail` in the positions' column, `cv.pdf · GitHub · LinkedIn` under it; the primary Button,
+  "Write to me", in the technologies' column, level with the Mail.
+- `projects` and `all projects`: three projects across both columns as panes of Panes, each its name, its line `small`
+  in `muted`, its stack `caption` in `faint` at its foot, each name whole; the whole pane its link where the project has
+  a page of its own.
+- `blog` and `all posts`: the line the author gives it, in `muted`, then the latest posts as the blog's list draws its
+  Tiles, whole.
+- On a phone each row's name over its parts.
+
 ## Pages
 
 - The first screen: left, the greeting, the Name and the headline in `lead`, the words naming his two kinds of work
@@ -689,6 +737,10 @@ Mail and the Button.
   primary button and the Command, then cv.pdf, GitHub and LinkedIn. Below, the CareerLine across the whole width; the
   four crosses at the corners. Under it LatestPosts, and no section more: the rest of the résumé is its tabs, each a
   page of its own (owner, 2026-11-26).
+- The résumé's tabs: `about`, the first screen; `experience`; `projects` (owner, 2026-11-26). What a skills tab and a
+  contact tab held stands on these: the technologies beside each role, the ways to reach him on the first screen and
+  at the experience's end.
+- Experience: the ExperienceHead, its Positions, newest first, and the ExperienceEnd (owner, 2026-11-26).
 - The address of no page: its status in block letters, in English as HTTP writes it, the address quoted as Code, a
   link to the start, the foot line in the words of the language whose folder the address opens with; no apology and
   no joke. The foot line stands as on every page, with no windows.

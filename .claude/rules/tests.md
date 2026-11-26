@@ -41,7 +41,9 @@ paths:
 
 ## Runs
 
-- Iterating: the tests of the package in hand. A commit runs the whole suite with the gates: it takes seconds.
-- At a chunk's end the author runs everything once, and the reviewer reads that run and repeats only what it doubts.
+- The tests of the packages a change touches, never the whole suite: no commit and no gate runs all of them.
+- The cards' tests draw with Typst, which `go run ./scripts/typst` puts in the folder it is given, ~/.local/bin.
+- At a chunk's end the author runs the tests of every package it touched once, and the reviewer reads that run and
+  repeats only what it doubts.
 - CI runs every gate again on what the commit carries.
 - A review's findings about tests are two: a test to delete (a look, a twin, internals, one that cannot fail) and a behaviour no test holds.

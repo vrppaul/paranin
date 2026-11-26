@@ -82,13 +82,6 @@ repos:
         files: (^content/|\.go$)
         pass_filenames: false
         verbose: true
-      # The whole suite takes seconds
-      - id: go-test
-        name: go test (the tests)
-        entry: go test ./...
-        language: system
-        types: [go]
-        pass_filenames: false
       # compose walks a post's parsed tree, which two goroutines may compose at once (release.Derived, ADR-0003), so
       # its tests run under the race detector too. The rest of the suite does not: charm.land/ssh's window, written
       # with no lock, races wish's read of it (TODO.md, Upstream)

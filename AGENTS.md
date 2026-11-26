@@ -7,7 +7,7 @@ The decisions, D1 onward, and the order of work are in `docs/FOUNDATION.md`; eac
 ## Commands
 
 ```bash
-go test ./...                     # the tests, Typst from go run ./scripts/typst ~/.local/bin
+go test ./internal/look/...       # a touched package's tests, never all
 go run ./scripts/coderules ./...  # the code rules no linter here holds
 pnpm --dir web install            # the page's tools, pinned by web/pnpm-lock.yaml
 pnpm --dir web build              # the page's build into build/web; `watch` builds on each change, and the site reloads

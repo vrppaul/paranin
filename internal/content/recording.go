@@ -101,12 +101,17 @@ func headerLength(header []byte) (time.Duration, error) {
 		return 0, fmt.Errorf("a %q box cut short", movieHeaderBox)
 	}
 	timescale := uint64(binary.BigEndian.Uint32(header[timescaleAt:]))
-	duration := uint64(binary.BigEndian.Uint32(header[durationAt:]))
+	// a duration of all ones says the length is unknown, and one of nought is a fragmented movie's, which its
+	// fragments hold
+	duration, unknown := uint64(binary.BigEndian.Uint32(header[durationAt:])), uint64(math.MaxUint32)
 	if timeBytes == longDuration {
-		duration = binary.BigEndian.Uint64(header[durationAt:])
+		duration, unknown = binary.BigEndian.Uint64(header[durationAt:]), math.MaxUint64
 	}
-	if timescale == 0 {
+	switch {
+	case timescale == 0:
 		return 0, fmt.Errorf("a %q box of no timescale", movieHeaderBox)
+	case duration == 0, duration == unknown:
+		return 0, fmt.Errorf("a %q box of no length: an unknown one, or a fragmented recording's", movieHeaderBox)
 	}
 	length := float64(duration) / float64(timescale) * float64(time.Second)
 	if length >= math.MaxInt64 {

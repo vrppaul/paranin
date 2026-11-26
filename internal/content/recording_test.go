@@ -2,6 +2,7 @@ package content
 
 import (
 	"encoding/binary"
+	"math"
 	"os"
 	"path"
 	"slices"
@@ -79,6 +80,9 @@ func TestARecordingsBoxesAreReadAsTheirSizesSay(test *testing.T) {
 		{name: "a movie header of no version known", body: box(movieBox, box(movieHeaderBox, []byte{unknownVersion, 0, 0, 0})), length: 0, read: false},
 		{name: "a movie header of no timescale", body: box(movieBox, shortHeader(0, testDuration)), length: 0, read: false},
 		{name: "a length past what one holds", body: box(movieBox, longHeader(testTimescale, pastLengthDuration)), length: 0, read: false},
+		{name: "a length of nought, as a fragmented recording's", body: box(movieBox, shortHeader(testTimescale, 0)), length: 0, read: false},
+		{name: "the first version's unknown length", body: box(movieBox, shortHeader(testTimescale, math.MaxUint32)), length: 0, read: false},
+		{name: "the second version's unknown length", body: box(movieBox, longHeader(testTimescale, math.MaxUint64)), length: 0, read: false},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

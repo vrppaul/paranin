@@ -36,8 +36,9 @@ const WIND = "wind";
 const NOWHERE = "zebra";
 
 // A phrase the fixture's first point parts with a mark, "Kept the <mark>queue</mark> moving"; and the end of the
-// first role's heading run on into its description, "Northwind — Senior Engineer" and "Joined a team of four…",
-// which the served page sets side by side with nothing between, as the golden page, set out a tag a line, does not
+// first role's heading run on into its description, "Northwind — Senior Engineer" and "Joined a team of four…", two
+// blocks a test sets with nothing between them, the description moved into the heading, as the golden page, set out
+// a tag a line, never sets two
 const PARTED = "the queue";
 const ACROSS_BLOCKS = "engineerjoined";
 const ROLE_HEADING = "main .entry-body > :first-child";

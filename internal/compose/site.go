@@ -17,6 +17,8 @@ type Site struct {
 	Index document.Document
 	// Pages are the résumé and each project's page that has one, each with its record
 	Pages []Composed
+	// ProjectFiles are the files served beside a project's page: each clip's recording and still
+	ProjectFiles []ProjectFile
 	// Own is the blog in the site's own language, English
 	Own Blog
 	// Translations are the blog in each other language the site has words for, in their tags' order
@@ -68,7 +70,8 @@ func SiteOf(prepared *Prepared, audience Audience) Site {
 	own, translations := blogsOf(snapshot, audience)
 	edited := editedPages(snapshot, append([]blog{own}, translations...))
 	site := Site{
-		Index: indexOf(snapshot, own), Pages: pagesOf(snapshot, own), Own: blogPagesOf(snapshot, own, edited), Translations: nil,
+		Index: indexOf(snapshot, own), Pages: pagesOf(snapshot, own), ProjectFiles: projectFilesOf(snapshot.Profile.Projects),
+		Own: blogPagesOf(snapshot, own, edited), Translations: nil,
 		Until:     audience.nextChange(allPosts(snapshot)),
 		Addresses: routes.New(snapshot.Profile.Site.BaseURL, snapshot.Profile.Site.TagAuthority, snapshot.TranslatedInto()),
 		paths:     map[string]document.Target{}, served: nil,

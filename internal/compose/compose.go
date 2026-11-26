@@ -395,6 +395,34 @@ func sideOf(section content.Section, page document.Page) []document.Block {
 	return side
 }
 
+// ProjectFile is a file served beside a project's page, at its file: the type it is sent as, and what it holds.
+type ProjectFile struct {
+	File      document.File
+	MediaType string
+	Body      []byte
+}
+
+// projectFilesOf are the files served beside the projects' pages, each project's that has one: each clip of its story
+// and its details, its recording and its still.
+func projectFilesOf(projects []content.Project) []ProjectFile {
+	files := []ProjectFile{}
+	for _, project := range projects {
+		if !project.Page {
+			continue
+		}
+		page := projectPage(project)
+		for _, section := range slices.Concat(project.Sections, project.Details) {
+			if clip := section.Clip; clip != nil {
+				files = append(files,
+					ProjectFile{File: document.File{Page: page, Name: clip.File}, MediaType: clip.Recording.MediaType, Body: clip.Recording.Body},
+					ProjectFile{File: document.File{Page: page, Name: clip.Still}, MediaType: clip.Picture.MediaType, Body: clip.Picture.Body},
+				)
+			}
+		}
+	}
+	return files
+}
+
 // linkListings are a section's links as contents: each leading to its address by its name, as written, with its line.
 func linkListings(links []content.Link) []document.Listing {
 	listings := make([]document.Listing, 0, len(links))

@@ -39,7 +39,6 @@ import (
 
 	"github.com/vrppaul/paranin/internal/assets"
 	"github.com/vrppaul/paranin/internal/compose"
-	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/face/feed"
 	"github.com/vrppaul/paranin/internal/face/html"
@@ -281,10 +280,11 @@ func picturedAs(icon html.Icon) answer {
 	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body}
 }
 
-// postPicturedAs is a post's picture as it is served, which a cache asks for again, since a reload may change it
-// under the same name, and which a browser opening it by itself runs nothing in.
-func postPicturedAs(picture content.Picture) answer {
-	return answer{contentType: picture.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: picture.Body}
+// besideAPage is a file served beside a page, a post's picture or a project's clip, of a type, as it is served: which a
+// cache asks for again, since a reload may change it under the same name, and which a browser opening it by itself runs
+// nothing in.
+func besideAPage(mediaType string, body []byte) answer {
+	return answer{contentType: mediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: body}
 }
 
 // siteFilesOf are the site's own files, by the path each is served at: its pictures, and the file of the IndexNow key
@@ -614,6 +614,7 @@ func draw(snapshot *release.Snapshot, prepared *compose.Prepared, audience compo
 			served.serveEveryFormat(shown, pageWriter.Page(composed.Document, composed.Record, shown.Head.Page.Tab), textWriter{site: addresses, manual: frame.Manual})
 		}
 	}
+	served.serveProjectFiles(composition.ProjectFiles)
 	drawn := blogDrawing{served: served, moved: map[string]move{}}
 	missing, notFound := missingDrawing{site: addresses, status: statusLine(missingStatus), build: build}, map[string]byFormat[missingFormat]{}
 	for _, blog := range composition.Blogs() {
@@ -693,7 +694,14 @@ func currentDayMoves(moved map[string]move, post document.Document) {
 // servePictures serves posts' pictures, each at its file beside its post.
 func (served answers) servePictures(pictures []compose.PostPicture) {
 	for _, shown := range pictures {
-		served.fixed[routes.FilePath(shown.File)] = postPicturedAs(shown.Picture)
+		served.fixed[routes.FilePath(shown.File)] = besideAPage(shown.Picture.MediaType, shown.Picture.Body)
+	}
+}
+
+// serveProjectFiles serves the files beside projects' pages, each clip's recording and still, at its file.
+func (served answers) serveProjectFiles(files []compose.ProjectFile) {
+	for _, file := range files {
+		served.fixed[routes.FilePath(file.File)] = besideAPage(file.MediaType, file.Body)
 	}
 }
 

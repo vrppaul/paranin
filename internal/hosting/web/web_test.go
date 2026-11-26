@@ -688,6 +688,41 @@ func TestAPostsPictureIsServedBesideThePost(test *testing.T) {
 	}
 }
 
+// A project's clip, its recording and its still, is served at its files beside the project's page, each as its type,
+// for a cache to ask for again and under the policy that runs nothing in it, as a post's picture is.
+func TestAProjectsClipIsServedBesideItsPage(test *testing.T) {
+	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	const (
+		wantCache  = "no-cache"
+		wantPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+	)
+	cases := []struct {
+		name        string
+		path        string
+		file        string
+		contentType string
+	}{
+		{name: "the recording", path: "/p/tidy-tool/tidying.mp4", file: "projects/tidy-tool/tidying.mp4", contentType: "video/mp4"},
+		{name: "its still", path: "/p/tidy-tool/tidying.png", file: "projects/tidy-tool/tidying.png", contentType: "image/png"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			want, err := os.ReadFile(filepath.Join(fixtures.ContentFolder(test), testCase.file))
+			if err != nil {
+				test.Fatalf("read %q: %v", testCase.file, err)
+			}
+			response := serve(server, http.MethodGet, testCase.path, "*/*", "")
+			header := response.Header()
+			if response.Code != http.StatusOK || header.Get("Content-Type") != testCase.contentType || header.Get("Cache-Control") != wantCache ||
+				header.Get("Content-Security-Policy") != wantPolicy || !bytes.Equal(response.Body.Bytes(), want) {
+				test.Errorf("GET %s = %d %q, Cache-Control %q, Content-Security-Policy %q, of %d bytes; want %d %q, %q, %q, the %d bytes of %q",
+					testCase.path, response.Code, header.Get("Content-Type"), header.Get("Cache-Control"), header.Get("Content-Security-Policy"),
+					response.Body.Len(), http.StatusOK, testCase.contentType, wantCache, wantPolicy, len(want), testCase.file)
+			}
+		})
+	}
+}
+
 // The key a site tells IndexNow of, and the path its file is served at, from the site's root (indexnow.org); and the
 // path of the file of an empty key
 const (

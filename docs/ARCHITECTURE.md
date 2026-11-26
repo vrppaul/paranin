@@ -334,9 +334,10 @@ and web routes.
   title, the place and the first three facts in the profile's order, the
   author's choice of which come first. Nothing of the first section
   stands under the first screen; the blog's latest posts close it, a hint
-  of the blog the résumé's head carries and the text faces leave out,
-  which write the first section whole (amended 2026-11-26, the owner's
-  word, `DESIGN.md` Pages, Facts and LatestPosts). `document.TabsOf` parts a document into its tabs, the
+  of the blog the résumé's head carries and the text faces leave out
+  (amended 2026-11-26, the owner's word, `DESIGN.md` Pages, Facts and
+  LatestPosts). The text faces write the first section whole (not
+  approved). `document.TabsOf` parts a document into its tabs, the
   opening and a tab for each section left, the TUI's; `SlugOf` names
   each, and the ids of the page's sections (amended 2026-11-20, the
   owner's word). Each section of the résumé after the opening stands

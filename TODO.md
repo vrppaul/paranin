@@ -13,9 +13,6 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
   other projects and the Mail with "Write to me", which does nothing until `inbox`; then the projects' words from their
   READMEs, with the owner. A post beside a section, the blog's post tagged with the project, comes with the owner's
   first such post.
-- A project's stack is one text in its head's fact, so the page breaks a name of it at its hyphen where the line runs
-  out (`sentence-` at 1440 wide), though ProjectHead keeps each name whole: the names kept apart in the model would let
-  the page hold each.
 - The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: the tabs
   `about`, `experience` and `projects`, the skills and contact tabs gone; each role's technologies and long description
   in the profile, the experience's line and the technologies it puts forward; the experience tab's look, its head,

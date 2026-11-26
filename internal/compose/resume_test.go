@@ -203,7 +203,8 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 	}{
 		{name: "its name", want: "tidy-tool"},
 		{name: "its tagline", want: "Tidies files."},
-		{name: "its language and what it is built on", want: "Lua · Penlight · LPeg"},
+		{name: "its language", want: "Lua"},
+		{name: "what it is built on", want: "LPeg"},
 		{name: "its repository", want: "https://github.test/mira/tidy"},
 		{name: "its install command", want: "go install example.test/tidy@latest"},
 		{name: "a later install's note", want: "On a machine with no Go"},
@@ -228,34 +229,31 @@ type readFact struct {
 	value string
 }
 
-// A project's head tells about the project in facts, each under the site's word, in the order DESIGN.md's
-// ProjectHead gives: what it is made of, its language first; where its releases are read; its licence. A fact the
-// profile does not give is left out.
+// A project's head tells about the project in the order DESIGN.md's ProjectHead gives: what it is made of, each name
+// whole, its language first; then facts, each under the site's word, where its releases are read and its licence. What
+// the profile does not give is left out.
 func TestAProjectsHeadTellsAboutTheProject(test *testing.T) {
 	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
+	told := []readFact{{label: "release", value: "latest · changelog"}, {label: "licence", value: "MIT"}}
 	cases := []struct {
-		name     string
-		snapshot *content.Snapshot
-		want     []readFact
+		name      string
+		snapshot  *content.Snapshot
+		wantStack []string
+		wantAbout []readFact
 	}{
-		{
-			name: "a project the profile tells all of", snapshot: fixtures.LoadedContent(test),
-			want: []readFact{{label: "stack", value: "Lua · Penlight · LPeg"}, {label: "release", value: "latest · changelog"}, {label: "licence", value: "MIT"}},
-		},
-		{
-			name: "a project that names no language", snapshot: withoutLanguages(fixtures.LoadedContent(test)),
-			want: []readFact{{label: "stack", value: "Penlight · LPeg"}, {label: "release", value: "latest · changelog"}, {label: "licence", value: "MIT"}},
-		},
-		{name: "a project the profile tells nothing of", snapshot: withoutAbout(fixtures.LoadedContent(test)), want: []readFact{}},
+		{name: "a project the profile tells all of", snapshot: fixtures.LoadedContent(test), wantStack: []string{"Lua", "Penlight", "LPeg"}, wantAbout: told},
+		{name: "a project that names no language", snapshot: withoutLanguages(fixtures.LoadedContent(test)), wantStack: []string{"Penlight", "LPeg"}, wantAbout: told},
+		{name: "a project the profile tells nothing of", snapshot: withoutAbout(fixtures.LoadedContent(test)), wantStack: []string{}, wantAbout: []readFact{}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			got := []readFact{}
-			for _, fact := range fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Pages), tidyTool).Head.Project.About {
-				got = append(got, readFact{label: fact.Label, value: document.PlainText(fact.Value)})
+			project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Pages), tidyTool).Head.Project
+			about := []readFact{}
+			for _, fact := range project.About {
+				about = append(about, readFact{label: fact.Label, value: document.PlainText(fact.Value)})
 			}
-			if !slices.Equal(got, testCase.want) {
-				test.Errorf("what tidy-tool's head tells of it = %+v, want %+v", got, testCase.want)
+			if !slices.Equal(project.Stack, testCase.wantStack) || !slices.Equal(about, testCase.wantAbout) {
+				test.Errorf("tidy-tool's head is made of %q and tells %+v, want %q and %+v", project.Stack, about, testCase.wantStack, testCase.wantAbout)
 			}
 		})
 	}

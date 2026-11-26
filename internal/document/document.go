@@ -130,8 +130,24 @@ type Project struct {
 	InstallLabel string
 	// Installs are the ways to install the project: the first, then each with a note on when to take it instead
 	Installs []Install
-	// About are the facts that tell about the project, each under the site's word, as far as the profile gives them
+	// StackLabel is the site's word over what the project is made of
+	StackLabel string
+	// Stack is what the project is made of, each name whole: the language it is written in, then what it is built
+	// on; none where the profile names nothing
+	Stack []string
+	// About are the other facts that tell about the project, its releases and its licence, each under the site's
+	// word, as far as the profile gives them
 	About []Fact
+}
+
+// AboutFacts are what tells about the project as a face that writes its stack as text lists it among facts: the
+// stack's names joined by the face's own joint, under its label, where it has any; then the other facts.
+func (project Project) AboutFacts(joint string) []Fact {
+	if len(project.Stack) == 0 {
+		return project.About
+	}
+	stack := Fact{Label: project.StackLabel, Value: []Span{Text{Text: strings.Join(project.Stack, joint)}}}
+	return append([]Fact{stack}, project.About...)
 }
 
 // Install is a way to install a project: a note on when to take it, none on the first, and its command.

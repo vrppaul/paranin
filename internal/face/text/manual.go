@@ -60,7 +60,7 @@ const (
 )
 
 // The words that stand between the parts of one line of a manual: a title and its subtitle, and a subtitle and its
-// place or each two of a project's tags
+// place or each two of a post's tags
 const (
 	dashWord = "—"
 	dotWord  = "·"
@@ -167,8 +167,8 @@ func (writer manualWriter) project(project *document.Project) []string {
 		later = append(later, codeLines(sectionIndent+bulletHang, install.Command)...)
 	}
 	lines := append(append([]string{""}, writer.pairs(sectionIndent, gets)...), later...)
-	if len(project.About) > 0 {
-		lines = append(append(lines, ""), writer.pairs(sectionIndent, project.About)...)
+	if about := project.AboutFacts(dot); len(about) > 0 {
+		lines = append(append(lines, ""), writer.pairs(sectionIndent, about)...)
 	}
 	return lines
 }

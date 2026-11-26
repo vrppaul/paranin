@@ -96,8 +96,9 @@ func rowPhrases(phrases []string, rows []Row) []string {
 }
 
 // projectPhrases are what a project's head says of it: where its code lives, each way to install it, its note and
-// its command, and each fact that tells about it; not the site's words over the repository and the first install,
-// which a face may leave out where the place they stand in says it.
+// its command, what it is made of, under its label, each name, and each other fact that tells about it; not the
+// site's words over the repository and the first install, which a face may leave out where the place they stand in
+// says it.
 func projectPhrases(phrases []string, project *Project) []string {
 	if project == nil {
 		return phrases
@@ -107,6 +108,12 @@ func projectPhrases(phrases []string, project *Project) []string {
 	}
 	for _, install := range project.Installs {
 		phrases = textPhrase(spanPhrases(phrases, install.Note), install.Command)
+	}
+	if len(project.Stack) > 0 {
+		phrases = textPhrase(phrases, project.StackLabel)
+	}
+	for _, name := range project.Stack {
+		phrases = textPhrase(phrases, name)
 	}
 	return factPhrases(phrases, project.About)
 }

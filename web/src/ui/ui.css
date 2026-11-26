@@ -1664,6 +1664,11 @@ a.tile-title:focus-visible {
   border-top: var(--hairline) solid var(--quiet);
 }
 
+/* a name of what the project is made of stands whole, so its line breaks after a dot alone, never at a hyphen */
+.stack-name {
+  white-space: nowrap;
+}
+
 /* where a project's code lives (DESIGN.md, Repository), in the Mail's colours, bold at the text's size, underlined as
  * any link: the host and the slashes faint at the body's weight, the owner in the accent small text takes, the name in
  * the host's colour. Each part stands whole, so a line breaks after a slash alone, never at a hyphen */

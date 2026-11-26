@@ -7,6 +7,9 @@ import (
 	"github.com/vrppaul/paranin/internal/routes"
 )
 
+// What stands between two names of a project's stack, as the page writes them
+const stackJoint = space + placeMark + space
+
 // readme lays out a project's head as the page lays it, in one column (DESIGN.md, The TUI): the name in the titles'
 // font; the tagline, and what the project does; what gets it, the repository's owner and name, a link to it, then each
 // way to install it, a command in a box under its label; then the facts that tell about it.
@@ -16,7 +19,7 @@ func (layout layout) readme(head document.Head) []line {
 		return lines
 	}
 	gets := stacked(layout.fill(layout.repositoryWords(head.Project.Repository), 0), layout.factBlock(head.Project.InstallFacts(), 0))
-	return stacked(stacked(lines, gets), layout.factBlock(head.Project.About, 0))
+	return stacked(stacked(lines, gets), layout.factBlock(head.Project.AboutFacts(stackJoint), 0))
 }
 
 // repositoryWords are a repository's owner and name, as its address names them, the path's mark between the two, each

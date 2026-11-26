@@ -517,12 +517,35 @@ templ (writer PageWriter) projectHead(head document.Head, project document.Proje
 					@command(writer.frame.copyWords.Of(install.Command))
 				}
 			</div>
-			if len(project.About) > 0 {
-				@writer.facts(project.About)
+			if len(project.Stack) > 0 || len(project.About) > 0 {
+				@writer.projectFacts(project)
 			}
 		</div>
 		@corners()
 	</header>
+}
+
+// projectFacts are what tells about a project, as facts: what it is made of, each name a whole that never breaks
+// inside, a line breaking only after the dot between two; then each other fact.
+templ (writer PageWriter) projectFacts(project document.Project) {
+	<dl class="facts">
+		if len(project.Stack) > 0 {
+			<dt>{ project.StackLabel }</dt>
+			<dd>
+				// the dot before a name meets it, as templ writes a space after one on a line of its own
+				for index, name := range project.Stack {
+					if index > 0 {
+						{ dot }<span class="stack-name">{ name }</span>
+					} else {
+						<span class="stack-name">{ name }</span>
+					}
+				}
+			</dd>
+		}
+		for _, fact := range project.About {
+			@writer.factRow(fact)
+		}
+	</dl>
 }
 
 // repositoryLink is where a project's code lives (DESIGN.md, Repository), in the Mail's colours: a link to it, its
@@ -642,16 +665,21 @@ templ codeRuns(runs []document.CodeRun) {
 	}
 }
 
-// facts are labels and their values, each value as factValue draws it.
+// facts are labels and their values, each a row.
 templ (writer PageWriter) facts(facts []document.Fact) {
 	<dl class="facts">
 		for _, fact := range facts {
-			<dt>{ fact.Label }</dt>
-			<dd>
-				@writer.factValue(fact)
-			</dd>
+			@writer.factRow(fact)
 		}
 	</dl>
+}
+
+// factRow is a fact's label and its value, the value as factValue draws it.
+templ (writer PageWriter) factRow(fact document.Fact) {
+	<dt>{ fact.Label }</dt>
+	<dd>
+		@writer.factValue(fact)
+	</dd>
 }
 
 // entry is a role or a school (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on;

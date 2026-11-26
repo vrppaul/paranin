@@ -18,8 +18,7 @@ import (
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
-// What separates the words of a fact the site joins, a project's stack and the links to its releases, as the profile
-// writes the résumé's stack
+// What separates the links to a project's releases in one fact, as the profile writes the résumé's stack
 const wordSeparator = " · "
 
 // Composed is a page a person reads, as compose makes it: its document, its tabs past the opening, each a document
@@ -289,18 +288,17 @@ func projectPart(project content.Project, words content.Words) *document.Project
 		Repository:   projectRepository(project, words),
 		InstallLabel: words.Text(content.WordInstall),
 		Installs:     installs,
+		StackLabel:   words.Text(content.WordStack),
+		Stack:        projectMadeOf(project),
 		About:        projectAbout(project, words),
 	}
 }
 
-// projectAbout are the facts that tell about a project, each under the site's word, as far as the profile gives
-// them: what it is made of, its words joined; where its releases are read, a link to the newest and one to their
-// history, with no number, which would go stale; and its licence.
+// projectAbout are the facts past its stack that tell about a project, each under the site's word, as far as the
+// profile gives them: where its releases are read, a link to the newest and one to their history, with no number,
+// which would go stale; and its licence.
 func projectAbout(project content.Project, words content.Words) []document.Fact {
 	about := []document.Fact{}
-	if madeOf := projectMadeOf(project); len(madeOf) > 0 {
-		about = append(about, document.Fact{Label: words.Text(content.WordStack), Value: textSpans(strings.Join(madeOf, wordSeparator))})
-	}
 	if release := project.Release; release != nil {
 		latest := linkSpans(document.Address{URL: release.Latest.Written()}, words.Text(content.WordLatest))
 		changelog := linkSpans(document.Address{URL: release.Changelog.Written()}, words.Text(content.WordChangelog))

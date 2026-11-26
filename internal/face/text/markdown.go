@@ -88,7 +88,7 @@ const (
 
 // What stands between the parts of one line
 const (
-	// a title and its place, a tag and a subtitle, and each two of a project's tags
+	// a title and its place, a tag and a subtitle, and each two names of a project's stack, in markdown and the manual
 	dot = " · "
 	// a title and its subtitle, the cells of a row
 	dash = " — "
@@ -165,7 +165,7 @@ func (writer markdownWriter) project(chunks []string, project *document.Project)
 	for _, fact := range slices.Concat(project.Repository.Facts(), project.InstallFacts()) {
 		chunks = appendLine(chunks, writer.fact(fact))
 	}
-	return appendChunk(chunks, writer.facts(project.About))
+	return appendChunk(chunks, writer.facts(project.AboutFacts(dot)))
 }
 
 func (writer markdownWriter) blocks(chunks []string, blocks []document.Block, depth int) []string {

@@ -475,8 +475,71 @@ templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
 	</a>
 }
 
+// projectMain is a project's page (DESIGN.md, Layout): one grid of its text's column and its side's, its head on it,
+// then its blocks across both.
+templ (writer PageWriter) projectMain(head document.Head, project document.Project, blocks []document.Block) {
+	<div class="project">
+		@writer.projectHead(head, project)
+		@writer.pageBlocks(blocks)
+	</div>
+}
+
+// projectHead is a project's first screen (DESIGN.md, ProjectHead): its name in block letters, the page's h1, on a row
+// of its own; under it, level with each other, the tagline and the description in the text's column, and in the
+// side's what gets the project, then the facts that tell about it; the crosses at its corners.
+templ (writer PageWriter) projectHead(head document.Head, project document.Project) {
+	<header class="project-head">
+		@writer.drawnTitle(head)
+		<div class="project-intro">
+			if len(head.Subtitle) > 0 {
+				<p class="project-line">
+					@writer.spans(head.Subtitle)
+				</p>
+			}
+			if len(head.Lead) > 0 {
+				<p class="project-lead">
+					@writer.spans(head.Lead)
+				</p>
+			}
+		</div>
+		<div class="project-side">
+			<div class="project-gets">
+				if project.Repository != nil {
+					@repositoryLink(*project.Repository)
+				}
+				for _, install := range project.Installs {
+					if len(install.Note) > 0 {
+						<p class="project-note">
+							@writer.spans(install.Note)
+							@text(noteEnd)
+						</p>
+					}
+					@command(writer.frame.copyWords.Of(install.Command))
+				}
+			</div>
+			if len(project.About) > 0 {
+				@writer.facts(project.About)
+			}
+		</div>
+		@corners()
+	</header>
+}
+
+// repositoryLink is where a project's code lives (DESIGN.md, Repository), in the Mail's colours: a link to it, its
+// host, its owner and its name each a part the stylesheet colours, a line breaking after a slash alone; or its
+// address whole where it names no owner and name.
+templ repositoryLink(repository document.Repository) {
+	<a class="repository" href={ routes.Reference(repository.Address, routes.FormatChosen) }>
+		if host, owner, name, parted := repository.Parts(); parted {
+			<span class="repository-host">{ host }</span><span class="repository-mark">{ document.RepositoryPathMark }</span><wbr/><span class="repository-owner">{ owner }</span><span class="repository-mark">{ document.RepositoryPathMark }</span><wbr/><span class="repository-name">{ name }</span>
+		} else {
+			{ repository.Address.URL }
+		}
+	</a>
+}
+
 // head is what the page's main part shows first (DESIGN.md, Contents and PageHead): its title in block letters, its
-// line, the subtitle and the place beside it; the lead; and what gets a project, then what tells about it.
+// line, the subtitle and the place beside it; and the lead.
 templ (writer PageWriter) head(head document.Head) {
 	<div class="page-head">
 		@writer.drawnTitle(head)
@@ -493,14 +556,6 @@ templ (writer PageWriter) head(head document.Head) {
 			<p class="page-lead">
 				@writer.spans(head.Lead)
 			</p>
-		}
-		if project := head.Project; project != nil {
-			if gets := append(project.Repository.Facts(), project.InstallFacts()...); len(gets) > 0 {
-				@writer.facts(gets)
-			}
-			if len(project.About) > 0 {
-				@writer.facts(project.About)
-			}
 		}
 	</div>
 }

@@ -22,6 +22,8 @@ const (
 	ColourEdge
 	// ColourAccent is what the eye goes to first, a command among it
 	ColourAccent
+	// ColourAccentText is the accent where small text takes it, as a repository's owner
+	ColourAccentText
 	// ColourHost is the site's host where it is written, as the footer's session, and the far end of the author's name
 	ColourHost
 	// ColourLabel is what names the text after it, as a fact's label
@@ -73,6 +75,7 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourQuiet:        {TrueColour: color.RGBA{R: 204, G: 208, B: 218, A: 255}, Indexed: 252, Basic: 8},
 			ColourEdge:         {TrueColour: color.RGBA{R: 156, G: 160, B: 176, A: 255}, Indexed: 248, Basic: 8},
 			ColourAccent:       {TrueColour: color.RGBA{R: 254, G: 100, B: 11, A: 255}, Indexed: 202, Basic: 3},
+			ColourAccentText:   {TrueColour: color.RGBA{R: 200, G: 45, B: 0, A: 255}, Indexed: 160, Basic: 3},
 			ColourHost:         {TrueColour: color.RGBA{R: 130, G: 48, B: 231, A: 255}, Indexed: 98, Basic: 5},
 			ColourLabel:        {TrueColour: color.RGBA{R: 30, G: 102, B: 245, A: 255}, Indexed: 27, Basic: 4},
 			ColourPrompt:       {TrueColour: color.RGBA{R: 64, G: 160, B: 43, A: 255}, Indexed: 70, Basic: 2},
@@ -102,6 +105,7 @@ func Palette(theme Theme) map[Colour]Shade {
 			ColourQuiet:        {TrueColour: color.RGBA{R: 54, G: 58, B: 79, A: 255}, Indexed: 238, Basic: 8},
 			ColourEdge:         {TrueColour: color.RGBA{R: 91, G: 96, B: 120, A: 255}, Indexed: 60, Basic: 8},
 			ColourAccent:       {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
+			ColourAccentText:   {TrueColour: color.RGBA{R: 245, G: 169, B: 127, A: 255}, Indexed: 216, Basic: 3},
 			ColourHost:         {TrueColour: color.RGBA{R: 198, G: 160, B: 246, A: 255}, Indexed: 183, Basic: 5},
 			ColourLabel:        {TrueColour: color.RGBA{R: 138, G: 173, B: 244, A: 255}, Indexed: 111, Basic: 4},
 			ColourPrompt:       {TrueColour: color.RGBA{R: 166, G: 218, B: 149, A: 255}, Indexed: 150, Basic: 2},

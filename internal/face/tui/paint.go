@@ -124,8 +124,9 @@ func paintFor(theme look.Theme, profile colorprofile.Profile) paint {
 			kindCurrent: plain.Foreground(colour(look.ColourAccent)),
 			kindPast:    plain.Foreground(colour(look.ColourEdge)).Faint(noColours),
 			kindSwatch:  plain,
-			// a repository's owner and name in the colours of the mail's two parts
-			kindOwner:      plain.Foreground(colour(look.ColourAccent)).Bold(true),
+			// a repository's owner and name in the colours of the mail's two parts, the owner in the accent small text
+			// takes
+			kindOwner:      plain.Foreground(colour(look.ColourAccentText)).Bold(true),
 			kindRepository: plain.Foreground(colour(look.ColourHost)).Bold(true),
 			kindPrompt:     plain.Foreground(colour(look.ColourPrompt)).Bold(true),
 			// a bar's cells and the mark of no measured time differ in shape, so they need no colour to tell them apart

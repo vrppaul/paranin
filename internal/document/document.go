@@ -3,9 +3,14 @@
 // over every kind, as gochecksumtype holds it to, draws every kind there is. The model knows no content and no
 // face: compose fills it, and each face decides how each kind looks. What a face reads off a document by the model's
 // own terms is read here once: its plain text, its phrases, the brief a résumé opens with (brief.go), the document as
-// a reader of the finished work sees it, with nothing that is only a gap still to fill (written.go), and a link to a
-// mailbox, its mailbox and its host (target.go).
+// a reader of the finished work sees it, with nothing that is only a gap still to fill (written.go), a link to a
+// mailbox, its mailbox and its host (target.go), and a repository's host, owner and name.
 package document
+
+import (
+	"net/url"
+	"strings"
+)
 
 // Document is one page as every face draws it.
 type Document struct {
@@ -158,6 +163,22 @@ func (project Project) InstallFact(install Install) Fact {
 type Repository struct {
 	Label   string
 	Address Address
+}
+
+// RepositoryPathMark is the mark between the parts of a repository's address, its host, its owner and its name, which
+// a face draws between them
+const RepositoryPathMark = "/"
+
+// Parts are a repository's address as a forge names it: its host; its owner, every part of its path but the last; and
+// its name, the last; not parted where its path names no owner and name, or it reads as no address.
+func (repository Repository) Parts() (host, owner, name string, parted bool) {
+	parsed, err := url.Parse(repository.Address.URL)
+	if err != nil {
+		return "", "", "", false
+	}
+	path := strings.Trim(parsed.Path, RepositoryPathMark)
+	owner, name, parted = cutLast(path, RepositoryPathMark)
+	return parsed.Host, owner, name, parted
 }
 
 // Facts are the repository as a face lists it among facts: its label, and its address as a link reading as it is

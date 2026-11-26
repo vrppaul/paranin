@@ -27,11 +27,14 @@ type resumeParts struct {
 }
 
 // openingPart is what the main part holds where a page shows its opening (document.TabsOf), as a reader of the
-// finished work sees it: on the résumé that opens with a brief, the first screen of the facts written and the
-// résumé's parts under it; on any other page, and on a résumé whose brief would hold nothing but gaps, its head, then
-// the opening's blocks.
+// finished work sees it: on a project's page its head and its blocks on the project's grid; on the résumé that opens
+// with a brief, the first screen of the facts written and the résumé's parts under it; on any other page, and on a
+// résumé whose brief would hold nothing but gaps, its head, then the opening's blocks.
 func (writer PageWriter) openingPart(composed document.Document, opening document.Opening) templ.Component {
 	blocks := document.WrittenBlocks(opening.Blocks)
+	if project := composed.Head.Project; project != nil {
+		return writer.projectMain(composed.Head, *project, blocks)
+	}
 	if opening.Brief == nil {
 		return writer.plainMain(composed.Head, blocks)
 	}

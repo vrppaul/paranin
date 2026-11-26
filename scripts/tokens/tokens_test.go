@@ -90,6 +90,9 @@ lengths:
   - name: code_in_words
     about: code among words, a share of their size
     em: 0.9375
+  - name: text_share
+    about: the text's share of the room its grid's columns leave
+    fr: 3
 times:
   - name: blink
     about: a cursor's blink
@@ -245,6 +248,7 @@ func TestThePagesOwnTokensAreCustomPropertiesOfItsRoot(test *testing.T) {
 		{name: "a length", want: "--row: 1.5rem;"},
 		{name: "a length in cells, a mono face's ch", want: "--cell: 1ch;"},
 		{name: "a length that is a share of its text's size, in em", want: "--code-in-words: 0.9375em;"},
+		{name: "a share of the room a grid's columns leave, in fr", want: "--text-share: 3fr;"},
 		{name: "what each length is for", want: "/* the grid's one row */"},
 		{name: "a time, in milliseconds", want: "--blink: 1060ms;"},
 		{name: "a layer, its place among the layers counted from one, named apart from a length", want: "--layer-row: 1;"},
@@ -501,10 +505,13 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a length named as a text style's weight is", original: "name: row", replacement: "name: type_body_weight", want: `"type_body_weight" is named twice`},
 		{name: "a length of no rem", original: "rem: 1.5", replacement: "rem: 0", want: `"row" has the rem 0`},
 		{name: "a length less than none", original: "rem: 1.5", replacement: "rem: -1.5", want: `"row" has the rem -1.5`},
-		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has 0 of rem, cells and em`},
-		{name: "a length in rem and in cells", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    cells: 2\n", want: `"row" has 2 of rem, cells and em`},
-		{name: "a length in cells and in em", original: "    cells: 1\n", replacement: "    cells: 1\n    em: 1\n", want: `"cell" has 2 of rem, cells and em`},
+		{name: "a length's rem left out", original: "    rem: 1.5\n", replacement: "", want: `"row" has 0 of rem, cells, em and fr`},
+		{name: "a length in rem and in cells", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    cells: 2\n", want: `"row" has 2 of rem, cells, em and fr`},
+		{name: "a length in cells and in em", original: "    cells: 1\n", replacement: "    cells: 1\n    em: 1\n", want: `"cell" has 2 of rem, cells, em and fr`},
+		{name: "a share of a grid in rem too", original: "    fr: 3\n", replacement: "    fr: 3\n    rem: 1\n", want: `"text_share" has 2 of rem, cells, em and fr`},
 		{name: "a length of no share of its text", original: "em: 0.9375", replacement: "em: 0", want: `"code_in_words" has the em 0`},
+		{name: "a share of none of a grid", original: "fr: 3", replacement: "fr: 0", want: `"text_share" has the fr 0`},
+		{name: "a share of part of a grid's room", original: "fr: 3", replacement: "fr: 1.5", want: `"1.5" is no whole number`},
 		{name: "a mix under its least contrast", original: "    share: 0.2\n", replacement: "    share: 0.2\n    least_contrast: {ratio: 21, over: [background]}\n", want: `"soft" reads`},
 		{name: "a length of no cells", original: "cells: 1", replacement: "cells: 0", want: `"cell" has the cells 0`},
 		{name: "a length in rem a terminal lays out by", original: "    rem: 1.5\n", replacement: "    rem: 1.5\n    terminal: true\n", want: `"row" is for a terminal, which lays out in cells alone`},

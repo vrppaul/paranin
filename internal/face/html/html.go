@@ -108,6 +108,8 @@ const (
 	pointSpace = " "
 	// the words of a command, where alone its lines break, so a copy reads the command as written
 	commandSpace = " "
+	// an install's note, before the command it says when to take
+	noteEnd = ":"
 )
 
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,

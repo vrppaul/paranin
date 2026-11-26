@@ -26,6 +26,8 @@
   edge: "#5b6078",
   // what the eye goes to first, a command among it
   accent: "#f5a97f",
+  // the accent where small text takes it, as a repository's owner
+  accent_text: "#f5a97f",
   // the site's host where it is written, as the footer's session, and the far end of the author's name
   host: "#c6a0f6",
   // what names the text after it, as a fact's label

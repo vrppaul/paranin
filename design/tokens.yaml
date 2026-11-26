@@ -23,9 +23,9 @@
 # the text size the reader set, so the whole page grows with it; none is in pixels. A text style is its size and its
 # line's height, and its weight; a line is in rem, not rows, since a style's line need not be a whole row. A length is
 # in rem, or in whole cells of the first face, ch, for a space inside a line, or a share of the size of the text it
-# stands in, em; a time is in whole milliseconds; a layer is a height over the page that a part standing over it as it
-# scrolls lies on, the layers listed lowest first, each over those before it. Each comes with the first part of the
-# page that draws by it.
+# stands in, em, or whole shares of the room a grid's columns leave, fr; a time is in whole milliseconds; a layer is a
+# height over the page that a part standing over it as it scrolls lies on, the layers listed lowest first, each over
+# those before it. Each comes with the first part of the page that draws by it.
 
 background:
   about: the page itself, which every blend is laid over
@@ -77,6 +77,15 @@ colours:
     light: "#fe640b"
     dark: "#f5a97f"
     basic: 3
+  - name: accent_text
+    about: the accent where small text takes it, as a repository's owner
+    # Latte's peach darkened along OKLCH lightness, its hue and chroma kept, just enough for its least contrast, as
+    # host's mauve is; Macchiato's peach reads as small text already
+    light: "#c82d00"
+    dark: "#f5a97f"
+    basic: 3
+    # small text, which WCAG asks to read at 4.5:1: a repository's owner on the page's ground and on the panel's
+    least_contrast: {ratio: 4.5, over: [background, sunk]}
   - name: host
     about: the site's host where it is written, as the footer's session, and the far end of the author's name
     # Latte's mauve darkened along OKLCH lightness, its hue and chroma kept, just enough for its least contrast
@@ -394,6 +403,12 @@ lengths:
   - name: tile
     about: the least width of a post's tile on the blog's list, a title of a few words a line
     cells: 30
+  - name: project_text
+    about: the share of a project's page its text's column takes of the room its columns leave, three fifths, the main thing
+    fr: 3
+  - name: project_side
+    about: the share of a project's page its side's column takes, two fifths, what adds to the text
+    fr: 2
   - name: title_text_measure
     about: the longest line of a title set in text, a few words, in cells of its own size
     cells: 22

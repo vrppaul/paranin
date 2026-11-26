@@ -1589,6 +1589,130 @@ a.tile-title:focus-visible {
   line-height: var(--type-heading-line);
 }
 
+/* a project's page (DESIGN.md, Layout): one grid from its head to its foot, its text's column, the main thing, three
+ * rows of air, then its side's, what adds to the text; its blocks after the head across both */
+.project {
+  display: grid;
+  grid-template-columns: minmax(0, var(--project-text)) minmax(0, var(--project-side));
+  column-gap: var(--row-3);
+}
+
+.project > .page-blocks {
+  grid-column: 1 / -1;
+  padding-top: var(--row-2);
+}
+
+/* its head (DESIGN.md, ProjectHead): the name on a row of its own, no wider than the text's column; two rows under
+ * it, level with each other, the tagline and the description in the text's column and what gets the project and
+ * what tells about it in the side's; the crosses at its corners, as round the résumé's first screen, and four rows
+ * from its last line to the first section's title, the blocks' first two of them */
+.project-head {
+  position: relative;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  row-gap: var(--row-2);
+  align-items: start;
+  padding-block: var(--row-4) var(--row-2);
+}
+
+.project-head > h1 {
+  grid-column: 1;
+  margin: 0;
+}
+
+.project-intro {
+  display: grid;
+  grid-column: 1;
+  gap: var(--row);
+}
+
+.project-intro > *,
+.project-note {
+  margin: 0;
+}
+
+/* the tagline in the lead's style, held to the headline's line; the description says less, held to prose's */
+.project-line {
+  max-width: var(--lead);
+  font-size: var(--type-lead-size);
+  font-weight: var(--type-lead-weight);
+  line-height: var(--type-lead-line);
+}
+
+.project-lead {
+  max-width: var(--measure);
+  color: var(--muted);
+}
+
+/* the side: what gets the project, its repository and each way to install it a row apart, a command as wide as its
+ * words, then, under a quiet rule, the facts that tell about it */
+.project-side {
+  display: grid;
+  grid-column: 2;
+  gap: var(--row);
+}
+
+.project-gets {
+  display: grid;
+  gap: var(--row);
+  justify-items: start;
+}
+
+.project-side .facts {
+  padding-top: var(--row);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+/* where a project's code lives (DESIGN.md, Repository), in the Mail's colours, bold at the text's size, underlined as
+ * any link: the host and the slashes faint at the body's weight, the owner in the accent small text takes, the name in
+ * the host's colour. Each part stands whole, so a line breaks after a slash alone, never at a hyphen */
+.repository {
+  font-weight: var(--type-strong-weight);
+}
+
+.repository > span {
+  white-space: nowrap;
+}
+
+.repository-host,
+.repository-mark {
+  color: var(--faint);
+  font-weight: var(--type-body-weight);
+}
+
+.repository-owner {
+  color: var(--accent-text);
+}
+
+.repository-name {
+  color: var(--host);
+}
+
+/* on a phone one column: the name, the tagline and the description, then the side's two groups; the tagline in the
+ * lead's phone size */
+@media (width < 53.75rem) {
+  .project {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-head {
+    padding-block: var(--row-2) var(--row);
+  }
+
+  .project-line {
+    font-size: var(--type-lead-phone-size);
+    font-weight: var(--type-lead-phone-weight);
+    line-height: var(--type-lead-phone-line);
+  }
+
+  .project-head > h1,
+  .project-intro,
+  .project-side {
+    grid-column: 1;
+  }
+}
+
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
  * what stands before it, as space shows its heading's level. Two entries or two cards need no row between them: each
  * has a row of air inside its hairline */

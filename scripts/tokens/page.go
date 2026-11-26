@@ -25,6 +25,7 @@ const (
 	remKey          = "rem"
 	cellsKey        = "cells"
 	textShareKey    = "em"
+	gridShareKey    = "fr"
 	millisecondsKey = "milliseconds"
 )
 
@@ -35,6 +36,10 @@ const cellsValue = "%dch"
 // How a length that is a share of its text's size is written in the stylesheet: in em, the size of the text it stands
 // in, as code inside words set larger than its own
 const textShareUnit = "em"
+
+// How a share of the room a grid's columns leave is written in the stylesheet: in fr, in whole shares, as the columns
+// of a project's page part it, three for its text and two for its side
+const gridShareValue = "%dfr"
 
 // How many units a length is written in: one, so the stylesheet never guesses which the file means
 const oneUnit = 1
@@ -92,14 +97,15 @@ type typeToken struct {
 }
 
 // lengthToken is a length the page lays out by, as the file writes it: its name, what it is for, how long it is, in
-// rem, in the face's cells or as a share of its text's size, in one of them alone, and whether a terminal lays out by
-// it too, in cells.
+// rem, in the face's cells, as a share of its text's size or as a share of the room a grid's columns leave, in one of
+// them alone, and whether a terminal lays out by it too, in cells.
 type lengthToken struct {
 	Name      string       `yaml:"name"`
 	About     string       `yaml:"about"`
 	Rem       *remSize     `yaml:"rem"`
 	Cells     *wholeNumber `yaml:"cells"`
 	TextShare *remSize     `yaml:"em"`
+	GridShare *wholeNumber `yaml:"fr"`
 	Terminal  bool         `yaml:"terminal"`
 }
 
@@ -197,8 +203,8 @@ type readType struct {
 	weight wholeNumber
 }
 
-// readLength is a length read, in rem or in cells, and the cells a terminal lays out by it in, none where the page
-// alone does.
+// readLength is a length read, in any unit the file writes one in, and the cells a terminal lays out by it in, none
+// where the page alone does.
 type readLength struct {
 	name          string
 	about         string
@@ -228,6 +234,14 @@ type textShare float64
 // exactly.
 func (share textShare) stylesheetValue() string {
 	return strconv.FormatFloat(float64(share), 'f', shortestDecimals, sizeFloatBits) + textShareUnit
+}
+
+// gridShare is a length that is a share of the room a grid's columns leave, in whole shares.
+type gridShare uint
+
+// stylesheetValue is a share of a grid's room as the stylesheet writes it: in fr.
+func (share gridShare) stylesheetValue() string {
+	return fmt.Sprintf(gridShareValue, share)
 }
 
 // readTime is a time read, in milliseconds.
@@ -331,22 +345,22 @@ func readTypeToken(token typeToken, faces []readFace, named map[string]bool) (re
 	return style, nil
 }
 
-// readLengthToken reads a length, more than nothing long, in rem, in cells or in em: one of them, since a length
-// written in two would leave the stylesheet to guess which the file means; and in cells where a terminal lays out by
-// it, since a terminal has no other unit.
+// readLengthToken reads a length, more than nothing long, in rem, in cells, in em or in fr: one of them, since a
+// length written in two would leave the stylesheet to guess which the file means; and in cells where a terminal lays
+// out by it, since a terminal has no other unit.
 func readLengthToken(token lengthToken, named map[string]bool) (readLength, error) {
 	if err := checkToken(token.Name, token.About, named); err != nil {
 		return readLength{}, err
 	}
 	written := 0
-	for _, unit := range []bool{token.Rem != nil, token.Cells != nil, token.TextShare != nil} {
+	for _, unit := range []bool{token.Rem != nil, token.Cells != nil, token.TextShare != nil, token.GridShare != nil} {
 		if unit {
 			written++
 		}
 	}
 	if written != oneUnit {
-		return readLength{}, fmt.Errorf("%w: %q has %d of %s, %s and %s, where it takes one",
-			errTokens, token.Name, written, remKey, cellsKey, textShareKey)
+		return readLength{}, fmt.Errorf("%w: %q has %d of %s, %s, %s and %s, where it takes one",
+			errTokens, token.Name, written, remKey, cellsKey, textShareKey, gridShareKey)
 	}
 	if token.Terminal && token.Cells == nil {
 		return readLength{}, fmt.Errorf("%w: %q is for a terminal, which lays out in cells alone", errTokens, token.Name)
@@ -363,10 +377,14 @@ func readLengthToken(token lengthToken, named map[string]bool) (readLength, erro
 		if token.Terminal {
 			read.terminalCells = cellCount(cells)
 		}
-	default:
+	case token.TextShare != nil:
 		var share remSize
 		share, err = counted(token.TextShare, token.Name, textShareKey)
 		read.value = textShare(share)
+	default:
+		var shares wholeNumber
+		shares, err = counted(token.GridShare, token.Name, gridShareKey)
+		read.value = gridShare(shares)
 	}
 	return read, err
 }

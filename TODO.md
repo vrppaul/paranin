@@ -7,12 +7,15 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
   - The form's salary range, an island, waits for `inbox` (step 10).
-- A project's page as `DESIGN.md` draws it (owner, 2026-11-26), a chunk each: its head, what gets the project and
-  what tells about it, on the grid's two shares; its sections, with points, code written in backticks in the profile's
-  words (owner, 2026-11-26), Links beside them and each title a link to its section; its Clips, recordings the site
-  serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); its end, the other projects and the
-  Mail with "Write to me", which does nothing until `inbox`; then the projects' words from their READMEs, with the
-  owner. A post beside a section, the blog's post tagged with the project, comes with the owner's first such post.
+- A project's page as `DESIGN.md` draws it (owner, 2026-11-26), a chunk each: its sections, with points, code written
+  in backticks in the profile's words (owner, 2026-11-26), Links beside them and each title a link to its section; its
+  Clips, recordings the site serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); its end, the
+  other projects and the Mail with "Write to me", which does nothing until `inbox`; then the projects' words from their
+  READMEs, with the owner. A post beside a section, the blog's post tagged with the project, comes with the owner's
+  first such post.
+- A project's stack is one text in its head's fact, so the page breaks a name of it at its hyphen where the line runs
+  out (`sentence-` at 1440 wide), though ProjectHead keeps each name whole: the names kept apart in the model would let
+  the page hold each.
 - The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: the tabs
   `about`, `experience` and `projects`, the skills and contact tabs gone; each role's technologies and long description
   in the profile, the experience's line and the technologies it puts forward; the experience tab's look, its head,

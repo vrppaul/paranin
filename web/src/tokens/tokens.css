@@ -21,6 +21,8 @@
   --edge: light-dark(#9ca0b0, #5b6078);
   /* what the eye goes to first, a command among it */
   --accent: light-dark(#fe640b, #f5a97f);
+  /* the accent where small text takes it, as a repository's owner */
+  --accent-text: light-dark(#c82d00, #f5a97f);
   /* the site's host where it is written, as the footer's session, and the far end of the author's name */
   --host: light-dark(#8230e7, #c6a0f6);
   /* what names the text after it, as a fact's label */
@@ -202,6 +204,10 @@
   --group-name-mid: 18ch;
   /* the least width of a post's tile on the blog's list, a title of a few words a line */
   --tile: 30ch;
+  /* the share of a project's page its text's column takes of the room its columns leave, three fifths, the main thing */
+  --project-text: 3fr;
+  /* the share of a project's page its side's column takes, two fifths, what adds to the text */
+  --project-side: 2fr;
   /* the longest line of a title set in text, a few words, in cells of its own size */
   --title-text-measure: 22ch;
   /* code among an article's words, a share of their size, since a mono face looks larger than theirs at one size */

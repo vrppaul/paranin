@@ -154,12 +154,19 @@ const MailAt = "@"
 
 // Parts are the mail's mailbox and its host, parted at its last at, since a host holds none; not parted where it
 // holds no at.
+//
+//wrapper:names a mail's mailbox and host, which a face draws apart
 func (mail Mail) Parts() (box, host string, parted bool) {
-	at := strings.LastIndex(mail.Address, MailAt)
+	return cutLast(mail.Address, MailAt)
+}
+
+// cutLast is a text cut at the last of a mark: what stands before it and what after; not cut where it holds none.
+func cutLast(text, mark string) (before, after string, cut bool) {
+	at := strings.LastIndex(text, mark)
 	if at < 0 {
-		return mail.Address, "", false
+		return text, "", false
 	}
-	return mail.Address[:at], mail.Address[at+len(MailAt):], true
+	return text[:at], text[at+len(mark):], true
 }
 
 // LinkOf is the link spans are, where they are one link alone, with no words beside it.

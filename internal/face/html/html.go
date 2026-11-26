@@ -112,6 +112,9 @@ const (
 	noteEnd = ":"
 )
 
+// The id of the heading over a project's other projects at its page's end, which their panes are named by (ownID)
+const othersHeadingID = "other-projects"
+
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
 // and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
 // (web/src/controllers/tooltip.ts)

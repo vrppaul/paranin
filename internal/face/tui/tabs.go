@@ -94,7 +94,8 @@ type briefOpening struct {
 	blocks  []document.Block
 }
 
-// projectOpening is a project's opening: its head as the page lays it, then all its blocks, its sections among them.
+// projectOpening is a project's opening: its head as the page lays it, then all its blocks, its sections among them,
+// then its end.
 type projectOpening struct {
 	head   document.Head
 	blocks []document.Block
@@ -221,7 +222,7 @@ func (layout layout) tab(shown tab) laidTab {
 	case briefOpening:
 		return linesAlone(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)))
 	case projectOpening:
-		return linesAlone(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)))
+		return linesAlone(stacked(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)), layout.projectEnd(body.head)))
 	case reportOpening:
 		return linesAlone(stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0)))
 	case skillsOpening:

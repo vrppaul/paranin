@@ -110,14 +110,17 @@ type markdownWriter struct {
 	titleEscape *strings.Replacer
 }
 
-// Markdown writes a document as CommonMark: its head, then each block, a blank line between them, and the notes its
-// blocks cite at the end.
+// Markdown writes a document as CommonMark: its head, then each block, a blank line between them, a project's end as
+// one more section, and the notes its blocks cite at the end.
 func Markdown(composed document.Document, site routes.Site) string {
 	writer := markdownWriter{
 		site: site, textEscape: escaperOf(inlineMarkup), gapEscape: escaperOf(gapMarkup), titleEscape: escaperOf(titleMarkup),
 	}
 	chunks := writer.head(composed.Head)
 	chunks = writer.blocks(chunks, composed.Blocks, sectionDepth)
+	if project := composed.Head.Project; project != nil {
+		chunks = writer.block(chunks, project.EndSection(), sectionDepth)
+	}
 	chunks = appendChunk(chunks, writer.notes(document.NotesOf(composed.Blocks)))
 	return strings.Join(chunks, blankLine) + lineEnd
 }

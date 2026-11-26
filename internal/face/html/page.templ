@@ -481,7 +481,69 @@ templ (writer PageWriter) projectMain(head document.Head, blocks []document.Bloc
 	<div class="project">
 		@writer.projectHead(head)
 		@writer.pageBlocks(blocks)
+		if project := head.Project; project != nil {
+			@writer.projectEnd(*project)
+		}
 	</div>
+}
+
+// projectEnd is where a project's reader goes next (DESIGN.md, ProjectEnd), under a quiet rule on the project's grid:
+// in the text's column the heading over the other projects and the way to them all, then each other project a pane;
+// in the side's the author's mail, heading as the brief's does, and the primary button, which does nothing until the
+// form is there, as the first screen's.
+templ (writer PageWriter) projectEnd(project document.Project) {
+	<footer class="project-end">
+		<div class="project-others">
+			<div class="project-others-heading">
+				<h2 id={ ownID(othersHeadingID) } class="panes-title">{ project.Labels.Others }</h2>
+				<a class="panes-all" href={ routes.Reference(project.AllProjects.Target, routes.FormatChosen) }>
+					@writer.spans(project.AllProjects.Spans)
+				</a>
+			</div>
+			if len(project.Others) > 0 {
+				<nav class="project-panes" aria-labelledby={ ownID(othersHeadingID) }>
+					for _, other := range project.Others {
+						@writer.otherPane(other)
+					}
+				</nav>
+			}
+		</div>
+		<div class="project-write">
+			@writer.mailLink(project.Mail, true)
+			<button type="button" class="button-primary">{ writer.frame.writeTo }</button>
+		</div>
+	</footer>
+}
+
+// otherPane is another project as a pane (DESIGN.md, Panes), the whole pane the link to its page: its name, its
+// tagline, and what it is made of at its foot, each name whole.
+templ (writer PageWriter) otherPane(other document.OtherProject) {
+	<a class="pane" href={ routes.Reference(other.Page, routes.FormatChosen) }>
+		<span class="pane-title">
+			@writer.spans(other.Name)
+		</span>
+		<span class="pane-lead">
+			@writer.spans(other.Tagline)
+		</span>
+		if len(other.Stack) > 0 {
+			<span class="pane-stack">
+				@stackNames(other.Stack)
+			</span>
+		}
+	</a>
+}
+
+// stackNames are what a project is made of, each name a whole that never breaks inside, a line breaking only after the
+// dot between two.
+templ stackNames(names []string) {
+	// the dot before a name meets it, as templ writes a space after one on a line of its own
+	for index, name := range names {
+		if index > 0 {
+			{ dot }<span class="stack-name">{ name }</span>
+		} else {
+			<span class="stack-name">{ name }</span>
+		}
+	}
 }
 
 // projectHead is a project's first screen (DESIGN.md, ProjectHead): its name in block letters, the page's h1, on a row
@@ -542,14 +604,7 @@ templ (writer PageWriter) projectFacts(project document.Project) {
 		if len(project.Stack) > 0 {
 			<dt>{ project.Labels.Stack }</dt>
 			<dd>
-				// the dot before a name meets it, as templ writes a space after one on a line of its own
-				for index, name := range project.Stack {
-					if index > 0 {
-						{ dot }<span class="stack-name">{ name }</span>
-					} else {
-						<span class="stack-name">{ name }</span>
-					}
-				}
+				@stackNames(project.Stack)
 			</dd>
 		}
 		if release := project.Release; release != nil {

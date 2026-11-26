@@ -54,16 +54,18 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 	}
 }
 
-// A project's head stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
-// and description; what gets it, its repository and each way to install it, a later one under its note; then what
-// tells about it, its stack, its releases and its licence.
-func TestAProjectsHeadStandsInThePagesOrder(test *testing.T) {
+// A project's page stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
+// and description; what gets it, its repository and each way to install it, a later one under its note; what tells
+// about it, its stack, its releases and its licence; its sections; then its end, the heading over the other projects
+// and the way to them all, each other project by its name, its tagline and its stack, and the author's mail.
+func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	inOrder := []string{
 		"Tidies files.", "A tool that tidies files.", "mira / tidy",
 		"go install example.test/tidy@latest", "On a machine with no Go", "curl -fsSL https://example.test/tidy.sh | sh",
-		"Lua · Penlight · LPeg", "latest · changelog", "MIT",
+		"Lua · Penlight · LPeg", "latest · changelog", "MIT", "Why", "Files were untidy.",
+		"Other projects", "all projects", "tame-tool", "Tames files.", "Go", "mira@example.test",
 	}
-	page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), "e tidy-tool")))
+	page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(twoPagesSnapshot(test), commonWidth, tallHeight), "e tidy-tool")))
 	rest := page
 	for _, want := range inOrder {
 		_, after, found := strings.Cut(rest, want)
@@ -95,14 +97,15 @@ func TestAProjectsPageStandsUnderItsName(test *testing.T) {
 	}
 }
 
-// projectModel is a session on the fixture content, the code of each of its projects living at an address.
+// projectModel is a session on the fixture content, the code of each of its projects living at an address, on a screen
+// tall enough for a project's whole page, so no scrollbar stands beside its rows.
 func projectModel(test *testing.T, address string) Model {
 	snapshot := *fixtures.LoadedContent(test)
 	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
 	for index := range snapshot.Profile.Projects {
 		snapshot.Profile.Projects[index].Repo = address
 	}
-	return sessionModel(&snapshot, commonWidth, commonHeight)
+	return sessionModel(&snapshot, commonWidth, tallHeight)
 }
 
 // A page whose head gives its opening no title of its own titles its first tab by the head's title: a project's page
@@ -230,16 +233,21 @@ func TestTabGoesRoundTheProjectsPagesInTheProfilesOrder(test *testing.T) {
 	}
 }
 
-// twoPagesModel is a session on the fixture's content with a second project of a page, tame-tool, of a name alone,
-// after tidy-tool in the profile though its slug sorts before it.
+// twoPagesModel is a session on the fixture's content with a second project of a page (twoPagesSnapshot).
 func twoPagesModel(test *testing.T) Model {
+	return sessionModel(twoPagesSnapshot(test), commonWidth, commonHeight)
+}
+
+// twoPagesSnapshot is the fixture's content with a second project of a page, tame-tool, of a name, a tagline and a
+// language, after tidy-tool in the profile though its slug sorts before it.
+func twoPagesSnapshot(test *testing.T) *content.Snapshot {
 	tame := content.Project{
-		Slug: "tame-tool", Name: "tame-tool", Tagline: "", Description: "", Language: "", Stack: nil, Repo: "", Install: nil,
-		Release: nil, Licence: "", Page: true, Sections: nil,
+		Slug: "tame-tool", Name: "tame-tool", Tagline: "Tames files.", Description: "", Language: "Go", Stack: nil, Repo: "",
+		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil,
 	}
 	snapshot := *fixtures.LoadedContent(test)
 	snapshot.Profile.Projects = slices.Concat(snapshot.Profile.Projects, []content.Project{tame})
-	return sessionModel(&snapshot, commonWidth, commonHeight)
+	return &snapshot
 }
 
 // Tab after :e and a space writes the first page whose slug fits, which Enter opens.

@@ -673,6 +673,34 @@ func TestAnOpeningOfGapsStaysTheOpening(test *testing.T) {
 	}
 }
 
+// Another project with a page stands at a project's page's end as a pane under the heading that names the panes: the
+// whole pane the link to its page, its name, its tagline, and what it is made of at its foot, each name whole.
+func TestAnotherProjectStandsAsAPaneLeadingToItsPage(test *testing.T) {
+	page := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
+	head := fixtures.HeadOf(page, []document.Span{document.Text{Text: "tidy-tool"}})
+	head.Project = &document.Project{
+		Repository: nil, Install: "", Alternatives: nil, Stack: nil, Release: nil, Licence: "",
+		Others: []document.OtherProject{{
+			Name:    []document.Span{document.Text{Text: "tame-tool"}},
+			Tagline: []document.Span{document.Text{Text: "Tames files."}},
+			Stack:   []string{"Go", "tree-sitter"},
+			Page:    document.Page{Kind: document.PageProject, Slug: "tame-tool", Tab: ""},
+		}},
+		AllProjects: document.Link{Target: document.Page{Kind: document.PageResume, Slug: "", Tab: "projects"}, Spans: []document.Span{document.Text{Text: "all projects"}}},
+		Mail:        document.Mail{Address: "mira@example.test"},
+		Labels:      document.ProjectLabels{Install: "", Stack: "", Release: "", Licence: "", Others: "Other projects"},
+	}
+	written := fixtureWriter(test).Page(document.Document{Head: head, Blocks: nil}, blankPerson(), "")
+	for _, want := range []string{
+		`<nav class="project-panes" aria-labelledby="_other-projects">`,
+		`<a class="pane" href="/p/tame-tool"><span class="pane-title">tame-tool</span> <span class="pane-lead">Tames files.</span> <span class="pane-stack"><span class="stack-name">Go</span>` + dot + `<span class="stack-name">tree-sitter</span></span></a>`,
+	} {
+		if !strings.Contains(written, want) {
+			test.Errorf("the page %q holds no %q", written, want)
+		}
+	}
+}
+
 // A fact whose value is a command alone stands as a chip that copies it, named by the command and saying in the toast
 // what it copied, on any page that holds one; code among a fact's words stays code.
 func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {

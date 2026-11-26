@@ -1684,7 +1684,33 @@ a.tile-title:focus-visible {
   color: var(--host);
 }
 
-/* on a phone one column: the name, the tagline and the description, then the side's two groups */
+/* where a project's reader goes next (DESIGN.md, ProjectEnd): under a quiet rule across the grid, in the text's column
+ * the heading over the other projects, the way to them all beside it, then their panes; in the side's the mail and the
+ * button under it, a row apart */
+.project-end {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: start;
+  padding-block: var(--row-2) var(--row-4);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.project-others {
+  display: grid;
+  grid-column: 1;
+  gap: var(--row);
+}
+
+.project-write {
+  display: grid;
+  grid-column: 2;
+  gap: var(--row);
+  justify-items: start;
+}
+
+/* on a phone one column: the name, the tagline and the description, then the side's two groups; at the end the panes
+ * one under another, then the mail and the button */
 @media (width < 53.75rem) {
   .project {
     grid-template-columns: minmax(0, 1fr);
@@ -1696,8 +1722,15 @@ a.tile-title:focus-visible {
 
   .project-head > h1,
   .project-intro,
-  .project-side {
+  .project-side,
+  .project-others,
+  .project-write {
     grid-column: 1;
+  }
+
+  .project-end {
+    row-gap: var(--row-2);
+    padding-block: var(--row) var(--row-2);
   }
 }
 
@@ -2420,7 +2453,8 @@ a.pick-row:hover {
   grid-column: text-start / aside-end;
 }
 
-.panes-heading {
+.panes-heading,
+.project-others-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2442,8 +2476,9 @@ a.pick-row:hover {
   line-height: var(--type-small-line);
 }
 
-/* two panes side by side, as tmux splits a window */
-.panes {
+/* two panes side by side, as tmux splits a window: a post's, and a project's other projects */
+.panes,
+.project-panes {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
@@ -2469,6 +2504,16 @@ a.pick-row:hover {
 
 .pane-none.pane-after {
   border-left-color: transparent;
+}
+
+/* a project's other projects share the lines between them too: each pane drawn a hairline over the one before it and
+ * the one above it */
+.project-panes {
+  padding: var(--hairline) 0 0 var(--hairline);
+}
+
+.project-panes > .pane {
+  margin: calc(-1 * var(--hairline)) 0 0 calc(-1 * var(--hairline));
 }
 
 /* what a pane, a tile or a widget's window sets into its top edge: a row half over the edge, as far in from each
@@ -2536,8 +2581,9 @@ a.pick-row:hover {
 }
 
 /* a post outside a series dated at the pane's foot, since the blog orders its posts by date, so the two dates stand on
- * one line however long the titles above them run */
-.pane-date {
+ * one line however long the titles above them run; another project's stack at its pane's foot, as its page says it */
+.pane-date,
+.pane-stack {
   margin-top: auto;
   padding-top: var(--row-half);
   color: var(--faint);
@@ -2675,7 +2721,9 @@ a.pane:hover .pane-title {
     grid-column: 1 / -1;
   }
 
-  .panes {
+  /* a project's other projects one under another too */
+  .panes,
+  .project-panes {
     grid-template-columns: minmax(0, 1fr);
   }
 

@@ -63,6 +63,40 @@ func (layout layout) projectAbout(project document.Project) []line {
 	return lines
 }
 
+// projectEnd lays out where a project's reader goes next, after its sections, in one column (DESIGN.md, ProjectEnd):
+// the heading over its other projects, strong, the way to them all beside it; each other project a pane, its name a
+// link, its tagline muted, its stack faint at its foot, each name whole; then the author's mail, parted as the brief
+// parts it. None on a page that is no project's.
+func (layout layout) projectEnd(head document.Head) []line {
+	project := head.Project
+	if project == nil {
+		return nil
+	}
+	lead := line{plainRun(project.Labels.Others, kindStrong), gapRun(headingGap)}
+	lines := layout.continued(lead, layout.words([]document.Span{project.AllProjects}, kindText), 0)
+	for _, other := range project.Others {
+		lines = stacked(lines, layout.otherPane(other))
+	}
+	mail := document.Link{Target: project.Mail, Spans: []document.Span{document.Text{Text: project.Mail.Address}}}
+	return stacked(lines, []line{mailRuns(wordRuns(layout.valueWords([]document.Span{mail})), project.Mail)})
+}
+
+// otherPane is another project in a pane across the page, as tmux frames one: its name, bold, a link to its page; its
+// tagline muted; what it is made of faint at its foot, each name whole, the faint mark between two.
+func (layout layout) otherPane(other document.OtherProject) []line {
+	width := layout.frameRoom(0)
+	name := layout.words([]document.Span{document.Link{Target: other.Page, Spans: other.Name}}, kindStrong)
+	names := make([][]word, 0, len(other.Stack))
+	for _, written := range other.Stack {
+		names = append(names, []word{wordOf(written, kindFaint)})
+	}
+	rows := slices.Concat(packed(line{}, line{}, name, width), packed(line{}, line{}, layout.words(other.Tagline, kindMuted), width))
+	if len(names) > 0 {
+		rows = slices.Concat(rows, blankLines(), packed(line{}, line{}, faintlyMarked(names), width))
+	}
+	return layout.framed(0, frameEdges{left: line{}, right: line{}, edge: kindMuted}, rows)
+}
+
 // faintlyMarked are groups of words in a row, the place mark in faint between each two, as the page parts a project's
 // names and links.
 func faintlyMarked(groups [][]word) []word {

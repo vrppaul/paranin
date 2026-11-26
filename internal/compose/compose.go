@@ -34,7 +34,7 @@ func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks(noSeries)), personRecord(profile))}
 	author := authorOf(profile.Person)
 	for _, project := range projectsWithPages(profile.Projects) {
-		pages = append(pages, composedPage(projectDocument(project, snapshot.Own.Words), workRecord(project, author)))
+		pages = append(pages, composedPage(projectDocument(project, profile, snapshot.Own.Words), workRecord(project, author)))
 	}
 	return pages
 }
@@ -126,7 +126,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
 	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
-		projects = append(projects, listing(projectHead(project, words)))
+		projects = append(projects, listing(projectHead(project, snapshot.Profile, words)))
 	}
 	if len(projects) > 0 {
 		blocks = append(blocks, section(words.Text(content.WordProjects), document.Contents{Listings: projects}))
@@ -238,8 +238,8 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
-// projectDocument is a project's own page: its head, then its sections.
-func projectDocument(project content.Project, words content.Words) document.Document {
+// projectDocument is a project's own page, one of the profile's: its head, then its sections.
+func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
 	blocks := make([]document.Block, 0, len(project.Sections))
 	for _, section := range project.Sections {
 		paragraphs := make([]document.Block, 0, len(section.Paragraphs))
@@ -248,12 +248,12 @@ func projectDocument(project content.Project, words content.Words) document.Docu
 		}
 		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Name: "", Blocks: paragraphs})
 	}
-	return document.Document{Head: projectHead(project, words), Blocks: blocks}
+	return document.Document{Head: projectHead(project, profile, words), Blocks: blocks}
 }
 
 // projectHead is the head of a project's page, in the language of the site's words: its name, what it is in a
-// line, what it does, its description, and what gets it and tells about it.
-func projectHead(project content.Project, words content.Words) document.Head {
+// line, what it does, its description, what gets it and tells about it, and where its reader goes next.
+func projectHead(project content.Project, profile content.Profile, words content.Words) document.Head {
 	description := markedSpans(project.Description)
 	return document.Head{
 		Page:        projectPage(project),
@@ -266,7 +266,7 @@ func projectHead(project content.Project, words content.Words) document.Head {
 		Filters:     nil,
 		Lead:        description,
 		Version:     nil,
-		Project:     projectPart(project, words),
+		Project:     projectPart(project, profile, words),
 		Post:        nil,
 		Description: description,
 		Feeds:       nil,
@@ -276,9 +276,11 @@ func projectHead(project content.Project, words content.Words) document.Head {
 
 // projectPart is what a project's head says of it beside its name and lines, each part under the site's word: where
 // its code lives; its install's command and the other ways, each note as prose and each command as written; what it is
-// made of, where its releases are read and its licence.
-func projectPart(project content.Project, words content.Words) *document.Project {
+// made of, where its releases are read and its licence; and where its reader goes next, the profile's other projects
+// with a page, the way to them all on the résumé's tab of them, and the author's mail.
+func projectPart(project content.Project, profile content.Profile, words content.Words) *document.Project {
 	install, alternatives := projectInstall(project.Install)
+	projectsTab := document.Page{Kind: document.PageResume, Slug: "", Tab: document.SlugOf(words.Text(content.WordProjects)), Revision: "", Translation: ""}
 	return &document.Project{
 		Repository:   projectRepository(project, words),
 		Install:      install,
@@ -286,13 +288,32 @@ func projectPart(project content.Project, words content.Words) *document.Project
 		Stack:        projectMadeOf(project),
 		Release:      projectRelease(project.Release, words),
 		Licence:      project.Licence,
+		Others:       otherProjects(project, profile.Projects),
+		AllProjects:  document.Link{Target: projectsTab, Spans: textSpans(words.Text(content.WordAllProjects))},
+		Mail:         document.Mail{Address: profile.Person.Email},
 		Labels: document.ProjectLabels{
 			Install: words.Text(content.WordInstall),
 			Stack:   words.Text(content.WordStack),
 			Release: words.Text(content.WordRelease),
 			Licence: words.Text(content.WordLicence),
+			Others:  words.Text(content.WordOtherProjects),
 		},
 	}
+}
+
+// otherProjects are the projects with a page of their own a project's page leads to, in the profile's order, the
+// project itself left out: each by its name, its tagline, what it is made of and its page.
+func otherProjects(project content.Project, projects []content.Project) []document.OtherProject {
+	others := []document.OtherProject{}
+	for _, other := range projectsWithPages(projects) {
+		if other.Slug == project.Slug {
+			continue
+		}
+		others = append(others, document.OtherProject{
+			Name: markedSpans(other.Name), Tagline: markedSpans(other.Tagline), Stack: projectMadeOf(other), Page: projectPage(other),
+		})
+	}
+	return others
 }
 
 // projectInstall is a project's install: its command and the other ways, each note as prose; none where the profile

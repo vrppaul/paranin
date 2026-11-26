@@ -97,8 +97,8 @@ func rowPhrases(phrases []string, rows []Row) []string {
 
 // projectPhrases are what a project's head says of it: where its code lives; its install's command, and each other way
 // with its note; what it is made of, under its label, each name; its release's links and its licence, each under its
-// label. Not the site's words over the repository and the install, which a face may leave out where the place they
-// stand in says it.
+// label; then its end (endPhrases). Not the site's words over the repository and the install, which a face may leave
+// out where the place they stand in says it.
 func projectPhrases(phrases []string, project *Project) []string {
 	if project == nil {
 		return phrases
@@ -122,7 +122,15 @@ func projectPhrases(phrases []string, project *Project) []string {
 	if project.Licence != "" {
 		phrases = textPhrase(textPhrase(phrases, project.Labels.Licence), project.Licence)
 	}
-	return phrases
+	return endPhrases(phrases, *project)
+}
+
+// endPhrases are what a project's end says: the heading over its other projects and the way to them all; each other
+// project's name and tagline, not what it is made of, which its own page says; the author's mail.
+func endPhrases(phrases []string, project Project) []string {
+	phrases = spanPhrases(textPhrase(phrases, project.Labels.Others), project.AllProjects.Spans)
+	phrases = listingPhrases(phrases, project.OtherListings())
+	return textPhrase(phrases, project.Mail.Address)
 }
 
 func factPhrases(phrases []string, facts []Fact) []string {

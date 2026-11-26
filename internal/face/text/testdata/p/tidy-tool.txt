@@ -19,4 +19,9 @@ DESCRIPTION
 WHY
        Files were untidy.
 
+OTHER PROJECTS
+       all projects <https://example.test/projects.txt>
+
+       mira@example.test
+
 example.test                                                      TIDY-TOOL(1)

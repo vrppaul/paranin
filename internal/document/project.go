@@ -4,7 +4,8 @@ import "strings"
 
 // Project is what a project's page says of it beside its name and lines (DESIGN.md, ProjectHead): what gets the
 // project, where its code lives, how it is installed and when another way is taken instead; and what tells about it,
-// what it is made of, where its releases are read and its licence, each as far as the profile gives it.
+// what it is made of, where its releases are read and its licence, each as far as the profile gives it. Then where its
+// reader goes next (DESIGN.md, ProjectEnd): the author's other projects, the way to them all, and the author's mail.
 type Project struct {
 	// Repository is where the project's code lives; none where the profile names no place
 	Repository *Repository
@@ -19,8 +20,23 @@ type Project struct {
 	Release *Release
 	// Licence is the project's licence, a word; none where the profile names none
 	Licence string
+	// Others are the author's other projects with a page of their own, in the profile's order
+	Others []OtherProject
+	// AllProjects is the way to every project, the résumé's tab of them, by the site's words
+	AllProjects Link
+	// Mail is where the reader writes to the author
+	Mail Mail
 	// Labels are the site's words over each part, for a face that labels them
 	Labels ProjectLabels
+}
+
+// OtherProject is another project of the author's as a project's page leads to it: its name, its tagline, what it is
+// made of, each name whole, and its page.
+type OtherProject struct {
+	Name    []Span
+	Tagline []Span
+	Stack   []string
+	Page    Page
 }
 
 // Alternative is a way to install a project instead of its install: a note on when to take it, and its command.
@@ -36,12 +52,36 @@ type Release struct {
 	Changelog Link
 }
 
-// ProjectLabels are the site's words over the parts of a project's head that a face labels.
+// ProjectLabels are the site's words over the parts of a project's page that a face labels: its head's, and the
+// heading over its other projects.
 type ProjectLabels struct {
 	Install string
 	Stack   string
 	Release string
 	Licence string
+	Others  string
+}
+
+// EndSection is where a project's reader goes next as a face that writes it as one more of the page's sections: under
+// the heading over its other projects, the way to them all, each other project, where there is one, a link by its name
+// with its tagline, then the author's mail.
+func (project Project) EndSection() Section {
+	blocks := []Block{Paragraph{Spans: []Span{project.AllProjects}}}
+	if len(project.Others) > 0 {
+		blocks = append(blocks, Contents{Listings: project.OtherListings()})
+	}
+	mail := Link{Target: project.Mail, Spans: []Span{Text{Text: project.Mail.Address}}}
+	return Section{Title: []Span{Text{Text: project.Labels.Others}}, Name: "", Blocks: append(blocks, Paragraph{Spans: []Span{mail}})}
+}
+
+// OtherListings are the other projects as a face that lists pages by their titles and lines lists them: each by its
+// name, a link to its page, and its tagline.
+func (project Project) OtherListings() []Listing {
+	listings := make([]Listing, 0, len(project.Others))
+	for _, other := range project.Others {
+		listings = append(listings, Listing{Page: other.Page, Title: other.Name, Note: other.Tagline})
+	}
+	return listings
 }
 
 // InstallFact is the install as a face that lists commands among facts writes it, under the site's word; none where

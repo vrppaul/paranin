@@ -17,6 +17,8 @@ release: release
 latest: latest
 changelog: changelog
 licence: licence
+other_projects: Other projects
+all_projects: all projects
 present: present
 side: on the side
 learning: still learning

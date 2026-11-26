@@ -75,8 +75,9 @@ type manualWriter struct {
 
 // Manual writes a document as a manual page laid out as text, in the manual's own words of its language: a title line
 // naming the manual's section, NAME from its head, DESCRIPTION from its head and the blocks that are no section, then a
-// section for each of its sections, NOTES where its blocks cite any, each section's name in capitals, and a closing
-// line, the version a post's reader reads in its middle, its day or a draft's word, where man(1) writes a page's date.
+// section for each of its sections and a project's end as one more, NOTES where its blocks cite any, each section's
+// name in capitals, and a closing line, the version a post's reader reads in its middle, its day or a draft's word,
+// where man(1) writes a page's date.
 func Manual(composed document.Document, site routes.Site, own compose.ManualWords) string {
 	writer := manualWriter{site: site, own: own}
 	title := strings.ToUpper(writer.pageName(composed.Head.Page)) + manualSection
@@ -86,6 +87,9 @@ func Manual(composed document.Document, site routes.Site, own compose.ManualWord
 	lines = append(lines, writer.description(composed.Head, others)...)
 	for _, section := range sections {
 		lines = append(lines, writer.pageSection(section)...)
+	}
+	if project := composed.Head.Project; project != nil {
+		lines = append(lines, writer.pageSection(project.EndSection())...)
 	}
 	lines = append(lines, writer.notes(document.NotesOf(composed.Blocks))...)
 	lines = append(lines, "", columns(site.Host(), versionText(composed.Head), title))

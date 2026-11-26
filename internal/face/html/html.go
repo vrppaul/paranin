@@ -126,6 +126,15 @@ const (
 	secondsInMinute = 60
 )
 
+// What opens the id of what a clip shows, which names its player (clipShowsID)
+const clipShowsMark = "clip-"
+
+// clipShowsID is the id of what a clip shows, which names its player for a screen reader, as a picture's alt text
+// names it: of the page's own (ownID), by its recording's name, a file of the page's folder.
+func clipShowsID(clip document.Clip) string {
+	return ownID(clipShowsMark + clip.Recording.Name)
+}
+
 // clipLength is how long a clip runs as the page writes it, minutes and seconds to the nearest second.
 func clipLength(length time.Duration) string {
 	seconds := int(length.Round(time.Second) / time.Second)

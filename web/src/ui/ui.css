@@ -1704,6 +1704,19 @@ a.tile-title:focus-visible {
   color: var(--accent);
 }
 
+/* the word plays as a Link reads (DESIGN.md, States and Link): under the pointer its underline the accent, thicker;
+ * a link has no pressed look of its own, so neither has the word */
+.clip-word {
+  text-decoration: underline transparent;
+  text-underline-offset: var(--nudge);
+  transition: text-decoration-color var(--quick);
+}
+
+.clip-play:hover .clip-word {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: var(--underline-hover);
+}
+
 .clip-length {
   color: var(--muted);
 }

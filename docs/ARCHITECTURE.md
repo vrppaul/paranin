@@ -321,19 +321,22 @@ and web routes.
   the block font where the page has room for it and the font draws every
   letter of it, so a search finds the name only where it reads as text;
   the résumé's first section, where it holds facts, taken into the first
-  tab, which its title names, its facts as a brief beside the name and
-  what else it holds under the lead; and the first way to reach the
+  tab, which its title names, its first three facts as a brief beside
+  the name and nothing else of it; and the first way to reach the
   author, the mail, at the brief's head without its label, the other ways
   after its facts. Under them a career's line lays out the roles, the
-  entries in any of its top-level sections, and the lead comes last. The
-  brief is the first section's first details, and the ways the first
-  facts of their kind, each found by its kind (amended 2026-11-26, the
-  owner's word). The page's first screen opens from the same reading,
-  which `document.BriefOf` makes for both faces: beside the name the
-  mail, the title, the place and the first four facts in the profile's
-  order, the author's choice of which come first; the facts after them
-  stay in their section, where the brief stood (amended 2026-11-18, the
-  owner's word). `document.TabsOf` parts a document into its tabs, the
+  entries in any of its top-level sections, then the lead, and the blog's
+  latest posts close the tab. The brief is the first three of the first
+  section's first details, and the ways the first facts of their kind,
+  each found by its kind (amended 2026-11-26, the owner's word). The
+  page's first screen opens from the same reading, which
+  `document.BriefOf` makes for both faces: beside the name the mail, the
+  title, the place and the first three facts in the profile's order, the
+  author's choice of which come first. Nothing of the first section
+  stands under the first screen; the blog's latest posts close it, a hint
+  of the blog the résumé's head carries and the text faces leave out,
+  which write the first section whole (amended 2026-11-26, the owner's
+  word, `DESIGN.md` Pages, Facts and LatestPosts). `document.TabsOf` parts a document into its tabs, the
   opening and a tab for each section left, the TUI's; `SlugOf` names
   each, and the ids of the page's sections (amended 2026-11-20, the
   owner's word). Each section of the résumé after the opening stands

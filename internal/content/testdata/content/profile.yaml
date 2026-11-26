@@ -34,7 +34,7 @@ experience:
       end: current
       bullets:
         - "Kept the ==queue== moving"
-      details:
+      description:
         - Joined a team of four that ran a ==message queue== for every service.
         - "[what came of it, in numbers]"
     - company: Southwind

@@ -36,7 +36,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a role", want: "Senior Engineer"},
 		{name: "a point", want: "Wrote the first parser"},
 		{name: "a role's technology", want: "Docker"},
-		{name: "a role's detail", want: "Joined a team of four that ran a "},
+		{name: "a role's description", want: "Joined a team of four that ran a "},
 		{name: "the experience's line", want: "Ships tools a team "},
 		{name: "a skill the experience puts forward", want: "Go"},
 		{name: "how long it was used", want: "3y"},

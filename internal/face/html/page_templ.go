@@ -4740,8 +4740,8 @@ func factRow(label string, value templ.Component) templ.Component {
 }
 
 // entry is a role (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on; then its title
-// and subtitle as its heading, its technologies under them, its points, each after the point's mark, and its details,
-// each a paragraph.
+// and subtitle as its heading, its technologies under them, its points, each after the point's mark, and its
+// description, its paragraphs one after another.
 func (writer PageWriter) entry(entry document.Entry, depth int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -4874,12 +4874,12 @@ func (writer PageWriter) entry(entry document.Entry, depth int) templ.Component 
 				return templ_7745c5c3_Err
 			}
 		}
-		for _, detail := range entry.Details {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 365, "<p class=\"entry-detail\">")
+		for _, passage := range entry.Description {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 365, "<p class=\"entry-description\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = writer.spans(detail.Spans).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = writer.spans(passage.Spans).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

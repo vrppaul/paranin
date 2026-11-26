@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-// WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point, a detail, the experience's line
-// or a technology it puts forward that holds nothing but gaps still to fill is left out until its author fills it, and
-// a list of facts or the experience's head left with none goes with it; a gap among written words stays. A face that
-// keeps the author's notes, as the text faces do, draws the blocks whole. The blocks it is handed keep everything they
-// had.
+// WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point, a paragraph of a role's
+// description, the experience's line or a technology it puts forward that holds nothing but gaps still to fill is left
+// out until its author fills it, and a list of facts or the experience's head left with none goes with it; a gap
+// among written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks whole. The
+// blocks it is handed keep everything they had.
 func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
 	for _, block := range blocks {
@@ -20,7 +20,7 @@ func WrittenBlocks(blocks []Block) []Block {
 	return kept
 }
 
-// writtenBlock is a block with its facts, points, details, line and technologies that are only gaps left out; not
+// writtenBlock is a block with its facts, points, paragraphs, line and technologies that are only gaps left out; not
 // shown at all where it is a list of facts or the experience's head left with none.
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
@@ -38,7 +38,7 @@ func writtenBlock(block Block) (Block, bool) {
 		return typed, len(typed.Line) > 0 || len(typed.Technologies) > 0
 	case Entry:
 		typed.Points = slices.DeleteFunc(slices.Clone(typed.Points), func(point Point) bool { return !written(point.Spans) })
-		typed.Details = slices.DeleteFunc(slices.Clone(typed.Details), func(detail Paragraph) bool { return !written(detail.Spans) })
+		typed.Description = slices.DeleteFunc(slices.Clone(typed.Description), func(paragraph Paragraph) bool { return !written(paragraph.Spans) })
 		return typed, true
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)

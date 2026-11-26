@@ -202,14 +202,14 @@ func (head ExperienceHead) Blocks() []Block {
 }
 
 // Entry is a role, work for an employer or a client, over a span of time, with what came of it: the technologies it
-// was done with, by name, its points, and its details, paragraphs that tell it at length.
+// was done with, by name, its points, and its description, paragraphs that tell it at length.
 type Entry struct {
 	Period       Period
 	Title        []Span
 	Subtitle     []Span
 	Technologies []string
 	Points       []Point
-	Details      []Paragraph
+	Description  []Paragraph
 }
 
 // Point is one thing an entry holds up.

@@ -148,8 +148,8 @@ func entryPhrases(phrases []string, entry Entry) []string {
 	for _, point := range entry.Points {
 		phrases = spanPhrases(phrases, point.Spans)
 	}
-	for _, detail := range entry.Details {
-		phrases = spanPhrases(phrases, detail.Spans)
+	for _, paragraph := range entry.Description {
+		phrases = spanPhrases(phrases, paragraph.Spans)
 	}
 	return phrases
 }

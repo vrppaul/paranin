@@ -1378,8 +1378,8 @@ a.tile-title:focus-visible {
   color: var(--muted);
 }
 
-/* a role's details, each a paragraph under its points, as wide as a point */
-.entry-detail {
+/* a role's description, its paragraphs under its points, as wide as a point */
+.entry-description {
   max-width: var(--measure);
   margin-top: var(--row-half);
 }

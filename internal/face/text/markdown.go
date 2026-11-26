@@ -393,7 +393,7 @@ func (writer markdownWriter) fact(fact document.Fact) string {
 }
 
 // entry writes an entry under its title and subtitle, its period in a line, its technologies in another, then its
-// points, and its details, each a paragraph.
+// points, and its description, its paragraphs one after another.
 func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth int) []string {
 	chunks = appendChunk(chunks, heading(depth, joined(dash, writer.spans(entry.Title), writer.spans(entry.Subtitle))))
 	chunks = appendLine(chunks, writer.period(entry.Period))
@@ -407,8 +407,8 @@ func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth 
 		points = append(points, writer.spans(point.Spans))
 	}
 	chunks = appendChunk(chunks, list(points))
-	for _, detail := range entry.Details {
-		chunks = appendLine(chunks, writer.spans(detail.Spans))
+	for _, passage := range entry.Description {
+		chunks = appendLine(chunks, writer.spans(passage.Spans))
 	}
 	return chunks
 }

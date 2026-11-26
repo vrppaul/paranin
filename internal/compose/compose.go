@@ -207,7 +207,7 @@ func experienceSection(experience content.Experience, groups []content.SkillGrou
 			Subtitle:     markedSpans(role.Title),
 			Technologies: technologiesOf(role.Company, groups),
 			Points:       points(role.Bullets),
-			Details:      paragraphs(role.Details),
+			Description:  paragraphs(role.Description),
 		})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: blocks}

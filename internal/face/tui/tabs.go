@@ -413,11 +413,11 @@ func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line
 }
 
 // entryBody is what stands under an entry's title at an indent: its technologies in a row, as a project's stack; its
-// points; then its details, each a paragraph a row of nothing below what stands before it.
+// points; then its description, each of its paragraphs a row of nothing below what stands before it.
 func (layout layout) entryBody(entry document.Entry, indent int) []line {
 	lines := slices.Concat(layout.fill(faintNames(entry.Technologies), indent), layout.points(entry.Points, indent))
-	for _, detail := range entry.Details {
-		lines = stacked(lines, layout.fill(layout.words(detail.Spans, kindText), indent))
+	for _, passage := range entry.Description {
+		lines = stacked(lines, layout.fill(layout.words(passage.Spans, kindText), indent))
 	}
 	return lines
 }

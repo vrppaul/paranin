@@ -1,9 +1,10 @@
 package content
 
 // The marks a text of the profile may carry, which the faces draw: ==text== a result worth highlighting, and
-// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a detail, a
-// value. A label, a place, a language's name, a stack's or a technology's name, an address, a link's text and a
-// command are shown as written. A gap is also how a duration not known yet is written, the gap its whole value
+// [text] a gap the author has still to fill. Prose and titles carry them: a name, a title, a line, a point, a
+// description, a value. A label, a place, a language's name, a stack's or a technology's name, an address, a link's
+// text and a command are shown as written. A gap is also how a duration not known yet is written, the gap its whole
+// value
 const (
 	HighlightMark = "=="
 	GapOpening    = "["
@@ -65,15 +66,15 @@ type Experience struct {
 	Roles      []Role   `yaml:"roles"`
 }
 
-// Role is one place of work: its points, and its details, paragraphs that tell it at length. A role still held ends
-// "current".
+// Role is one place of work: its points, and its description, paragraphs that tell it at length. A role still held
+// ends "current".
 type Role struct {
-	Company string   `yaml:"company"`
-	Title   string   `yaml:"title"`
-	Start   Month    `yaml:"start"`
-	End     Month    `yaml:"end"`
-	Bullets []string `yaml:"bullets"`
-	Details []string `yaml:"details"`
+	Company     string   `yaml:"company"`
+	Title       string   `yaml:"title"`
+	Start       Month    `yaml:"start"`
+	End         Month    `yaml:"end"`
+	Bullets     []string `yaml:"bullets"`
+	Description []string `yaml:"description"`
 }
 
 // Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of

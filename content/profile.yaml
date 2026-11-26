@@ -57,7 +57,7 @@ facts:
 
 # The experience's line is the one thing a reader should keep; it puts forward skills by their names in skill_groups,
 # whose durations say how long. A role's technologies are the skills whose sources name its company, and it tells
-# itself at length in its details.
+# itself at length in its description.
 experience:
   line: "[the one thing you want a reader to keep]"
   put_forward: [Python, Kubernetes, LLM agents, MCP]
@@ -70,7 +70,7 @@ experience:
         - "Owned [service] handling ==[N] requests/day=="
         - "Cut [p95 latency] by ==[40%]== through [change]"
         - "Brought AI agent tooling into the team's workflow: [what changed, measured]"
-      details:
+      description:
         - "[the context: the team, the product, its scale]"
         - "[what you built, and how]"
         - "[what came of it, in numbers]"
@@ -88,7 +88,7 @@ experience:
       bullets:
         - Built new services from scratch with business stakeholders, from first idea to production
         - Migrated services from Python 2 to Python 3, added Kubernetes support, moved legacy databases to new infrastructure
-      details:
+      description:
         - "[the context: the team, the product, its scale]"
         - "[what you built, and how]"
         - "[what came of it, in numbers]"
@@ -99,7 +99,7 @@ experience:
       bullets:
         - NLP topic extraction with scikit-learn behind a C# / ASP.NET backend; context search in Python
         - "Logistics optimisation: data analysis in Python, solver in Kotlin"
-      details:
+      description:
         - "[the context: the team, the product, its scale]"
         - "[what you built, and how]"
         - "[what came of it, in numbers]"

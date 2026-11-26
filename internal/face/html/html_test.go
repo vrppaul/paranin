@@ -545,16 +545,15 @@ func TestTheBriefIsHeadedByTheMail(test *testing.T) {
 }
 
 // The first screen lays the résumé's roles along the career line, in the order they started, and lists them for a
-// phone with their years: a role with a month still to fill is left out, the one still held is marked and runs to the
-// site's word for the present, and the line's ends are its first year and that word.
-func TestTheCareerLineHoldsTheRolesOfKnownMonths(test *testing.T) {
+// phone with their years: the one still held is marked and runs to the site's word for the present, and the line's
+// ends are its first year and that word.
+func TestTheCareerLineHoldsTheRoles(test *testing.T) {
 	about := document.Section{
 		Title:  []document.Span{document.Text{Text: "About"}},
 		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: []document.Span{document.Text{Text: "here"}}}}}},
 	}
 	work := document.Section{Title: []document.Span{document.Text{Text: "Work"}}, Blocks: []document.Block{
 		roleOf("Northwind", monthOf(2023, time.April), document.CurrentMonth{Text: "present"}),
-		roleOf("Gapwind", document.GapMonth{Text: "[2019]"}, monthOf(2019, time.December)),
 		roleOf("Southwind", monthOf(2020, time.January), monthOf(2022, time.December)),
 	}}
 	firstScreen, _, _ := strings.Cut(fixtureWriter(test).Page(resumeOf(about, work), blankPerson(), ""), `<section class="section"`)
@@ -579,11 +578,6 @@ func TestTheCareerLineHoldsTheRolesOfKnownMonths(test *testing.T) {
 	test.Run("the roles in the order they started", func(test *testing.T) {
 		if earlier, later := strings.Index(firstScreen, "Southwind"), strings.Index(firstScreen, "Northwind"); earlier > later {
 			test.Errorf("the first screen %q names Northwind at %d, before Southwind at %d", firstScreen, later, earlier)
-		}
-	})
-	test.Run("a role with a month still to fill left out", func(test *testing.T) {
-		if strings.Contains(firstScreen, "Gapwind") {
-			test.Errorf("the first screen %q holds %q", firstScreen, "Gapwind")
 		}
 	})
 }

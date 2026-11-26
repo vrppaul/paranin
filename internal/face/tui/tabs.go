@@ -661,8 +661,6 @@ func monthText(month document.Month) string {
 	switch typed := month.(type) {
 	case document.KnownMonth:
 		return typed.Start.Format(monthLayout)
-	case document.GapMonth:
-		return typed.Text
 	case document.CurrentMonth:
 		return typed.Text
 	}

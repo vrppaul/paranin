@@ -119,33 +119,16 @@ func TestTheFirstTabOpensWhateverTheCareerHolds(test *testing.T) {
 	}
 }
 
-// The career's line lays out the roles, the entries in any top-level section, whose months are known: not a role whose
-// start or end is still to fill.
-func TestTheCareersLineHoldsTheRolesOfKnownMonths(test *testing.T) {
+// The career's line lays out the roles, the entries in any top-level section.
+func TestTheCareersLineHoldsTheEntriesOfAnySection(test *testing.T) {
 	role := document.Entry{Period: document.Period{Start: knownMonth(2023, time.April), End: document.CurrentMonth{Text: "present"}}, Title: textOf("Northwind")}
-	unfilled := document.Entry{Period: document.Period{Start: knownMonth(2020, time.January), End: document.GapMonth{Text: "[20XX]"}}, Title: textOf("Eastwind")}
-	unstarted := document.Entry{Period: document.Period{Start: document.GapMonth{Text: "[20XX]"}, End: knownMonth(2019, time.June)}, Title: textOf("Westwind")}
 	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
 	model := handResume(test, "home", commonWidth, tallHeight,
 		document.Section{Title: textOf("Facts"), Blocks: []document.Block{facts}},
-		document.Section{Title: textOf("Work"), Blocks: []document.Block{role, unfilled, unstarted}},
+		document.Section{Title: textOf("Work"), Blocks: []document.Block{role}},
 	)
-	page := aboveTheFooter(screenOf(test, model))
-	cases := []struct {
-		name    string
-		company string
-		placed  bool
-	}{
-		{name: "a role", company: "Northwind", placed: true},
-		{name: "a role whose end is still to fill", company: "Eastwind", placed: false},
-		{name: "a role whose start is still to fill", company: "Westwind", placed: false},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if strings.Contains(page, testCase.company) != testCase.placed {
-				test.Errorf("the first tab =\n%s\nwant %q on the career's line: %t", page, testCase.company, testCase.placed)
-			}
-		})
+	if page := aboveTheFooter(screenOf(test, model)); !strings.Contains(page, "Northwind") {
+		test.Errorf("the first tab =\n%s\nwant %q on the career's line", page, "Northwind")
 	}
 }
 

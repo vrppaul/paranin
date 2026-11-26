@@ -408,8 +408,7 @@ width.
 Every role on one line of time, each as long as it lasted: ended roles in `edge`, the current one in `accent`, its name
 bold. Names alternate between two rows, so a short role keeps its name; under the line stand only its ends, the first
 year and the site's word for the present (`present`). It runs to the day the page is drawn. Below `phone` it becomes a
-list: years in a column as wide as the widest, company, and a bar as long as the role beside the longest. A role with a
-month still to fill is left out of both.
+list: years in a column as wide as the widest, company, and a bar as long as the role beside the longest.
 
 ### Entry
 

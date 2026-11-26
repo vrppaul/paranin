@@ -1,7 +1,6 @@
 package content
 
 import (
-	"strings"
 	"time"
 
 	"go.yaml.in/yaml/v3"
@@ -13,27 +12,24 @@ const (
 	currentWord = "current"
 )
 
-// MonthKind is what a month written in the content turned out to be. A snapshot holds the three exported kinds
+// MonthKind is what a month written in the content turned out to be. A snapshot holds the two exported kinds
 // alone: a load refuses a month left out and one it could not read, so only content's own checks meet those.
 type MonthKind int
 
 const (
 	// The zero kind is a month the content leaves out or leaves empty, which yaml never hands over: no check
-	// needs its name, as it is neither known, a gap nor current
+	// needs its name, as it is neither known nor current
 	_ MonthKind = iota
 	// monthUnread is text that is none of the kinds below; a check names it
 	monthUnread
 	// MonthKnown is a month of a year
 	MonthKnown
-	// MonthGap is a month the author has still to fill
-	MonthGap
 	// MonthCurrent is the end of what still goes on
 	MonthCurrent
 )
 
-// Month is a month of a year as the content writes it, a gap still to fill, or the end of what still goes on
-// ("current"). It keeps what was written, so a check can name a month it could not read, and a load reports
-// every such month at once.
+// Month is a month of a year as the content writes it, or the end of what still goes on ("current"). It keeps what
+// was written, so a check can name a month it could not read, and a load reports every such month at once.
 type Month struct {
 	written string
 	kind    MonthKind
@@ -51,20 +47,11 @@ func readMonth(written string) Month {
 	if written == currentWord {
 		return Month{written: written, kind: MonthCurrent, start: time.Time{}}
 	}
-	if isGap(written) {
-		return Month{written: written, kind: MonthGap, start: time.Time{}}
-	}
 	start, err := time.Parse(monthLayout, written)
 	if err != nil {
 		return Month{written: written, kind: monthUnread, start: time.Time{}}
 	}
 	return Month{written: written, kind: MonthKnown, start: start}
-}
-
-func isGap(written string) bool {
-	inside, opened := strings.CutPrefix(written, GapOpening)
-	inside, closed := strings.CutSuffix(inside, GapClosing)
-	return opened && closed && inside != "" && !strings.ContainsAny(inside, GapOpening+GapClosing)
 }
 
 // Kind is what the month turned out to be.

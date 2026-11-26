@@ -186,11 +186,9 @@ func readinessPhrases(phrases []string, readiness Readiness) []string {
 	return phrases
 }
 
-// monthPhrase is a gap's text and the word for what still goes on; a known month is each face's to write.
+// monthPhrase is the word for what still goes on; a known month is each face's to write.
 func monthPhrase(phrases []string, month Month) []string {
 	switch typed := month.(type) {
-	case GapMonth:
-		return textPhrase(phrases, typed.Text)
 	case CurrentMonth:
 		return textPhrase(phrases, typed.Text)
 	case KnownMonth:

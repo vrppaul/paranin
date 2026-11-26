@@ -24,7 +24,7 @@
 // line holds the toast that says what a chip copied; a fact whose value is one link to a mailbox stands as the mail,
 // in the size of the text round it.
 // A page shows a document as a reader of the finished work sees it (document.WrittenBlocks), a fact or a point that is
-// only a gap still to fill left out; a gap among written words, and a month still to fill, stand marked as gaps.
+// only a gap still to fill left out; a gap among written words stands marked as a gap.
 // A page that is not the résumé opens with its head (DESIGN.md, Contents and PageHead), its blocks after it. A post
 // is drawn whole, with no tabs (post.go): its head as a first screen, its series' pick among its facts, its outline
 // beside its article, its paragraphs numbered and each note beside the line that first cites it, then the panes at its
@@ -496,13 +496,11 @@ func (writer PageWriter) factValue(fact document.Fact) templ.Component {
 	return writer.spans(fact.Value)
 }
 
-// month is the component of a month: a known one as a time, a gap as a gap, what still goes on as its text.
+// month is the component of a month: a known one as a time, what still goes on as its text.
 func month(month document.Month) templ.Component {
 	switch typed := month.(type) {
 	case document.KnownMonth:
 		return knownMonth(typed.Start)
-	case document.GapMonth:
-		return gap(typed.Text)
 	case document.CurrentMonth:
 		return text(typed.Text)
 	}

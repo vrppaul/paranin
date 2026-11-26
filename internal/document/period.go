@@ -26,16 +26,10 @@ type KnownMonth struct {
 	Start time.Time
 }
 
-// GapMonth is a month the author has still to fill, as the content writes it.
-type GapMonth struct {
-	Text string
-}
-
 // CurrentMonth is the end of what still goes on, with the site's word for it.
 type CurrentMonth struct {
 	Text string
 }
 
 func (KnownMonth) month()   {}
-func (GapMonth) month()     {}
 func (CurrentMonth) month() {}

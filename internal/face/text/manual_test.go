@@ -3,6 +3,7 @@ package text
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vrppaul/paranin/internal/document"
 	"github.com/vrppaul/paranin/internal/fixtures"
@@ -54,13 +55,18 @@ func TestTheDescriptionHoldsWhatDescribesThePage(test *testing.T) {
 // A title and its period never touch: where fewer than two spaces would part them, the period takes a line of its
 // own.
 func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
-	period := document.Period{Start: document.GapMonth{Text: "[2020]"}, End: document.GapMonth{Text: "[2021]"}}
-	title := strings.Repeat("a", pageWidth-sectionIndent-textWidth("[2020] – [2021]")-1)
+	// the period as the manual writes it
+	const written = "01/2020 – 01/2021"
+	period := document.Period{
+		Start: document.KnownMonth{Start: time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		End:   document.KnownMonth{Start: time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	title := strings.Repeat("a", pageWidth-sectionIndent-textWidth(written)-1)
 	composed := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil),
 		Blocks: []document.Block{document.Entry{Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Technologies: nil, Points: nil, Details: nil}},
 	}
-	want := strings.Repeat(" ", sectionIndent) + "[2020] – [2021]\n"
+	want := strings.Repeat(" ", sectionIndent) + written + "\n"
 	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test)); !strings.Contains(got, "\n"+want) {
 		test.Errorf("Manual = %q, want the period on a line of its own, %q", got, want)
 	}

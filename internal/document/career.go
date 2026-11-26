@@ -28,8 +28,8 @@ type CareerSpan struct {
 	Current bool
 }
 
-// CareerOf is roles on a line of months on a day: a role whose start or end is a month still to fill is left out, one
-// that ended runs to the end of its last month, and one still held to the day.
+// CareerOf is roles on a line of months on a day: a role that ended runs to the end of its last month, and one still
+// held to the day.
 func CareerOf(roles []Entry, today time.Time) Career {
 	career := Career{Spans: []CareerSpan{}, First: today, Last: today, Present: ""}
 	for _, role := range roles {
@@ -43,8 +43,6 @@ func CareerOf(roles []Entry, today time.Time) Career {
 			span.End = end.Start.AddDate(0, 1, 0)
 		case CurrentMonth:
 			span.Current, career.Present = true, end.Text
-		case GapMonth:
-			continue
 		}
 		career.Spans = append(career.Spans, span)
 		career.First = minTime(career.First, span.Start)

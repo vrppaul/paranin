@@ -630,7 +630,7 @@ and web routes.
   took; a heading's anchor kept clear of the page's other places, which a
   new part, project or version named alike renamed, breaking every link to
   it.
-- **A period is a type**: a start and an end, each a month or a gap, and the
+- **A period is a type**: a start and an end, each a known month, and the
   end may be current; the kinds of month are a closed set too. Each face
   writes a known month its own way (`2024`, `01/2024`); the end of what still
   goes on carries the site's word for it, `present`, which every face writes

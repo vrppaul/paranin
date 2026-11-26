@@ -3,6 +3,7 @@ package content
 import (
 	"regexp"
 	"strconv"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -69,6 +70,13 @@ func readDuration(written string) Duration {
 		return Duration{written: written, kind: durationUnread, months: 0}
 	}
 	return Duration{written: written, kind: DurationMeasured, months: months}
+}
+
+// isGap is whether the text is a gap still to fill alone: words in brackets, and no bracket among them.
+func isGap(written string) bool {
+	inside, opened := strings.CutPrefix(written, GapOpening)
+	inside, closed := strings.CutSuffix(inside, GapClosing)
+	return opened && closed && inside != "" && !strings.ContainsAny(inside, GapOpening+GapClosing)
 }
 
 // spanMonths are the months a span comes to, and whether the text is a span, written as spanPattern says.

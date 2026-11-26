@@ -61,8 +61,8 @@
   --quiet-half: light-dark(#ccd0da80, #363a4f80);
 }
 
-/* What the page alone reads: the colours it mixes, its faces, its text styles, the lengths it lays out by, its times and
- * its layers */
+/* What the page alone reads: the colours it mixes, its faces, its text styles, the lengths it lays out by, its times,
+ * the counts it lays side by side, and its layers */
 :root {
   /* the start of a title set in text, the accent a fifth toward the text, so it reads apart from block letters */
   --title-soft-start: light-dark(#da601e, #ecb197);
@@ -254,6 +254,8 @@
   --quick: 120ms;
   /* how long a toast stays, and a copied command's button says so */
   --toast: 2400ms;
+  /* how many of the blog's latest posts the first screen names at most, a place of a row each */
+  --latest-posts: 3;
   /* a tile of the blog's list that leads somewhere, over a tile to come beside it, so the line the two share is the live one's */
   --layer-tile: 1;
   /* what is set into the top edge of a tile to come, over the line a live tile above it draws there */

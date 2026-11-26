@@ -9,6 +9,7 @@ import (
 
 	"github.com/vrppaul/paranin/internal/content"
 	"github.com/vrppaul/paranin/internal/document"
+	"github.com/vrppaul/paranin/internal/look"
 )
 
 // blogLists are the blog's list, a document every face draws (D25), in its two groupings: every post the blog lists
@@ -276,8 +277,8 @@ func (read blog) latestPosts() *document.LatestPosts {
 	if len(read.newest) == 0 {
 		return nil
 	}
-	posts := make([]document.ListedPost, 0, document.LatestPostsPlaces)
-	for _, post := range read.newest[:min(document.LatestPostsPlaces, len(read.newest))] {
+	posts := make([]document.ListedPost, 0, look.LatestPosts)
+	for _, post := range read.newest[:min(look.LatestPosts, len(read.newest))] {
 		listed := listedPost(post)
 		listed.Lead, listed.Tags = nil, nil
 		posts = append(posts, listed)

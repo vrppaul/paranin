@@ -14,7 +14,8 @@
 # tokens.css and nothing of internal/look, but a length in cells marked `terminal`, which a terminal lays out by too,
 # and internal/look carries as a number of cells. A share of the screen's height is in whole percent from its top, a
 # line a script and a terminal measure by and no stylesheet lays out by: it becomes a constant of internal/look and of
-# the page's script, and no custom property.
+# the page's script, and no custom property. A count is how many of a thing the page and a terminal both lay side by
+# side, a whole number: it becomes a constant of internal/look and a custom property of tokens.css.
 # A mix is a colour of the file moved a share toward another in each theme, worked out as a blend is, and where it
 # must read, its least contrast is held as a colour's. A face is its families by name, in the order a browser tries
 # them, and the files of the first, which the site serves: an upright one for each weight a text style drawn in it is
@@ -482,6 +483,11 @@ screen_shares:
   - name: reading_line
     about: the line a post's heading counts as read once its top has passed, so one gone to is read at once
     percent: 33
+
+counts:
+  - name: latest_posts
+    about: how many of the blog's latest posts the first screen names at most, a place of a row each
+    count: 3
 
 layers:
   - name: tile

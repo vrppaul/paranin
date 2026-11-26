@@ -79,10 +79,6 @@ func (location *Location) Parts() []string {
 	return slices.DeleteFunc([]string{location.BasedIn, location.WorksFrom}, func(part string) bool { return part == "" })
 }
 
-// LatestPostsPlaces is how many of the blog's latest posts the résumé's first screen names at most, each in a place of
-// its own in a row (DESIGN.md, LatestPosts)
-const LatestPostsPlaces = 3
-
 // LatestPosts are the blog's latest posts as the résumé's first screen hints at the blog (DESIGN.md, LatestPosts), no
 // part of the résumé, which a text face leaves out: the blog's name, the way to its list, and its latest posts out,
 // newest first, each a post out by its title alone.

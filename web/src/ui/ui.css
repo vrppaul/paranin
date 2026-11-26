@@ -3206,10 +3206,10 @@ a.tile-title::after {
   margin: 0;
 }
 
-/* three equal places, a post in each, fewer posts in the first places as wide; each tile held to its place, however
- * long the one line its title keeps */
+/* equal places, as many as the latest posts it names at most, a post in each, fewer posts in the first places as wide;
+ * each tile held to its place, however long the one line its title keeps */
 .latest .tiles {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--latest-posts), minmax(0, 1fr));
 }
 
 .latest .tiles > li {

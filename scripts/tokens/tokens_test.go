@@ -101,6 +101,10 @@ screen_shares:
   - name: reading_line
     about: where a heading counts as read
     percent: 33
+counts:
+  - name: latest_posts
+    about: how many posts stand in a row
+    count: 3
 layers:
   - name: row
     about: what sticks to the top
@@ -413,6 +417,34 @@ func TestAShareOfTheScreenReachesTheTerminalAndThePagesScript(test *testing.T) {
 	}
 }
 
+// A count reaches both the faces' Go and the page's stylesheet as its whole number, under what it is for, each named as
+// its language names a constant or a custom property.
+func TestACountReachesTheTerminalAndThePage(test *testing.T) {
+	read, err := readTokens([]byte(fixtureTokens))
+	if err != nil {
+		test.Fatalf("readTokens(fixture) = %v, want no fault", err)
+	}
+	source, err := countsSource(read)
+	if err != nil {
+		test.Fatalf("countsSource(fixture) = %v, want no fault", err)
+	}
+	cases := []struct {
+		name    string
+		written string
+		want    string
+	}{
+		{name: "the Go, under what it is for", written: string(source), want: "\t// LatestPosts is how many posts stand in a row\n\tLatestPosts = 3\n"},
+		{name: "the stylesheet, under what it is for", written: string(stylesheet(read)), want: "  /* how many posts stand in a row */\n  --latest-posts: 3;\n"},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			if !strings.Contains(testCase.written, testCase.want) {
+				test.Errorf("the generated file = %q, want it to hold %q", testCase.written, testCase.want)
+			}
+		})
+	}
+}
+
 // A name of words parted by underscores is a custom property's, parted by hyphens.
 func TestATokenOfTwoWordsIsAPropertyOfTwoWords(test *testing.T) {
 	read, err := readTokens([]byte(strings.ReplaceAll(fixtureTokens, ": accent\n", ": on_accent\n")))
@@ -528,6 +560,9 @@ func TestAFaultyFileOfTokensIsRefused(test *testing.T) {
 		{name: "a share beyond the screen", original: "percent: 33", replacement: "percent: 101", want: `"reading_line" has the percent 101, which is more than the whole screen`},
 		{name: "a share of part of a percent", original: "percent: 33", replacement: "percent: 33.5", want: `"33.5" is no whole number`},
 		{name: "a share's percent left out", original: "    percent: 33\n", replacement: "", want: `"reading_line" has no percent`},
+		{name: "a count of none", original: "count: 3", replacement: "count: 0", want: `"latest_posts" has the count 0`},
+		{name: "a count of part of a thing", original: "count: 3", replacement: "count: 2.5", want: `"2.5" is no whole number`},
+		{name: "a count left out", original: "    count: 3\n", replacement: "", want: `"latest_posts" has no count`},
 		{name: "a share named as a length is", original: "name: reading_line", replacement: "name: row", want: `"row" is named twice`},
 		{name: "a blend named as the face's property is", original: "name: tint", replacement: "name: face", want: `"face" is named twice`},
 		{name: "a weight of part of a hundred", original: "    weight: 400\n", replacement: "    weight: 400.5\n", want: `"400.5" is no whole number`},
@@ -724,6 +759,7 @@ func TestTheCheckFindsAGeneratedFileOutOfStep(test *testing.T) {
 		{name: "a palette edited by hand", path: palettePath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "a stylesheet edited by hand", path: stylesheetPath, change: func(generated string) string { return generated + "\n/* edited */\n" }, want: failed},
 		{name: "the terminal's lengths edited by hand", path: cellsPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
+		{name: "the terminal's counts edited by hand", path: countsPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the terminal's shares edited by hand", path: sharesPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the script's shares edited by hand", path: sharesScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},
 		{name: "the script's colours edited by hand", path: coloursScriptPath, change: func(generated string) string { return generated + "\n// edited\n" }, want: failed},

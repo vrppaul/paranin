@@ -61,6 +61,7 @@ type tokensFile struct {
 	Lengths      []lengthToken      `yaml:"lengths"`
 	Times        []timeToken        `yaml:"times"`
 	ScreenShares []screenShareToken `yaml:"screen_shares"`
+	Counts       []countToken       `yaml:"counts"`
 	Layers       []layerToken       `yaml:"layers"`
 }
 

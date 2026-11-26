@@ -82,8 +82,8 @@ func (layout layout) latestPosts(latest *document.LatestPosts) []line {
 	}
 	head := slices.Concat(layout.fill(layout.words(latest.Title, kindStrong), 0), layout.fill(layout.words([]document.Span{latest.All}, kindText), 0))
 	headWidth := linesWidth(head)
-	if room := layout.width - headWidth - nameGap; room >= document.LatestPostsPlaces*leastSmallTile+textWidth(frameDown) {
-		return besideLines(head, headWidth+nameGap, layout.smallTiles(latest.Posts, filledGrid(document.LatestPostsPlaces, room)))
+	if room := layout.width - headWidth - nameGap; room >= look.LatestPosts*leastSmallTile+textWidth(frameDown) {
+		return besideLines(head, headWidth+nameGap, layout.smallTiles(latest.Posts, filledGrid(look.LatestPosts, room)))
 	}
 	return stacked(head, layout.smallTiles(latest.Posts, filledGrid(oneUnderAnother, layout.width)))
 }

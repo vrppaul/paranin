@@ -397,6 +397,20 @@ func (paint paint) line(shown []matchedRun, from, width int, faded color.Color, 
 	return builder.String(), used - from
 }
 
+// highlightedStyle is a result's look over the look of a run of a kind: underlined where the terminal shows no colours,
+// and on the highlight's ground, but code, which keeps its own inside a result, as the page sets code inside a mark.
+func (paint paint) highlightedStyle(style lipgloss.Style, shown kind) lipgloss.Style {
+	style = style.Underline(paint.noColours)
+	if shown == kindCode {
+		return style
+	}
+	style = style.Background(paint.highlightGround)
+	if paint.fewColours {
+		style = style.Foreground(paint.highlightText)
+	}
+	return style
+}
+
 // style is the look of a run: its kind's, its text in a faded colour where one is given, highlighted where it is a
 // result, on the panel's ground where it lies in the link the keys stand on, underlined where it is part of the link's
 // words, marked where it matches the search, apart where it is the match the count names, carrying its address where
@@ -416,10 +430,7 @@ func (paint paint) style(piece matchedRun, faded color.Color, named, pointed boo
 		style = style.Underline(true).UnderlineColor(paint.pointedUnderline)
 	}
 	if piece.highlighted {
-		style = style.Background(paint.highlightGround).Underline(paint.noColours)
-		if paint.fewColours {
-			style = style.Foreground(paint.highlightText)
-		}
+		style = paint.highlightedStyle(style, piece.kind)
 	}
 	// the match the count names stands out over a highlight too, and with few colours or none it is reversed, as a
 	// highlight is not; the others are underlined, and with no colours bold as well, since a highlight is underlined

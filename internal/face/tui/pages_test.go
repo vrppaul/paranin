@@ -104,6 +104,18 @@ func TestAProjectsDetailsAndEndOpenWithARule(test *testing.T) {
 	}
 }
 
+// A section's links read as the page's contents (DESIGN.md, Contents): each on a row of its own, its name, then a
+// colon and its line, with no mark before it, so under the section's points they read as no more of them.
+func TestASectionsLinksReadAsContents(test *testing.T) {
+	page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), "e tidy-tool")))
+	rows := strings.Split(page, "\n")
+	for _, want := range []string{"source: where the code lives", "manual: every flag it takes"} {
+		if !slices.ContainsFunc(rows, func(row string) bool { return strings.TrimSpace(row) == want }) {
+			test.Errorf("the project's page =\n%s\nwant a row %q alone", page, want)
+		}
+	}
+}
+
 // isRule is whether a screen's row is a rule alone: a line across and nothing else.
 func isRule(row string) bool {
 	return strings.Contains(row, frameAcross) && strings.Trim(row, " "+frameAcross) == ""

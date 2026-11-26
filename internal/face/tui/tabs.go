@@ -26,12 +26,13 @@ const (
 const narrowestEntry = 30
 
 // The marks and words of the layout itself: what parts a title from its subtitle and a subtitle from its place, the
-// start of a period from its end
+// start of a period from its end, and a listing's title from its line, as the page parts them
 const (
 	subtitleMark = "—"
 	placeMark    = "·"
 	rangeMark    = "–"
 	monthLayout  = "2006-01"
+	listingEnd   = ":"
 )
 
 // The site's cursor: the bar after the author's name, as the page, the PDF and the card draw it
@@ -310,12 +311,18 @@ func carriesCursor(kind document.PageKind) bool {
 // that word is wider than the line and breaks, bar and all, as fill breaks any; a title of no words is left with
 // none. It stands still: a blink would paint the head again each half second, where a tab is painted once.
 func withCursor(words []word) []word {
+	return endedWith(words, plainRun(cursorBar, kindCursor))
+}
+
+// endedWith are words with a mark joined to the end of the last, so a line never parts the two: the site's cursor
+// after a title, the colon after a listing's title; words of none are left with none.
+func endedWith(words []word, mark run) []word {
 	last := len(words) - 1
 	if last < 0 {
 		return words
 	}
 	marked := slices.Clone(words)
-	marked[last].runs = append(slices.Clone(marked[last].runs), plainRun(cursorBar, kindCursor))
+	marked[last].runs = append(slices.Clone(marked[last].runs), mark)
 	return marked
 }
 
@@ -462,12 +469,16 @@ func (layout layout) card(card document.Card, indent int) []line {
 	return append(lines, layout.facts(card.Facts, indent, kindMuted)...)
 }
 
-// contents lays out each listed page as a point: its title, leading to it, and the line on what it is.
+// contents lays out each listed place as the page's Contents draws it (DESIGN.md, Contents), on lines of its own with
+// no mark before it: its title, leading to it, then a colon and the line on what it is, muted.
 func (layout layout) contents(contents document.Contents, indent int) []line {
 	lines := []line{}
 	for _, listing := range contents.Listings {
-		title := layout.words([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}}, kindStrong)
-		lines = append(lines, layout.bullet(markedWords(title, layout.words(listing.Note, kindMuted), subtitleMark), indent)...)
+		title := layout.words([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}}, kindText)
+		if note := layout.words(listing.Note, kindMuted); len(note) > 0 {
+			title = append(endedWith(title, plainRun(listingEnd, kindMuted)), note...)
+		}
+		lines = append(lines, layout.fill(title, indent)...)
 	}
 	return lines
 }

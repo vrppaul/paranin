@@ -25,7 +25,7 @@ Files were untidy.
 - Sorts the lines
 - Keeps the **blank** ones
 
-[tidy . tidying a folder](https://example.test/p/tidy-tool/tidying.mp4)
+[`tidy .` tidying a folder](https://example.test/p/tidy-tool/tidying.mp4)
 
 [source](https://github.test/mira/tidy): where the code lives
 

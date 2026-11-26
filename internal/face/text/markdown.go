@@ -223,8 +223,9 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Side:
 		return writer.side(chunks, typed, depth)
 	case document.Clip:
-		// a recording as a picture stands, a link by what it shows, which a reader of markdown follows to play it
-		return appendLine(chunks, writer.captionedLink(document.PlainText(typed.Shows), writer.site.Address(typed.Recording, routes.FormatMarkdown), ""))
+		// a recording as a picture stands, a link by what it shows, its marks kept, which a reader of markdown follows to
+		// play it
+		return appendLine(chunks, writer.spans([]document.Span{document.Link{Target: typed.Recording, Spans: typed.Shows}}))
 	case document.Reference:
 		// the details set apart from the story by a thematic break, as a turn a post takes
 		return writer.blocks(appendChunk(chunks, breakMark), typed.Blocks(), depth)

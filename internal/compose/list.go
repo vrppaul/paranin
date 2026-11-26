@@ -126,7 +126,7 @@ func (read blog) listHead(page document.Page, filter []document.Span, words cont
 		Greeting:    "",
 		Title:       textSpans(words.Text(content.WordBlog)),
 		Subtitle:    filter,
-		Place:       "",
+		Place:       nil,
 		Filters:     read.listFilters(page, words),
 		Lead:        line,
 		Version:     nil,

@@ -389,8 +389,10 @@ templ (writer PageWriter) introduction(head document.Head, parts resumeParts) {
 					@writer.spans(head.Subtitle)
 				</p>
 			}
-			if head.Place != "" {
-				<p class="place">{ head.Place }</p>
+			if len(head.Place.Parts()) > 0 {
+				<p class="place">
+					@placeLine(head.Place)
+				</p>
 			}
 		</div>
 		if len(parts.brief) > 0 {
@@ -646,13 +648,13 @@ templ repositoryLink(repository document.Repository) {
 templ (writer PageWriter) head(head document.Head) {
 	<div class="page-head">
 		@writer.drawnTitle(head)
-		if len(head.Subtitle) > 0 || head.Place != "" {
+		if len(head.Subtitle) > 0 || len(head.Place.Parts()) > 0 {
 			<p class="page-line">
 				@writer.spans(head.Subtitle)
-				if len(head.Subtitle) > 0 && head.Place != "" {
+				if len(head.Subtitle) > 0 && len(head.Place.Parts()) > 0 {
 					@text(dot)
 				}
-				@text(head.Place)
+				@placeLine(head.Place)
 			</p>
 		}
 		if len(head.Lead) > 0 {

@@ -11,7 +11,9 @@ func Phrases(document Document) []string {
 	head := document.Head
 	phrases := spanPhrases(nil, head.Title)
 	phrases = spanPhrases(phrases, head.Subtitle)
-	phrases = textPhrase(phrases, head.Place)
+	for _, part := range head.Place.Parts() {
+		phrases = textPhrase(phrases, part)
+	}
 	for _, tag := range head.Tags() {
 		phrases = textPhrase(phrases, tag)
 	}

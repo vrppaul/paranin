@@ -146,10 +146,16 @@ func (writer manualWriter) pageName(page document.Page) string {
 	return ""
 }
 
-// name writes the name section: the title with its subtitle and place.
+// name writes the name section: the title with its subtitle, then where the author is on a line of its own, as the page
+// stands it apart.
 func (writer manualWriter) name(head document.Head) []string {
-	name := joinedWords(dashWord, writer.words(head.Title), joinedWords(dotWord, writer.words(head.Subtitle), strings.Fields(head.Place)))
-	return append([]string{"", strings.ToUpper(writer.own.Name)}, paragraph(sectionIndent, 0, name)...)
+	name := joinedWords(dashWord, writer.words(head.Title), writer.words(head.Subtitle))
+	place := [][]string{}
+	for _, part := range head.Place.Parts() {
+		place = append(place, strings.Fields(part))
+	}
+	lines := append([]string{"", strings.ToUpper(writer.own.Name)}, paragraph(sectionIndent, 0, name)...)
+	return append(lines, paragraph(sectionIndent, 0, joinedWords(dotWord, place...))...)
 }
 
 // description writes the description section: what the version read says under its day, that a newer version stands

@@ -96,7 +96,7 @@ func postHead(version postVersion, read blog) document.Head {
 		Greeting:    "",
 		Title:       textSpans(version.text.Title),
 		Subtitle:    nil,
-		Place:       "",
+		Place:       nil,
 		Filters:     read.postFilters(post),
 		Lead:        description,
 		Version:     read.versionOf(version, words, languages),

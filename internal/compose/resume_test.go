@@ -22,7 +22,8 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 	}{
 		{name: "the name", want: "Mira Example"},
 		{name: "the title", want: "Software Engineer"},
-		{name: "the place", want: "Based in Brno · remote across Europe"},
+		{name: "the city the author is based in", want: "Based in Brno"},
+		{name: "where the author works from", want: "remote across Europe"},
 		{name: "the headline's words for a kind of work", want: "small tools"},
 		{name: "the summary", want: "Writes software for people who read it."},
 		{name: "a fact's label", want: "available"},
@@ -513,20 +514,21 @@ func TestTheHeadlineLeadsEachKindOfWorkToItsTab(test *testing.T) {
 	}
 }
 
-// The résumé's head places the author in the site's words: the city they are based in, then where they work from, the
-// dot between (DESIGN.md, Pages); the city alone where the profile says nowhere they work from.
+// The résumé's head places the author (DESIGN.md, Pages): the city they are based in, in the site's words, then where
+// they work from, each a part of its own a face joins with its own mark; the city alone where the profile says nowhere
+// they work from.
 func TestTheResumeHeadSaysWhereTheAuthorWorksFrom(test *testing.T) {
 	cases := []struct {
 		name     string
 		snapshot *content.Snapshot
-		want     string
+		want     []string
 	}{
-		{name: "a city and where they work from", snapshot: fixtures.LoadedContent(test), want: "Based in Brno · remote across Europe"},
-		{name: "a city alone", snapshot: withoutWorkingFrom(fixtures.LoadedContent(test)), want: "Based in Brno"},
+		{name: "a city and where they work from", snapshot: fixtures.LoadedContent(test), want: []string{"Based in Brno", "remote across Europe"}},
+		{name: "a city alone", snapshot: withoutWorkingFrom(fixtures.LoadedContent(test)), want: []string{"Based in Brno"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := Resume(testCase.snapshot, nil, nil).Head.Place; got != testCase.want {
+			if got := Resume(testCase.snapshot, nil, nil).Head.Place.Parts(); !slices.Equal(got, testCase.want) {
 				test.Errorf("the place = %q, want %q", got, testCase.want)
 			}
 		})

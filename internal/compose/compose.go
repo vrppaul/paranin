@@ -19,10 +19,6 @@ import (
 // What separates the places a skill was proven, written in one text
 const listSeparator = ", "
 
-// What parts the city the author is based in from where they work from, in the one text a head's place is: the dot
-// every face parts the parts of a line with
-const placeJoint = " · "
-
 // Composed is a page a person reads, as compose makes it: its document, its tabs past the opening, each a document
 // alone, and its record, made together so none is ever without the others.
 type Composed struct {
@@ -75,7 +71,7 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 		Greeting:    "",
 		Title:       tab.Title,
 		Subtitle:    nil,
-		Place:       "",
+		Place:       nil,
 		Filters:     nil,
 		Lead:        nil,
 		Version:     nil,
@@ -180,7 +176,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 			Greeting:    "",
 			Title:       resume.Title,
 			Subtitle:    nil,
-			Place:       "",
+			Place:       nil,
 			Filters:     nil,
 			Lead:        resume.Lead,
 			Version:     nil,
@@ -226,18 +222,13 @@ func resumeHead(profile content.Profile, words content.Words, tabs workTabs, fee
 	}
 }
 
-// placeOf is where the author is, in the site's words (DESIGN.md, Pages): the city they are based in, then where they
-// work from, the place mark between; the city alone where the profile says nowhere they work from, and none where it
-// names no city.
-func placeOf(person content.Person, words content.Words) string {
+// placeOf is where the author is (DESIGN.md, Pages): the city they are based in, in the site's words, then where they
+// work from, none where the profile says nowhere; none where it names no city.
+func placeOf(person content.Person, words content.Words) *document.Location {
 	if person.Location == "" {
-		return ""
+		return nil
 	}
-	based := words.Phrase(content.PhraseBasedIn, person.Location)
-	if person.WorksFrom == "" {
-		return based
-	}
-	return based + placeJoint + person.WorksFrom
+	return &document.Location{BasedIn: words.Phrase(content.PhraseBasedIn, person.Location), WorksFrom: person.WorksFrom}
 }
 
 // ways are the ways to reach the author, in the order a reader tries them: mail, the public profiles, ssh.
@@ -380,7 +371,7 @@ func projectHead(project content.Project, profile content.Profile, words content
 		Greeting:    "",
 		Title:       markedSpans(project.Name),
 		Subtitle:    markedSpans(project.Tagline),
-		Place:       "",
+		Place:       nil,
 		Filters:     nil,
 		Lead:        description,
 		Version:     nil,

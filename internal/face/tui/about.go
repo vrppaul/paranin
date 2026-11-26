@@ -164,7 +164,7 @@ func (layout layout) brief(opening briefOpening) []line {
 		rule := plainRun(strings.Repeat(briefRuleMark, runsWidth(addressLine)), kindFaint)
 		lines = append(lines, addressLine, line{rule})
 	}
-	role, place := layout.fill(layout.words(opening.head.Subtitle, kindText), 0), layout.fill(textWords(opening.head.Place, kindMuted), 0)
+	role, place := layout.fill(layout.words(opening.head.Subtitle, kindText), 0), layout.fill(placeWords(opening.head.Place), 0)
 	lines = stacked(slices.Concat(lines, role, place, layout.facts(opening.brief, 0, kindLabel)), layout.factBlock(opening.ways, 0))
 	swatches := line{}
 	for tone := range len(swatchColours()) {

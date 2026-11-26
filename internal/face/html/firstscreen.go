@@ -53,6 +53,19 @@ func partsOf(briefed *document.Briefed, today time.Time) resumeParts {
 	}
 }
 
+// placeLine is where the author is, its parts in one line, the line's dot between two. It is joined here, not in a
+// template's loop, where templ writes a space before each part.
+func placeLine(location *document.Location) templ.Component {
+	parts := []templ.Component{}
+	for index, part := range location.Parts() {
+		if index > 0 {
+			parts = append(parts, text(dot))
+		}
+		parts = append(parts, text(part))
+	}
+	return templ.Join(parts...)
+}
+
 // linkLine is links in one line, the brief's ways to the author's profiles or where a post is discussed, each drawn as
 // any link is, the line's dot between two. It is joined here, not in a template's loop, where templ writes a space
 // before each part.

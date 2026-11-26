@@ -136,15 +136,20 @@ func escaperOf(letters string) *strings.Replacer {
 	return strings.NewReplacer(pairs...)
 }
 
-// head writes the title as a heading, then the subtitle, the place and the version a post's reader reads on a line, an
-// older version's with the newer one that stands over it, a translation older than its original's with the way to the
-// original, the languages a post is read in on the next, the one read
-// strong and each other a link to the post in it, a post's tags on the next, the lead as a quote, and what gets a
-// project and tells about it.
+// head writes the title as a heading, then the subtitle and the version a post's reader reads on a line, an older
+// version's with the newer one that stands over it, a translation older than its original's with the way to the
+// original, where the author is on the next, as the page stands it apart, the languages a post is read in on the next,
+// the one read strong and each other a link to the post in it, a post's tags on the next, the lead as a quote, and what
+// gets a project and tells about it.
 func (writer markdownWriter) head(head document.Head) []string {
 	chunks := []string{heading(titleDepth, writer.spans(head.Title))}
 	version := joined(dot, writer.text(versionText(head)), writer.spans(versionNote(head)))
-	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), writer.text(head.Place), version))
+	chunks = appendLine(chunks, joined(dot, writer.spans(head.Subtitle), version))
+	place := make([]string, 0, len(head.Place.Parts()))
+	for _, part := range head.Place.Parts() {
+		place = append(place, writer.text(part))
+	}
+	chunks = appendLine(chunks, joined(dot, place...))
 	languages := make([]string, 0, len(head.Languages))
 	for _, language := range head.Languages {
 		languages = append(languages, writer.spans(language.Spans()))

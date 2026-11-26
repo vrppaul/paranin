@@ -279,7 +279,16 @@ func (layout layout) headParts(head document.Head) headParts {
 
 // subtitleLines are a head's subtitle with its place beside it, under the title.
 func (layout layout) subtitleLines(head document.Head) []line {
-	return layout.fill(markedWords(layout.words(head.Subtitle, kindText), textWords(head.Place, kindMuted), placeMark), 0)
+	return layout.fill(markedWords(layout.words(head.Subtitle, kindText), placeWords(head.Place), placeMark), 0)
+}
+
+// placeWords are where the author is, each part muted, the place mark between each two, as the page writes them.
+func placeWords(location *document.Location) []word {
+	words := []word{}
+	for _, part := range location.Parts() {
+		words = markedWords(words, textWords(part, kindMuted), placeMark)
+	}
+	return words
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the

@@ -728,7 +728,7 @@ func TestAPostsHeadHoldsItsFrontMatter(test *testing.T) {
 	toCome := document.Page{Kind: document.PageNone, Slug: "", Tab: ""}
 	want := document.Head{
 		Page: page, Number: 1, Language: "en",
-		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: "",
+		Greeting: "", Title: textSpans("Reading slowly"), Subtitle: nil, Place: nil,
 		Filters: []document.Filter{
 			{Tag: "reading", Page: document.TagFilter("reading"), Current: false, WayOut: ""},
 			{Tag: "terminals", Page: document.TagFilter("terminals"), Current: false, WayOut: ""},

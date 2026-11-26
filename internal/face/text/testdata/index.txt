@@ -1,7 +1,8 @@
 EXAMPLE.TEST(1)                 User Commands                  EXAMPLE.TEST(1)
 
 NAME
-       Mira Example — Software Engineer · Based in Brno · remote across Europe
+       Mira Example — Software Engineer
+       Based in Brno · remote across Europe
 
 DESCRIPTION
        Builds <https://example.test/experience.txt> small tools

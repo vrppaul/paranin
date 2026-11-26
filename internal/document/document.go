@@ -9,6 +9,7 @@ package document
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 )
 
@@ -36,7 +37,8 @@ type Head struct {
 	// Subtitle is what stands beside the title: the author's title on the résumé, a project's tagline on its page,
 	// the filter in the site's words on a filtered list
 	Subtitle []Span
-	Place    string
+	// Place is where the author is, on the résumé; none on any other page
+	Place *Location
 	// Filters are the tags a post's head and the blog's list's offer to filter the list by; none on any other page
 	Filters []Filter
 	Lead    []Span
@@ -59,6 +61,22 @@ type Head struct {
 	// Latest are the blog's latest posts the résumé's first screen ends with; none on any other page, or where no post
 	// is out
 	Latest *LatestPosts
+}
+
+// Location is where the author is (DESIGN.md, Pages): the city they are based in, in the site's words, and where they
+// work from, none where the profile says nowhere. Each face joins its parts with its own mark.
+type Location struct {
+	BasedIn   string
+	WorksFrom string
+}
+
+// Parts are the words a location says, in their order: where the author is based, then where they work from; none of
+// no location, or of a part it leaves empty.
+func (location *Location) Parts() []string {
+	if location == nil {
+		return nil
+	}
+	return slices.DeleteFunc([]string{location.BasedIn, location.WorksFrom}, func(part string) bool { return part == "" })
 }
 
 // LatestPostsPlaces is how many of the blog's latest posts the résumé's first screen names at most, each in a place of

@@ -1601,9 +1601,29 @@ a.tile-title:focus-visible {
   column-gap: var(--row-3);
 }
 
-.project > .page-blocks {
+/* a project's section (DESIGN.md, ProjectSection) on the project's grid: its title on a row of its own across it, a
+ * row over its words, which stand in the text's column held to the reading column; the side's column stays empty
+ * until a section has something to add */
+.project-sections {
+  display: grid;
   grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   padding-top: var(--row-2);
+}
+
+.project-sections > section {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.project-sections > section > :is(p, .points) {
+  grid-column: 1;
+  max-width: var(--column);
+}
+
+.project-sections > section > h2 {
+  grid-column: 1 / -1;
 }
 
 /* its head (DESIGN.md, ProjectHead): the name on a row of its own, no wider than the text's column; two rows under
@@ -1970,12 +1990,14 @@ a.tag[aria-current]:hover {
   margin: 0 0 var(--row);
 }
 
-/* the words read, in the reading face, on lines taller than a row: the paragraphs, the lists and the quotes; code among
- * them stays in the page's own face, which counts its cells, and so does a picture's caption, a note on it */
+/* the words read, in the reading face, on lines taller than a row: a post's paragraphs, lists and quotes, and a
+ * project's section's paragraphs and points; code among them stays in the page's own face, which counts its cells, and
+ * so does a picture's caption, a note on it, and a point's mark */
 .post .article > p,
 .post .article-section > p,
 .article .post-list,
-.article blockquote {
+.article blockquote,
+.project-sections > section > :is(p, .points) {
   font-family: var(--reading-face);
   font-size: var(--type-reading-size);
   font-weight: var(--type-reading-weight);
@@ -1986,12 +2008,15 @@ a.tag[aria-current]:hover {
 .article sup,
 .article figcaption,
 .post-list .point-mark,
-.post-list li::marker {
+.post-list li::marker,
+.project-sections code,
+.project-sections .point-mark {
   font-family: var(--face);
 }
 
 /* code among the words, a share of their size, so it stands no larger than they do */
-.article :not(pre) > code {
+.article :not(pre) > code,
+.project-sections :not(pre) > code {
   font-size: var(--code-in-words);
 }
 

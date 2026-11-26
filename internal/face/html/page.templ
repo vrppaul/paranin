@@ -476,11 +476,15 @@ templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
 }
 
 // projectMain is a project's page (DESIGN.md, Layout): one grid of its text's column and its side's, its head on it,
-// then its blocks across both.
+// then its sections on it too, each a row of it (DESIGN.md, ProjectSection), as a page's blocks stand.
 templ (writer PageWriter) projectMain(head document.Head, blocks []document.Block) {
 	<div class="project">
 		@writer.projectHead(head)
-		@writer.pageBlocks(blocks)
+		<div class="blocks page-blocks project-sections">
+			for _, block := range blocks {
+				@writer.block(block, firstHeadingDepth)
+			}
+		</div>
 		if project := head.Project; project != nil {
 			@writer.projectEnd(*project)
 		}

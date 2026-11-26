@@ -338,16 +338,12 @@ func (layout layout) tiles(posts []document.ListedPost) laidTab {
 	grid := gridOf(layout.width)
 	inside := layout
 	inside.width = grid.inside()
-	rows := [][]gridCell{}
-	for first := 0; first < len(posts); first += grid.columns {
-		row := []gridCell{}
-		for _, post := range posts[first:min(first+grid.columns, len(posts))] {
-			_, isOut := post.Readiness.(document.PostOut)
-			row = append(row, gridCell{label: layout.edgeLabel(post), words: inside.tileWordsOf(post), leads: isOut})
-		}
-		rows = append(rows, row)
+	cells := make([]gridCell, 0, len(posts))
+	for _, post := range posts {
+		_, isOut := post.Readiness.(document.PostOut)
+		cells = append(cells, gridCell{label: layout.edgeLabel(post), words: inside.tileWordsOf(post), leads: isOut})
 	}
-	framed := grid.framed(rows)
+	framed := grid.framed(cells)
 	laid := laidTab{lines: framed.lines, links: []laidLink{}, opening: 0, groups: nil, split: 0, sections: nil, outline: noOutline()}
 	for index, post := range posts {
 		if out, isOut := post.Readiness.(document.PostOut); isOut {
@@ -374,10 +370,11 @@ type framedGrid struct {
 	edges []int
 }
 
-// framed lays out rows of cells as a grid, each row as tall as its tallest cell, the cells sharing their edges.
-func (grid tileGrid) framed(rows [][]gridCell) framedGrid {
+// framed lays out cells as a grid, as many in a row as the grid has columns, each row as tall as its tallest cell, the
+// cells sharing their edges.
+func (grid tileGrid) framed(cells []gridCell) framedGrid {
 	laid, above := framedGrid{lines: []line{}, edges: []int{}}, []bool{}
-	for _, row := range rows {
+	for row := range slices.Chunk(cells, grid.columns) {
 		labels, words, leads := make([]line, 0, len(row)), make([]tileWords, 0, len(row)), make([]bool, 0, len(row))
 		for _, cell := range row {
 			labels, words, leads = append(labels, cell.label), append(words, cell.words), append(leads, cell.leads)

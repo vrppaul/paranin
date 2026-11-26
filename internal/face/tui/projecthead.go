@@ -87,15 +87,11 @@ func (layout layout) otherTiles(others []document.OtherProject) []line {
 	grid := gridOf(layout.width)
 	inside := layout
 	inside.width = grid.inside()
-	rows := [][]gridCell{}
-	for first := 0; first < len(others); first += grid.columns {
-		row := []gridCell{}
-		for _, other := range others[first:min(first+grid.columns, len(others))] {
-			row = append(row, gridCell{label: nil, words: inside.otherWords(other), leads: true})
-		}
-		rows = append(rows, row)
+	cells := make([]gridCell, 0, len(others))
+	for _, other := range others {
+		cells = append(cells, gridCell{label: nil, words: inside.otherWords(other), leads: true})
 	}
-	return grid.framed(rows).lines
+	return grid.framed(cells).lines
 }
 
 // otherWords are another project's words in its tile: its name, bold, a link to its page, and its tagline muted at

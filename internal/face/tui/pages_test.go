@@ -75,6 +75,19 @@ func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	}
 }
 
+// A tile with nothing set into its top edge, as another project at a project's end, draws its top edge whole, with no
+// gap in the line.
+func TestATileWithNothingInItsEdgeDrawsTheEdgeWhole(test *testing.T) {
+	page := aboveTheFooter(screenOf(test, commanded(test, sessionModel(fixtures.WithTwoProjectPages(test), commonWidth, tallHeight), "e tidy-tool")))
+	_, others, _ := strings.Cut(page, "all projects")
+	edgeStart := strings.Index(others, frameAcross)
+	lineStart := strings.LastIndex(others[:edgeStart], "\n") + 1
+	edge, _, _ := strings.Cut(others[lineStart:], "\n")
+	if strings.Contains(strings.TrimSpace(edge), " ") {
+		test.Errorf("the project's page =\n%s\nwant the other projects' top edge whole, not %q", page, edge)
+	}
+}
+
 // A project's page stands under the project's name, in the titles' font where the page has the room for it, as text
 // on a page too narrow for that. A banner is a look, so the cases read only whether the name stands as text.
 func TestAProjectsPageStandsUnderItsName(test *testing.T) {

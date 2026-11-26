@@ -57,6 +57,9 @@ const (
 	discussGap     = 2
 )
 
+// The columns of a post's panes standing one under the other
+const oneUnderAnother = 1
+
 // postShape is how a post stands, by the columns its page has room for (DESIGN.md, The TUI).
 type postShape int
 
@@ -662,25 +665,21 @@ func (layout layout) panes(place document.PostPlace, sideBySide bool) []line {
 // sharing the line between them as the blog's tiles do, filling the width: side by side, the side before at the left,
 // as the page sets them; else one under the other, the side after first.
 func (layout layout) paneGrid(after, before paneSide, sideBySide bool) []line {
-	rows := [][]paneSide{{after}, {before}}
+	sides, columns := []paneSide{after, before}, oneUnderAnother
 	if sideBySide {
-		rows = [][]paneSide{{before, after}}
+		sides, columns = []paneSide{before, after}, len(sides)
 	}
-	grid := filledGrid(len(rows[0]), layout.width-textColumn)
+	grid := filledGrid(columns, layout.width-textColumn)
 	inside := layout
 	inside.width = grid.inside()
-	cells := make([][]gridCell, 0, len(rows))
-	for _, row := range rows {
-		cells = append(cells, inside.paneCells(row))
-	}
-	return grid.framed(cells).lines
+	return grid.framed(inside.paneCells(sides)).lines
 }
 
-// paneCells are sides of a post's foot as a row of its grid's cells: each its name set into its top edge, bold where
-// the pane leads somewhere, faint where not, and what it holds.
-func (layout layout) paneCells(row []paneSide) []gridCell {
-	cells := make([]gridCell, 0, len(row))
-	for _, side := range row {
+// paneCells are sides of a post's foot as its grid's cells: each its name set into its top edge, bold where the pane
+// leads somewhere, faint where not, and what it holds.
+func (layout layout) paneCells(sides []paneSide) []gridCell {
+	cells := make([]gridCell, 0, len(sides))
+	for _, side := range sides {
 		nameKind := kindStrong
 		if side.neighbour == nil {
 			nameKind = kindFaint

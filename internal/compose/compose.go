@@ -208,7 +208,6 @@ func experienceSection(experience content.Experience, groups []content.SkillGrou
 			Period:       periodOf(role.Start, role.End, words),
 			Title:        markedSpans(role.Company),
 			Subtitle:     markedSpans(role.Title),
-			Place:        role.Location,
 			Technologies: role.Technologies,
 			Points:       points(role.Bullets),
 			Details:      paragraphs(role.Details),

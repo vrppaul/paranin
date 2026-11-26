@@ -24,7 +24,7 @@ EXPERIENCE
        Go     3y
        Rust   still learning
 
-       Northwind — Senior Engineer                    04/2023 – present · Brno
+       Northwind — Senior Engineer                           04/2023 – present
               Go · Docker
               - Kept the queue moving
 
@@ -33,7 +33,7 @@ EXPERIENCE
 
               [what came of it, in numbers]
 
-       Southwind — Engineer                         01/2020 – 03/2023 · Prague
+       Southwind — Engineer                                  01/2020 – 03/2023
               - Wrote the first parser
               - Kept the build green through three moves of the office, two
                 mergers and one long winter of outages

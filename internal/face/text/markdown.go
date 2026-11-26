@@ -391,11 +391,11 @@ func (writer markdownWriter) fact(fact document.Fact) string {
 	return writer.text(fact.Label) + labelEnd + writer.spans(fact.Value)
 }
 
-// entry writes an entry under its title and subtitle, its period and place in a line, its technologies in another,
-// then its points, and its details, each a paragraph.
+// entry writes an entry under its title and subtitle, its period in a line, its technologies in another, then its
+// points, and its details, each a paragraph.
 func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth int) []string {
 	chunks = appendChunk(chunks, heading(depth, joined(dash, writer.spans(entry.Title), writer.spans(entry.Subtitle))))
-	chunks = appendLine(chunks, joined(dot, writer.period(entry.Period), writer.text(entry.Place)))
+	chunks = appendLine(chunks, writer.period(entry.Period))
 	technologies := make([]string, 0, len(entry.Technologies))
 	for _, technology := range entry.Technologies {
 		technologies = append(technologies, writer.text(technology))

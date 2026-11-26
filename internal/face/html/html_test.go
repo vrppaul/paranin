@@ -747,7 +747,7 @@ func TestTheBriefEndsWithTheProfiles(test *testing.T) {
 func roleOf(company string, start, end document.Month) document.Entry {
 	return document.Entry{
 		Period: document.Period{Start: start, End: end}, Title: []document.Span{document.Text{Text: company}},
-		Subtitle: nil, Place: "", Points: nil,
+		Subtitle: nil, Points: nil,
 	}
 }
 

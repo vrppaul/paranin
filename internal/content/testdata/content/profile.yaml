@@ -30,7 +30,6 @@ experience:
   roles:
     - company: Northwind
       title: Senior Engineer
-      location: Brno
       start: 2023-04
       end: current
       technologies: [Go, Docker]
@@ -41,7 +40,6 @@ experience:
         - "[what came of it, in numbers]"
     - company: Southwind
       title: Engineer
-      location: Prague
       start: 2020-01
       end: 2023-03
       bullets:

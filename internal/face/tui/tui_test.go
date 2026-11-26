@@ -431,18 +431,18 @@ func TestEachTabKeepsItsPlace(test *testing.T) {
 	}
 }
 
-// A role reads with its period, each month its year and its number, and with its title, its subtitle and its place,
-// on a common terminal as on a phone.
-func TestARoleReadsWithItsPeriodAndPlace(test *testing.T) {
+// A role reads with its period, each month its year and its number, and with its title and its subtitle, on a common
+// terminal as on a phone.
+func TestARoleReadsWithItsPeriodAndTitle(test *testing.T) {
 	cases := []struct {
 		name  string
 		width int
 		want  string
 	}{
 		{name: "the period of a role still held", width: commonWidth, want: "2023-04 – present"},
-		{name: "a role still held", width: commonWidth, want: "Northwind — Senior Engineer · Brno"},
+		{name: "a role still held", width: commonWidth, want: "Northwind — Senior Engineer"},
 		{name: "the period of a role that ended", width: commonWidth, want: "2020-01 – 2023-03"},
-		{name: "a role that ended", width: commonWidth, want: "Southwind — Engineer · Prague"},
+		{name: "a role that ended", width: commonWidth, want: "Southwind — Engineer"},
 		{name: "the period of a role on a phone", width: phoneWidth, want: "2023-04 – present"},
 	}
 	for _, testCase := range cases {

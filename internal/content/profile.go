@@ -70,7 +70,6 @@ type Experience struct {
 type Role struct {
 	Company      string   `yaml:"company"`
 	Title        string   `yaml:"title"`
-	Location     string   `yaml:"location"`
 	Start        Month    `yaml:"start"`
 	End          Month    `yaml:"end"`
 	Technologies []string `yaml:"technologies"`

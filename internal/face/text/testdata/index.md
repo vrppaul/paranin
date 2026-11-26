@@ -27,7 +27,7 @@ Ships tools a team **leans on** every day.
 
 ### Northwind — Senior Engineer
 
-04/2023 – present · Brno
+04/2023 – present
 
 Go · Docker
 
@@ -39,7 +39,7 @@ Joined a team of four that ran a **message queue** for every service.
 
 ### Southwind — Engineer
 
-01/2020 – 03/2023 · Prague
+01/2020 – 03/2023
 
 - Wrote the first parser
 - Kept the build green through three moves of the office, two mergers and one long winter of outages

@@ -179,7 +179,6 @@ type Entry struct {
 	Period       Period
 	Title        []Span
 	Subtitle     []Span
-	Place        string
 	Technologies []string
 	Points       []Point
 	Details      []Paragraph

@@ -105,7 +105,7 @@ func TestASearchStartsWhereThePageStands(test *testing.T) {
 
 // n and N go on from the match shown even where the page can scroll no further, so no match is skipped; each tab
 // keeps the match it showed while the reader looks at another; and a tab that has shown none starts at its top line,
-// as Enter does, and N there goes to the match before it. The experience tab holds an e 49 times, four of them on its
+// as Enter does, and N there goes to the match before it. The experience tab holds an e 48 times, four of them on its
 // top line, and the projects tab 11 times, its top line among them.
 func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 	cases := []struct {
@@ -113,8 +113,8 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 		keys  []string
 		holds string
 	}{
-		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [48/49]"},
-		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/49]"},
+		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [47/48]"},
+		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/48]"},
 		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/11]"},
 		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [11/11]"},
 	}
@@ -251,7 +251,7 @@ func TestANewSearchForgetsTheMatchesShown(test *testing.T) {
 func TestAResizeForgetsTheMatchesShown(test *testing.T) {
 	model := pressed(test, fixtureModel(test, commonWidth, shortHeight), append(toExperience(), "/")...)
 	resized, _ := pressed(test, typed(test, model, "e"), "enter").Update(tea.WindowSizeMsg{Width: commonWidth, Height: shortHeight})
-	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/49]") {
+	if screen := screenOf(test, pressed(test, as[Model](test, resized), "n")); !strings.Contains(screen, "/e [1/48]") {
 		test.Errorf("after a resize and n the screen =\n%s\nwant the match on the top line", screen)
 	}
 }

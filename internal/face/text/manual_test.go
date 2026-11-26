@@ -64,7 +64,7 @@ func TestATitleAndItsPeriodNeverTouch(test *testing.T) {
 	title := strings.Repeat("a", pageWidth-sectionIndent-textWidth(written)-1)
 	composed := document.Document{
 		Head:   fixtures.HeadOf(document.Page{Kind: document.PageProject, Slug: "tool", Tab: ""}, nil),
-		Blocks: []document.Block{document.Entry{Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Place: "", Technologies: nil, Points: nil, Details: nil}},
+		Blocks: []document.Block{document.Entry{Period: period, Title: []document.Span{document.Text{Text: title}}, Subtitle: nil, Technologies: nil, Points: nil, Details: nil}},
 	}
 	want := strings.Repeat(" ", sectionIndent) + written + "\n"
 	if got := Manual(composed, fixtures.Site(fixtures.LoadedContent(test)), ownManual(test)); !strings.Contains(got, "\n"+want) {

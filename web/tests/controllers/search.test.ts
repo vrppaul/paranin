@@ -36,12 +36,12 @@ const WIND = "wind";
 const NOWHERE = "zebra";
 
 // A phrase the fixture's first point parts with a mark, "Kept the <mark>queue</mark> moving"; and the end of the
-// first role's heading run on into its place, "Northwind — Senior Engineer" and "Brno", which the served page sets
-// side by side with nothing between, as the golden page, set out a tag a line, does not
+// first role's heading run on into its detail, "Northwind — Senior Engineer" and "Joined a team of four…", which the
+// served page sets side by side with nothing between, as the golden page, set out a tag a line, does not
 const PARTED = "the queue";
-const ACROSS_BLOCKS = "engineerbrno";
+const ACROSS_BLOCKS = "engineerjoined";
 const ROLE_HEADING = "main .entry-body > :first-child";
-const ROLE_PLACE = "main .entry-place";
+const ROLE_DETAIL = "main .entry-detail";
 
 // Each test opens its first page in a session of its own, which the pages it opens after share
 beforeEach(() => sessionStorage.clear());
@@ -158,7 +158,7 @@ test("a search finds a phrase a mark parts, and marks it whole", () => {
 });
 
 test("a search never joins the words of two blocks, however close the markup sets them", () => {
-  started(true, (page) => found(ROLE_HEADING, page).append(found(ROLE_PLACE, page)));
+  started(true, (page) => found(ROLE_HEADING, page).append(found(ROLE_DETAIL, page)));
   searched(ACROSS_BLOCKS);
   expect(said()).toBe(`E486: Pattern not found: ${ACROSS_BLOCKS}`);
 });

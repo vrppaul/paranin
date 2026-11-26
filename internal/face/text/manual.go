@@ -289,12 +289,11 @@ func (writer manualWriter) contents(indent int, contents document.Contents) []st
 	return lines
 }
 
-// entry writes an entry's title and subtitle with its period and place at the right, its technologies in a line under
-// them, then its points, and its details, each a paragraph a row of nothing below what stands before it.
+// entry writes an entry's title and subtitle with its period at the right, its technologies in a line under them, then
+// its points, and its details, each a paragraph a row of nothing below what stands before it.
 func (writer manualWriter) entry(indent int, entry document.Entry) []string {
 	left := joinedWords(dashWord, writer.words(entry.Title), writer.words(entry.Subtitle))
-	right := joinedWords(dotWord, strings.Fields(periodText(entry.Period)), strings.Fields(entry.Place))
-	lines := titleLine(indent, left, right)
+	lines := titleLine(indent, left, strings.Fields(periodText(entry.Period)))
 	technologies := make([][]string, 0, len(entry.Technologies))
 	for _, technology := range entry.Technologies {
 		technologies = append(technologies, strings.Fields(technology))

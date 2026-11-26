@@ -386,15 +386,15 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 }
 
 // entry lays out an entry: its period in a column of a width, the widest period of those laid out with it, the one
-// still going on standing out, and beside it its title, its subtitle and its place, the rest of it under them; where
-// the page leaves the words beside the column too little room, the period stands above them.
+// still going on standing out, and beside it its title and its subtitle, the rest of it under them; where the page
+// leaves the words beside the column too little room, the period stands above them.
 func (layout layout) entry(entry document.Entry, indent, periodWidth int) []line {
 	periodKind := kindMuted
 	if entry.Period.GoesOn() {
 		periodKind = kindCurrent
 	}
 	period := textWords(periodText(entry.Period), periodKind)
-	titleWords := markedWords(markedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted), subtitleMark), textWords(entry.Place, kindMuted), placeMark)
+	titleWords := markedWords(layout.words(entry.Title, kindStrong), layout.words(entry.Subtitle, kindMuted), subtitleMark)
 	column := indent + periodWidth + columnGap
 	if layout.width-column < narrowestEntry {
 		return slices.Concat(layout.fill(period, indent), layout.fill(titleWords, indent), layout.entryBody(entry, indent))

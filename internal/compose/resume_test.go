@@ -34,7 +34,6 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "the ssh command", want: "ssh example.test"},
 		{name: "a company", want: "Northwind"},
 		{name: "a role", want: "Senior Engineer"},
-		{name: "a role's place", want: "Prague"},
 		{name: "a point", want: "Wrote the first parser"},
 		{name: "a role's technology", want: "Docker"},
 		{name: "a role's detail", want: "Joined a team of four that ran a "},

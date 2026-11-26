@@ -413,7 +413,7 @@ list: years in a column as wide as the widest, company, and a bar as long as the
 ### Entry
 
 One role: its dates in a column of their own (`when`), then its heading, `strong`, an `h2` on its tab, under the
-page's `h1`. Its place in `muted`, its points. The current role's dates bold in `text`, ended ones `muted`. Points start
+page's `h1`. Its points. The current role's dates bold in `text`, ended ones `muted`. Points start
 with a `faint` dash, at most `measure` wide. Entries are set apart by a `quiet` hairline, never boxed.
 
 ### Card

@@ -742,8 +742,8 @@ templ factRow(label string, value templ.Component) {
 }
 
 // entry is a role (DESIGN.md, Entry): its period in a column of its own, marked where it still goes on; then its title
-// and subtitle as its heading, its place and its technologies under them, its points, each after the point's mark,
-// and its details, each a paragraph.
+// and subtitle as its heading, its technologies under them, its points, each after the point's mark, and its details,
+// each a paragraph.
 templ (writer PageWriter) entry(entry document.Entry, depth int) {
 	<article class={ "entry", templ.KV("entry-now", entry.Period.GoesOn()) }>
 		<p class="entry-when">
@@ -753,9 +753,6 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 		</p>
 		<div class="entry-body">
 			@heading(depth, unnamed, writer.titled(entry.Title, entry.Subtitle))
-			if entry.Place != "" {
-				<p class="entry-place">{ entry.Place }</p>
-			}
 			if len(entry.Technologies) > 0 {
 				<p class="entry-technologies">
 					@writer.wholeParts(document.NameParts(entry.Technologies))

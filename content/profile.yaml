@@ -63,7 +63,6 @@ experience:
   roles:
     - company: Kiwi.com
       title: Senior Software Engineer
-      location: Prague
       start: 2024-01
       end: current
       bullets:
@@ -76,7 +75,6 @@ experience:
         - "[what came of it, in numbers]"
     - company: Twisto
       title: Backend Developer
-      location: Prague
       start: 2022-02
       end: 2023-12
       bullets:
@@ -84,7 +82,6 @@ experience:
         - "[A second result, with a number]"
     - company: Seznam.cz
       title: Backend Developer
-      location: Prague
       start: 2020-08
       end: 2022-01
       technologies: [Python, Kubernetes]
@@ -97,7 +94,6 @@ experience:
         - "[what came of it, in numbers]"
     - company: Blindspot Solutions
       title: Machine Learning Developer
-      location: Prague
       start: 2019-01
       end: 2020-07
       technologies: [Python, Kotlin, scikit-learn]
@@ -110,7 +106,6 @@ experience:
         - "[what came of it, in numbers]"
     - company: Česká spořitelna
       title: UX Designer
-      location: Prague
       start: 2017-11
       end: 2018-09
       technologies: [UX design]
@@ -118,7 +113,6 @@ experience:
         - Personas, prototypes and usability testing for a major web app in an agile team
     - company: Freelance
       title: Web Graphic Designer
-      location: Prague
       start: 2016-01
       end: 2017-10
       bullets:

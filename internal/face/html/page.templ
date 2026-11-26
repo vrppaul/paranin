@@ -299,9 +299,10 @@ templ (writer PageWriter) tabMain(title templ.Component, blocks []document.Block
 	@writer.pageBlocks(blocks)
 }
 
-// pageBlocks are the blocks after a page's head, a row apart as a résumé section's are.
-templ (writer PageWriter) pageBlocks(blocks []document.Block) {
-	<div class="blocks page-blocks">
+// pageBlocks are the blocks after a page's head, a row apart as a résumé section's are, with the classes of the page's
+// own that lay them out where it has any: a project's.
+templ (writer PageWriter) pageBlocks(blocks []document.Block, ownClasses ...string) {
+	<div class={ "blocks", "page-blocks", ownClasses }>
 		for _, block := range blocks {
 			@writer.block(block, firstHeadingDepth)
 		}
@@ -480,11 +481,7 @@ templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
 templ (writer PageWriter) projectMain(head document.Head, blocks []document.Block) {
 	<div class="project">
 		@writer.projectHead(head)
-		<div class="blocks page-blocks project-sections">
-			for _, block := range blocks {
-				@writer.block(block, firstHeadingDepth)
-			}
-		</div>
+		@writer.pageBlocks(blocks, "project-sections")
 		if project := head.Project; project != nil {
 			@writer.projectEnd(*project)
 		}

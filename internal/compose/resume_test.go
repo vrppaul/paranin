@@ -328,14 +328,14 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 		want    []document.Listing
 	}{
 		{name: "the résumé", section: "Résumé", want: []document.Listing{{
-			Page:  document.Page{Kind: document.PageResume, Slug: "", Tab: ""},
-			Title: []document.Span{document.Text{Text: "Mira Example"}},
-			Note:  []document.Span{document.Text{Text: "Software Engineer"}},
+			Target: document.Page{Kind: document.PageResume, Slug: "", Tab: ""},
+			Title:  []document.Span{document.Text{Text: "Mira Example"}},
+			Note:   []document.Span{document.Text{Text: "Software Engineer"}},
 		}}},
 		{name: "the projects' pages", section: "Projects", want: []document.Listing{{
-			Page:  document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""},
-			Title: []document.Span{document.Text{Text: "tidy-tool"}},
-			Note:  []document.Span{document.Text{Text: "Tidies files."}},
+			Target: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""},
+			Title:  []document.Span{document.Text{Text: "tidy-tool"}},
+			Note:   []document.Span{document.Text{Text: "Tidies files."}},
 		}}},
 	}
 	for _, testCase := range cases {
@@ -352,13 +352,13 @@ func TestTheIndexListsEachPageUnderItsWord(test *testing.T) {
 func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	index := SiteOf(Prepare(snapshot), publicOnTheDay()).Index
-	got := []document.Page{}
+	got := []document.Target{}
 	for _, title := range []string{"Résumé", "Projects"} {
 		for _, listed := range contentsOf(test, sectionTitled(test, index, title)).Listings {
-			got = append(got, listed.Page)
+			got = append(got, listed.Target)
 		}
 	}
-	want := []document.Page{}
+	want := []document.Target{}
 	for _, page := range DocumentsOf(SiteOf(Prepare(snapshot), publicOnTheDay()).Pages) {
 		want = append(want, page.Head.Page)
 	}
@@ -369,9 +369,9 @@ func TestTheIndexListsEveryPageComposeMakes(test *testing.T) {
 
 // seenListing is a page the index lists as a test reads it: the page, its title and its line.
 type seenListing struct {
-	page  document.Page
-	title string
-	note  string
+	target document.Target
+	title  string
+	note   string
 }
 
 // The index lists the blog under the site's word for it: the blog's list in each grouping, by its title naming the
@@ -387,15 +387,15 @@ func TestTheIndexListsTheBlogsListsThenEveryPostListedNewestFirst(test *testing.
 	}
 	index := SiteOf(Prepare(withPostsAndSeries(test, posts, nil)), publicOnTheDay()).Index
 	want := []seenListing{
-		{page: document.PageOf(document.PageBlog), title: "blog by years", note: "What the writer reads, and how."},
-		{page: document.PageOf(document.PageBlogSeries), title: "blog by series", note: "What the writer reads, and how."},
-		{page: document.Page{Kind: document.PagePost, Slug: "toolbox", Tab: ""}, title: "toolbox", note: "About toolbox."},
-		{page: document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}, title: fixturePostTitle, note: "Why a page read twice is read once."},
-		{page: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, title: "first", note: "About first."},
+		{target: document.PageOf(document.PageBlog), title: "blog by years", note: "What the writer reads, and how."},
+		{target: document.PageOf(document.PageBlogSeries), title: "blog by series", note: "What the writer reads, and how."},
+		{target: document.Page{Kind: document.PagePost, Slug: "toolbox", Tab: ""}, title: "toolbox", note: "About toolbox."},
+		{target: document.Page{Kind: document.PagePost, Slug: fixturePostSlug, Tab: ""}, title: fixturePostTitle, note: "Why a page read twice is read once."},
+		{target: document.Page{Kind: document.PagePost, Slug: "first", Tab: ""}, title: "first", note: "About first."},
 	}
 	got := []seenListing{}
 	for _, listed := range contentsOf(test, sectionTitled(test, index, "blog")).Listings {
-		got = append(got, seenListing{page: listed.Page, title: document.PlainText(listed.Title), note: document.PlainText(listed.Note)})
+		got = append(got, seenListing{target: listed.Target, title: document.PlainText(listed.Title), note: document.PlainText(listed.Note)})
 	}
 	if !reflect.DeepEqual(got, want) {
 		test.Errorf("listings under the blog = %+v, want %+v", got, want)

@@ -432,7 +432,7 @@ func (writer markdownWriter) card(chunks []string, card document.Card, depth int
 func (writer markdownWriter) contents(contents document.Contents) string {
 	items := make([]string, 0, len(contents.Listings))
 	for _, listing := range contents.Listings {
-		title := writer.spans([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}})
+		title := writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
 		items = append(items, joined(labelEnd, title, writer.spans(listing.Note)))
 	}
 	return list(items)

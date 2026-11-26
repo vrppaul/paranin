@@ -287,7 +287,7 @@ func (writer manualWriter) listedPost(indent int, post document.ListedPost) []st
 func (writer manualWriter) contents(indent int, contents document.Contents) []string {
 	lines := []string{}
 	for _, listing := range contents.Listings {
-		title := writer.words([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}})
+		title := writer.words([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
 		lines = append(lines, bullet(indent, joinedWords(dashWord, title, writer.words(listing.Note)))...)
 	}
 	return lines

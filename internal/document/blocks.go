@@ -233,17 +233,18 @@ type Card struct {
 	Page     Page
 }
 
-// Contents are pages of the site a document leads to, each by its title and a line on what it is: the site's
-// index lists its pages so.
+// Contents are places a document leads to, each by its title and a line on what it is: the site's index lists its
+// pages so, and a project's section its links.
 type Contents struct {
 	Listings []Listing
 }
 
-// Listing is one page a list of contents leads to: the page, its title, and a line on what it is.
+// Listing is one place a list of contents leads to: a page of the site or an address outside it, its title, and a line
+// on what it is.
 type Listing struct {
-	Page  Page
-	Title []Span
-	Note  []Span
+	Target Target
+	Title  []Span
+	Note   []Span
 }
 
 // Checks are a group of checks under the group's name: the hidden health report holds its checks so, as Neovim's

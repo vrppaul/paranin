@@ -82,7 +82,7 @@ func (project Project) EndSections() []Section {
 func (project Project) OtherListings() []Listing {
 	listings := make([]Listing, 0, len(project.Others))
 	for _, other := range project.Others {
-		listings = append(listings, Listing{Page: other.Page, Title: other.Name, Note: other.Tagline})
+		listings = append(listings, Listing{Target: other.Page, Title: other.Name, Note: other.Tagline})
 	}
 	return listings
 }

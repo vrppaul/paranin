@@ -533,7 +533,7 @@ func headingLevels() []func(templ.Attributes, templ.Component) templ.Component {
 	return []func(templ.Attributes, templ.Component) templ.Component{headingTwo, headingThree, headingFour, headingFive, headingSix}
 }
 
-// linked are spans as a link to a page, where the page has an address: a card's title, a listing's.
+// linked are spans as a link to a page, where the page has an address: a card's title.
 func linked(page document.Page, spans []document.Span) []document.Span {
 	if page.Kind == document.PageNone {
 		return spans

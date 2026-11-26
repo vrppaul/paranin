@@ -460,7 +460,7 @@ func (layout layout) card(card document.Card, indent int) []line {
 func (layout layout) contents(contents document.Contents, indent int) []line {
 	lines := []line{}
 	for _, listing := range contents.Listings {
-		title := layout.words([]document.Span{document.Link{Target: listing.Page, Spans: listing.Title}}, kindStrong)
+		title := layout.words([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}}, kindStrong)
 		lines = append(lines, layout.bullet(markedWords(title, layout.words(listing.Note, kindMuted), subtitleMark), indent)...)
 	}
 	return lines

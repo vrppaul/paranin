@@ -829,12 +829,12 @@ templ (writer PageWriter) card(card document.Card, depth int) {
 	</article>
 }
 
-// contents are the pages a document leads to, each a link by its title, then the line on what it is.
+// contents are the places a document leads to, each a link by its title, then the line on what it is.
 templ (writer PageWriter) contents(contents document.Contents) {
 	<ul>
 		for _, listing := range contents.Listings {
 			<li>
-				@writer.spans(linked(listing.Page, listing.Title))
+				@writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
 				if len(listing.Note) > 0 {
 					@text(labelEnd)
 					@writer.spans(listing.Note)

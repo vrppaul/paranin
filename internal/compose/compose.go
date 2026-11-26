@@ -156,7 +156,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 
 // listing is a page as a list of contents names it: by its head's title and subtitle.
 func listing(head document.Head) document.Listing {
-	return document.Listing{Page: head.Page, Title: head.Title, Note: head.Subtitle}
+	return document.Listing{Target: head.Page, Title: head.Title, Note: head.Subtitle}
 }
 
 // resumeHead is the résumé's head, its headline its description: it greets the reader before the author's name,

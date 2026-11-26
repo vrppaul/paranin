@@ -106,10 +106,10 @@ func blogListings(read blog, words content.Words) []document.Listing {
 	for _, grouping := range read.listWords().Groupings(read.words.Translation()) {
 		head := read.listHead(grouping.List, nil, words)
 		title := words.Phrase(content.PhraseGroupedList, document.PlainText(head.Title), grouping.Words)
-		listings = append(listings, document.Listing{Page: head.Page, Title: textSpans(title), Note: head.Description})
+		listings = append(listings, document.Listing{Target: head.Page, Title: textSpans(title), Note: head.Description})
 	}
 	for _, post := range read.newest {
-		listings = append(listings, document.Listing{Page: postPage(post), Title: textSpans(post.Title), Note: textSpans(post.Description)})
+		listings = append(listings, document.Listing{Target: postPage(post), Title: textSpans(post.Title), Note: textSpans(post.Description)})
 	}
 	return listings
 }

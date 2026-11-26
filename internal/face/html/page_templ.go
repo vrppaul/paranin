@@ -5094,7 +5094,7 @@ func (writer PageWriter) card(card document.Card, depth int) templ.Component {
 	})
 }
 
-// contents are the pages a document leads to, each a link by its title, then the line on what it is.
+// contents are the places a document leads to, each a link by its title, then the line on what it is.
 func (writer PageWriter) contents(contents document.Contents) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -5121,7 +5121,7 @@ func (writer PageWriter) contents(contents document.Contents) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = writer.spans(linked(listing.Page, listing.Title)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

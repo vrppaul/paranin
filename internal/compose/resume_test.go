@@ -43,16 +43,6 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a project's language", want: "Lua"},
 		{name: "a repository", want: "https://github.test/mira/tidy"},
 		{name: "an install command", want: "go install example.test/tidy@latest"},
-		{name: "a group of skills", want: "Tools"},
-		{name: "a skill", want: "Docker"},
-		{name: "a skill's span", want: "3y"},
-		{name: "a skill used on the side, in the site's words", want: "on the side"},
-		{name: "a skill's sources", want: "tidy-tool, a hobby"},
-		{name: "a school", want: "A University"},
-		{name: "a field of study", want: "Computer Science and the Engineering of Systems That Last"},
-		{name: "a month still to fill", want: "[20XX]"},
-		{name: "a language", want: "English"},
-		{name: "a language's level", want: "fluent"},
 		{name: "a word of the site", want: "Experience"},
 		{name: "a label of the site", want: "repository"},
 		{name: "the word for what still goes on", want: "present"},
@@ -66,56 +56,29 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 	}
 }
 
-// The résumé's parts stand in one order, decided once here, which every face follows: five sections, each under the
-// site's word for it, the summary and the facts in the first; and in the skills, after the groups, the languages and
-// the education.
+// The résumé's parts stand in one order, decided once here, which every face follows: three sections, each under the
+// site's word for it, about the author, their experience and their projects (DESIGN.md, Pages).
 func TestTheResumeKeepsOneOrder(test *testing.T) {
-	resume := Resume(fixtures.LoadedContent(test), nil)
-	skills := sectionTitled(test, resume, "Skills").Blocks
-	cases := []struct {
-		name   string
-		blocks []document.Block
-		want   []string
-	}{
-		{name: "the sections", blocks: resume.Blocks, want: []string{"About", "Experience", "Projects", "Skills", "Contact"}},
-		{name: "the skills' last parts", blocks: skills[len(skills)-2:], want: []string{"Languages", "Education"}},
+	got := []string{}
+	for _, block := range Resume(fixtures.LoadedContent(test), nil).Blocks {
+		got = append(got, titleOf(test, as[document.Section](test, block)))
 	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			got := []string{}
-			for _, block := range testCase.blocks {
-				got = append(got, titleOf(test, as[document.Section](test, block)))
-			}
-			if !slices.Equal(got, testCase.want) {
-				test.Errorf("sections = %q, want %q", got, testCase.want)
-			}
-		})
+	if want := []string{"About", "Experience", "Projects"}; !slices.Equal(got, want) {
+		test.Errorf("sections = %q, want %q", got, want)
 	}
 }
 
-// A skill group's table tells a skill's duration from the words beside it, so each face can draw it set back.
-func TestASkillsDurationStandsInACellOfItsOwnKind(test *testing.T) {
-	group := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Tools")
-	table := as[document.Table](test, group.Blocks[0])
-	got := [][]string{}
-	for _, row := range table.Rows {
-		got = append(got, kindNamesOf(row.Cells))
-	}
-	want := [][]string{{"text", "duration", "text"}}
-	if !reflect.DeepEqual(got, want) {
-		test.Errorf("the group's cells are of the kinds %q, want %q", got, want)
-	}
-}
-
-// The résumé's first section, about the author, holds the summary and then the facts, and nothing more.
-func TestTheAboutSectionHoldsTheSummaryAndTheFacts(test *testing.T) {
+// The résumé's first section, about the author, holds the summary, the facts, and the ways to reach them, which the
+// first screen places, and nothing more.
+func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
 	about := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "About").Blocks
 	got := make([]string, 0, len(about))
 	for _, block := range about {
 		got = append(got, fmt.Sprintf("%T", block))
 	}
-	if want := []string{"document.Paragraph", "document.Facts"}; !slices.Equal(got, want) {
-		test.Errorf("the about section holds %q, want %q", got, want)
+	ways := as[document.Facts](test, about[len(about)-1]).Kind
+	if want := []string{"document.Paragraph", "document.Facts", "document.Facts"}; !slices.Equal(got, want) || ways != document.FactsWays {
+		test.Errorf("the about section holds %q, the last of the ways' kind: %t, want %q, the last the ways", got, ways == document.FactsWays, want)
 	}
 }
 
@@ -136,27 +99,13 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 	}
 }
 
-// Each entry of the résumé says what its time was spent on: an entry of the experience is a role, one of the
-// education a school, so a face takes either by its kind, not by the section it stands in.
-func TestEachEntryTellsARoleFromASchool(test *testing.T) {
-	resume := Resume(fixtures.LoadedContent(test), nil)
-	kindNames := map[document.EntryKind]string{0: "of no kind", document.EntryRole: "a role", document.EntrySchool: "a school"}
-	cases := []struct {
-		name    string
-		section string
-		want    document.EntryKind
-	}{
-		{name: "a role", section: "Experience", want: document.EntryRole},
-		{name: "a school", section: "Education", want: document.EntrySchool},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			for _, block := range sectionTitled(test, resume, testCase.section).Blocks {
-				if got := as[document.Entry](test, block).Kind; got != testCase.want {
-					test.Errorf("an entry of %q is %s, want %s", testCase.section, kindNames[got], kindNames[testCase.want])
-				}
-			}
-		})
+// Each entry of the experience says what its time was spent on, a role, so a face takes it by its kind, as the
+// career line does, not by the section it stands in.
+func TestEachEntryOfTheExperienceIsARole(test *testing.T) {
+	for _, block := range sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience").Blocks {
+		if got := as[document.Entry](test, block).Kind; got != document.EntryRole {
+			test.Errorf("an entry of the experience is of the kind %d, want a role, %d", got, document.EntryRole)
+		}
 	}
 }
 
@@ -594,20 +543,6 @@ func sectionIn(test *testing.T, blocks []document.Block, title string) (document
 		}
 	}
 	return document.Section{Title: nil, Blocks: nil}, false
-}
-
-// kindNamesOf are the names of a row's cells' kinds, in its order; a kind with no name reads as "".
-func kindNamesOf(cells []document.Cell) []string {
-	names := make([]string, 0, len(cells))
-	for _, cell := range cells {
-		names = append(names, cellKindNames()[cell.Kind])
-	}
-	return names
-}
-
-// cellKindNames name each kind of a table's cell, so a failure says which kinds came.
-func cellKindNames() map[document.CellKind]string {
-	return map[document.CellKind]string{document.CellText: "text", document.CellDuration: "duration"}
 }
 
 func titleOf(test *testing.T, section document.Section) string {

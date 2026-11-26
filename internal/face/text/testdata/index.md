@@ -12,6 +12,12 @@ Writes software for people who read it.
 - available: [notice period]
 - focus: Small tools for people who live in the terminal, written to last and to be read by whoever comes next
 
+mail: [mira@example.test](mailto:mira@example.test)
+
+GitHub: [github.test/mira](https://github.test/mira)
+
+ssh: `ssh example.test`
+
 ## Experience
 
 ### Northwind — Senior Engineer
@@ -39,31 +45,3 @@ A tool that **tidies files**.
 
 - repository: [https://github.test/mira/tidy](https://github.test/mira/tidy)
 - install: `go install example.test/tidy@latest`
-
-## Skills
-
-### Languages
-
-- Rust — still learning — a hobby
-- Go — 3y — tidy-tool, a hobby
-- Shell scripts for the build machines — 2y — Northwind, Southwind
-
-### Tools
-
-- Docker — on the side — Northwind
-
-### Languages
-
-- English: fluent
-
-### Education
-
-#### A University — Computer Science and the Engineering of Systems That Last
-
-09/2016 – [20XX]
-
-## Contact
-
-- mail: [mira@example.test](mailto:mira@example.test)
-- GitHub: [github.test/mira](https://github.test/mira)
-- ssh: `ssh example.test`

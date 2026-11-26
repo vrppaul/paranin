@@ -87,9 +87,9 @@ func projectsWithPages(projects []content.Project) []content.Project {
 	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
 }
 
-// Resume is the résumé as one document: its head, naming the feeds a reader handed the site's address finds, then five
-// sections, each under the site's word for it, as a reader asks of an author: about them, their experience, their
-// projects, their skills, and how to reach them.
+// Resume is the résumé as one document: its head, naming the feeds a reader handed the site's address finds, then three
+// sections, each under the site's word for it, as a reader asks of an author: about them and how to reach them, their
+// experience, and their projects (DESIGN.md, Pages).
 func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document {
 	profile, words := snapshot.Profile, snapshot.Own.Words
 	return document.Document{
@@ -98,13 +98,12 @@ func Resume(snapshot *content.Snapshot, feeds []document.Link) document.Document
 			aboutSection(profile, words),
 			experienceSection(profile.Experience, words),
 			projectsSection(profile.Projects, words),
-			skillsSection(profile.SkillGroups, words, languagesSection(profile.Languages, words), educationSection(profile.Education, words)),
-			section(words.Text(content.WordContact), document.Facts{Kind: document.FactsWays, List: ways(profile.Person, profile.Site, words)}),
 		},
 	}
 }
 
-// aboutSection is the section about the author: the summary, then the facts.
+// aboutSection is the section about the author: the summary, the facts, then the ways to reach them, which the first
+// screen places as each face chooses.
 func aboutSection(profile content.Profile, words content.Words) document.Section {
 	return document.Section{
 		Title: textSpans(words.Text(content.WordAbout)),
@@ -112,6 +111,7 @@ func aboutSection(profile content.Profile, words content.Words) document.Section
 		Blocks: []document.Block{
 			document.Paragraph{Spans: markedSpans(profile.Summary)},
 			document.Facts{Kind: document.FactsDetails, List: factList(profile.Facts)},
+			document.Facts{Kind: document.FactsWays, List: ways(profile.Person, profile.Site, words)},
 		},
 	}
 }
@@ -206,21 +206,6 @@ func experienceSection(roles []content.Role, words content.Words) document.Secti
 		})
 	}
 	return document.Section{Title: textSpans(words.Text(content.WordExperience)), Name: "", Blocks: entries}
-}
-
-func educationSection(schools []content.School, words content.Words) document.Section {
-	entries := make([]document.Block, 0, len(schools))
-	for _, school := range schools {
-		entries = append(entries, document.Entry{
-			Kind:     document.EntrySchool,
-			Period:   periodOf(school.Start, school.End, words),
-			Title:    markedSpans(school.Name),
-			Subtitle: markedSpans(school.Field),
-			Place:    "",
-			Points:   nil,
-		})
-	}
-	return document.Section{Title: textSpans(words.Text(content.WordEducation)), Name: "", Blocks: entries}
 }
 
 func projectsSection(projects []content.Project, words content.Words) document.Section {
@@ -376,33 +361,8 @@ func installFacts(project content.Project, words content.Words) []document.Fact 
 	return []document.Fact{document.CommandFact(words.Text(content.WordInstall), project.Install.Command)}
 }
 
-// skillsSection is what the author can do: a section of each group of skills, each a table of a skill, how long, and
-// where it was proven; then the sections handed after them.
-func skillsSection(groups []content.SkillGroup, words content.Words, after ...document.Block) document.Section {
-	sections := make([]document.Block, 0, len(groups)+len(after))
-	for _, group := range groups {
-		rows := make([]document.Row, 0, len(group.Skills))
-		for _, skill := range group.Skills {
-			listed := listedSkill(skill, words)
-			rows = append(rows, document.Row{Cells: []document.Cell{
-				{Kind: document.CellText, Spans: listed.Name},
-				{Kind: document.CellDuration, Spans: listed.Duration},
-				{Kind: document.CellText, Spans: listed.Sources},
-			}})
-		}
-		table := document.Table{Header: document.Row{Cells: nil}, Rows: rows}
-		sections = append(sections, document.Section{Title: markedSpans(group.Title), Name: "", Blocks: []document.Block{table}})
-	}
-	return document.Section{Title: textSpans(words.Text(content.WordSkills)), Name: "", Blocks: append(sections, after...)}
-}
-
-// languagesSection is the languages the author speaks, each with how well.
-func languagesSection(languages []content.Language, words content.Words) document.Section {
-	return section(words.Text(content.WordLanguages), document.Facts{Kind: document.FactsDetails, List: languageList(languages)})
-}
-
-// listedSkill is a skill as the documents hold it, in the résumé's table and in the list of skills alike: its name,
-// how long in text and in months, the places it was proven in one text, and whether the author is still learning it.
+// listedSkill is a skill as the hidden list of skills holds it: its name, how long in text and in months, the places it
+// was proven in one text, and whether the author is still learning it.
 func listedSkill(skill content.Skill, words content.Words) document.Skill {
 	return document.Skill{
 		Name:     markedSpans(skill.Name),
@@ -435,14 +395,6 @@ func factList(facts []content.Fact) []document.Fact {
 	list := make([]document.Fact, 0, len(facts))
 	for _, fact := range facts {
 		list = append(list, document.Fact{Label: fact.Label, Value: markedSpans(fact.Value)})
-	}
-	return list
-}
-
-func languageList(languages []content.Language) []document.Fact {
-	list := make([]document.Fact, 0, len(languages))
-	for _, language := range languages {
-		list = append(list, document.Fact{Label: language.Name, Value: markedSpans(language.Level)})
 	}
 	return list
 }

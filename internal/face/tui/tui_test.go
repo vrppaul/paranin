@@ -279,7 +279,7 @@ func TestTheNameReadsAsTextWhereNoBannerFits(test *testing.T) {
 // number and its name, the one shown marked, as tmux marks the window shown; then the key that opens the window of
 // keys, and the ruler.
 func TestTheFooterNamesTheSiteAndEveryTab(test *testing.T) {
-	want := []string{"[example.test]", "[blog]", "1:about", "2:experience*", "3:projects", "4:skills", "5:contact", "?", "keys", "All"}
+	want := []string{"[example.test]", "[blog]", "1:about", "2:experience*", "3:projects", "?", "keys", "All"}
 	footer := strings.Fields(footerOf(screenOf(test, pressed(test, fixtureModel(test, wideWidth, commonHeight), "l"))))
 	if !slices.Equal(footer, want) {
 		test.Errorf("on the second tab the footer reads %q, want %q", footer, want)
@@ -290,10 +290,10 @@ func TestTheFooterNamesTheSiteAndEveryTab(test *testing.T) {
 // one shown, a mark standing for them, then the session, the ruler kept.
 func TestTheFooterGivesWayAroundTheTabShown(test *testing.T) {
 	// a terminal wide enough for the sessions and one tab in the footer; one wide enough for every tab of the
-	// fixture's résumé, not for the key beside them; and one wide enough for the third tab and one tab beside it
+	// fixture's résumé, not for the key beside them; and one wide enough for the second tab and one tab beside it
 	const (
 		oneTabWidth    = 47
-		everyTabWidth  = 92
+		everyTabWidth  = 70
 		oneBesideWidth = 62
 	)
 	cases := []struct {
@@ -303,12 +303,12 @@ func TestTheFooterGivesWayAroundTheTabShown(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "the last tab", width: oneTabWidth, keys: []string{"h"}, holds: []string{"[example.test] [blog] … 5:contact*"}, lacks: []string{"4:skills", "keys"}},
+		{name: "the last tab", width: oneTabWidth, keys: []string{"h"}, holds: []string{"[example.test] [blog] … 3:projects*"}, lacks: []string{"2:experience", "keys"}},
 		{name: "the first tab at its end", width: oneTabWidth, keys: []string{"G"}, holds: []string{"[example.test] [blog] 1:about* … Bot"}, lacks: []string{"2:experience", "keys"}},
-		{name: "a tab between", width: oneTabWidth, keys: []string{"l", "l"}, holds: []string{"[example.test] [blog] … 3:projects* …"}, lacks: []string{"2:experience", "4:skills"}},
+		{name: "a tab between", width: oneTabWidth, keys: []string{"l"}, holds: []string{"[example.test] [blog] … 2:experience* …"}, lacks: []string{"1:about", "3:projects"}},
 		{name: "a screen too narrow for the sessions beside the tab shown", width: phoneWidth, keys: []string{"l"}, holds: []string{"2:experience*"}, lacks: []string{"[example.test]"}},
-		{name: "the later of two as far gives way first", width: oneBesideWidth, keys: []string{"l", "l"}, holds: []string{"… 2:experience 3:projects* …"}, lacks: []string{"4:skills"}},
-		{name: "a screen roomy enough for all but the key", width: everyTabWidth, keys: nil, holds: []string{"1:about* 2:experience 3:projects 4:skills 5:contact"}, lacks: []string{"keys"}},
+		{name: "the later of two as far gives way first", width: oneBesideWidth, keys: []string{"l"}, holds: []string{"1:about 2:experience* …"}, lacks: []string{"3:projects"}},
+		{name: "a screen roomy enough for all but the key", width: everyTabWidth, keys: nil, holds: []string{"1:about* 2:experience 3:projects"}, lacks: []string{"keys"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -799,7 +799,7 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 		address string
 	}{
 		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
-		{name: "a public profile on the contact tab", model: commanded(test, fixtureModel(test, commonWidth, commonHeight), "contact"), address: "https://github.test/mira"},
+		{name: "a public profile on the first tab", model: fixtureModel(test, commonWidth, tallHeight), address: "https://github.test/mira"},
 		{name: "a post's picture", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly/margin.png"},
 		{name: "a post's link to a heading", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly#what-a-reader-keeps"},
 	}
@@ -832,40 +832,22 @@ func TestAPicturesAddressLeadsToThePictureFromEachOfItsLines(test *testing.T) {
 	}
 }
 
-// Of the ways to reach the author the brief keeps the mail alone: the others stand once, on the contact tab.
-func TestTheBriefKeepsTheMailAloneOfTheWays(test *testing.T) {
+// The first tab holds every way to reach the author once (DESIGN.md, Pages): the mail heading the brief, the others
+// at the tab's end, each by its label, a command in its box.
+func TestTheFirstTabHoldsEveryWayToReachTheAuthorOnce(test *testing.T) {
 	screen := readRows(aboveTheFooter(screenOf(test, fixtureModel(test, commonWidth, tallHeight))))
-	cases := []struct {
-		name string
-		way  string
-	}{
-		{name: "a public profile", way: "github.test/mira"},
-		{name: "ssh", way: "ssh example.test"},
-	}
-	for _, testCase := range cases {
-		test.Run(testCase.name, func(test *testing.T) {
-			if strings.Contains(screen, testCase.way) {
-				test.Errorf("the first tab =\n%s\nholds %q, want it on the contact tab alone", screen, testCase.way)
-			}
-		})
-	}
-}
-
-// The résumé's contact tab holds every way to reach the author, each by its label.
-func TestTheContactTabHoldsEveryWayToReachTheAuthor(test *testing.T) {
-	screen := readRows(aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, commonWidth, tallHeight), "contact"))))
 	cases := []struct {
 		name string
 		want string
 	}{
-		{name: "the mail", want: "mail mira@example.test"},
+		{name: "the mail", want: "mira@example.test"},
 		{name: "a public profile", want: "GitHub github.test/mira"},
-		{name: "ssh, a command", want: "ssh example.test"},
+		{name: "ssh, a command", want: "❯ ssh example.test"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if !strings.Contains(screen, testCase.want) {
-				test.Errorf("the contact tab =\n%s\nwant %q on it", screen, testCase.want)
+			if count := strings.Count(screen, testCase.want); count != 1 {
+				test.Errorf("the first tab =\n%s\nholds %q %d times, want it once", screen, testCase.want, count)
 			}
 		})
 	}

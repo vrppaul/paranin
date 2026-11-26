@@ -6,10 +6,11 @@ import (
 )
 
 // Briefed is a document's sections read for the brief a résumé opens with: the brief, the first facts the first
-// section holds; that section's title, and the blocks it holds before the brief and after it; the sections after it;
-// the ways to reach the author they give, the mail first; and the roles they hold, in order, which CareerOf lays on a
-// line.
-// Its lists share the sections' arrays, each clipped to its length, so a face that appends to one writes no section.
+// section holds; that section's title, and the blocks it holds before the brief and after it, but the ways to reach
+// the author, which each face places as it chooses; the sections after it; those ways, the mail first; and the roles
+// the sections hold, in order, which CareerOf lays on a line.
+// Its lists are their own or share the sections' arrays clipped to their length, so a face that appends to one writes
+// no section.
 type Briefed struct {
 	Brief  Facts
 	Title  []Span
@@ -28,6 +29,15 @@ func (briefed *Briefed) Address() []Span {
 	return briefed.Ways[0].Value
 }
 
+// OtherWays are the ways to reach the author after the first, the mail, which a face that heads the brief with the
+// address places apart; none where the sections give no other.
+func (briefed *Briefed) OtherWays() []Fact {
+	if len(briefed.Ways) == 0 {
+		return nil
+	}
+	return briefed.Ways[1:]
+}
+
 // BriefOf is sections read for their brief; nothing where the first holds no facts.
 func BriefOf(sections []Section) *Briefed {
 	if len(sections) == 0 {
@@ -39,8 +49,8 @@ func BriefOf(sections []Section) *Briefed {
 			return &Briefed{
 				Brief:  facts,
 				Title:  first.Title,
-				Before: slices.Clip(first.Blocks[:index]),
-				After:  slices.Clip(first.Blocks[index+1:]),
+				Before: slices.DeleteFunc(slices.Clone(first.Blocks[:index]), isWays),
+				After:  slices.DeleteFunc(slices.Clone(first.Blocks[index+1:]), isWays),
 				Rest:   slices.Clip(sections[1:]),
 				Ways:   waysOf(sections),
 				Roles:  rolesOf(sections),
@@ -83,6 +93,12 @@ func waysOf(sections []Section) []Fact {
 		}
 	}
 	return nil
+}
+
+// isWays is whether a block is the ways to reach the author.
+func isWays(block Block) bool {
+	facts, isFacts := block.(Facts)
+	return isFacts && facts.Kind == FactsWays
 }
 
 // sectionBlocks are the blocks each section holds, in order, not those of the sections nested in them.

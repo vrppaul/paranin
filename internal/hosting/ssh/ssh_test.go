@@ -47,6 +47,8 @@ const (
 	sessionEndTolerance = time.Second
 	// the subsystem a client asks for to move files
 	sftpSubsystem = "sftp"
+	// the footer's last window on the résumé, which a test reads up to so the first screen has reached it whole
+	lastTab = "3:projects"
 )
 
 // commonTerminal is the size of a reader's terminal, well within the bound.
@@ -58,7 +60,7 @@ func commonTerminal() terminalSize {
 func TestASessionWithATerminalReadsTheResume(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, _ := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
-	if read := readUntil(test, output, "contact"); !strings.Contains(read, "experience") {
+	if read := readUntil(test, output, lastTab); !strings.Contains(read, "experience") {
 		test.Errorf("the screen = %q, want the places of the résumé's tabs", read)
 	}
 }
@@ -144,7 +146,7 @@ func TestATerminalLargerThanTheBoundTakesTheBoundsMemory(test *testing.T) {
 					test.Fatalf("WindowChange(%+v) = %v, want the terminal grown", size, err)
 				}
 			}
-			readUntil(test, output, "contact")
+			readUntil(test, output, lastTab)
 			if taken := allocated() - before; taken > sessionAllocation {
 				test.Errorf("a terminal opening at %+v and changing to %+v took %d bytes to draw, want %d at most", testCase.opening,
 					testCase.changes, taken, sessionAllocation)
@@ -300,7 +302,7 @@ func TestASecondSessionOnAConnectionIsRefused(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	client, first := sessionOver(test, dialed(test, address), address, "reader")
 	output, _ := openTerminal(test, first, commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	var refusal *gossh.OpenChannelError
 	if _, err := client.NewSession(); !errors.As(err, &refusal) || refusal.Reason != gossh.ResourceShortage {
 		test.Errorf("a second session on the connection = %v, want it refused for want of resources", err)
@@ -316,7 +318,7 @@ func TestAClosedSessionLeavesNoGoroutineBehind(test *testing.T) {
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 		output, _ := openTerminal(test, session, commonTerminal())
-		readUntil(test, output, "contact")
+		readUntil(test, output, lastTab)
 		closeClient(client, session)
 		if err := server.Shutdown(test.Context()); err != nil {
 			test.Errorf("Shutdown after the session closed = %v, want the server stopped", err)
@@ -390,7 +392,7 @@ func TestAConnectionEndsWithItsSession(test *testing.T) {
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 		output, _ := openTerminal(test, session, commonTerminal())
-		readUntil(test, output, "contact")
+		readUntil(test, output, lastTab)
 		closed := time.Now()
 		if err := session.Close(); err != nil {
 			test.Fatalf("Close of the session = %v, want it closed", err)
@@ -412,7 +414,7 @@ func TestASessionStartedInTimeOutlivesItsTimeToStart(test *testing.T) {
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 		output, input := openTerminal(test, session, commonTerminal())
-		readUntil(test, output, "contact")
+		readUntil(test, output, lastTab)
 		time.Sleep(openingTimeout)
 		if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
 			test.Fatalf("type :checkhealth past the time to start = %v, want the session open", err)
@@ -457,7 +459,7 @@ func TestAFloodOfInputReachesTheTUIAtAReadersPace(test *testing.T) {
 				go server.server.HandleConn(serverEnd)
 				client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 				output, input := openTerminal(test, session, commonTerminal())
-				readUntil(test, output, "contact")
+				readUntil(test, output, lastTab)
 				flooded := time.Now()
 				if _, err := io.WriteString(input, testCase.flood+":checkhealth\r"); err != nil {
 					test.Fatalf("send a flood of %s = %v, want it taken", testCase.name, err)
@@ -490,7 +492,7 @@ func TestAnOrdinaryPasteReachesTheTUIAtOnce(test *testing.T) {
 		go server.server.HandleConn(serverEnd)
 		client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 		output, input := openTerminal(test, session, commonTerminal())
-		readUntil(test, output, "contact")
+		readUntil(test, output, lastTab)
 		pasted := time.Now()
 		paste := pasteOpens + strings.Repeat(floodKey, ordinaryPaste-pasteRoom) + pasteCloses
 		if _, err := io.WriteString(input, paste+":checkhealth\r"); err != nil {
@@ -513,7 +515,7 @@ func TestASessionClosedOnAnOpenConnectionEnds(test *testing.T) {
 	address := serving(test, slog.New(fixtures.RecordedLog{Records: records}))
 	session := clientSession(test, address, "reader")
 	output, _ := openTerminal(test, session, commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	nextRecord(test, records)
 	if err := session.Close(); err != nil {
 		test.Fatalf("Close of the session = %v, want it closed", err)
@@ -538,7 +540,7 @@ func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 	server := newServer(test, slog.New(slog.NewTextHandler(lineWriter{lines: lines}, nil)), false)
 	address := listening(test, server)
 	output, _ := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	ended, end := context.WithCancel(context.Background())
 	end()
 	if err := server.Shutdown(ended); err != nil {
@@ -555,7 +557,7 @@ func TestAStopClosesTheSessionsStillOpen(test *testing.T) {
 func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, input := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	stops := make(chan os.Signal, 1)
 	signal.Notify(stops, syscall.SIGTERM)
 	defer signal.Stop(stops)
@@ -573,7 +575,7 @@ func TestTheServersSignalLeavesItsSessionsOpen(test *testing.T) {
 func TestASessionOpensTheHealthReport(test *testing.T) {
 	address := serving(test, slog.New(slog.DiscardHandler))
 	output, input := openTerminal(test, clientSession(test, address, "reader"), commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	if _, err := io.WriteString(input, ":checkhealth\r"); err != nil {
 		test.Fatalf("type :checkhealth = %v, want the session open", err)
 	}
@@ -725,7 +727,7 @@ func drawnServer(test *testing.T) *Server {
 	go server.server.HandleConn(serverEnd)
 	client, session := sessionOver(test, clientEnd, memoryAddress, "reader")
 	output, _ := openTerminal(test, session, commonTerminal())
-	readUntil(test, output, "contact")
+	readUntil(test, output, lastTab)
 	closeClient(client, session)
 	return server
 }

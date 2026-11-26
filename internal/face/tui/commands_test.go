@@ -12,8 +12,8 @@ import (
 	"github.com/vrppaul/paranin/internal/fixtures"
 )
 
-// The presses of Tab that reach the last place from the résumé's first tab: the fixture's four other tabs, then help
-const lastPlace = 5
+// The presses of Tab that reach the last place from the résumé's first tab: the fixture's two other tabs, then help
+const lastPlace = 3
 
 // The fixture's post, its file and the name a session opens it by, its last heading, which a case retitles Help, and
 // the title and words that tell the window of keys
@@ -314,7 +314,7 @@ func TestTabGoesRoundThePlaces(test *testing.T) {
 		{name: "the last Tab help", keys: slices.Repeat([]string{"tab"}, lastPlace), line: ":help"},
 		{name: "a Tab past the last what was typed", keys: slices.Repeat([]string{"tab"}, lastPlace+1), line: ":"},
 		{name: "a Tab after that the first again", keys: slices.Repeat([]string{"tab"}, lastPlace+2), line: ":experience"},
-		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: ":contact"},
+		{name: "a second Shift+Tab the one before the last", keys: []string{"shift+tab", "shift+tab"}, line: ":projects"},
 		{name: "Shift+Tab after Tab what was typed", keys: []string{"tab", "shift+tab"}, line: ":"},
 	}
 	for _, testCase := range cases {
@@ -341,7 +341,7 @@ func TestTheMenuNamesWhatTabGoesRound(test *testing.T) {
 		holds []string
 		lacks []string
 	}{
-		{name: "a colon alone", width: commonWidth, text: "", holds: []string{`experience +tab`, `contact +tab`, `help +keys`}, lacks: []string{`tidy-tool`}},
+		{name: "a colon alone", width: commonWidth, text: "", holds: []string{`experience +tab`, `projects +tab`, `help +keys`}, lacks: []string{`tidy-tool`}},
 		{name: "a letter typed", width: commonWidth, text: "t", holds: []string{`tidy-tool +project`}, lacks: []string{`experience +tab`, `help +keys`}},
 		{name: "an edit and a space", width: commonWidth, text: "e ", holds: []string{`tidy-tool +project`}, lacks: []string{`help +keys`, `(?m)^ +project *$`}},
 		{name: "a screen too narrow for the kinds", width: narrowerThanTheKinds, text: "e ", holds: []string{`tidy-tool`}, lacks: []string{`tidy-tool +pr`}},
@@ -389,7 +389,7 @@ func TestNoMenuStandsWhereNothingFits(test *testing.T) {
 
 // A menu taller than the page has room for shows the item Tab chose, and stays where it stands while that is in
 // sight, as Neovim's popup menu does: on a short screen, with room for two, the first two after one Tab, the last two
-// after Tab to help and still after Shift+Tab back to contact, the two before them after Shift+Tab once more; and an
+// after Tab to help and still after Shift+Tab back to projects, the two before them after Shift+Tab once more; and an
 // edit shows it from its first again.
 func TestTheMenuKeepsTheChoiceInSight(test *testing.T) {
 	cases := []struct {
@@ -399,9 +399,9 @@ func TestTheMenuKeepsTheChoiceInSight(test *testing.T) {
 		lacks []string
 	}{
 		{name: "the first chosen", keys: []string{"tab"}, holds: []string{`experience +tab`, `projects +tab`}, lacks: []string{`help +keys`}},
-		{name: "the last chosen", keys: slices.Repeat([]string{"tab"}, lastPlace), holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`experience +tab`}},
-		{name: "one back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab"), holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`skills +tab`}},
-		{name: "two back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab", "shift+tab"), holds: []string{`skills +tab`, `contact +tab`}, lacks: []string{`help +keys`}},
+		{name: "the last chosen", keys: slices.Repeat([]string{"tab"}, lastPlace), holds: []string{`projects +tab`, `help +keys`}, lacks: []string{`experience +tab`}},
+		{name: "one back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab"), holds: []string{`projects +tab`, `help +keys`}, lacks: []string{`experience +tab`}},
+		{name: "two back from the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), "shift+tab", "shift+tab"), holds: []string{`experience +tab`, `projects +tab`}, lacks: []string{`help +keys`}},
 		{name: "an edit after the last", keys: append(slices.Repeat([]string{"tab"}, lastPlace), slices.Repeat([]string{"backspace"}, len("help"))...), holds: []string{`experience +tab`, `projects +tab`}, lacks: []string{`help +keys`}},
 	}
 	for _, testCase := range cases {
@@ -435,7 +435,7 @@ func TestAMenuFollowsTheScreensHeight(test *testing.T) {
 		lacks []string
 	}{
 		{name: "taller", from: shortHeight, to: commonHeight, keys: nil, holds: []string{`experience +tab`, `help +keys`}, lacks: nil},
-		{name: "shorter", from: fourRows, to: shortHeight, keys: []string{"shift+tab"}, holds: []string{`contact +tab`, `help +keys`}, lacks: []string{`skills +tab`}},
+		{name: "shorter", from: fourRows, to: shortHeight, keys: []string{"shift+tab"}, holds: []string{`projects +tab`, `help +keys`}, lacks: []string{`experience +tab`}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

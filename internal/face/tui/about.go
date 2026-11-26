@@ -113,7 +113,7 @@ func besideLines(left []line, rightStart int, right []line) []line {
 
 // brief is the brief as neofetch prints a system's: the address, the first way to reach the author, parted into its
 // mailbox and its host, a rule under it; the subtitle and the place; then the facts, each by its label; then a row of
-// swatches of the design's colours. The other ways stand on a tab of their own.
+// swatches of the design's colours. The other ways stand at the tab's end.
 func (layout layout) brief(head document.Head, facts []document.Fact, address []document.Span) []line {
 	lines := []line{}
 	if len(address) > 0 {

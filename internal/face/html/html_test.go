@@ -36,7 +36,6 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}{
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, file: "index.html"},
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, file: "experience.html"},
-		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "skills"}, file: "skills.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
 	}
 	for _, testCase := range cases {
@@ -374,12 +373,12 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			holds: slices.Concat(every, []string{
 				siteSessions, resumeSSH, resumeGives, resumeMarkdown, resumeReading, `<a class="window" href="/" aria-current="page"><span class="window-number">1:</span>about</a>`,
 				`<a class="window" href="/experience"><span class="window-number">2:</span>experience</a>`,
-				`<a class="window" href="/contact"><span class="window-number">5:</span>contact</a>`,
+				`<a class="window" href="/projects"><span class="window-number">3:</span>projects</a>`,
 				`data-place="tab" data-name="about" data-address="/" data-current`,
-				`data-place="tab" data-name="contact" data-address="/contact"`, projectPlace, projectPlace + ` data-edit`,
+				`data-place="tab" data-name="projects" data-address="/projects"`, projectPlace, projectPlace + ` data-edit`,
 				`data-part="folder" data-name="blog/" data-address="/blog/"`, `data-part="folder" data-name="ru/blog/" data-address="/ru/blog/"`,
 			}),
-			lacks: []string{noPagePlace, `data-name="blog/reading-slowly"`},
+			lacks: []string{noPagePlace, `data-name="blog/reading-slowly"`, `data-name="skills"`, `data-name="contact"`, `<span class="window-number">4:`},
 		},
 		{
 			name: "a tab of the résumé", page: writer.Page(resume.Document, resume.Record, "experience"),

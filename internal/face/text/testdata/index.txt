@@ -14,6 +14,10 @@ ABOUT
        focus        Small tools for people who live in the terminal, written
                     to last and to be read by whoever comes next
 
+       mail     mira@example.test
+       GitHub   github.test/mira
+       ssh      ssh example.test
+
 EXPERIENCE
        Northwind — Senior Engineer                    04/2023 – present · Brno
               - Kept the queue moving
@@ -31,28 +35,5 @@ PROJECTS
               https://example.test/p/tidy-tool.txt
               repository   https://github.test/mira/tidy
               install      go install example.test/tidy@latest
-
-SKILLS
-       Languages
-              - Rust — still learning — a hobby
-              - Go — 3y — tidy-tool, a hobby
-              - Shell scripts for the build machines — 2y — Northwind,
-                Southwind
-
-       Tools
-              - Docker — on the side — Northwind
-
-       Languages
-              English   fluent
-
-       Education
-              A University — Computer Science and the Engineering of Systems
-              That Last
-              09/2016 – [20XX]
-
-CONTACT
-       mail     mira@example.test
-       GitHub   github.test/mira
-       ssh      ssh example.test
 
 example.test                                                   EXAMPLE.TEST(1)

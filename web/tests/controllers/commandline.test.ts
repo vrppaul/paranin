@@ -44,7 +44,7 @@ test("the colon opens the line with the tabs but the one shown, the field holdin
   expect({ ...seen(), focused: document.activeElement === found(FIELD) }).toEqual({
     open: true,
     line: "",
-    places: ["about", "projects", "skills", "contact"],
+    places: ["about", "projects"],
     chosen: undefined,
     said: false,
     focused: true,
@@ -223,7 +223,7 @@ test.each([
     ],
     line: "projects",
   },
-  { name: "Shift+Tab chooses the last", keys: [{ key: "Tab", shiftKey: true }], line: "contact" },
+  { name: "Shift+Tab chooses the last", keys: [{ key: "Tab", shiftKey: true }], line: "projects" },
 ])("$name, the focus kept on the line", ({ keys, line }) => {
   started();
   press(":");
@@ -236,7 +236,7 @@ test.each([
 });
 
 test.each([
-  { name: "a place by its name", typed: "skills", want: ["/skills"] },
+  { name: "a place by its name", typed: "about", want: ["/"] },
   { name: "the project's page :e names", typed: "e tidy-tool", want: ["/p/tidy-tool"] },
   { name: "a post :e names by its number, in the blog's folder", typed: "e blog/1", want: ["/blog/1"] },
   { name: "the blog's list in another language :e names", typed: "e ru/blog", want: ["/ru/blog"] },
@@ -304,9 +304,9 @@ test("Esc hands the focus back where it was before the colon", () => {
 const PROJECT = `${PLACE}[data-place="project"]`;
 const EDITED_PROJECT = `${PROJECT}[data-edit]`;
 
-/** The page with its one project named as a tab is, skills, by its name and as :e opens it. */
+/** The page with its one project named as a tab is, projects, by its name and as :e opens it. */
 function projectNamedAsTab(page: Document): void {
-  page.querySelectorAll<HTMLElement>(PROJECT).forEach((project) => project.setAttribute("data-name", "skills"));
+  page.querySelectorAll<HTMLElement>(PROJECT).forEach((project) => project.setAttribute("data-name", "projects"));
 }
 
 test("a press on a project's page :e lists goes to the project, though a tab takes its name", () => {
@@ -320,6 +320,6 @@ test("a press on a project's page :e lists goes to the project, though a tab tak
 test("a press on a place goes there", () => {
   const { went } = started();
   press(":");
-  found(`${PLACE}[data-name="skills"]`).click();
-  expect(went).toEqual(["/skills"]);
+  found(`${PLACE}[data-name="projects"]`).click();
+  expect(went).toEqual(["/projects"]);
 });

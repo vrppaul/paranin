@@ -40,9 +40,6 @@ const (
 	WordExperience
 	WordProjects
 	WordSkills
-	WordEducation
-	WordLanguages
-	WordContact
 	WordMail
 	WordSSH
 	WordRepository
@@ -176,9 +173,6 @@ func wordKeys() map[Word]string {
 		WordExperience:        "experience",
 		WordProjects:          "projects",
 		WordSkills:            "skills",
-		WordEducation:         "education",
-		WordLanguages:         "languages",
-		WordContact:           "contact",
 		WordMail:              "mail",
 		WordSSH:               "ssh",
 		WordRepository:        "repository",

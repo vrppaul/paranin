@@ -176,7 +176,7 @@ func TestAClickOnTheFooterDoesWhatItsKeyDoes(test *testing.T) {
 		{name: "the site's session as left", opened: commanded(test, pressed(test, resume, "l"), "e blog"), clicked: "[example.test]", want: "2:experience*"},
 		{name: "the blog's session as left", opened: commanded(test, post, "e tidy-tool"), clicked: "[blog]", want: postRead},
 		{name: "the blog's session, where the site has no blog", opened: handResume(test, "Mira", wideWidth, keyWindowHeight), clicked: "[blog]", want: "1:mira*"},
-		{name: "the mark of windows given way", opened: pressed(test, openedModel(test, "", oneTabWidth, keyWindowHeight), "h"), clicked: givenWayMark, want: "5:contact*"},
+		{name: "the mark of windows given way", opened: pressed(test, openedModel(test, "", oneTabWidth, keyWindowHeight), "h"), clicked: givenWayMark, want: "3:projects*"},
 		{name: "the key to the window of keys", opened: post, clicked: "? keys", want: "esc close"},
 		{name: "the key to the window of keys, the page scrolled", opened: pressed(test, post, "j"), clicked: "? keys", want: "esc close"},
 	}

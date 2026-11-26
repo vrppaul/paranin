@@ -85,13 +85,15 @@ type tabBody interface {
 
 // briefOpening is the résumé's opening as neofetch prints a system, where its first section holds facts: the head,
 // beside it those facts as the brief, headed by the address, the first way to reach the author; the roles for the
-// career's line under them; then the blocks before the first section and those the section holds beside its facts.
+// career's line under them; then the blocks before the first section and those the section holds beside its facts;
+// then the other ways to reach the author.
 type briefOpening struct {
 	head    document.Head
 	brief   []document.Fact
 	address []document.Span
 	career  []document.Entry
 	blocks  []document.Block
+	ways    []document.Fact
 }
 
 // projectOpening is a project's opening: its head as the page lays it, then all its blocks, its sections among them,
@@ -173,7 +175,7 @@ func tabsOf(composed document.Document) []tab {
 func openingBody(composed document.Document, opening document.Opening) tabBody {
 	head, blocks := composed.Head, opening.Blocks
 	if briefed := opening.Brief; briefed != nil {
-		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, blocks: blocks}
+		return briefOpening{head: head, brief: briefed.Brief.List, address: briefed.Address(), career: briefed.Roles, blocks: blocks, ways: briefed.OtherWays()}
 	}
 	switch head.Page.Kind {
 	case document.PageProject:
@@ -220,7 +222,7 @@ type layout struct {
 func (layout layout) tab(shown tab) laidTab {
 	switch body := shown.body.(type) {
 	case briefOpening:
-		return linesAlone(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)))
+		return linesAlone(stacked(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)), layout.factBlock(body.ways, 0)))
 	case projectOpening:
 		return linesAlone(stacked(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)), layout.projectEnd(body.head)))
 	case reportOpening:

@@ -206,7 +206,7 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Widget:
 		return appendChunk(chunks, writer.widget(typed))
 	case document.Facts:
-		return appendChunk(chunks, writer.facts(typed.List))
+		return writer.factsBlock(chunks, typed)
 	case document.Entry:
 		return writer.entry(chunks, typed, depth)
 	case document.Card:
@@ -359,6 +359,20 @@ func (writer markdownWriter) notes(notes []document.Note) string {
 // noteReference is how a line cites a note by its number, and how the note's words open at the end.
 func noteReference(number int) string {
 	return noteOpening + strconv.Itoa(number) + noteClosing
+}
+
+// factsBlock writes a block of facts by its kind: details as a list; the ways to reach the author each a line of its
+// own, since they follow the author's details and markdown would read two lists in a row as one.
+func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) []string {
+	switch facts.Kind {
+	case document.FactsWays:
+		for _, fact := range facts.List {
+			chunks = appendLine(chunks, writer.fact(fact))
+		}
+		return chunks
+	case document.FactsDetails:
+	}
+	return appendChunk(chunks, writer.facts(facts.List))
 }
 
 func (writer markdownWriter) facts(facts []document.Fact) string {

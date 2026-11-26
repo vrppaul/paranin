@@ -78,7 +78,7 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - `tint_strong`'s values (`design/tokens.yaml`, the way from an older version of a post to the newer, under the pointer) are the author's: in Latte the step from `tint` reads 1.13:1, and in Macchiato `text` over it 4.52:1, which no gate holds; a gate on text over a blend is his word.
 - A post's head gives the day of its version read, its `updated:` where it says one, while the list's tiles and the panes give the day it was published, and that first day stands only inside the versions' Pick: his eye.
 - The blog's line, "What I build, and what I learn building it." (`blog_line` in `content/i18n/en.yaml`), is not the owner's own: his words, later.
-- Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`): no code, and it blocks any promotion.
+- Fill the profile's placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`): no code, and it blocks any promotion.
 - In Latte the TUI's menu writes its kinds in `muted` on `quiet` at 4.05:1, under the 4.7 `muted` is held to over its grounds, among which `quiet` is not: another ground for the menu, or another ink for its kinds. His eye.
 
 ## Upstream

@@ -47,7 +47,7 @@ The owner confirmed these as binding on 2026-11-06. A redesign changes the look 
 ## Evidence on Hand
 
 - The real profile: `content/profile.yaml`, with the site's words in `content/i18n/en.yaml`.
-- It still holds placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`, `[20XX]`) that only the author fills. Nothing may stand in for them.
+- It still holds placeholders (`[later]`, `[remote?]`, `[notice period]`, `[service]`, `[N]`) that only the author fills. Nothing may stand in for them.
 - No testimonials, client names or metrics beyond what the profile states.
 
 ## Product Principles

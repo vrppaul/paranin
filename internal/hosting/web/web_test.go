@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/png"
 	"net/http"
@@ -718,6 +719,47 @@ func TestAProjectsClipIsServedBesideItsPage(test *testing.T) {
 				test.Errorf("GET %s = %d %q, Cache-Control %q, Content-Security-Policy %q, of %d bytes; want %d %q, %q, %q, the %d bytes of %q",
 					testCase.path, response.Code, header.Get("Content-Type"), header.Get("Cache-Control"), header.Get("Content-Security-Policy"),
 					response.Body.Len(), http.StatusOK, testCase.contentType, wantCache, wantPolicy, len(want), testCase.file)
+			}
+		})
+	}
+}
+
+// A file the site serves answers a request for a range of its bytes with those bytes alone, as a player asks for a
+// recording's, Safari's among them, and a request for the whole with the whole.
+func TestAFileAnswersARangeOfItsBytes(test *testing.T) {
+	const (
+		clipPath  = "/p/tidy-tool/tidying.mp4"
+		clipFile  = "projects/tidy-tool/tidying.mp4"
+		firstByte = 100
+		lastByte  = 199
+	)
+	whole, err := os.ReadFile(filepath.Join(fixtures.ContentFolder(test), clipFile))
+	if err != nil {
+		test.Fatalf("read %q: %v", clipFile, err)
+	}
+	cases := []struct {
+		name         string
+		asked        string
+		status       int
+		contentRange string
+		body         []byte
+	}{
+		{
+			name: "a range", asked: fmt.Sprintf("bytes=%d-%d", firstByte, lastByte), status: http.StatusPartialContent,
+			contentRange: fmt.Sprintf("bytes %d-%d/%d", firstByte, lastByte, len(whole)), body: whole[firstByte : lastByte+1],
+		},
+		{name: "the whole", asked: "", status: http.StatusOK, contentRange: "", body: whole},
+	}
+	server := serverOf(fixtureStore(test, fixtures.ContentFolder(test)), false)
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, clipPath, nil)
+			request.Header.Set("Range", testCase.asked)
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if response.Code != testCase.status || response.Header().Get("Content-Range") != testCase.contentRange || !bytes.Equal(response.Body.Bytes(), testCase.body) {
+				test.Errorf("GET %s, Range %q = %d, Content-Range %q, %d bytes; want %d, %q, %d bytes", clipPath, testCase.asked,
+					response.Code, response.Header().Get("Content-Range"), response.Body.Len(), testCase.status, testCase.contentRange, len(testCase.body))
 			}
 		})
 	}

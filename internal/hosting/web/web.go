@@ -27,6 +27,7 @@
 package web
 
 import (
+	"bytes"
 	"cmp"
 	"mime"
 	"net/http"
@@ -252,8 +253,9 @@ type missingFormat struct {
 
 // answer is a page or a file as it is sent: the header that says what it is; the Link header naming the address a page
 // is known by, empty where it is none a person reads; what it tells a search engine, empty where it leaves it free to
-// index it; how long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; and what it
-// holds.
+// index it; how long a cache keeps it; the policy a browser holds it to, empty where it is the site's own; what it
+// holds; and whether it is a file, which answers a range of its bytes, as a player asks for a recording's, where a page
+// or a feed is always sent whole.
 type answer struct {
 	contentType  string
 	link         string
@@ -261,30 +263,31 @@ type answer struct {
 	cacheControl string
 	policy       string
 	body         []byte
+	file         bool
 }
 
 // drawnAs is a page's text, drawn, as a media type: text of UTF-8, as every page is, which a cache asks for again.
 func drawnAs(mediaType, text string) answer {
-	return answer{contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text)}
+	return answer{contentType: mediaType + utf8Text, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: []byte(text), file: false}
 }
 
 // builtAs is a file of the build as it is served, which a cache keeps for good: a changed file is built under
 // another name.
 func builtAs(file assets.File) answer {
-	return answer{contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body}
+	return answer{contentType: file.ContentType, link: "", robots: "", cacheControl: keptForGood, policy: "", body: file.Body, file: true}
 }
 
 // picturedAs is a picture of the site as it is served, which a cache asks for again: its path keeps its name when a
 // new build of the server draws it anew.
 func picturedAs(icon html.Icon) answer {
-	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body}
+	return answer{contentType: icon.MediaType, link: "", robots: "", cacheControl: askEveryTime, policy: "", body: icon.Body, file: true}
 }
 
 // besideAPage is a file served beside a page, a post's picture or a project's clip, of a type, as it is served: which a
 // cache asks for again, since a reload may change it under the same name, and which a browser opening it by itself runs
 // nothing in.
 func besideAPage(mediaType string, body []byte) answer {
-	return answer{contentType: mediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: body}
+	return answer{contentType: mediaType, link: "", robots: "", cacheControl: askEveryTime, policy: pictureAlone, body: body, file: true}
 }
 
 // siteFilesOf are the site's own files, by the path each is served at: its pictures, and the file of the IndexNow key
@@ -336,7 +339,7 @@ func (server *Server) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 func (server *Server) servePage(writer http.ResponseWriter, request *http.Request) {
 	path := request.URL.Path
 	if file, isSiteFile := server.siteFiles[path]; isSiteFile {
-		send(writer, http.StatusOK, file)
+		send(writer, request, http.StatusOK, file)
 		return
 	}
 	drawn := server.drawn.Current(time.Now())
@@ -346,7 +349,7 @@ func (server *Server) servePage(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 	status, sent := drawn.served.answerTo(writer.Header(), request, drawn.site.Requested(path, request.URL.Query()), drawn.notFoundAt(path))
-	send(writer, status, sent)
+	send(writer, request, status, sent)
 }
 
 // movedFrom is where an address sends its reader on to, where it does: a path the drawing moves, to its location; a
@@ -565,7 +568,9 @@ func qualityOf(parameters map[string]string) float64 {
 	return value
 }
 
-func send(writer http.ResponseWriter, status int, sent answer) {
+// send writes an answer with its headers: a file found through http.ServeContent, which answers a range of its bytes
+// and a conditional request, as Go's own docs give it; anything else whole, at its status.
+func send(writer http.ResponseWriter, request *http.Request, status int, sent answer) {
 	header := writer.Header()
 	header.Set(contentType, sent.contentType)
 	if sent.link != "" {
@@ -578,6 +583,12 @@ func send(writer http.ResponseWriter, status int, sent answer) {
 		header.Set(securityPolicy, sent.policy)
 	}
 	header.Set(cacheControl, sent.cacheControl)
+	if sent.file && status == http.StatusOK {
+		// no moment of change: a reload may change a file under the same name, and the snapshot keeps no moment of each,
+		// so no Last-Modified tells a cache the file is older than it is
+		http.ServeContent(writer, request, "", time.Time{}, bytes.NewReader(sent.body))
+		return
+	}
 	writer.WriteHeader(status)
 	// A write fails only when the reader has gone, and nobody is left to tell
 	_, _ = writer.Write(sent.body)

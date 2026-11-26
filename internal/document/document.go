@@ -56,6 +56,22 @@ type Head struct {
 	Feeds []Link
 	// Languages are the languages a post's Switch offers, the one read and each the lists name it in; none for one alone
 	Languages []Language
+	// Latest are the blog's latest posts the résumé's first screen ends with; none on any other page, or where no post
+	// is out
+	Latest *LatestPosts
+}
+
+// LatestPostsPlaces is how many of the blog's latest posts the résumé's first screen names at most, each in a place of
+// its own in a row (DESIGN.md, LatestPosts)
+const LatestPostsPlaces = 3
+
+// LatestPosts are the blog's latest posts as the résumé's first screen hints at the blog (DESIGN.md, LatestPosts), no
+// part of the résumé, which a text face leaves out: the blog's name, the way to its list, and its latest posts out,
+// newest first, each a post out by its title alone.
+type LatestPosts struct {
+	Title []Span
+	All   Link
+	Posts []ListedPost
 }
 
 // Previewed is whether a link's preview shows the page, its address and its card (DESIGN.md, Social cards): every page

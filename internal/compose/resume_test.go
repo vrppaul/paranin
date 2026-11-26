@@ -15,7 +15,7 @@ import (
 // Every fact of the profile a person reads reaches the résumé, as a phrase of its own: a face that shows every
 // phrase shows every fact.
 func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
-	phrases := document.Phrases(Resume(fixtures.LoadedContent(test), nil))
+	phrases := document.Phrases(Resume(fixtures.LoadedContent(test), nil, nil))
 	cases := []struct {
 		name string
 		want string
@@ -64,7 +64,7 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 // site's word for it, about the author, their experience and their projects (DESIGN.md, Pages).
 func TestTheResumeKeepsOneOrder(test *testing.T) {
 	got := []string{}
-	for _, block := range Resume(fixtures.LoadedContent(test), nil).Blocks {
+	for _, block := range Resume(fixtures.LoadedContent(test), nil, nil).Blocks {
 		got = append(got, titleOf(test, as[document.Section](test, block)))
 	}
 	if want := []string{"About", "Experience", "Projects"}; !slices.Equal(got, want) {
@@ -75,7 +75,7 @@ func TestTheResumeKeepsOneOrder(test *testing.T) {
 // The résumé's first section, about the author, holds the summary, the facts, and the ways to reach them, which the
 // first screen places, and nothing more.
 func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
-	about := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "About").Blocks
+	about := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil, nil), "About").Blocks
 	got := make([]string, 0, len(about))
 	for _, block := range about {
 		got = append(got, fmt.Sprintf("%T", block))
@@ -91,7 +91,7 @@ func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
 // The experience opens with its head, its line and the skills it puts forward, each by its name and how long it was
 // used, in the profile's order, as the skills' list writes a duration; its roles come after.
 func TestTheExperienceOpensWithItsLineAndTheSkillsPutForward(test *testing.T) {
-	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience").Blocks
+	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil, nil), "Experience").Blocks
 	got := make([]string, 0, len(experience))
 	for _, block := range experience {
 		got = append(got, fmt.Sprintf("%T", block))
@@ -115,7 +115,7 @@ func TestTheExperienceOpensWithItsLineAndTheSkillsPutForward(test *testing.T) {
 // A role's months reach the document typed, so each face writes them its own way, and a role still held stays
 // current.
 func TestEachRoleKeepsItsPeriod(test *testing.T) {
-	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil).Blocks)
+	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil, nil).Blocks)
 	got := []document.Period{}
 	for _, role := range document.BriefOf(sections).Roles {
 		got = append(got, role.Period)
@@ -132,7 +132,7 @@ func TestEachRoleKeepsItsPeriod(test *testing.T) {
 // A role's technologies are the skills whose sources name its company, in the profile's order of groups and skills,
 // a skill still being learnt among them.
 func TestARolesTechnologiesAreTheSkillsItsCompanyIsASourceOf(test *testing.T) {
-	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil).Blocks)
+	_, sections := document.SectionsOf(Resume(fixtures.LoadedContent(test), nil, nil).Blocks)
 	got := map[string][]string{}
 	for _, role := range document.BriefOf(sections).Roles {
 		got[document.PlainText(role.Title)] = role.Technologies
@@ -490,7 +490,7 @@ func TestEachPageHasADescription(test *testing.T) {
 // The headline's words for each kind of work lead to the résumé's tab that holds that work, the experience's and the
 // projects', and the words round them stand as the headline writes them (DESIGN.md, Pages).
 func TestTheHeadlineLeadsEachKindOfWorkToItsTab(test *testing.T) {
-	resume := Resume(fixtures.LoadedContent(test), nil)
+	resume := Resume(fixtures.LoadedContent(test), nil, nil)
 	experience := document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}
 	projects := document.Page{Kind: document.PageResume, Slug: "", Tab: "projects"}
 	want := []document.Span{
@@ -526,11 +526,76 @@ func TestTheResumeHeadSaysWhereTheAuthorWorksFrom(test *testing.T) {
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			if got := Resume(testCase.snapshot, nil).Head.Place; got != testCase.want {
+			if got := Resume(testCase.snapshot, nil, nil).Head.Place; got != testCase.want {
 				test.Errorf("the place = %q, want %q", got, testCase.want)
 			}
 		})
 	}
+}
+
+// seenLatest are the latest posts the résumé ends with as a test reads them: the blog's name, the way to its list, the
+// page it leads to, and the posts, as a list names them.
+type seenLatest struct {
+	title string
+	all   string
+	list  document.Target
+	posts []seenListed
+}
+
+// The résumé's first screen ends with the blog's latest posts out in the site's language as its reader reads the site,
+// three at most, newest first, each by its day and its title alone, after the blog's name and the way to its list:
+// never a draft, an unlisted post or one that comes later than its reader; none where no post is out (DESIGN.md,
+// LatestPosts).
+func TestTheResumeEndsWithTheLatestPostsOut(test *testing.T) {
+	posts := []writtenPost{
+		{slug: "first", id: 3, status: content.StatusPublished, published: earliest, tags: "reading"},
+		{slug: "second", id: 4, status: content.StatusPublished, published: earlier, tags: ""},
+		{slug: "newest", id: 5, status: content.StatusPublished, published: latest, tags: ""},
+		{slug: "hidden", id: 6, status: content.StatusUnlisted, published: later, tags: ""},
+		{slug: "drafted", id: 7, status: content.StatusDraft, published: later, tags: ""},
+		{slug: "coming", id: 8, status: content.StatusPublished, published: afterTheDay, tags: ""},
+	}
+	// a day before the fixture's post comes out, when no post is out yet
+	const beforeAnyPost = "2026-01-01T00:00+00:00"
+	cases := []struct {
+		name     string
+		snapshot *content.Snapshot
+		reader   Audience
+		want     *seenLatest
+	}{
+		{
+			name: "the three latest of the posts out", snapshot: withPostsAndSeries(test, posts, nil), reader: publicOnTheDay(),
+			want: &seenLatest{
+				title: "blog", all: "all posts", list: document.PageOf(document.PageBlog),
+				posts: []seenListed{
+					{readiness: outAt(test, "newest", latest), title: "newest", part: "", series: "", seriesName: "", tags: ""},
+					{readiness: outAt(test, fixturePostSlug, fixturePostMoment), title: fixturePostTitle, part: "", series: "", seriesName: "", tags: ""},
+					{readiness: outAt(test, "second", earlier), title: "second", part: "", series: "", seriesName: "", tags: ""},
+				},
+			},
+		},
+		{name: "none where no post is out", snapshot: fixtures.LoadedContent(test), reader: Audience{At: fixtures.MomentOf(test, beforeAnyPost), Drafts: false}, want: nil},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			resume := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(testCase.snapshot), testCase.reader).Pages), document.PageOf(document.PageResume))
+			if got := seenLatestOf(resume.Head.Latest); !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("the latest posts = %+v, want %+v", got, testCase.want)
+			}
+		})
+	}
+}
+
+// seenLatestOf are the latest posts the résumé ends with as a test reads them, none where it ends with none.
+func seenLatestOf(latest *document.LatestPosts) *seenLatest {
+	if latest == nil {
+		return nil
+	}
+	seen := &seenLatest{title: document.PlainText(latest.Title), all: document.PlainText(latest.All.Spans), list: latest.All.Target, posts: []seenListed{}}
+	for _, post := range latest.Posts {
+		seen.posts = append(seen.posts, seenListedOf(post))
+	}
+	return seen
 }
 
 // The résumé's head greets the reader before the author's name, in the site's words; a project's page does not.

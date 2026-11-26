@@ -189,6 +189,55 @@ func TestOnlyAFirstSectionOfFactsJoinsTheFirstTab(test *testing.T) {
 	}
 }
 
+// The first tab ends with the blog's latest posts (DESIGN.md, The TUI): the blog's name and the way to its list, then
+// each post as a small tile framed as tmux frames its panes, its day set into its top edge, its title alone on one
+// line, cut where it runs longer; beside them where the page has room, under them where not; with no post out, nothing
+// of the blog.
+func TestTheFirstTabEndsWithTheLatestPosts(test *testing.T) {
+	// how many days before the tests' day, 23 Nov 2026, the newest post and the one with the long title came out; the
+	// long title, its start, and its end, which no small tile has room for
+	const (
+		newestDaysBefore = 2
+		longDaysBefore   = 13
+		longTitle        = "a-title-that-runs-on-past-the-room-of-any-small-tile"
+		longTitleStart   = "a-title-that"
+		longTitleEnd     = "any-small-tile"
+	)
+	brief := document.Section{Title: textOf("Facts"), Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}}}
+	ending := document.Document{Head: fixtures.HeadOf(document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, textOf("home")), Blocks: []document.Block{brief}}
+	ending.Head.Latest = &document.LatestPosts{
+		Title: textOf("blog"),
+		All:   document.Link{Target: document.PageOf(document.PageBlog), Spans: textOf("all posts")},
+		Posts: []document.ListedPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost(longTitle, longDaysBefore)},
+	}
+	holds := []string{"blog", "all posts", "┌", "21 Nov 2026", "newest", longTitleStart}
+	cases := []struct {
+		name  string
+		model Model
+		holds []string
+		lacks []string
+	}{
+		{name: "beside the way to the list", model: handModel(test, commonWidth, tallHeight, ending), holds: holds, lacks: []string{longTitleEnd}},
+		{name: "under the way to the list", model: handModel(test, narrowWidth, tallHeight, ending), holds: holds, lacks: []string{longTitleEnd}},
+		{name: "with no post out", model: handResume(test, "home", commonWidth, tallHeight, brief), holds: nil, lacks: []string{"all posts"}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			page := aboveTheFooter(screenOf(test, testCase.model))
+			for _, want := range testCase.holds {
+				if !strings.Contains(page, want) {
+					test.Errorf("the first tab =\n%s\nholds no %q", page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(page, unwanted) {
+					test.Errorf("the first tab =\n%s\nholds %q", page, unwanted)
+				}
+			}
+		})
+	}
+}
+
 // The first section the first tab takes in names the tab; where none joins, the tab is named by the author.
 func TestTheSectionTakenIntoTheFirstTabNamesTheTab(test *testing.T) {
 	facts := document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "experience", Value: textOf("5 years")}}}
@@ -733,7 +782,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 		// byForm are the phrases the page shows by its form, not as text
 		byForm []string
 	}{
-		{name: "the résumé", shown: compose.Resume(snapshot, nil), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
+		{name: "the résumé", shown: compose.Resume(snapshot, nil, nil), model: sessionModel(snapshot, narrowWidth, tallHeight), byForm: []string{"mail", "Facts", "About", "Projects", "Skills", "Contact"}},
 		{
 			name: "a project's page", shown: fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}),
 			model:  commanded(test, sessionModel(snapshot, narrowWidth, tallHeight), "e tidy-tool"),

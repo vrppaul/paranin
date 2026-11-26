@@ -135,6 +135,7 @@ func (read blog) listHead(page document.Page, filter []document.Span, words cont
 		Description: line,
 		Feeds:       read.feedLinks(noSeries),
 		Languages:   nil,
+		Latest:      nil,
 	}
 }
 
@@ -266,6 +267,28 @@ func partInItsGroup(part listedPart, number int, group document.Anchor, words co
 	listed := listedPost(*part.post)
 	listed.Part, listed.SeriesGroup = partWords, group
 	return listed
+}
+
+// latestPosts are the blog's latest posts as the résumé's first screen names them (DESIGN.md, LatestPosts): the blog's
+// name and the way to its list by year, in its words, then the latest posts its lists name, newest first, each a post
+// out by its title alone, as a small tile holds it; none where the lists name none.
+func (read blog) latestPosts() *document.LatestPosts {
+	if len(read.newest) == 0 {
+		return nil
+	}
+	posts := make([]document.ListedPost, 0, document.LatestPostsPlaces)
+	for _, post := range read.newest[:min(document.LatestPostsPlaces, len(read.newest))] {
+		listed := listedPost(post)
+		listed.Lead, listed.Tags = nil, nil
+		posts = append(posts, listed)
+	}
+	words := read.words
+	list := document.PageOf(document.PageBlog).InLanguage(words.Translation())
+	return &document.LatestPosts{
+		Title: textSpans(words.Text(content.WordBlog)),
+		All:   document.Link{Target: list, Spans: textSpans(words.Text(content.WordAllPosts))},
+		Posts: posts,
+	}
 }
 
 // listedPost is a post out as a list names it, in no series: its page, when it came out, its title, its lead and its

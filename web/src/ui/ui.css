@@ -3030,6 +3030,14 @@ a.pane:hover .pane-title {
   text-wrap: balance;
 }
 
+/* a small tile, under the résumé's first screen (.latest), holds its title alone, on one line, cut where it runs
+ * longer, so every small tile stands one height; the pane's padding keeps a row clear above it and below */
+.latest .tile-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tile-lead {
   color: var(--muted);
   font-size: var(--type-small-size);
@@ -3171,5 +3179,51 @@ a.tile-title::after {
 
   .tiles {
     margin-top: var(--row);
+  }
+}
+
+/* the blog's latest posts under the résumé's first screen (DESIGN.md, LatestPosts): the blog's name over the way to
+ * its list at the left, then, right after them, the row of tiles to the page's right edge */
+.latest {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--cell-3);
+  align-items: start;
+  margin-bottom: var(--row-3);
+}
+
+/* the name bold in the heading's size, its letters' top level with the tiles' top edge, which stands half a row down
+ * for the days set into it (.tiles) */
+.latest-title {
+  margin: var(--row-half) 0 0;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  line-height: var(--type-heading-line);
+  text-box: trim-start cap alphabetic;
+}
+
+.latest-all {
+  margin: 0;
+}
+
+/* three equal places, a post in each, fewer posts in the first places as wide; each tile held to its place, however
+ * long the one line its title keeps */
+.latest .tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.latest .tiles > li {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* on a phone the blog's name and the way to its list stand over the tiles, a row apart (.tiles), which take the
+ * width one under another */
+@media (width < 53.75rem) {
+  .latest {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .latest .tiles {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -26,6 +26,11 @@ const (
 	shortestCutName = 2
 )
 
+// The least width of a small tile under the résumé's career's line, its left edge with it: room for the day set into
+// its top edge, 21 Nov 2026 with its inset and a space either side, and a dozen letters of its title, so three stand
+// beside the blog's name on a terminal of 80 columns
+const leastSmallTile = 18
+
 // The marks of the brief: the rule under the address and a swatch of the design's colours; and of the career's line:
 // a role's span, the line the spans stand on, a year's tick, and the end of a company's name cut to its span
 const (
@@ -48,7 +53,8 @@ const (
 )
 
 // about lays out the résumé's opening as neofetch prints a system: the name's column, the greeting and the name,
-// beside the brief where the page has room for both, above it where not; then the career's line, and the lead.
+// beside the brief where the page has room for both, above it where not; then the career's line, the lead, and the
+// blog's latest posts.
 func (layout layout) about(opening briefOpening) []line {
 	parts := layout.headParts(opening.head)
 	name := layout.nameColumn(slices.Concat(parts.greeting, blankLines()), document.PlainText(opening.head.Title))
@@ -62,8 +68,40 @@ func (layout layout) about(opening briefOpening) []line {
 	} else {
 		lines = stacked(name, layout.brief(opening))
 	}
-	lines = stacked(lines, layout.career(opening.career))
-	return stacked(lines, parts.lead)
+	lines = stacked(stacked(lines, layout.career(opening.career)), parts.lead)
+	return stacked(lines, layout.latestPosts(opening.head.Latest))
+}
+
+// latestPosts lays out the blog's latest posts under the résumé's career's line (DESIGN.md, The TUI): the blog's name
+// bold over the way to its list, then a small tile for each post on a grid of a place for each post the blog names at
+// most, beside them where the page has room for each place, under them one under another where not; nothing where no
+// post is out, or where the page is narrower than a small tile, as the career's line is left out.
+func (layout layout) latestPosts(latest *document.LatestPosts) []line {
+	if latest == nil || layout.width < leastSmallTile {
+		return nil
+	}
+	head := slices.Concat(layout.fill(layout.words(latest.Title, kindStrong), 0), layout.fill(layout.words([]document.Span{latest.All}, kindText), 0))
+	headWidth := linesWidth(head)
+	if room := layout.width - headWidth - nameGap; room >= document.LatestPostsPlaces*leastSmallTile+textWidth(frameDown) {
+		return besideLines(head, headWidth+nameGap, layout.smallTiles(latest.Posts, filledGrid(document.LatestPostsPlaces, room)))
+	}
+	return stacked(head, layout.smallTiles(latest.Posts, filledGrid(oneUnderAnother, layout.width)))
+}
+
+// smallTiles lays out posts as small tiles on a grid (DESIGN.md, LatestPosts), framed as the blog's list frames its
+// tiles: each its day set into its top edge, as a tile's, and its title alone, bold, on one line, cut where it runs
+// longer, leading to its post.
+func (layout layout) smallTiles(posts []document.ListedPost, grid tileGrid) []line {
+	inside := layout
+	inside.width = grid.inside()
+	cells := make([]gridCell, 0, len(posts))
+	for _, post := range posts {
+		// compose hands the latest posts out alone; a part to come would stand off, leading nowhere
+		out, isOut := post.Readiness.(document.PostOut)
+		title := []document.Span{document.Link{Target: out.Page, Spans: []document.Span{document.Text{Text: cutTo(document.PlainText(post.Title), inside.width)}}}}
+		cells = append(cells, gridCell{label: layout.edgeLabel(post), words: tileWords{top: inside.fill(inside.words(title, kindStrong), 0), foot: nil}, leads: isOut})
+	}
+	return grid.framed(cells).lines
 }
 
 // nameColumn is the lines over the author's name, then the name: its first word above the rest in the name's font, the

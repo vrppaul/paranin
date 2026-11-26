@@ -263,7 +263,7 @@ func (writer PageWriter) postGroup(group document.Group) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = writer.tiles(group.Posts).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = writer.tiles(group.Posts.List).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -275,8 +275,8 @@ func (writer PageWriter) postGroup(group document.Group) templ.Component {
 	})
 }
 
-// tiles are the posts a group names, each as its tile.
-func (writer PageWriter) tiles(posts document.Posts) templ.Component {
+// tiles are posts, each as its tile: those a group of the list names, or the latest under the résumé's first screen.
+func (writer PageWriter) tiles(posts []document.ListedPost) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -297,7 +297,7 @@ func (writer PageWriter) tiles(posts document.Posts) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, post := range posts.List {
+		for _, post := range posts {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

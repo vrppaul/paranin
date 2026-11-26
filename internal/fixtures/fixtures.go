@@ -85,7 +85,17 @@ func Site(snapshot *content.Snapshot) routes.Site {
 func HeadOf(page document.Page, title []document.Span) document.Head {
 	return document.Head{
 		Page: page, Number: 0, Language: "", Greeting: "", Title: title, Subtitle: nil, Place: "", Filters: nil, Lead: nil,
-		Version: nil, Project: nil, Post: nil, Description: nil, Feeds: nil, Languages: nil,
+		Version: nil, Project: nil, Post: nil, Description: nil, Feeds: nil, Languages: nil, Latest: nil,
+	}
+}
+
+// LatestPost is a post out as the résumé's latest posts name it, for a test that hands them by hand: by its slug, which
+// titles it too, out a number of days before the tests' day, its title alone.
+func LatestPost(slug string, daysBefore int) document.ListedPost {
+	out := document.PostOut{Page: document.PostPage(slug), Published: Day().AddDate(0, 0, -daysBefore)}
+	return document.ListedPost{
+		Readiness: out, Title: []document.Span{document.Text{Text: slug}}, Lead: nil, Part: nil, Series: nil,
+		SeriesGroup: document.Anchor{Page: document.PageOf(document.PageNone), Name: ""}, Tags: nil,
 	}
 }
 

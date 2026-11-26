@@ -100,7 +100,7 @@ func TestANameFromOutsideReachesTheScreenAsLetters(test *testing.T) {
 func TestASessionWithNoListOpensAPostAlone(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	drawn := sessionDrawing(snapshot, false)
-	documents := []document.Document{compose.Resume(snapshot, nil), fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
+	documents := []document.Document{compose.Resume(snapshot, nil, nil), fixtures.DocumentOf(test, drawn.Documents, document.Page{Kind: document.PagePost, Slug: "reading-slowly", Tab: ""})}
 	drawing := Drawing{Documents: documents, Frames: drawn.Frames, Site: fixtures.Site(snapshot)}
 	cases := []struct {
 		name  string

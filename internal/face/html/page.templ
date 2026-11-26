@@ -309,11 +309,36 @@ templ (writer PageWriter) pageBlocks(blocks []document.Block, ownClasses ...stri
 	</div>
 }
 
-// firstScreen is the résumé's first screen (DESIGN.md, Pages), its opening whole: the greeting, the author's name in
-// block letters and the lead in one column; beside it the brief, its parts a row apart: the address heading it, the
-// subtitle and the place; the facts, where any is written; and what the brief offers to do, side by side: the primary
-// button that writes to the author, which opens the form once there is one (TODO, Hosting) and does nothing until
-// then, and the command that reaches the site over ssh, to copy.
+// resumeMain is the résumé's opening (DESIGN.md, Pages): its first screen, then the blog's latest posts where any is
+// out, and no section more.
+templ (writer PageWriter) resumeMain(head document.Head, parts resumeParts) {
+	@writer.firstScreen(head, parts)
+	if latest := head.Latest; latest != nil {
+		@writer.latestPosts(*latest)
+	}
+}
+
+// latestPosts are the blog's latest posts under the résumé's first screen (DESIGN.md, LatestPosts), a hint of the
+// blog: the blog's name over the way to its list, then each post as a small tile, newest first, on the grid of tiles.
+templ (writer PageWriter) latestPosts(latest document.LatestPosts) {
+	<section class="latest" aria-labelledby={ ownID(latestHeadingID) }>
+		<div class="latest-head">
+			<h2 id={ ownID(latestHeadingID) } class="latest-title">
+				@writer.spans(latest.Title)
+			</h2>
+			<p class="latest-all">
+				@writer.span(latest.All)
+			</p>
+		</div>
+		@writer.tiles(latest.Posts)
+	</section>
+}
+
+// firstScreen is the résumé's first screen (DESIGN.md, Pages): the greeting, the author's name in block letters and
+// the lead in one column; beside it the brief, its parts a row apart: the address heading it, the subtitle and the
+// place; the facts, where any is written; and what the brief offers to do, side by side: the primary button that
+// writes to the author, which opens the form once there is one (TODO, Hosting) and does nothing until then, and the
+// command that reaches the site over ssh, to copy.
 templ (writer PageWriter) firstScreen(head document.Head, parts resumeParts) {
 	<div class="first-screen">
 		<div class="introduction">

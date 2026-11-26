@@ -476,6 +476,64 @@ func TestTheFirstScreenBriefsTheFirstThreeFactsAlone(test *testing.T) {
 	}
 }
 
+// The résumé's first screen ends with the blog's latest posts where any is out (DESIGN.md, LatestPosts): the blog's
+// name over the way to its list, then each post as a small tile in the order handed, newest first, the whole tile the
+// link to its post, its day set into its edge, its title alone; with none out, nothing of the blog stands.
+func TestTheFirstScreenEndsWithTheLatestPosts(test *testing.T) {
+	// how many days before the tests' day, 23 Nov 2026, the newest post and an older one came out
+	const (
+		newestDaysBefore = 2
+		olderDaysBefore  = 13
+	)
+	about := document.Section{
+		Title:  textOf("About"),
+		Name:   "",
+		Blocks: []document.Block{document.Facts{Kind: document.FactsDetails, List: []document.Fact{{Label: "now", Value: textOf("here")}}}},
+	}
+	plain := resumeOf(about)
+	ending := resumeOf(about)
+	ending.Head.Latest = &document.LatestPosts{
+		Title: textOf("blog"),
+		All:   document.Link{Target: document.PageOf(document.PageBlog), Spans: textOf("all posts")},
+		Posts: []document.ListedPost{fixtures.LatestPost("newest", newestDaysBefore), fixtures.LatestPost("older", olderDaysBefore)},
+	}
+	withPosts := fixtureWriter(test).Page(ending, blankPerson(), "")
+	newest := `<a class="tile-title" href="/blog/newest">` + "\n" + `<span class="edge">` + "\n" + `<span class="edge-name tile-edge">` + "\n" +
+		`<time datetime="2026-11-21">21 Nov 2026</time>` + "\n" + `</span>` + "\n" + `</span> newest</a>`
+	cases := []struct {
+		name  string
+		page  string
+		holds []string
+		lacks []string
+	}{
+		{
+			name: "posts out", page: lined(withPosts),
+			holds: []string{`<h2 id="_latest-posts" class="latest-title">blog</h2>`, `<a href="/blog">all posts</a>`, newest + " </div>\n</li>"},
+			lacks: []string{`class="tile-lead"`, `class="tile-foot"`},
+		},
+		{name: "none out", page: fixtureWriter(test).Page(plain, blankPerson(), ""), holds: nil, lacks: []string{`class="latest"`}},
+	}
+	for _, testCase := range cases {
+		test.Run(testCase.name, func(test *testing.T) {
+			for _, want := range testCase.holds {
+				if !strings.Contains(testCase.page, want) {
+					test.Errorf("the page %q holds no %q", testCase.page, want)
+				}
+			}
+			for _, unwanted := range testCase.lacks {
+				if strings.Contains(testCase.page, unwanted) {
+					test.Errorf("the page %q holds %q", testCase.page, unwanted)
+				}
+			}
+		})
+	}
+	test.Run("newest first", func(test *testing.T) {
+		if newer, older := strings.Index(withPosts, "/blog/newest"), strings.Index(withPosts, "/blog/older"); newer > older {
+			test.Errorf("the page %q names /blog/older at %d, before /blog/newest at %d", withPosts, older, newer)
+		}
+	})
+}
+
 // The brief is headed by the first way to reach the author: a link that writes to its mailbox, parted at its at into
 // the mailbox and the host; an address that is no such link reads as its words.
 func TestTheBriefIsHeadedByTheMail(test *testing.T) {

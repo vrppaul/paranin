@@ -71,14 +71,14 @@ templ (writer PageWriter) postGroup(group document.Group) {
 				@writer.spans(group.Posts.Count)
 			</p>
 		</div>
-		@writer.tiles(group.Posts)
+		@writer.tiles(group.Posts.List)
 	</section>
 }
 
-// tiles are the posts a group names, each as its tile.
-templ (writer PageWriter) tiles(posts document.Posts) {
+// tiles are posts, each as its tile: those a group of the list names, or the latest under the résumé's first screen.
+templ (writer PageWriter) tiles(posts []document.ListedPost) {
 	<ol class="tiles tile-grid">
-		for _, post := range posts.List {
+		for _, post := range posts {
 			<li>
 				@writer.tile(post)
 			</li>

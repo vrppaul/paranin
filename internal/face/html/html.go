@@ -114,6 +114,9 @@ const (
 // The id of the heading over a project's other projects at its page's end, which their panes are named by (ownID)
 const othersHeadingID = "other-projects"
 
+// The id of the blog's name over its latest posts under the résumé's first screen, which names their part (ownID)
+const latestHeadingID = "latest-posts"
+
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
 // and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
 // (web/src/controllers/tooltip.ts)
@@ -486,7 +489,7 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	case document.List, document.Quote, document.Pause, document.Figure, document.Widget:
 		// a post's alone, which its article draws (post.go)
 	case document.Posts:
-		return writer.tiles(typed)
+		return writer.tiles(typed.List)
 	}
 	return templ.NopComponent
 }

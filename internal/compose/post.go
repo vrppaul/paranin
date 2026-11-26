@@ -105,6 +105,7 @@ func postHead(version postVersion, read blog) document.Head {
 		Description: description,
 		Feeds:       read.feedLinks(read.seriesShownOn(post)),
 		Languages:   languages,
+		Latest:      nil,
 	}
 }
 

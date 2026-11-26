@@ -25,8 +25,9 @@ Files were untidy.
 - Sorts the lines
 - Keeps the **blank** ones
 
-- [source](https://github.test/mira/tidy): where the code lives
-- [manual](https://docs.example.test/tidy): every flag it takes
+[source](https://github.test/mira/tidy): where the code lives
+
+[manual](https://docs.example.test/tidy): every flag it takes
 
 ***
 
@@ -34,7 +35,7 @@ Files were untidy.
 
 `--check` reports what it would tidy and changes nothing.
 
-- [flags](https://docs.example.test/tidy/flags): each flag in full
+[flags](https://docs.example.test/tidy/flags): each flag in full
 
 ## Other projects
 

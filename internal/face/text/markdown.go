@@ -216,7 +216,7 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Points:
 		return appendChunk(chunks, writer.points(typed.List))
 	case document.Side:
-		return writer.blocks(chunks, typed.Blocks, depth)
+		return writer.side(chunks, typed, depth)
 	case document.Reference:
 		// the details set apart from the story by a thematic break, as a turn a post takes
 		return writer.blocks(appendChunk(chunks, breakMark), typed.Blocks(), depth)
@@ -433,14 +433,35 @@ func (writer markdownWriter) card(chunks []string, card document.Card, depth int
 	return appendChunk(chunks, writer.facts(card.Facts))
 }
 
-// contents writes each listed page as an item: a link to the page in markdown, then the line on what it is.
+// contents writes each listed place as an item of a list.
 func (writer markdownWriter) contents(contents document.Contents) string {
 	items := make([]string, 0, len(contents.Listings))
 	for _, listing := range contents.Listings {
-		title := writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
-		items = append(items, joined(labelEnd, title, writer.spans(listing.Note)))
+		items = append(items, writer.listing(listing))
 	}
 	return list(items)
+}
+
+// listing writes a listed place: a link to it in markdown, then the line on what it is.
+func (writer markdownWriter) listing(listing document.Listing) string {
+	title := writer.spans([]document.Span{document.Link{Target: listing.Target, Spans: listing.Title}})
+	return joined(labelEnd, title, writer.spans(listing.Note))
+}
+
+// side writes what adds to a section after its words: each of its links a paragraph of its own, as the ways to reach
+// the author, since they may follow the section's points and markdown would read two lists in a row as one.
+func (writer markdownWriter) side(chunks []string, side document.Side, depth int) []string {
+	for _, block := range side.Blocks {
+		contents, isContents := block.(document.Contents)
+		if !isContents {
+			chunks = writer.block(chunks, block, depth)
+			continue
+		}
+		for _, listing := range contents.Listings {
+			chunks = appendLine(chunks, writer.listing(listing))
+		}
+	}
+	return chunks
 }
 
 // period writes a period escaped as a gap is: its gaps keep their brackets.

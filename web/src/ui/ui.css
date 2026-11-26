@@ -2818,7 +2818,8 @@ a.pane:hover .pane-title {
   a.pick-row,
   .version-pick time,
   .version-note,
-  .pane {
+  .pane,
+  .clip-word {
     transition: none;
   }
 }

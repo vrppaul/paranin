@@ -273,11 +273,11 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
 	blocks := make([]document.Block, 0, len(project.Sections))
 	for _, section := range project.Sections {
-		paragraphs := make([]document.Block, 0, len(section.Paragraphs))
-		for _, paragraph := range section.Paragraphs {
-			paragraphs = append(paragraphs, document.Paragraph{Spans: markedSpans(paragraph)})
+		sectionBlocks := make([]document.Block, 0, len(section.Paragraphs))
+		for _, paragraph := range paragraphs(section.Paragraphs) {
+			sectionBlocks = append(sectionBlocks, paragraph)
 		}
-		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Name: "", Blocks: paragraphs})
+		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Name: "", Blocks: sectionBlocks})
 	}
 	return document.Document{Head: projectHead(project, profile, words), Blocks: blocks}
 }

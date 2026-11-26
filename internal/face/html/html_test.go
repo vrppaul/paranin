@@ -322,7 +322,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	every := []string{
 		`popovertarget="_hint-ssh"><span class="way-mark" aria-hidden="true">❯</span>ssh</button>`,
 		`popovertarget="_hint-curl"><span class="way-mark" aria-hidden="true">❯</span>curl</button>`,
-		`<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint"><p id="_hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words">ssh `,
+		`<div id="_hint-ssh" class="hint" popover role="dialog" aria-labelledby="_hint-ssh-title" data-part="hint"><p id="_hint-ssh-title" class="hint-title">ssh</p><div class="command" data-part="command"><span class="command-prompt" aria-hidden="true">❯</span> <code data-part="command-words"><span class="command-word">ssh</span> `,
 		`<p class="hint-gives">The page as a manual in a terminal.</p>`,
 		`popovertarget="_hint-ssh" popovertargetaction="hide"`, `popovertarget="_hint-curl" popovertargetaction="hide"`,
 		`data-part="vim-keys"`, `data-part="theme"`, `data-part="command-line"`, `role="combobox"`,
@@ -331,8 +331,8 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	}
 	// the commands that read the résumé whole, which the page of no page offers too, and the project's page whole
 	const (
-		resumeReading  = `<code data-part="command-words">curl https://example.test/</code>`
-		projectReading = `<code data-part="command-words">curl https://example.test/p/tidy-tool</code>`
+		resumeReading  = `<code data-part="command-words"><span class="command-word">curl</span> <span class="command-word">https://example.test/</span></code>`
+		projectReading = `<code data-part="command-words"><span class="command-word">curl</span> <span class="command-word">https://example.test/p/tidy-tool</span></code>`
 	)
 	// the place of the fixture's one project with a page; another project has none, so no place
 	const (
@@ -342,10 +342,10 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 	// the ssh hint of the pages the site's own command opens, the résumé's and the page of no page's, of a post's, which
 	// its number opens, and of the blog's lists (D26): each its page's command and what it gives
 	const (
-		resumeSSH = `<code data-part="command-words">ssh example.test</code>`
-		postSSH   = `<code data-part="command-words">ssh blog/1@example.test</code>`
-		blogSSH   = `<code data-part="command-words">ssh blog@example.test</code>`
-		seriesSSH = `<code data-part="command-words">ssh blog/series@example.test</code>`
+		resumeSSH = `<code data-part="command-words"><span class="command-word">ssh</span> <span class="command-word">example.test</span></code>`
+		postSSH   = `<code data-part="command-words"><span class="command-word">ssh</span> <span class="command-word">blog/1@example.test</span></code>`
+		blogSSH   = `<code data-part="command-words"><span class="command-word">ssh</span> <span class="command-word">blog@example.test</span></code>`
+		seriesSSH = `<code data-part="command-words"><span class="command-word">ssh</span> <span class="command-word">blog/series@example.test</span></code>`
 	)
 	const (
 		resumeGives = `<p class="hint-gives">The résumé as an app in a terminal.</p>`
@@ -407,7 +407,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			name: "a post's page", page: writer.Post(post.Document, post.Record),
 			holds: slices.Concat(every, []string{
 				blogSessions, postSSH, postGives, `<a class="way-chip" href="/blog/reading-slowly.md">reading-slowly.md</a>`,
-				`<code data-part="command-words">curl https://example.test/blog/reading-slowly</code>`,
+				`<code data-part="command-words"><span class="command-word">curl</span> <span class="command-word">https://example.test/blog/reading-slowly</span></code>`,
 				`<a class="window" href="/blog"><span class="window-number">1:</span>posts</a>`,
 				`<a class="window" href="/blog/reading-slowly" aria-current="page"><span class="window-number">2:</span>reading-slowly</a>`,
 				`data-place="tab" data-name="posts" data-address="/blog" hidden`,
@@ -421,7 +421,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			name: "the blog's list by year", page: writer.List(lists[0]),
 			holds: slices.Concat(every, []string{
 				blogSessions, blogSSH, blogGives, `<a class="way-chip" href="/blog.md">blog.md</a>`,
-				`<code data-part="command-words">curl https://example.test/blog</code>`,
+				`<code data-part="command-words"><span class="command-word">curl</span> <span class="command-word">https://example.test/blog</span></code>`,
 				`<a class="window" href="/blog" aria-current="page"><span class="window-number">1:</span>posts</a>`,
 				`data-place="tab" data-name="posts" data-address="/blog" data-current`,
 				`data-place="post" data-name="reading-slowly" data-address="/blog/reading-slowly"`,
@@ -435,7 +435,7 @@ func TestEveryPageEndsWithTheFootLine(test *testing.T) {
 			name: "the blog's list by series", page: writer.List(lists[1]),
 			holds: slices.Concat(every, []string{
 				blogSessions, seriesSSH, blogGives, `<a class="way-chip" href="/blog/series.md">series.md</a>`,
-				`<code data-part="command-words">curl https://example.test/blog/series</code>`,
+				`<code data-part="command-words"><span class="command-word">curl</span> <span class="command-word">https://example.test/blog/series</span></code>`,
 				`<a class="window" href="/blog/series" aria-current="page"><span class="window-number">1:</span>posts</a>`,
 				`data-place="series" data-name="reading" data-address="/blog/series#reading"`,
 			}),
@@ -690,7 +690,7 @@ func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
 	page := fixtureWriter(test).Page(composed, blankPerson(), "")
 	for _, want := range []string{
 		`<dt>install</dt><dd><div class="command" data-part="command">`,
-		`<code data-part="command-words">go install example.test/tidy@latest</code>`,
+		`<code data-part="command-words"><span class="command-word">go</span> <span class="command-word">install</span> <span class="command-word">example.test/tidy@latest</span></code>`,
 		`aria-label="copy go install example.test/tidy@latest" data-copied="copied" data-toast="Copied go install example.test/tidy@latest"`,
 		`<dt>use</dt><dd><code>tidy .</code> daily</dd>`,
 		`data-part="toast"`,
@@ -1633,30 +1633,44 @@ func siteOnTheDay(snapshot *content.Snapshot) compose.Site {
 	return compose.SiteOf(compose.Prepare(snapshot), compose.Audience{At: fixtures.Day(), Drafts: false})
 }
 
-// What lined breaks a line between, two tags that meet, and what it keeps whole, a pre, whose every letter shows
+// What lined breaks a line between, two tags that meet, and what it keeps whole, a pre and a command's words, whose
+// every letter shows
 const (
-	tagsMeeting   = "><"
-	tagsBroken    = ">\n<"
-	preOpening    = "<pre"
-	preClosing    = "</pre>"
-	goldenFileEnd = "\n"
+	tagsMeeting         = "><"
+	tagsBroken          = ">\n<"
+	preOpening          = "<pre"
+	preClosing          = "</pre>"
+	commandWordsOpening = `<code data-part="` + commandWordsPart + `"`
+	commandWordsClosing = "</code>"
+	goldenFileEnd       = "\n"
+	// either opening, as a pattern finds the first of them; neither holds a letter a pattern reads otherwise
+	keptWholeOpening = preOpening + "|" + commandWordsOpening
 )
 
+// keptWholeClosings are the parts lined keeps whole, each opening with the closing that ends it.
+func keptWholeClosings() map[string]string {
+	return map[string]string{preOpening: preClosing, commandWordsOpening: commandWordsClosing}
+}
+
 // lined is a page with a line break between each two tags that meet, so its golden file reads in a diff; a space
-// or a word between two tags stays where it is, and so does all inside a pre, where a break would show, and the
-// page's tests, which run over the golden files, would copy it.
+// or a word between two tags stays where it is, and so does all inside a pre and a command's words, where a break
+// would show, and the page's tests, which run over the golden files, would copy it.
 func lined(page string) string {
+	closings := keptWholeClosings()
+	openings := regexp.MustCompile(keptWholeOpening)
 	var builder strings.Builder
 	rest := page
 	for {
-		outside, opened, found := strings.Cut(rest, preOpening)
-		if !found {
-			return builder.String() + strings.ReplaceAll(outside, tagsMeeting, tagsBroken) + goldenFileEnd
+		found := openings.FindStringIndex(rest)
+		if found == nil {
+			return builder.String() + strings.ReplaceAll(rest, tagsMeeting, tagsBroken) + goldenFileEnd
 		}
-		builder.WriteString(strings.ReplaceAll(outside+preOpening, tagsMeeting, tagsBroken))
-		inside, after, _ := strings.Cut(opened, preClosing)
+		openingStart, openingEnd := found[0], found[1]
+		closing := closings[rest[openingStart:openingEnd]]
+		builder.WriteString(strings.ReplaceAll(rest[:openingEnd], tagsMeeting, tagsBroken))
+		inside, after, _ := strings.Cut(rest[openingEnd:], closing)
 		builder.WriteString(inside)
-		rest = preClosing + after
+		rest = closing + after
 	}
 }
 

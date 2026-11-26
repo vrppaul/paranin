@@ -979,8 +979,8 @@ a.tag[aria-current] .tag-mark {
 }
 
 /* what the brief offers to do, side by side, a row of them under another where they do not fit. As an item of the
- * brief's grid it would be at least as wide as a chip's whole command; it narrows to the brief instead, and the chip
- * scrolls inside itself, as at a large text size on a phone */
+ * brief's grid it would be at least as wide as a chip's whole command; it narrows to the brief instead, and the chip's
+ * command goes on under itself, as at a large text size on a phone */
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -1026,23 +1026,21 @@ a.tag[aria-current] .tag-mark {
 }
 
 /* a command the reader can run (DESIGN.md, Command): a regular chip on the ground a shade below the page, a muted
- * hairline round it, the prompt's mark, the command, and its button after a muted rule. It never wraps: where its
- * column is narrower it scrolls inside itself, as a table and code do, under a thin scrollbar, which says there is
- * more without weighing as much as what it scrolls */
+ * hairline round it, the prompt's mark, the command, and its button after a muted rule. Its words stand half a row,
+ * hairline and all, from its top and its foot, so one line of them makes the regular size's two rows, and a command
+ * longer than its column goes on under itself with the same air round it, the prompt by its first line and the
+ * button's rule down its whole height */
 .command {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--cell);
   box-sizing: border-box;
   max-width: 100%;
   min-height: var(--control);
-  padding: 0 var(--cell-2);
-  overflow-x: auto;
-  scrollbar-width: thin;
+  padding: calc(var(--row-half) - var(--hairline)) var(--cell-2);
   border: var(--hairline) solid var(--muted);
   border-radius: var(--radius);
   background: var(--sunk);
-  white-space: nowrap;
   transition:
     background-color var(--quick),
     border-color var(--quick);
@@ -1053,12 +1051,26 @@ a.tag[aria-current] .tag-mark {
   font-weight: var(--type-strong-weight);
 }
 
-/* the command's own ground is the chip's */
+/* the command's own ground is the chip's. It narrows below its longest word, which then breaks inside itself, and
+ * each line after its first stands two cells in, as a terminal wraps a long line */
 .command code {
+  min-width: 0;
+  padding-left: var(--cell-2);
   background: none;
+  text-indent: calc(-1 * var(--cell-2));
+}
+
+/* a word of the command stands whole, so its lines break between its words alone, never at a hyphen of one; a word
+ * wider than the line breaks inside itself rather than run past the chip. Its own first line keeps no indent */
+.command-word {
+  display: inline-block;
+  overflow-wrap: anywhere;
+  text-indent: 0;
 }
 
 .command-copy {
+  flex-shrink: 0;
+  align-self: stretch;
   padding: 0 0 0 var(--cell);
   border: 0;
   border-left: var(--hairline) solid var(--muted);
@@ -1400,8 +1412,8 @@ a.tile-title:focus-visible {
   color: var(--muted);
 }
 
-/* an install line, a long command that never wraps, stands under its label across the card's width: beside the
- * label it outruns the value's column and scrolls inside its chip */
+/* an install line, a long command, stands under its label across the card's width: beside the label the value's
+ * column would leave it a word or two a line */
 .card .facts dd:has(> .command) {
   grid-column: 1 / -1;
 }

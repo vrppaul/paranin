@@ -422,11 +422,21 @@ templ careerLine(career careerDrawing) {
 }
 
 // command is a command the reader can run (DESIGN.md, Command): the prompt's mark, the command as code a reader may
-// select, and the button that copies it, hidden until the site's script shows it and lets the whole chip copy.
+// select, each word whole so its lines break between them alone, and the button that copies it, hidden until the
+// site's script shows it and lets the whole chip copy.
 templ command(command compose.Copyable) {
 	<div class="command" data-part={ commandPart }>
 		<span class="command-prompt" aria-hidden="true">{ look.PromptMark }</span>
-		<code data-part={ commandWordsPart }>{ command.Text }</code>
+		<code data-part={ commandWordsPart }>
+			// the space before a word meets it, as templ writes a space after one on a line of its own
+			for index, word := range strings.Split(command.Text, commandSpace) {
+				if index > 0 {
+					{ commandSpace }<span class="command-word">{ word }</span>
+				} else {
+					<span class="command-word">{ word }</span>
+				}
+			}
+		</code>
 		<button type="button" class="command-copy" data-part={ copyPart } aria-label={ command.Button.CopyName } data-copied={ command.Button.Copied } data-toast={ command.Button.Toast } hidden>{ command.Button.Copy }</button>
 	</div>
 }

@@ -32,8 +32,8 @@ type resumeParts struct {
 // résumé whose brief would hold nothing but gaps, its head, then the opening's blocks.
 func (writer PageWriter) openingPart(composed document.Document, opening document.Opening) templ.Component {
 	blocks := document.WrittenBlocks(opening.Blocks)
-	if project := composed.Head.Project; project != nil {
-		return writer.projectMain(composed.Head, *project, blocks)
+	if composed.Head.Page.Kind == document.PageProject {
+		return writer.projectMain(composed.Head, blocks)
 	}
 	if opening.Brief == nil {
 		return writer.plainMain(composed.Head, blocks)

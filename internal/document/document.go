@@ -121,58 +121,9 @@ func (fact Fact) Command() (string, bool) {
 	return code.Text, isCode
 }
 
-// Project is what a project's page says of it beside its name and lines (DESIGN.md, ProjectHead): what gets the
-// project, where its code lives and how it is installed, and what tells about it.
-type Project struct {
-	// Repository is where the project's code lives; none where the profile names no place
-	Repository *Repository
-	// InstallLabel is the site's word for installing, over the first install where a face labels each
-	InstallLabel string
-	// Installs are the ways to install the project: the first, then each with a note on when to take it instead
-	Installs []Install
-	// StackLabel is the site's word over what the project is made of
-	StackLabel string
-	// Stack is what the project is made of, each name whole: the language it is written in, then what it is built
-	// on; none where the profile names nothing
-	Stack []string
-	// About are the other facts that tell about the project, its releases and its licence, each under the site's
-	// word, as far as the profile gives them
-	About []Fact
-}
-
-// AboutFacts are what tells about the project as a face that writes its stack as text lists it among facts: the
-// stack's names joined by the face's own joint, under its label, where it has any; then the other facts.
-func (project Project) AboutFacts(joint string) []Fact {
-	if len(project.Stack) == 0 {
-		return project.About
-	}
-	stack := Fact{Label: project.StackLabel, Value: []Span{Text{Text: strings.Join(project.Stack, joint)}}}
-	return append([]Fact{stack}, project.About...)
-}
-
-// Install is a way to install a project: a note on when to take it, none on the first, and its command.
-type Install struct {
-	Note    []Span
-	Command string
-}
-
-// InstallFacts are the installs as a face that labels each lists them among facts (InstallFact).
-func (project Project) InstallFacts() []Fact {
-	facts := make([]Fact, 0, len(project.Installs))
-	for _, install := range project.Installs {
-		facts = append(facts, project.InstallFact(install))
-	}
-	return facts
-}
-
-// InstallFact is an install as a face that labels it lists it among facts, its command as code: under its note, or
-// under the site's word where it has none, as the first.
-func (project Project) InstallFact(install Install) Fact {
-	label := project.InstallLabel
-	if len(install.Note) > 0 {
-		label = PlainText(install.Note)
-	}
-	return Fact{Label: label, Value: []Span{Code{Text: install.Command}}}
+// CommandFact is a command under a label, as a face that lists a command among facts writes it: its value code alone.
+func CommandFact(label, command string) Fact {
+	return Fact{Label: label, Value: []Span{Code{Text: command}}}
 }
 
 // Repository is where a project's code lives: the site's word that names it, and its address.

@@ -104,7 +104,7 @@ experience:
     bullets:
       - Websites, logos and brand identities for small companies
 
-# A project's first install is the way to install it; each after it says in a note when to take it instead. Its
+# A project's install is its command, and its alternatives, each a note on when to take it instead and a command. Its
 # release names its newest release and its changelog, both or none; its licence is a word.
 projects:
   - slug: claude-review
@@ -116,7 +116,7 @@ projects:
     language: Python
     repo: https://github.com/vrppaul/claude-review
     install:
-      - command: npx skills add vrppaul/claude-review -g -y
+      command: npx skills add vrppaul/claude-review -g -y
     release:
       latest: https://github.com/vrppaul/claude-review/releases/latest
       changelog: https://github.com/vrppaul/claude-review/blob/HEAD/CHANGELOG.md
@@ -140,9 +140,10 @@ projects:
     stack: [tree-sitter, sentence-transformers, LanceDB]
     repo: https://github.com/vrppaul/semantic-code-mcp
     install:
-      - command: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
-      - note: On Linux, the CPU-only torch build
-        command: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp
+      command: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
+      alternatives:
+        - note: On Linux, the CPU-only torch build
+          command: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp
     release:
       latest: https://github.com/vrppaul/semantic-code-mcp/releases/latest
       changelog: https://github.com/vrppaul/semantic-code-mcp/blob/HEAD/CHANGELOG.md
@@ -163,7 +164,7 @@ projects:
     language: Go
     repo: ""
     install:
-      - command: ssh paran.in
+      command: ssh paran.in
     page: false
     sections: []
   - slug: water-tracker
@@ -172,7 +173,6 @@ projects:
     description: ESP32 firmware reads a load cell; a Raspberry Pi server with PostgreSQL answers how much water you drank today.
     language: C++ and Python
     repo: ""
-    install: []
     page: false
     sections: []
 

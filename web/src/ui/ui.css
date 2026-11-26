@@ -940,7 +940,9 @@ a.tag[aria-current] .tag-mark {
   color: var(--muted);
 }
 
-.brief .facts {
+/* facts under a quiet rule: the brief's, and what tells about a project in its side (DESIGN.md, ProjectHead) */
+.brief .facts,
+.project-side .facts {
   padding-top: var(--row);
   border-top: var(--hairline) solid var(--quiet);
 }
@@ -1061,11 +1063,12 @@ a.tag[aria-current] .tag-mark {
 }
 
 /* a word of the command stands whole, so its lines break between its words alone, never at a hyphen of one; a word
- * wider than the line breaks inside itself rather than run past the chip. Its own first line keeps no indent */
+ * wider than the line breaks where the line runs out, wherever that falls inside it, never first at its hyphen, rather
+ * than run past the chip. Its own first line keeps no indent */
 .command-word {
   display: inline-block;
-  overflow-wrap: anywhere;
   text-indent: 0;
+  word-break: break-all;
 }
 
 .command-copy {
@@ -1551,8 +1554,7 @@ a.tile-title:focus-visible {
 /* what a page opens with, its title in block letters first, each part a row from the next: the page of an address of
  * no page (DESIGN.md, Pages), its status, the address asked for, the way to the start, four rows of air above and
  * below; and the head of a page that is not the résumé (DESIGN.md, Contents and PageHead), its line in the lead's
- * style, its lead held to the measure, what gets a project and what tells about it, four rows of air above and two
- * below */
+ * style and its lead, each held to the measure, four rows of air above and two below */
 .not-found,
 .page-head {
   display: grid;
@@ -1632,14 +1634,7 @@ a.tile-title:focus-visible {
   margin: 0;
 }
 
-/* the tagline in the lead's style, held to the headline's line; the description says less, held to prose's */
-.project-line {
-  max-width: var(--lead);
-  font-size: var(--type-lead-size);
-  font-weight: var(--type-lead-weight);
-  line-height: var(--type-lead-line);
-}
-
+/* the description under the tagline, a page's line, says less, held to prose's measure as the line is */
 .project-lead {
   max-width: var(--measure);
   color: var(--muted);
@@ -1657,11 +1652,6 @@ a.tile-title:focus-visible {
   display: grid;
   gap: var(--row);
   justify-items: start;
-}
-
-.project-side .facts {
-  padding-top: var(--row);
-  border-top: var(--hairline) solid var(--quiet);
 }
 
 /* a name of what the project is made of stands whole, so its line breaks after a dot alone, never at a hyphen */
@@ -1694,8 +1684,7 @@ a.tile-title:focus-visible {
   color: var(--host);
 }
 
-/* on a phone one column: the name, the tagline and the description, then the side's two groups; the tagline in the
- * lead's phone size */
+/* on a phone one column: the name, the tagline and the description, then the side's two groups */
 @media (width < 53.75rem) {
   .project {
     grid-template-columns: minmax(0, 1fr);
@@ -1703,12 +1692,6 @@ a.tile-title:focus-visible {
 
   .project-head {
     padding-block: var(--row-2) var(--row);
-  }
-
-  .project-line {
-    font-size: var(--type-lead-phone-size);
-    font-weight: var(--type-lead-phone-weight);
-    line-height: var(--type-lead-phone-line);
   }
 
   .project-head > h1,

@@ -79,16 +79,21 @@ type Project struct {
 	Language    string    `yaml:"language"`
 	Stack       []string  `yaml:"stack"`
 	Repo        string    `yaml:"repo"`
-	Install     []Install `yaml:"install"`
+	Install     *Install  `yaml:"install"`
 	Release     *Release  `yaml:"release"`
 	Licence     string    `yaml:"licence"`
 	Page        bool      `yaml:"page"`
 	Sections    []Section `yaml:"sections"`
 }
 
-// Install is a way to install a project: its command, and a note on when to take it instead of the first, which
-// every way but the first has.
+// Install is how a project is installed: its command, and the other ways, each taken instead where its note says.
 type Install struct {
+	Command      string        `yaml:"command"`
+	Alternatives []Alternative `yaml:"alternatives"`
+}
+
+// Alternative is another way to install a project: a note on when to take it instead, and its command.
+type Alternative struct {
 	Note    string `yaml:"note"`
 	Command string `yaml:"command"`
 }

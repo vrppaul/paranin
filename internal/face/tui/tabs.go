@@ -75,8 +75,8 @@ func (laid laidTab) overLines() []lineSpan {
 	return append(spans, lineSpan{first: laid.outline.first, end: laid.outline.end})
 }
 
-// tabBody is what a tab shows: a document's opening, beside the brief, as a README, as a report of checks, as a list
-// of skills or as it is, or a section, under its title or as it is; or the blog's list or a post, whole.
+// tabBody is what a tab shows: a document's opening, beside the brief, under a project's head, as a report of checks,
+// as a list of skills or as it is, or a section, under its title or as it is; or the blog's list or a post, whole.
 //
 //sumtype:decl
 type tabBody interface {
@@ -94,9 +94,8 @@ type briefOpening struct {
 	blocks  []document.Block
 }
 
-// readmeOpening is a project's opening as its forge shows its README: the head, then all its blocks, its
-// sections among them.
-type readmeOpening struct {
+// projectOpening is a project's opening: its head as the page lays it, then all its blocks, its sections among them.
+type projectOpening struct {
 	head   document.Head
 	blocks []document.Block
 }
@@ -142,15 +141,15 @@ type postBody struct {
 	post document.Document
 }
 
-func (briefOpening) tabBody()  {}
-func (readmeOpening) tabBody() {}
-func (reportOpening) tabBody() {}
-func (skillsOpening) tabBody() {}
-func (plainOpening) tabBody()  {}
-func (titledSection) tabBody() {}
-func (plainSection) tabBody()  {}
-func (listBody) tabBody()      {}
-func (postBody) tabBody()      {}
+func (briefOpening) tabBody()   {}
+func (projectOpening) tabBody() {}
+func (reportOpening) tabBody()  {}
+func (skillsOpening) tabBody()  {}
+func (plainOpening) tabBody()   {}
+func (titledSection) tabBody()  {}
+func (plainSection) tabBody()   {}
+func (listBody) tabBody()       {}
+func (postBody) tabBody()       {}
 
 // tabsOf lays a document's tabs out as the TUI shows them, as document.TabsOf parts it: the blog's list, filtered or
 // not, and a post whole are one tab each, which the blog's session names as its windows (Model.windows).
@@ -168,7 +167,8 @@ func tabsOf(composed document.Document) []tab {
 }
 
 // openingBody is what a document's first tab shows: its brief as neofetch prints a system, or by the kind of its page
-// a project's README, the health report, the list of skills, a post whole, the blog's list, or the head as it is.
+// a project's head and its blocks, the health report, the list of skills, a post whole, the blog's list, or the head as
+// it is.
 func openingBody(composed document.Document, opening document.Opening) tabBody {
 	head, blocks := composed.Head, opening.Blocks
 	if briefed := opening.Brief; briefed != nil {
@@ -176,7 +176,7 @@ func openingBody(composed document.Document, opening document.Opening) tabBody {
 	}
 	switch head.Page.Kind {
 	case document.PageProject:
-		return readmeOpening{head: head, blocks: blocks}
+		return projectOpening{head: head, blocks: blocks}
 	case document.PageHealth:
 		return reportOpening{head: head, blocks: blocks}
 	case document.PageSkills:
@@ -220,8 +220,8 @@ func (layout layout) tab(shown tab) laidTab {
 	switch body := shown.body.(type) {
 	case briefOpening:
 		return linesAlone(stacked(layout.about(body.head, body.brief, body.address, body.career), layout.blocks(body.blocks, 0)))
-	case readmeOpening:
-		return linesAlone(stacked(layout.readme(body.head), layout.blocks(body.blocks, 0)))
+	case projectOpening:
+		return linesAlone(stacked(layout.projectHead(body.head), layout.blocks(body.blocks, 0)))
 	case reportOpening:
 		return linesAlone(stacked(layout.report(body.head, body.blocks), layout.blocks(body.blocks, 0)))
 	case skillsOpening:
@@ -274,8 +274,7 @@ func (layout layout) subtitleLines(head document.Head) []line {
 }
 
 // head lays out the greeting, where the head has one, then the title, with the site's cursor after it where the
-// page carries one, the subtitle and place, and the lead. A project's head, the one with tags and a repository, is a
-// README's (readme).
+// page carries one, the subtitle and place, and the lead. A project's head is laid as the page lays it (projectHead).
 func (layout layout) head(head document.Head) []line {
 	parts := layout.headParts(head)
 	title := layout.words(head.Title, kindStrong)
@@ -454,19 +453,39 @@ func (layout layout) facts(facts []document.Fact, indent int, labelKind kind) []
 	return lines
 }
 
-// valueColumn is how far in from their labels facts' values stand: after the widest label, a gap between.
+// valueColumn is how far in from their labels facts' values stand (labelColumn).
 func valueColumn(facts []document.Fact) int {
-	labelWidth := 0
+	labels := make([]string, 0, len(facts))
 	for _, fact := range facts {
-		labelWidth = max(labelWidth, textWidth(fact.Label))
+		labels = append(labels, fact.Label)
+	}
+	return labelColumn(labels)
+}
+
+// labelColumn is how far in from labels the words under them stand: after the widest label, a gap between.
+func labelColumn(labels []string) int {
+	labelWidth := 0
+	for _, label := range labels {
+		labelWidth = max(labelWidth, textWidth(label))
 	}
 	return labelWidth + columnGap
 }
 
 // fact lays out a label of a kind and its value, the value in a column a width in from the label.
 func (layout layout) fact(fact document.Fact, indent, column int, labelKind kind) []line {
-	lead := line{gapRun(indent), plainRun(padded(fact.Label, column), labelKind)}
-	return layout.continued(lead, layout.valueWords(fact.Value), indent+column)
+	return layout.labelled(labelledWords{label: fact.Label, words: layout.valueWords(fact.Value)}, indent, column, labelKind)
+}
+
+// labelledWords are words under a label, as a fact stands: the label, and the words of its value.
+type labelledWords struct {
+	label string
+	words []word
+}
+
+// labelled lays out a label of a kind and its words, the words in a column a width in from the label.
+func (layout layout) labelled(labelled labelledWords, indent, column int, labelKind kind) []line {
+	lead := line{gapRun(indent), plainRun(padded(labelled.label, column), labelKind)}
+	return layout.continued(lead, labelled.words, indent+column)
 }
 
 // factBlock lays out a block of facts at an indent, in their order, the values in one column: each fact under its
@@ -490,28 +509,35 @@ func (layout layout) factBlock(facts []document.Fact, indent int) []line {
 }
 
 // commandBox is a command in a box as wide as the page, as the page's Command stands: its label set into the top edge,
-// and the command on one row inside it after the prompt's mark, so a reader copies it whole; nothing for a fact that
-// is no command, or where the page is too narrow for the box's edges round the label or round the command's row, the
-// fact then standing under its label.
+// and the command inside it after the prompt's mark; nothing for a fact that is no command.
 func (layout layout) commandBox(fact document.Fact, indent int) []line {
-	if _, isCommand := fact.Command(); !isCommand {
+	command, isCommand := fact.Command()
+	if !isCommand {
 		return nil
 	}
 	width := layout.width - indent
-	topRoom := width - textWidth(frameTopLeft+frameAcross+space+fact.Label+space+frameTopRight)
-	prompted := slices.Concat(line{
-		boxRun(frameDown + space),
-		plainRun(look.PromptMark, kindPrompt),
-		gapRun(spaceWidth),
-	}, wordRuns(layout.valueWords(fact.Value)))
-	insideRoom := width - runsWidth(prompted) - textWidth(space+frameDown)
-	if topRoom < 1 || insideRoom < 0 {
-		return nil
+	topRoom := max(width-textWidth(frameTopLeft+frameAcross+space+fact.Label+space+frameTopRight), 0)
+	// a screen narrower than the box's edges still gets a letter a row inside it
+	inside := max(width-textWidth(frameDown+space)-textWidth(space+frameDown), 1)
+	lines := []line{{gapRun(indent), boxRun(frameTopLeft + frameAcross + space), plainRun(fact.Label, kindMuted), boxRun(space + strings.Repeat(frameAcross, topRoom) + frameTopRight)}}
+	for _, row := range commandRows(command, inside) {
+		lines = append(lines, slices.Concat(line{gapRun(indent), boxRun(frameDown + space)}, row, line{gapRun(max(inside-runsWidth(row), 0)), boxRun(space + frameDown)}))
 	}
-	top := line{gapRun(indent), boxRun(frameTopLeft + frameAcross + space), plainRun(fact.Label, kindMuted), boxRun(space + strings.Repeat(frameAcross, topRoom) + frameTopRight)}
-	inside := slices.Concat(line{gapRun(indent)}, prompted, line{gapRun(insideRoom), boxRun(space + frameDown)})
-	bottom := frameBottomLeft + strings.Repeat(frameAcross, width-textWidth(frameBottomLeft+frameBottomRight)) + frameBottomRight
-	return []line{top, inside, {gapRun(indent), boxRun(bottom)}}
+	bottom := frameBottomLeft + strings.Repeat(frameAcross, max(width-textWidth(frameBottomLeft+frameBottomRight), 0)) + frameBottomRight
+	return append(lines, line{gapRun(indent), boxRun(bottom)})
+}
+
+// commandRows are a command laid in rows of a width, as DESIGN.md's TUI lays a line wider than its frame: the prompt's
+// mark before it, its words a space apart, a row breaking between them; each row it goes on in opens with the mark
+// Neovim's showbreak sets, and a word wider than a row breaks inside it. Each word copies the command whole, so a
+// reader copies it with y however it wraps.
+func commandRows(command string, width int) []line {
+	words := []word{}
+	for written := range strings.FieldsSeq(command) {
+		words = append(words, word{runs: []run{{text: written, kind: kindCode, highlighted: false, address: "", copied: command, tone: 0, cites: noCitation, opens: document.PageOf(document.PageNone)}}, highlightBefore: false, spaceBefore: kindCode})
+	}
+	prompt := line{plainRun(look.PromptMark, kindPrompt), gapRun(spaceWidth)}
+	return packed(prompt, line{plainRun(codeGoesOnMark, kindFaint)}, words, width)
 }
 
 // boxRun is a piece of a box's edge, muted as the page draws the Command's hairline, so the box shows on any ground.

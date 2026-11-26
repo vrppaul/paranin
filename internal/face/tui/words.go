@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -292,19 +293,25 @@ func (layout layout) fill(words []word, indent int) []line {
 // standing in at a column. A word that opens a line and is wider than its room breaks where the line ends, as a
 // terminal breaks it, so none of it is lost.
 func (layout layout) continued(lead line, words []word, column int) []line {
-	packing := packing{width: layout.width, column: column, lines: []line{}, current: lead, used: runsWidth(lead), holdsWord: false}
+	return packed(lead, line{gapRun(column)}, words, layout.width)
+}
+
+// packed are words laid after a lead in lines of a width, each line after the first opening with the onward runs.
+func packed(lead, onward line, words []word, width int) []line {
+	packing := packing{width: width, onward: onward, lines: []line{}, current: lead, used: runsWidth(lead), holdsWord: false}
 	for _, next := range words {
 		packing.add(next)
 	}
 	return append(packing.lines, packing.current)
 }
 
-// packing is words being laid in lines of a width, each line after the first standing in at a column: the lines
-// filled, the line being laid and how many columns it takes, and whether it holds a word yet, which only the first
-// line, a lead alone, may not, since every line opened after it takes its word at once.
+// packing is words being laid in lines of a width, each line after the first opening with the same runs, a gap that
+// stands it in at a column or a mark: the lines filled, the line being laid and how many columns it takes, and whether
+// it holds a word yet, which only the first line, a lead alone, may not, since every line opened after it takes its
+// word at once.
 type packing struct {
 	width     int
-	column    int
+	onward    line
 	lines     []line
 	current   line
 	used      int
@@ -340,10 +347,10 @@ func (packing *packing) add(next word) {
 	packing.holdsWord = true
 }
 
-// open ends the line being laid and opens the next, standing in at the column.
+// open ends the line being laid and opens the next with the onward runs.
 func (packing *packing) open() {
 	packing.lines = append(packing.lines, packing.current)
-	packing.current, packing.used = line{gapRun(packing.column)}, packing.column
+	packing.current, packing.used = slices.Clone(packing.onward), runsWidth(packing.onward)
 }
 
 // cutWord parts a word after a width: the piece that fills it, and the rest, with no space before it. The piece holds

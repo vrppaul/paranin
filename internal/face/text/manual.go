@@ -150,23 +150,22 @@ func (writer manualWriter) description(head document.Head, others []document.Blo
 }
 
 // project writes what gets a project and what tells about it, a blank line before each part: where its code lives
-// and the way to install it as labelled pairs; each later way under its note, its command standing in under the note,
-// since a note is too long a label to set the pairs' column by; then the facts that tell about it. None on a page
-// that is no project's.
+// and its install as labelled pairs; each other way under its note, its command standing in under the note, since a
+// note is too long a label to set the pairs' column by; then the facts that tell about it. None on a page that is no
+// project's.
 func (writer manualWriter) project(project *document.Project) []string {
 	if project == nil {
 		return nil
 	}
-	gets, later := project.Repository.Facts(), []string{}
-	for _, install := range project.Installs {
-		if len(install.Note) == 0 {
-			gets = append(gets, project.InstallFact(install))
-			continue
-		}
-		later = append(append(later, ""), paragraph(sectionIndent, 0, writer.words(install.Note))...)
-		later = append(later, codeLines(sectionIndent+bulletHang, install.Command)...)
+	gets := project.Repository.Facts()
+	if install, installed := project.InstallFact(); installed {
+		gets = append(gets, install)
 	}
-	lines := append(append([]string{""}, writer.pairs(sectionIndent, gets)...), later...)
+	lines := append([]string{""}, writer.pairs(sectionIndent, gets)...)
+	for _, alternative := range project.Alternatives {
+		lines = append(append(lines, ""), paragraph(sectionIndent, 0, writer.words(alternative.Note))...)
+		lines = append(lines, codeLines(sectionIndent+bulletHang, alternative.Command)...)
+	}
 	if about := project.AboutFacts(dot); len(about) > 0 {
 		lines = append(append(lines, ""), writer.pairs(sectionIndent, about)...)
 	}

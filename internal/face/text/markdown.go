@@ -155,15 +155,21 @@ func (writer markdownWriter) head(head document.Head) []string {
 	return writer.project(chunks, head.Project)
 }
 
-// project writes what gets a project, each a line of its own: where its code lives, then each way to install it, the
-// first under the site's word, a later one under its note; then what tells about it as a list of facts. What gets it
-// stands in lines, not items, since markdown would read two lists in a row as one.
+// project writes what gets a project, each a line of its own: where its code lives, then its install under the site's
+// word, then each other way under its note; then what tells about it as a list of facts. What gets it stands in
+// lines, not items, since markdown would read two lists in a row as one.
 func (writer markdownWriter) project(chunks []string, project *document.Project) []string {
 	if project == nil {
 		return chunks
 	}
-	for _, fact := range slices.Concat(project.Repository.Facts(), project.InstallFacts()) {
+	for _, fact := range project.Repository.Facts() {
 		chunks = appendLine(chunks, writer.fact(fact))
+	}
+	if install, installed := project.InstallFact(); installed {
+		chunks = appendLine(chunks, writer.fact(install))
+	}
+	for _, alternative := range project.Alternatives {
+		chunks = appendLine(chunks, writer.spans(alternative.Note)+labelEnd+writer.spans([]document.Span{document.Code{Text: alternative.Command}}))
 	}
 	return appendChunk(chunks, writer.facts(project.AboutFacts(dot)))
 }

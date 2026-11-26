@@ -477,9 +477,9 @@ templ (writer PageWriter) mailLink(mail document.Mail, heading bool) {
 
 // projectMain is a project's page (DESIGN.md, Layout): one grid of its text's column and its side's, its head on it,
 // then its blocks across both.
-templ (writer PageWriter) projectMain(head document.Head, project document.Project, blocks []document.Block) {
+templ (writer PageWriter) projectMain(head document.Head, blocks []document.Block) {
 	<div class="project">
-		@writer.projectHead(head, project)
+		@writer.projectHead(head)
 		@writer.pageBlocks(blocks)
 	</div>
 }
@@ -487,12 +487,12 @@ templ (writer PageWriter) projectMain(head document.Head, project document.Proje
 // projectHead is a project's first screen (DESIGN.md, ProjectHead): its name in block letters, the page's h1, on a row
 // of its own; under it, level with each other, the tagline and the description in the text's column, and in the
 // side's what gets the project, then the facts that tell about it; the crosses at its corners.
-templ (writer PageWriter) projectHead(head document.Head, project document.Project) {
+templ (writer PageWriter) projectHead(head document.Head) {
 	<header class="project-head">
 		@writer.drawnTitle(head)
 		<div class="project-intro">
 			if len(head.Subtitle) > 0 {
-				<p class="project-line">
+				<p class="page-line">
 					@writer.spans(head.Subtitle)
 				</p>
 			}
@@ -502,35 +502,45 @@ templ (writer PageWriter) projectHead(head document.Head, project document.Proje
 				</p>
 			}
 		</div>
-		<div class="project-side">
-			<div class="project-gets">
-				if project.Repository != nil {
-					@repositoryLink(*project.Repository)
-				}
-				for _, install := range project.Installs {
-					if len(install.Note) > 0 {
-						<p class="project-note">
-							@writer.spans(install.Note)
-							@text(noteEnd)
-						</p>
-					}
-					@command(writer.frame.copyWords.Of(install.Command))
+		if project := head.Project; project != nil {
+			<div class="project-side">
+				@writer.projectGets(*project)
+				if len(project.Stack) > 0 || project.Release != nil || project.Licence != "" {
+					@writer.projectFacts(*project)
 				}
 			</div>
-			if len(project.Stack) > 0 || len(project.About) > 0 {
-				@writer.projectFacts(project)
-			}
-		</div>
+		}
 		@corners()
 	</header>
 }
 
-// projectFacts are what tells about a project, as facts: what it is made of, each name a whole that never breaks
-// inside, a line breaking only after the dot between two; then each other fact.
+// projectGets are what gets a project: where its code lives, its install's command, then each other way, its note over
+// its command.
+templ (writer PageWriter) projectGets(project document.Project) {
+	<div class="project-gets">
+		if project.Repository != nil {
+			@repositoryLink(*project.Repository)
+		}
+		if project.Install != "" {
+			@command(writer.frame.copyWords.Of(project.Install))
+		}
+		for _, alternative := range project.Alternatives {
+			<p class="project-note">
+				@writer.spans(alternative.Note)
+				@text(noteEnd)
+			</p>
+			@command(writer.frame.copyWords.Of(alternative.Command))
+		}
+	</div>
+}
+
+// projectFacts are what tells about a project, as facts under the site's words, as far as it gives each: what it is
+// made of, each name a whole that never breaks inside, a line breaking only after the dot between two; a link to its
+// newest release and one to their history, the dot between them; its licence.
 templ (writer PageWriter) projectFacts(project document.Project) {
 	<dl class="facts">
 		if len(project.Stack) > 0 {
-			<dt>{ project.StackLabel }</dt>
+			<dt>{ project.Labels.Stack }</dt>
 			<dd>
 				// the dot before a name meets it, as templ writes a space after one on a line of its own
 				for index, name := range project.Stack {
@@ -542,8 +552,17 @@ templ (writer PageWriter) projectFacts(project document.Project) {
 				}
 			</dd>
 		}
-		for _, fact := range project.About {
-			@writer.factRow(fact)
+		if release := project.Release; release != nil {
+			<dt>{ project.Labels.Release }</dt>
+			<dd>
+				@writer.spans([]document.Span{release.Latest})
+				@text(dot)
+				@writer.spans([]document.Span{release.Changelog})
+			</dd>
+		}
+		if project.Licence != "" {
+			<dt>{ project.Labels.Licence }</dt>
+			<dd>{ project.Licence }</dd>
 		}
 	</dl>
 }

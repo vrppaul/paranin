@@ -651,23 +651,26 @@ func TestAFactBlockKeepsItsOrderRoundACommand(test *testing.T) {
 	}
 }
 
-// A command stands under its label, as any fact does, where the page is too narrow for its box: for the top edge round
-// its label, or for the row of the prompt's mark and the command.
-func TestACommandWiderThanItsBoxStandsUnderItsLabel(test *testing.T) {
+// A command wider than its box goes on under itself inside the box, never cut and never out of it (DESIGN.md, The
+// TUI): a row breaks between its words, each row it goes on in opening with the showbreak mark, and a word wider than
+// a row breaks inside it.
+func TestACommandWiderThanItsBoxGoesOnUnderItself(test *testing.T) {
 	cases := []struct {
 		name    string
-		label   string
 		command string
+		rows    []string
 	}{
-		{name: "a label too wide for the top edge", label: "set up the tool and run", command: "ls"},
-		{name: "a command too wide for its row", label: "run", command: "go install example.tool"},
+		{name: "words that fit a row each", command: "go install example.tool", rows: []string{"│ ❯ go install │", "│ ↪ example.tool │"}},
+		{name: "a word wider than a row", command: "ls example.test/a/very/long/path/to/tool", rows: []string{"│ ❯ ls │", "│ ↪ example.test/a/very/lo │", "│ ↪ ng/path/to/tool │"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
-			facts := document.Facts{List: []document.Fact{{Label: testCase.label, Value: []document.Span{document.Code{Text: testCase.command}}}}}
+			facts := document.Facts{List: []document.Fact{{Label: "run", Value: []document.Span{document.Code{Text: testCase.command}}}}}
 			read := readRows(aboveTheFooter(screenOf(test, handResume(test, "Mira", phoneWidth, commonHeight, facts))))
-			if want := testCase.label + space + testCase.command; !strings.Contains(read, want) || strings.Contains(read, look.PromptMark) {
-				test.Errorf("at %d columns the page =\n%s\nwant %q under its label, with no box", phoneWidth, read, want)
+			for _, row := range testCase.rows {
+				if !strings.Contains(read, row) {
+					test.Errorf("at %d columns the page =\n%s\nwant a row %q", phoneWidth, read, row)
+				}
 			}
 		})
 	}
@@ -727,8 +730,9 @@ func TestTheQuitKeysEndTheSession(test *testing.T) {
 // section's title. A tab's title the page draws in the titles' font, or not at all on the opening, reaches the reader
 // by form too, as the footer's name of the tab. A project's opening shows its repository by its form too: its owner
 // and name under the title, a link to the address, without its label. The blog's list and a post reach it as well,
-// the blog's name in the titles' font; what a frame holds, a post's code and a widget's alt text, is read without the
-// frame's sides, which stand between each two of its rows.
+// the blog's name in the titles' font; what a frame holds, a post's code, a widget's alt text and a command, is read
+// without the frame's sides, which stand between each two of its rows, and without the mark that opens each row a
+// command goes on in.
 func TestEveryPhraseReachesTheTUI(test *testing.T) {
 	snapshot := fixtures.LoadedContent(test)
 	drawn := sessionDrawing(snapshot, false)
@@ -777,7 +781,7 @@ func TestEveryPhraseReachesTheTUI(test *testing.T) {
 				screens = append(screens, screenOf(test, model))
 				model = pressed(test, model, "l")
 			}
-			read := strings.Join(strings.Fields(strings.ReplaceAll(strings.Join(screens, " "), frameDown, "")), "")
+			read := strings.Join(strings.Fields(strings.NewReplacer(frameDown, "", codeGoesOnMark, "").Replace(strings.Join(screens, " "))), "")
 			for _, phrase := range document.Phrases(testCase.shown) {
 				if !strings.Contains(read, strings.Join(strings.Fields(phrase), "")) && !slices.Contains(testCase.byForm, phrase) {
 					test.Errorf("no tab of %s holds %q", testCase.name, phrase)

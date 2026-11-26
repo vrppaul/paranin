@@ -180,8 +180,8 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
 		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
 		{name: "a project's page to its code", got: project.Head.Project.Repository.Address, want: document.Address{URL: "https://github.test/mira/tidy"}},
-		{name: "a project's page to its newest release", got: linkWorded(test, factLabelled(test, project.Head.Project.About, "release").Value, "latest"), want: document.Address{URL: "https://github.test/mira/tidy/releases/latest"}},
-		{name: "a project's page to its releases' history", got: linkWorded(test, factLabelled(test, project.Head.Project.About, "release").Value, "changelog"), want: document.Address{URL: "https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md"}},
+		{name: "a project's page to its newest release", got: project.Head.Project.Release.Latest.Target, want: document.Address{URL: "https://github.test/mira/tidy/releases/latest"}},
+		{name: "a project's page to its releases' history", got: project.Head.Project.Release.Changelog.Target, want: document.Address{URL: "https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md"}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -223,56 +223,51 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 	}
 }
 
-// A fact as a face reads it: its label and its value's words
-type readFact struct {
-	label string
-	value string
+// What tells about a project in its head: what it is made of, where its releases are read, its licence
+type toldAbout struct {
+	stack   []string
+	release *document.Release
+	licence string
 }
 
-// A project's head tells about the project in the order DESIGN.md's ProjectHead gives: what it is made of, each name
-// whole, its language first; then facts, each under the site's word, where its releases are read and its licence. What
-// the profile does not give is left out.
+// A project's head tells about the project as DESIGN.md's ProjectHead does: what it is made of, each name whole, its
+// language first; its newest release and their history, each a link by the site's word; its licence. What the profile
+// does not give is left out.
 func TestAProjectsHeadTellsAboutTheProject(test *testing.T) {
 	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
-	told := []readFact{{label: "release", value: "latest · changelog"}, {label: "licence", value: "MIT"}}
+	release := &document.Release{
+		Latest:    document.Link{Target: document.Address{URL: "https://github.test/mira/tidy/releases/latest"}, Spans: []document.Span{document.Text{Text: "latest"}}},
+		Changelog: document.Link{Target: document.Address{URL: "https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md"}, Spans: []document.Span{document.Text{Text: "changelog"}}},
+	}
 	cases := []struct {
-		name      string
-		snapshot  *content.Snapshot
-		wantStack []string
-		wantAbout []readFact
+		name     string
+		snapshot *content.Snapshot
+		want     toldAbout
 	}{
-		{name: "a project the profile tells all of", snapshot: fixtures.LoadedContent(test), wantStack: []string{"Lua", "Penlight", "LPeg"}, wantAbout: told},
-		{name: "a project that names no language", snapshot: withoutLanguages(fixtures.LoadedContent(test)), wantStack: []string{"Penlight", "LPeg"}, wantAbout: told},
-		{name: "a project the profile tells nothing of", snapshot: withoutAbout(fixtures.LoadedContent(test)), wantStack: []string{}, wantAbout: []readFact{}},
+		{name: "a project the profile tells all of", snapshot: fixtures.LoadedContent(test), want: toldAbout{stack: []string{"Lua", "Penlight", "LPeg"}, release: release, licence: "MIT"}},
+		{name: "a project that names no language", snapshot: withoutLanguages(fixtures.LoadedContent(test)), want: toldAbout{stack: []string{"Penlight", "LPeg"}, release: release, licence: "MIT"}},
+		{name: "a project the profile tells nothing of", snapshot: withoutAbout(fixtures.LoadedContent(test)), want: toldAbout{stack: nil, release: nil, licence: ""}},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(testCase.snapshot), publicOnTheDay()).Pages), tidyTool).Head.Project
-			about := []readFact{}
-			for _, fact := range project.About {
-				about = append(about, readFact{label: fact.Label, value: document.PlainText(fact.Value)})
-			}
-			if !slices.Equal(project.Stack, testCase.wantStack) || !slices.Equal(about, testCase.wantAbout) {
-				test.Errorf("tidy-tool's head is made of %q and tells %+v, want %q and %+v", project.Stack, about, testCase.wantStack, testCase.wantAbout)
+			if got := (toldAbout{stack: project.Stack, release: project.Release, licence: project.Licence}); !reflect.DeepEqual(got, testCase.want) {
+				test.Errorf("what tidy-tool's head tells of it = %+v, want %+v", got, testCase.want)
 			}
 		})
 	}
 }
 
-// A project's head says how to get the project: each way to install it in the profile's order, the first under the
-// site's word, a later one under its note, which says when to take it instead.
+// A project's head says how to get the project: its install's command, then each other way with its note, which says
+// when to take it instead, in the profile's order.
 func TestAProjectsHeadSaysEachWayToInstallTheProject(test *testing.T) {
-	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	want := []readFact{
-		{label: "install", value: "go install example.test/tidy@latest"},
-		{label: "On a machine with no Go", value: "curl -fsSL https://example.test/tidy.sh | sh"},
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}).Head.Project
+	const wantInstall = "go install example.test/tidy@latest"
+	wantAlternatives := []document.Alternative{
+		{Note: []document.Span{document.Text{Text: "On a machine with no Go"}}, Command: "curl -fsSL https://example.test/tidy.sh | sh"},
 	}
-	got := []readFact{}
-	for _, fact := range project.Head.Project.InstallFacts() {
-		got = append(got, readFact{label: fact.Label, value: document.PlainText(fact.Value)})
-	}
-	if !slices.Equal(got, want) {
-		test.Errorf("the ways to install tidy-tool = %+v, want %+v", got, want)
+	if project.Install != wantInstall || !reflect.DeepEqual(project.Alternatives, wantAlternatives) {
+		test.Errorf("the ways to install tidy-tool = %q and %+v, want %q and %+v", project.Install, project.Alternatives, wantInstall, wantAlternatives)
 	}
 }
 
@@ -583,17 +578,6 @@ func titleOf(test *testing.T, section document.Section) string {
 // linkTarget is where a value that is one link leads.
 func linkTarget(test *testing.T, spans []document.Span) document.Target {
 	return as[document.Link](test, spans[0]).Target
-}
-
-// linkWorded is where the link among spans that reads as its words leads, or the test's end where none does.
-func linkWorded(test *testing.T, spans []document.Span, words string) document.Target {
-	for _, span := range spans {
-		if link, isLink := span.(document.Link); isLink && document.PlainText(link.Spans) == words {
-			return link.Target
-		}
-	}
-	test.Fatalf("no link among %+v reads %q", spans, words)
-	return nil
 }
 
 // as is a value as the kind a test expects of it, or the test's end, saying what it was.

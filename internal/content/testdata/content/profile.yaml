@@ -52,9 +52,10 @@ projects:
     stack: [Penlight, LPeg]
     repo: https://github.test/mira/tidy
     install:
-      - command: go install example.test/tidy@latest
-      - note: On a machine with no Go
-        command: curl -fsSL https://example.test/tidy.sh | sh
+      command: go install example.test/tidy@latest
+      alternatives:
+        - note: On a machine with no Go
+          command: curl -fsSL https://example.test/tidy.sh | sh
     release:
       latest: https://github.test/mira/tidy/releases/latest
       changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md

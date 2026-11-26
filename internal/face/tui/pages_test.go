@@ -29,9 +29,8 @@ func TestEditOpensAProjectsPage(test *testing.T) {
 	}
 }
 
-// A project's page opens, as a README its forge shows, with where its code lives: the owner and the name its
-// repository's address gives, a link to the repository; where the address has no path to read them from, the address
-// as written.
+// A project's head names where its code lives as the page does: the owner and the name its repository's address
+// gives, a link to the repository; where the address has no path to read them from, the address as written.
 func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 	const address = "https://github.test/mira/tidy"
 	cases := []struct {

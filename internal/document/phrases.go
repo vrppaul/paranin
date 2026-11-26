@@ -95,10 +95,10 @@ func rowPhrases(phrases []string, rows []Row) []string {
 	return phrases
 }
 
-// projectPhrases are what a project's head says of it: where its code lives, each way to install it, its note and
-// its command, what it is made of, under its label, each name, and each other fact that tells about it; not the
-// site's words over the repository and the first install, which a face may leave out where the place they stand in
-// says it.
+// projectPhrases are what a project's head says of it: where its code lives; its install's command, and each other way
+// with its note; what it is made of, under its label, each name; its release's links and its licence, each under its
+// label. Not the site's words over the repository and the install, which a face may leave out where the place they
+// stand in says it.
 func projectPhrases(phrases []string, project *Project) []string {
 	if project == nil {
 		return phrases
@@ -106,16 +106,23 @@ func projectPhrases(phrases []string, project *Project) []string {
 	if project.Repository != nil {
 		phrases = textPhrase(phrases, project.Repository.Address.URL)
 	}
-	for _, install := range project.Installs {
-		phrases = textPhrase(spanPhrases(phrases, install.Note), install.Command)
+	phrases = textPhrase(phrases, project.Install)
+	for _, alternative := range project.Alternatives {
+		phrases = textPhrase(spanPhrases(phrases, alternative.Note), alternative.Command)
 	}
 	if len(project.Stack) > 0 {
-		phrases = textPhrase(phrases, project.StackLabel)
+		phrases = textPhrase(phrases, project.Labels.Stack)
 	}
 	for _, name := range project.Stack {
 		phrases = textPhrase(phrases, name)
 	}
-	return factPhrases(phrases, project.About)
+	if release := project.Release; release != nil {
+		phrases = spanPhrases(textPhrase(phrases, project.Labels.Release), []Span{release.Latest, release.Changelog})
+	}
+	if project.Licence != "" {
+		phrases = textPhrase(textPhrase(phrases, project.Labels.Licence), project.Licence)
+	}
+	return phrases
 }
 
 func factPhrases(phrases []string, facts []Fact) []string {

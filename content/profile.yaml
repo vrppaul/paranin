@@ -11,6 +11,7 @@
 # command are shown as written:
 #   ==text==  a result worth highlighting
 #   [text]    a gap still to fill; the site shows it faint
+#   `text`    code, shown as written: no mark is read inside it
 #
 # The first four facts brief the reader beside the name on the page's first screen, so the ones a reader should see
 # first come first; the rest stand under the summary.
@@ -117,7 +118,8 @@ experience:
         - Websites, logos and brand identities for small companies
 
 # A project's install is its command, and its alternatives, each a note on when to take it instead and a command. Its
-# release names its newest release and its changelog, both or none; its licence is a word.
+# release names its newest release and its changelog, both or none; its licence is a word. A section of its page takes
+# its title, then its paragraphs: and its points:, one of them at least.
 projects:
   - slug: claude-review
     name: claude-review

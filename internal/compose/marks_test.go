@@ -33,6 +33,14 @@ func TestTheProfilesMarksBecomeSpans(test *testing.T) {
 		{name: "no mark inside code", text: "`==a== [b]`", want: []document.Span{document.Code{Text: "==a== [b]"}}},
 		{name: "a backtick with no partner", text: "a ` b", want: []document.Span{document.Text{Text: "a ` b"}}},
 		{
+			name: "code, then a backtick with no partner", text: "`go` and a lone ` here",
+			want: []document.Span{document.Code{Text: "go"}, document.Text{Text: " and a lone ` here"}},
+		},
+		{
+			name: "an empty pair of backticks, then code", text: "a `` b `c`",
+			want: []document.Span{document.Text{Text: "a `` b "}, document.Code{Text: "c"}},
+		},
+		{
 			name: "code inside a result", text: "==`go` fast==",
 			want: []document.Span{document.Highlight{Spans: []document.Span{document.Code{Text: "go"}, document.Text{Text: " fast"}}}},
 		},

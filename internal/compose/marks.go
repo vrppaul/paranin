@@ -51,7 +51,7 @@ func (run codeRun) end() int {
 }
 
 // codeRunsOf are a text's runs of code: a code mark opens one and the next closes it, with something between them; a
-// code mark with none after it is prose.
+// pair with nothing between them, and a code mark with none after it, are prose.
 func codeRunsOf(text string) []codeRun {
 	runs, cursor := []codeRun{}, 0
 	for {
@@ -62,11 +62,14 @@ func codeRunsOf(text string) []codeRun {
 		opening += cursor
 		insideStart := opening + len(content.CodeMark)
 		closing := strings.Index(text[insideStart:], content.CodeMark)
-		if closing <= 0 {
+		if closing < 0 {
 			return runs
 		}
 		run := codeRun{opening: opening, closing: insideStart + closing}
-		runs, cursor = append(runs, run), run.end()
+		if closing > 0 {
+			runs = append(runs, run)
+		}
+		cursor = run.end()
 	}
 }
 

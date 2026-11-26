@@ -1,7 +1,6 @@
 package compose
 
 import (
-	"cmp"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
@@ -24,9 +23,6 @@ const (
 	lineJoint   = " "
 	codeLineEnd = "\n"
 )
-
-// The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
-const unnamedHeading = "heading"
 
 // composedPosts are the posts the blog serves its audience, each a document of its current version with its record, in
 // the snapshot's order; each link inside the site read into the page or the feed at its path among paths.
@@ -159,9 +155,8 @@ func (reader bodyReader) nested(nodes []ast.Node, level int) ([]document.Block, 
 			return blocks, nodes
 		case isHeading:
 			title := reader.spans(heading)
-			name := reader.anchors.given(cmp.Or(document.SlugOf(document.PlainText(title)), unnamedHeading))
 			inside, rest := reader.nested(nodes[1:], heading.Level)
-			blocks = append(blocks, document.Section{Title: title, Name: name, Blocks: inside})
+			blocks = append(blocks, document.Section{Title: title, Name: reader.anchors.headingAnchor(title), Blocks: inside})
 			nodes = rest
 		default:
 			if block, isBlock := reader.block(nodes[0]); isBlock {

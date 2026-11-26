@@ -644,13 +644,26 @@ templ (writer PageWriter) head(head document.Head) {
 	</div>
 }
 
+// section is a titled part of a page under its heading; a section with a name, a project's, has its title a link to
+// itself (DESIGN.md, ProjectSection), so a reader takes the address of where it stands.
 templ (writer PageWriter) section(section document.Section, depth int) {
 	<section>
-		@heading(depth, unnamed, writer.spans(section.Title))
+		if section.Name == unnamed {
+			@heading(depth, unnamed, writer.spans(section.Title))
+		} else {
+			@heading(depth, section.Name, linkHere(section.Name, writer.spans(section.Title)))
+		}
 		for _, block := range section.Blocks {
 			@writer.block(block, depth+1)
 		}
 	</section>
+}
+
+// linkHere is words as a link to a place of the page they stand on, by its name.
+templ linkHere(name string, words templ.Component) {
+	<a href={ fragmentMark + name }>
+		@words
+	</a>
 }
 
 // blockList is blocks one after another, each standing as it would where it stood alone: the experience's head drawn

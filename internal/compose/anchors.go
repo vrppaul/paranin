@@ -1,6 +1,11 @@
 package compose
 
-import "strconv"
+import (
+	"cmp"
+	"strconv"
+
+	"github.com/vrppaul/paranin/internal/document"
+)
 
 // What joins an anchor asked for again to its count, as a slug joins its words, and the count it takes the second time
 const (
@@ -8,7 +13,11 @@ const (
 	secondCount = 2
 )
 
-// anchors are the anchors given so far to the headings and widgets of one version of a post, so no two share one.
+// The name of a heading whose title holds no letter or digit, which document.SlugOf makes none of
+const unnamedHeading = "heading"
+
+// anchors are the anchors given so far on one page, to the headings and widgets of one version of a post or to the
+// sections of a project's page, so no two share one.
 type anchors map[string]bool
 
 // given is the anchor a heading or a widget asking for one is given, and takes: the one it asks for, or that with its
@@ -20,4 +29,10 @@ func (taken anchors) given(asked string) string {
 	}
 	taken[anchor] = true
 	return anchor
+}
+
+// headingAnchor is the anchor a heading of a title is given: its title's slug, or the word for a heading where the
+// title holds no letter or digit.
+func (taken anchors) headingAnchor(title []document.Span) string {
+	return taken.given(cmp.Or(document.SlugOf(document.PlainText(title)), unnamedHeading))
 }

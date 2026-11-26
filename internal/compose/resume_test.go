@@ -225,6 +225,23 @@ func TestAProjectsSectionHoldsItsParagraphsThenItsPoints(test *testing.T) {
 	}
 }
 
+// Each section of a project's page is named by its title, as a post's headings are, so a link reaches it; two of one
+// title are named apart.
+func TestEachSectionOfAProjectIsNamedByItsTitle(test *testing.T) {
+	snapshot := *fixtures.LoadedContent(test)
+	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
+	tidy := &snapshot.Profile.Projects[slices.IndexFunc(snapshot.Profile.Projects, func(project content.Project) bool { return project.Slug == "tidy-tool" })]
+	tidy.Sections = append(slices.Clone(tidy.Sections), content.Section{Title: "Why", Paragraphs: []string{"Files were untidy again."}, Points: nil})
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(&snapshot), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	got := []string{}
+	for _, block := range project.Blocks {
+		got = append(got, as[document.Section](test, block).Name)
+	}
+	if want := []string{"why", "how-it-tidies", "why-2"}; !slices.Equal(got, want) {
+		test.Errorf("the sections' names = %q, want %q", got, want)
+	}
+}
+
 // What tells about a project in its head: what it is made of, where its releases are read, its licence
 type toldAbout struct {
 	stack   []string

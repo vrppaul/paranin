@@ -310,6 +310,8 @@ func carriesCursor(kind document.PageKind) bool {
 // withCursor is a title's words with the site's cursor at the end of the last, so a line parts the two only where
 // that word is wider than the line and breaks, bar and all, as fill breaks any; a title of no words is left with
 // none. It stands still: a blink would paint the head again each half second, where a tab is painted once.
+//
+//wrapper:names the site's cursor standing after a title, which the name's banner and a tab's heading both carry
 func withCursor(words []word) []word {
 	return endedWith(words, plainRun(cursorBar, kindCursor))
 }

@@ -401,6 +401,9 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 	case document.Side:
 		// a section's side under its words (DESIGN.md, The TUI)
 		return layout.blocks(typed.Blocks, indent)
+	case document.Clip:
+		// a recording, which a cell cannot hold, drawn as a picture is (DESIGN.md, The TUI)
+		return layout.standIn(typed.Recording, document.PlainText(typed.Shows), indent)
 	case document.Reference:
 		// the details set apart from the story by the quiet rule a post's sources stand under
 		return stacked([]line{quietRule(indent, layout.width-indent)}, layout.blocks(typed.Blocks(), indent))

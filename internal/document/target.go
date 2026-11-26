@@ -130,7 +130,8 @@ type Anchor struct {
 	Name string
 }
 
-// File is a file the site serves beside a page, by the page and the file's name: a post's picture.
+// File is a file the site serves beside a page, by the page and the file's name: a post's picture, a project's clip's
+// recording and still.
 type File struct {
 	Page Page
 	Name string

@@ -54,7 +54,7 @@ func writtenBlock(block Block) (Block, bool) {
 	case Card:
 		typed.Facts = WrittenFacts(typed.Facts)
 		return typed, true
-	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Side, Contents, Checks, Skills, Posts:
+	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Side, Clip, Contents, Checks, Skills, Posts:
 	}
 	return block, true
 }

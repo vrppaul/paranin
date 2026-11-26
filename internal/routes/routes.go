@@ -236,12 +236,15 @@ func anchorPath(anchor document.Anchor, format Format) string {
 }
 
 // FilePath is where a file is served beside its page, whatever the format: a post's picture in the post's own folder,
-// by its name, in its language's folder; empty for a page of any other kind, which serves none.
+// by its name, in its language's folder; a project's clip, its recording and its still, in the project's page's; empty
+// for a page of any other kind, which serves none.
 func FilePath(file document.File) string {
 	switch file.Page.Kind {
 	case document.PagePost:
 		return inLanguage(file.Page.Translation, fileIn(postPaths(file.Page.Slug), file.Name))
-	case document.PageNone, document.PageResume, document.PageProject, document.PageIndex, document.PageHealth,
+	case document.PageProject:
+		return fileIn(projectPaths(file.Page.Slug), file.Name)
+	case document.PageNone, document.PageResume, document.PageIndex, document.PageHealth,
 		document.PageSkills, document.PageBlog, document.PageBlogSeries, document.PageTagFilter:
 	}
 	return ""

@@ -46,6 +46,7 @@ type frame struct {
 	sshWays      sshWays
 	readingGives string
 	writeTo      string
+	play         string
 	projects     []document.Place
 	pages        []compose.OpenedPage
 	folders      []folder
@@ -136,6 +137,7 @@ func frameOf(site routes.Site, composed compose.Frame) frame {
 		sshWays:      composed,
 		readingGives: composed.ReadingGives,
 		writeTo:      composed.WriteTo,
+		play:         composed.Play,
 		projects:     composed.Projects,
 		pages:        composed.Pages,
 		folders:      foldersOf(site),

@@ -1662,9 +1662,58 @@ a.tile-title:focus-visible {
 .section-side {
   position: sticky;
   top: var(--row);
+  display: grid;
   grid-row: 2;
   grid-column: 2;
+  row-gap: var(--row);
   align-self: start;
+}
+
+/* a clip (DESIGN.md, Clip): the recording as wide as the side's column, framed in a quiet hairline; under it the way
+ * to play it, bold, its mark in the accent, and its length muted, then what it shows, small and muted */
+.clip {
+  display: grid;
+  gap: var(--row-half);
+  margin: 0;
+}
+
+.clip-recording {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: var(--hairline) solid var(--quiet);
+}
+
+.clip-about {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--cell-2);
+  align-items: baseline;
+}
+
+.clip-play {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-weight: var(--type-strong-weight);
+  cursor: pointer;
+}
+
+.clip-mark {
+  color: var(--accent);
+}
+
+.clip-length {
+  color: var(--muted);
+}
+
+.clip-shows {
+  width: 100%;
+  color: var(--muted);
+  font-size: var(--type-small-size);
+  font-weight: var(--type-small-weight);
+  line-height: var(--type-small-line);
 }
 
 :is(.project-sections, .project-reference) > section > h2 {

@@ -39,6 +39,7 @@ package html
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -116,6 +117,20 @@ const othersHeadingID = "other-projects"
 
 // The id of the blog's name over its latest posts under the résumé's first screen, which names their part (ownID)
 const latestHeadingID = "latest-posts"
+
+// A clip as the page draws it (DESIGN.md, Clip): the mark before the word that plays it; and its length, in minutes and
+// seconds, m:ss, as no other part of the page writes a length
+const (
+	playMark        = "▶"
+	lengthLayout    = "%d:%02d"
+	secondsInMinute = 60
+)
+
+// clipLength is how long a clip runs as the page writes it, minutes and seconds to the nearest second.
+func clipLength(length time.Duration) string {
+	seconds := int(length.Round(time.Second) / time.Second)
+	return fmt.Sprintf(lengthLayout, seconds/secondsInMinute, seconds%secondsInMinute)
+}
 
 // The theme button as the site's script finds and runs it (web/src/controllers/theme.ts): the part it stands in,
 // and the id of the words that name it and show as its tooltip; and the part a tooltip is, which Esc hides
@@ -477,6 +492,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		return writer.points(typed.List)
 	case document.Side:
 		return writer.side(typed, depth)
+	case document.Clip:
+		return writer.clip(typed)
 	case document.Reference:
 		return writer.reference(typed, depth)
 	case document.Card:

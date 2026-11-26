@@ -346,14 +346,14 @@ func projectsSection(projects []content.Project, words content.Words, title []do
 // projectDocument is a project's own page, one of the profile's: its head, then its story's sections, then its details,
 // where it has any, all named from one set of anchors, so no two share a name.
 func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
-	blocks, taken := make([]document.Block, 0, len(project.Sections)+1), anchors{}
+	blocks, taken, page := make([]document.Block, 0, len(project.Sections)+1), anchors{}, projectPage(project)
 	for _, section := range project.Sections {
-		blocks = append(blocks, projectSection(section, taken))
+		blocks = append(blocks, projectSection(section, page, taken))
 	}
 	if len(project.Details) > 0 {
 		details := make([]document.Section, 0, len(project.Details))
 		for _, detail := range project.Details {
-			details = append(details, projectSection(detail, taken))
+			details = append(details, projectSection(detail, page, taken))
 		}
 		blocks = append(blocks, document.Reference{Sections: details})
 	}
@@ -361,8 +361,8 @@ func projectDocument(project content.Project, profile content.Profile, words con
 }
 
 // projectSection is a section of a project's page, named by its title from the page's anchors as a post's headings
-// are: its paragraphs, then its points, then its side, its links, where it has any.
-func projectSection(section content.Section, taken anchors) document.Section {
+// are: its paragraphs, then its points, then its side, where it has anything to add.
+func projectSection(section content.Section, page document.Page, taken anchors) document.Section {
 	blocks := make([]document.Block, 0, len(section.Paragraphs))
 	for _, paragraph := range paragraphs(section.Paragraphs) {
 		blocks = append(blocks, paragraph)
@@ -370,11 +370,29 @@ func projectSection(section content.Section, taken anchors) document.Section {
 	if len(section.Points) > 0 {
 		blocks = append(blocks, document.Points{List: points(section.Points)})
 	}
-	if len(section.Links) > 0 {
-		blocks = append(blocks, document.Side{Blocks: []document.Block{document.Contents{Listings: linkListings(section.Links)}}})
+	if side := sideOf(section, page); len(side) > 0 {
+		blocks = append(blocks, document.Side{Blocks: side})
 	}
 	title := markedSpans(section.Title)
 	return document.Section{Title: title, Name: taken.headingAnchor(title), Blocks: blocks}
+}
+
+// sideOf is what adds to a section of a project's page: its clip, its files beside the page, then its links as
+// contents; nothing where it has neither.
+func sideOf(section content.Section, page document.Page) []document.Block {
+	side := []document.Block{}
+	if clip := section.Clip; clip != nil {
+		side = append(side, document.Clip{
+			Recording: document.File{Page: page, Name: clip.File},
+			Still:     document.File{Page: page, Name: clip.Still},
+			Shows:     markedSpans(clip.Shows),
+			Length:    clip.Recording.Length,
+		})
+	}
+	if len(section.Links) > 0 {
+		side = append(side, document.Contents{Listings: linkListings(section.Links)})
+	}
+	return side
 }
 
 // linkListings are a section's links as contents: each leading to its address by its name, as written, with its line.

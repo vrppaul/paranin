@@ -49,7 +49,9 @@ type Frame struct {
 	BlogName     string
 	ReadingGives string
 	WriteTo      string
-	Projects     []document.Place
+	// Play is the word on a project's clip that plays it
+	Play     string
+	Projects []document.Place
 	// Pages are every page :e opens, in every language, each once, so a face's :e opens the same pages whichever
 	// language its page is in
 	Pages        []OpenedPage
@@ -228,6 +230,7 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 		BlogName:     words.Text(content.WordBlog),
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
+		Play:         words.Text(content.WordPlay),
 		Projects:     projectPlaces(snapshot.Profile.Projects),
 		Pages:        edited,
 		Sessions: []Session{

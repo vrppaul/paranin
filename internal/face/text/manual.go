@@ -259,6 +259,9 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return writer.bullets(indent, typed.List)
 	case document.Side:
 		return trimBlank(writer.blocks(typed.Blocks, indent))
+	case document.Clip:
+		// a recording, which a terminal cannot play, as a picture stands: what it shows, then its address
+		return standIn(indent, document.PlainText(typed.Shows), writer.site.Address(typed.Recording, routes.FormatManual), "")
 	case document.Reference:
 		// Manual writes a project's details after its sections, taken apart from the description (detailsApart), so
 		// none stands among the blocks written here

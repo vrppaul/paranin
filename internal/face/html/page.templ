@@ -705,6 +705,22 @@ templ (writer PageWriter) reference(reference document.Reference, depth int) {
 	</div>
 }
 
+// clip is a recording of a project at work (DESIGN.md, Clip), the browser's own player with its still shown until a
+// press plays it, which needs no script; under it the way to play it, hidden until the site's script shows it and takes
+// the player's own controls away (web/src/controllers/clip.ts), its length and what it shows.
+templ (writer PageWriter) clip(clip document.Clip) {
+	<figure class="clip" data-part="clip">
+		<video class="clip-recording" src={ routes.Reference(clip.Recording, routes.FormatChosen) } poster={ routes.Reference(clip.Still, routes.FormatChosen) } controls preload="none" data-part="clip-recording"></video>
+		<figcaption class="clip-about">
+			<button type="button" class="clip-play" data-part="clip-play" hidden><span class="clip-mark" aria-hidden="true">{ playMark }</span> { writer.frame.play }</button>
+			<span class="clip-length">{ clipLength(clip.Length) }</span>
+			<span class="clip-shows">
+				@writer.spans(clip.Shows)
+			</span>
+		</figcaption>
+	</figure>
+}
+
 // side is what adds to a section, beside its words (DESIGN.md, ProjectSection): its blocks, held in sight while the
 // words scroll past.
 templ (writer PageWriter) side(side document.Side, depth int) {

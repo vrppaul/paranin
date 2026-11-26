@@ -210,10 +210,12 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 	}
 }
 
-// A project's section holds its paragraphs, then its points, their marks read, then its side: its links, in their
+// A project's section holds its paragraphs, then its points, their marks read, then its side: its clip, its files
+// beside the project's page, what it shows and how long it runs, read from the recording; then its links, in their
 // order, each leading to its address by its name, with its line.
 func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
-	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	tidyTool := document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), tidyTool)
 	got := sectionTitled(test, project, "How it tidies").Blocks
 	want := []document.Block{
 		document.Paragraph{Spans: []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " reads each file once."}}},
@@ -221,7 +223,12 @@ func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
 			{Spans: []document.Span{document.Text{Text: "Sorts the lines"}}},
 			{Spans: []document.Span{document.Text{Text: "Keeps the "}, document.Highlight{Spans: []document.Span{document.Text{Text: "blank"}}}, document.Text{Text: " ones"}}},
 		}},
-		document.Side{Blocks: []document.Block{document.Contents{Listings: []document.Listing{
+		document.Side{Blocks: []document.Block{document.Clip{
+			Recording: document.File{Page: tidyTool, Name: "tidying.mp4"},
+			Still:     document.File{Page: tidyTool, Name: "tidying.png"},
+			Shows:     []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " tidying a folder"}},
+			Length:    2 * time.Second,
+		}, document.Contents{Listings: []document.Listing{
 			{Target: document.Address{URL: "https://github.test/mira/tidy"}, Title: []document.Span{document.Text{Text: "source"}}, Note: []document.Span{document.Text{Text: "where the code lives"}}},
 			{Target: document.Address{URL: "https://docs.example.test/tidy"}, Title: []document.Span{document.Text{Text: "manual"}}, Note: []document.Span{document.Text{Text: "every flag it takes"}}},
 		}}}},

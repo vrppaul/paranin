@@ -57,6 +57,7 @@ copied: copied
 copy_command: "copy {}"
 copied_command: "Copied {}"
 write_to: Write to me
+play: play
 ssh_gives: My résumé as an app in your terminal.
 ssh_post_gives: This post in your terminal.
 ssh_blog_gives: The blog in your terminal.

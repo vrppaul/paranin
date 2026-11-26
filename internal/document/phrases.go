@@ -71,6 +71,9 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return pointPhrases(phrases, typed.List)
 	case Side:
 		return blockPhrases(phrases, typed.Blocks)
+	case Clip:
+		// a clip's files and its length are each face's to write
+		return spanPhrases(phrases, typed.Shows)
 	case Reference:
 		return blockPhrases(phrases, typed.Blocks())
 	case Card:

@@ -28,6 +28,7 @@ copied: скопировано
 copy_command: "копировать {}"
 copied_command: "Скопировано: {}"
 write_to: Написать мне
+play: смотреть
 ssh_gives: Резюме как приложение в терминале.
 ssh_post_gives: Этот пост в терминале.
 ssh_blog_gives: Блог в терминале.

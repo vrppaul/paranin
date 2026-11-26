@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Block is one kind of block of a document.
@@ -237,8 +238,17 @@ func (reference Reference) Blocks() []Block {
 	return blocks
 }
 
-// Side is what adds to a section of a project's page, which a face sets beside its words or after them: its links,
-// as contents.
+// Clip is a recording of a project at work, which a section's side opens with (DESIGN.md, ProjectSection): its
+// recording and its still, files the site serves beside the project's page, what it shows, and how long it runs.
+type Clip struct {
+	Recording File
+	Still     File
+	Shows     []Span
+	Length    time.Duration
+}
+
+// Side is what adds to a section of a project's page, which a face sets beside its words or after them: its clip, then
+// its links, as contents.
 type Side struct {
 	Blocks []Block
 }
@@ -329,6 +339,7 @@ func (ExperienceHead) block() {}
 func (Entry) block()          {}
 func (Points) block()         {}
 func (Side) block()           {}
+func (Clip) block()           {}
 func (Reference) block()      {}
 func (Card) block()           {}
 func (Contents) block()       {}

@@ -56,15 +56,17 @@ func TestAProjectsPageNamesTheOwnerAndNameOfItsRepository(test *testing.T) {
 
 // A project's page stands in one column in the page's order (DESIGN.md, The TUI): what the project is, its tagline
 // and description; what gets it, its repository and each way to install it, a later one under its note; what tells
-// about it, its stack, its releases and its licence; its sections, each side under its section's words, its links by
-// their names and lines, then its details; then its end, the heading over the other projects and the way to them all,
-// each other project by its name, its tagline and its stack, and the author's mail.
+// about it, its stack, its releases and its licence; its sections, each side under its section's words, its clip by
+// what it shows and its address, as a picture stands, its links by their names and lines, then its details; then its
+// end, the heading over the other projects and the way to them all, each other project by its name, its tagline and
+// its stack, and the author's mail.
 func TestAProjectsPageStandsInThePagesOrder(test *testing.T) {
 	inOrder := []string{
 		"Tidies files.", "A tool that tidies files.", "mira / tidy",
 		"go install example.test/tidy@latest", "On a machine with no Go", "curl -fsSL https://example.test/tidy.sh | sh",
 		"Lua · Penlight · LPeg", "latest · changelog", "MIT", "Why", "Files were untidy.",
-		"How it tidies", "tidy . reads each file once.", "Keeps the blank ones", "source", "where the code lives", "manual",
+		"How it tidies", "tidy . reads each file once.", "Keeps the blank ones", "tidy . tidying a folder",
+		"https://example.test/p/tidy-tool/tidying.mp4", "source", "where the code lives", "manual",
 		"Flags", "--check reports what it would tidy", "flags", "each flag in full",
 		"Other projects", "all projects", "tame-tool", "Tames files.", "Go", "mira@example.test",
 	}
@@ -116,6 +118,11 @@ func TestASectionsLinksReadAsContents(test *testing.T) {
 	}
 }
 
+// isNameRow is whether a screen's row holds the fixture project's name alone, as text, the site's cursor after it.
+func isNameRow(row string) bool {
+	return strings.TrimSuffix(strings.TrimSpace(row), cursorBar) == "tidy-tool"
+}
+
 // isRule is whether a screen's row is a rule alone: a line across and nothing else.
 func isRule(row string) bool {
 	return strings.Contains(row, frameAcross) && strings.Trim(row, " "+frameAcross) == ""
@@ -135,7 +142,8 @@ func TestATileWithNothingInItsEdgeDrawsTheEdgeWhole(test *testing.T) {
 }
 
 // A project's page stands under the project's name, in the titles' font where the page has the room for it, as text
-// on a page too narrow for that. A banner is a look, so the cases read only whether the name stands as text.
+// on a page too narrow for that. A banner is a look, so the cases read only whether the name stands as text, on a row
+// of its own, as a title does, apart from the addresses on the page that hold it.
 func TestAProjectsPageStandsUnderItsName(test *testing.T) {
 	cases := []struct {
 		name       string
@@ -148,7 +156,7 @@ func TestAProjectsPageStandsUnderItsName(test *testing.T) {
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
 			page := aboveTheFooter(screenOf(test, commanded(test, fixtureModel(test, testCase.width, tallHeight), "e tidy-tool")))
-			if strings.Contains(page, "tidy-tool") != testCase.nameAsText {
+			if slices.ContainsFunc(strings.Split(page, "\n"), isNameRow) != testCase.nameAsText {
 				test.Errorf("the project's page =\n%s\nwant its name %q on it as text: %t", page, "tidy-tool", testCase.nameAsText)
 			}
 		})

@@ -7,6 +7,8 @@
 const CLIP = '[data-part="clip"]';
 const RECORDING = '[data-part="clip-recording"]';
 const PLAY = '[data-part="clip-play"]';
+// The tab index of an element the script may focus that the keys go round without
+const FOCUSED_BY_SCRIPT = -1;
 
 /** Starts each clip of a page: its player's controls taken away and the way to play it shown, until a press plays it. */
 export function startClips(page: Document): void {
@@ -23,7 +25,10 @@ export function startClips(page: Document): void {
   }
 }
 
-/** Plays a clip in its place, its controls given back and its sound on, the way to play it gone. */
+/**
+ * Plays a clip in its place, its controls given back and its sound on, the way to play it gone and the focus on the
+ * player, so a reader who pressed it from the keyboard goes on from there.
+ */
 function playClip(recording: HTMLVideoElement, play: HTMLButtonElement): void {
   if (recording.controls) {
     return;
@@ -31,5 +36,8 @@ function playClip(recording: HTMLVideoElement, play: HTMLButtonElement): void {
   recording.controls = true;
   recording.muted = false;
   play.hidden = true;
+  // a player takes the focus in no browser of its own accord, Safari's among them, though its controls do
+  recording.tabIndex = FOCUSED_BY_SCRIPT;
+  recording.focus();
   void recording.play();
 }

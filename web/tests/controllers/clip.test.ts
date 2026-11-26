@@ -69,3 +69,10 @@ test.each([
     played: 1,
   });
 });
+
+test("playing from the keyboard leaves the focus on the player, the way to play it gone", () => {
+  started();
+  found(PLAY).focus();
+  found(PLAY).click();
+  expect(document.activeElement).toBe(player());
+});

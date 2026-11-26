@@ -64,6 +64,8 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return phrases
 	case Entry:
 		return entryPhrases(phrases, typed)
+	case Points:
+		return pointPhrases(phrases, typed.List)
 	case Card:
 		return cardPhrases(phrases, typed)
 	case Contents:
@@ -145,11 +147,17 @@ func entryPhrases(phrases []string, entry Entry) []string {
 	for _, technology := range entry.Technologies {
 		phrases = textPhrase(phrases, technology)
 	}
-	for _, point := range entry.Points {
-		phrases = spanPhrases(phrases, point.Spans)
-	}
+	phrases = pointPhrases(phrases, entry.Points)
 	for _, paragraph := range entry.Description {
 		phrases = spanPhrases(phrases, paragraph.Spans)
+	}
+	return phrases
+}
+
+// pointPhrases are what points say, an entry's or a project's section's.
+func pointPhrases(phrases []string, points []Point) []string {
+	for _, point := range points {
+		phrases = spanPhrases(phrases, point.Spans)
 	}
 	return phrases
 }

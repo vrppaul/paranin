@@ -8,7 +8,7 @@ import (
 
 // A document as a reader of the finished work sees it leaves out a fact, a point, a paragraph of a role's description,
 // the experience's line or a technology it puts forward that holds nothing but gaps still to fill, and a list of facts
-// or the experience's head left with none; a gap among written words stays, as does every other block.
+// or of points or the experience's head left with none; a gap among written words stays, as does every other block.
 func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	later := Fact{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}
 	where := Fact{Label: "where", Value: []Span{Text{Text: "Prague · "}, Gap{Text: "[remote?]"}}}
@@ -66,6 +66,8 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 			block: Entry{Period: Period{Start: KnownMonth{Start: time.Time{}}, End: nil}, Title: nil, Subtitle: nil, Technologies: nil, Points: []Point{stressedGap, strongGap, stressedWords, strongWords}, Description: nil},
 			want:  []Block{Entry{Period: Period{Start: KnownMonth{Start: time.Time{}}, End: nil}, Title: nil, Subtitle: nil, Technologies: nil, Points: []Point{stressedWords, strongWords}, Description: nil}},
 		},
+		{name: "a section's point only a gap", block: Points{List: []Point{onlyAGap, amongWords}}, want: []Block{Points{List: []Point{amongWords}}}},
+		{name: "a section's points left with none", block: Points{List: []Point{onlyAGap}}, want: []Block{}},
 		{
 			name:  "the experience's line only a gap",
 			block: ExperienceHead{Line: gapLine, Technologies: []Technology{usedTechnology}},

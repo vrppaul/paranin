@@ -113,10 +113,11 @@ type Release struct {
 	Changelog WebAddress `yaml:"changelog"`
 }
 
-// Section is a titled block of paragraphs on a project's page.
+// Section is a titled part of a project's page: its paragraphs, then its points.
 type Section struct {
 	Title      string   `yaml:"title"`
 	Paragraphs []string `yaml:"paragraphs"`
+	Points     []string `yaml:"points"`
 }
 
 // SkillGroup is a group of skills, under its title; the profile lists the groups, and the skills in each, in

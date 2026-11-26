@@ -69,6 +69,12 @@ projects:
       - title: Why
         paragraphs:
           - Files were untidy.
+      - title: How it tidies
+        paragraphs:
+          - It reads each file once.
+        points:
+          - Sorts the lines
+          - Keeps the ==blank== ones
 
 skill_groups:
   - title: Languages

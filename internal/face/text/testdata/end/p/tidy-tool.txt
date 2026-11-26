@@ -19,6 +19,12 @@ DESCRIPTION
 WHY
        Files were untidy.
 
+HOW IT TIDIES
+       It reads each file once.
+
+       - Sorts the lines
+       - Keeps the blank ones
+
 OTHER PROJECTS
        all projects <https://example.test/projects.txt>
 

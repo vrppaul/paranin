@@ -209,6 +209,22 @@ func TestEveryFactOfAProjectReachesItsPage(test *testing.T) {
 	}
 }
 
+// A project's section holds its paragraphs, then its points, their marks read.
+func TestAProjectsSectionHoldsItsParagraphsThenItsPoints(test *testing.T) {
+	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
+	got := sectionTitled(test, project, "How it tidies").Blocks
+	want := []document.Block{
+		document.Paragraph{Spans: []document.Span{document.Text{Text: "It reads each file once."}}},
+		document.Points{List: []document.Point{
+			{Spans: []document.Span{document.Text{Text: "Sorts the lines"}}},
+			{Spans: []document.Span{document.Text{Text: "Keeps the "}, document.Highlight{Spans: []document.Span{document.Text{Text: "blank"}}}, document.Text{Text: " ones"}}},
+		}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("the section's blocks = %+v, want %+v", got, want)
+	}
+}
+
 // What tells about a project in its head: what it is made of, where its releases are read, its licence
 type toldAbout struct {
 	stack   []string

@@ -18,6 +18,13 @@ On a machine with no Go: `curl -fsSL https://example.test/tidy.sh | sh`
 
 Files were untidy.
 
+## How it tidies
+
+It reads each file once.
+
+- Sorts the lines
+- Keeps the **blank** ones
+
 ## contact
 
 [mira@example.test](mailto:mira@example.test)

@@ -221,6 +221,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return trimBlank(writer.blocks(typed.Blocks(), indent))
 	case document.Entry:
 		return writer.entry(indent, typed)
+	case document.Points:
+		return writer.bullets(indent, typed.List)
 	case document.Card:
 		return writer.card(indent, typed)
 	case document.Contents:
@@ -301,9 +303,7 @@ func (writer manualWriter) entry(indent int, entry document.Entry) []string {
 		technologies = append(technologies, strings.Fields(technology))
 	}
 	lines = append(lines, paragraph(indent+sectionIndent, 0, joinedWords(dotWord, technologies...))...)
-	for _, point := range entry.Points {
-		lines = append(lines, bullet(indent+sectionIndent, writer.words(point.Spans))...)
-	}
+	lines = append(lines, writer.bullets(indent+sectionIndent, entry.Points)...)
 	for _, passage := range entry.Description {
 		lines = append(append(lines, ""), paragraph(indent+sectionIndent, 0, writer.words(passage.Spans))...)
 	}
@@ -512,6 +512,15 @@ func titleLine(indent int, left, right []string) []string {
 		return append(paragraph(indent, 0, left), paragraph(indent, 0, right)...)
 	}
 	return []string{strings.Repeat(space, indent) + leftText + strings.Repeat(space, gap) + rightText}
+}
+
+// bullets lays points out at an indent, an entry's or a project's section's, each a bullet.
+func (writer manualWriter) bullets(indent int, points []document.Point) []string {
+	lines := []string{}
+	for _, point := range points {
+		lines = append(lines, bullet(indent, writer.words(point.Spans))...)
+	}
+	return lines
 }
 
 // bullet lays words out as one item of a list at an indent: its mark, then the words, its lines after the first

@@ -213,6 +213,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return writer.blocks(chunks, typed.Blocks(), depth)
 	case document.Entry:
 		return writer.entry(chunks, typed, depth)
+	case document.Points:
+		return appendChunk(chunks, writer.points(typed.List))
 	case document.Card:
 		return writer.card(chunks, typed, depth)
 	case document.Contents:
@@ -401,16 +403,20 @@ func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth 
 	for _, technology := range entry.Technologies {
 		technologies = append(technologies, writer.text(technology))
 	}
-	chunks = appendLine(chunks, joined(dot, technologies...))
-	points := make([]string, 0, len(entry.Points))
-	for _, point := range entry.Points {
-		points = append(points, writer.spans(point.Spans))
-	}
-	chunks = appendChunk(chunks, list(points))
+	chunks = appendChunk(appendLine(chunks, joined(dot, technologies...)), writer.points(entry.Points))
 	for _, passage := range entry.Description {
 		chunks = appendLine(chunks, writer.spans(passage.Spans))
 	}
 	return chunks
+}
+
+// points writes points, an entry's or a project's section's, as a list.
+func (writer markdownWriter) points(points []document.Point) string {
+	items := make([]string, 0, len(points))
+	for _, point := range points {
+		items = append(items, writer.spans(point.Spans))
+	}
+	return list(items)
 }
 
 // card writes a card under its title, a link to its page where it has one; its tag and subtitle in a line, its

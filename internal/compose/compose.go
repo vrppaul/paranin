@@ -269,13 +269,17 @@ func projectsSection(projects []content.Project, words content.Words) document.S
 	return document.Section{Title: textSpans(words.Text(content.WordProjects)), Name: "", Blocks: cards}
 }
 
-// projectDocument is a project's own page, one of the profile's: its head, then its sections.
+// projectDocument is a project's own page, one of the profile's: its head, then its sections, each its paragraphs, then
+// its points.
 func projectDocument(project content.Project, profile content.Profile, words content.Words) document.Document {
 	blocks := make([]document.Block, 0, len(project.Sections))
 	for _, section := range project.Sections {
-		sectionBlocks := make([]document.Block, 0, len(section.Paragraphs))
+		sectionBlocks := make([]document.Block, 0, len(section.Paragraphs)+1)
 		for _, paragraph := range paragraphs(section.Paragraphs) {
 			sectionBlocks = append(sectionBlocks, paragraph)
+		}
+		if len(section.Points) > 0 {
+			sectionBlocks = append(sectionBlocks, document.Points{List: points(section.Points)})
 		}
 		blocks = append(blocks, document.Section{Title: markedSpans(section.Title), Name: "", Blocks: sectionBlocks})
 	}

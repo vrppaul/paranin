@@ -7,9 +7,9 @@ import (
 
 // WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point, a paragraph of a role's
 // description, the experience's line or a technology it puts forward that holds nothing but gaps still to fill is left
-// out until its author fills it, and a list of facts or the experience's head left with none goes with it; a gap
-// among written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks whole. The
-// blocks it is handed keep everything they had.
+// out until its author fills it, and a list of facts or of points or the experience's head left with none goes with
+// it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the blocks
+// whole. The blocks it is handed keep everything they had.
 func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
 	for _, block := range blocks {
@@ -21,7 +21,7 @@ func WrittenBlocks(blocks []Block) []Block {
 }
 
 // writtenBlock is a block with its facts, points, paragraphs, line and technologies that are only gaps left out; not
-// shown at all where it is a list of facts or the experience's head left with none.
+// shown at all where it is a list of facts or of points or the experience's head left with none.
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
 	case Section:
@@ -37,9 +37,12 @@ func writtenBlock(block Block) (Block, bool) {
 		typed.Technologies = slices.DeleteFunc(slices.Clone(typed.Technologies), func(technology Technology) bool { return !written(technology.Used) })
 		return typed, len(typed.Line) > 0 || len(typed.Technologies) > 0
 	case Entry:
-		typed.Points = slices.DeleteFunc(slices.Clone(typed.Points), func(point Point) bool { return !written(point.Spans) })
+		typed.Points = writtenPoints(typed.Points)
 		typed.Description = slices.DeleteFunc(slices.Clone(typed.Description), func(paragraph Paragraph) bool { return !written(paragraph.Spans) })
 		return typed, true
+	case Points:
+		typed.List = writtenPoints(typed.List)
+		return typed, len(typed.List) > 0
 	case Card:
 		typed.Facts = writtenFacts(typed.Facts)
 		return typed, true
@@ -51,6 +54,11 @@ func writtenBlock(block Block) (Block, bool) {
 // writtenFacts are the facts whose values hold a written word, in their order.
 func writtenFacts(facts []Fact) []Fact {
 	return slices.DeleteFunc(slices.Clone(facts), func(fact Fact) bool { return !written(fact.Value) })
+}
+
+// writtenPoints are the points that hold a written word, in their order.
+func writtenPoints(points []Point) []Point {
+	return slices.DeleteFunc(slices.Clone(points), func(point Point) bool { return !written(point.Spans) })
 }
 
 // written is whether spans hold a word the author wrote, not gaps alone.

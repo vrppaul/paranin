@@ -766,15 +766,7 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 				</p>
 			}
 			if len(entry.Points) > 0 {
-				<ul class="points">
-					for _, point := range entry.Points {
-						<li>
-							<span class="point-mark" aria-hidden="true">{ look.PointMark }</span>
-							@text(pointSpace)
-							@writer.spans(point.Spans)
-						</li>
-					}
-				</ul>
+				@writer.points(entry.Points)
 			}
 			for _, passage := range entry.Description {
 				<p class="entry-description">
@@ -783,6 +775,19 @@ templ (writer PageWriter) entry(entry document.Entry, depth int) {
 			}
 		</div>
 	</article>
+}
+
+// points are points an entry or a project's section holds up (DESIGN.md, Entry), each after the point's mark.
+templ (writer PageWriter) points(points []document.Point) {
+	<ul class="points">
+		for _, point := range points {
+			<li>
+				<span class="point-mark" aria-hidden="true">{ look.PointMark }</span>
+				@text(pointSpace)
+				@writer.spans(point.Spans)
+			</li>
+		}
+	</ul>
 }
 
 // card is a piece of work (DESIGN.md, Card): its title, a link to its page where it has one; its tag and subtitle in

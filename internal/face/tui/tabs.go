@@ -379,6 +379,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return layout.blocks(typed.Blocks(), indent)
 	case document.Entry:
 		return layout.entry(typed, indent, periodWidth)
+	case document.Points:
+		return layout.points(typed.List, indent)
 	case document.Card:
 		return layout.card(typed, indent)
 	case document.Contents:
@@ -433,7 +435,7 @@ func periodWidthOf(blocks []document.Block) int {
 	return width
 }
 
-// points lays out an entry's points at an indent, each a bullet.
+// points lays out points at an indent, an entry's or a project's section's, each a bullet.
 func (layout layout) points(points []document.Point, indent int) []line {
 	lines := []line{}
 	for _, point := range points {

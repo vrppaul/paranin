@@ -212,9 +212,14 @@ type Entry struct {
 	Description  []Paragraph
 }
 
-// Point is one thing an entry holds up.
+// Point is one thing an entry or a project's section holds up.
 type Point struct {
 	Spans []Span
+}
+
+// Points are a project's section's points, after its paragraphs, each drawn as an entry's.
+type Points struct {
+	List []Point
 }
 
 // Card is a piece of work: its title, what it is in a line, what it is written in, what it does, its details,
@@ -300,6 +305,7 @@ func (Widget) block()         {}
 func (Facts) block()          {}
 func (ExperienceHead) block() {}
 func (Entry) block()          {}
+func (Points) block()         {}
 func (Card) block()           {}
 func (Contents) block()       {}
 func (Checks) block()         {}

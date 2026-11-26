@@ -54,6 +54,11 @@ func TestEveryFaultSaysItsFieldAndProblem(test *testing.T) {
 		{name: "another way to install with no note", original: "note: On a machine with no Go\n          ", replacement: "", want: "profile.yaml: projects[1].install.alternatives[0].note is empty"},
 		{name: "another way to install with no command", original: "command: curl -fsSL https://example.test/tidy.sh | sh", replacement: `command: ""`, want: "profile.yaml: projects[1].install.alternatives[0].command is empty"},
 		{name: "a release with no changelog", original: "\n      changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md", replacement: "", want: `profile.yaml: projects[1].release.changelog "" is no absolute web address`},
+		{name: "a section with no title", original: "title: Why", replacement: `title: ""`, want: "profile.yaml: projects[1].sections[0].title is empty"},
+		{
+			name: "a section with no paragraph and no point", original: "        paragraphs:\n          - Files were untidy.\n", replacement: "",
+			want: "profile.yaml: projects[1].sections[0] holds no paragraph and no point",
+		},
 		{name: "a release with no newest", original: "latest: https://github.test/mira/tidy/releases/latest\n      ", replacement: "", want: `profile.yaml: projects[1].release.latest "" is no absolute web address`},
 		{name: "a group with no title", original: "title: Tools", replacement: `title: ""`, want: "profile.yaml: skill_groups[1].title is empty"},
 		{name: "a group written twice", original: "title: Tools", replacement: "title: Languages", want: `profile.yaml: skill_groups[1].title "Languages" names another group too`},

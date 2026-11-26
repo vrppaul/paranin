@@ -5,8 +5,9 @@ import (
 	"testing"
 )
 
-// A document as a reader of the finished work sees it leaves out a fact, a point or a detail that holds nothing but
-// gaps still to fill, and a list of facts left with none; a gap among written words stays, as does every other block.
+// A document as a reader of the finished work sees it leaves out a fact, a point, a detail, the experience's line or a
+// technology it puts forward that holds nothing but gaps still to fill, and a list of facts or the experience's head
+// left with none; a gap among written words stays, as does every other block.
 func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	later := Fact{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}
 	where := Fact{Label: "where", Value: []Span{Text{Text: "Prague · "}, Gap{Text: "[remote?]"}}}
@@ -20,6 +21,10 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	strongGap := Point{Spans: []Span{Strong{Spans: []Span{Gap{Text: "[N]"}}}}}
 	strongWords := Point{Spans: []Span{Strong{Spans: []Span{Text{Text: "Shipped"}}}}}
 	stressedWords := Point{Spans: []Span{Emphasis{Spans: []Span{Text{Text: "Twice"}}}}}
+	gapLine := []Span{Gap{Text: "[the one thing]"}}
+	writtenLine := []Span{Text{Text: "Ships tools."}}
+	usedTechnology := Technology{Name: "Go", Used: []Span{Text{Text: "3y"}}}
+	gapTechnology := Technology{Name: "Lua", Used: []Span{Gap{Text: "[1y?]"}}}
 	cases := []struct {
 		name  string
 		block Block
@@ -60,6 +65,17 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 			block: Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Technologies: nil, Points: []Point{stressedGap, strongGap, stressedWords, strongWords}, Details: nil},
 			want:  []Block{Entry{Period: Period{Start: nil, End: nil}, Title: nil, Subtitle: nil, Technologies: nil, Points: []Point{stressedWords, strongWords}, Details: nil}},
 		},
+		{
+			name:  "the experience's line only a gap",
+			block: ExperienceHead{Line: gapLine, Technologies: []Technology{usedTechnology}},
+			want:  []Block{ExperienceHead{Line: nil, Technologies: []Technology{usedTechnology}}},
+		},
+		{
+			name:  "a technology put forward only a gap",
+			block: ExperienceHead{Line: writtenLine, Technologies: []Technology{gapTechnology, usedTechnology}},
+			want:  []Block{ExperienceHead{Line: writtenLine, Technologies: []Technology{usedTechnology}}},
+		},
+		{name: "the experience's head left with none", block: ExperienceHead{Line: gapLine, Technologies: []Technology{gapTechnology}}, want: []Block{}},
 		{name: "a paragraph, which is no fact and no point", block: gapParagraph, want: []Block{gapParagraph}},
 	}
 	for _, testCase := range cases {

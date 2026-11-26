@@ -168,10 +168,38 @@ const (
 	FactsDetails
 	// FactsWays are the ways to reach the author, the mail first, which a face shows where it chooses
 	FactsWays
-	// FactsTechnologies are the technologies the author's experience puts forward, each labelled by its name, its
-	// value how long they used it
-	FactsTechnologies
 )
+
+// ExperienceHead is what the author's experience opens with (DESIGN.md, ExperienceHead): its line, the one thing a
+// reader should keep of it, none where the profile writes none; and the technologies it puts forward.
+type ExperienceHead struct {
+	Line         []Span
+	Technologies []Technology
+}
+
+// Technology is a technology the experience puts forward: its name, and how long it was used, as the skills' list
+// writes a duration.
+type Technology struct {
+	Name string
+	Used []Span
+}
+
+// Blocks are the head as a face draws it until the head has a look of its own: its line as a paragraph, and its
+// technologies as details, each labelled by its name, its value how long it was used; each where the head has it.
+func (head ExperienceHead) Blocks() []Block {
+	blocks := []Block{}
+	if len(head.Line) > 0 {
+		blocks = append(blocks, Paragraph{Spans: head.Line})
+	}
+	if len(head.Technologies) > 0 {
+		facts := make([]Fact, 0, len(head.Technologies))
+		for _, technology := range head.Technologies {
+			facts = append(facts, Fact{Label: technology.Name, Value: technology.Used})
+		}
+		blocks = append(blocks, Facts{Kind: FactsDetails, List: facts})
+	}
+	return blocks
+}
 
 // Entry is a role, work for an employer or a client, over a span of time, with what came of it: the technologies it
 // was done with, by name, its points, and its details, paragraphs that tell it at length.
@@ -260,18 +288,19 @@ type Skill struct {
 	Learning bool
 }
 
-func (Section) block()   {}
-func (Paragraph) block() {}
-func (Table) block()     {}
-func (CodeBlock) block() {}
-func (List) block()      {}
-func (Quote) block()     {}
-func (Pause) block()     {}
-func (Figure) block()    {}
-func (Widget) block()    {}
-func (Facts) block()     {}
-func (Entry) block()     {}
-func (Card) block()      {}
-func (Contents) block()  {}
-func (Checks) block()    {}
-func (Skills) block()    {}
+func (Section) block()        {}
+func (Paragraph) block()      {}
+func (Table) block()          {}
+func (CodeBlock) block()      {}
+func (List) block()           {}
+func (Quote) block()          {}
+func (Pause) block()          {}
+func (Figure) block()         {}
+func (Widget) block()         {}
+func (Facts) block()          {}
+func (ExperienceHead) block() {}
+func (Entry) block()          {}
+func (Card) block()           {}
+func (Contents) block()       {}
+func (Checks) block()         {}
+func (Skills) block()         {}

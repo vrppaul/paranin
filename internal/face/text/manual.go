@@ -217,6 +217,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		return standIn(indent, typed.Alt, writer.site.Address(typed.Live, routes.FormatChosen), typed.Caption)
 	case document.Facts:
 		return writer.pairs(indent, typed.List)
+	case document.ExperienceHead:
+		return trimBlank(writer.blocks(typed.Blocks(), indent))
 	case document.Entry:
 		return writer.entry(indent, typed)
 	case document.Card:

@@ -375,6 +375,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 		return codeLines(typed.Text(), indent+nestIndent)
 	case document.Facts:
 		return layout.factBlock(typed.List, indent)
+	case document.ExperienceHead:
+		return layout.blocks(typed.Blocks(), indent)
 	case document.Entry:
 		return layout.entry(typed, indent, periodWidth)
 	case document.Card:

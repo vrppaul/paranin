@@ -57,6 +57,12 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return textPhrase(textPhrase(phrases, typed.Alt), typed.Caption)
 	case Facts:
 		return factPhrases(phrases, typed.List)
+	case ExperienceHead:
+		phrases = spanPhrases(phrases, typed.Line)
+		for _, technology := range typed.Technologies {
+			phrases = spanPhrases(textPhrase(phrases, technology.Name), technology.Used)
+		}
+		return phrases
 	case Entry:
 		return entryPhrases(phrases, typed)
 	case Card:

@@ -467,6 +467,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		return codeBlock(typed.Runs)
 	case document.Facts:
 		return writer.facts(typed.List)
+	case document.ExperienceHead:
+		return writer.blockList(typed.Blocks(), depth)
 	case document.Entry:
 		return writer.entry(typed, depth)
 	case document.Card:

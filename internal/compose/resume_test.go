@@ -88,24 +88,27 @@ func TestTheAboutSectionHoldsTheSummaryTheFactsAndTheWays(test *testing.T) {
 	}
 }
 
-// The experience opens with its line, then the skills it puts forward, each by its name and how long it was used, in
-// the profile's order, as the skills' list writes a duration; its roles come after.
+// The experience opens with its head, its line and the skills it puts forward, each by its name and how long it was
+// used, in the profile's order, as the skills' list writes a duration; its roles come after.
 func TestTheExperienceOpensWithItsLineAndTheSkillsPutForward(test *testing.T) {
 	experience := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil), "Experience").Blocks
 	got := make([]string, 0, len(experience))
 	for _, block := range experience {
 		got = append(got, fmt.Sprintf("%T", block))
 	}
-	if want := []string{"document.Paragraph", "document.Facts", "document.Entry", "document.Entry"}; !slices.Equal(got, want) {
+	if want := []string{"document.ExperienceHead", "document.Entry", "document.Entry"}; !slices.Equal(got, want) {
 		test.Fatalf("the experience section holds %q, want %q", got, want)
 	}
-	putForward := as[document.Facts](test, experience[1])
-	want := document.Facts{Kind: document.FactsTechnologies, List: []document.Fact{
-		{Label: "Go", Value: []document.Span{document.Text{Text: "3y"}}},
-		{Label: "Rust", Value: []document.Span{document.Text{Text: "still learning"}}},
-	}}
-	if !reflect.DeepEqual(putForward, want) {
-		test.Errorf("the skills the experience puts forward = %+v, want %+v", putForward, want)
+	head := as[document.ExperienceHead](test, experience[0])
+	want := document.ExperienceHead{
+		Line: []document.Span{document.Text{Text: "Ships tools a team "}, document.Highlight{Spans: []document.Span{document.Text{Text: "leans on"}}}, document.Text{Text: " every day."}},
+		Technologies: []document.Technology{
+			{Name: "Go", Used: []document.Span{document.Text{Text: "3y"}}},
+			{Name: "Rust", Used: []document.Span{document.Text{Text: "still learning"}}},
+		},
+	}
+	if !reflect.DeepEqual(head, want) {
+		test.Errorf("the experience's head = %+v, want %+v", head, want)
 	}
 }
 

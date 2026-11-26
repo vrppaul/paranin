@@ -193,15 +193,12 @@ func ways(person content.Person, site content.Site, words content.Words) []docum
 	return append(list, document.Fact{Label: words.Text(content.WordSSH), Value: []document.Span{document.Code{Text: sshCommand(site.SSHHost, anyUser)}}})
 }
 
-// experienceSection is the author's work: its line, where the profile writes one, and the skills it puts forward,
-// each by its name and how long it was used, where it puts any; then each role, with the technologies it worked with.
+// experienceSection is the author's work: its head, where the profile writes its line or puts any skill forward, each
+// by its name and how long it was used; then each role, with the technologies it worked with.
 func experienceSection(experience content.Experience, groups []content.SkillGroup, words content.Words) document.Section {
-	blocks := make([]document.Block, 0, len(experience.Roles))
-	if experience.Line != "" {
-		blocks = append(blocks, document.Paragraph{Spans: markedSpans(experience.Line)})
-	}
-	if len(experience.PutForward) > 0 {
-		blocks = append(blocks, document.Facts{Kind: document.FactsTechnologies, List: putForward(experience.PutForward, groups, words)})
+	blocks := make([]document.Block, 0, len(experience.Roles)+1)
+	if experience.Line != "" || len(experience.PutForward) > 0 {
+		blocks = append(blocks, document.ExperienceHead{Line: markedSpans(experience.Line), Technologies: putForward(experience.PutForward, groups, words)})
 	}
 	for _, role := range experience.Roles {
 		blocks = append(blocks, document.Entry{
@@ -232,20 +229,20 @@ func technologiesOf(company string, groups []content.SkillGroup) []string {
 	return technologies
 }
 
-// putForward are the skills of names the groups list, each labelled by its name, its value how long it was used, as
+// putForward are the skills of names the groups list as technologies, each by its name and how long it was used, as
 // the skills' list writes it; the check holds every name to a skill of a group.
-func putForward(names []string, groups []content.SkillGroup, words content.Words) []document.Fact {
+func putForward(names []string, groups []content.SkillGroup, words content.Words) []document.Technology {
 	durations := map[string]content.Duration{}
 	for _, group := range groups {
 		for _, skill := range group.Skills {
 			durations[skill.Name] = skill.Duration
 		}
 	}
-	facts := make([]document.Fact, 0, len(names))
+	technologies := make([]document.Technology, 0, len(names))
 	for _, name := range names {
-		facts = append(facts, document.Fact{Label: name, Value: durationSpans(durations[name], words)})
+		technologies = append(technologies, document.Technology{Name: name, Used: durationSpans(durations[name], words)})
 	}
-	return facts
+	return technologies
 }
 
 // paragraphs are texts of the profile as paragraphs, their marks read.

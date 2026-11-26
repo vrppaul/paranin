@@ -653,6 +653,14 @@ templ (writer PageWriter) section(section document.Section, depth int) {
 	</section>
 }
 
+// blockList is blocks one after another, each standing as it would where it stood alone: the experience's head drawn
+// as its blocks (document.ExperienceHead.Blocks).
+templ (writer PageWriter) blockList(blocks []document.Block, depth int) {
+	for _, block := range blocks {
+		@writer.block(block, depth)
+	}
+}
+
 // table is rows of cells (DESIGN.md, Table), under the row that names its columns where it has one, as a post's may,
 // in a part that scrolls sideways where the screen is narrower than the table, so the page never does. A table that
 // names no columns is marked, since a phone folds it into a grid, and each of its parts names its role, which a

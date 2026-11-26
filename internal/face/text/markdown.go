@@ -209,6 +209,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 		return appendChunk(chunks, writer.widget(typed))
 	case document.Facts:
 		return writer.factsBlock(chunks, typed)
+	case document.ExperienceHead:
+		return writer.blocks(chunks, typed.Blocks(), depth)
 	case document.Entry:
 		return writer.entry(chunks, typed, depth)
 	case document.Card:
@@ -363,9 +365,8 @@ func noteReference(number int) string {
 	return noteOpening + strconv.Itoa(number) + noteClosing
 }
 
-// factsBlock writes a block of facts by its kind: details and technologies as a list; the ways to reach the author
-// each a paragraph of its own, since they follow the author's details and markdown would read two lists in a row as
-// one.
+// factsBlock writes a block of facts by its kind: details as a list; the ways to reach the author each a paragraph of
+// its own, since they follow the author's details and markdown would read two lists in a row as one.
 func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) []string {
 	switch facts.Kind {
 	case document.FactsWays:
@@ -373,7 +374,7 @@ func (writer markdownWriter) factsBlock(chunks []string, facts document.Facts) [
 			chunks = appendLine(chunks, writer.fact(fact))
 		}
 		return chunks
-	case document.FactsDetails, document.FactsTechnologies:
+	case document.FactsDetails:
 	}
 	return appendChunk(chunks, writer.facts(facts.List))
 }

@@ -195,9 +195,7 @@ other size: a control that seems to need one is the wrong control.
 
 ## Layout
 
-- From `wide` (80rem) a section's title stands beside its content where it fits at its full size, and over it where
-  it would shrink (Frame and Section). Below `wide` the brief narrows to `brief_mid` and every section's title stands
-  above its content.
+- Below `wide` (80rem) the brief narrows to `brief_mid`.
 - Below `phone` (53.75rem) everything is one column, the gutters `gutter_phone`, the foot line wraps, the career line
   becomes a list, a table that names no columns folds and one that names them scrolls inside itself (Table). No page is
   ever wider than its screen.

@@ -910,7 +910,7 @@ templ (writer PageWriter) projectList(list document.ProjectList) {
 						<span class="told-project-name">
 							@writer.spans(project.Name)
 						</span>
-						<span class="told-project-tagline">
+						<span>
 							@writer.spans(project.Tagline)
 						</span>
 						<span class="told-project-description">
@@ -934,7 +934,7 @@ templ (writer PageWriter) featuredProject(project document.FeaturedProject) {
 		<span class="featured-project-tagline">
 			@writer.spans(project.Tagline)
 		</span>
-		<span class="featured-project-description">
+		<span>
 			@writer.spans(project.Description)
 		</span>
 		if len(project.Stack) > 0 {

@@ -476,37 +476,36 @@ func (layout layout) points(points []document.Point, indent int) []line {
 func (layout layout) projectList(list document.ProjectList, indent int) []line {
 	lines := layout.fill(layout.words(list.Line, kindText), indent)
 	for _, project := range list.Featured {
-		name := layout.words([]document.Span{document.Link{Target: project.Page, Spans: project.Name}}, kindStrong)
-		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: project.Description, stack: project.Stack}, indent))
+		name := []document.Span{document.Link{Target: project.Page, Spans: project.Name}}
+		lines = stacked(lines, layout.projectLines(listedProject{name: name, tagline: project.Tagline, description: project.Description, stack: project.Stack}, indent))
 	}
 	for _, project := range list.Auxiliary {
-		name := layout.words([]document.Span{document.Link{Target: project.Repository, Spans: project.Name}}, kindStrong)
-		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: nil, stack: nil}, indent))
+		name := []document.Span{document.Link{Target: project.Repository, Spans: project.Name}}
+		lines = stacked(lines, layout.projectLines(listedProject{name: name, tagline: project.Tagline, description: nil, stack: nil}, indent))
 	}
 	if len(list.Told) > 0 {
 		lines = stacked(lines, []line{quietRule(indent, layout.width-indent)})
 	}
 	for _, project := range list.Told {
-		name := layout.words(project.Name, kindStrong)
-		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: project.Description, stack: nil}, indent))
+		lines = stacked(lines, layout.projectLines(listedProject{name: project.Name, tagline: project.Tagline, description: project.Description, stack: nil}, indent))
 	}
 	return lines
 }
 
-// listedProject is what the projects' list says of a project, where it has each: its name, as words, and its line,
-// its description and what it is made of.
+// listedProject is what the projects' list says of a project, where it has each: its name, a link where it leads
+// somewhere, its line, its description and what it is made of.
 type listedProject struct {
-	name        []word
+	name        []document.Span
 	tagline     []document.Span
 	description []document.Span
 	stack       []string
 }
 
-// listedProject lays out a project of the list at an indent, one under another: its name, its line, its description,
-// muted, and what it is made of, faint, each name whole.
-func (layout layout) listedProject(project listedProject, indent int) []line {
+// projectLines lay out a project of the list at an indent, one under another: its name, strong, its line, its
+// description, muted, and what it is made of, faint, each name whole.
+func (layout layout) projectLines(project listedProject, indent int) []line {
 	return slices.Concat(
-		layout.fill(project.name, indent),
+		layout.fill(layout.words(project.name, kindStrong), indent),
 		layout.fill(layout.words(project.tagline, kindText), indent),
 		layout.fill(layout.words(project.description, kindMuted), indent),
 		layout.fill(faintNames(project.stack), indent),

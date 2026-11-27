@@ -1298,39 +1298,20 @@ a.tile-title:focus-visible {
   }
 }
 
-/* a section of the résumé (DESIGN.md, Frame and Section): its blocks at the right, and its block title at its full
- * size in the room they leave, or, where it does not fit there, wrapped onto a line of its own over them, as wide as
- * they are, so a title never shrinks and the blocks stand in one column on every tab. Two rows above and below each,
- * so two sections stand four rows apart */
+/* a tab of the résumé (DESIGN.md, Frame and Section): its title in block letters, the page's h1, on a row of its own a
+ * row over what the tab holds, which takes the page's width; two rows of air above and below */
 .section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--row) var(--row-3);
-  align-items: start;
-  justify-content: flex-end;
   padding-block: var(--row-2);
 }
 
 .section > :is(h1, h2) {
-  flex-grow: 1;
-  margin: 0;
+  margin: 0 0 var(--row);
 }
 
 /* a title in block letters is a heading that holds a drawing and no words: it takes the body's size, so its cells
  * are the blocks'. A title the font cannot draw keeps its words' size */
 .section > :has(> .letters) {
   font-size: inherit;
-}
-
-/* a section's blocks, as wide as the widest of them, an entry: its dates, the gap after them and a line of prose; no
- * wider than the screen leaves them. A title in block letters over them is as wide */
-.blocks,
-.section > :has(> .letters) {
-  max-width: calc(var(--when) + var(--cell-3) + var(--measure));
-}
-
-.blocks {
-  width: 100%;
 }
 
 /* a heading among a section's blocks names in the strong style, its level shown by the space before it, never by its
@@ -1349,11 +1330,13 @@ a.tile-title:focus-visible {
 }
 
 /* an entry (DESIGN.md, Entry): its dates in a column of their own, muted, then its heading, its place, its points;
- * entries are set apart by a quiet hairline, never boxed */
+ * entries are set apart by a quiet hairline, never boxed. It is as wide as its dates, the gap after them and a line of
+ * prose, no wider than the screen leaves it */
 .entry {
   display: grid;
   grid-template-columns: var(--when) minmax(0, 1fr);
   column-gap: var(--cell-3);
+  max-width: calc(var(--when) + var(--cell-3) + var(--measure));
   padding-block: var(--row);
   border-top: var(--hairline) solid var(--quiet);
 }
@@ -1900,13 +1883,6 @@ a.tile-title:focus-visible {
 
 .entry + .entry {
   margin-top: 0;
-}
-
-/* below the wide screen's width a section's title stands above its blocks, whatever its length */
-@media (width < 80rem) {
-  .section {
-    flex-direction: column;
-  }
 }
 
 /* on a phone sections stand two rows apart, an entry's dates above its heading, and a command under its label across
@@ -3266,18 +3242,8 @@ a.tile-title::after {
   }
 }
 
-/* the projects' tab (DESIGN.md, ProjectList): the list runs the page's width, wider than a section's blocks, so the
- * tab's title stands on a row of its own over it, at the left (.section) */
-.section:has(> .blocks > .project-list) {
-  justify-content: flex-start;
-}
-
-.blocks:has(> .project-list) {
-  max-width: none;
-}
-
-/* its parts two rows apart, a row more after the line and before the projects told in words, which a rule sets
- * apart */
+/* the projects' tab (DESIGN.md, ProjectList): its parts two rows apart, a row more after the line and before the
+ * projects told in words, which a rule sets apart */
 .project-list {
   display: grid;
   row-gap: var(--row-2);

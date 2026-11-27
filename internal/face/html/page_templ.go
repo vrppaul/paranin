@@ -5895,9 +5895,9 @@ func knownMonth(start time.Time) templ.Component {
 	})
 }
 
-// resumeSection is a section of the résumé (DESIGN.md, Frame and Section): its heading, and its blocks beside it, or
-// under it where the two do not fit side by side; their headings start a level below its own, at the depth its caller
-// gives, since the caller alone knows whether its heading is the page's h1 or an h2.
+// resumeSection is a section of the résumé (DESIGN.md, Frame and Section): its heading on a row of its own, and its
+// blocks under it; their headings start a level below its own, at the depth its caller gives, since the caller alone
+// knows whether its heading is the page's h1 or an h2.
 func (writer PageWriter) resumeSection(blocks []document.Block, heading templ.Component, blockDepth int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context

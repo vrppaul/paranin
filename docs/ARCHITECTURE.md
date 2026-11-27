@@ -336,8 +336,8 @@ and web routes.
   stands under the first screen; the blog's latest posts close it, a hint
   of the blog the résumé's head carries and the text faces leave out
   (amended 2026-11-26, the owner's word, `DESIGN.md` Pages, Facts and
-  LatestPosts). The text faces write the first section whole (not
-  approved). `document.TabsOf` parts a document into its tabs, the
+  LatestPosts). The text faces write the first section whole (owner,
+  2026-11-27). `document.TabsOf` parts a document into its tabs, the
   opening and a tab for each section left, the TUI's; `SlugOf` names
   each, and the ids of the page's sections (amended 2026-11-20, the
   owner's word). Each section of the résumé after the opening stands
@@ -1055,7 +1055,7 @@ internal/routes/         # every address of the site
 internal/release/        # the content, the build and the cards as one snapshot: load, the store, what is derived once, the watch
 internal/document/       # the face-neutral model
 internal/content/        # the content folder: load, check; a post's markdown parsed once
-internal/look/           # the design's colours, generated from design/tokens.yaml, and its block fonts
+internal/look/           # what of the design a terminal draws by too, generated from design/tokens.yaml: its colours, lengths in cells, shares of the screen's height and counts; and its block fonts
 internal/assets/         # the page's build and the cards: each folder's manifest and files, read and checked
 internal/golden/         # the golden files' helper, for tests alone
 internal/fixtures/       # the shared fixtures, the content's and the build's, for tests alone
@@ -1067,7 +1067,7 @@ scripts/check_instruction_files.py  # claude-review's gate of the instruction fi
 scripts/cut_extrabold.sh # the mail's ExtraBold, cut to a mail's characters from the face as released
 content/                 # the site's content: the profile, the site's words
 design/fonts/            # the faces, each under its own licence, as released: those the site serves, the ExtraBold its cut is made from, and the TTF Typst reads, which reads no woff2
-design/tokens.yaml       # the design's colours, which internal/look and tokens.css are written from, and the page's mixes of them, faces, text styles, lengths, times and layers, which only the page takes
+design/tokens.yaml       # the design's colours, lengths in cells, shares of the screen's height and counts, which internal/look and the page's tokens are written from, and the page's mixes of the colours, faces, text styles, other lengths, times and layers, which only the page takes
 web/                     # the page: Vite, its stylesheet, the tokens' CSS; built into build/web
 ```
 

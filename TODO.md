@@ -7,11 +7,12 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
 - The faces, each its own commit (§8, step 5): the rest of `face/tui`: `:hire` once the form and the CV are there, since without them it repeats the ways the résumé opens with. Each reads the first version under _old/tree while the face is written, or in the archive where _old/tree lacks it (the TUI), and deletes what it replaces; the archive `paranin-first-version-2026-11-01.tar.gz` beside the repository keeps it whole.
 - The page (§8, step 6), each part landing with its first user (D18), in this order:
   - The form's salary range, an island, waits for `inbox` (step 10).
-- A project's page as `DESIGN.md` draws it (owner, 2026-11-26), a chunk each: the Links beside its sections; its story
-  and then, under a quiet rule, the details a user looks up (ProjectSection); its sections offered in the `:` menu as a
-  post's headings are (not approved); its Clips, recordings the site serves, 1280px wide with their sound, played on a press (owner, 2026-11-26); then the
-  projects' words from their READMEs, with the owner. A post beside a section, the blog's post tagged with the project,
-  comes with the owner's first such post.
+- A project's page as `DESIGN.md` draws it (owner, 2026-11-26): its sections offered in the `:` menu as a post's
+  headings are (not approved); then the projects' words from their READMEs, their links, details and clips, with the
+  owner. A post beside a section, the blog's post tagged with the project, comes with the owner's first such post.
+- The projects tab as `DESIGN.md` ProjectList draws it (owner, 2026-11-27): each project's level in the profile,
+  featured, auxiliary or told in words alone, which the author writes (owner, 2026-11-27); the tab's line, the
+  author's words; then the TUI's projects tab, drawn on a capture of the TUI before its code.
 - The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: the
   experience tab's look, its head, its Positions with the CareerLine on its side, the description folded, the filter
   by a technology; its end, contact, projects and blog; then the TUI's experience, drawn on a capture of the TUI

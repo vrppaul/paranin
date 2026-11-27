@@ -1859,6 +1859,11 @@ a.tile-title:focus-visible {
   margin: 0 calc(-1 * var(--hairline)) calc(-1 * var(--hairline)) 0;
 }
 
+/* a place of a list of tiles holds its tile as tall as its row */
+.tile-grid > li {
+  display: grid;
+}
+
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
  * what stands before it, as space shows its heading's level. Two entries need no row between them: each has a row of
  * air inside its hairline */
@@ -2628,8 +2633,11 @@ a.pick-row:hover {
   border-left-color: transparent;
 }
 
-/* a project's other projects, with no name set into their edge, stand a row from their top */
-.project-end > .tile-grid > .pane {
+/* a pane or a tile with nothing set into its edge stands its words a row from its top: a project's other projects, and
+ * the projects' tiles on their tab */
+.project-end > .tile-grid > .pane,
+.featured-project,
+.auxiliary-project {
   padding-top: var(--row);
 }
 
@@ -3023,10 +3031,6 @@ a.pane:hover .pane-title {
   list-style: none;
 }
 
-.tiles > li {
-  display: grid;
-}
-
 /* a tile (DESIGN.md, Tile) is a pane, its day set into its top edge as a pane's name is (.pane, .edge), its title
  * the link (a.tile-title, below): what differs is here. Its day muted and not bold; in a series' own group its part
  * before it, bold in the text's colour */
@@ -3264,7 +3268,7 @@ a.tile-title::after {
 }
 
 /* the featured projects' tiles across the page, as many as the token says, and the auxiliary ones two in a featured
- * one's width, so their edges meet; each tile as tall as its row (.tile-grid) */
+ * one's width, so their edges meet */
 .featured-projects {
   grid-template-columns: repeat(var(--featured-projects), minmax(0, 1fr));
 }
@@ -3273,21 +3277,16 @@ a.tile-title::after {
   grid-template-columns: repeat(var(--featured-projects), minmax(0, 1fr) minmax(0, 1fr));
 }
 
-.project-list .tile-grid > li {
-  display: grid;
-}
-
 /* a project's name is a heading under the tab's title, its link inside it, which its list spaces */
 :is(.featured-project-name, .auxiliary-project-name, .told-project-name) {
   margin: 0;
 }
 
-/* a featured project's tile is a tile (.tile), with nothing set into its edge, so its name stands a row from its top:
- * its name in the heading's style, underlined as a pane's title (.pane-title), its line bold, its description, then
- * what it is made of, muted, at its foot, a row apart */
+/* a featured project's tile is a tile (.tile), with nothing set into its edge (.pane): its name in the heading's style,
+ * underlined as a pane's title (.pane-title), its line bold, its description, then what it is made of, muted, at its
+ * foot, a row apart */
 .featured-project {
   gap: var(--row);
-  padding-top: var(--row);
 }
 
 .featured-project-name {
@@ -3307,7 +3306,6 @@ a.tile-title::after {
 /* an auxiliary project's small tile: its name bold and its line, both small, half a row apart */
 .auxiliary-project {
   gap: var(--row-half);
-  padding-top: var(--row);
 }
 
 .auxiliary-project-name,

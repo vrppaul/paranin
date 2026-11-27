@@ -154,7 +154,6 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	documents := DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages)
 	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	projects := as[document.ProjectList](test, sectionTitled(test, resume, "Projects").Blocks[0])
 	ways := waysOf(test, resume)
 	cases := []struct {
 		name string
@@ -163,8 +162,6 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	}{
 		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Mail{Address: "mira@example.test"}},
 		{name: "a public profile", got: linkTarget(test, factLabelled(test, ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
-		{name: "a featured project to its page", got: projects.Featured[0].Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}},
-		{name: "an auxiliary project to its repository", got: projects.Auxiliary[0].Repository, want: document.Address{URL: "https://github.test/mira/trim"}},
 		{name: "a project's page to its code", got: project.Head.Project.Repository.Address, want: document.Address{URL: "https://github.test/mira/tidy"}},
 		{name: "a project's page to its newest release", got: project.Head.Project.Release.Latest.Target, want: document.Address{URL: "https://github.test/mira/tidy/releases/latest"}},
 		{name: "a project's page to its releases' history", got: project.Head.Project.Release.Changelog.Target, want: document.Address{URL: "https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md"}},

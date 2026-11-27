@@ -22,16 +22,15 @@ import (
 // that copies it: the word on it and the word it turns to once it has, the first screen's button that writes to the
 // author, the word on a project's clip that plays it, what each way a terminal reaches the site gives, which its hint
 // says, the blog's session, the labels of a post's facts, what a draft's version says it is, what the toast says once
-// a code block is copied, and the words of
-// a post's series and the panes at its foot: where a part stands for the reader, each side's name, what a side with
-// none says, the panes' heading outside a series, the word before where the post is discussed, and the name of its
-// outline; and the blog's list: the line it opens with, its window in the foot line, the way to it beside a post's
-// other posts, the word before how it groups its posts, its grouping by year and by series, and its group of the
-// posts in no series; and a post's versions: the title of the window that lists them, and the words that mark the
-// current one and the one read; and the language: the label of a post's language, and the locale Open Graph marks a
-// page in; the manual's own words, the section of the manual its pages stand in and the names of the sections each
-// opens with and of the notes it ends with; what a translation older than its original says of it; and the word in a
-// widget's edge that says it runs.
+// a code block is copied, and the words of a post's series and the panes at its foot: where a part stands for the
+// reader, each side's name, what a side with none says, the panes' heading outside a series, the word before where the
+// post is discussed, and the name of its outline; and the blog's list: the line it opens with, its window in the foot
+// line, the way to it beside a post's other posts, the word before how it groups its posts, its grouping by year and
+// by series, and its group of the posts in no series; and a post's versions: the title of the window that lists them,
+// and the words that mark the current one and the one read; and the language: the label of a post's language, and the
+// locale Open Graph marks a page in; the manual's own words, the section of the manual its pages stand in and the
+// names of the sections each opens with and of the notes it ends with; what a translation older than its original says
+// of it; and the word in a widget's edge that says it runs.
 type Word int
 
 const (

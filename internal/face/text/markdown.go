@@ -412,7 +412,7 @@ func (writer markdownWriter) fact(fact document.Fact) string {
 // points, and its description, its paragraphs one after another.
 func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth int) []string {
 	chunks = appendChunk(chunks, heading(depth, joined(dash, writer.spans(entry.Title), writer.spans(entry.Subtitle))))
-	chunks = appendLine(chunks, writer.period(entry.Period))
+	chunks = appendLine(chunks, writer.text(periodText(entry.Period)))
 	technologies := make([]string, 0, len(entry.Technologies))
 	for _, technology := range entry.Technologies {
 		technologies = append(technologies, writer.text(technology))
@@ -471,11 +471,6 @@ func (writer markdownWriter) side(chunks []string, side document.Side, depth int
 		}
 	}
 	return chunks
-}
-
-// period writes a period escaped as a gap is: its gaps keep their brackets.
-func (writer markdownWriter) period(period document.Period) string {
-	return writer.gapEscape.Replace(periodText(period))
 }
 
 func (writer markdownWriter) spans(spans []document.Span) string {

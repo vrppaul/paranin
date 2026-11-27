@@ -875,29 +875,87 @@ templ (writer PageWriter) points(points []document.Point) {
 	</ul>
 }
 
-// card is a piece of work (DESIGN.md, Card): its title, a link to its page where it has one; its tag and subtitle in
-// a line, its summary, then its facts.
-templ (writer PageWriter) card(card document.Card, depth int) {
-	<article class="card">
-		@heading(depth, unnamed, writer.spans(linked(card.Page, card.Title)))
-		if card.Tag != "" || len(card.Subtitle) > 0 {
-			<p class="card-line">
-				@text(card.Tag)
-				if card.Tag != "" && len(card.Subtitle) > 0 {
-					@text(dot)
+// projectList is the projects at their levels (DESIGN.md, ProjectList), no name over a level: the line the author
+// gives them; the featured ones as detailed tiles and the auxiliary ones as small tiles, each on the grid of tiles;
+// then those told in words alone, leading nowhere.
+templ (writer PageWriter) projectList(list document.ProjectList) {
+	<div class="project-list">
+		if len(list.Line) > 0 {
+			<p class="project-list-line">
+				@writer.spans(list.Line)
+			</p>
+		}
+		if len(list.Featured) > 0 {
+			<ul class="tile-grid featured-projects">
+				for _, project := range list.Featured {
+					<li>
+						@writer.featuredProject(project)
+					</li>
 				}
-				@writer.spans(card.Subtitle)
-			</p>
+			</ul>
 		}
-		if len(card.Summary) > 0 {
-			<p>
-				@writer.spans(card.Summary)
-			</p>
+		if len(list.Auxiliary) > 0 {
+			<ul class="tile-grid auxiliary-projects">
+				for _, project := range list.Auxiliary {
+					<li>
+						@writer.auxiliaryProject(project)
+					</li>
+				}
+			</ul>
 		}
-		if len(card.Facts) > 0 {
-			@writer.facts(card.Facts)
+		if len(list.Told) > 0 {
+			<ul class="told-projects">
+				for _, project := range list.Told {
+					<li class="told-project">
+						<span class="told-project-name">
+							@writer.spans(project.Name)
+						</span>
+						<span class="told-project-tagline">
+							@writer.spans(project.Tagline)
+						</span>
+						<span class="told-project-description">
+							@writer.spans(project.Description)
+						</span>
+					</li>
+				}
+			</ul>
 		}
-	</article>
+	</div>
+}
+
+// featuredProject is a featured project as a detailed tile, the whole of it leading to the project's page by its
+// name's link, which the stylesheet stretches over the tile, as a post's tile's title: its name, its line, its
+// description, then what it is made of at its foot, each name whole.
+templ (writer PageWriter) featuredProject(project document.FeaturedProject) {
+	<div class="pane tile featured-project">
+		<a class="tile-title" href={ routes.Reference(project.Page, routes.FormatChosen) }>
+			@writer.spans(project.Name)
+		</a>
+		<span class="featured-project-tagline">
+			@writer.spans(project.Tagline)
+		</span>
+		<span class="featured-project-description">
+			@writer.spans(project.Description)
+		</span>
+		if len(project.Stack) > 0 {
+			<span class="featured-project-stack">
+				@writer.wholeParts(document.NameParts(project.Stack))
+			</span>
+		}
+	</div>
+}
+
+// auxiliaryProject is an auxiliary project as a small tile, the whole of it leading to its repository by its name's
+// link, stretched over the tile as a featured one's: its name and its line.
+templ (writer PageWriter) auxiliaryProject(project document.AuxiliaryProject) {
+	<div class="pane tile auxiliary-project">
+		<a class="tile-title" href={ routes.Reference(project.Repository, routes.FormatChosen) }>
+			@writer.spans(project.Name)
+		</a>
+		<span class="auxiliary-project-tagline">
+			@writer.spans(project.Tagline)
+		</span>
+	</div>
 }
 
 // contents are the places a document leads to (DESIGN.md, Contents), each a link by its title, then the line on what

@@ -93,9 +93,8 @@ const noBreakSpace = "\xc2\xa0"
 // What stands between the parts of one line, the page's own choice as each face's is: the text faces write the same
 // marks, with a plain space before the dot
 const (
-	// a title and its place, a card's tag and its subtitle, a project's tags, the blog's name and a list's grouping in
-	// the title the list says of itself; a space that never breaks before the dot, so the dot ends a line and never
-	// opens the next
+	// a title and its place, a project's tags, the blog's name and a list's grouping in the title the list says of
+	// itself; a space that never breaks before the dot, so the dot ends a line and never opens the next
 	dot = noBreakSpace + "· "
 	// a title and its subtitle; in the title a page says of itself, a tab's title and its page's, the blog's name and
 	// the list's filter
@@ -505,8 +504,8 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 		return writer.clip(typed)
 	case document.Reference:
 		return writer.reference(typed, depth)
-	case document.Card:
-		return writer.card(typed, depth)
+	case document.ProjectList:
+		return writer.projectList(typed)
 	case document.Contents:
 		return writer.contents(typed)
 	case document.Checks, document.Skills:
@@ -576,12 +575,4 @@ func sideApart(blocks []document.Block) ([]document.Block, []document.Block) {
 		}
 	}
 	return words, sides
-}
-
-// linked are spans as a link to a page, where the page has an address: a card's title.
-func linked(page document.Page, spans []document.Span) []document.Span {
-	if page.Kind == document.PageNone {
-		return spans
-	}
-	return []document.Span{document.Link{Target: page, Spans: spans}}
 }

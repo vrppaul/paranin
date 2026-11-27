@@ -76,8 +76,8 @@ func oneBlockPhrases(phrases []string, block Block) []string {
 		return spanPhrases(phrases, typed.Shows)
 	case Reference:
 		return blockPhrases(phrases, typed.Blocks())
-	case Card:
-		return cardPhrases(phrases, typed)
+	case ProjectList:
+		return projectListPhrases(phrases, typed)
 	case Contents:
 		return listingPhrases(phrases, typed.Listings)
 	case Checks:
@@ -172,9 +172,23 @@ func pointPhrases(phrases []string, points []Point) []string {
 	return phrases
 }
 
-func cardPhrases(phrases []string, card Card) []string {
-	phrases = textPhrase(spanPhrases(spanPhrases(phrases, card.Title), card.Subtitle), card.Tag)
-	return factPhrases(spanPhrases(phrases, card.Summary), card.Facts)
+// projectListPhrases are what the projects' list says: its line, then each project's name, line and description, and
+// what a featured one is made of; where a project leads is each face's to write.
+func projectListPhrases(phrases []string, list ProjectList) []string {
+	phrases = spanPhrases(phrases, list.Line)
+	for _, featured := range list.Featured {
+		phrases = spanPhrases(spanPhrases(spanPhrases(phrases, featured.Name), featured.Tagline), featured.Description)
+		for _, name := range featured.Stack {
+			phrases = textPhrase(phrases, name)
+		}
+	}
+	for _, auxiliary := range list.Auxiliary {
+		phrases = spanPhrases(spanPhrases(phrases, auxiliary.Name), auxiliary.Tagline)
+	}
+	for _, told := range list.Told {
+		phrases = spanPhrases(spanPhrases(spanPhrases(phrases, told.Name), told.Tagline), told.Description)
+	}
+	return phrases
 }
 
 func listingPhrases(phrases []string, listings []Listing) []string {

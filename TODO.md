@@ -11,9 +11,9 @@ The order of work is `docs/FOUNDATION.md` §8; each item is one chunk, started o
   - The form's salary range, an island, waits for `inbox` (step 10).
 - A project's page as `DESIGN.md` draws it (owner, 2026-11-26): the projects' words from their READMEs, their links,
   details and clips, with the owner. A post beside a section, the blog's post tagged with the project, comes with the owner's first such post.
-- The projects tab as `DESIGN.md` ProjectList draws it (owner, 2026-11-27): each project's level in the profile,
-  featured, auxiliary or told in words alone, which the author writes (owner, 2026-11-27); the tab's line, the
-  author's words; then the TUI's projects tab, drawn on a capture of the TUI before its code.
+- The TUI's projects tab, drawn on a capture of the TUI before its code (owner, 2026-11-27): until then it lays the
+  ProjectList out plainly. The projects' line, `[the line you give your projects]` in the profile, is the author's
+  words.
 - The résumé's tabs as `DESIGN.md` draws them (owner, 2026-11-26), a chunk each, after a project's page: the
   experience tab's look, its head, its Positions with the CareerLine on its side, the description folded, the filter
   by a technology; its end, contact, projects and blog; then the TUI's experience, drawn on a capture of the TUI

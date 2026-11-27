@@ -407,8 +407,8 @@ func (layout layout) block(block document.Block, indent, periodWidth int) []line
 	case document.Reference:
 		// the details set apart from the story by the quiet rule a post's sources stand under
 		return stacked([]line{quietRule(indent, layout.width-indent)}, layout.blocks(typed.Blocks(), indent))
-	case document.Card:
-		return layout.card(typed, indent)
+	case document.ProjectList:
+		return layout.projectList(typed, indent)
 	case document.Contents:
 		return layout.contents(typed, indent)
 	case document.Checks:
@@ -470,16 +470,47 @@ func (layout layout) points(points []document.Point, indent int) []line {
 	return lines
 }
 
-// card lays out a card's title, leading to its page where it has one, and its subtitle, with its tag at the
-// right; then its summary and its facts.
-func (layout layout) card(card document.Card, indent int) []line {
-	title := layout.words(card.Title, kindStrong)
-	if card.Page.Kind != document.PageNone {
-		title = layout.words([]document.Span{document.Link{Target: card.Page, Spans: card.Title}}, kindStrong)
+// projectList lays out the projects at an indent, plainly, until the tab is drawn on a capture of its own: their line;
+// each featured project, then each auxiliary one, leading to its page or its repository; then, under a quiet rule as
+// the page sets them, each one told in words; a row of nothing between two.
+func (layout layout) projectList(list document.ProjectList, indent int) []line {
+	lines := layout.fill(layout.words(list.Line, kindText), indent)
+	for _, project := range list.Featured {
+		name := layout.words([]document.Span{document.Link{Target: project.Page, Spans: project.Name}}, kindStrong)
+		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: project.Description, stack: project.Stack}, indent))
 	}
-	lines := layout.titleLine(markedWords(title, layout.words(card.Subtitle, kindMuted), subtitleMark), textWords(card.Tag, kindMuted), indent)
-	lines = append(lines, layout.fill(layout.words(card.Summary, kindText), indent)...)
-	return append(lines, layout.facts(card.Facts, indent, kindMuted)...)
+	for _, project := range list.Auxiliary {
+		name := layout.words([]document.Span{document.Link{Target: project.Repository, Spans: project.Name}}, kindStrong)
+		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: nil, stack: nil}, indent))
+	}
+	if len(list.Told) > 0 {
+		lines = stacked(lines, []line{quietRule(indent, layout.width-indent)})
+	}
+	for _, project := range list.Told {
+		name := layout.words(project.Name, kindStrong)
+		lines = stacked(lines, layout.listedProject(listedProject{name: name, tagline: project.Tagline, description: project.Description, stack: nil}, indent))
+	}
+	return lines
+}
+
+// listedProject is what the projects' list says of a project, where it has each: its name, as words, and its line,
+// its description and what it is made of.
+type listedProject struct {
+	name        []word
+	tagline     []document.Span
+	description []document.Span
+	stack       []string
+}
+
+// listedProject lays out a project of the list at an indent, one under another: its name, its line, its description,
+// muted, and what it is made of, faint, each name whole.
+func (layout layout) listedProject(project listedProject, indent int) []line {
+	return slices.Concat(
+		layout.fill(project.name, indent),
+		layout.fill(layout.words(project.tagline, kindText), indent),
+		layout.fill(layout.words(project.description, kindMuted), indent),
+		layout.fill(faintNames(project.stack), indent),
+	)
 }
 
 // contents lays out each listed place as the page's Contents draws it (DESIGN.md, Contents), on lines of its own with
@@ -670,17 +701,6 @@ func (layout layout) columnWidths(rows []document.Row) []int {
 func (layout layout) bullet(words []word, indent int) []line {
 	lead := line{gapRun(indent), plainRun(look.PointMark+space, kindFaint)}
 	return layout.continued(lead, words, indent+bulletHang)
-}
-
-// titleLine lays out left words with right words at the right of the same line, or each on lines of its own
-// where both do not fit.
-func (layout layout) titleLine(left, right []word, indent int) []line {
-	leftWidth, rightWidth := wordsWidth(left), wordsWidth(right)
-	gap := layout.width - indent - leftWidth - rightWidth
-	if len(right) == 0 || gap < columnGap {
-		return append(layout.fill(left, indent), layout.fill(right, indent)...)
-	}
-	return []line{append(append(line{gapRun(indent)}, wordRuns(left)...), append(line{gapRun(gap)}, wordRuns(right)...)...)}
 }
 
 // codeLines lays out text line for line at an indent, as it is written: never wrapped.

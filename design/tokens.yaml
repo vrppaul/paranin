@@ -488,6 +488,9 @@ counts:
   - name: latest_posts
     about: how many of the blog's latest posts the first screen names at most, a place of a row each
     count: 3
+  - name: featured_projects
+    about: how many featured projects' tiles stand in a row across the projects' tab, each as wide as two auxiliary ones
+    count: 3
 
 layers:
   - name: tile

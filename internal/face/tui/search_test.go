@@ -25,6 +25,9 @@ const (
 	pastTheFirstKept = 8
 )
 
+// Words of the first line of the fixture's projects tab, the projects' line, which no other tab holds
+const projectsTop = "Small tools"
+
 // A search finds its text in the tab, whatever its case, scrolls to the first line holding it at or after where
 // the page stood, and says which match of how many it shows.
 func TestASearchScrollsToItsFirstMatch(test *testing.T) {
@@ -115,8 +118,8 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 	}{
 		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [53/54]"},
 		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/54]"},
-		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/21]"},
-		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [21/21]"},
+		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/18]"},
+		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [18/18]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

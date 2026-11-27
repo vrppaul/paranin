@@ -7,8 +7,9 @@ import (
 )
 
 // A document as a reader of the finished work sees it leaves out a fact, a point, a paragraph of a role's description,
-// the experience's line or a technology it puts forward that holds nothing but gaps still to fill, and a list of facts
-// or of points or the experience's head left with none; a gap among written words stays, as does every other block.
+// the experience's or the projects' line or a technology put forward that holds nothing but gaps still to fill, and a
+// list of facts or of points or the experience's head left with none; a gap among written words stays, as does every
+// other block.
 func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	later := Fact{Label: "looking for", Value: []Span{Gap{Text: "[later]"}}}
 	where := Fact{Label: "where", Value: []Span{Text{Text: "Prague · "}, Gap{Text: "[remote?]"}}}
@@ -26,6 +27,7 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 	writtenLine := []Span{Text{Text: "Ships tools."}}
 	usedTechnology := Technology{Name: "Go", Used: []Span{Text{Text: "3y"}}}
 	gapTechnology := Technology{Name: "Lua", Used: []Span{Gap{Text: "[1y?]"}}}
+	toldProject := ToldProject{Name: []Span{Text{Text: "other-tool"}}, Tagline: nil, Description: nil}
 	cases := []struct {
 		name  string
 		block Block
@@ -52,9 +54,14 @@ func TestWrittenLeavesOutWhatIsOnlyAGap(test *testing.T) {
 			want:  []Block{Entry{Period: Period{Start: KnownMonth{Start: time.Time{}}, End: nil}, Title: nil, Subtitle: nil, Technologies: nil, Points: nil, Description: []Paragraph{writtenParagraph}}},
 		},
 		{
-			name:  "a card's fact",
-			block: Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where, later}, Page: Page{Kind: PageNone, Slug: "", Tab: ""}},
-			want:  []Block{Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: []Fact{where}, Page: Page{Kind: PageNone, Slug: "", Tab: ""}}},
+			name:  "the projects' line only a gap",
+			block: ProjectList{Line: gapLine, Featured: nil, Auxiliary: nil, Told: []ToldProject{toldProject}},
+			want:  []Block{ProjectList{Line: nil, Featured: nil, Auxiliary: nil, Told: []ToldProject{toldProject}}},
+		},
+		{
+			name:  "the projects' line of words",
+			block: ProjectList{Line: writtenLine, Featured: nil, Auxiliary: nil, Told: []ToldProject{toldProject}},
+			want:  []Block{ProjectList{Line: writtenLine, Featured: nil, Auxiliary: nil, Told: []ToldProject{toldProject}}},
 		},
 		{
 			name:  "a fact in a section inside a section",

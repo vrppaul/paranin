@@ -906,9 +906,10 @@ a.tag[aria-current] .tag-mark {
   color: var(--muted);
 }
 
-/* the lead's style: the headline under the name, and the line under another page's title */
+/* the lead's style: the headline under the name, the line under another page's title, and the projects' line */
 .lead,
-.page-line {
+.page-line,
+.project-list-line {
   font-size: var(--type-lead-size);
   font-weight: var(--type-lead-weight);
   line-height: var(--type-lead-line);
@@ -1276,7 +1277,8 @@ a.tile-title:focus-visible {
   }
 
   .lead,
-  .page-line {
+  .page-line,
+  .project-list-line {
     font-size: var(--type-lead-phone-size);
     font-weight: var(--type-lead-phone-weight);
     line-height: var(--type-lead-phone-line);
@@ -1343,7 +1345,6 @@ a.tile-title:focus-visible {
 
 /* running prose is held to the measure; the layout is not */
 .blocks > p,
-.card > p,
 .blocks section > p,
 .points {
   max-width: var(--measure);
@@ -1418,29 +1419,6 @@ a.tile-title:focus-visible {
 
 .contents-line {
   color: var(--muted);
-}
-
-/* a piece of work (DESIGN.md, Card): its heading, its line muted, its summary, its facts, half a row apart; cards are
- * set apart by a quiet hairline, a row of air either side of it */
-.card {
-  display: grid;
-  gap: var(--row-half);
-  padding-block: var(--row);
-  border-top: var(--hairline) solid var(--quiet);
-}
-
-.card > * {
-  margin: 0;
-}
-
-.card-line {
-  color: var(--muted);
-}
-
-/* an install line, a long command, stands under its label across the card's width: beside the label the value's
- * column would leave it a word or two a line */
-.card .facts dd:has(> .command) {
-  grid-column: 1 / -1;
 }
 
 /* rows of a few cells (DESIGN.md, Table): the first names the row, bold; cells three cells apart, each row a row and
@@ -1900,8 +1878,8 @@ a.tile-title:focus-visible {
 }
 
 /* the blocks of a section and of a subsection stand a row apart (DESIGN.md, The grid); a subsection two rows below
- * what stands before it, as space shows its heading's level. Two entries or two cards need no row between them: each
- * has a row of air inside its hairline */
+ * what stands before it, as space shows its heading's level. Two entries need no row between them: each has a row of
+ * air inside its hairline */
 .blocks > * {
   margin-block: 0;
 }
@@ -1922,8 +1900,7 @@ a.tile-title:focus-visible {
   margin-top: var(--row-2);
 }
 
-.entry + .entry,
-.card + .card {
+.entry + .entry {
   margin-top: 0;
 }
 
@@ -3288,5 +3265,122 @@ a.tile-title::after {
 
   .latest .tiles {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* the projects' tab (DESIGN.md, ProjectList): the list runs the page's width, wider than a section's blocks, so the
+ * tab's title stands on a row of its own over it, at the left (.section) */
+.section:has(> .blocks > .project-list) {
+  justify-content: flex-start;
+}
+
+.blocks:has(> .project-list) {
+  max-width: none;
+}
+
+/* its parts two rows apart, a row more after the line and before the projects told in words, which a rule sets
+ * apart */
+.project-list {
+  display: grid;
+  row-gap: var(--row-2);
+}
+
+.project-list-line {
+  max-width: var(--measure);
+  margin: 0 0 var(--row);
+}
+
+.featured-projects,
+.auxiliary-projects,
+.told-projects {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* the featured projects' tiles across the page, as many as the token says, and the auxiliary ones two in a featured
+ * one's width, so their edges meet; each tile as tall as its row (.tile-grid) */
+.featured-projects {
+  grid-template-columns: repeat(var(--featured-projects), minmax(0, 1fr));
+}
+
+.auxiliary-projects {
+  grid-template-columns: repeat(var(--featured-projects), minmax(0, 1fr) minmax(0, 1fr));
+}
+
+.project-list .tile-grid > li {
+  display: grid;
+}
+
+/* a featured project's tile is a tile (.tile), with nothing set into its edge, so its name stands a row from its top:
+ * its name in the heading's style, underlined as a link, its line bold, its description, then what it is made of,
+ * muted, at its foot, a row apart */
+.featured-project {
+  gap: var(--row);
+  padding-top: var(--row);
+}
+
+.featured-project > a.tile-title {
+  font-size: var(--type-heading-size);
+  line-height: var(--type-heading-line);
+  text-decoration: underline var(--muted);
+  text-underline-offset: var(--nudge);
+}
+
+.featured-project-tagline {
+  font-weight: var(--type-strong-weight);
+}
+
+.featured-project-stack {
+  margin-top: auto;
+  color: var(--muted);
+}
+
+/* an auxiliary project's small tile: its name bold and its line, both small, half a row apart */
+.auxiliary-project {
+  gap: var(--row-half);
+  padding-top: var(--row);
+}
+
+.auxiliary-project > a.tile-title,
+.auxiliary-project-tagline {
+  font-size: var(--type-small-size);
+  line-height: var(--type-small-line);
+}
+
+/* the projects told in words, under a quiet rule, no frame and no link, each a column of prose as wide as the measure
+ * where the width holds more than one: its name bold, its line, its description muted */
+.told-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--measure), 100%), 1fr));
+  gap: var(--row) var(--row-3);
+  margin-top: var(--row);
+  padding-top: var(--row-2);
+  border-top: var(--hairline) solid var(--quiet);
+}
+
+.told-project {
+  display: grid;
+  gap: var(--row-half);
+  align-content: start;
+  max-width: var(--measure);
+}
+
+.told-project-name {
+  font-weight: var(--type-strong-weight);
+}
+
+.told-project-description {
+  color: var(--muted);
+}
+
+/* on a phone the featured tiles one under another, the auxiliary ones two across */
+@media (width < 53.75rem) {
+  .featured-projects {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auxiliary-projects {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }

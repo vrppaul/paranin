@@ -127,7 +127,7 @@ func checksIn(blocks []document.Block) []document.Check {
 		case document.Paragraph, document.Table, document.CodeBlock, document.List, document.Quote, document.Pause,
 			document.Figure, document.Widget, document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side,
 			document.Clip,
-			document.Card, document.Contents, document.Skills, document.Posts:
+			document.ProjectList, document.Contents, document.Skills, document.Posts:
 		}
 	}
 	return checks

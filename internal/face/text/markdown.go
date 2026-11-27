@@ -229,8 +229,8 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	case document.Reference:
 		// the details set apart from the story by a thematic break, as a turn a post takes
 		return writer.blocks(appendChunk(chunks, breakMark), typed.Blocks(), depth)
-	case document.Card:
-		return writer.card(chunks, typed, depth)
+	case document.ProjectList:
+		return writer.projectList(chunks, typed, depth)
 	case document.Contents:
 		return appendChunk(chunks, writer.contents(typed))
 	case document.Posts:
@@ -246,7 +246,7 @@ func (writer markdownWriter) block(chunks []string, block document.Block, depth 
 	return chunks
 }
 
-// listedPost writes a post of the blog's list as a card is written: under its title, a link to it where it is out;
+// listedPost writes a post of the blog's list as an entry is written: under its title, a link to it where it is out;
 // the day it came out, or the word saying it comes, its part and its series in a line; its tags on the next; then its
 // lead.
 func (writer markdownWriter) listedPost(chunks []string, post document.ListedPost, depth int) []string {
@@ -267,7 +267,7 @@ func (writer markdownWriter) listedPost(chunks []string, post document.ListedPos
 	return appendLine(chunks, writer.spans(post.Lead))
 }
 
-// linkedTo are spans as a link to a page, where it is one: a card's title, a listed post's.
+// linkedTo are spans as a link to a page, where it is one: a listed post's title.
 func linkedTo(page document.Page, spans []document.Span) []document.Span {
 	if page.Kind == document.PageNone {
 		return spans
@@ -413,11 +413,7 @@ func (writer markdownWriter) fact(fact document.Fact) string {
 func (writer markdownWriter) entry(chunks []string, entry document.Entry, depth int) []string {
 	chunks = appendChunk(chunks, heading(depth, joined(dash, writer.spans(entry.Title), writer.spans(entry.Subtitle))))
 	chunks = appendLine(chunks, writer.text(periodText(entry.Period)))
-	technologies := make([]string, 0, len(entry.Technologies))
-	for _, technology := range entry.Technologies {
-		technologies = append(technologies, writer.text(technology))
-	}
-	chunks = appendChunk(appendLine(chunks, joined(dot, technologies...)), writer.points(entry.Points))
+	chunks = appendChunk(appendLine(chunks, writer.names(entry.Technologies)), writer.points(entry.Points))
 	for _, passage := range entry.Description {
 		chunks = appendLine(chunks, writer.spans(passage.Spans))
 	}
@@ -433,13 +429,38 @@ func (writer markdownWriter) points(points []document.Point) string {
 	return list(items)
 }
 
-// card writes a card under its title, a link to its page where it has one; its tag and subtitle in a line, its
-// summary, then its facts.
-func (writer markdownWriter) card(chunks []string, card document.Card, depth int) []string {
-	chunks = appendChunk(chunks, heading(depth, writer.spans(linkedTo(card.Page, card.Title))))
-	chunks = appendLine(chunks, joined(dot, writer.text(card.Tag), writer.spans(card.Subtitle)))
-	chunks = appendLine(chunks, writer.spans(card.Summary))
-	return appendChunk(chunks, writer.facts(card.Facts))
+// names writes names in a line, as written, a dot between two: a role's technologies, what a project is made of.
+func (writer markdownWriter) names(names []string) string {
+	written := make([]string, 0, len(names))
+	for _, name := range names {
+		written = append(written, writer.text(name))
+	}
+	return joined(dot, written...)
+}
+
+// projectList writes the projects' line, then each project at its level under its name as a heading: a featured one's
+// name a link to its page, its line, its description and what it is made of; an auxiliary one's name a link to its
+// repository, and its line; then, after a thematic break, as the page sets them under a rule, each one told in words by
+// its name, its line and its description.
+func (writer markdownWriter) projectList(chunks []string, list document.ProjectList, depth int) []string {
+	chunks = appendLine(chunks, writer.spans(list.Line))
+	for _, project := range list.Featured {
+		chunks = appendChunk(chunks, heading(depth, writer.spans([]document.Span{document.Link{Target: project.Page, Spans: project.Name}})))
+		chunks = appendLine(appendLine(chunks, writer.spans(project.Tagline)), writer.spans(project.Description))
+		chunks = appendLine(chunks, writer.names(project.Stack))
+	}
+	for _, project := range list.Auxiliary {
+		chunks = appendChunk(chunks, heading(depth, writer.spans([]document.Span{document.Link{Target: project.Repository, Spans: project.Name}})))
+		chunks = appendLine(chunks, writer.spans(project.Tagline))
+	}
+	if len(list.Told) > 0 {
+		chunks = appendChunk(chunks, breakMark)
+	}
+	for _, project := range list.Told {
+		chunks = appendChunk(chunks, heading(depth, writer.spans(project.Name)))
+		chunks = appendLine(appendLine(chunks, writer.spans(project.Tagline)), writer.spans(project.Description))
+	}
+	return chunks
 }
 
 // contents writes each listed place as an item of a list.

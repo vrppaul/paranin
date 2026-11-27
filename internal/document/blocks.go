@@ -256,15 +256,38 @@ type Side struct {
 	Blocks []Block
 }
 
-// Card is a piece of work: its title, what it is in a line, what it is written in, what it does, its details,
-// and its page, PageNone where it has none.
-type Card struct {
-	Title    []Span
-	Subtitle []Span
-	Tag      string
-	Summary  []Span
-	Facts    []Fact
-	Page     Page
+// ProjectList is the author's projects at their three levels (DESIGN.md, ProjectList): the line the author gives them,
+// none where the profile writes none; then the featured ones, the auxiliary ones and those told in words alone, each
+// in the profile's order.
+type ProjectList struct {
+	Line      []Span
+	Featured  []FeaturedProject
+	Auxiliary []AuxiliaryProject
+	Told      []ToldProject
+}
+
+// FeaturedProject is a project with a page of its own: its name, its line, its description, what it is made of, its
+// language first, and its page.
+type FeaturedProject struct {
+	Name        []Span
+	Tagline     []Span
+	Description []Span
+	Stack       []string
+	Page        Page
+}
+
+// AuxiliaryProject is a project shown in brief: its name, its line, and its repository, where it leads.
+type AuxiliaryProject struct {
+	Name       []Span
+	Tagline    []Span
+	Repository Address
+}
+
+// ToldProject is a project told in words alone, leading nowhere: its name, its line and its description.
+type ToldProject struct {
+	Name        []Span
+	Tagline     []Span
+	Description []Span
 }
 
 // Contents are places a document leads to, each by its title and a line on what it is: the site's index lists its
@@ -344,7 +367,7 @@ func (Points) block()         {}
 func (Side) block()           {}
 func (Clip) block()           {}
 func (Reference) block()      {}
-func (Card) block()           {}
+func (ProjectList) block()    {}
 func (Contents) block()       {}
 func (Checks) block()         {}
 func (Skills) block()         {}

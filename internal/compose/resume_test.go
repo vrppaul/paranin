@@ -46,10 +46,11 @@ func TestEveryFactOfTheProfileReachesTheResume(test *testing.T) {
 		{name: "a tagline", want: "Tidies files."},
 		{name: "a description", want: "tidies files"},
 		{name: "a project's language", want: "Lua"},
-		{name: "a repository", want: "https://github.test/mira/tidy"},
-		{name: "an install command", want: "go install example.test/tidy@latest"},
+		{name: "what a project is built on", want: "LPeg"},
+		{name: "the projects' line", want: "Small tools, each doing "},
+		{name: "a project shown in brief", want: "trim-tool"},
+		{name: "a project told in words", want: "A tool that ran for a year, until no mail came for it to sort."},
 		{name: "a word of the site", want: "Experience"},
-		{name: "a label of the site", want: "repository"},
 		{name: "the word for what still goes on", want: "present"},
 	}
 	for _, testCase := range cases {
@@ -153,8 +154,7 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	documents := DocumentsOf(SiteOf(Prepare(fixtures.LoadedContent(test)), publicOnTheDay()).Pages)
 	resume := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageResume, Slug: "", Tab: ""})
 	project := fixtures.DocumentOf(test, documents, document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
-	projects := sectionTitled(test, resume, "Projects")
-	pageless, tidy := cardTitled(test, projects, "other-tool"), cardTitled(test, projects, "tidy-tool")
+	projects := as[document.ProjectList](test, sectionTitled(test, resume, "Projects").Blocks[0])
 	ways := waysOf(test, resume)
 	cases := []struct {
 		name string
@@ -163,9 +163,8 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 	}{
 		{name: "the mail address", got: linkTarget(test, factLabelled(test, ways, "mail").Value), want: document.Mail{Address: "mira@example.test"}},
 		{name: "a public profile", got: linkTarget(test, factLabelled(test, ways, "GitHub").Value), want: document.Address{URL: "https://github.test/mira"}},
-		{name: "a project's page", got: tidy.Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}},
-		{name: "a project with no page", got: pageless.Page, want: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}},
-		{name: "a project's repository", got: linkTarget(test, factLabelled(test, tidy.Facts, "repository").Value), want: document.Address{URL: "https://github.test/mira/tidy"}},
+		{name: "a featured project to its page", got: projects.Featured[0].Page, want: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}},
+		{name: "an auxiliary project to its repository", got: projects.Auxiliary[0].Repository, want: document.Address{URL: "https://github.test/mira/trim"}},
 		{name: "a project's page to its code", got: project.Head.Project.Repository.Address, want: document.Address{URL: "https://github.test/mira/tidy"}},
 		{name: "a project's page to its newest release", got: project.Head.Project.Release.Latest.Target, want: document.Address{URL: "https://github.test/mira/tidy/releases/latest"}},
 		{name: "a project's page to its releases' history", got: project.Head.Project.Release.Changelog.Target, want: document.Address{URL: "https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md"}},
@@ -176,6 +175,42 @@ func TestEveryLinkLeadsWhereTheProfileSays(test *testing.T) {
 				test.Errorf("target = %+v, want %+v", testCase.got, testCase.want)
 			}
 		})
+	}
+}
+
+// The résumé's projects stand as one list at their levels, each level in the profile's order: under the line the
+// author gives them, a featured project by its name, line, description, what it is made of, its language first, and
+// its page; an auxiliary one by its name, line and repository; one told in words by its name, line and description.
+func TestTheProjectsStandAtTheirLevels(test *testing.T) {
+	got := sectionTitled(test, Resume(fixtures.LoadedContent(test), nil, nil), "Projects").Blocks
+	want := []document.Block{document.ProjectList{
+		Line: []document.Span{
+			document.Text{Text: "Small tools, each doing "},
+			document.Highlight{Spans: []document.Span{document.Text{Text: "one thing"}}},
+			document.Text{Text: " well."},
+		},
+		Featured: []document.FeaturedProject{{
+			Name:    []document.Span{document.Text{Text: "tidy-tool"}},
+			Tagline: []document.Span{document.Text{Text: "Tidies files."}},
+			Description: []document.Span{
+				document.Text{Text: "A tool that "}, document.Highlight{Spans: []document.Span{document.Text{Text: "tidies files"}}}, document.Text{Text: "."},
+			},
+			Stack: []string{"Lua", "Penlight", "LPeg"},
+			Page:  document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""},
+		}},
+		Auxiliary: []document.AuxiliaryProject{{
+			Name:       []document.Span{document.Text{Text: "trim-tool"}},
+			Tagline:    []document.Span{document.Text{Text: "Trims space at a line's end."}},
+			Repository: document.Address{URL: "https://github.test/mira/trim"},
+		}},
+		Told: []document.ToldProject{{
+			Name:        []document.Span{document.Text{Text: "other-tool"}},
+			Tagline:     []document.Span{document.Text{Text: "Sorted mail by its sender."}},
+			Description: []document.Span{document.Text{Text: "A tool that ran for a year, until no mail came for it to sort."}},
+		}},
+	}}
+	if !reflect.DeepEqual(got, want) {
+		test.Errorf("the projects' section holds %+v, want %+v", got, want)
 	}
 }
 
@@ -686,17 +721,6 @@ func withoutAbout(snapshot *content.Snapshot) *content.Snapshot {
 		changed.Profile.Projects.List[index].Licence = ""
 	}
 	return &changed
-}
-
-// cardTitled is a section's card under a title, wherever compose put it.
-func cardTitled(test *testing.T, section document.Section, title string) document.Card {
-	for _, block := range section.Blocks {
-		if card, isCard := block.(document.Card); isCard && as[document.Text](test, card.Title[0]).Text == title {
-			return card
-		}
-	}
-	test.Fatalf("the section has no card %q", title)
-	return document.Card{Title: nil, Subtitle: nil, Tag: "", Summary: nil, Facts: nil, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""}}
 }
 
 // waysOf are the ways to reach the author a page holds, the facts of their kind in any of its sections, found as a

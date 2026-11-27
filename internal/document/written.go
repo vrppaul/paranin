@@ -6,9 +6,9 @@ import (
 )
 
 // WrittenBlocks are blocks as a reader of the finished work sees them: a fact, a point, a paragraph of a role's
-// description, the experience's line or a technology it puts forward that holds nothing but gaps still to fill is left
-// out until its author fills it, and a list of facts or of points or the experience's head left with none goes with
-// it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the
+// description, the experience's or the projects' line or a technology put forward that holds nothing but gaps still to
+// fill is left out until its author fills it, and a list of facts or of points or the experience's head left with none
+// goes with it; a gap among written words stays. A face that keeps the author's notes, as the text faces do, draws the
 // blocks whole. The blocks it is handed keep everything they had.
 func WrittenBlocks(blocks []Block) []Block {
 	kept := make([]Block, 0, len(blocks))
@@ -20,7 +20,7 @@ func WrittenBlocks(blocks []Block) []Block {
 	return kept
 }
 
-// writtenBlock is a block with its facts, points, paragraphs, line and technologies that are only gaps left out; not
+// writtenBlock is a block with its facts, points, paragraphs, lines and technologies that are only gaps left out; not
 // shown at all where it is a list of facts or of points or the experience's head left with none.
 func writtenBlock(block Block) (Block, bool) {
 	switch typed := block.(type) {
@@ -51,8 +51,10 @@ func writtenBlock(block Block) (Block, bool) {
 		}
 		typed.Sections = sections
 		return typed, true
-	case Card:
-		typed.Facts = WrittenFacts(typed.Facts)
+	case ProjectList:
+		if !written(typed.Line) {
+			typed.Line = nil
+		}
 		return typed, true
 	case Paragraph, Table, CodeBlock, List, Quote, Pause, Figure, Widget, Side, Clip, Contents, Checks, Skills, Posts:
 	}

@@ -331,7 +331,7 @@ func (writing *article) block(block document.Block, column int, numbered bool) [
 	case document.Widget:
 		return layout.widget(typed, column)
 	case document.Section, document.Facts, document.ExperienceHead, document.Entry, document.Points, document.Side, document.Clip,
-		document.Reference, document.Card, document.Contents, document.Checks, document.Skills, document.Posts:
+		document.Reference, document.ProjectList, document.Contents, document.Checks, document.Skills, document.Posts:
 		// body lays out the body's sections, and the load refuses a heading inside a list's item or a quote; a post's
 		// body holds none of the résumé's blocks, a project's nor the blog's list
 	}

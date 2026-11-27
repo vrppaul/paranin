@@ -101,7 +101,7 @@ func Resume(snapshot *content.Snapshot, feeds []document.Link, latest *document.
 		Blocks: []document.Block{
 			aboutSection(profile, words, titles.about),
 			experienceSection(profile.Experience, profile.SkillGroups, words, titles.experience),
-			projectsSection(profile.Projects.List, words, titles.projects),
+			projectsSection(profile.Projects, titles.projects),
 		},
 	}
 }
@@ -327,20 +327,29 @@ func paragraphs(texts []string) []document.Paragraph {
 	return written
 }
 
-// projectsSection is the author's projects under its title, each a card.
-func projectsSection(projects []content.Project, words content.Words, title []document.Span) document.Section {
-	cards := make([]document.Block, 0, len(projects))
-	for _, project := range projects {
-		cards = append(cards, document.Card{
-			Title:    markedSpans(project.Name),
-			Subtitle: markedSpans(project.Tagline),
-			Tag:      project.Language,
-			Summary:  markedSpans(project.Description),
-			Facts:    append(projectRepository(project, words).Facts(), installFacts(project, words)...),
-			Page:     projectPage(project),
-		})
+// projectsSection is the author's projects under its title, one list of them at their levels (DESIGN.md, ProjectList).
+func projectsSection(projects content.Projects, title []document.Span) document.Section {
+	return document.Section{Title: title, Name: "", Blocks: []document.Block{projectList(projects)}}
+}
+
+// projectList is the projects under their line, each at its level, by what that level shows of it, in the profile's
+// order: a featured one leading to its page, an auxiliary one to its repository, one told in words nowhere.
+func projectList(projects content.Projects) document.ProjectList {
+	list := document.ProjectList{Line: markedSpans(projects.Line), Featured: nil, Auxiliary: nil, Told: nil}
+	for _, project := range projects.List {
+		name, tagline, description := markedSpans(project.Name), markedSpans(project.Tagline), markedSpans(project.Description)
+		switch project.Level {
+		case content.ProjectFeatured:
+			list.Featured = append(list.Featured, document.FeaturedProject{
+				Name: name, Tagline: tagline, Description: description, Stack: projectMadeOf(project), Page: projectPage(project),
+			})
+		case content.ProjectAuxiliary:
+			list.Auxiliary = append(list.Auxiliary, document.AuxiliaryProject{Name: name, Tagline: tagline, Repository: document.Address{URL: project.Repo}})
+		case content.ProjectTold:
+			list.Told = append(list.Told, document.ToldProject{Name: name, Tagline: tagline, Description: description})
+		}
 	}
-	return document.Section{Title: title, Name: "", Blocks: cards}
+	return list
 }
 
 // projectDocument is a project's own page, one of the profile's: its head, then its story's sections, then its details,
@@ -547,15 +556,6 @@ func projectRepository(project content.Project, words content.Words) *document.R
 		return nil
 	}
 	return &document.Repository{Label: words.Text(content.WordRepository), Address: document.Address{URL: project.Repo}}
-}
-
-// installFacts are how a project is installed as its card says it, its install's command under the site's word for
-// it, where the project gives one.
-func installFacts(project content.Project, words content.Words) []document.Fact {
-	if project.Install == nil {
-		return nil
-	}
-	return []document.Fact{document.CommandFact(words.Text(content.WordInstall), project.Install.Command)}
 }
 
 // listedSkill is a skill as the hidden list of skills holds it: its name, how long in text and in months, the places it

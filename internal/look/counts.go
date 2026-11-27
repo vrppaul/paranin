@@ -7,4 +7,6 @@ package look
 const (
 	// LatestPosts is how many of the blog's latest posts the first screen names at most, a place of a row each
 	LatestPosts = 3
+	// FeaturedProjects is how many featured projects' tiles stand in a row across the projects' tab, each as wide as two auxiliary ones
+	FeaturedProjects = 3
 )

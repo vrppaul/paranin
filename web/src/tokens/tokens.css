@@ -256,6 +256,8 @@
   --toast: 2400ms;
   /* how many of the blog's latest posts the first screen names at most, a place of a row each */
   --latest-posts: 3;
+  /* how many featured projects' tiles stand in a row across the projects' tab, each as wide as two auxiliary ones */
+  --featured-projects: 3;
   /* a tile of the blog's list that leads somewhere, over a tile to come beside it, so the line the two share is the live one's */
   --layer-tile: 1;
   /* what is set into the top edge of a tile to come, over the line a live tile above it draws there */

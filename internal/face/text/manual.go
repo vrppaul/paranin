@@ -266,8 +266,8 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 		// Manual writes a project's details after its sections, taken apart from the description (detailsApart), so
 		// none stands among the blocks written here
 		return nil
-	case document.Card:
-		return writer.card(indent, typed)
+	case document.ProjectList:
+		return writer.projectList(indent, typed)
 	case document.Contents:
 		return writer.contents(indent, typed)
 	case document.Posts:
@@ -279,16 +279,45 @@ func (writer manualWriter) block(block document.Block, indent int) []string {
 	return nil
 }
 
-// card writes a card's title and subtitle with its tag at the right, then under them its summary, its page's
-// address as a manual, where it has one, and its facts.
-func (writer manualWriter) card(indent int, card document.Card) []string {
-	lines := titleLine(indent, joinedWords(dashWord, writer.words(card.Title), writer.words(card.Subtitle)), strings.Fields(card.Tag))
+// projectList writes the projects' line, then each project at its level, a blank line before each, its name and its
+// line over what stands in under them: a featured one's description, what it is made of and its page's address as a
+// manual; an auxiliary one's repository; then, after a pause, as the page sets them under a rule, each one told in
+// words, its description under it.
+func (writer manualWriter) projectList(indent int, list document.ProjectList) []string {
+	lines := paragraph(indent, 0, writer.words(list.Line))
 	inner := indent + sectionIndent
-	lines = append(lines, paragraph(inner, 0, writer.words(card.Summary))...)
-	if address := writer.site.Address(card.Page, routes.FormatManual); address != "" {
-		lines = append(lines, paragraph(inner, 0, []string{address})...)
+	for _, project := range list.Featured {
+		lines = append(lines, writer.projectTitle(indent, project.Name, project.Tagline)...)
+		lines = append(lines, paragraph(inner, 0, writer.words(project.Description))...)
+		lines = append(lines, paragraph(inner, 0, nameWords(project.Stack))...)
+		lines = append(lines, paragraph(inner, 0, strings.Fields(writer.site.Address(project.Page, routes.FormatManual)))...)
 	}
-	return append(lines, writer.pairs(inner, card.Facts)...)
+	for _, project := range list.Auxiliary {
+		lines = append(lines, writer.projectTitle(indent, project.Name, project.Tagline)...)
+		lines = append(lines, paragraph(inner, 0, []string{project.Repository.URL})...)
+	}
+	if len(list.Told) > 0 {
+		lines = append(lines, "", pauseLine(indent))
+	}
+	for _, project := range list.Told {
+		lines = append(lines, writer.projectTitle(indent, project.Name, project.Tagline)...)
+		lines = append(lines, paragraph(inner, 0, writer.words(project.Description))...)
+	}
+	return trimBlank(lines)
+}
+
+// projectTitle writes a project's name and its line, a dash between them, a blank line before them.
+func (writer manualWriter) projectTitle(indent int, name, tagline []document.Span) []string {
+	return append([]string{""}, paragraph(indent, 0, joinedWords(dashWord, writer.words(name), writer.words(tagline)))...)
+}
+
+// nameWords are names in a line, as written, a dot between two: a role's technologies, what a project is made of.
+func nameWords(names []string) []string {
+	parts := make([][]string, 0, len(names))
+	for _, name := range names {
+		parts = append(parts, strings.Fields(name))
+	}
+	return joinedWords(dotWord, parts...)
 }
 
 // posts writes a group of the blog's list: a series' line and how many posts it holds, then each post, a blank line
@@ -302,7 +331,7 @@ func (writer manualWriter) posts(indent int, posts document.Posts) []string {
 	return lines
 }
 
-// listedPost writes a post of the blog's list as a card is written: its title with the day it came out at the right,
+// listedPost writes a post of the blog's list as an entry is written: its title with the day it came out at the right,
 // or the word saying it comes; then under them its lead, its part and its series, its tags, and its page's address as
 // a manual, where it is out.
 func (writer manualWriter) listedPost(indent int, post document.ListedPost) []string {
@@ -353,11 +382,7 @@ func (writer manualWriter) listedAddress(target document.Target) string {
 func (writer manualWriter) entry(indent int, entry document.Entry) []string {
 	left := joinedWords(dashWord, writer.words(entry.Title), writer.words(entry.Subtitle))
 	lines := titleLine(indent, left, strings.Fields(periodText(entry.Period)))
-	technologies := make([][]string, 0, len(entry.Technologies))
-	for _, technology := range entry.Technologies {
-		technologies = append(technologies, strings.Fields(technology))
-	}
-	lines = append(lines, paragraph(indent+sectionIndent, 0, joinedWords(dotWord, technologies...))...)
+	lines = append(lines, paragraph(indent+sectionIndent, 0, nameWords(entry.Technologies))...)
 	lines = append(lines, writer.bullets(indent+sectionIndent, entry.Points)...)
 	for _, passage := range entry.Description {
 		lines = append(append(lines, ""), paragraph(indent+sectionIndent, 0, writer.words(passage.Spans))...)

@@ -36,6 +36,7 @@ func TestEveryPageReadsAsItsGoldenMarkup(test *testing.T) {
 	}{
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: ""}, file: "index.html"},
 		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "experience"}, file: "experience.html"},
+		{page: document.Page{Kind: document.PageResume, Slug: "", Tab: "projects"}, file: "projects.html"},
 		{page: document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""}, file: "p/tidy-tool.html"},
 	}
 	for _, testCase := range cases {
@@ -726,9 +727,9 @@ func TestAnotherProjectStandsAsAPaneLeadingToItsPage(test *testing.T) {
 // A fact whose value is a command alone stands as a chip that copies it, named by the command and saying in the toast
 // what it copied, on any page that holds one; code among a fact's words stays code.
 func TestACommandAloneStandsAsAChipThatCopiesTheCommand(test *testing.T) {
-	tool := document.Card{
-		Title: []document.Span{document.Text{Text: "tidy"}}, Subtitle: nil, Tag: "", Summary: nil, Page: document.Page{Kind: document.PageNone, Slug: "", Tab: ""},
-		Facts: []document.Fact{
+	tool := document.Facts{
+		Kind: document.FactsDetails,
+		List: []document.Fact{
 			{Label: "install", Value: []document.Span{document.Code{Text: "go install example.test/tidy@latest"}}},
 			{Label: "use", Value: []document.Span{document.Code{Text: "tidy ."}, document.Text{Text: " daily"}}},
 		},

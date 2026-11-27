@@ -394,10 +394,10 @@ func TestADigitChoosesItsTabAtOnce(test *testing.T) {
 		holds string
 		lacks string
 	}{
-		{name: "the third tab", keys: []string{"3"}, holds: "other-tool", lacks: "Kept the queue"},
-		{name: "the tab, then a line down", keys: []string{"2", "j"}, holds: experienceSecond, lacks: "other-tool"},
-		{name: "a digit of no tab", keys: []string{"2", "9"}, holds: experienceTop, lacks: "other-tool"},
-		{name: "zero", keys: []string{"2", "0"}, holds: experienceTop, lacks: "other-tool"},
+		{name: "the third tab", keys: []string{"3"}, holds: projectsTop, lacks: "Kept the queue"},
+		{name: "the tab, then a line down", keys: []string{"2", "j"}, holds: experienceSecond, lacks: projectsTop},
+		{name: "a digit of no tab", keys: []string{"2", "9"}, holds: experienceTop, lacks: projectsTop},
+		{name: "zero", keys: []string{"2", "0"}, holds: experienceTop, lacks: projectsTop},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {
@@ -426,8 +426,8 @@ func TestTheTabKeysMoveBetweenTabs(test *testing.T) {
 	}{
 		{name: "l goes to the next tab", keys: []string{"l"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
 		{name: "the right arrow goes to the next tab", keys: []string{"right"}, holds: "Kept the queue", lacks: "Builds small tools that last."},
-		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: "other-tool", lacks: "Kept the queue"},
-		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: "github.test/mira", lacks: "Builds small tools that last."},
+		{name: "two steps go two tabs on", keys: []string{"l", "l"}, holds: projectsTop, lacks: "Kept the queue"},
+		{name: "h goes round from the first tab to the last", keys: []string{"h"}, holds: projectsTop, lacks: "Builds small tools that last."},
 		{name: "the left arrow goes back", keys: []string{"l", "left"}, holds: "Builds small tools that last.", lacks: "Kept the queue"},
 	}
 	for _, testCase := range cases {
@@ -840,6 +840,8 @@ func TestALinkCarriesItsAddress(test *testing.T) {
 		{name: "the mail address in the brief", model: fixtureModel(test, commonWidth, commonHeight), address: "mailto:mira@example.test"},
 		{name: "a public profile on the first tab", model: fixtureModel(test, commonWidth, tallHeight), address: "https://github.test/mira"},
 		{name: "the headline's words for a kind of work", model: fixtureModel(test, commonWidth, tallHeight), address: "https://example.test/projects"},
+		{name: "a featured project's name", model: pressed(test, fixtureModel(test, commonWidth, tallHeight), "3"), address: "https://example.test/p/tidy-tool"},
+		{name: "an auxiliary project's name", model: pressed(test, fixtureModel(test, commonWidth, tallHeight), "3"), address: "https://github.test/mira/trim"},
 		{name: "a post's picture", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly/margin.png"},
 		{name: "a post's link to a heading", model: openedModel(test, "blog/1", commonWidth, tallHeight), address: "https://example.test/blog/reading-slowly#what-a-reader-keeps"},
 	}

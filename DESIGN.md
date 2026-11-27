@@ -149,7 +149,7 @@ other size: a control that seems to need one is the wrong control.
 - The page's one `h1`, a tab's title among them, is block letters; a post's title is its page's `h1` in
   `title_text`, since a sentence in block letters would not fit; another page's `h2` is `heading`; every heading
   below is `strong`, its depth shown by the space before it: `row_2` before a subsection's heading, `row` before an
-  entry's or a card's. Levels never skip.
+  entry's. Levels never skip.
 - Code is told by its `sunk` ground, since the whole page is one face.
 - Weights: 400 for text, 700 for what names (a role, a company, a button) and for a word made strong, wherever it
   stands, 800 only for the mail, its @ left at 400.
@@ -400,8 +400,7 @@ in a Tooltip over it under the pointer. Without the script it is hidden and the 
 Label and value, two cells apart: the label `muted`, one or two lower-case words as the profile writes them; the value
 in `text`, on the label's baseline. On the first screen the first three the profile lists, its author's choice
 (experience, stack, languages); where he works from stands with the place, not as a fact (owner, 2026-11-26). On a
-phone a value that is a Command stands under its label across the whole width, as a Card's install line does at any
-width.
+phone a value that is a Command stands under its label across the whole width.
 
 ### CareerLine
 
@@ -415,13 +414,6 @@ list: years in a column as wide as the widest, company, and a bar as long as the
 One role: its dates in a column of their own (`when`), then its heading, `strong`, an `h2` on its tab, under the
 page's `h1`. Its points. The current role's dates bold in `text`, ended ones `muted`. Points start
 with a `faint` dash, at most `measure` wide. Entries are set apart by a `quiet` hairline, never boxed.
-
-### Card
-
-A piece of work: its name as a `strong` heading with a link to its page, its language and line in one `muted` row, its
-summary, its facts. An install line is a fact whose value is Code alone; the page draws it as a Command, under its
-label across the card's width, since beside the label a long one outruns the value's column. Cards are
-`row_2` apart with a `quiet` hairline between, never boxed.
 
 ### Table
 
@@ -489,11 +481,9 @@ named "Close"; its tooltip says Esc does the same. Never opens on its own.
 - Four crosses mark the first screen's corners, `cross` in `edge`, half a gutter outside the content and `row_2` in
   from its top and foot: only there and round a post's head, which stands as a first screen, and not on a phone, whose
   gutter leaves them no room.
-- A section: its block title at the left, its content at the right, as wide as an Entry: `when`, `cell_3` and
-  `measure`; a title too wide for the room the content leaves stands over the content in its column at its full size,
-  never shrunk to fit beside it, so the content stands in one column on every tab; `row_2` of air above and below it,
-  `row` on a phone. Its blocks stand a row apart, a subsection two. A tab of the résumé stands as a section, its title
-  the page's `h1`.
+- A tab of the résumé stands as a section: its title in block letters, the page's `h1`, on a row of its own over what
+  the tab holds, as ExperienceHead and ProjectList draw it (owner, 2026-11-27); `row_2` of air above and below it,
+  `row` on a phone. Its blocks stand a row apart, a subsection two.
 
 ### Tag
 

@@ -1088,7 +1088,7 @@ a.tag[aria-current] .tag-mark {
 /* the focus on the button rings the whole chip, which is the control, and the focus on a tile's title the whole tile,
  * which its link stands over */
 .command:has(> :focus-visible),
-.tile:has(> a.tile-title:focus-visible) {
+.tile:has(a.tile-title:focus-visible) {
   outline: var(--focus-width) solid var(--label);
   outline-offset: var(--focus-width);
 }
@@ -1315,8 +1315,9 @@ a.tile-title:focus-visible {
 }
 
 /* a heading among a section's blocks names in the strong style, its level shown by the space before it, never by its
- * size (DESIGN.md, Type): an h2 on a tab, under the page's h1, an h3 under a section's h2 on the résumé's opening */
-.section .blocks :is(h2, h3, h4, h5, h6) {
+ * size (DESIGN.md, Type): an h2 on a tab, under the page's h1, an h3 under a section's h2 on the résumé's opening.
+ * It weighs as a heading alone, so a part whose heading has a style of its own, a project's name, sets it by a class */
+:where(.section .blocks) :is(h2, h3, h4, h5, h6) {
   font-size: var(--type-strong-size);
   font-weight: var(--type-strong-weight);
   line-height: var(--type-strong-line);
@@ -2728,11 +2729,11 @@ a.pick-row:hover {
 
 /* a pane that leads somewhere under the pointer, and a tile of the blog's list, whose title's link leads: its ground a
  * shade down, its name on both grounds, the page's above the edge and the pane's below it */
-:is(a.pane:hover, .tile:has(> a.tile-title:hover)) {
+:is(a.pane:hover, .tile:has(a.tile-title:hover)) {
   background: var(--sunk);
 }
 
-:is(a.pane:hover, .tile:has(> a.tile-title:hover)) .edge-name {
+:is(a.pane:hover, .tile:has(a.tile-title:hover)) .edge-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--sunk) 0);
 }
 
@@ -2742,11 +2743,11 @@ a.pane:hover .pane-title {
 }
 
 /* pressed, one shade further, as a quiet control (DESIGN.md, States) */
-:is(a.pane:active, .tile:has(> a.tile-title:active)) {
+:is(a.pane:active, .tile:has(a.tile-title:active)) {
   background: var(--deep);
 }
 
-:is(a.pane:active, .tile:has(> a.tile-title:active)) .edge-name {
+:is(a.pane:active, .tile:has(a.tile-title:active)) .edge-name {
   background: linear-gradient(var(--background) calc(0.5 * var(--row)), var(--deep) 0);
 }
 
@@ -3109,12 +3110,13 @@ a.pane:hover .pane-title {
  * its edge inside it, stretched over the whole tile, since its series leads elsewhere and a link holds no other: the
  * keyboard's ring and the pointer's states are the tile's, as a pane's (.pane, .command), and its title, which no
  * underline marks at rest, takes the accent's under the pointer, twice as thick, its edge left out, set into the frame
- * as it is. A pane the keyboard is on stands over its neighbours too, so no line they share cuts its ring */
-.tile:has(> a.tile-title:any-link) {
+ * as it is. A project's tile holds the link inside its name's heading. A pane the keyboard is on stands over its
+ * neighbours too, so no line they share cuts its ring */
+.tile:has(a.tile-title:any-link) {
   z-index: var(--layer-tile);
 }
 
-.tile:has(> a.tile-title:focus-visible),
+.tile:has(a.tile-title:focus-visible),
 a.pane:focus-visible {
   z-index: var(--layer-tile-focus);
 }
@@ -3130,7 +3132,7 @@ a.tile-title::after {
   content: "";
 }
 
-.tile:has(> a.tile-title:hover) .tile-title {
+.tile:has(a.tile-title:hover) .tile-title {
   text-decoration: underline var(--accent) var(--underline-hover);
   text-underline-offset: var(--nudge);
 }
@@ -3275,19 +3277,22 @@ a.tile-title::after {
   display: grid;
 }
 
+/* a project's name is a heading under the tab's title, its link inside it, which its list spaces */
+:is(.featured-project-name, .auxiliary-project-name, .told-project-name) {
+  margin: 0;
+}
+
 /* a featured project's tile is a tile (.tile), with nothing set into its edge, so its name stands a row from its top:
- * its name in the heading's style, underlined as a link, its line bold, its description, then what it is made of,
- * muted, at its foot, a row apart */
+ * its name in the heading's style, underlined as a pane's title (.pane-title), its line bold, its description, then
+ * what it is made of, muted, at its foot, a row apart */
 .featured-project {
   gap: var(--row);
   padding-top: var(--row);
 }
 
-.featured-project > a.tile-title {
+.featured-project-name {
   font-size: var(--type-heading-size);
   line-height: var(--type-heading-line);
-  text-decoration: underline var(--muted);
-  text-underline-offset: var(--nudge);
 }
 
 .featured-project-tagline {
@@ -3305,7 +3310,7 @@ a.tile-title::after {
   padding-top: var(--row);
 }
 
-.auxiliary-project > a.tile-title,
+.auxiliary-project-name,
 .auxiliary-project-tagline {
   font-size: var(--type-small-size);
   line-height: var(--type-small-line);
@@ -3326,10 +3331,6 @@ a.tile-title::after {
   gap: var(--row-half);
   align-content: start;
   max-width: var(--measure);
-}
-
-.told-project-name {
-  font-weight: var(--type-strong-weight);
 }
 
 .told-project-description {

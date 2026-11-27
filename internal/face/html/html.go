@@ -77,14 +77,23 @@ const (
 const largeImagePreview = "max-image-preview:large"
 
 // The depth of a section's heading under the page's title, h2, and the deepest HTML has, h6; the name of a heading no
-// reader links to, which carries none, the attribute a named one carries its name in, and the one a heading the site's
-// script finds carries its part in
+// reader links to, which carries none, the attribute a named one carries its name in, the one a heading the site's
+// script finds carries its part in, and the one a heading the stylesheet finds carries its classes in
 const (
 	firstHeadingDepth   = 2
 	deepestHeadingDepth = 6
 	unnamed             = ""
 	idAttribute         = "id"
 	partAttribute       = "data-part"
+	classAttribute      = "class"
+)
+
+// The classes of a project's name on the projects' tab, a heading, by its level: a featured one's titled as a pane's
+// is, underlined as a link, in the heading's size; an auxiliary one's small; a told one's in the strong style
+const (
+	featuredNameClasses  = "pane-title featured-project-name"
+	auxiliaryNameClasses = "auxiliary-project-name"
+	toldNameClasses      = "told-project-name"
 )
 
 // A space a line never breaks at, U+00A0, written as its bytes in UTF-8 so the code shows it
@@ -505,7 +514,7 @@ func (writer PageWriter) block(block document.Block, depth int) templ.Component 
 	case document.Reference:
 		return writer.reference(typed, depth)
 	case document.ProjectList:
-		return writer.projectList(typed)
+		return writer.projectList(typed, depth)
 	case document.Contents:
 		return writer.contents(typed)
 	case document.Checks, document.Skills:

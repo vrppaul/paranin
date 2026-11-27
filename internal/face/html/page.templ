@@ -877,8 +877,8 @@ templ (writer PageWriter) points(points []document.Point) {
 
 // projectList is the projects at their levels (DESIGN.md, ProjectList), no name over a level: the line the author
 // gives them; the featured ones as detailed tiles and the auxiliary ones as small tiles, each on the grid of tiles;
-// then those told in words alone, leading nowhere.
-templ (writer PageWriter) projectList(list document.ProjectList) {
+// then those told in words alone, leading nowhere. Each project's name is a heading at the depth of the list's.
+templ (writer PageWriter) projectList(list document.ProjectList, depth int) {
 	<div class="project-list">
 		if len(list.Line) > 0 {
 			<p class="page-line">
@@ -889,7 +889,7 @@ templ (writer PageWriter) projectList(list document.ProjectList) {
 			<ul class="tile-grid featured-projects">
 				for _, project := range list.Featured {
 					<li>
-						@writer.featuredProject(project)
+						@writer.featuredProject(project, depth)
 					</li>
 				}
 			</ul>
@@ -898,7 +898,7 @@ templ (writer PageWriter) projectList(list document.ProjectList) {
 			<ul class="tile-grid auxiliary-projects">
 				for _, project := range list.Auxiliary {
 					<li>
-						@writer.auxiliaryProject(project)
+						@writer.auxiliaryProject(project, depth)
 					</li>
 				}
 			</ul>
@@ -907,9 +907,7 @@ templ (writer PageWriter) projectList(list document.ProjectList) {
 			<ul class="told-projects">
 				for _, project := range list.Told {
 					<li class="told-project">
-						<span class="told-project-name">
-							@writer.spans(project.Name)
-						</span>
+						@headingWith(depth, templ.Attributes{classAttribute: toldNameClasses}, writer.spans(project.Name))
 						<span>
 							@writer.spans(project.Tagline)
 						</span>
@@ -924,13 +922,11 @@ templ (writer PageWriter) projectList(list document.ProjectList) {
 }
 
 // featuredProject is a featured project as a detailed tile, the whole of it leading to the project's page by its
-// name's link, which the stylesheet stretches over the tile, as a post's tile's title: its name, its line, its
-// description, then what it is made of at its foot, each name whole.
-templ (writer PageWriter) featuredProject(project document.FeaturedProject) {
+// name's link, which the stylesheet stretches over the tile, as a post's tile's title: its name as a heading at a
+// depth, its line, its description, then what it is made of at its foot, each name whole.
+templ (writer PageWriter) featuredProject(project document.FeaturedProject, depth int) {
 	<div class="pane tile featured-project">
-		<a class="tile-title" href={ routes.Reference(project.Page, routes.FormatChosen) }>
-			@writer.spans(project.Name)
-		</a>
+		@headingWith(depth, templ.Attributes{classAttribute: featuredNameClasses}, writer.tileLink(routes.Reference(project.Page, routes.FormatChosen), project.Name))
 		<span class="featured-project-tagline">
 			@writer.spans(project.Tagline)
 		</span>
@@ -946,16 +942,22 @@ templ (writer PageWriter) featuredProject(project document.FeaturedProject) {
 }
 
 // auxiliaryProject is an auxiliary project as a small tile, the whole of it leading to its repository by its name's
-// link, stretched over the tile as a featured one's: its name and its line.
-templ (writer PageWriter) auxiliaryProject(project document.AuxiliaryProject) {
+// link, stretched over the tile as a featured one's: its name as a heading at a depth, and its line.
+templ (writer PageWriter) auxiliaryProject(project document.AuxiliaryProject, depth int) {
 	<div class="pane tile auxiliary-project">
-		<a class="tile-title" href={ routes.Reference(project.Repository, routes.FormatChosen) }>
-			@writer.spans(project.Name)
-		</a>
+		@headingWith(depth, templ.Attributes{classAttribute: auxiliaryNameClasses}, writer.tileLink(routes.Reference(project.Repository, routes.FormatChosen), project.Name))
 		<span class="auxiliary-project-tagline">
 			@writer.spans(project.Tagline)
 		</span>
 	</div>
+}
+
+// tileLink is a project's name in its tile as the link to where the tile leads, which the stylesheet stretches over
+// the tile.
+templ (writer PageWriter) tileLink(address string, name []document.Span) {
+	<a class="tile-title" href={ address }>
+		@writer.spans(name)
+	</a>
 }
 
 // contents are the places a document leads to (DESIGN.md, Contents), each a link by its title, then the line on what

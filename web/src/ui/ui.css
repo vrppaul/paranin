@@ -1750,9 +1750,11 @@ a.tile-title:focus-visible {
 }
 
 /* a part of what tells about a project, a name or a link, stands whole, so its line breaks after a dot alone, never at
- * a hyphen */
+ * a hyphen; one wider than the line breaks inside itself rather than run past it, and holds no column wider */
 .whole-part {
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* where a project's code lives (DESIGN.md, Repository), in the Mail's colours, bold at the text's size, underlined as

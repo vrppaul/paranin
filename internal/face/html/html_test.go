@@ -716,7 +716,7 @@ func TestAnotherProjectStandsAsAPaneLeadingToItsPage(test *testing.T) {
 	written := fixtureWriter(test).Page(document.Document{Head: head, Blocks: nil}, blankPerson(), "")
 	for _, want := range []string{
 		`<nav class="tile-grid" aria-labelledby="_other-projects">`,
-		`<a class="pane" href="/p/tame-tool"><span class="pane-title">tame-tool</span> <span class="pane-lead">Tames files.</span> <span class="pane-stack"><span class="whole-part">Go</span>` + dot + `<span class="whole-part">tree-sitter</span></span></a>`,
+		`<a class="pane" href="/p/tame-tool"><span class="pane-title">tame-tool</span> <span class="pane-lead">Tames files.</span> <span class="pane-stack"><span class="whole-part">Go` + partEnd + `</span> <span class="whole-part">tree-sitter</span></span></a>`,
 	} {
 		if !strings.Contains(written, want) {
 			test.Errorf("the page %q holds no %q", written, want)

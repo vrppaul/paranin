@@ -550,23 +550,25 @@ templ (writer PageWriter) otherPane(other document.OtherProject) {
 	</a>
 }
 
-// wholeParts are parts a face joins, names or links, each a whole that never breaks inside, a line breaking only after
-// the dot between two.
+// wholeParts are parts a face joins, names or links, each a whole with the dot after it, but the last, a line breaking
+// only at the space after a dot.
 templ (writer PageWriter) wholeParts(parts []document.Span) {
-	// the dot before a part meets it, as templ writes a space after one on a line of its own
 	for index, part := range parts {
-		if index > 0 {
-			{ dot }@writer.wholePart(part)
+		if index < len(parts)-1 {
+			@writer.wholePart(part, partEnd)
+			@text(wordSpace)
 		} else {
-			@writer.wholePart(part)
+			@writer.wholePart(part, "")
 		}
 	}
 }
 
-// wholePart is a part a face joins, a name or a link, as one whole that never breaks inside.
-templ (writer PageWriter) wholePart(part document.Span) {
+// wholePart is a part a face joins, a name or a link, and what ends it, as one whole that breaks inside only where it
+// is wider than its line.
+templ (writer PageWriter) wholePart(part document.Span, end string) {
 	<span class="whole-part">
 		@writer.spans([]document.Span{part})
+		@text(end)
 	</span>
 }
 

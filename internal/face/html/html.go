@@ -105,6 +105,9 @@ const (
 	// a title and its place, a project's tags, the blog's name and a list's grouping in the title the list says of
 	// itself; a space that never breaks before the dot, so the dot ends a line and never opens the next
 	dot = noBreakSpace + "· "
+	// what ends a whole part, a name or a link, but the last: the dot stands inside it, so the part and its dot break
+	// as one, the space after them the line's only break
+	partEnd = noBreakSpace + "·"
 	// a title and its subtitle; in the title a page says of itself, a tab's title and its page's, the blog's name and
 	// the list's filter
 	dash = " — "

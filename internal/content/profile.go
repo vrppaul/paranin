@@ -21,7 +21,7 @@ type Profile struct {
 	Summary     string          `yaml:"summary"`
 	Facts       []Fact          `yaml:"facts"`
 	Experience  Experience      `yaml:"experience"`
-	Projects    []Project       `yaml:"projects"`
+	Projects    Projects        `yaml:"projects"`
 	SkillGroups []SkillGroup    `yaml:"skill_groups"`
 	Languages   []Language      `yaml:"languages"`
 	Health      []HealthSection `yaml:"health"`
@@ -90,23 +90,49 @@ type Role struct {
 	Description []string `yaml:"description"`
 }
 
-// Project is a piece of work that can be checked. Its slug names it in every address; a project with a page of
-// its own gets one. Its stack is what it is built on, by name, after the language it is written in; its licence a
-// word, as SPDX names one. Its page tells its story in its sections, then the details a user looks up.
+// Projects are the author's projects: their line, the one thing a reader should keep of them, as the experience has
+// its own; and the projects, in their order.
+type Projects struct {
+	Line string    `yaml:"line"`
+	List []Project `yaml:"list"`
+}
+
+// Project is a piece of work that can be checked. Its slug names it in every address; its level says how the
+// projects' tab shows it. Its stack is what it is built on, by name, after the language it is written in; its licence
+// a word, as SPDX names one. A featured project's page tells its story in its sections, then the details a user looks
+// up.
 type Project struct {
-	Slug        string    `yaml:"slug"`
-	Name        string    `yaml:"name"`
-	Tagline     string    `yaml:"tagline"`
-	Description string    `yaml:"description"`
-	Language    string    `yaml:"language"`
-	Stack       []string  `yaml:"stack"`
-	Repo        string    `yaml:"repo"`
-	Install     *Install  `yaml:"install"`
-	Release     *Release  `yaml:"release"`
-	Licence     string    `yaml:"licence"`
-	Page        bool      `yaml:"page"`
-	Sections    []Section `yaml:"sections"`
-	Details     []Section `yaml:"details"`
+	Slug        string       `yaml:"slug"`
+	Name        string       `yaml:"name"`
+	Level       ProjectLevel `yaml:"level"`
+	Tagline     string       `yaml:"tagline"`
+	Description string       `yaml:"description"`
+	Language    string       `yaml:"language"`
+	Stack       []string     `yaml:"stack"`
+	Repo        string       `yaml:"repo"`
+	Install     *Install     `yaml:"install"`
+	Release     *Release     `yaml:"release"`
+	Licence     string       `yaml:"licence"`
+	Sections    []Section    `yaml:"sections"`
+	Details     []Section    `yaml:"details"`
+}
+
+// ProjectLevel is how far the projects' tab puts a project forward (DESIGN.md, ProjectList).
+type ProjectLevel string
+
+const (
+	// ProjectFeatured is a project with a page of its own, a detailed tile on the tab leading there
+	ProjectFeatured ProjectLevel = "featured"
+	// ProjectAuxiliary is a small tile on the tab, leading to the project's repository
+	ProjectAuxiliary ProjectLevel = "auxiliary"
+	// ProjectTold is a project told in words alone, with no link
+	ProjectTold ProjectLevel = "told"
+)
+
+// projectLevels are the levels a project may stand at, each named once. exhaustive holds the literal to every
+// ProjectLevel, so a level added to the constants is added here too.
+func projectLevels() map[ProjectLevel]bool {
+	return map[ProjectLevel]bool{ProjectFeatured: true, ProjectAuxiliary: true, ProjectTold: true}
 }
 
 // Install is how a project is installed: its command, and the other ways, each taken instead where its note says.

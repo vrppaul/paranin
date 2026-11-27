@@ -42,12 +42,16 @@ EXPERIENCE
                 mergers and one long winter of outages
 
 PROJECTS
-       other-tool
+       other-tool — Sorted mail by its sender.
+              A tool that ran for a year, until no mail came for it to sort.
 
        tidy-tool — Tidies files.                                           Lua
               A tool that tidies files.
               https://example.test/p/tidy-tool.txt
               repository   https://github.test/mira/tidy
               install      go install example.test/tidy@latest
+
+       trim-tool — Trims space at a line's end.                             Go
+              repository   https://github.test/mira/trim
 
 example.test                                                   EXAMPLE.TEST(1)

@@ -50,45 +50,56 @@ experience:
         - Kept the build green through three moves of the office, two mergers and one long winter of outages
 
 projects:
-  - slug: other-tool
-    name: other-tool
-  - slug: tidy-tool
-    name: tidy-tool
-    tagline: Tidies files.
-    description: A tool that ==tidies files==.
-    language: Lua
-    stack: [Penlight, LPeg]
-    repo: https://github.test/mira/tidy
-    install:
-      command: go install example.test/tidy@latest
-      alternatives:
-        - note: On a machine with no Go
-          command: curl -fsSL https://example.test/tidy.sh | sh
-    release:
-      latest: https://github.test/mira/tidy/releases/latest
-      changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md
-    licence: MIT
-    page: true
-    sections:
-      - title: Why
-        paragraphs:
-          - Files were untidy.
-      - title: How it tidies
-        paragraphs:
-          - "`tidy .` reads each file once."
-        points:
-          - Sorts the lines
-          - Keeps the ==blank== ones
-        clip: {file: tidying.mp4, still: tidying.png, shows: "`tidy .` tidying a folder"}
-        links:
-          - {name: source, url: https://github.test/mira/tidy, line: where the code lives}
-          - {name: manual, url: https://docs.example.test/tidy, line: every flag it takes}
-    details:
-      - title: Flags
-        paragraphs:
-          - "`--check` reports what it would tidy and changes nothing."
-        links:
-          - {name: flags, url: https://docs.example.test/tidy/flags, line: each flag in full}
+  line: Small tools, each doing ==one thing== well.
+  list:
+    - slug: other-tool
+      name: other-tool
+      level: told
+      tagline: Sorted mail by its sender.
+      description: A tool that ran for a year, until no mail came for it to sort.
+    - slug: tidy-tool
+      name: tidy-tool
+      level: featured
+      tagline: Tidies files.
+      description: A tool that ==tidies files==.
+      language: Lua
+      stack: [Penlight, LPeg]
+      repo: https://github.test/mira/tidy
+      install:
+        command: go install example.test/tidy@latest
+        alternatives:
+          - note: On a machine with no Go
+            command: curl -fsSL https://example.test/tidy.sh | sh
+      release:
+        latest: https://github.test/mira/tidy/releases/latest
+        changelog: https://github.test/mira/tidy/blob/HEAD/CHANGELOG.md
+      licence: MIT
+      sections:
+        - title: Why
+          paragraphs:
+            - Files were untidy.
+        - title: How it tidies
+          paragraphs:
+            - "`tidy .` reads each file once."
+          points:
+            - Sorts the lines
+            - Keeps the ==blank== ones
+          clip: {file: tidying.mp4, still: tidying.png, shows: "`tidy .` tidying a folder"}
+          links:
+            - {name: source, url: https://github.test/mira/tidy, line: where the code lives}
+            - {name: manual, url: https://docs.example.test/tidy, line: every flag it takes}
+      details:
+        - title: Flags
+          paragraphs:
+            - "`--check` reports what it would tidy and changes nothing."
+          links:
+            - {name: flags, url: https://docs.example.test/tidy/flags, line: each flag in full}
+    - slug: trim-tool
+      name: trim-tool
+      level: auxiliary
+      tagline: Trims space at a line's end.
+      language: Go
+      repo: https://github.test/mira/trim
 
 skill_groups:
   - title: Languages

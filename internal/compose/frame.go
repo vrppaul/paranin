@@ -231,7 +231,7 @@ func frameOf(snapshot *content.Snapshot, read blog, edited []OpenedPage) Frame {
 		ReadingGives: words.Text(content.WordReadingGives),
 		WriteTo:      words.Text(content.WordWriteTo),
 		Play:         words.Text(content.WordPlay),
-		Projects:     projectPlaces(snapshot.Profile.Projects),
+		Projects:     projectPlaces(snapshot.Profile.Projects.List),
 		Pages:        edited,
 		Sessions: []Session{
 			{Name: snapshot.Profile.Site.BaseURL.Host(), Start: document.PageOf(document.PageResume)},
@@ -368,7 +368,7 @@ func projectPages(projects []document.Place) []OpenedPage {
 // editedPages are the pages :e opens in every language, each once: each project's page, then each blog's pages, the
 // site's own language's first.
 func editedPages(snapshot *content.Snapshot, blogs []blog) []OpenedPage {
-	pages := projectPages(projectPlaces(snapshot.Profile.Projects))
+	pages := projectPages(projectPlaces(snapshot.Profile.Projects.List))
 	for _, read := range blogs {
 		pages = append(pages, blogPages(read)...)
 	}

@@ -122,80 +122,80 @@ experience:
       bullets:
         - Websites, logos and brand identities for small companies
 
-# A project's install is its command, and its alternatives, each a note on when to take it instead and a command. Its
-# release names its newest release and its changelog, both or none; its licence is a word. A section of its page takes
-# its title, then its paragraphs: and its points:, one of them at least; its clip:, a recording (an MP4) and its still,
-# files of projects/<slug>/, and what it shows, the length read from the file; and its links:. The details: after its
-# sections take the same.
+# The projects' line is the one thing a reader should keep of them. A project's level says how the projects' tab shows
+# it: featured, a tile leading to its own page; auxiliary, a small tile leading to its repo:, which it names; told, in
+# words alone. Its install is its command, and its alternatives, each a note on when to take it instead and a command.
+# Its release names its newest release and its changelog, both or none; its licence is a word. A section of its page
+# takes its title, then its paragraphs: and its points:, one of them at least; its clip:, a recording (an MP4) and its
+# still, files of projects/<slug>/, and what it shows, the length read from the file; and its links:. The details:
+# after its sections take the same.
 projects:
-  - slug: claude-review
-    name: claude-review
-    tagline: Browser-based code review for AI coding agents.
-    description: >-
-      Add inline comments on code changes, text files or conversation
-      transcripts, and send structured feedback back to the agent.
-    language: Python
-    repo: https://github.com/vrppaul/claude-review
-    install:
-      command: npx skills add vrppaul/claude-review -g -y
-    release:
-      latest: https://github.com/vrppaul/claude-review/releases/latest
-      changelog: https://github.com/vrppaul/claude-review/blob/HEAD/CHANGELOG.md
-    licence: MIT
-    page: true
-    sections:
-      - title: What it does
-        paragraphs:
-          - "Diff mode shows uncommitted changes, tracked, staged and untracked, in a GitHub-style diff view with a file tree."
-          - "Files mode opens any text file for review: plans, docs, configs, source code. /review-ui plan opens the current plan before you approve it."
-          - "Transcript mode turns a Claude Code conversation into reviewable entries, one per user or assistant message, without tool calls or thinking blocks."
-          - "Comments go on a line or a range. A comment can suggest a replacement, or be marked as a question or a blocker. On submit, the comments reach the agent, and it makes the requested changes."
-          - "A review can go in rounds: the threads stay on screen while the agent answers and makes the changes, and the diff is taken again beneath them."
-  - slug: semantic-code-mcp
-    name: semantic-code-mcp
-    tagline: Semantic code search for Claude Code.
-    description: >-
-      An MCP server that indexes a codebase with embeddings and returns ranked
-      results by meaning, instead of iterative grep and glob.
-    language: Python
-    stack: [tree-sitter, sentence-transformers, LanceDB]
-    repo: https://github.com/vrppaul/semantic-code-mcp
-    install:
-      command: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
-      alternatives:
-        - note: On Linux, the CPU-only torch build
-          command: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp
-    release:
-      latest: https://github.com/vrppaul/semantic-code-mcp/releases/latest
-      changelog: https://github.com/vrppaul/semantic-code-mcp/blob/HEAD/CHANGELOG.md
-    licence: MIT
-    page: true
-    sections:
-      - title: How it works
-        paragraphs:
-          - "tree-sitter splits source files into functions, classes, methods, structs, traits and markdown sections."
-          - "sentence-transformers encodes each chunk with all-MiniLM-L6-v2, and LanceDB stores the vectors. LanceDB is embedded, like SQLite, so there is no server to run."
-          - "Search combines semantic and keyword matching and boosts recent code. The first search indexes the project on its own."
-          - "Indexing is incremental, by file modification time, and finds files with git ls-files. The embedding model loads on the first query."
-          - "Three MCP tools: search_code, index_codebase and index_status."
-  - slug: paranin
-    name: paranin
-    tagline: This résumé as an SSH app.
-    description: The same profile, served over SSH as a terminal app. Go, Charm Wish and Bubble Tea.
-    language: Go
-    repo: ""
-    install:
-      command: ssh paran.in
-    page: false
-    sections: []
-  - slug: water-tracker
-    name: water-tracker
-    tagline: A coaster that weighs your mug.
-    description: ESP32 firmware reads a load cell; a Raspberry Pi server with PostgreSQL answers how much water you drank today.
-    language: C++ and Python
-    repo: ""
-    page: false
-    sections: []
+  line: "[the line you give your projects]"
+  list:
+    - slug: claude-review
+      name: claude-review
+      level: featured
+      tagline: Browser-based code review for AI coding agents.
+      description: >-
+        Add inline comments on code changes, text files or conversation
+        transcripts, and send structured feedback back to the agent.
+      language: Python
+      repo: https://github.com/vrppaul/claude-review
+      install:
+        command: npx skills add vrppaul/claude-review -g -y
+      release:
+        latest: https://github.com/vrppaul/claude-review/releases/latest
+        changelog: https://github.com/vrppaul/claude-review/blob/HEAD/CHANGELOG.md
+      licence: MIT
+      sections:
+        - title: What it does
+          paragraphs:
+            - "Diff mode shows uncommitted changes, tracked, staged and untracked, in a GitHub-style diff view with a file tree."
+            - "Files mode opens any text file for review: plans, docs, configs, source code. /review-ui plan opens the current plan before you approve it."
+            - "Transcript mode turns a Claude Code conversation into reviewable entries, one per user or assistant message, without tool calls or thinking blocks."
+            - "Comments go on a line or a range. A comment can suggest a replacement, or be marked as a question or a blocker. On submit, the comments reach the agent, and it makes the requested changes."
+            - "A review can go in rounds: the threads stay on screen while the agent answers and makes the changes, and the diff is taken again beneath them."
+    - slug: semantic-code-mcp
+      name: semantic-code-mcp
+      level: featured
+      tagline: Semantic code search for Claude Code.
+      description: >-
+        An MCP server that indexes a codebase with embeddings and returns ranked
+        results by meaning, instead of iterative grep and glob.
+      language: Python
+      stack: [tree-sitter, sentence-transformers, LanceDB]
+      repo: https://github.com/vrppaul/semantic-code-mcp
+      install:
+        command: claude mcp add --scope user semantic-code -- uvx semantic-code-mcp
+        alternatives:
+          - note: On Linux, the CPU-only torch build
+            command: uvx --index pytorch-cpu=https://download.pytorch.org/whl/cpu semantic-code-mcp
+      release:
+        latest: https://github.com/vrppaul/semantic-code-mcp/releases/latest
+        changelog: https://github.com/vrppaul/semantic-code-mcp/blob/HEAD/CHANGELOG.md
+      licence: MIT
+      sections:
+        - title: How it works
+          paragraphs:
+            - "tree-sitter splits source files into functions, classes, methods, structs, traits and markdown sections."
+            - "sentence-transformers encodes each chunk with all-MiniLM-L6-v2, and LanceDB stores the vectors. LanceDB is embedded, like SQLite, so there is no server to run."
+            - "Search combines semantic and keyword matching and boosts recent code. The first search indexes the project on its own."
+            - "Indexing is incremental, by file modification time, and finds files with git ls-files. The embedding model loads on the first query."
+            - "Three MCP tools: search_code, index_codebase and index_status."
+    - slug: paranin
+      name: paranin
+      level: featured
+      tagline: This résumé as an SSH app.
+      description: The same profile, served over SSH as a terminal app. Go, Charm Wish and Bubble Tea.
+      language: Go
+      install:
+        command: ssh paran.in
+    - slug: water-tracker
+      name: water-tracker
+      level: told
+      tagline: A coaster that weighs your mug.
+      description: ESP32 firmware reads a load cell; a Raspberry Pi server with PostgreSQL answers how much water you drank today.
+      language: C++ and Python
 
 # The groups skills are shown in, and the skills in each, in this order
 skill_groups:

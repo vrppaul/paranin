@@ -115,8 +115,8 @@ func TestTheMatchShownIsWhereTheNextGoesOnFrom(test *testing.T) {
 	}{
 		{name: "back over the last page", keys: []string{"N", "N"}, holds: "/e [53/54]"},
 		{name: "back to a tab left", keys: []string{"n", "n", "n", "l", "h", "n"}, holds: "/e [5/54]"},
-		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/11]"},
-		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [11/11]"},
+		{name: "on a tab with no match shown", keys: []string{"l", "n"}, holds: "/e [1/21]"},
+		{name: "back from a tab's top line with no match shown", keys: []string{"l", "N"}, holds: "/e [21/21]"},
 	}
 	for _, testCase := range cases {
 		test.Run(testCase.name, func(test *testing.T) {

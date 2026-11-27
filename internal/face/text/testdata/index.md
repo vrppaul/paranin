@@ -52,6 +52,10 @@ Shell scripts for the build machines
 
 ### other-tool
 
+Sorted mail by its sender.
+
+A tool that ran for a year, until no mail came for it to sort.
+
 ### [tidy-tool](https://example.test/p/tidy-tool.md)
 
 Lua · Tidies files.
@@ -60,3 +64,9 @@ A tool that **tidies files**.
 
 - repository: [https://github.test/mira/tidy](https://github.test/mira/tidy)
 - install: `go install example.test/tidy@latest`
+
+### trim-tool
+
+Go · Trims space at a line's end.
+
+- repository: [https://github.test/mira/trim](https://github.test/mira/trim)

@@ -167,9 +167,9 @@ func TestAProjectsPageStandsUnderItsName(test *testing.T) {
 // tall enough for a project's whole page, so no scrollbar stands beside its rows.
 func projectModel(test *testing.T, address string) Model {
 	snapshot := *fixtures.LoadedContent(test)
-	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
-	for index := range snapshot.Profile.Projects {
-		snapshot.Profile.Projects[index].Repo = address
+	snapshot.Profile.Projects.List = slices.Clone(snapshot.Profile.Projects.List)
+	for index := range snapshot.Profile.Projects.List {
+		snapshot.Profile.Projects.List[index].Repo = address
 	}
 	return sessionModel(&snapshot, commonWidth, tallHeight)
 }

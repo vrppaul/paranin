@@ -244,8 +244,8 @@ func TestAProjectsSectionHoldsItsWordsThenItsSide(test *testing.T) {
 // post's headings are, so a link reaches it; two of one title are named apart, a detail and a section of the story too.
 func TestAProjectsDetailsFollowItsStoryEachNamedApart(test *testing.T) {
 	snapshot := *fixtures.LoadedContent(test)
-	snapshot.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
-	tidy := &snapshot.Profile.Projects[slices.IndexFunc(snapshot.Profile.Projects, func(project content.Project) bool { return project.Slug == "tidy-tool" })]
+	snapshot.Profile.Projects.List = slices.Clone(snapshot.Profile.Projects.List)
+	tidy := &snapshot.Profile.Projects.List[slices.IndexFunc(snapshot.Profile.Projects.List, func(project content.Project) bool { return project.Slug == "tidy-tool" })]
 	again := content.Section{Title: "Why", Paragraphs: []string{"Files were untidy again."}, Points: nil, Links: nil}
 	tidy.Sections, tidy.Details = append(slices.Clone(tidy.Sections), again), append(slices.Clone(tidy.Details), again)
 	project := fixtures.DocumentOf(test, DocumentsOf(SiteOf(Prepare(&snapshot), publicOnTheDay()).Pages), document.Page{Kind: document.PageProject, Slug: "tidy-tool", Tab: ""})
@@ -423,12 +423,12 @@ func TestTheIndexListsTheBlogsListsThenEveryPostListedNewestFirst(test *testing.
 	}
 }
 
-// The projects' word stands in the index only where a project has a page to list under it.
+// The projects' word stands in the index only where a project has a page to list under it, a featured one.
 func TestTheIndexHasNoProjectsWhereNoProjectHasAPage(test *testing.T) {
 	withoutPages := *fixtures.LoadedContent(test)
-	withoutPages.Profile.Projects = slices.Clone(withoutPages.Profile.Projects)
-	for index := range withoutPages.Profile.Projects {
-		withoutPages.Profile.Projects[index].Page = false
+	withoutPages.Profile.Projects.List = slices.Clone(withoutPages.Profile.Projects.List)
+	for index := range withoutPages.Profile.Projects.List {
+		withoutPages.Profile.Projects.List[index].Level = content.ProjectTold
 	}
 	got := []string{}
 	for _, block := range SiteOf(Prepare(&withoutPages), publicOnTheDay()).Index.Blocks {
@@ -660,9 +660,9 @@ func contentsOf(test *testing.T, section document.Section) document.Contents {
 // withoutLanguages is a snapshot whose projects name no language, the rest as it was.
 func withoutLanguages(snapshot *content.Snapshot) *content.Snapshot {
 	changed := *snapshot
-	changed.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
-	for index := range changed.Profile.Projects {
-		changed.Profile.Projects[index].Language = ""
+	changed.Profile.Projects.List = slices.Clone(snapshot.Profile.Projects.List)
+	for index := range changed.Profile.Projects.List {
+		changed.Profile.Projects.List[index].Language = ""
 	}
 	return &changed
 }
@@ -678,12 +678,12 @@ func withoutWorkingFrom(snapshot *content.Snapshot) *content.Snapshot {
 // licence.
 func withoutAbout(snapshot *content.Snapshot) *content.Snapshot {
 	changed := *snapshot
-	changed.Profile.Projects = slices.Clone(snapshot.Profile.Projects)
-	for index := range changed.Profile.Projects {
-		changed.Profile.Projects[index].Language = ""
-		changed.Profile.Projects[index].Stack = nil
-		changed.Profile.Projects[index].Release = nil
-		changed.Profile.Projects[index].Licence = ""
+	changed.Profile.Projects.List = slices.Clone(snapshot.Profile.Projects.List)
+	for index := range changed.Profile.Projects.List {
+		changed.Profile.Projects.List[index].Language = ""
+		changed.Profile.Projects.List[index].Stack = nil
+		changed.Profile.Projects.List[index].Release = nil
+		changed.Profile.Projects.List[index].Licence = ""
 	}
 	return &changed
 }

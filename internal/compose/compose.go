@@ -34,7 +34,7 @@ func pagesOf(snapshot *content.Snapshot, read blog) []Composed {
 	profile := snapshot.Profile
 	pages := []Composed{composedPage(Resume(snapshot, read.feedLinks(noSeries), read.latestPosts()), personRecord(profile))}
 	author := authorOf(profile.Person)
-	for _, project := range projectsWithPages(profile.Projects) {
+	for _, project := range projectsWithPages(profile.Projects.List) {
 		pages = append(pages, composedPage(projectDocument(project, profile, snapshot.Own.Words), workRecord(project, author)))
 	}
 	return pages
@@ -84,9 +84,9 @@ func tabHead(head document.Head, tab document.Tab) document.Head {
 	}
 }
 
-// projectsWithPages are the projects that have a page of their own, in their order.
+// projectsWithPages are the projects that have a page of their own, the featured ones, in their order.
 func projectsWithPages(projects []content.Project) []content.Project {
-	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return !project.Page })
+	return slices.DeleteFunc(slices.Clone(projects), func(project content.Project) bool { return project.Level != content.ProjectFeatured })
 }
 
 // Resume is the résumé as one document: its head, naming the feeds a reader handed the site's address finds and ending
@@ -101,7 +101,7 @@ func Resume(snapshot *content.Snapshot, feeds []document.Link, latest *document.
 		Blocks: []document.Block{
 			aboutSection(profile, words, titles.about),
 			experienceSection(profile.Experience, profile.SkillGroups, words, titles.experience),
-			projectsSection(profile.Projects, words, titles.projects),
+			projectsSection(profile.Projects.List, words, titles.projects),
 		},
 	}
 }
@@ -186,7 +186,7 @@ func indexOf(snapshot *content.Snapshot, read blog) document.Document {
 	resume := resumeHead(snapshot.Profile, words, workTabsOf(resumeTitlesOf(words)), nil, nil)
 	blocks := []document.Block{section(words.Text(content.WordResume), document.Contents{Listings: []document.Listing{listing(resume)}})}
 	projects := []document.Listing{}
-	for _, project := range projectsWithPages(snapshot.Profile.Projects) {
+	for _, project := range projectsWithPages(snapshot.Profile.Projects.List) {
 		projects = append(projects, listing(projectHead(project, snapshot.Profile, words)))
 	}
 	if len(projects) > 0 {
@@ -408,10 +408,7 @@ type ProjectFile struct {
 // and its details, its recording and its still.
 func projectFilesOf(projects []content.Project) []ProjectFile {
 	files := []ProjectFile{}
-	for _, project := range projects {
-		if !project.Page {
-			continue
-		}
+	for _, project := range projectsWithPages(projects) {
 		page := projectPage(project)
 		for _, section := range slices.Concat(project.Sections, project.Details) {
 			if clip := section.Clip; clip != nil {
@@ -472,7 +469,7 @@ func projectPart(project content.Project, profile content.Profile, words content
 		Stack:        projectMadeOf(project),
 		Release:      projectRelease(project.Release, words),
 		Licence:      project.Licence,
-		Others:       otherProjects(project, profile.Projects),
+		Others:       otherProjects(project, profile.Projects.List),
 		AllProjects:  document.Link{Target: projectsTab, Spans: textSpans(words.Text(content.WordAllProjects))},
 		Mail:         document.Mail{Address: profile.Person.Email},
 		Labels: document.ProjectLabels{
@@ -535,9 +532,9 @@ func projectMadeOf(project content.Project) []string {
 	return append([]string{project.Language}, project.Stack...)
 }
 
-// projectPage is a project's own page, or no page where it has none.
+// projectPage is a project's own page, a featured one's, or no page where it has none.
 func projectPage(project content.Project) document.Page {
-	if !project.Page {
+	if project.Level != content.ProjectFeatured {
 		return document.PageOf(document.PageNone)
 	}
 	return document.Page{Kind: document.PageProject, Slug: project.Slug, Tab: "", Revision: "", Translation: ""}

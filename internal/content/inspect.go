@@ -39,6 +39,7 @@ const (
 	sharedGroupProblem         = "%q names another group too"
 	sharedSkillProblem         = "%q names another skill too"
 	stackLanguageProblem       = "%q is the project's language already"
+	auxiliaryRepositoryProblem = "is empty, where an auxiliary project's tile leads to its repository"
 	emptyGroupProblem          = "holds no skill"
 	wordlessSectionProblem     = "holds no paragraph and no point"
 	unknownSkillProblem        = "%q is no skill of a group"
@@ -138,6 +139,9 @@ const kindSeparator = ", "
 // The field of the site's address, which two checks read
 const baseAddressField = "site.base_url"
 
+// Where a project stands in the profile, by its index in the projects' list
+const projectPlaceFormat = "projects.list[%d]"
+
 // The host a terminal reaches the site at over ssh: its field, and what it is where it is no domain
 const (
 	sshHostField   = "site.ssh_host"
@@ -235,7 +239,7 @@ func inspectProfile(profile Profile) Faults {
 	inspectSite(inspection, profile.Site)
 	inspectPerson(inspection, profile.Person)
 	inspectExperience(inspection, profile.Experience, profile.SkillGroups)
-	inspectProjects(inspection, profile.Projects)
+	inspectProjects(inspection, profile.Projects.List)
 	inspectSkills(inspection, profile.SkillGroups)
 	inspectHealth(inspection, profile.Health)
 	inspectSalary(inspection, profile.Contact.Salary)
@@ -382,31 +386,46 @@ func inspectRole(inspection *inspection, place string, role Role) {
 	}
 }
 
+// inspectProjects holds each project, at its place in the profile, to a slug no project has before it, a name, a level
+// of the known ones, and a repository where the level leads to one; then its stack, its install, its page's sections
+// and its release as their own checks do.
 func inspectProjects(inspection *inspection, projects []Project) {
 	slug := regexp.MustCompile(slugPattern)
 	seen := map[string]bool{}
 	for index, project := range projects {
-		field := fmt.Sprintf("projects[%d].slug", index)
+		place := fmt.Sprintf(projectPlaceFormat, index)
 		switch {
 		case !slug.MatchString(project.Slug):
-			inspection.add(field, slugProblem, project.Slug)
+			inspection.add(place+".slug", slugProblem, project.Slug)
 		case seen[project.Slug]:
-			inspection.add(field, sharedSlugProblem, project.Slug)
+			inspection.add(place+".slug", sharedSlugProblem, project.Slug)
 		}
 		seen[project.Slug] = true
-		inspection.require(fmt.Sprintf("projects[%d].name", index), project.Name)
-		if project.Repo != "" {
-			inspection.requireWebAddress(fmt.Sprintf("projects[%d].repo", index), readWebAddress(project.Repo))
-		}
-		inspectStack(inspection, index, project)
-		inspectInstall(inspection, index, project.Install)
-		for _, list := range sectionListsOf(index, project) {
+		inspection.require(place+".name", project.Name)
+		inspectLevel(inspection, place, project)
+		inspectStack(inspection, place, project)
+		inspectInstall(inspection, place, project.Install)
+		for _, list := range sectionListsOf(place, project) {
 			inspectSections(inspection, list.field, list.sections)
 		}
 		if project.Release != nil {
-			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.latest", index), project.Release.Latest)
-			inspection.requireWebAddress(fmt.Sprintf("projects[%d].release.changelog", index), project.Release.Changelog)
+			inspection.requireWebAddress(place+".release.latest", project.Release.Latest)
+			inspection.requireWebAddress(place+".release.changelog", project.Release.Changelog)
 		}
+	}
+}
+
+// inspectLevel holds a project at a place to a level of the known ones, and its repository to a web address where it
+// names one, which an auxiliary project must: its tile leads there.
+func inspectLevel(inspection *inspection, place string, project Project) {
+	if !projectLevels()[project.Level] {
+		inspection.add(place+".level", noneOfProblem, project.Level, kindList(projectLevels()))
+	}
+	switch {
+	case project.Repo != "":
+		inspection.requireWebAddress(place+".repo", readWebAddress(project.Repo))
+	case project.Level == ProjectAuxiliary:
+		inspection.add(place+".repo", auxiliaryRepositoryProblem)
 	}
 }
 
@@ -432,13 +451,13 @@ func inspectSections(inspection *inspection, field string, sections []Section) {
 	}
 }
 
-// inspectInstall holds a project's install, where it gives one, to its command, and each other way to a note on when
-// to take it and a command.
-func inspectInstall(inspection *inspection, projectIndex int, install *Install) {
+// inspectInstall holds the install of a project at a field, where it gives one, to its command, and each other way to
+// a note on when to take it and a command.
+func inspectInstall(inspection *inspection, projectField string, install *Install) {
 	if install == nil {
 		return
 	}
-	place := fmt.Sprintf("projects[%d].install", projectIndex)
+	place := projectField + ".install"
 	inspection.require(place+".command", install.Command)
 	for alternativeIndex, alternative := range install.Alternatives {
 		alternativePlace := fmt.Sprintf("%s.alternatives[%d]", place, alternativeIndex)
@@ -447,10 +466,11 @@ func inspectInstall(inspection *inspection, projectIndex int, install *Install) 
 	}
 }
 
-// inspectStack holds each name of a project's stack to some text, and to another than the project's language.
-func inspectStack(inspection *inspection, projectIndex int, project Project) {
+// inspectStack holds each name of the stack of a project at a field to some text, and to another than the project's
+// language.
+func inspectStack(inspection *inspection, projectField string, project Project) {
 	for stackIndex, name := range project.Stack {
-		field := fmt.Sprintf("projects[%d].stack[%d]", projectIndex, stackIndex)
+		field := fmt.Sprintf("%s.stack[%d]", projectField, stackIndex)
 		switch {
 		case blank(name):
 			inspection.add(field, emptyProblem)

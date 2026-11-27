@@ -130,19 +130,19 @@ func LoadedContent(test *testing.T) *content.Snapshot {
 	return LoadedFrom(test, ContentFolder(test))
 }
 
-// WithTwoProjectPages is the fixture content, loaded, with a second project of a page of its own after tidy-tool,
-// though its slug sorts before it: tame-tool, of a name, a tagline and a language, so a project's page has another
-// to lead to.
+// WithTwoProjectPages is the fixture content, loaded, with a second featured project, of a page of its own, after
+// tidy-tool, though its slug sorts before it: tame-tool, of a name, a tagline and a language, so a project's page has
+// another to lead to.
 func WithTwoProjectPages(test *testing.T) *content.Snapshot {
 	test.Helper()
 	// the second project's slug, which is its name too
 	const tameTool = "tame-tool"
 	tame := content.Project{
-		Slug: tameTool, Name: tameTool, Tagline: "Tames files.", Description: "", Language: "Go", Stack: nil, Repo: "",
-		Install: nil, Release: nil, Licence: "", Page: true, Sections: nil, Details: nil,
+		Slug: tameTool, Name: tameTool, Level: content.ProjectFeatured, Tagline: "Tames files.", Description: "", Language: "Go",
+		Stack: nil, Repo: "", Install: nil, Release: nil, Licence: "", Sections: nil, Details: nil,
 	}
 	snapshot := *LoadedContent(test)
-	snapshot.Profile.Projects = append(slices.Clone(snapshot.Profile.Projects), tame)
+	snapshot.Profile.Projects.List = append(slices.Clone(snapshot.Profile.Projects.List), tame)
 	return &snapshot
 }
 

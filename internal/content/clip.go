@@ -28,11 +28,12 @@ type sectionList struct {
 	sections []Section
 }
 
-// sectionListsOf are a project's page's sections, its story's and its details', at their fields of the profile.
-func sectionListsOf(projectIndex int, project Project) []sectionList {
+// sectionListsOf are the sections of the page of a project at a field, its story's and its details', at their fields of
+// the profile.
+func sectionListsOf(projectField string, project Project) []sectionList {
 	return []sectionList{
-		{field: fmt.Sprintf("projects[%d].sections", projectIndex), sections: project.Sections},
-		{field: fmt.Sprintf("projects[%d].details", projectIndex), sections: project.Details},
+		{field: projectField + ".sections", sections: project.Sections},
+		{field: projectField + ".details", sections: project.Details},
 	}
 }
 
@@ -43,7 +44,7 @@ func readClips(folder fs.FS, projects []Project) Faults {
 	inspection := &inspection{file: profileFile, faults: nil}
 	for projectIndex, project := range projects {
 		place := path.Join(projectsFolder, project.Slug)
-		for _, list := range sectionListsOf(projectIndex, project) {
+		for _, list := range sectionListsOf(fmt.Sprintf(projectPlaceFormat, projectIndex), project) {
 			for sectionIndex, section := range list.sections {
 				if section.Clip != nil {
 					field := fmt.Sprintf("%s[%d].clip", list.field, sectionIndex)

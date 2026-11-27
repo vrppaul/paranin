@@ -906,10 +906,9 @@ a.tag[aria-current] .tag-mark {
   color: var(--muted);
 }
 
-/* the lead's style: the headline under the name, the line under another page's title, and the projects' line */
+/* the lead's style: the headline under the name, and the line under another page's title or over the projects */
 .lead,
-.page-line,
-.project-list-line {
+.page-line {
   font-size: var(--type-lead-size);
   font-weight: var(--type-lead-weight);
   line-height: var(--type-lead-line);
@@ -1277,8 +1276,7 @@ a.tile-title:focus-visible {
   }
 
   .lead,
-  .page-line,
-  .project-list-line {
+  .page-line {
     font-size: var(--type-lead-phone-size);
     font-weight: var(--type-lead-phone-weight);
     line-height: var(--type-lead-phone-line);
@@ -3285,8 +3283,7 @@ a.tile-title::after {
   row-gap: var(--row-2);
 }
 
-.project-list-line {
-  max-width: var(--measure);
+.project-list > .page-line {
   margin: 0 0 var(--row);
 }
 

@@ -881,7 +881,7 @@ templ (writer PageWriter) points(points []document.Point) {
 templ (writer PageWriter) projectList(list document.ProjectList) {
 	<div class="project-list">
 		if len(list.Line) > 0 {
-			<p class="project-list-line">
+			<p class="page-line">
 				@writer.spans(list.Line)
 			</p>
 		}

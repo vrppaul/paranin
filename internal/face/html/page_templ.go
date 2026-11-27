@@ -5386,7 +5386,7 @@ func (writer PageWriter) projectList(list document.ProjectList) templ.Component 
 			return templ_7745c5c3_Err
 		}
 		if len(list.Line) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 397, "<p class=\"project-list-line\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 397, "<p class=\"page-line\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

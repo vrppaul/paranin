@@ -727,6 +727,23 @@ Under the Positions, three rows of one form on the same grid, each under a `quie
   Tiles, whole.
 - On a phone each row's name over its parts.
 
+### ProjectList
+
+The projects tab, its projects in the three levels the profile gives each, featured, auxiliary and told in words alone,
+with no name over a level: size and weight tell them apart (owner, 2026-11-27).
+
+- Its title in block letters on a row of its own, as Experience's; under it the line the author gives his projects, in
+  `lead`, held to `measure`.
+- Featured: a detailed tile each, three across the page's width, sharing their lines as the blog's tiles do, nothing
+  set into their edge: the name in `heading`, bold, underlined as a Link; its line, bold; its description whole, in
+  `text`; at its foot what it is made of, its language first and once, each name whole, joined by ` · `, in `muted`.
+  The whole tile leads to the project's page.
+- Auxiliary: a small tile each, a row under the featured ones, half a featured tile wide so their edges meet: its name
+  bold and its line, both `small`. The whole tile leads to its repository.
+- Told in words: under a `quiet` rule, no frame and no link: its name bold, its line in `text`, its description in
+  `muted`, held to `measure`.
+- On a phone the featured tiles one under another, the auxiliary two across, the told ones one under another.
+
 ## Pages
 
 - The first screen: left, the greeting, the Name and the headline in `lead`, the words naming his two kinds of work
@@ -739,6 +756,7 @@ Under the Positions, three rows of one form on the same grid, each under a `quie
   contact tab held stands on these: the technologies beside each role, the ways to reach him on the first screen and
   at the experience's end.
 - Experience: the ExperienceHead, its Positions, newest first, and the ExperienceEnd (owner, 2026-11-26).
+- Projects: the ProjectList (owner, 2026-11-27).
 - The address of no page: its status in block letters, in English as HTTP writes it, the address quoted as Code, a
   link to the start, the foot line in the words of the language whose folder the address opens with; no apology and
   no joke. The foot line stands as on every page, with no windows.

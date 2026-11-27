@@ -386,9 +386,9 @@ func inspectRole(inspection *inspection, place string, role Role) {
 	}
 }
 
-// inspectProjects holds each project, at its place in the profile, to a slug no project has before it, a name, a level
-// of the known ones, and a repository where the level leads to one; then its stack, its install, its page's sections
-// and its release as their own checks do.
+// inspectProjects holds each project, at its place in the profile, to a slug no project has before it, a name, its
+// level as inspectLevel holds it, and a web address where it names a repository; then its stack, its install, its
+// page's sections and its release as their own checks do.
 func inspectProjects(inspection *inspection, projects []Project) {
 	slug := regexp.MustCompile(slugPattern)
 	seen := map[string]bool{}
@@ -403,6 +403,9 @@ func inspectProjects(inspection *inspection, projects []Project) {
 		seen[project.Slug] = true
 		inspection.require(place+".name", project.Name)
 		inspectLevel(inspection, place, project)
+		if project.Repo != "" {
+			inspection.requireWebAddress(place+".repo", readWebAddress(project.Repo))
+		}
 		inspectStack(inspection, place, project)
 		inspectInstall(inspection, place, project.Install)
 		for _, list := range sectionListsOf(place, project) {
@@ -415,16 +418,13 @@ func inspectProjects(inspection *inspection, projects []Project) {
 	}
 }
 
-// inspectLevel holds a project at a place to a level of the known ones, and its repository to a web address where it
-// names one, which an auxiliary project must: its tile leads there.
+// inspectLevel holds a project at a place to a level of the known ones, and an auxiliary one to a repository, where its
+// tile leads.
 func inspectLevel(inspection *inspection, place string, project Project) {
 	if !projectLevels()[project.Level] {
 		inspection.add(place+".level", noneOfProblem, project.Level, kindList(projectLevels()))
 	}
-	switch {
-	case project.Repo != "":
-		inspection.requireWebAddress(place+".repo", readWebAddress(project.Repo))
-	case project.Level == ProjectAuxiliary:
+	if project.Level == ProjectAuxiliary && project.Repo == "" {
 		inspection.add(place+".repo", auxiliaryRepositoryProblem)
 	}
 }

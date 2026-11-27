@@ -3311,12 +3311,11 @@ a.tile-title::after {
   line-height: var(--type-small-line);
 }
 
-/* the projects told in words, under a quiet rule, no frame and no link, each a column of prose as wide as the measure
- * where the width holds more than one: its name bold, its line, its description muted */
+/* the projects told in words, under a quiet rule, no frame and no link, one under another, each held to the measure:
+ * its name bold, its line, its description muted */
 .told-projects {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(var(--measure), 100%), 1fr));
-  gap: var(--row) var(--row-3);
+  row-gap: var(--row);
   margin-top: var(--row);
   padding-top: var(--row-2);
   border-top: var(--hairline) solid var(--quiet);
